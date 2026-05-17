@@ -1,19 +1,33 @@
-name: Build Electron App
+name: Build Electron App (manual)
+
+# Manual rebuild for an existing release tag.
+#
+# Use this to (re)build installers and attach them to a pre-existing GitHub
+# Release — e.g. to backfill assets for a release that was published before
+# the build pipeline existed, or to re-run a flaky build for a tag.
+#
+# Routine releases are built automatically by .github/workflows/release.yml
+# whenever release-please publishes a new release.
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag to build (e.g. v0.1.1)'
+        required: true
+        type: string
 
 permissions:
-  contents: write  # Required to upload release assets
+  contents: write
 
 jobs:
   build-macos:
     runs-on: macos-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -27,67 +41,28 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'apps/x/pnpm-lock.yaml'
 
-      - name: Extract version from tag
-        id: version
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Extracted version: ${VERSION}"
-
-      - name: Update package.json versions
-        run: |
-          node -e "
-            const fs = require('fs');
-            const version = '${{ steps.version.outputs.version }}';
-            
-            // Update apps/x/package.json
-            const rootPackage = JSON.parse(fs.readFileSync('apps/x/package.json', 'utf8'));
-            rootPackage.version = version;
-            fs.writeFileSync('apps/x/package.json', JSON.stringify(rootPackage, null, 2) + '\n');
-            
-            // Update apps/x/apps/main/package.json
-            const mainPackage = JSON.parse(fs.readFileSync('apps/x/apps/main/package.json', 'utf8'));
-            mainPackage.version = version;
-            fs.writeFileSync('apps/x/apps/main/package.json', JSON.stringify(mainPackage, null, 2) + '\n');
-            
-            console.log('Updated version to:', version);
-          "
-
       - name: Import Code Signing Certificate
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
-          # Create a temporary keychain
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-          
-          # Create keychain
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          
-          # Decode and import certificate
           echo "$APPLE_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
           security import $RUNNER_TEMP/certificate.p12 -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          
-          # Allow codesign to access the keychain
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          
-          # Add keychain to search list
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain
-          
-          # Verify certificate was imported
           security find-identity -v "$KEYCHAIN_PATH"
-          
-          # Clean up certificate file
           rm -f $RUNNER_TEMP/certificate.p12
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
 
-      - name: Build electron app
+      - name: Build and publish electron app
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -109,16 +84,17 @@ jobs:
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: distributables
+          name: distributables-macos
           path: apps/x/apps/main/out/make/*
           retention-days: 30
 
   build-linux:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -132,37 +108,11 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'apps/x/pnpm-lock.yaml'
 
-      - name: Extract version from tag
-        id: version
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Extracted version: ${VERSION}"
-
-      - name: Update package.json versions
-        run: |
-          node -e "
-            const fs = require('fs');
-            const version = '${{ steps.version.outputs.version }}';
-            
-            // Update apps/x/package.json
-            const rootPackage = JSON.parse(fs.readFileSync('apps/x/package.json', 'utf8'));
-            rootPackage.version = version;
-            fs.writeFileSync('apps/x/package.json', JSON.stringify(rootPackage, null, 2) + '\n');
-            
-            // Update apps/x/apps/main/package.json
-            const mainPackage = JSON.parse(fs.readFileSync('apps/x/apps/main/package.json', 'utf8'));
-            mainPackage.version = version;
-            fs.writeFileSync('apps/x/apps/main/package.json', JSON.stringify(mainPackage, null, 2) + '\n');
-            
-            console.log('Updated version to:', version);
-          "
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
 
-      - name: Build electron app
+      - name: Build and publish electron app
         env:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
@@ -179,10 +129,11 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -196,39 +147,11 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'apps/x/pnpm-lock.yaml'
 
-      - name: Extract version from tag
-        id: version
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Extracted version: ${VERSION}"
-
-      - name: Update package.json versions
-        shell: bash
-        run: |
-          node -e "
-            const fs = require('fs');
-            const version = '${{ steps.version.outputs.version }}';
-            
-            // Update apps/x/package.json
-            const rootPackage = JSON.parse(fs.readFileSync('apps/x/package.json', 'utf8'));
-            rootPackage.version = version;
-            fs.writeFileSync('apps/x/package.json', JSON.stringify(rootPackage, null, 2) + '\n');
-            
-            // Update apps/x/apps/main/package.json
-            const mainPackage = JSON.parse(fs.readFileSync('apps/x/apps/main/package.json', 'utf8'));
-            mainPackage.version = version;
-            fs.writeFileSync('apps/x/apps/main/package.json', JSON.stringify(mainPackage, null, 2) + '\n');
-            
-            console.log('Updated version to:', version);
-          "
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
 
-      - name: Build electron app
+      - name: Build and publish electron app
         env:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
