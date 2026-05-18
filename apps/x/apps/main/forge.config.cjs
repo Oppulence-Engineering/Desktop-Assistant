@@ -94,7 +94,7 @@ module.exports = {
                     owner: 'Oppulence-Engineering',
                     name: 'rowboat'
                 },
-                prerelease: true
+                prerelease: false
             }
         }
     ],
