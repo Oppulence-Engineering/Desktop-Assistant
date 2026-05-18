@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.1...v0.1.2) (2026-05-18)
+
+
+### Bug Fixes
+
+* publish releases as stable, not pre-release ([a1ec3d8](https://github.com/Oppulence-Engineering/rowboat/commit/a1ec3d87c90f04cf2a54ab3fa36d03f239849b1a))
+* publish releases as stable, not pre-release ([06549c9](https://github.com/Oppulence-Engineering/rowboat/commit/06549c9907a3373af7c3a21e74770dc379a37c09))
+
 ## [0.1.1](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.0...v0.1.1) (2026-05-17)
 
 
