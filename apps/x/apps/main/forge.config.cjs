@@ -91,7 +91,7 @@ module.exports = {
             name: '@electron-forge/publisher-github',
             config: {
                 repository: {
-                    owner: 'rowboatlabs',
+                    owner: 'Oppulence-Engineering',
                     name: 'rowboat'
                 },
                 prerelease: true
