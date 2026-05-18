@@ -94,6 +94,9 @@ module.exports = {
                     owner: 'Oppulence-Engineering',
                     name: 'rowboat'
                 },
+                // GitHub releases are published as stable (not pre-release).
+                // This matches what release-please publishes; flipping back to `true`
+                // would cause release churn and hide installers from the Latest tag.
                 prerelease: false
             }
         }
