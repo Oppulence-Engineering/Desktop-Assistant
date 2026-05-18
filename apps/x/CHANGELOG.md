@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.2...v0.1.3) (2026-05-18)
+
+
+### Documentation
+
+* **forge:** document why releases are stable, not pre-release ([#8](https://github.com/Oppulence-Engineering/rowboat/issues/8)) ([937b418](https://github.com/Oppulence-Engineering/rowboat/commit/937b418253509d2d3d6da94bdb8a914ef2e98d73))
+
 ## [0.1.2](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.1...v0.1.2) (2026-05-18)
 
 
