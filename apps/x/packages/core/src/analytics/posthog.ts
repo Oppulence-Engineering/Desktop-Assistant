@@ -120,3 +120,35 @@ export async function shutdown(): Promise<void> {
     console.error('[Analytics] shutdown failed:', err);
   }
 }
+
+/**
+ * Capture a native crash event (Crashpad minidump or render/child process gone).
+ * Emits as a $exception event with mechanism.handled=false so PostHog flags it
+ * separately from JS-level handled exceptions.
+ */
+export function captureNativeCrash(properties: Record<string, unknown>): void {
+  const ph = getClient();
+  if (!ph) return;
+  try {
+    const kind = typeof properties.kind === "string" ? properties.kind : null;
+    const message = kind
+      ? 'Native crash: ' + kind
+      : 'Native crash (minidump from previous launch)';
+    ph.capture({
+      distinctId: activeDistinctId(),
+      event: '$exception',
+      properties: {
+        ...properties,
+        $exception_list: [
+          {
+            type: 'NativeCrash',
+            value: message,
+            mechanism: { handled: false, synthetic: true },
+          },
+        ],
+      },
+    });
+  } catch (err) {
+    console.error('[Analytics] captureNativeCrash failed:', err);
+  }
+}
