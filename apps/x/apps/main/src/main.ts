@@ -31,7 +31,7 @@ import { liveNoteEventConsumer } from "@x/core/dist/knowledge/live-note/event-co
 import { init as initBackgroundTaskScheduler } from "@x/core/dist/background-tasks/scheduler.js";
 import { backgroundTaskEventConsumer } from "@x/core/dist/background-tasks/event-consumer.js";
 import { init as initLocalSites, shutdown as shutdownLocalSites } from "@x/core/dist/local-sites/server.js";
-import { shutdown as shutdownAnalytics } from "@x/core/dist/analytics/posthog.js";
+import { shutdown as shutdownAnalytics, captureException } from "@x/core/dist/analytics/posthog.js";
 import { identifyIfSignedIn } from "@x/core/dist/analytics/identify.js";
 
 import { initConfigs } from "@x/core/dist/config/initConfigs.js";
@@ -56,6 +56,24 @@ const execAsync = promisify(exec);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Capture uncaught exceptions and unhandled promise rejections in the main
+// process and forward them to PostHog. This must be registered as early as
+// possible so we don't miss errors thrown during startup. The handlers swallow
+// errors from the analytics path itself to avoid recursive crashes.
+process.on('uncaughtException', (err) => {
+  console.error('[Main] uncaughtException:', err);
+  try {
+    captureException(err, { process: 'main', stage: 'runtime' });
+  } catch {}
+});
+process.on('unhandledRejection', (reason) => {
+  const err = reason instanceof Error ? reason : new Error(String(reason));
+  console.error('[Main] unhandledRejection:', err);
+  try {
+    captureException(err, { process: 'main', stage: 'runtime', kind: 'unhandledRejection' });
+  } catch {}
+});
 
 // run this as early in the main process as possible
 if (started) app.quit();
