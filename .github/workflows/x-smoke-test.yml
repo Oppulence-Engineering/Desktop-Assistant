@@ -1,0 +1,82 @@
+name: x Smoke Test
+
+on:
+  pull_request:
+    paths:
+      - 'apps/x/**'
+      - '.github/workflows/x-smoke-test.yml'
+
+jobs:
+  smoke-test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          cache-dependency-path: 'apps/x/pnpm-lock.yaml'
+
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: apps/x
+
+      - name: Build shared/core/preload (TypeScript)
+        run: npm run deps
+        working-directory: apps/x
+
+      - name: Lint apps/x
+        run: npm run lint
+        working-directory: apps/x
+
+      - name: Package electron app (no publish, no signing)
+        run: npx electron-forge package --arch=x64 --platform=linux
+        working-directory: apps/x/apps/main
+
+      - name: Verify packaged binary exists
+        run: |
+          BIN="apps/x/apps/main/out/x-linux-x64/x"
+          if [ ! -f "$BIN" ]; then
+            echo "Packaged binary not found at $BIN" >&2
+            ls -la apps/x/apps/main/out/ || true
+            exit 1
+          fi
+          file "$BIN"
+
+      - name: Boot app under xvfb (5 second smoke)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1280x720x24 &
+          sleep 2
+          # Launch and capture exit / pid liveness
+          ./apps/x/apps/main/out/x-linux-x64/x --no-sandbox > smoke.log 2>&1 &
+          APP_PID=$!
+          sleep 5
+          if ! kill -0 $APP_PID 2>/dev/null; then
+            echo "App died within 5 seconds" >&2
+            cat smoke.log
+            exit 1
+          fi
+          echo "App still alive after 5s (pid $APP_PID) — smoke test passed"
+          kill $APP_PID || true
+          tail -n 50 smoke.log || true
