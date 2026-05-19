@@ -209,3 +209,42 @@ jobs:
           name: distributables-windows
           path: apps/x/apps/main/out/make/*
           retention-days: 30
+
+  attach-sbom:
+    needs: [release-please, build-macos, build-linux, build-windows]
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Generate SPDX SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./apps/x
+          format: spdx-json
+          output-file: rowboat-x-${{ needs.release-please.outputs.version }}.spdx.json
+          upload-artifact: true
+          upload-artifact-retention: 30
+
+      - name: Generate CycloneDX SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./apps/x
+          format: cyclonedx-json
+          output-file: rowboat-x-${{ needs.release-please.outputs.version }}.cdx.json
+          upload-artifact: true
+          upload-artifact-retention: 30
+
+      - name: Attach SBOMs to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ needs.release-please.outputs.tag_name }}" \
+            "rowboat-x-${{ needs.release-please.outputs.version }}.spdx.json" \
+            "rowboat-x-${{ needs.release-please.outputs.version }}.cdx.json" \
+            --clobber
