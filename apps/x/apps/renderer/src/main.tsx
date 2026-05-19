@@ -23,6 +23,10 @@ async function bootstrap() {
   const options = {
     api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
     defaults: '2025-11-30',
+    // Autocapture uncaught exceptions and unhandled promise rejections in the
+    // renderer process. PostHog wires up window.onerror + 'unhandledrejection'
+    // listeners and emits $exception events with stack traces.
+    capture_exceptions: true,
     ...(installationId ? { bootstrap: { distinctID: installationId } } : {}),
   } as const
 
