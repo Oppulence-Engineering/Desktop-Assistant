@@ -1,4 +1,4 @@
-undefinedimport { PostHog } from 'posthog-node';
+import { PostHog } from 'posthog-node';
 import { getInstallationId } from './installation.js';
 import { API_URL } from '../config/env.js';
 
