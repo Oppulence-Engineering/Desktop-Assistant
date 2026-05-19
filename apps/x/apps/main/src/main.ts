@@ -282,7 +282,7 @@ app.whenReady().then(async () => {
     updateElectronApp({
       updateSource: {
         type: UpdateSourceType.ElectronPublicUpdateService,
-        repo: "rowboatlabs/rowboat",
+        repo: "Oppulence-Engineering/rowboat",
       },
       notifyUser: true, // Shows native dialog when update is available
     });
