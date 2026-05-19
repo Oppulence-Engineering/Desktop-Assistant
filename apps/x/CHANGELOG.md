@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.4...v0.1.5) (2026-05-19)
+
+
+### Features
+
+* **x:** capture uncaught exceptions in posthog ([#14](https://github.com/Oppulence-Engineering/rowboat/issues/14)) ([af6f20d](https://github.com/Oppulence-Engineering/rowboat/commit/af6f20d703f51d0fc1908341be6fdb5180863a3f))
+
 ## [0.1.4](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.3...v0.1.4) (2026-05-19)
 
 
