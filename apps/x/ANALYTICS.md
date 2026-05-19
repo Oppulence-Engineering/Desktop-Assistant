@@ -156,3 +156,37 @@ If unset, analytics no-op silently — you'll see `[Analytics] POSTHOG_KEY not s
 | `packages/shared/src/ipc.ts` | `analytics:bootstrap` IPC channel definition |
 | `apps/main/src/ipc.ts` | `analytics:bootstrap` handler + forwards `userId` on `oauth:didConnect` |
 | `apps/main/bundle.mjs` | Bakes `POSTHOG_KEY`/`POSTHOG_HOST` into packaged `main.cjs` |
+
+## Crash & exception reporting
+
+Uncaught exceptions and unhandled promise rejections are forwarded to PostHog
+as `$exception` events, surfacing in **PostHog → Error tracking**. We reuse
+the analytics PostHog project — there is no separate Sentry-style SDK or
+secret.
+
+### Main process
+- `apps/main/src/main.ts` registers `process.on('uncaughtException')` and
+  `process.on('unhandledRejection')` handlers at the very top of the file
+  (before any other init) so startup errors are captured.
+- Handlers call `captureException()` from
+  `packages/core/src/analytics/posthog.ts` with
+  `{ process: 'main', stage: 'runtime' }` properties. Rejection events also
+  set `kind: 'unhandledRejection'`.
+- `captureException()` uses `posthog-node`'s native method when available
+  and falls back to emitting a `$exception` event with the documented
+  `$exception_list` shape for older SDK versions.
+
+### Renderer process
+- `apps/renderer/src/main.tsx` passes `capture_exceptions: true` in the
+  PostHog options. The `posthog-js` SDK wires up `window.onerror` and
+  `unhandledrejection` listeners and emits `$exception` events with stack
+  traces and breadcrumbs.
+
+### Caveats
+- **No native crash coverage.** Renderer GPU/Crashpad crashes and main-process
+  segfaults are not surfaced — `uncaughtException` does not fire for native
+  crashes. We can layer Electron's `crashReporter` API later if needed.
+- **Stacks are against the bundled/minified output.** Source maps are not
+  uploaded; stacks resolve against `main.cjs` and the Vite renderer bundle.
+- Events flow to the same PostHog project as analytics. Filter by
+  `event = $exception` in dashboards.
