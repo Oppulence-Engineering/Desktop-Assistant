@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.5...v0.1.6) (2026-05-19)
+
+
+### Bug Fixes
+
+* **x:** remove stray 'undefined' prefix from posthog.ts ([#16](https://github.com/Oppulence-Engineering/rowboat/issues/16)) ([4011057](https://github.com/Oppulence-Engineering/rowboat/commit/40110579a7f7d48f1fcb6d0c81e973b62f157220))
+
 ## [0.1.5](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.4...v0.1.5) (2026-05-19)
 
 
