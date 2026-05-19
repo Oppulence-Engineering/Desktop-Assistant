@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.3...v0.1.4) (2026-05-19)
+
+
+### Bug Fixes
+
+* **x:** point auto-updater to fork repository ([#12](https://github.com/Oppulence-Engineering/rowboat/issues/12)) ([6e43dfe](https://github.com/Oppulence-Engineering/rowboat/commit/6e43dfec7436f569cccd7384a3447e696e22093c))
+
 ## [0.1.3](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.2...v0.1.3) (2026-05-18)
 
 
