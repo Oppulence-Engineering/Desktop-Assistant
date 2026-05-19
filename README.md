@@ -30,6 +30,8 @@
 
 </h5>
 
+> **Fork notice** — This is the [Oppulence-Engineering](https://github.com/Oppulence-Engineering) fork of [rowboatlabs/rowboat](https://github.com/rowboatlabs/rowboat). It ships independent builds with its own release cadence, telemetry pipeline, and update channel. See [Fork details](#fork-details) below.
+
 Rowboat connects to your email and meeting notes, builds a long-lived knowledge graph, and uses that context to help you get work done - privately, on your machine.
 
 You can do things like:
@@ -154,3 +156,38 @@ Examples: Exa (web search), Twitter/X, ElevenLabs (voice), Slack, Linear/Jira, G
 
 [Discord](https://discord.gg/wajrgmJQ6b) · [Twitter](https://x.com/intent/user?screen_name=rowboatlabshq)
 </div>
+
+
+---
+
+## Fork details
+
+This fork is maintained independently of upstream. The substantive differences are confined to the desktop app under `apps/x/` plus the CI/release pipeline under `.github/workflows/`.
+
+### Installation (this fork)
+
+Download installers from this fork's releases page:
+
+**Latest release:** https://github.com/Oppulence-Engineering/rowboat/releases/latest
+
+Each release ships 16 installer assets covering the full Mac/Windows/Linux matrix (macOS `.dmg` and `.zip` for both arm64 and x64; Linux `.deb`, `.rpm`, and `.zip` for arm64 and x86_64; Windows Squirrel `.exe` installer plus a portable `.zip`), plus two supply-chain SBOMs (SPDX 2.3 and CycloneDX 1.5) so consumers can scan dependencies for known CVEs without rebuilding from source.
+
+### Auto-update
+
+The desktop app uses [`update-electron-app`](https://github.com/electron/update-electron-app) and is pointed at this fork's release feed (`Oppulence-Engineering/rowboat`). Installed clients check for new versions on startup and silently download in the background; the next launch boots into the new version. To opt out, quit and remove the app — no telemetry is sent past that point.
+
+### Telemetry and crash reporting
+
+This fork uses [PostHog](https://posthog.com/) for both product analytics and exception capture. The main process registers `process.on('uncaughtException')` and `process.on('unhandledRejection')` handlers that ship to `posthog-node`; the renderer enables `capture_exceptions: true` on the React provider so browser-side errors flow to `posthog-js` automatically. No third-party crash-reporting SDK is wired in. See [ANALYTICS.md](./ANALYTICS.md) for the full event taxonomy and opt-out instructions.
+
+### Release process
+
+Releases follow [Conventional Commits](https://www.conventionalcommits.org/). When a PR with a `feat:`, `fix:`, or `feat!:`/`fix!:` commit (squash-merged into `main`) touches `apps/x/`, [release-please](https://github.com/googleapis/release-please) automatically opens a release PR with the version bump and changelog entry. Merging that PR cuts a tag, triggers parallel macOS/Linux/Windows builds via electron-forge, attaches all 16 installer assets to the GitHub Release, and uploads SBOMs. Total wall-clock time is around 6 minutes.
+
+### Upstream sync
+
+Upstream changes are periodically merged in via `Sync fork` on the GitHub UI. Fork-specific files (anything under `.github/workflows/release.yml`, `apps/x/apps/main/forge.config.js`, `apps/x/packages/core/src/posthog.ts`, and this section of `README.md`) take precedence on conflict.
+
+### Security
+
+To report a vulnerability in this fork, see [SECURITY.md](./SECURITY.md) (email: admin@solomon-ai.co). Vulnerabilities in upstream code should be reported to [rowboatlabs/rowboat](https://github.com/rowboatlabs/rowboat) directly.
