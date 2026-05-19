@@ -1,4 +1,4 @@
-import { PostHog } from 'posthog-node';
+undefinedimport { PostHog } from 'posthog-node';
 import { getInstallationId } from './installation.js';
 import { API_URL } from '../config/env.js';
 
@@ -73,6 +73,38 @@ export function identify(userId: string, properties?: Record<string, unknown>): 
     identifiedUserId = userId;
   } catch (err) {
     console.error('[Analytics] identify failed:', err);
+  }
+}
+
+export function captureException(error: unknown, properties?: Record<string, unknown>): void {
+  const ph = getClient();
+  if (!ph) return;
+  try {
+    const err = error instanceof Error ? error : new Error(typeof error === 'string' ? error : JSON.stringify(error));
+    const phAny = ph as unknown as { captureException?: (err: unknown, distinctId?: string, props?: Record<string, unknown>) => void };
+    if (typeof phAny.captureException === 'function') {
+      // posthog-node v4+: native captureException signature
+      phAny.captureException(err, activeDistinctId(), properties);
+      return;
+    }
+    // Fallback: emit a $exception event in the documented shape
+    ph.capture({
+      distinctId: activeDistinctId(),
+      event: '$exception',
+      properties: {
+        ...properties,
+        $exception_list: [
+          {
+            type: err.name,
+            value: err.message,
+            stacktrace: err.stack ? { frames: [], raw: err.stack } : undefined,
+            mechanism: { handled: true, synthetic: false },
+          },
+        ],
+      },
+    });
+  } catch (e) {
+    console.error('[Analytics] captureException failed:', e);
   }
 }
 
