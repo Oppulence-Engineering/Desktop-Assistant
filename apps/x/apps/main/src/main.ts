@@ -51,6 +51,7 @@ import {
   extractDeepLinkFromArgv,
   setMainWindowForDeepLinks,
 } from "./deeplink.js";
+import { startCrashReporter, processPendingCrashDumps, registerLiveCrashListeners } from "./crash-reporter.js";
 
 const execAsync = promisify(exec);
 
@@ -74,6 +75,10 @@ process.on('unhandledRejection', (reason) => {
     captureException(err, { process: 'main', stage: 'runtime', kind: 'unhandledRejection' });
   } catch {}
 });
+
+// Start Electron's native Crashpad/Breakpad reporter as early as possible so it
+// can catch crashes that happen during initialization (before app.whenReady).
+startCrashReporter();
 
 // run this as early in the main process as possible
 if (started) app.quit();
@@ -334,6 +339,13 @@ app.whenReady().then(async () => {
 
   setupIpcHandlers();
   setupBrowserEventForwarding();
+
+  // Capture any minidumps left behind by a previous crashed launch and
+  // listen for renderer/child-process crashes happening live.
+  processPendingCrashDumps().catch((err) => {
+    console.error('[CrashReporter] processPendingCrashDumps threw:', err);
+  });
+  registerLiveCrashListeners();
 
   createWindow();
 
