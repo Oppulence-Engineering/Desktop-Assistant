@@ -51,6 +51,16 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'apps/x/pnpm-lock.yaml'
 
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
       - name: Import Code Signing Certificate
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -120,6 +130,16 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'apps/x/pnpm-lock.yaml'
 
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
@@ -160,6 +180,16 @@ jobs:
           node-version: 24
           cache: 'pnpm'
           cache-dependency-path: 'apps/x/pnpm-lock.yaml'
+
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\\AppData\\Local\\electron\\Cache
+            ~\\AppData\\Local\\electron-builder\\Cache
+          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
