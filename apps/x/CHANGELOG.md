@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.6...v0.1.7) (2026-05-20)
+
+
+### Features
+
+* **x:** capture native crashes via Electron crashReporter ([#22](https://github.com/Oppulence-Engineering/rowboat/issues/22)) ([79121d1](https://github.com/Oppulence-Engineering/rowboat/commit/79121d18eda4bde6a790dcf7d4dbb196bacdafb5))
+
 ## [0.1.6](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.5...v0.1.6) (2026-05-19)
 
 
