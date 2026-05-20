@@ -77,8 +77,8 @@ export async function processPendingCrashDumps(): Promise<void> {
   let entries: string[];
   try {
     entries = await readdir(crashesDir);
-  } catch (err: any) {
-    if (err && err.code === 'ENOENT') return;
+  } catch (err: unknown) {
+    if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'ENOENT') return;
     console.error('[CrashReporter] Failed to read crashes directory:', err);
     return;
   }
