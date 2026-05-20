@@ -1,7 +1,21 @@
 import { app, crashReporter } from 'electron';
-import { readdir, readFile, unlink } from 'node:fs/promises';
+import { readdir, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { captureNativeCrash } from '@x/core/dist/analytics/posthog.js';
+
+/**
+ * Reasons reported by Electron's render-process-gone / child-process-gone
+ * events that we treat as actual crashes worth recording as $exception.
+ * Non-crash reasons like 'clean-exit', 'killed', 'abnormal-exit' are noisy or
+ * expected during normal app lifecycle, so we skip them to avoid polluting
+ * PostHog Error Tracking.
+ */
+const CRASH_REASONS = new Set([
+  'crashed',
+  'oom',
+  'launch-failed',
+  'integrity-failure',
+]);
 
 /**
  * Starts Electron's built-in Crashpad/Breakpad reporter. This MUST be called
@@ -45,6 +59,11 @@ export function startCrashReporter(): void {
  * Safe to call multiple times — idempotent. Must be called after app.whenReady()
  * so app.getPath('crashDumps') is resolvable, and after PostHog has been
  * initialized so captureNativeCrash() has a client to send to.
+ *
+ * We only delete a dump after captureNativeCrash() returns without throwing.
+ * If capture fails (e.g. PostHog disabled, network error), the .dmp is left on
+ * disk so a future launch can retry — we'd rather double-upload than lose
+ * evidence of a crash.
  */
 export async function processPendingCrashDumps(): Promise<void> {
   let crashesDir: string;
@@ -58,25 +77,25 @@ export async function processPendingCrashDumps(): Promise<void> {
   let entries: string[];
   try {
     entries = await readdir(crashesDir);
-  } catch (err) {
-    // Directory doesn't exist yet (no crashes ever) — totally normal.
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
+  } catch (err: any) {
+    if (err && err.code === 'ENOENT') return;
     console.error('[CrashReporter] Failed to read crashes directory:', err);
     return;
   }
 
-  const dumps = entries.filter((name) => name.endsWith('.dmp'));
+  const dumps = entries.filter((f) => f.endsWith('.dmp'));
   if (dumps.length === 0) return;
 
   console.log('[CrashReporter] Found', dumps.length, 'pending crash dump(s); uploading to PostHog');
 
   for (const dump of dumps) {
     const fullPath = join(crashesDir, dump);
+    let captureOk = false;
     try {
-      const stat = await readFile(fullPath).then((b) => ({ size: b.byteLength }));
+      const st = await stat(fullPath);
       captureNativeCrash({
         dumpFilename: dump,
-        sizeBytes: stat.size,
+        sizeBytes: st.size,
         platform: process.platform,
         arch: process.arch,
         appVersion: app.getVersion(),
@@ -84,11 +103,14 @@ export async function processPendingCrashDumps(): Promise<void> {
         // isn't a symbol server. The filename + metadata is enough to know that
         // a native crash happened and pair it with timing of the previous launch.
       });
+      captureOk = true;
+    } catch (err) {
+      console.error('[CrashReporter] Failed to capture dump (will retry on next launch):', dump, err);
+    }
+    if (captureOk) {
       await unlink(fullPath).catch((err) => {
         console.error('[CrashReporter] Failed to delete dump after upload:', dump, err);
       });
-    } catch (err) {
-      console.error('[CrashReporter] Failed to process dump:', dump, err);
     }
   }
 }
@@ -97,9 +119,16 @@ export async function processPendingCrashDumps(): Promise<void> {
  * Registers listeners for renderer + child process crashes that happen while
  * the app is running. Unlike minidumps (which are read on the NEXT launch),
  * these fire synchronously and let us capture exit reason / code in real time.
+ *
+ * We gate emission on CRASH_REASONS so normal exits (clean-exit, killed) don't
+ * pollute PostHog Error Tracking — only actual crash-like reasons are forwarded.
  */
 export function registerLiveCrashListeners(): void {
   app.on('render-process-gone', (_event, _webContents, details) => {
+    if (!CRASH_REASONS.has(details.reason)) {
+      console.log('[CrashReporter] render-process-gone (non-crash, ignored):', details.reason);
+      return;
+    }
     console.error('[CrashReporter] render-process-gone:', details);
     try {
       captureNativeCrash({
@@ -116,6 +145,10 @@ export function registerLiveCrashListeners(): void {
   });
 
   app.on('child-process-gone', (_event, details) => {
+    if (!CRASH_REASONS.has(details.reason)) {
+      console.log('[CrashReporter] child-process-gone (non-crash, ignored):', details.reason);
+      return;
+    }
     console.error('[CrashReporter] child-process-gone:', details);
     try {
       captureNativeCrash({
