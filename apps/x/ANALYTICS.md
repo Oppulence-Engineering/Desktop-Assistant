@@ -182,10 +182,31 @@ secret.
   `unhandledrejection` listeners and emits `$exception` events with stack
   traces and breadcrumbs.
 
+### Native crashes (Crashpad + render/child process gone)
+- `apps/main/src/crash-reporter.ts` starts Electron's built-in `crashReporter`
+  synchronously at process startup (before `app.whenReady()`), so crashes
+  during initialization are captured. `uploadToServer: false` means minidumps
+  land on local disk under `app.getPath('crashDumps')` instead of being POSTed
+  to a Crashpad collection endpoint.
+- On the *next* launch, `processPendingCrashDumps()` scans that directory for
+  leftover `.dmp` files, emits a `$exception` event per file via
+  `captureNativeCrash()` (with `mechanism.handled = false`), and deletes the
+  dump so it is not re-uploaded.
+- `registerLiveCrashListeners()` subscribes to `app.on('render-process-gone')`
+  and `app.on('child-process-gone')` so renderer/GPU crashes that happen while
+  the app is running are captured live with reason + exitCode.
+- Minidump *bytes* are never uploaded — PostHog is not a symbol server. We
+  only ship metadata (filename, size, platform, arch, app version, crash
+  reason) which is enough to correlate with the previous session and detect
+  trends.
+- This closes the gap left by JS-level `uncaughtException`: V8 engine crashes,
+  native module segfaults, stack overflows below the JS frame, and renderer
+  process OOMs all now flow to PostHog Error tracking.
+
 ### Caveats
-- **No native crash coverage.** Renderer GPU/Crashpad crashes and main-process
-  segfaults are not surfaced — `uncaughtException` does not fire for native
-  crashes. We can layer Electron's `crashReporter` API later if needed.
+- **Native crashes are captured but symbols are not uploaded.** Minidump
+  bytes stay on the user's disk for offline debugging via `minidump_stackwalk`;
+  we only forward metadata to PostHog.
 - **Stacks are against the bundled/minified output.** Source maps are not
   uploaded; stacks resolve against `main.cjs` and the Vite renderer bundle.
 - Events flow to the same PostHog project as analytics. Filter by
