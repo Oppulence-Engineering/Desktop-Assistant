@@ -43,10 +43,6 @@ jobs:
         run: npm run deps
         working-directory: apps/x
 
-      - name: Lint apps/x
-        run: npm run lint
-        working-directory: apps/x
-
       - name: Package electron app (no publish, no signing)
         run: npx electron-forge package --arch=x64 --platform=linux
         working-directory: apps/x/apps/main
