@@ -53,7 +53,7 @@ jobs:
 
       - name: Verify packaged binary exists
         run: |
-          BIN="apps/x/apps/main/out/x-linux-x64/x"
+          BIN="apps/x/apps/main/out/Rowboat-linux-x64/rowboat"
           if [ ! -f "$BIN" ]; then
             echo "Packaged binary not found at $BIN" >&2
             ls -la apps/x/apps/main/out/ || true
@@ -69,7 +69,7 @@ jobs:
           Xvfb :99 -screen 0 1280x720x24 &
           sleep 2
           # Launch and capture exit / pid liveness
-          ./apps/x/apps/main/out/x-linux-x64/x --no-sandbox > smoke.log 2>&1 &
+          ./apps/x/apps/main/out/Rowboat-linux-x64/rowboat --no-sandbox > smoke.log 2>&1 &
           APP_PID=$!
           sleep 5
           if ! kill -0 $APP_PID 2>/dev/null; then
