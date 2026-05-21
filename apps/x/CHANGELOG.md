@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.8](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.7...v0.1.8) (2026-05-21)
+
+
+### Performance
+
+* improve desktop app performance hot paths ([e70895b](https://github.com/Oppulence-Engineering/rowboat/commit/e70895b9d4a3d9974812b974a66e993418da6e4d))
+
 ## [0.1.7](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.6...v0.1.7) (2026-05-20)
 
 
