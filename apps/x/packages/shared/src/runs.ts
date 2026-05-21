@@ -166,6 +166,12 @@ export const ListRunsResponse = z.object({
     nextCursor: z.string().optional(),
 });
 
+export const ListRunsOptions = z.object({
+    cursor: z.string().optional(),
+    limit: z.number().int().min(1).max(100).optional(),
+    agentId: z.string().optional(),
+});
+
 export const CreateRunOptions = z.object({
     agentId: z.string(),
     model: z.string().optional(),

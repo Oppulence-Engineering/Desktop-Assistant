@@ -69,6 +69,7 @@ import {
   readRunIds as readTaskRunIds,
 } from '@x/core/dist/background-tasks/fileops.js';
 import { browserIpcHandlers } from './browser/ipc.js';
+import { ensureAgentSlackAvailable } from './agent-slack.js';
 
 /**
  * Convert markdown to a styled HTML document for PDF/DOCX export.
@@ -525,7 +526,7 @@ export function setupIpcHandlers() {
       return runsCore.fetchRun(args.runId);
     },
     'runs:list': async (_event, args) => {
-      return runsCore.listRuns(args.cursor);
+      return runsCore.listRuns(args);
     },
     'runs:delete': async (_event, args) => {
       await runsCore.deleteRun(args.runId);
@@ -605,6 +606,7 @@ export function setupIpcHandlers() {
     },
     'slack:listWorkspaces': async () => {
       try {
+        await ensureAgentSlackAvailable();
         const { stdout } = await execAsync('agent-slack auth whoami', { timeout: 10000 });
         const parsed = JSON.parse(stdout);
         const workspaces = (parsed.workspaces || []).map((w: { workspace_url?: string; workspace_name?: string }) => ({

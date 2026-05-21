@@ -9,6 +9,20 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const unusedVarsRule = {
+  "@typescript-eslint/no-unused-vars": [
+    "error",
+    {
+      args: "after-used",
+      argsIgnorePattern: "^_",
+      varsIgnorePattern: "^_",
+      caughtErrorsIgnorePattern: "^_",
+      destructuredArrayIgnorePattern: "^_",
+      ignoreRestSiblings: true,
+    },
+  ],
+};
+
 export default defineConfig([
   globalIgnores(["**/dist"]),
 
@@ -22,6 +36,7 @@ export default defineConfig([
         tsconfigRootDir: __dirname,
       },
     },
+    rules: unusedVarsRule,
   },
 
   // browser runtime (renderer)
@@ -52,5 +67,6 @@ export default defineConfig([
         tsconfigRootDir: __dirname,
       },
     },
+    rules: unusedVarsRule,
   },
 ]);

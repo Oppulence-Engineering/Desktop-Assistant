@@ -1,6 +1,22 @@
 import { useEffect } from 'react'
 import posthog from 'posthog-js'
 
+const MAX_NOTE_COUNT_DIRECTORY_READS = 50
+
+function requestIdleTask(callback: () => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+  const idleWindow = window as Window & typeof globalThis & {
+    requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number
+    cancelIdleCallback?: (id: number) => void
+  }
+  if (idleWindow.requestIdleCallback && idleWindow.cancelIdleCallback) {
+    const id = idleWindow.requestIdleCallback(callback, { timeout: 5_000 })
+    return () => idleWindow.cancelIdleCallback?.(id)
+  }
+  const id = globalThis.setTimeout(callback, 1_500)
+  return () => globalThis.clearTimeout(id)
+}
+
 /**
  * Identifies the user in PostHog when signed into Rowboat,
  * and sets user properties for connected OAuth providers.
@@ -28,31 +44,51 @@ export function useAnalyticsIdentity() {
         }
         posthog.people.set(props)
 
-        // Count notes for total_notes property
-        try {
-          const entries = await window.ipc.invoke('workspace:readdir', { path: '' })
-          let totalNotes = 0
-          if (entries) {
-            for (const entry of entries) {
-              if (entry.kind === 'dir') {
-                try {
-                  const sub = await window.ipc.invoke('workspace:readdir', { path: `${entry.name}` })
-                  totalNotes += sub?.length ?? 0
-                } catch {
-                  // skip inaccessible dirs
-                }
-              }
-            }
-          }
-          posthog.people.set({ total_notes: totalNotes })
-        } catch {
-          // workspace may not be available
-        }
       } catch {
         // oauth state unavailable
       }
     }
     init()
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const cancelIdleTask = requestIdleTask(() => {
+      async function countNotes() {
+        try {
+          const entries = await window.ipc.invoke('workspace:readdir', { path: '' })
+          if (cancelled || !entries) return
+
+          let totalNotes = 0
+          let directoriesRead = 0
+          for (const entry of entries) {
+            if (entry.kind !== 'dir') continue
+            if (directoriesRead >= MAX_NOTE_COUNT_DIRECTORY_READS) break
+            directoriesRead += 1
+            try {
+              const sub = await window.ipc.invoke('workspace:readdir', { path: `${entry.name}` })
+              if (cancelled) return
+              totalNotes += sub?.filter((item) => item.kind === 'file').length ?? 0
+            } catch {
+              // skip inaccessible dirs
+            }
+          }
+
+          if (!cancelled) {
+            posthog.people.set({ total_notes: totalNotes })
+          }
+        } catch {
+          // workspace may not be available
+        }
+      }
+
+      void countNotes()
+    })
+
+    return () => {
+      cancelled = true
+      cancelIdleTask()
+    }
   }, [])
 
   // Listen for OAuth connect/disconnect events to update identity

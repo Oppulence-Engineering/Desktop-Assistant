@@ -1,17 +1,26 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import mermaid from 'mermaid'
 import { useTheme } from '@/contexts/theme-context'
 
-let lastTheme: string | null = null
+type MermaidApi = typeof import('mermaid')['default']
 
-function ensureInit(theme: 'default' | 'dark') {
-  if (lastTheme === theme) return
+let lastTheme: string | null = null
+let mermaidPromise: Promise<MermaidApi> | null = null
+
+function loadMermaid() {
+  mermaidPromise ??= import('mermaid').then((mod) => mod.default)
+  return mermaidPromise
+}
+
+async function ensureInit(theme: 'default' | 'dark') {
+  const mermaid = await loadMermaid()
+  if (lastTheme === theme) return mermaid
   mermaid.initialize({
     startOnLoad: false,
     theme,
     securityLevel: 'strict',
   })
   lastTheme = theme
+  return mermaid
 }
 
 interface MermaidRendererProps {
@@ -35,10 +44,9 @@ export function MermaidRenderer({ source, className }: MermaidRendererProps) {
 
     let cancelled = false
     const mermaidTheme = resolvedTheme === 'dark' ? 'dark' : 'default'
-    ensureInit(mermaidTheme)
 
-    mermaid
-      .render(`mermaid-${id}`, source.trim())
+    ensureInit(mermaidTheme)
+      .then((mermaid) => mermaid.render(`mermaid-${id}`, source.trim()))
       .then(({ svg: renderedSvg }) => {
         if (!cancelled) {
           setSvg(renderedSvg)

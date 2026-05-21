@@ -133,10 +133,10 @@ export async function readdir(
   async function readDir(currentPath: string, currentRelPath: string): Promise<void> {
     const items = await fs.readdir(currentPath, { withFileTypes: true });
 
-    for (const item of items) {
+    await Promise.all(items.map(async (item) => {
       // Skip hidden files unless includeHidden is true
       if (!opts?.includeHidden && item.name.startsWith('.')) {
-        continue;
+        return;
       }
 
       const itemPath = path.join(currentPath, item.name);
@@ -146,7 +146,7 @@ export async function readdir(
       if (opts?.allowedExtensions && opts.allowedExtensions.length > 0) {
         const ext = path.extname(item.name);
         if (!opts.allowedExtensions.includes(ext)) {
-          continue;
+          return;
         }
       }
 
@@ -173,7 +173,7 @@ export async function readdir(
         }
         entries.push({ name: item.name, path: itemRelPath, kind: itemKind, stat: itemStat });
       }
-    }
+    }));
   }
 
   await readDir(dirPath, relPath);

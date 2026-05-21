@@ -13,7 +13,7 @@ import {
     loadUserConfig,
     getUserConfigPath,
 } from './config.js';
-import { PREBUILT_AGENTS } from './types.js';
+import { PREBUILT_AGENTS, type PreBuiltAgentName } from './types.js';
 
 // Service configuration
 const CHECK_INTERVAL_MS = 60 * 1000; // Check every minute which agents need to run
@@ -79,8 +79,6 @@ Process new items and use the user context above to identify yourself when draft
  * Check all agents and run those that are due
  */
 async function checkAndRunAgents(): Promise<void> {
-    const config = loadConfig();
-
     for (const agentName of PREBUILT_AGENTS) {
         try {
             if (shouldRunAgent(agentName)) {
@@ -139,7 +137,7 @@ export async function init(): Promise<void> {
  * Manually trigger an agent run (useful for testing)
  */
 export async function triggerAgent(agentName: string): Promise<void> {
-    if (!PREBUILT_AGENTS.includes(agentName as any)) {
+    if (!PREBUILT_AGENTS.includes(agentName as PreBuiltAgentName)) {
         throw new Error(`Unknown agent: ${agentName}. Available: ${PREBUILT_AGENTS.join(', ')}`);
     }
     await runAgent(agentName);

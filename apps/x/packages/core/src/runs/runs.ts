@@ -1,7 +1,7 @@
 import z from "zod";
 import container from "../di/container.js";
 import { IMessageQueue, UserMessageContentType, VoiceOutputMode, MiddlePaneContext } from "../application/lib/message-queue.js";
-import { AskHumanResponseEvent, ToolPermissionRequestEvent, ToolPermissionResponseEvent, CreateRunOptions, Run, ListRunsResponse, ToolPermissionAuthorizePayload, AskHumanResponsePayload } from "@x/shared/dist/runs.js";
+import { AskHumanResponseEvent, ToolPermissionRequestEvent, ToolPermissionResponseEvent, CreateRunOptions, Run, ListRunsOptions, ListRunsResponse, ToolPermissionAuthorizePayload, AskHumanResponsePayload } from "@x/shared/dist/runs.js";
 import { IRunsRepo } from "./repo.js";
 import { IAgentRuntime } from "../agents/runtime.js";
 import { IBus } from "../application/lib/bus.js";
@@ -127,7 +127,7 @@ export async function fetchRun(runId: string): Promise<z.infer<typeof Run>> {
     return repo.fetch(runId);
 }
 
-export async function listRuns(cursor?: string): Promise<z.infer<typeof ListRunsResponse>> {
+export async function listRuns(opts?: z.infer<typeof ListRunsOptions>): Promise<z.infer<typeof ListRunsResponse>> {
     const repo = container.resolve<IRunsRepo>('runsRepo');
-    return repo.list(cursor);
+    return repo.list(opts);
 }

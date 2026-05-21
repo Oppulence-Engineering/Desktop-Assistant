@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import fsp from 'fs/promises';
 import readline from 'readline';
-import { execFile } from 'child_process';
+import { spawn } from 'child_process';
 import { WorkDir } from '../config/config.js';
 
 interface SearchResult {
@@ -53,7 +53,7 @@ async function searchKnowledge(query: string, limit: number): Promise<SearchResu
 
   // Content search via grep
   try {
-    const grepMatches = await grepFiles(query, KNOWLEDGE_DIR, '*.md');
+    const grepMatches = await grepFiles(query, KNOWLEDGE_DIR, '*.md', limit);
     for (const match of grepMatches) {
       if (results.length >= limit) break;
       const relPath = path.relative(WorkDir, match.file);
@@ -113,7 +113,7 @@ async function searchChats(query: string, limit: number): Promise<SearchResult[]
 
   // Content search via grep on JSONL files
   try {
-    const grepMatches = await grepFiles(query, RUNS_DIR, '*.jsonl');
+    const grepMatches = await grepFiles(query, RUNS_DIR, '*.jsonl', limit);
     for (const match of grepMatches) {
       if (results.length >= limit) break;
       const runId = path.basename(match.file, '.jsonl');
@@ -188,31 +188,70 @@ async function searchChats(query: string, limit: number): Promise<SearchResult[]
 /**
  * Use grep to find files matching a query.
  */
-function grepFiles(query: string, dir: string, includeGlob: string): Promise<Array<{ file: string; line: string }>> {
+function grepFiles(query: string, dir: string, includeGlob: string, limit: number): Promise<Array<{ file: string; line: string }>> {
   return new Promise((resolve, reject) => {
-    execFile(
-      'grep',
-      ['-ril', '--include=' + includeGlob, query, dir],
-      { maxBuffer: 1024 * 1024 },
-      (error, stdout) => {
-        if (error) {
-          // Exit code 1 = no matches
-          if (error.code === 1) {
-            resolve([]);
-            return;
-          }
-          reject(error);
-          return;
-        }
+    const child = spawn('grep', ['-ril', '--include=' + includeGlob, query, dir], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    const files: string[] = [];
+    let stdoutBuffer = '';
+    let stderrBuffer = '';
+    let settled = false;
+    let killedAfterLimit = false;
 
-        const files = stdout.trim().split('\n').filter(Boolean);
-        // For each matching file, get the first matching line
-        const promises = files.map(file =>
-          getFirstMatchingLine(file, query).then(line => ({ file, line }))
-        );
-        Promise.all(promises).then(resolve).catch(reject);
+    const settle = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      fn();
+    };
+
+    const processLine = (line: string) => {
+      const file = line.trim();
+      if (!file || files.length >= limit) return;
+      files.push(file);
+      if (files.length >= limit && !killedAfterLimit) {
+        killedAfterLimit = true;
+        child.kill('SIGTERM');
       }
-    );
+    };
+
+    const processStdout = (chunk: string) => {
+      stdoutBuffer += chunk;
+      let newlineIndex = stdoutBuffer.indexOf('\n');
+      while (newlineIndex >= 0) {
+        processLine(stdoutBuffer.slice(0, newlineIndex));
+        stdoutBuffer = stdoutBuffer.slice(newlineIndex + 1);
+        newlineIndex = stdoutBuffer.indexOf('\n');
+      }
+    };
+
+    const resolveMatches = () => {
+      if (stdoutBuffer) {
+        processLine(stdoutBuffer);
+        stdoutBuffer = '';
+      }
+      const selected = files.slice(0, limit);
+      Promise.all(selected.map(file =>
+        getFirstMatchingLine(file, query).then(line => ({ file, line }))
+      ))
+        .then((matches) => settle(() => resolve(matches)))
+        .catch((error) => settle(() => reject(error)));
+    };
+
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', processStdout);
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', (chunk) => {
+      stderrBuffer += chunk;
+    });
+    child.on('error', (error) => settle(() => reject(error)));
+    child.on('close', (code, signal) => {
+      if (code === 0 || code === 1 || killedAfterLimit || signal === 'SIGTERM') {
+        resolveMatches();
+        return;
+      }
+      settle(() => reject(new Error(stderrBuffer.trim() || `grep exited with code ${code ?? 'unknown'}`)));
+    });
   });
 }
 

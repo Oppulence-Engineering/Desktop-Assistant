@@ -5,8 +5,7 @@ import path from "path";
 import fsp from "fs/promises";
 import fs from "fs";
 import readline from "readline";
-import { Run, RunEvent, StartEvent, ListRunsResponse, MessageEvent, UseCase } from "@x/shared/dist/runs.js";
-import { getDefaultModelAndProvider } from "../models/defaults.js";
+import { Run, RunEvent, StartEvent, ListRunsOptions, ListRunsResponse, MessageEvent, UseCase } from "@x/shared/dist/runs.js";
 
 /**
  * Reading-only schemas: extend the canonical `StartEvent` / `RunEvent` to
@@ -46,7 +45,7 @@ function runLogPath(runId: string): string {
 export interface IRunsRepo {
     create(options: CreateRunRepoOptions): Promise<z.infer<typeof Run>>;
     fetch(id: string): Promise<z.infer<typeof Run>>;
-    list(cursor?: string): Promise<z.infer<typeof ListRunsResponse>>;
+    list(opts?: z.infer<typeof ListRunsOptions>): Promise<z.infer<typeof ListRunsResponse>>;
     appendEvents(runId: string, events: z.infer<typeof RunEvent>[]): Promise<void>;
     delete(id: string): Promise<void>;
 }
@@ -235,7 +234,7 @@ export class FSRunsRepo implements IRunsRepo {
         // then promote to the canonical strict types for callers.
         const rawStart = rawEvents[0];
         const defaults = (!rawStart.model || !rawStart.provider)
-            ? await getDefaultModelAndProvider()
+            ? await import("../models/defaults.js").then(m => m.getDefaultModelAndProvider())
             : null;
         const start: z.infer<typeof StartEvent> = {
             ...rawStart,
@@ -257,9 +256,11 @@ export class FSRunsRepo implements IRunsRepo {
         };
     }
 
-    async list(cursor?: string): Promise<z.infer<typeof ListRunsResponse>> {
+    async list(opts: z.infer<typeof ListRunsOptions> = {}): Promise<z.infer<typeof ListRunsResponse>> {
         const runsDir = path.join(WorkDir, 'runs');
-        const PAGE_SIZE = 20;
+        const requestedPageSize = opts.limit ?? 20;
+        const pageSize = Math.max(1, Math.min(100, requestedPageSize));
+        const agentIdFilter = opts.agentId?.trim() || undefined;
 
         let files: string[] = [];
         try {
@@ -277,7 +278,7 @@ export class FSRunsRepo implements IRunsRepo {
 
         files.sort((a, b) => b.localeCompare(a));
 
-        const cursorFile = cursor;
+        const cursorFile = opts.cursor;
         let startIndex = 0;
         if (cursorFile) {
             const exact = files.indexOf(cursorFile);
@@ -289,13 +290,20 @@ export class FSRunsRepo implements IRunsRepo {
             }
         }
 
-        const selected = files.slice(startIndex, startIndex + PAGE_SIZE);
         const runs: z.infer<typeof ListRunsResponse>['runs'] = [];
+        let index = startIndex;
+        let lastExamined: string | undefined;
 
-        for (const name of selected) {
+        while (index < files.length && runs.length < pageSize) {
+            const name = files[index]!;
+            index += 1;
+            lastExamined = name;
             const runId = name.slice(0, -'.jsonl'.length);
             const metadata = await this.readRunMetadata(path.join(runsDir, name));
             if (!metadata) {
+                continue;
+            }
+            if (agentIdFilter && metadata.start.agentName !== agentIdFilter) {
                 continue;
             }
             runs.push({
@@ -306,9 +314,8 @@ export class FSRunsRepo implements IRunsRepo {
             });
         }
 
-        const hasMore = startIndex + PAGE_SIZE < files.length;
-        const nextCursor = hasMore && selected.length > 0
-            ? selected[selected.length - 1]
+        const nextCursor = index < files.length && lastExamined
+            ? lastExamined
             : undefined;
 
         return {

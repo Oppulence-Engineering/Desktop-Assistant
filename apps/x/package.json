@@ -11,6 +11,7 @@
     "preload": "cd apps/preload && npm run build",
     "deps": "npm run shared && npm run core && npm run preload",
     "main": "wait-on http://localhost:5173 && cd apps/main && npm run build && npm run start",
+    "test": "npm run shared && cd packages/core && npm test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
