@@ -714,6 +714,10 @@ function App() {
   const [editorContentByPath, setEditorContentByPath] = useState<Record<string, string>>({})
   const editorContentByPathRef = useRef<Map<string, string>>(new Map())
   const [tree, setTree] = useState<TreeNode[]>([])
+  const treeRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const treeRefreshInFlightRef = useRef(false)
+  const treeRefreshQueuedRef = useRef(false)
+  const loadDirectoryRef = useRef<() => Promise<TreeNode[]>>(async () => [])
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
   const [recentWikiFiles, setRecentWikiFiles] = useState<string[]>([])
   const [isGraphOpen, setIsGraphOpen] = useState(false)
@@ -802,6 +806,7 @@ function App() {
   const [processingRunIds, setProcessingRunIds] = useState<Set<string>>(new Set())
   const processingRunIdsRef = useRef<Set<string>>(new Set())
   const streamingBuffersRef = useRef<Map<string, { assistant: string }>>(new Map())
+  const streamFlushRafRef = useRef<number | null>(null)
   const [isStopping, setIsStopping] = useState(false)
   const [stopClickedAt, setStopClickedAt] = useState<number | null>(null)
   const [agentId] = useState<string>('copilot')
@@ -1310,6 +1315,45 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    loadDirectoryRef.current = loadDirectory
+  }, [loadDirectory])
+
+  const runTreeRefresh = useCallback(async () => {
+    if (treeRefreshInFlightRef.current) {
+      treeRefreshQueuedRef.current = true
+      return
+    }
+
+    treeRefreshInFlightRef.current = true
+    try {
+      const nextTree = await loadDirectoryRef.current()
+      setTree(nextTree)
+    } finally {
+      treeRefreshInFlightRef.current = false
+      if (treeRefreshQueuedRef.current) {
+        treeRefreshQueuedRef.current = false
+        if (treeRefreshTimerRef.current) {
+          clearTimeout(treeRefreshTimerRef.current)
+        }
+        treeRefreshTimerRef.current = setTimeout(() => {
+          treeRefreshTimerRef.current = null
+          void runTreeRefresh()
+        }, 100)
+      }
+    }
+  }, [])
+
+  const scheduleTreeRefresh = useCallback((delayMs = 250) => {
+    if (treeRefreshTimerRef.current) {
+      clearTimeout(treeRefreshTimerRef.current)
+    }
+    treeRefreshTimerRef.current = setTimeout(() => {
+      treeRefreshTimerRef.current = null
+      void runTreeRefresh()
+    }, delayMs)
+  }, [runTreeRefresh])
+
   // Ensure bases/ and knowledge/Notes/ directories exist on startup
   useEffect(() => {
     window.ipc.invoke('workspace:mkdir', { path: 'bases', recursive: true })
@@ -1320,13 +1364,22 @@ function App() {
 
   // Load initial tree
   useEffect(() => {
-    loadDirectory().then(setTree)
-  }, [loadDirectory])
+    void runTreeRefresh()
+  }, [runTreeRefresh])
+
+  useEffect(() => {
+    return () => {
+      if (treeRefreshTimerRef.current) {
+        clearTimeout(treeRefreshTimerRef.current)
+        treeRefreshTimerRef.current = null
+      }
+    }
+  }, [])
 
   // Listen to workspace change events
   useEffect(() => {
     const cleanup = window.ipc.on('workspace:didChange', async (event) => {
-      loadDirectory().then(setTree)
+      scheduleTreeRefresh(event.type === 'changed' || event.type === 'bulkChanged' ? 250 : 75)
 
       const changedPath = event.type === 'changed' ? event.path : null
       const changedPaths = (event.type === 'bulkChanged' ? event.paths : []) ?? []
@@ -1396,7 +1449,7 @@ function App() {
     })
     return cleanup
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadDirectory, removeEditorCacheForPath, setEditorCacheForPath])
+  }, [removeEditorCacheForPath, scheduleTreeRefresh, setEditorCacheForPath])
 
   // Load file content when selected
   useEffect(() => {
@@ -1669,19 +1722,11 @@ function App() {
   // Load runs list (all pages)
   const loadRuns = useCallback(async () => {
     try {
-      const allRuns: RunListItem[] = []
-      let cursor: string | undefined = undefined
-
-      // Fetch all pages
-      do {
-        const result: ListRunsResponseType = await window.ipc.invoke('runs:list', { cursor })
-        allRuns.push(...result.runs)
-        cursor = result.nextCursor
-      } while (cursor)
-
-      // Filter for copilot runs only
-      const copilotRuns = allRuns.filter((run: RunListItem) => run.agentId === 'copilot')
-      setRuns(copilotRuns)
+      const result: ListRunsResponseType = await window.ipc.invoke('runs:list', {
+        limit: 100,
+        agentId: 'copilot',
+      })
+      setRuns(result.runs)
     } catch (err) {
       console.error('Failed to load runs:', err)
     }
@@ -1938,11 +1983,31 @@ function App() {
     streamingBuffersRef.current.delete(id)
   }, [])
 
+  const scheduleActiveStreamFlush = useCallback((id: string) => {
+    if (streamFlushRafRef.current !== null) return
+    streamFlushRafRef.current = requestAnimationFrame(() => {
+      streamFlushRafRef.current = null
+      if (runIdRef.current !== id) return
+      setCurrentAssistantMessage(streamingBuffersRef.current.get(id)?.assistant ?? '')
+    })
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (streamFlushRafRef.current !== null) {
+        cancelAnimationFrame(streamFlushRafRef.current)
+        streamFlushRafRef.current = null
+      }
+    }
+  }, [])
+
   const handleRunEvent = useCallback((event: RunEventType) => {
     const activeRunId = runIdRef.current
     const isActiveRun = event.runId === activeRunId
 
-    console.log('Run event:', event.type, event)
+    if (import.meta.env.DEV && event.type !== 'llm-stream-event') {
+      console.debug('Run event:', event.type, event)
+    }
 
     switch (event.type) {
       case 'run-processing-start':
@@ -2005,7 +2070,7 @@ function App() {
           setIsProcessing(true)
           if (llmEvent.type === 'text-delta' && llmEvent.delta) {
             appendStreamingBuffer(event.runId, llmEvent.delta)
-            setCurrentAssistantMessage(prev => prev + llmEvent.delta)
+            scheduleActiveStreamFlush(event.runId)
 
             // Extract <voice> tags and send to TTS when enabled
             voiceTextBufferRef.current += llmEvent.delta
@@ -2057,9 +2122,11 @@ function App() {
             return
           }
           if (msg.role === 'assistant') {
+            const bufferedAssistant = streamingBuffersRef.current.get(event.runId)?.assistant ?? ''
             setCurrentAssistantMessage(currentMsg => {
-              if (currentMsg) {
-                const cleanedContent = currentMsg.replace(/<\/?voice>/g, '')
+              const finalMessage = bufferedAssistant || currentMsg
+              if (finalMessage) {
+                const cleanedContent = finalMessage.replace(/<\/?voice>/g, '')
                 setConversation(prev => {
                   const exists = prev.some(m =>
                     m.id === event.messageId && 'role' in m && m.role === 'assistant'
@@ -2241,12 +2308,14 @@ function App() {
         setPendingPermissionRequests(new Map())
         setPendingAskHumanRequests(new Map())
         // Flush any streaming content as a message
+        const bufferedAssistant = streamingBuffersRef.current.get(event.runId)?.assistant ?? ''
         setCurrentAssistantMessage(currentMsg => {
-          if (currentMsg) {
+          const finalMessage = bufferedAssistant || currentMsg
+          if (finalMessage) {
             setConversation(prev => [...prev, {
               id: `assistant-stopped-${Date.now()}`,
               role: 'assistant',
-              content: currentMsg,
+              content: finalMessage,
               timestamp: Date.now(),
             }])
           }
@@ -2275,7 +2344,7 @@ function App() {
         console.error('Run error:', event.error)
         break
     }
-  }, [appendStreamingBuffer, clearStreamingBuffer, loadRuns])
+  }, [appendStreamingBuffer, clearStreamingBuffer, loadRuns, scheduleActiveStreamFlush])
 
   // Listen to run events - use refs/callbacks to avoid stale closure issues.
   useEffect(() => {

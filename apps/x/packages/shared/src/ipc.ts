@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { RelPath, Encoding, Stat, DirEntry, ReaddirOptions, ReadFileResult, WorkspaceChangeEvent, WriteFileOptions, WriteFileResult, RemoveOptions } from './workspace.js';
 import { ListToolsResponse } from './mcp.js';
-import { AskHumanResponsePayload, CreateRunOptions, Run, ListRunsResponse, ToolPermissionAuthorizePayload } from './runs.js';
+import { AskHumanResponsePayload, CreateRunOptions, Run, ListRunsOptions, ListRunsResponse, ToolPermissionAuthorizePayload } from './runs.js';
 import { LlmModelConfig } from './models.js';
 import { AgentScheduleConfig, AgentScheduleEntry } from './agent-schedule.js';
 import { AgentScheduleState } from './agent-schedule-state.js';
@@ -18,7 +18,7 @@ import { RowboatApiConfig } from './rowboat-account.js';
 import { ZListToolkitsResponse } from './composio.js';
 import { BrowserStateSchema } from './browser-control.js';
 import { BillingInfoSchema } from './billing.js';
-import { EmailBlockSchema, GmailThreadSchema } from './blocks.js';
+import { GmailThreadSchema } from './blocks.js';
 
 // ============================================================================
 // Runtime Validation Schemas (Single Source of Truth)
@@ -235,9 +235,7 @@ const ipcSchemas = {
     res: Run,
   },
   'runs:list': {
-    req: z.object({
-      cursor: z.string().optional(),
-    }),
+    req: ListRunsOptions,
     res: ListRunsResponse,
   },
   'runs:delete': {

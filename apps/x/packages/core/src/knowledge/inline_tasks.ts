@@ -3,7 +3,7 @@ import path from 'path';
 import { CronExpressionParser } from 'cron-parser';
 import { generateText } from 'ai';
 import { WorkDir } from '../config/config.js';
-import { createRun, createMessage, fetchRun } from '../runs/runs.js';
+import { createRun, createMessage } from '../runs/runs.js';
 import { getKgModel } from '../models/defaults.js';
 import container from '../di/container.js';
 import type { IModelConfigRepo } from '../models/repo.js';
@@ -602,7 +602,6 @@ export async function processRowboatInstruction(
             const parsed = JSON.parse(scheduleMatch[1]);
             if (parsed && typeof parsed === 'object' && parsed.type) {
                 scheduleLabel = parsed.label || null;
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const { label: _, ...rest } = parsed;
                 schedule = rest as ScheduleWithoutLabel;
             }

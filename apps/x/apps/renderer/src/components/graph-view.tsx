@@ -47,6 +47,8 @@ const FLOAT_BASE = 3.5
 const FLOAT_VARIANCE = 2
 const FLOAT_SPEED_BASE = 0.0006
 const FLOAT_SPEED_VARIANCE = 0.00025
+const MAX_FORCE_SIMULATION_NODES = 180
+const MAX_AMBIENT_ANIMATION_NODES = 140
 
 export function GraphView({ nodes, edges, error, onSelectNode }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -73,6 +75,8 @@ export function GraphView({ nodes, edges, error, onSelectNode }: GraphViewProps)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
   const [, forceRender] = useState(0)
+  const nodeIds = useMemo(() => nodes.map((node) => node.id), [nodes])
+  const useStaticLayout = nodes.length > MAX_FORCE_SIMULATION_NODES
 
   const edgeList = useMemo(
     () => edges.filter((edge) => edge.source !== edge.target),
@@ -181,10 +185,33 @@ export function GraphView({ nodes, edges, error, onSelectNode }: GraphViewProps)
     const count = nodes.length
     const radius = Math.max(110, Math.min(220, count * 9))
 
+    const groupCounts = new Map<string, number>()
+    const groupIndexes = new Map<string, number>()
+    nodes.forEach((node) => {
+      const group = node.group || 'root'
+      groupCounts.set(group, (groupCounts.get(group) ?? 0) + 1)
+    })
+
     nodes.forEach((node, index) => {
       const existing = positionsRef.current.get(node.id)
       if (existing) {
         nextPositions.set(node.id, { ...existing })
+        return
+      }
+      if (useStaticLayout) {
+        const group = node.group || 'root'
+        const groupIndex = groupIndexes.get(group) ?? 0
+        groupIndexes.set(group, groupIndex + 1)
+        const groupCount = groupCounts.get(group) ?? 1
+        const center = groupCenters.get(group) ?? { x: 0, y: 0 }
+        const localRadius = Math.max(40, Math.min(180, groupCount * 5))
+        const angle = (groupIndex / groupCount) * Math.PI * 2
+        nextPositions.set(node.id, {
+          x: center.x + localRadius * Math.cos(angle),
+          y: center.y + localRadius * Math.sin(angle),
+          vx: 0,
+          vy: 0,
+        })
         return
       }
       const angle = (index / count) * Math.PI * 2
@@ -198,6 +225,11 @@ export function GraphView({ nodes, edges, error, onSelectNode }: GraphViewProps)
 
     positionsRef.current = nextPositions
 
+    if (useStaticLayout) {
+      forceRender((prev) => prev + 1)
+      return
+    }
+
     let step = 0
     let rafId = 0
     let active = true
@@ -207,7 +239,7 @@ export function GraphView({ nodes, edges, error, onSelectNode }: GraphViewProps)
       step += 1
 
       const positions = positionsRef.current
-      const ids = nodes.map((node) => node.id)
+      const ids = nodeIds
       const forces = new Map<string, { x: number; y: number }>()
 
       ids.forEach((id) => forces.set(id, { x: 0, y: 0 }))
@@ -302,10 +334,10 @@ export function GraphView({ nodes, edges, error, onSelectNode }: GraphViewProps)
       active = false
       if (rafId) cancelAnimationFrame(rafId)
     }
-  }, [nodes, edgeList, groupCenters, nodeGroupMap])
+  }, [nodes, nodeIds, edgeList, groupCenters, nodeGroupMap, useStaticLayout])
 
   useEffect(() => {
-    if (nodes.length === 0) return
+    if (nodes.length === 0 || nodes.length > MAX_AMBIENT_ANIMATION_NODES) return
     let rafId = 0
     let lastTime = performance.now()
 

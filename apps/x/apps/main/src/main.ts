@@ -37,8 +37,6 @@ import { identifyIfSignedIn } from "@x/core/dist/analytics/identify.js";
 import { initConfigs } from "@x/core/dist/config/initConfigs.js";
 import { resolveWorkspacePath } from "@x/core/dist/workspace/workspace.js";
 import started from "electron-squirrel-startup";
-import { execSync, exec, execFileSync } from "node:child_process";
-import { promisify } from "node:util";
 import { init as initChromeSync } from "@x/core/dist/knowledge/chrome-extension/server/server.js";
 import { registerBrowserControlService, registerNotificationService } from "@x/core/dist/di/container.js";
 import { browserViewManager, BROWSER_PARTITION } from "./browser/view.js";
@@ -52,8 +50,7 @@ import {
   setMainWindowForDeepLinks,
 } from "./deeplink.js";
 import { startCrashReporter, processPendingCrashDumps, registerLiveCrashListeners } from "./crash-reporter.js";
-
-const execAsync = promisify(exec);
+import { initializeExecutionEnvironment } from "./execution-environment.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -66,14 +63,18 @@ process.on('uncaughtException', (err) => {
   console.error('[Main] uncaughtException:', err);
   try {
     captureException(err, { process: 'main', stage: 'runtime' });
-  } catch {}
+  } catch {
+    // Swallow analytics errors to avoid recursive crashes
+  }
 });
 process.on('unhandledRejection', (reason) => {
   const err = reason instanceof Error ? reason : new Error(String(reason));
   console.error('[Main] unhandledRejection:', err);
   try {
     captureException(err, { process: 'main', stage: 'runtime', kind: 'unhandledRejection' });
-  } catch {}
+  } catch {
+    // Swallow analytics errors to avoid recursive crashes
+  }
 });
 
 // Start Electron's native Crashpad/Breakpad reporter as early as possible so it
@@ -120,35 +121,6 @@ app.on("second-instance", (_event, argv) => {
   const url = extractDeepLinkFromArgv(argv);
   if (url) dispatchUrl(url);
 });
-
-// Fix PATH for packaged Electron apps on macOS/Linux.
-// Packaged apps inherit a minimal environment that doesn't include paths from
-// the user's shell profile (such as those provided by nvm, Homebrew, etc.).
-// The function below spawns the user's login shell and runs a Node.js one-liner
-// to print the full environment as JSON, then merges it into process.env.
-// This ensures the Electron app has the same PATH and environment as user shell
-// (helping find tools installed via Homebrew/nvm/npm, etc.)
-function initializeExecutionEnvironment(): void {
-  if (process.platform === 'win32') return;
-
-  const shell = process.env.SHELL || '/bin/zsh';
-
-  try {
-    const stdout = execFileSync(
-      shell,
-      ['-l', '-c', `node -p "JSON.stringify(process.env)"`],
-      { encoding: 'utf8' }
-    ).trim();
-
-    const env = JSON.parse(stdout) as Record<string, string>;
-    // Let the user's shell environment win for overlapping keys like PATH.
-    // Finder/launched GUI apps on macOS often start with a stripped PATH.
-    process.env = { ...process.env, ...env };
-  } catch (error) {
-    console.error('Failed to load shell environment', error);
-  }
-}
-initializeExecutionEnvironment();
 
 // Path resolution differs between development and production:
 const preloadPath = app.isPackaged
@@ -292,41 +264,11 @@ function createWindow() {
   } else {
     win.loadURL("http://localhost:5173");
   }
+
+  return win;
 }
 
-app.whenReady().then(async () => {
-  // Register custom protocol before creating window.
-  // In production this serves the renderer SPA; in dev (and prod) it also
-  // serves workspace files via app://workspace/<rel-path> for media previews.
-  registerAppProtocol();
-
-  // Initialize auto-updater (only in production)
-  if (app.isPackaged) {
-    updateElectronApp({
-      updateSource: {
-        type: UpdateSourceType.ElectronPublicUpdateService,
-        repo: "Oppulence-Engineering/rowboat",
-      },
-      notifyUser: true, // Shows native dialog when update is available
-    });
-  }
-
-  // Ensure agent-slack CLI is available
-  try {
-    execSync('agent-slack --version', { stdio: 'ignore', timeout: 5000 });
-  } catch {
-    try {
-      console.log('agent-slack not found, installing...');
-      await execAsync('npm install -g agent-slack', { timeout: 60000 });
-      console.log('agent-slack installed successfully');
-    } catch (e) {
-      console.error('Failed to install agent-slack:', e);
-    }
-  }
-
-  // Initialize all config files before UI can access them
-  await initConfigs();
-
+function startBackgroundServices() {
   // PostHog identify() is idempotent — call it on every startup so existing
   // signed-in installs (and every cold start of v0.3.4+) get re-identified.
   // Otherwise main-process events stay anonymous until the user re-signs-in.
@@ -334,20 +276,10 @@ app.whenReady().then(async () => {
     console.error('[Analytics] Failed to identify on startup:', error);
   });
 
-  registerBrowserControlService(new ElectronBrowserControlService());
-  registerNotificationService(new ElectronNotificationService());
-
-  setupIpcHandlers();
-  setupBrowserEventForwarding();
-
-  // Capture any minidumps left behind by a previous crashed launch and
-  // listen for renderer/child-process crashes happening live.
+  // Capture any minidumps left behind by a previous crashed launch.
   processPendingCrashDumps().catch((err) => {
     console.error('[CrashReporter] processPendingCrashDumps threw:', err);
   });
-  registerLiveCrashListeners();
-
-  createWindow();
 
   // Start workspace watcher as a main-process service
   // Watcher runs independently and catches ALL filesystem changes:
@@ -421,6 +353,44 @@ app.whenReady().then(async () => {
   initLocalSites().catch((error) => {
     console.error('[LocalSites] Failed to start:', error);
   });
+}
+
+app.whenReady().then(async () => {
+  // Register custom protocol before creating window.
+  // In production this serves the renderer SPA; in dev (and prod) it also
+  // serves workspace files via app://workspace/<rel-path> for media previews.
+  registerAppProtocol();
+
+  // Initialize auto-updater (only in production)
+  if (app.isPackaged) {
+    updateElectronApp({
+      updateSource: {
+        type: UpdateSourceType.ElectronPublicUpdateService,
+        repo: "Oppulence-Engineering/rowboat",
+      },
+      notifyUser: true, // Shows native dialog when update is available
+    });
+  }
+
+  // Initialize all config files before UI can access them
+  await initConfigs();
+
+  registerBrowserControlService(new ElectronBrowserControlService());
+  registerNotificationService(new ElectronNotificationService());
+
+  setupIpcHandlers();
+  setupBrowserEventForwarding();
+
+  // Listen for renderer/child-process crashes happening live.
+  registerLiveCrashListeners();
+
+  createWindow();
+
+  initializeExecutionEnvironment().catch((error) => {
+    console.error('Failed to initialize execution environment:', error);
+  });
+
+  setTimeout(startBackgroundServices, 750);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
