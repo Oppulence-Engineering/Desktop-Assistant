@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# chat_widget
 
-## Getting Started
+Embeddable end-user chat surface for Rowboat. Built with Next.js 16 (App Router), React 19, NextUI, and Tailwind.
 
-First, run the development server:
+## What it does
+
+Third-party sites embed a single `<script>` that loads `bootstrap.js`. That script:
+
+1. Reads/creates a guest session against the Rowboat API (`/api/widget/v1/session/guest`).
+2. Mounts an iframe pointing at this app, which renders the chat UI (`app/app.tsx`).
+3. Persists minimized/maximized state in `localStorage` and the session id in a cookie.
+
+The iframe UI talks to the Rowboat backend through `rowboat-shared` (`apiV1` types) for messages, turns, and chat lifecycle.
+
+## Key files
+
+| File | Role |
+|------|------|
+| `app/page.tsx` → `app/app.tsx` | Chat UI rendered inside the iframe |
+| `app/markdown-content.tsx` | Markdown + GFM renderer for assistant messages |
+| `app/api/bootstrap.js/route.ts` | Serves the loader script, substituting `__CHAT_WIDGET_HOST__` and `__ROWBOAT_HOST__` |
+| `public/bootstrap.template.js` | Loader template (iframe mount, session, postMessage handlers) |
+
+## Environment
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `CHAT_WIDGET_HOST` | yes | Public origin of this app — interpolated into the loader |
+| `ROWBOAT_HOST` | yes | Public origin of the Rowboat API — used as `${ROWBOAT_HOST}/api/widget/v1` |
+
+If `CHAT_WIDGET_HOST` is unset at request time, `/api/bootstrap.js` returns HTTP 500.
+
+## Local dev
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+CHAT_WIDGET_HOST=http://localhost:3001 ROWBOAT_HOST=http://localhost:3000 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then on `http://localhost:3001` you can open the chat directly, or embed the loader from another page:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```html
+<script>
+  window.ROWBOAT_CONFIG = { clientId: '<your-client-id>' };
+</script>
+<script src="http://localhost:3001/api/bootstrap.js"></script>
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Build & Docker
 
-## Learn More
+```bash
+npm run build           # next build (standalone output)
+docker build -t rowboat-chat-widget .
+docker run -p 3000:3000 \
+  -e CHAT_WIDGET_HOST=https://widget.example.com \
+  -e ROWBOAT_HOST=https://rowboat.example.com \
+  rowboat-chat-widget
+```
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The Dockerfile produces a standalone Next server (`node server.js`) on port 3000.

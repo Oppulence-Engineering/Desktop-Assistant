@@ -152,6 +152,149 @@ Examples: Exa (web search), Twitter/X, ElevenLabs (voice), Slack, Linear/Jira, G
 - You can inspect, edit, back up, or delete everything at any time
 
 ---
+
+## Architecture & Deployment
+
+There are really **two products** in this repo, plus a constellation of supporting services. They are deployed completely differently.
+
+### The two products
+
+**1. Rowboat Desktop (`apps/x`)** — the user-facing product. Electron, local-first, builds a Markdown knowledge graph on the user's machine.
+
+```
+apps/x/
+├── apps/
+│   ├── main/        # Electron main process (Node) — main.ts
+│   ├── renderer/    # React 19 + Vite UI
+│   └── preload/     # contextBridge between main and renderer
+└── packages/
+    ├── shared/      # @x/shared — types, validators
+    └── core/        # @x/core — AI, OAuth, MCP, business logic
+```
+
+Build chain: `shared → core → preload → renderer/main`. `npm run deps` builds the workspaces; esbuild bundles the main process to a single CommonJS file because Electron Forge's dep walker can't follow pnpm symlinks. See [`apps/x/CLAUDE.md`](./CLAUDE.md) and [`apps/x/LIVE_NOTE.md`](./apps/x/LIVE_NOTE.md) for deep dives.
+
+**2. Rowboat Platform (`apps/rowboat`)** — Next.js 16 app that hosts projects, workflows, the visual agent builder, RAG, and the chat widget API. Hexagonal-ish layering:
+
+```
+apps/rowboat/src/
+├── application/        # use-cases (agents-runtime, copilot, …)
+├── entities/           # models (copilot, workflow, …)
+├── infrastructure/     # adapters (Mongo, Qdrant, Redis, providers)
+└── interface-adapters/
+```
+
+Plus Next.js routes under `app/api/` — `app/api/widget/v1/*` is what the chat widget calls; `app/api/v1/*` is the public Rowboat API.
+
+### Surrounding apps
+
+| Path | What it is |
+|------|-----------|
+| `apps/rowboatx` | Second Next.js frontend (newer UI exploration). |
+| `apps/cli` | CLI tool. |
+| `apps/python-sdk` | The `rowboat` PyPI client (used by `simulation_runner`). |
+| `apps/docs` | Docs site, shipped on port 8000 via the `docs` profile. |
+| `apps/experimental/chat_widget` | Iframe-embedded end-user chat. Talks to platform at `/api/widget/v1`. |
+| `apps/experimental/simulation_runner` | Async Python worker — polls `test_runs` in Mongo, role-plays scenarios via OpenAI against a Rowboat workflow, writes verdicts back. |
+| `apps/experimental/tools_webhook` | Reference Flask service that Rowboat tool-calls can POST to. |
+
+### Runtime composition (platform side)
+
+`docker-compose.yml` is the orchestration spine. Active services:
+
+```
+rowboat        :3000   Next.js app (Dockerfile)
+jobs-worker             scripts.Dockerfile, runs `npm run jobs-worker`
+rag-worker              scripts.Dockerfile, runs `npm run rag-worker` (profile: rag-worker)
+mongo          :27017   official image, data → ./data/mongo
+redis          :6379    official image
+qdrant         :6333    Dockerfile.qdrant (profile: qdrant), data → ./data/qdrant
+setup_qdrant            one-shot init via `npm run setupQdrant` (profile: setup_qdrant)
+docs           :8000    (profile: docs)
+```
+
+Commented-out but pre-wired: `rowboat_agents:3001`, `copilot:3002`, `tools_webhook:3005`, `simulation_runner`, `chat_widget:3006`, `twilio_handler:4010`. The agents service and copilot run **outside** the compose stack in the current setup — `rowboat` reaches them at `AGENTS_API_URL` / `COPILOT_API_URL`.
+
+Three roles share one image: the `Dockerfile` runs the long-running Next server; `scripts.Dockerfile` runs the same bundle with `npm run jobs-worker` / `rag-worker` / `setupQdrant` / `deleteQdrant`. **The worker containers are the same Node bundle running a different `package.json` script**, not separate codebases.
+
+`start.sh` is the dev entry point: sets `USE_RAG=true`, `USE_KLAVIS_TOOLS=true`, toggles `USE_COMPOSIO_TOOLS` if `COMPOSIO_API_KEY` is set, then runs `docker compose --profile setup_qdrant --profile qdrant --profile rag-worker up --build`.
+
+### Request flow
+
+```
+End-user site
+  └─ <script src=".../bootstrap.js">  →  chat_widget  (apps/experimental/chat_widget)
+                                          │ /api/bootstrap.js substitutes CHAT_WIDGET_HOST / ROWBOAT_HOST
+                                          ▼
+                                   iframe (chat UI) ──fetch──> rowboat  (Next.js)
+                                                                 │  /api/widget/v1/{session,chats,messages,turn}
+                                                                 ▼
+                                                 ┌──────────────────────────────┐
+                                                 │ rowboat platform             │
+                                                 │  ├─ Mongo (state)            │
+                                                 │  ├─ Redis (queues/cache)     │
+                                                 │  ├─ Qdrant (vectors)         │
+                                                 │  ├─ jobs-worker  (async)     │
+                                                 │  ├─ rag-worker   (ingest)    │
+                                                 │  ├─ rowboat_agents (LLM)     │
+                                                 │  └─ copilot      (LLM)       │
+                                                 └──────────────────────────────┘
+                                                                 │
+                                            ┌────────────────────┴──────────────────┐
+                                            ▼                                       ▼
+                                     tool webhooks                      simulation_runner (poll loop)
+                                     (e.g. tools_webhook)               picks up test_runs, role-plays,
+                                                                        writes results
+```
+
+Two persistent workers handle async work outside the request lifecycle:
+
+- **`jobs-worker`** — generic background queue (Redis-backed), needs Mongo + provider keys.
+- **`rag-worker`** — document ingestion: pulls from S3 or `./data/uploads`, embeds, writes to Qdrant. Optional Gemini parsing, Firecrawl scraping.
+
+### Deployment paths
+
+The two products ship through **completely separate pipelines**.
+
+**Desktop (`apps/x`)** is the only thing released from this repo's tags. Triggered on push to `main` via [`.github/workflows/release.yml`](./.github/workflows/release.yml):
+
+1. `release-please` scans commits under `apps/x/` (per `.release-please-config.json`). On a `feat:`/`fix:`/`feat!:`, it opens (or updates) a Release PR with a `CHANGELOG.md` bump + version. Merging that PR causes the next push to produce `release_created: true` and a tag `apps/x@vX.Y.Z`.
+2. Three parallel builders fan out from the tag: `build-macos` (imports Apple cert into a temp keychain, makes `.dmg` + `.zip` for arm64 + x64), `build-linux` (`.deb` / `.rpm` / `.zip` per arch), `build-windows` (Squirrel `.exe` + portable `.zip`).
+3. Publish job attaches 16 installer assets + SPDX/CycloneDX SBOMs to the GitHub Release.
+4. Installed clients use `update-electron-app` pointed at this fork's releases; they download in the background and apply on next launch.
+
+End-to-end: ~6 minutes from merging the release PR to installers on the Releases page. Details in [Fork details](#fork-details) below.
+
+**Platform (`apps/rowboat`)** is source-distributed — no registry push in this fork. Users run `./start.sh` locally (or in their own infra), which builds the images from source and brings up the compose stack. Feature flags toggle behavior:
+
+| Flag | Effect |
+|------|--------|
+| `USE_RAG`, `USE_RAG_UPLOADS`, `USE_RAG_S3_UPLOADS` | Enables vector store, file uploads, S3 ingestion. |
+| `USE_RAG_SCRAPING` + `FIRECRAWL_API_KEY` | Web ingestion. |
+| `USE_CHAT_WIDGET` + `CHAT_WIDGET_HOST` | Mounts the widget endpoints. |
+| `USE_KLAVIS_TOOLS`, `USE_COMPOSIO_TOOLS` | Tool integrations. |
+| `USE_BILLING` + `BILLING_API_URL` / `BILLING_API_KEY` | Talks to an external billing service. |
+| `USE_AUTH` | Auth0-gated SSR. |
+
+### CI side-jobs
+
+- [`rowboat-build.yml`](./.github/workflows/rowboat-build.yml) — typecheck/build for `apps/rowboat`.
+- [`electron-build.yml`](./.github/workflows/electron-build.yml) / [`x-publish.yml`](./.github/workflows/x-publish.yml) / [`x-smoke-test.yml`](./.github/workflows/x-smoke-test.yml) — desktop CI gates (lint, packaging dry-run, smoke test).
+- [`pr-title-lint.yml`](./.github/workflows/pr-title-lint.yml) — enforces Conventional Commits on PR titles, so release-please works.
+
+### Where the experimental apps fit
+
+- **`chat_widget`** is part of the **platform** stack (currently commented out in compose; would run on `:3006`). Depends on `rowboat` for `/api/widget/v1/*` and uses `CHAT_WIDGET_SESSION_JWT_SECRET`. Not part of the desktop release.
+- **`simulation_runner`** is a backend test harness. It reads `test_runs` from the platform's Mongo and runs the workflow at `ROWBOAT_API_HOST`. Platform-side, currently off in compose.
+- **`tools_webhook`** is a **reference implementation** for customer tool webhooks (signed-request handling, function dispatch) — not deployed by Rowboat itself.
+
+### Summary
+
+- Desktop app (`apps/x`) is the **shipped product** — release-please + electron-forge + GitHub Releases + auto-update.
+- Web platform (`apps/rowboat`) is **self-hosted via docker-compose** — one Next.js image runs as three roles (server, jobs-worker, rag-worker), plus Mongo/Redis/Qdrant, with `rowboat_agents` + `copilot` as separate LLM services and the experimental apps as optional satellites.
+- The two share `apps/python-sdk` (the `rowboat` client) and types from `rowboat-shared`, but otherwise have independent lifecycles.
+
+---
 <div align="center">
 
 [Discord](https://discord.gg/wajrgmJQ6b) · [Twitter](https://x.com/intent/user?screen_name=rowboatlabshq)
