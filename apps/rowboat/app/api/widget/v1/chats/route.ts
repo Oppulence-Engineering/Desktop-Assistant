@@ -1,11 +1,15 @@
 import { NextRequest } from "next/server";
 import { db } from "../../../../lib/mongodb";
-import { z } from "zod";
 import { ObjectId } from "mongodb";
 import { apiV1 } from "rowboat-shared";
 import { authCheck } from "../utils";
+import type {
+    SharedApiCreateChatResponse,
+    SharedApiGetChatsResponse,
+    SharedChat,
+} from "../../../../lib/types/rowboat_shared_types";
 
-const chatsCollection = db.collection<z.infer<typeof apiV1.Chat>>("chats");
+const chatsCollection = db.collection<SharedChat>("chats");
 
 // create a chat
 export async function POST(
@@ -26,7 +30,7 @@ export async function POST(
 
         // insert the chat into the database
         const id = new ObjectId();
-        const chat: z.infer<typeof apiV1.Chat> = {
+        const chat: SharedChat = {
             version: "v1",
             projectId: session.projectId,
             userId: session.userId,
@@ -42,7 +46,7 @@ export async function POST(
         });
 
         // return response
-        const response: z.infer<typeof apiV1.ApiCreateChatResponse> = {
+        const response: SharedApiCreateChatResponse = {
             ...chat,
             id: id.toString(),
         };
@@ -98,7 +102,7 @@ export async function GET(
         }
 
         // Prepare the response
-        const response: z.infer<typeof apiV1.ApiGetChatsResponse> = {
+        const response: SharedApiGetChatsResponse = {
             chats: chats
                 .slice(0, limit)
                 .map(chat => ({

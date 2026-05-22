@@ -148,8 +148,8 @@ export async function invokeMockTool(
     usageTracker.track({
         type: "LLM_USAGE",
         modelName: MODEL,
-        inputTokens: usage.promptTokens,
-        outputTokens: usage.completionTokens,
+        inputTokens: usage.inputTokens ?? 0,
+        outputTokens: usage.outputTokens ?? 0,
         context: "agents_runtime.mock_tool",
     });
 

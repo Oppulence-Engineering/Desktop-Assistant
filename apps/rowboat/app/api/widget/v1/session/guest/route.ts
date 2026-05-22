@@ -3,7 +3,7 @@ import { clientIdCheck } from "../../utils";
 import { SignJWT } from "jose";
 import { z } from "zod";
 import { Session } from "../../utils";
-import { apiV1 } from "rowboat-shared";
+import type { SharedApiCreateGuestSessionResponse } from "../../../../../lib/types/rowboat_shared_types";
 
 export async function POST(req: NextRequest): Promise<Response> {
     return await clientIdCheck(req, async (projectId) => {
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest): Promise<Response> {
             .setExpirationTime('24h')
             .sign(new TextEncoder().encode(process.env.CHAT_WIDGET_SESSION_JWT_SECRET));
 
-        const response: z.infer<typeof apiV1.ApiCreateGuestSessionResponse> = {
+        const response: SharedApiCreateGuestSessionResponse = {
             sessionId: token,
         };
 

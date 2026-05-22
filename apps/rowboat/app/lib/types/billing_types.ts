@@ -25,7 +25,7 @@ export const UsageTypeKey = z.enum([
 ]);
 
 export const LLMUsage = z.object({
-    type: z.literal(UsageTypeKey.Enum.LLM_USAGE),
+    type: z.literal(UsageTypeKey.enum.LLM_USAGE),
     modelName: z.string(),
     inputTokens: z.number(),
     outputTokens: z.number(),
@@ -33,26 +33,26 @@ export const LLMUsage = z.object({
 });
 
 export const EmbeddingModelUsage = z.object({
-    type: z.literal(UsageTypeKey.Enum.EMBEDDING_MODEL_USAGE),
+    type: z.literal(UsageTypeKey.enum.EMBEDDING_MODEL_USAGE),
     modelName: z.string(),
     tokens: z.number(),
     context: z.string(),
 });
 
 export const ComposioToolUsage = z.object({
-    type: z.literal(UsageTypeKey.Enum.COMPOSIO_TOOL_USAGE),
+    type: z.literal(UsageTypeKey.enum.COMPOSIO_TOOL_USAGE),
     toolSlug: z.string(),
     context: z.string(),
 });
 
 export const ComposioTriggerUsage = z.object({
-    type: z.literal(UsageTypeKey.Enum.COMPOSIO_TRIGGER_USAGE),
+    type: z.literal(UsageTypeKey.enum.COMPOSIO_TRIGGER_USAGE),
     triggerSlug: z.string(),
     context: z.string(),
 });
 
 export const FirecrawlScrapeUsage = z.object({
-    type: z.literal(UsageTypeKey.Enum.FIRECRAWL_SCRAPE_USAGE),
+    type: z.literal(UsageTypeKey.enum.FIRECRAWL_SCRAPE_USAGE),
     context: z.string(),
 });
 

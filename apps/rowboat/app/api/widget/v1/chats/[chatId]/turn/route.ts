@@ -11,8 +11,9 @@ import { getResponse } from "@/src/application/lib/agents-runtime/agents";
 import { Message, AssistantMessage, AssistantMessageWithToolCalls, ToolMessage } from "@/app/lib/types/types";
 import { IUsageQuotaPolicy } from "@/src/application/policies/usage-quota.policy.interface";
 import { container } from "@/di/container";
+import type { SharedChatMessage } from "../../../../../../lib/types/rowboat_shared_types";
 
-function convert(messages: z.infer<typeof apiV1.ChatMessage>[]): z.infer<typeof Message>[] {
+function convert(messages: SharedChatMessage[]): z.infer<typeof Message>[] {
     const result: z.infer<typeof Message>[] = [];
     for (const m of messages) {
         if (m.role === 'assistant') {
@@ -60,8 +61,8 @@ function convert(messages: z.infer<typeof apiV1.ChatMessage>[]): z.infer<typeof 
     return result;
 }
 
-function convertBack(messages: z.infer<typeof AssistantMessage | typeof AssistantMessageWithToolCalls | typeof ToolMessage>[]): z.infer<typeof apiV1.ChatMessage>[] {
-    const result: z.infer<typeof apiV1.ChatMessage>[] = [];
+function convertBack(messages: z.infer<typeof AssistantMessage | typeof AssistantMessageWithToolCalls | typeof ToolMessage>[]): SharedChatMessage[] {
+    const result: SharedChatMessage[] = [];
     for (const m of messages) {
         if (m.role === 'assistant') {
             if ('toolCalls' in m) {
@@ -143,7 +144,7 @@ export async function POST(
             logger.log(`Invalid request body: ${result.error.message}`);
             return Response.json({ error: `Invalid request body: ${result.error.message}` }, { status: 400 });
         }
-        const userMessage: z.infer<typeof apiV1.ChatMessage> = {
+        const userMessage: SharedChatMessage = {
             version: 'v1',
             createdAt: new Date().toISOString(),
             chatId,
@@ -162,7 +163,7 @@ export async function POST(
         }
 
         // prepare system message which will contain user data
-        const systemMessage: z.infer<typeof apiV1.ChatMessage> = {
+        const systemMessage: SharedChatMessage = {
             version: 'v1',
             createdAt: new Date().toISOString(),
             chatId,
@@ -229,7 +230,7 @@ export async function POST(
         }
 
         logger.log(`Turn processing completed successfully`);
-        const lastMessage = unsavedMessages[unsavedMessages.length - 1] as WithId<z.infer<typeof apiV1.ChatMessage>>;
+        const lastMessage = unsavedMessages[unsavedMessages.length - 1] as WithId<SharedChatMessage>;
         return Response.json({
             ...lastMessage,
             id: lastMessage._id.toString(),

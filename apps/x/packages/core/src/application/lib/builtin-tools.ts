@@ -62,6 +62,11 @@ import type { INotificationService } from "../notification/service.js";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const _importDynamic = new Function('mod', 'return import(mod)') as (mod: string) => Promise<any>;
 
+function csvValue(value: unknown): string {
+    const text = value instanceof Date ? value.toISOString() : value == null ? '' : String(value);
+    return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const BuiltinToolsSchema = z.record(z.string(), z.object({
     description: z.string(),
@@ -675,7 +680,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     },
 
     'parseFile': {
-        description: 'Parse and extract text content from files (PDF, Excel, CSV, Word .docx). Auto-detects format from file extension.',
+        description: 'Parse and extract text content from files (PDF, XLSX, CSV, Word .docx). Auto-detects format from file extension.',
         inputSchema: z.object({
             path: z.string().min(1).describe('File path to parse. Can be an absolute path or a workspace-relative path.'),
         }),
@@ -683,7 +688,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
             try {
                 const fileName = path.basename(filePath);
                 const ext = path.extname(filePath).toLowerCase();
-                const supportedExts = ['.pdf', '.xlsx', '.xls', '.csv', '.docx'];
+                const supportedExts = ['.pdf', '.xlsx', '.csv', '.docx'];
 
                 if (!supportedExts.includes(ext)) {
                     return {
@@ -723,22 +728,22 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
                     }
                 }
 
-                if (ext === '.xlsx' || ext === '.xls') {
-                    const XLSX = await _importDynamic("xlsx");
-                    const workbook = XLSX.read(buffer, { type: 'buffer' });
+                if (ext === '.xlsx') {
+                    const { default: readXlsxFile, readSheetNames } = await _importDynamic("read-excel-file/node");
+                    const sheetNames = await readSheetNames(buffer);
                     const sheets: Record<string, string> = {};
-                    for (const sheetName of workbook.SheetNames) {
-                        const sheet = workbook.Sheets[sheetName];
-                        sheets[sheetName] = XLSX.utils.sheet_to_csv(sheet);
+                    for (const sheetName of sheetNames) {
+                        const rows = await readXlsxFile(buffer, { sheet: sheetName });
+                        sheets[sheetName] = rows.map((row: unknown[]) => row.map(csvValue).join(',')).join('\n');
                     }
                     return {
                         success: true,
                         fileName,
-                        format: ext === '.xlsx' ? 'xlsx' : 'xls',
+                        format: 'xlsx',
                         content: Object.values(sheets).join('\n\n'),
                         metadata: {
-                            sheetNames: workbook.SheetNames,
-                            sheetCount: workbook.SheetNames.length,
+                            sheetNames,
+                            sheetCount: sheetNames.length,
                         },
                         sheets,
                     };

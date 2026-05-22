@@ -1,5 +1,4 @@
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
-import nextTypescript from "eslint-config-next/typescript";
 
 const reactCompilerRulesAsWarn = {
   "react-hooks/set-state-in-effect": "warn",
@@ -13,16 +12,9 @@ const reactCompilerRulesAsWarn = {
 
 const config = [
   {
-    ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-    ],
+    ignores: [".next/**", "node_modules/**", "out/**"],
   },
   ...nextCoreWebVitals,
-  ...nextTypescript,
   {
     rules: reactCompilerRulesAsWarn,
   },

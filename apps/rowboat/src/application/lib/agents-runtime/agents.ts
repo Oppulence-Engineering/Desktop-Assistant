@@ -1,7 +1,7 @@
 // External dependencies
 import { Agent, AgentInputItem, run, RunRawModelStreamEvent, Tool } from "@openai/agents";
 import { RECOMMENDED_PROMPT_PREFIX } from "@openai/agents-core/extensions";
-import { aisdk } from "@openai/agents-extensions";
+import { aisdk } from "@openai/agents-extensions/ai-sdk";
 import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
 import crypto from "crypto";
@@ -29,6 +29,7 @@ const USE_NATIVE_HANDOFFS = process.env.USE_NATIVE_HANDOFFS === 'true';
 
 // Agent execution limits
 const MAX_AGENT_TURNS = 25; // Configurable limit for agent SDK turns (default was 10)
+const FlexibleRecord = z.record(z.string(), z.any());
 
 // Internal types for agent handoffs and pipeline management
 // Context passing schemas for SDK handoffs (OpenAI API compatible)
@@ -37,7 +38,7 @@ export const HandoffContext = z.object({
     parentAgent: z.string().default('unknown'),
     transferCount: z.number().default(0),
     // Allow metadata to be object, string, or null to handle AI model variations
-    metadata: z.union([z.record(z.any()), z.string(), z.null()]).default(null)
+    metadata: z.union([FlexibleRecord, z.string(), z.null()]).default(null)
 });
 
 export const PipelineContext = HandoffContext.extend({
@@ -46,8 +47,8 @@ export const PipelineContext = HandoffContext.extend({
     totalSteps: z.number().default(1),
     isLastStep: z.boolean().default(false),
     // Allow flexible types for AI model compatibility  
-    pipelineData: z.union([z.record(z.any()), z.string(), z.null()]).default(null),
-    stepResults: z.union([z.array(z.record(z.any())), z.string(), z.null()]).default(null)
+    pipelineData: z.union([FlexibleRecord, z.string(), z.null()]).default(null),
+    stepResults: z.union([z.array(FlexibleRecord), z.string(), z.null()]).default(null)
 });
 
 export const TaskContext = HandoffContext.extend({
@@ -55,7 +56,7 @@ export const TaskContext = HandoffContext.extend({
     priority: z.enum(['low', 'medium', 'high']).default('medium'),
     deadline: z.union([z.string().datetime(), z.string(), z.null()]).default(null),
     requirements: z.union([z.array(z.string()), z.string(), z.null()]).default(null),
-    resources: z.union([z.record(z.any()), z.string(), z.null()]).default(null)
+    resources: z.union([FlexibleRecord, z.string(), z.null()]).default(null)
 });
 
 // Pipeline execution state for state manager
@@ -64,11 +65,11 @@ export const PipelineExecutionState = z.object({
     currentStep: z.number(),
     totalSteps: z.number(),
     callingAgent: z.string(),
-    pipelineData: z.union([z.record(z.any()), z.string(), z.null()]).default(null),
-    stepResults: z.union([z.array(z.record(z.any())), z.string(), z.null()]).default(null),
-    currentStepResult: z.union([z.record(z.any()), z.string(), z.null()]).default(null),
+    pipelineData: z.union([FlexibleRecord, z.string(), z.null()]).default(null),
+    stepResults: z.union([z.array(FlexibleRecord), z.string(), z.null()]).default(null),
+    currentStepResult: z.union([FlexibleRecord, z.string(), z.null()]).default(null),
     startTime: z.string().datetime(),
-    metadata: z.union([z.record(z.any()), z.string(), z.null()]).default(null)
+    metadata: z.union([FlexibleRecord, z.string(), z.null()]).default(null)
 });
 
 // Agent state tracking for tool call completion
@@ -79,7 +80,6 @@ interface AgentState {
 const openai = createOpenAI({
     apiKey: PROVIDER_API_KEY,
     baseURL: PROVIDER_BASE_URL,
-    compatibility: "strict",
 });
 
 const ZOutMessage = z.union([
@@ -1015,14 +1015,25 @@ async function* handleHandoffEvent(
 }
 
 // Handle tool call result events
+function getFunctionCallResultText(output: unknown): string | null {
+    if (typeof output === 'string') {
+        return output;
+    }
+    if (output && typeof output === 'object' && !Array.isArray(output) && 'type' in output && output.type === 'text' && 'text' in output && typeof output.text === 'string') {
+        return output.text;
+    }
+    return null;
+}
+
 async function* handleToolCallResult(
     event: any,
     turnMsgs: z.infer<typeof Message>[],
-    eventLogger: PrefixLogger
+    eventLogger: PrefixLogger,
+    outputText: string
 ): AsyncIterable<z.infer<typeof ZOutMessage>> {
     const m: z.infer<typeof Message> = {
         role: 'tool',
-        content: event.item.rawItem.output.text,
+        content: outputText,
         toolCallId: event.item.rawItem.callId,
         toolName: event.item.rawItem.name,
     };
@@ -1484,9 +1495,11 @@ export async function* streamResponse(
                     // handle tool call result
                     if (event.item.type === 'tool_call_output_item' &&
                         event.item.rawItem.type === 'function_call_result' &&
-                        event.item.rawItem.status === 'completed' &&
-                        event.item.rawItem.output.type === 'text') {
-                        yield* handleToolCallResult(event, turnMsgs, eventLogger);
+                        event.item.rawItem.status === 'completed') {
+                        const outputText = getFunctionCallResultText(event.item.rawItem.output);
+                        if (outputText !== null) {
+                            yield* handleToolCallResult(event, turnMsgs, eventLogger, outputText);
+                        }
                     }
 
                     // handle model response message output
