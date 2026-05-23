@@ -1,6 +1,6 @@
 # Oppulence Connector Suite — OAuth 2.0 Authorization for Cross-Product Access
 
-> Companion to [BACKEND_API_SPEC.md](./BACKEND_API_SPEC.md) and [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md). This doc defines the cross-product OAuth 2.0 protocol that lets the Rowboat desktop (and any future client) connect to user-owned data in Canvas, Corinthian, Billflow, and future Oppulence products.
+> Companion to [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md). This doc defines the cross-product OAuth 2.0 protocol that lets the Rowboat desktop (and any future client) connect to user-owned data in Canvas, Corinthian, Billflow, and future Oppulence products.
 
 ## 1. Goal
 
