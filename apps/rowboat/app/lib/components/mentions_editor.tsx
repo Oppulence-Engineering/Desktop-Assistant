@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useRef } from 'react';
-import Quill, { Delta, Op } from 'quill';
+import Quill from 'quill';
+import type { Delta } from 'quill/core';
 import { Mention, MentionBlot, MentionBlotData } from "quill-mention";
 import "quill/dist/quill.snow.css";
 import "./mentions-editor.css";

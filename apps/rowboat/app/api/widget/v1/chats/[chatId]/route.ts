@@ -1,11 +1,10 @@
 import { NextRequest } from "next/server";
-import { apiV1 } from "rowboat-shared";
 import { db } from "../../../../../lib/mongodb";
-import { z } from "zod";
 import { ObjectId } from "mongodb";
 import { authCheck } from "../../utils";
+import type { SharedChat } from "../../../../../lib/types/rowboat_shared_types";
 
-const chatsCollection = db.collection<z.infer<typeof apiV1.Chat>>("chats");
+const chatsCollection = db.collection<SharedChat>("chats");
 
 // get chat
 export async function GET(

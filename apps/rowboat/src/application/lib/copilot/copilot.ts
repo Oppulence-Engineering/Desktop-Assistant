@@ -1,10 +1,9 @@
 import z from "zod";
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateObject, streamText, tool } from "ai";
+import { generateObject, streamText, stepCountIs, tool } from "ai";
 import { Workflow, WorkflowTool } from "@/app/lib/types/workflow_types";
 import { CopilotChatContext, CopilotMessage, DataSourceSchemaForCopilot, TriggerSchemaForCopilot } from "../../../entities/models/copilot";
 import { PrefixLogger } from "@/app/lib/utils";
-import zodToJsonSchema from "zod-to-json-schema";
 import { COPILOT_INSTRUCTIONS_EDIT_AGENT } from "./copilot_edit_agent";
 import { COPILOT_INSTRUCTIONS_MULTI_AGENT_WITH_DOCS as COPILOT_INSTRUCTIONS_MULTI_AGENT } from "./copilot_multi_agent";
 import { COPILOT_MULTI_AGENT_EXAMPLE_1 } from "./example_multi_agent_1";
@@ -19,7 +18,7 @@ const PROVIDER_BASE_URL = process.env.PROVIDER_BASE_URL || undefined;
 const COPILOT_MODEL = process.env.PROVIDER_COPILOT_MODEL || 'gpt-4.1';
 const AGENT_MODEL = process.env.PROVIDER_DEFAULT_MODEL || 'gpt-4.1';
 
-const WORKFLOW_SCHEMA = JSON.stringify(zodToJsonSchema(Workflow));
+const WORKFLOW_SCHEMA = JSON.stringify(z.toJSONSchema(Workflow));
 
 const SYSTEM_PROMPT = [
     COPILOT_INSTRUCTIONS_MULTI_AGENT,
@@ -33,8 +32,11 @@ const SYSTEM_PROMPT = [
 const openai = createOpenAI({
     apiKey: PROVIDER_API_KEY,
     baseURL: PROVIDER_BASE_URL,
-    compatibility: "strict",
 });
+
+function asRecord(value: unknown): Record<string, any> {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {};
+}
 
 const composioToolSearchResponseSchema = z.object({
     results: z.array(z.object({
@@ -398,8 +400,8 @@ export async function getEditAgentInstructionsResponse(
     usageTracker.track({
         type: "LLM_USAGE",
         modelName: COPILOT_MODEL,
-        inputTokens: usage.promptTokens,
-        outputTokens: usage.completionTokens,
+        inputTokens: usage.inputTokens ?? 0,
+        outputTokens: usage.outputTokens ?? 0,
         context: "copilot.llm_usage",
     });
 
@@ -453,11 +455,11 @@ export async function* streamMultiAgentResponse(
     
     const { fullStream } = streamText({
         model: openai(COPILOT_MODEL),
-        maxSteps: 10,
+        stopWhen: stepCountIs(10),
         tools: {
             "search_relevant_tools": tool({
                 description: "Use this tool whenever the user wants to add tools to their agents , search for tools or have questions about specific tools. ALWAYS search for real tools before suggesting mock tools. Use this when users mention: email sending, calendar management, file operations, database queries, web scraping, payment processing, social media integration, CRM operations, analytics, notifications, or any external service integration. This tool searches a comprehensive library of real, production-ready tools that can be integrated into workflows.",
-                parameters: z.object({
+                inputSchema: z.object({
                     query: z.string().describe("Describe the specific functionality or use-case needed. Be specific about the action (e.g., 'send email via Gmail', 'create calendar events', 'upload files to cloud storage', 'process payments via Stripe', 'search web content', 'manage customer data in CRM'). Include the service/platform if mentioned by user."),
                 }),
                 execute: async ({ query }: { query: string }) => {
@@ -472,7 +474,7 @@ export async function* streamMultiAgentResponse(
             }),
             "search_relevant_triggers": tool({
                 description: "Use this tool to discover external triggers provided by Composio toolkits. Supply the toolkit slug (for example 'gmail', 'slack', or 'salesforce') and optionally keywords from the user's request to narrow down results. Always call this before adding an external trigger to ensure the trigger exists and to understand its configuration schema.",
-                parameters: z.object({
+                inputSchema: z.object({
                     toolkitSlug: z.string().describe("Slug of the Composio toolkit to search, such as 'gmail', 'slack', 'salesforce', 'googlecalendar'."),
                     query: z.string().min(1).describe("Optional keywords pulled from the user's request to filter trigger names, descriptions, or config fields.").optional(),
                 }),
@@ -507,29 +509,30 @@ export async function* streamMultiAgentResponse(
         
         if (event.type === "text-delta") {
             yield {
-                content: event.textDelta,
+                content: event.text,
             };
         } else if (event.type === "tool-call") {
+            const input = asRecord(event.input);
             yield {
                 type: 'tool-call',
                 toolName: event.toolName,
                 toolCallId: event.toolCallId,
-                args: event.args,
-                query: event.args.query || undefined,
+                args: input,
+                query: typeof input.query === 'string' ? input.query : undefined,
             };
         } else if (event.type === "tool-result") { 
             yield {
                 type: 'tool-result',
                 toolCallId: event.toolCallId,
-                result: event.result,
+                result: event.output,
             };
-        } else if (event.type === "step-finish") {
+        } else if (event.type === "finish-step") {
             // log usage
             usageTracker.track({
                 type: "LLM_USAGE",
                 modelName: COPILOT_MODEL,
-                inputTokens: event.usage.promptTokens,
-                outputTokens: event.usage.completionTokens,
+                inputTokens: event.usage.inputTokens ?? 0,
+                outputTokens: event.usage.outputTokens ?? 0,
                 context: "copilot.llm_usage",
             });
         }

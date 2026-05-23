@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
-import { apiV1 } from "rowboat-shared";
 import { chatsCollection, chatMessagesCollection } from "../../../../../../lib/mongodb";
-import { z } from "zod";
 import { Filter, ObjectId } from "mongodb";
 import { authCheck } from "../../../utils";
+import type {
+    SharedApiGetChatMessagesResponse,
+    SharedChatMessage,
+} from "../../../../../../lib/types/rowboat_shared_types";
 
 // list messages
 export async function GET(req: NextRequest, props: { params: Promise<{ chatId: string }> }): Promise<Response> {
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ chatId: s
         const previous = searchParams.get('previous');
 
         // Construct the query
-        const query: Filter<z.infer<typeof apiV1.ChatMessage>> = {
+        const query: Filter<SharedChatMessage> = {
             chatId,
             $or: [
                 { role: 'user' },
@@ -73,7 +75,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ chatId: s
         }
 
         // Prepare the response
-        const response: z.infer<typeof apiV1.ApiGetChatMessagesResponse> = {
+        const response: SharedApiGetChatMessagesResponse = {
             messages: messages.map(message => ({
                 ...message,
                 id: message._id.toString(),

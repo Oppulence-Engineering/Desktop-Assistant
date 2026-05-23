@@ -95,7 +95,7 @@ async function runProcessFilePipeline(_logger: PrefixLogger, usageTracker: Usage
                         {
                             type: "file",
                             data: fileData.toString('base64'),
-                            mimeType: doc.data.mimeType,
+                            mediaType: doc.data.mimeType,
                         }
                     ]
                 }
@@ -105,8 +105,8 @@ async function runProcessFilePipeline(_logger: PrefixLogger, usageTracker: Usage
         usageTracker.track({
             type: "LLM_USAGE",
             modelName: FILE_PARSING_MODEL,
-            inputTokens: usage.promptTokens,
-            outputTokens: usage.completionTokens,
+            inputTokens: usage.inputTokens ?? 0,
+            outputTokens: usage.outputTokens ?? 0,
             context: "rag.files.llm_usage",
         });
     } else {
