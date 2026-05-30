@@ -1,0 +1,3 @@
+# Scalars referenced by the entgql-generated ent.graphql but not declared there
+# (uuid.UUID fields such as request_id). Bound to uuid.UUID in gqlgen.yml.
+scalar UUID

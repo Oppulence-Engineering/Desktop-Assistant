@@ -706,6 +706,23 @@ function ContentHeader({
   )
 }
 
+/**
+ * Coerce a run/stream error payload into a clean, user-facing string. The event
+ * contract types `error` as a string, but upstream sources (AI SDK / gateway,
+ * older persisted run logs) can deliver an Error or a plain object — which would
+ * otherwise render as a stack dump or "name: ClientError". Always yields a
+ * single readable line.
+ */
+function toErrorText(error: unknown): string {
+  if (typeof error === 'string' && error.trim()) return error
+  if (error instanceof Error) return error.message || error.name || 'Something went wrong'
+  if (error && typeof error === 'object') {
+    const m = (error as { message?: unknown }).message
+    if (typeof m === 'string' && m.trim()) return m
+  }
+  return 'Something went wrong'
+}
+
 function App() {
   type ShortcutPane = 'left' | 'right'
   type MarkdownHistoryHandlers = { undo: () => boolean; redo: () => boolean }
@@ -1909,7 +1926,7 @@ function App() {
             items.push({
               id: `error-${Date.now()}-${Math.random()}`,
               kind: 'error',
-              message: event.error,
+              message: toErrorText(event.error),
               timestamp: event.ts ? new Date(event.ts).getTime() : Date.now(),
             })
             break
@@ -2343,10 +2360,10 @@ function App() {
         setConversation(prev => [...prev, {
           id: `error-${Date.now()}`,
           kind: 'error',
-          message: event.error,
+          message: toErrorText(event.error),
           timestamp: Date.now(),
         }])
-        toast.error(event.error.split('\n')[0] || 'Model error')
+        toast.error(toErrorText(event.error).split('\n')[0] || 'Model error')
         console.error('Run error:', event.error)
         break
     }

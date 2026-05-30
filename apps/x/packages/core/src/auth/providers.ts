@@ -105,10 +105,19 @@ export async function getProviderConfig(providerName: string): Promise<ProviderC
   }
   if (providerName === 'rowboat') {
     const rowboatConfig = await getRowboatConfig();
+    // Use the OIDC issuer (Ory Hydra) directly — the client discovers endpoints
+    // from `${issuer}/.well-known/oauth-authorization-server`. Fall back to the
+    // legacy supabaseUrl during the migration.
+    const issuer = rowboatConfig.oidcIssuerUrl || rowboatConfig.supabaseUrl;
     config.discovery = {
       mode: 'issuer',
-      issuer: `${rowboatConfig.supabaseUrl}/auth/v1/.well-known/oauth-authorization-server`,
-    }
+      issuer,
+    };
+    // Prefer a static, pre-registered client when the backend supplies one;
+    // otherwise keep dynamic client registration.
+    config.client = rowboatConfig.oauthClientId
+      ? { mode: 'static', clientId: rowboatConfig.oauthClientId }
+      : { mode: 'dcr' };
   }
   return config;
 }

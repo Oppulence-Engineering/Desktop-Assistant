@@ -16,6 +16,7 @@ import { capture as analyticsCapture, identify as analyticsIdentify, reset as an
 import { isSignedIn } from '@x/core/dist/account/account.js';
 import { getWebappUrl } from '@x/core/dist/config/remote-config.js';
 import { claimTokensViaBackend } from '@x/core/dist/auth/google-backend-oauth.js';
+import { getWorkosLoginUrl, exchangeWorkosCode } from '@x/core/dist/auth/workos-backend.js';
 
 const REDIRECT_URI = 'http://localhost:8080/oauth/callback';
 
@@ -190,6 +191,95 @@ async function getProviderConfiguration(provider: string, credentialsOverride?: 
 }
 
 /**
+ * Rowboat sign-in via the rowboat-api WorkOS broker. The desktop runs the
+ * browser authorize + PKCE and the loopback callback; rowboat-api completes the
+ * confidential code exchange (it holds the WorkOS API key) and returns tokens.
+ */
+async function connectRowboatViaBroker(): Promise<{ success: boolean; error?: string }> {
+  const oauthRepo = getOAuthRepo();
+  const { verifier: codeVerifier, challenge: codeChallenge } = await oauthClient.generatePKCE();
+  const state = oauthClient.generateState();
+
+  // rowboat-api builds the WorkOS AuthKit authorize URL (keeps WorkOS's
+  // endpoint layout server-side).
+  const loginUrl = await getWorkosLoginUrl(REDIRECT_URI, state, codeChallenge);
+
+  let callbackHandled = false;
+  const { server } = await createAuthServer(8080, async (callbackUrl) => {
+    if (callbackHandled) return;
+    callbackHandled = true;
+
+    const receivedState = callbackUrl.searchParams.get('state');
+    if (!receivedState || receivedState !== state) {
+      throw new Error('Invalid state parameter - possible CSRF attack');
+    }
+    const code = callbackUrl.searchParams.get('code');
+    if (!code) {
+      throw new Error('OAuth callback missing authorization code');
+    }
+
+    try {
+      console.log('[OAuth] Exchanging WorkOS code via rowboat-api broker...');
+      const tokens = await exchangeWorkosCode(code, codeVerifier);
+      await oauthRepo.upsert('rowboat', { tokens, error: null });
+      console.log('[OAuth] Rowboat sign-in successful');
+
+      // Ensure user + Stripe customer exist before notifying the renderer.
+      let signedInUserId: string | undefined;
+      try {
+        const billing = await getBillingInfo();
+        if (billing.userId) {
+          signedInUserId = billing.userId;
+          analyticsIdentify(billing.userId, {
+            ...(billing.userEmail ? { email: billing.userEmail } : {}),
+            plan: billing.subscriptionPlan,
+            status: billing.subscriptionStatus,
+          });
+          analyticsCapture('user_signed_in', {
+            plan: billing.subscriptionPlan,
+            status: billing.subscriptionStatus,
+          });
+        }
+      } catch (meError) {
+        console.error('[OAuth] Failed to initialize user via /v1/me:', meError);
+      }
+
+      emitOAuthEvent({
+        provider: 'rowboat',
+        success: true,
+        ...(signedInUserId ? { userId: signedInUserId } : {}),
+      });
+    } catch (error) {
+      console.error('[OAuth] Rowboat sign-in failed:', error);
+      emitOAuthEvent({
+        provider: 'rowboat',
+        success: false,
+        error: error instanceof Error ? error.message : 'Sign-in failed',
+      });
+      throw error;
+    } finally {
+      if (activeFlow && activeFlow.state === state) {
+        clearTimeout(activeFlow.cleanupTimeout);
+        activeFlow.server.close();
+        activeFlow = null;
+      }
+    }
+  });
+
+  const cleanupTimeout = setTimeout(() => {
+    if (activeFlow?.state === state) {
+      console.log('[OAuth] Cleaning up abandoned rowboat sign-in (timeout)');
+      cancelActiveFlow('timed_out');
+    }
+  }, 2 * 60 * 1000);
+
+  activeFlow = { provider: 'rowboat', state, server, cleanupTimeout };
+
+  shell.openExternal(loginUrl);
+  return { success: true };
+}
+
+/**
  * Initiate OAuth flow for a provider
  */
 export async function connectProvider(provider: string, credentials?: { clientId: string; clientSecret: string }): Promise<{ success: boolean; error?: string }> {
@@ -198,6 +288,13 @@ export async function connectProvider(provider: string, credentials?: { clientId
 
     // Cancel any existing flow before starting a new one
     cancelActiveFlow('new_flow_started');
+
+    // Rowboat sign-in goes through the WorkOS broker in rowboat-api (WorkOS is
+    // a confidential client; the desktop can't hold the API key). The browser
+    // authorize + PKCE happen here; the code exchange is server-side.
+    if (provider === 'rowboat') {
+      return await connectRowboatViaBroker();
+    }
 
     const oauthRepo = getOAuthRepo();
     const providerConfig = await getProviderConfig(provider);

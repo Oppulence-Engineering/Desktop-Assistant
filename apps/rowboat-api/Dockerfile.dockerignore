@@ -1,0 +1,11 @@
+# BuildKit applies this when building with -f apps/rowboat-api/Dockerfile.
+# Context is the repo root; keep only the two Go modules we build.
+*
+!apps/rowboat-api
+!packages/oauth-resource-server-go
+
+# Drop local build/test artifacts even within the kept trees.
+apps/rowboat-api/bin
+apps/rowboat-api/*.db
+**/node_modules
+.git

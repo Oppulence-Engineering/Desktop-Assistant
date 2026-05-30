@@ -1,0 +1,30 @@
+# Production overrides (US-East primary). Apply with:
+#   helm upgrade --install rowboat-api charts/rowboat-api \
+#     -f charts/rowboat-api/values-production.yaml -n rowboat
+replicaCount: 3
+
+image:
+  tag: "" # set by CI to the released git SHA / tag
+
+ingress:
+  host: api.x.solomon-ai.co
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 65
+
+serviceMonitor:
+  enabled: true
+
+config:
+  ENVIRONMENT: production
+  LOG_LEVEL: info
+  AUTO_MIGRATE: "false"
+  INFISICAL_ENABLED: "true"
+  INFISICAL_ENVIRONMENT: production
+
+# Secrets live in the cluster Secret `rowboat-api-secrets` (sealed-secrets /
+# external-secrets / Infisical operator). Do NOT inline secret values here.
+existingSecret: rowboat-api-secrets

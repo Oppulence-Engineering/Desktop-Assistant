@@ -1,0 +1,51 @@
+# Staging values for the upstream ory/hydra chart.
+#   helm upgrade --install hydra ory/hydra -n ory-staging \
+#     -f charts/hydra/values-staging.yaml
+
+hydra:
+  existingSecret: hydra-secrets
+
+  config:
+    urls:
+      self:
+        issuer: https://oauth.staging.solomon-ai.co
+        public: https://oauth.staging.solomon-ai.co
+      login: https://consent.staging.solomon-ai.co/login
+      consent: https://consent.staging.solomon-ai.co/consent
+      logout: https://consent.staging.solomon-ai.co/logout
+    strategies:
+      access_token: jwt
+    oidc:
+      subject_identifiers:
+        supported_types:
+          - public
+    ttl:
+      access_token: 1h
+      refresh_token: 720h
+
+  automigration:
+    enabled: true
+    type: job
+
+  dangerousForceHttp: false
+
+deployment:
+  replicaCount: 1
+
+ingress:
+  public:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-staging
+    hosts:
+      - host: oauth.staging.solomon-ai.co
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: hydra-public-tls
+        hosts:
+          - oauth.staging.solomon-ai.co
+  admin:
+    enabled: false

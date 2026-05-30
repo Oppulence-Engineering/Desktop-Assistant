@@ -1,0 +1,4921 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "rowboat-api",
+    "description": "Entity-shaped REST surface generated from ent schemas. Streaming/proxy endpoints are hand-curated and merged.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/credit-ledgers": {
+      "get": {
+        "tags": [
+          "CreditLedger"
+        ],
+        "summary": "List CreditLedgers",
+        "description": "List CreditLedgers.",
+        "operationId": "listCreditLedger",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result CreditLedger list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CreditLedger"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "CreditLedger"
+        ],
+        "summary": "Create a new CreditLedger",
+        "description": "Creates a new CreditLedger and persists it to storage.",
+        "operationId": "createCreditLedger",
+        "requestBody": {
+          "description": "CreditLedger to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "delta": {
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "ts": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "user": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "delta",
+                  "reason",
+                  "request_id",
+                  "ts",
+                  "user"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "CreditLedger created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditLedger"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/credit-ledgers/{id}": {
+      "get": {
+        "tags": [
+          "CreditLedger"
+        ],
+        "summary": "Find a CreditLedger by ID",
+        "description": "Finds the CreditLedger with the requested ID and returns it.",
+        "operationId": "readCreditLedger",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the CreditLedger",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CreditLedger with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditLedger"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "CreditLedger"
+        ],
+        "summary": "Deletes a CreditLedger by ID",
+        "description": "Deletes the CreditLedger with the requested ID.",
+        "operationId": "deleteCreditLedger",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the CreditLedger",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "CreditLedger with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "CreditLedger"
+        ],
+        "summary": "Updates a CreditLedger",
+        "description": "Updates a CreditLedger and persists changes to storage.",
+        "operationId": "updateCreditLedger",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the CreditLedger",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "CreditLedger properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "delta": {
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "user": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "CreditLedger updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditLedger"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/credit-ledgers/{id}/user": {
+      "get": {
+        "tags": [
+          "CreditLedger"
+        ],
+        "summary": "Find the attached User",
+        "description": "Find the attached User of the CreditLedger with the given ID",
+        "operationId": "readCreditLedgerUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the CreditLedger",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User attached to CreditLedger with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/llm-usage-histories": {
+      "get": {
+        "tags": [
+          "LLMUsageHistory"
+        ],
+        "summary": "List LLMUsageHistories",
+        "description": "List LLMUsageHistories.",
+        "operationId": "listLLMUsageHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result LLMUsageHistory list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LLMUsageHistory"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LLMUsageHistory"
+        ],
+        "summary": "Create a new LLMUsageHistory",
+        "description": "Creates a new LLMUsageHistory and persists it to storage.",
+        "operationId": "createLLMUsageHistory",
+        "requestBody": {
+          "description": "LLMUsageHistory to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "history_time": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "operation": {
+                    "type": "string",
+                    "enum": [
+                      "INSERT",
+                      "UPDATE",
+                      "DELETE"
+                    ]
+                  },
+                  "ref": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "use_case": {
+                    "type": "string"
+                  },
+                  "sub_use_case": {
+                    "type": "string"
+                  },
+                  "agent_name": {
+                    "type": "string"
+                  },
+                  "input_tokens": {
+                    "type": "integer"
+                  },
+                  "output_tokens": {
+                    "type": "integer"
+                  },
+                  "cost_units": {
+                    "type": "integer"
+                  },
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "ts": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "history_time",
+                  "operation",
+                  "model",
+                  "input_tokens",
+                  "output_tokens",
+                  "cost_units",
+                  "request_id",
+                  "ts"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "LLMUsageHistory created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMUsageHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/llm-usage-histories/{id}": {
+      "get": {
+        "tags": [
+          "LLMUsageHistory"
+        ],
+        "summary": "Find a LLMUsageHistory by ID",
+        "description": "Finds the LLMUsageHistory with the requested ID and returns it.",
+        "operationId": "readLLMUsageHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the LLMUsageHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "LLMUsageHistory with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMUsageHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "LLMUsageHistory"
+        ],
+        "summary": "Deletes a LLMUsageHistory by ID",
+        "description": "Deletes the LLMUsageHistory with the requested ID.",
+        "operationId": "deleteLLMUsageHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the LLMUsageHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "LLMUsageHistory with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "LLMUsageHistory"
+        ],
+        "summary": "Updates a LLMUsageHistory",
+        "description": "Updates a LLMUsageHistory and persists changes to storage.",
+        "operationId": "updateLLMUsageHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the LLMUsageHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "LLMUsageHistory properties to update",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "LLMUsageHistory updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMUsageHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/llm-usages": {
+      "get": {
+        "tags": [
+          "LLMUsage"
+        ],
+        "summary": "List LLMUsages",
+        "description": "List LLMUsages.",
+        "operationId": "listLLMUsage",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result LLMUsage list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LLMUsage"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LLMUsage"
+        ],
+        "summary": "Create a new LLMUsage",
+        "description": "Creates a new LLMUsage and persists it to storage.",
+        "operationId": "createLLMUsage",
+        "requestBody": {
+          "description": "LLMUsage to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string"
+                  },
+                  "use_case": {
+                    "type": "string"
+                  },
+                  "sub_use_case": {
+                    "type": "string"
+                  },
+                  "agent_name": {
+                    "type": "string"
+                  },
+                  "input_tokens": {
+                    "type": "integer"
+                  },
+                  "output_tokens": {
+                    "type": "integer"
+                  },
+                  "cost_units": {
+                    "type": "integer"
+                  },
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "ts": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "user": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "model",
+                  "input_tokens",
+                  "output_tokens",
+                  "cost_units",
+                  "request_id",
+                  "ts",
+                  "user"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "LLMUsage created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMUsage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/llm-usages/{id}": {
+      "get": {
+        "tags": [
+          "LLMUsage"
+        ],
+        "summary": "Find a LLMUsage by ID",
+        "description": "Finds the LLMUsage with the requested ID and returns it.",
+        "operationId": "readLLMUsage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the LLMUsage",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "LLMUsage with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMUsage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "LLMUsage"
+        ],
+        "summary": "Deletes a LLMUsage by ID",
+        "description": "Deletes the LLMUsage with the requested ID.",
+        "operationId": "deleteLLMUsage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the LLMUsage",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "LLMUsage with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "LLMUsage"
+        ],
+        "summary": "Updates a LLMUsage",
+        "description": "Updates a LLMUsage and persists changes to storage.",
+        "operationId": "updateLLMUsage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the LLMUsage",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "LLMUsage properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string"
+                  },
+                  "use_case": {
+                    "type": "string"
+                  },
+                  "sub_use_case": {
+                    "type": "string"
+                  },
+                  "agent_name": {
+                    "type": "string"
+                  },
+                  "input_tokens": {
+                    "type": "integer"
+                  },
+                  "output_tokens": {
+                    "type": "integer"
+                  },
+                  "cost_units": {
+                    "type": "integer"
+                  },
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "user": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "LLMUsage updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMUsage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/llm-usages/{id}/user": {
+      "get": {
+        "tags": [
+          "LLMUsage"
+        ],
+        "summary": "Find the attached User",
+        "description": "Find the attached User of the LLMUsage with the given ID",
+        "operationId": "readLLMUsageUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the LLMUsage",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User attached to LLMUsage with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/mcp-connection-histories": {
+      "get": {
+        "tags": [
+          "MCPConnectionHistory"
+        ],
+        "summary": "List MCPConnectionHistories",
+        "description": "List MCPConnectionHistories.",
+        "operationId": "listMCPConnectionHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result MCPConnectionHistory list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MCPConnectionHistory"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "MCPConnectionHistory"
+        ],
+        "summary": "Create a new MCPConnectionHistory",
+        "description": "Creates a new MCPConnectionHistory and persists it to storage.",
+        "operationId": "createMCPConnectionHistory",
+        "requestBody": {
+          "description": "MCPConnectionHistory to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "history_time": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "operation": {
+                    "type": "string",
+                    "enum": [
+                      "INSERT",
+                      "UPDATE",
+                      "DELETE"
+                    ]
+                  },
+                  "ref": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "connector": {
+                    "type": "string"
+                  },
+                  "audience": {
+                    "type": "string"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "refresh_token_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "api_key_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "connected_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "last_used_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "created_at",
+                  "updated_at",
+                  "history_time",
+                  "operation",
+                  "connector",
+                  "audience"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "MCPConnectionHistory created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPConnectionHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/mcp-connection-histories/{id}": {
+      "get": {
+        "tags": [
+          "MCPConnectionHistory"
+        ],
+        "summary": "Find a MCPConnectionHistory by ID",
+        "description": "Finds the MCPConnectionHistory with the requested ID and returns it.",
+        "operationId": "readMCPConnectionHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the MCPConnectionHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MCPConnectionHistory with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPConnectionHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "MCPConnectionHistory"
+        ],
+        "summary": "Deletes a MCPConnectionHistory by ID",
+        "description": "Deletes the MCPConnectionHistory with the requested ID.",
+        "operationId": "deleteMCPConnectionHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the MCPConnectionHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "MCPConnectionHistory with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "MCPConnectionHistory"
+        ],
+        "summary": "Updates a MCPConnectionHistory",
+        "description": "Updates a MCPConnectionHistory and persists changes to storage.",
+        "operationId": "updateMCPConnectionHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the MCPConnectionHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "MCPConnectionHistory properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "MCPConnectionHistory updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPConnectionHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/mcp-connections": {
+      "get": {
+        "tags": [
+          "MCPConnection"
+        ],
+        "summary": "List MCPConnections",
+        "description": "List MCPConnections.",
+        "operationId": "listMCPConnection",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result MCPConnection list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MCPConnection"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "MCPConnection"
+        ],
+        "summary": "Create a new MCPConnection",
+        "description": "Creates a new MCPConnection and persists it to storage.",
+        "operationId": "createMCPConnection",
+        "requestBody": {
+          "description": "MCPConnection to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "connector": {
+                    "type": "string"
+                  },
+                  "audience": {
+                    "type": "string"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "refresh_token_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "api_key_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "connected_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "last_used_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "user": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "created_at",
+                  "updated_at",
+                  "connector",
+                  "audience",
+                  "user"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "MCPConnection created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/mcp-connections/{id}": {
+      "get": {
+        "tags": [
+          "MCPConnection"
+        ],
+        "summary": "Find a MCPConnection by ID",
+        "description": "Finds the MCPConnection with the requested ID and returns it.",
+        "operationId": "readMCPConnection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the MCPConnection",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MCPConnection with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "MCPConnection"
+        ],
+        "summary": "Deletes a MCPConnection by ID",
+        "description": "Deletes the MCPConnection with the requested ID.",
+        "operationId": "deleteMCPConnection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the MCPConnection",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "MCPConnection with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "MCPConnection"
+        ],
+        "summary": "Updates a MCPConnection",
+        "description": "Updates a MCPConnection and persists changes to storage.",
+        "operationId": "updateMCPConnection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the MCPConnection",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "MCPConnection properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "connector": {
+                    "type": "string"
+                  },
+                  "audience": {
+                    "type": "string"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "refresh_token_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "api_key_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "connected_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "last_used_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "user": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "MCPConnection updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/mcp-connections/{id}/user": {
+      "get": {
+        "tags": [
+          "MCPConnection"
+        ],
+        "summary": "Find the attached User",
+        "description": "Find the attached User of the MCPConnection with the given ID",
+        "operationId": "readMCPConnectionUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the MCPConnection",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User attached to MCPConnection with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/o-auth-connection-histories": {
+      "get": {
+        "tags": [
+          "OAuthConnectionHistory"
+        ],
+        "summary": "List OAuthConnectionHistories",
+        "description": "List OAuthConnectionHistories.",
+        "operationId": "listOAuthConnectionHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result OAuthConnectionHistory list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OAuthConnectionHistory"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "OAuthConnectionHistory"
+        ],
+        "summary": "Create a new OAuthConnectionHistory",
+        "description": "Creates a new OAuthConnectionHistory and persists it to storage.",
+        "operationId": "createOAuthConnectionHistory",
+        "requestBody": {
+          "description": "OAuthConnectionHistory to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "history_time": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "operation": {
+                    "type": "string",
+                    "enum": [
+                      "INSERT",
+                      "UPDATE",
+                      "DELETE"
+                    ]
+                  },
+                  "ref": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "refresh_token_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "created_at",
+                  "updated_at",
+                  "history_time",
+                  "operation",
+                  "provider",
+                  "refresh_token_encrypted"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OAuthConnectionHistory created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthConnectionHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/o-auth-connection-histories/{id}": {
+      "get": {
+        "tags": [
+          "OAuthConnectionHistory"
+        ],
+        "summary": "Find a OAuthConnectionHistory by ID",
+        "description": "Finds the OAuthConnectionHistory with the requested ID and returns it.",
+        "operationId": "readOAuthConnectionHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the OAuthConnectionHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuthConnectionHistory with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthConnectionHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "OAuthConnectionHistory"
+        ],
+        "summary": "Deletes a OAuthConnectionHistory by ID",
+        "description": "Deletes the OAuthConnectionHistory with the requested ID.",
+        "operationId": "deleteOAuthConnectionHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the OAuthConnectionHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "OAuthConnectionHistory with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "OAuthConnectionHistory"
+        ],
+        "summary": "Updates a OAuthConnectionHistory",
+        "description": "Updates a OAuthConnectionHistory and persists changes to storage.",
+        "operationId": "updateOAuthConnectionHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the OAuthConnectionHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "OAuthConnectionHistory properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OAuthConnectionHistory updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthConnectionHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/o-auth-connections": {
+      "get": {
+        "tags": [
+          "OAuthConnection"
+        ],
+        "summary": "List OAuthConnections",
+        "description": "List OAuthConnections.",
+        "operationId": "listOAuthConnection",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result OAuthConnection list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OAuthConnection"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "OAuthConnection"
+        ],
+        "summary": "Create a new OAuthConnection",
+        "description": "Creates a new OAuthConnection and persists it to storage.",
+        "operationId": "createOAuthConnection",
+        "requestBody": {
+          "description": "OAuthConnection to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "refresh_token_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "user": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "created_at",
+                  "updated_at",
+                  "provider",
+                  "refresh_token_encrypted",
+                  "user"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OAuthConnection created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/o-auth-connections/{id}": {
+      "get": {
+        "tags": [
+          "OAuthConnection"
+        ],
+        "summary": "Find a OAuthConnection by ID",
+        "description": "Finds the OAuthConnection with the requested ID and returns it.",
+        "operationId": "readOAuthConnection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the OAuthConnection",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuthConnection with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "OAuthConnection"
+        ],
+        "summary": "Deletes a OAuthConnection by ID",
+        "description": "Deletes the OAuthConnection with the requested ID.",
+        "operationId": "deleteOAuthConnection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the OAuthConnection",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "OAuthConnection with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "OAuthConnection"
+        ],
+        "summary": "Updates a OAuthConnection",
+        "description": "Updates a OAuthConnection and persists changes to storage.",
+        "operationId": "updateOAuthConnection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the OAuthConnection",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "OAuthConnection properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "refresh_token_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "user": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OAuthConnection updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/o-auth-connections/{id}/user": {
+      "get": {
+        "tags": [
+          "OAuthConnection"
+        ],
+        "summary": "Find the attached User",
+        "description": "Find the attached User of the OAuthConnection with the given ID",
+        "operationId": "readOAuthConnectionUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the OAuthConnection",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User attached to OAuthConnection with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/o-auth-pendings": {
+      "get": {
+        "tags": [
+          "OAuthPending"
+        ],
+        "summary": "List OAuthPendings",
+        "description": "List OAuthPendings.",
+        "operationId": "listOAuthPending",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result OAuthPending list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OAuthPending"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "OAuthPending"
+        ],
+        "summary": "Create a new OAuthPending",
+        "description": "Creates a new OAuthPending and persists it to storage.",
+        "operationId": "createOAuthPending",
+        "requestBody": {
+          "description": "OAuthPending to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "payload_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "created_at",
+                  "updated_at",
+                  "state",
+                  "provider",
+                  "payload_encrypted",
+                  "expires_at"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OAuthPending created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthPending"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/o-auth-pendings/{id}": {
+      "get": {
+        "tags": [
+          "OAuthPending"
+        ],
+        "summary": "Find a OAuthPending by ID",
+        "description": "Finds the OAuthPending with the requested ID and returns it.",
+        "operationId": "readOAuthPending",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the OAuthPending",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuthPending with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthPending"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "OAuthPending"
+        ],
+        "summary": "Deletes a OAuthPending by ID",
+        "description": "Deletes the OAuthPending with the requested ID.",
+        "operationId": "deleteOAuthPending",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the OAuthPending",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "OAuthPending with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "OAuthPending"
+        ],
+        "summary": "Updates a OAuthPending",
+        "description": "Updates a OAuthPending and persists changes to storage.",
+        "operationId": "updateOAuthPending",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the OAuthPending",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "OAuthPending properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "payload_encrypted": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OAuthPending updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthPending"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/subscription-histories": {
+      "get": {
+        "tags": [
+          "SubscriptionHistory"
+        ],
+        "summary": "List SubscriptionHistories",
+        "description": "List SubscriptionHistories.",
+        "operationId": "listSubscriptionHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result SubscriptionHistory list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubscriptionHistory"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "SubscriptionHistory"
+        ],
+        "summary": "Create a new SubscriptionHistory",
+        "description": "Creates a new SubscriptionHistory and persists it to storage.",
+        "operationId": "createSubscriptionHistory",
+        "requestBody": {
+          "description": "SubscriptionHistory to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "history_time": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "operation": {
+                    "type": "string",
+                    "enum": [
+                      "INSERT",
+                      "UPDATE",
+                      "DELETE"
+                    ]
+                  },
+                  "ref": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "plan": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "trial_expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "sanctioned_credits": {
+                    "type": "integer"
+                  },
+                  "stripe_customer_id": {
+                    "type": "string"
+                  },
+                  "stripe_subscription_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "created_at",
+                  "updated_at",
+                  "history_time",
+                  "operation",
+                  "plan",
+                  "status",
+                  "sanctioned_credits"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "SubscriptionHistory created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/subscription-histories/{id}": {
+      "get": {
+        "tags": [
+          "SubscriptionHistory"
+        ],
+        "summary": "Find a SubscriptionHistory by ID",
+        "description": "Finds the SubscriptionHistory with the requested ID and returns it.",
+        "operationId": "readSubscriptionHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the SubscriptionHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SubscriptionHistory with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SubscriptionHistory"
+        ],
+        "summary": "Deletes a SubscriptionHistory by ID",
+        "description": "Deletes the SubscriptionHistory with the requested ID.",
+        "operationId": "deleteSubscriptionHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the SubscriptionHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "SubscriptionHistory with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "SubscriptionHistory"
+        ],
+        "summary": "Updates a SubscriptionHistory",
+        "description": "Updates a SubscriptionHistory and persists changes to storage.",
+        "operationId": "updateSubscriptionHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the SubscriptionHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "SubscriptionHistory properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "SubscriptionHistory updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/subscriptions": {
+      "get": {
+        "tags": [
+          "Subscription"
+        ],
+        "summary": "List Subscriptions",
+        "description": "List Subscriptions.",
+        "operationId": "listSubscription",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result Subscription list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Subscription"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Subscription"
+        ],
+        "summary": "Create a new Subscription",
+        "description": "Creates a new Subscription and persists it to storage.",
+        "operationId": "createSubscription",
+        "requestBody": {
+          "description": "Subscription to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "plan": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "trial_expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "sanctioned_credits": {
+                    "type": "integer"
+                  },
+                  "stripe_customer_id": {
+                    "type": "string"
+                  },
+                  "stripe_subscription_id": {
+                    "type": "string"
+                  },
+                  "user": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "created_at",
+                  "updated_at",
+                  "plan",
+                  "status",
+                  "sanctioned_credits",
+                  "user"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Subscription created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/subscriptions/{id}": {
+      "get": {
+        "tags": [
+          "Subscription"
+        ],
+        "summary": "Find a Subscription by ID",
+        "description": "Finds the Subscription with the requested ID and returns it.",
+        "operationId": "readSubscription",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the Subscription",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Subscription"
+        ],
+        "summary": "Deletes a Subscription by ID",
+        "description": "Deletes the Subscription with the requested ID.",
+        "operationId": "deleteSubscription",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the Subscription",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Subscription with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Subscription"
+        ],
+        "summary": "Updates a Subscription",
+        "description": "Updates a Subscription and persists changes to storage.",
+        "operationId": "updateSubscription",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the Subscription",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Subscription properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "plan": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "trial_expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "sanctioned_credits": {
+                    "type": "integer"
+                  },
+                  "stripe_customer_id": {
+                    "type": "string"
+                  },
+                  "stripe_subscription_id": {
+                    "type": "string"
+                  },
+                  "user": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Subscription updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/subscriptions/{id}/user": {
+      "get": {
+        "tags": [
+          "Subscription"
+        ],
+        "summary": "Find the attached User",
+        "description": "Find the attached User of the Subscription with the given ID",
+        "operationId": "readSubscriptionUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the Subscription",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User attached to Subscription with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/user-histories": {
+      "get": {
+        "tags": [
+          "UserHistory"
+        ],
+        "summary": "List UserHistories",
+        "description": "List UserHistories.",
+        "operationId": "listUserHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result UserHistory list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserHistory"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "UserHistory"
+        ],
+        "summary": "Create a new UserHistory",
+        "description": "Creates a new UserHistory and persists it to storage.",
+        "operationId": "createUserHistory",
+        "requestBody": {
+          "description": "UserHistory to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "history_time": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "operation": {
+                    "type": "string",
+                    "enum": [
+                      "INSERT",
+                      "UPDATE",
+                      "DELETE"
+                    ]
+                  },
+                  "ref": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "workos_user_id": {
+                    "type": "string"
+                  },
+                  "workos_org_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "created_at",
+                  "updated_at",
+                  "history_time",
+                  "operation",
+                  "workos_user_id"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "UserHistory created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/user-histories/{id}": {
+      "get": {
+        "tags": [
+          "UserHistory"
+        ],
+        "summary": "Find a UserHistory by ID",
+        "description": "Finds the UserHistory with the requested ID and returns it.",
+        "operationId": "readUserHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the UserHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "UserHistory with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "UserHistory"
+        ],
+        "summary": "Deletes a UserHistory by ID",
+        "description": "Deletes the UserHistory with the requested ID.",
+        "operationId": "deleteUserHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the UserHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "UserHistory with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "UserHistory"
+        ],
+        "summary": "Updates a UserHistory",
+        "description": "Updates a UserHistory and persists changes to storage.",
+        "operationId": "updateUserHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the UserHistory",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "UserHistory properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "UserHistory updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "List Users",
+        "description": "List Users.",
+        "operationId": "listUser",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer",
+              "maximum": 255,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result User list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Create a new User",
+        "description": "Creates a new User and persists it to storage.",
+        "operationId": "createUser",
+        "requestBody": {
+          "description": "User to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "workos_user_id": {
+                    "type": "string"
+                  },
+                  "workos_org_id": {
+                    "type": "string"
+                  },
+                  "subscription": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "ledger_entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "llm_usages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "oauth_connections": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "mcp_connections": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                },
+                "required": [
+                  "created_at",
+                  "updated_at",
+                  "workos_user_id"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Find a User by ID",
+        "description": "Finds the User with the requested ID and returns it.",
+        "operationId": "readUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the User",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Deletes a User by ID",
+        "description": "Deletes the User with the requested ID.",
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the User",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "User with requested ID was deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Updates a User",
+        "description": "Updates a User and persists changes to storage.",
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the User",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "User properties to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "workos_user_id": {
+                    "type": "string"
+                  },
+                  "workos_org_id": {
+                    "type": "string"
+                  },
+                  "subscription": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "ledger_entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "llm_usages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "oauth_connections": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "mcp_connections": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "User updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/users/{id}/ledger-entries": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "List attached LedgerEntries",
+        "description": "List attached LedgerEntries.",
+        "operationId": "listUserLedgerEntries",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the User",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result Users list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CreditLedger"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/users/{id}/llm-usages": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "List attached LlmUsages",
+        "description": "List attached LlmUsages.",
+        "operationId": "listUserLlmUsages",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the User",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result Users list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LLMUsage"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/users/{id}/mcp-connections": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "List attached McpConnections",
+        "description": "List attached McpConnections.",
+        "operationId": "listUserMcpConnections",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the User",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result Users list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MCPConnection"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/users/{id}/oauth-connections": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "List attached OauthConnections",
+        "description": "List attached OauthConnections.",
+        "operationId": "listUserOauthConnections",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the User",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "what page to render",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "itemsPerPage",
+            "in": "query",
+            "description": "item count to render per page",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "result Users list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OAuthConnection"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/users/{id}/subscription": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Find the attached Subscription",
+        "description": "Find the attached Subscription of the User with the given ID",
+        "operationId": "readUserSubscription",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the User",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription attached to User with requested ID was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreditLedger": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "delta": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ts": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "id",
+          "delta",
+          "reason",
+          "request_id",
+          "ts",
+          "user"
+        ]
+      },
+      "LLMUsage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "model": {
+            "type": "string"
+          },
+          "use_case": {
+            "type": "string"
+          },
+          "sub_use_case": {
+            "type": "string"
+          },
+          "agent_name": {
+            "type": "string"
+          },
+          "input_tokens": {
+            "type": "integer"
+          },
+          "output_tokens": {
+            "type": "integer"
+          },
+          "cost_units": {
+            "type": "integer"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ts": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "id",
+          "model",
+          "input_tokens",
+          "output_tokens",
+          "cost_units",
+          "request_id",
+          "ts",
+          "user"
+        ]
+      },
+      "LLMUsageHistory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "history_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "model": {
+            "type": "string"
+          },
+          "use_case": {
+            "type": "string"
+          },
+          "sub_use_case": {
+            "type": "string"
+          },
+          "agent_name": {
+            "type": "string"
+          },
+          "input_tokens": {
+            "type": "integer"
+          },
+          "output_tokens": {
+            "type": "integer"
+          },
+          "cost_units": {
+            "type": "integer"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ts": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "history_time",
+          "operation",
+          "model",
+          "input_tokens",
+          "output_tokens",
+          "cost_units",
+          "request_id",
+          "ts"
+        ]
+      },
+      "MCPConnection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "connector": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "refresh_token_encrypted": {
+            "type": "string",
+            "format": "byte"
+          },
+          "api_key_encrypted": {
+            "type": "string",
+            "format": "byte"
+          },
+          "connected_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_used_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "connector",
+          "audience",
+          "user"
+        ]
+      },
+      "MCPConnectionHistory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "history_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "connector": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "refresh_token_encrypted": {
+            "type": "string",
+            "format": "byte"
+          },
+          "api_key_encrypted": {
+            "type": "string",
+            "format": "byte"
+          },
+          "connected_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_used_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "history_time",
+          "operation",
+          "connector",
+          "audience"
+        ]
+      },
+      "OAuthConnection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "refresh_token_encrypted": {
+            "type": "string",
+            "format": "byte"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "provider",
+          "refresh_token_encrypted",
+          "user"
+        ]
+      },
+      "OAuthConnectionHistory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "history_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "refresh_token_encrypted": {
+            "type": "string",
+            "format": "byte"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "history_time",
+          "operation",
+          "provider",
+          "refresh_token_encrypted"
+        ]
+      },
+      "OAuthPending": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "payload_encrypted": {
+            "type": "string",
+            "format": "byte"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "state",
+          "provider",
+          "payload_encrypted",
+          "expires_at"
+        ]
+      },
+      "Subscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "trial_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sanctioned_credits": {
+            "type": "integer"
+          },
+          "stripe_customer_id": {
+            "type": "string"
+          },
+          "stripe_subscription_id": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "plan",
+          "status",
+          "sanctioned_credits",
+          "user"
+        ]
+      },
+      "SubscriptionHistory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "history_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "trial_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sanctioned_credits": {
+            "type": "integer"
+          },
+          "stripe_customer_id": {
+            "type": "string"
+          },
+          "stripe_subscription_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "history_time",
+          "operation",
+          "plan",
+          "status",
+          "sanctioned_credits"
+        ]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "email": {
+            "type": "string"
+          },
+          "workos_user_id": {
+            "type": "string"
+          },
+          "workos_org_id": {
+            "type": "string"
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/Subscription"
+          },
+          "ledger_entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreditLedger"
+            }
+          },
+          "llm_usages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LLMUsage"
+            }
+          },
+          "oauth_connections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OAuthConnection"
+            }
+          },
+          "mcp_connections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MCPConnection"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "workos_user_id"
+        ]
+      },
+      "UserHistory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "history_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "workos_user_id": {
+            "type": "string"
+          },
+          "workos_org_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "history_time",
+          "operation",
+          "workos_user_id"
+        ]
+      }
+    },
+    "responses": {
+      "400": {
+        "description": "invalid input, data invalid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "errors": {}
+              },
+              "required": [
+                "code",
+                "status"
+              ]
+            }
+          }
+        }
+      },
+      "403": {
+        "description": "insufficient permissions",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "errors": {}
+              },
+              "required": [
+                "code",
+                "status"
+              ]
+            }
+          }
+        }
+      },
+      "404": {
+        "description": "resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "errors": {}
+              },
+              "required": [
+                "code",
+                "status"
+              ]
+            }
+          }
+        }
+      },
+      "409": {
+        "description": "conflicting resources",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "errors": {}
+              },
+              "required": [
+                "code",
+                "status"
+              ]
+            }
+          }
+        }
+      },
+      "500": {
+        "description": "unexpected error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "errors": {}
+              },
+              "required": [
+                "code",
+                "status"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

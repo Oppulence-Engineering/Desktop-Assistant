@@ -1,0 +1,11 @@
+apiVersion: v2
+name: rowboat-api
+description: Rowboat desktop backend (Go) — billing, credits, LLM gateway, vendor proxies, OAuth connector brokering.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: Oppulence Engineering
+home: https://github.com/Oppulence-Engineering/rowboat
+sources:
+  - https://github.com/Oppulence-Engineering/rowboat/tree/main/apps/rowboat-api

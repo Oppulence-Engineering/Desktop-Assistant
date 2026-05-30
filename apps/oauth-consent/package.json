@@ -1,0 +1,26 @@
+{
+  "name": "oauth-consent",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Ory Hydra login + consent UI federating to WorkOS, with rowboat-api entitlement gating.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "jose": "^5.9.6",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
