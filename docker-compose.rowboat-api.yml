@@ -1,0 +1,112 @@
+# Local end-to-end stack for the rowboat-api backend on real Postgres + Redis.
+# Ports are offset to avoid clashing with the legacy docker-compose.yml.
+#
+#   # WORKOS_API_KEY is read from the gitignored root .env (auto-loaded by
+#   # compose). Sign in from the desktop to get a real token; then:
+#   docker compose -f docker-compose.rowboat-api.yml up --build -d
+#   curl localhost:18080/v1/config
+#
+# AUTH always uses REAL WorkOS (no Ory Hydra, no auth mock) — see
+# apps/rowboat-api/AUTH.md. devstack remains only as a DEV mock for the LLM
+# gateway and the Google OAuth broker (no real vendor keys needed for those).
+
+name: rowboat-api-stack
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: rowboat
+      POSTGRES_PASSWORD: rowboat
+      POSTGRES_DB: rowboat
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rowboat"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    # No host port — the api reaches it on the internal network (redis:6379).
+    # Inspect from the host with: docker compose exec redis redis-cli
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  devstack:
+    image: rowboat-api:local
+    entrypoint: ["/devstack"]
+    environment:
+      ADDR: ":8090"
+      # Issuer MUST be the host-reachable URL: it's the `iss` in minted tokens
+      # AND the issuer the desktop's openid-client discovers + validates. The
+      # api reaches the same service internally via JWKS_URL (devstack:8090).
+      ISSUER: "http://localhost:8090"
+      AUDIENCE: "rowboat-api"
+    ports:
+      - "8090:8090"
+    # Independent of the api: the api's JWKS verifier tolerates devstack coming
+    # up late (keyfunc refreshes on first unknown-kid token).
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/rowboat-api/Dockerfile
+    image: rowboat-api:local
+    ports:
+      # Host ports offset to 18080/18081/19090 so the desktop's own loopback
+      # OAuth/Composio callback servers (localhost:8080 / :8081) don't collide.
+      - "18080:8080" # HTTP + SSE
+      - "18081:8081" # gRPC
+      - "19090:9090" # metrics
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: info
+      DATABASE_URL: "postgres://rowboat:rowboat@postgres:5432/rowboat?sslmode=disable"
+      REDIS_URL: "redis://redis:6379/0"
+      AUTO_MIGRATE: "true"
+      DB_ENCRYPTION_KEY: "dev-encryption-key-32-bytes-min!!"
+      APP_URL: "http://localhost:18080"
+      # Auth = REAL WorkOS AuthKit (verified token shape: iss=https://api.workos.com,
+      # no `aud`, user id in `sub`). The desktop signs in via the rowboat-api
+      # WorkOS broker (/v1/auth/workos/*); see apps/rowboat-api/AUTH.md.
+      OIDC_ISSUER_URL: "https://api.workos.com"
+      TOKEN_ISSUER: "https://api.workos.com"
+      TOKEN_AUDIENCE: "" # WorkOS access tokens carry no aud → skip the check
+      JWKS_URL: "https://api.workos.com/sso/jwks/client_01JS1THN6FR45322P2CAV2WWB0"
+      # LLM gateway. REAL OpenAI for openai/* models (key from the gitignored
+      # root .env; OPENAI_BASE_URL unset → api.openai.com). anthropic/* + google/*
+      # still route to the devstack mock (no OpenRouter key), so those don't error.
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?set OPENAI_API_KEY in the root .env}"
+      OPENROUTER_BASE_URL: "http://devstack:8090"
+      OPENROUTER_API_KEY: "dev-dummy"
+      # Webhook / internal shared secrets (for /oauth-hooks and /v1/internal).
+      HOOK_HMAC_SECRET: "dev-hook-secret"
+      INTERNAL_API_SECRET: "dev-internal-secret"
+      FREE_TIER_CREDITS: "10000"
+      # Google OAuth broker → mock token endpoint on devstack. Dummy client
+      # credentials satisfy the "configured" check so /v1/google-oauth/refresh
+      # returns a (fake) access token instead of 502.
+      # REAL Google OAuth. client_id/secret come from the gitignored root .env
+      # (user named them GOOGLE_CLIENT_ID/SECRET → mapped to the api's vars).
+      # AUTHORIZE_URL + TOKEN_URL omitted → real accounts.google.com +
+      # oauth2.googleapis.com. REDIRECT_URI must match the Google Cloud entry.
+      GOOGLE_OAUTH_CLIENT_ID: "${GOOGLE_CLIENT_ID:?set GOOGLE_CLIENT_ID in root .env}"
+      GOOGLE_OAUTH_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:?set GOOGLE_CLIENT_SECRET in root .env}"
+      GOOGLE_REDIRECT_URI: "http://localhost:18080/oauth/google/callback"
+      # WorkOS sign-in broker → REAL WorkOS. client_id is public (literal); the
+      # secret API key comes from the gitignored root .env (compose auto-loads
+      # it for ${...} substitution). Both base URLs are api.workos.com in prod.
+      WORKOS_CLIENT_ID: "client_01JS1THN6FR45322P2CAV2WWB0"
+      WORKOS_API_KEY: "${WORKOS_API_KEY:?set WORKOS_API_KEY in the root .env (see apps/rowboat-api/AUTH.md)}"
+      WORKOS_BASE_URL: "https://api.workos.com"
+      WORKOS_AUTHORIZE_BASE_URL: "https://api.workos.com"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

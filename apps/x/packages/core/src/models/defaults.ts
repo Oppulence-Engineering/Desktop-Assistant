@@ -4,10 +4,13 @@ import { IModelConfigRepo } from "./repo.js";
 import { isSignedIn } from "../account/account.js";
 import container from "../di/container.js";
 
-const SIGNED_IN_DEFAULT_MODEL = "gpt-5.4";
+// Signed-in defaults must be ids the rowboat-api gateway actually serves (see
+// its pricing/catalog: openai/*, anthropic/*, google/gemini-2.5*). openai/* is
+// routed to real OpenAI; the others need an OpenRouter key or hit the dev mock.
+const SIGNED_IN_DEFAULT_MODEL = "openai/gpt-4.1-mini";
 const SIGNED_IN_DEFAULT_PROVIDER = "rowboat";
-const SIGNED_IN_KG_MODEL = "google/gemini-3.1-flash-lite";
-const SIGNED_IN_LIVE_NOTE_AGENT_MODEL = "google/gemini-3.1-flash-lite";
+const SIGNED_IN_KG_MODEL = "openai/gpt-4.1-mini";
+const SIGNED_IN_LIVE_NOTE_AGENT_MODEL = "openai/gpt-4.1-mini";
 
 /**
  * The single source of truth for "what model+provider should we use when

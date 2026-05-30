@@ -106,25 +106,18 @@ apps/rowboat-api/
 
 ### Bootstrapping from podinfo
 
-**Add podinfo to this repo as the scaffolding starter for `apps/rowboat-api`.** Don't fork it as a separate repo — vendor the relevant pieces into `apps/rowboat-api/` and delete the rest. podinfo's value is its operational scaffolding (Dockerfile, OTel wiring, structured logging, health probes, Prometheus metrics, chi routing patterns, Makefile), not its business logic.
+**Clone the podinfo template into `apps/rowboat-api` and build off of it.** podinfo is a production-grade Go microservice template; we take the whole thing as our starting point rather than re-deriving the service skeleton by hand. Clone it in place, detach it from podinfo's git history so it becomes our code, then strip the demo surface and build our endpoints on top of the operational scaffolding it ships with (Dockerfile, OTel wiring, structured logging, health probes, Prometheus metrics, chi routing patterns, Makefile). The business logic is ours; the scaffolding is podinfo's.
 
-#### One-time bootstrap procedure
+#### One-time clone procedure
 
 ```bash
-# In the rowboat fork
-git clone --depth=1 https://github.com/stefanprodan/podinfo /tmp/podinfo
-mkdir -p apps/rowboat-api
-# Cherry-pick scaffolding files into apps/rowboat-api/
-cp -r /tmp/podinfo/Dockerfile           apps/rowboat-api/
-cp -r /tmp/podinfo/Makefile             apps/rowboat-api/
-cp -r /tmp/podinfo/pkg/server           apps/rowboat-api/internal/server-bootstrap   # rename + retool
-cp -r /tmp/podinfo/pkg/logger           apps/rowboat-api/internal/logger
-cp -r /tmp/podinfo/pkg/version          apps/rowboat-api/internal/version
-cp    /tmp/podinfo/cmd/podinfo/main.go  apps/rowboat-api/cmd/server/main.go          # then rewrite
-rm -rf /tmp/podinfo
+# In the rowboat fork — clone the podinfo template directly into place
+git clone https://github.com/stefanprodan/podinfo apps/rowboat-api
+rm -rf apps/rowboat-api/.git          # detach from podinfo's history — this is our code now
+git add apps/rowboat-api              # stage the cloned template in the fork
 ```
 
-This is a one-shot copy. After it, `apps/rowboat-api/` is a normal Go module in our tree — no upstream sync, no submodule, no podinfo dependency. Future podinfo changes don't flow in automatically; we cherry-pick if we want.
+After this, `apps/rowboat-api/` is the full podinfo template living as a normal Go module in our tree — no submodule, no upstream sync, no podinfo dependency. We build directly on the cloned scaffolding: rename the module, delete the demo surface (see [What we delete from podinfo](#what-we-delete-from-podinfo)), and mount our own routes (see [What we tune / add on top](#what-we-tune--add-on-top)). Future podinfo changes don't flow in automatically; we cherry-pick if we want.
 
 #### What we keep from podinfo
 

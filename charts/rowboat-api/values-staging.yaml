@@ -1,0 +1,27 @@
+# Staging overrides. Apply with:
+#   helm upgrade --install rowboat-api charts/rowboat-api \
+#     -f charts/rowboat-api/values-staging.yaml -n rowboat-staging
+replicaCount: 1
+
+ingress:
+  host: api.x.staging.solomon-ai.co
+
+autoscaling:
+  enabled: false
+
+serviceMonitor:
+  enabled: true
+
+config:
+  ENVIRONMENT: staging
+  LOG_LEVEL: debug
+  AUTO_MIGRATE: "true" # staging may auto-migrate for fast iteration
+  APP_URL: https://app.staging.solomon-ai.co
+  OIDC_ISSUER_URL: https://oauth.staging.solomon-ai.co
+  TOKEN_ISSUER: https://oauth.staging.solomon-ai.co
+  JWKS_URL: https://oauth.staging.solomon-ai.co/.well-known/jwks.json
+  ORY_PUBLIC_URL: https://oauth.staging.solomon-ai.co
+  PUBLIC_BASE_URL: https://api.x.staging.solomon-ai.co
+  INFISICAL_ENVIRONMENT: staging
+
+existingSecret: rowboat-api-secrets

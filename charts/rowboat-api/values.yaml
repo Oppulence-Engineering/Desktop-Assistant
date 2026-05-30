@@ -1,0 +1,122 @@
+# Default values for rowboat-api. Override per environment via
+# values-{production,staging}.yaml.
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/oppulence-engineering/rowboat-api
+  pullPolicy: IfNotPresent
+  tag: "" # defaults to .Chart.AppVersion
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Ports the container listens on (must match the binary's defaults / env).
+ports:
+  http: 8080    # public REST + SSE
+  grpc: 8081    # reserved (entproto)
+  metrics: 9090 # prometheus
+
+service:
+  type: ClusterIP
+  annotations: {}
+
+ingress:
+  enabled: true
+  className: nginx
+  host: api.x.solomon-ai.co
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # SSE: never buffer or prematurely time out streamed LLM responses.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  tls:
+    enabled: true
+    secretName: rowboat-api-tls
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# Liveness/readiness probes hit the binary's health endpoints.
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  readiness:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+# Prometheus Operator ServiceMonitor (set false if using annotation scraping).
+serviceMonitor:
+  enabled: false
+  interval: 30s
+
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  fsGroup: 65532
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Non-secret configuration, surfaced as env via a ConfigMap.
+config:
+  ENVIRONMENT: production
+  LOG_LEVEL: info
+  HTTP_ADDR: ":8080"
+  METRICS_ADDR: ":9090"
+  GRPC_ADDR: ":8081"
+  AUTO_MIGRATE: "false" # production uses versioned migrations
+  APP_URL: https://app.solomon-ai.co
+  OIDC_ISSUER_URL: https://oauth.solomon-ai.co
+  WEBSOCKET_API_URL: ""
+  TOKEN_ISSUER: https://oauth.solomon-ai.co
+  TOKEN_AUDIENCE: rowboat-api
+  JWKS_URL: https://oauth.solomon-ai.co/.well-known/jwks.json
+  ORY_PUBLIC_URL: https://oauth.solomon-ai.co
+  PUBLIC_BASE_URL: https://api.x.solomon-ai.co
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability:4318
+  INFISICAL_ENABLED: "true"
+
+# Secret env. In production these are projected from an existing Secret
+# (existingSecret) rather than templated into the chart. When existingSecret is
+# empty, the chart creates a Secret from `secretValues` (dev only).
+existingSecret: rowboat-api-secrets
+secretValues: {}
+  # DATABASE_URL: ""
+  # REDIS_URL: ""
+  # DB_ENCRYPTION_KEY: ""
+  # WORKOS_API_KEY: ""
+  # HOOK_HMAC_SECRET: ""
+  # INTERNAL_API_SECRET: ""
+  # ORY_BROKER_CLIENT_ID: ""
+  # ORY_BROKER_CLIENT_SECRET: ""
+  # INFISICAL_TOKEN: ""
+  # INFISICAL_PROJECT_ID: ""

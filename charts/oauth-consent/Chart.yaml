@@ -1,0 +1,9 @@
+apiVersion: v2
+name: oauth-consent
+description: Ory Hydra login + consent UI (WorkOS federation, rowboat-api entitlement gating).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/Oppulence-Engineering/rowboat
+sources:
+  - https://github.com/Oppulence-Engineering/rowboat/tree/main/apps/oauth-consent

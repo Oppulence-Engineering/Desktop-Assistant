@@ -212,9 +212,15 @@ export class AgentRuntime implements IAgentRuntime {
             }
         } catch (error) {
             console.error(`Run ${runId} failed:`, error);
+            // Full detail (incl. stack) goes to the console above; the event
+            // carries a clean, user-facing message — never a raw stack dump or
+            // an object serialization that renders as "name: ClientError".
             const message = error instanceof Error
-                ? (error.stack || error.message || error.name)
-                : typeof error === "string" ? error : JSON.stringify(error);
+                ? (error.message || error.name || "The run failed unexpectedly.")
+                : typeof error === "string" ? error
+                : (error && typeof error === "object" && typeof (error as { message?: unknown }).message === "string")
+                    ? (error as { message: string }).message
+                    : "The run failed unexpectedly.";
             const errorEvent: z.infer<typeof RunEvent> = {
                 runId,
                 type: "error",

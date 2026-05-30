@@ -22,12 +22,24 @@ rowboat/
 │   ├── x/                 # Electron desktop app (focus of this doc)
 │   ├── rowboat/           # Next.js web dashboard
 │   ├── rowboatx/          # Next.js frontend
+│   ├── rowboat-api/       # Go desktop backend (billing, LLM gateway, OAuth broker)
+│   ├── oauth-consent/     # Ory Hydra login + consent UI (TS/Express) — DEFERRED (see rowboat-api/AUTH.md)
 │   ├── cli/               # CLI tool
 │   ├── python-sdk/        # Python SDK
 │   └── docs/              # Documentation site
+├── packages/
+│   ├── oauth-resource-server-go/   # JWT/JWKS verification lib (Go)
+│   └── oauth-resource-server-ts/   # JWT/JWKS verification lib (TS, @oppulence/oauth-resource-server)
+├── charts/                # Helm: rowboat-api, oauth-consent, hydra values
+├── docs/                  # IMPLEMENTATION_PLAN, CONNECTOR_SUITE, BACKEND_DEPLOYMENT
 ├── CLAUDE.md              # This file
 └── README.md              # User-facing readme
 ```
+
+The Go backend (`apps/rowboat-api`) replaces the closed hosted backend the
+desktop used. See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md),
+[docs/CONNECTOR_SUITE.md](docs/CONNECTOR_SUITE.md), and
+[docs/BACKEND_DEPLOYMENT.md](docs/BACKEND_DEPLOYMENT.md).
 
 ## Electron App Architecture (`apps/x`)
 

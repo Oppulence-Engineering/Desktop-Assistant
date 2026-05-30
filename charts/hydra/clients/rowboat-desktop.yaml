@@ -1,0 +1,67 @@
+# Provisions the OAuth 2.0 clients Rowboat needs, via a one-shot Job that calls
+# the Hydra Admin API (cluster-internal). Idempotent: re-running updates the
+# clients. Apply after Hydra is up:
+#
+#   kubectl apply -n ory -f charts/hydra/clients/rowboat-desktop.yaml
+#
+# Two clients are created:
+#   1. rowboat-desktop          — PUBLIC client (PKCE, no secret) for sign-in.
+#   2. rowboat-connector-broker — CONFIDENTIAL client used by rowboat-api to
+#      broker per-product connector tokens (auth-code + refresh).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rowboat-oauth-clients
+  labels:
+    app.kubernetes.io/part-of: rowboat
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      name: rowboat-oauth-clients
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: create-clients
+          image: oryd/hydra:v2.2.0
+          env:
+            - name: HYDRA_ADMIN_URL
+              value: http://hydra-admin.ory.svc.cluster.local:4445
+            # Confidential broker client secret, injected from a Secret.
+            - name: BROKER_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: rowboat-api-secrets
+                  key: ORY_BROKER_CLIENT_SECRET
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "Creating rowboat-desktop (public, PKCE)..."
+              hydra create oauth2-client \
+                --endpoint "$HYDRA_ADMIN_URL" \
+                --name "Rowboat Desktop" \
+                --grant-type authorization_code,refresh_token \
+                --response-type code \
+                --token-endpoint-auth-method none \
+                --scope openid,offline_access,email,profile \
+                --redirect-uri "http://127.0.0.1/callback" \
+                --redirect-uri "rowboat://callback" \
+                --skip-consent=false || echo "rowboat-desktop may already exist"
+
+              echo "Creating rowboat-connector-broker (confidential)..."
+              hydra create oauth2-client \
+                --endpoint "$HYDRA_ADMIN_URL" \
+                --name "Rowboat Connector Broker" \
+                --grant-type authorization_code,refresh_token \
+                --response-type code \
+                --token-endpoint-auth-method client_secret_basic \
+                --secret "$BROKER_CLIENT_SECRET" \
+                --scope openid,offline_access,invoices:read,customers:read,transactions:read,ar:read,collections:read \
+                --redirect-uri "https://api.x.solomon-ai.co/v1/connections/canvas/callback" \
+                --redirect-uri "https://api.x.solomon-ai.co/v1/connections/corinthian/callback" \
+                --redirect-uri "https://api.x.solomon-ai.co/v1/connections/billflow/callback" \
+                --audience canvas-api,corinthian-api,billflow-api || echo "broker may already exist"
+              echo "done"

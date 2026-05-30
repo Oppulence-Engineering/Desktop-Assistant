@@ -1,0 +1,74 @@
+# Values for the UPSTREAM ory/hydra Helm chart (https://k8s.ory.sh/helm/charts).
+# This is NOT a wrapper chart — it is the per-environment values file the plan
+# calls for. Deploy with:
+#
+#   helm repo add ory https://k8s.ory.sh/helm/charts
+#   helm upgrade --install hydra ory/hydra \
+#     -n ory -f charts/hydra/values-production.yaml
+#
+# The `hydra` Postgres database lives in the managed Postgres instance; the DSN
+# and secrets are supplied via the existing Secret `hydra-secrets` with keys:
+#   dsn, secretsSystem, secretsCookie
+
+hydra:
+  existingSecret: hydra-secrets
+
+  config:
+    urls:
+      self:
+        issuer: https://oauth.solomon-ai.co
+        public: https://oauth.solomon-ai.co
+      # Login/consent are served by apps/oauth-consent at consent.solomon-ai.co.
+      login: https://consent.solomon-ai.co/login
+      consent: https://consent.solomon-ai.co/consent
+      logout: https://consent.solomon-ai.co/logout
+    # CRITICAL: JWT access tokens so rowboat-api and every product MCP can
+    # verify tokens offline against Hydra's JWKS (no token introspection call).
+    strategies:
+      access_token: jwt
+    oidc:
+      subject_identifiers:
+        supported_types:
+          - public
+    ttl:
+      access_token: 1h
+      refresh_token: 720h
+      id_token: 1h
+      auth_code: 10m
+    oauth2:
+      expose_internal_errors: false
+
+  automigration:
+    enabled: true
+    type: job
+
+  dangerousForceHttp: false
+
+deployment:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+ingress:
+  public:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: oauth.solomon-ai.co
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: hydra-public-tls
+        hosts:
+          - oauth.solomon-ai.co
+  # Admin API stays cluster-internal (never exposed publicly).
+  admin:
+    enabled: false

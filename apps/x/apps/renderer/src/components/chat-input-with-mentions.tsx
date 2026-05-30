@@ -259,6 +259,12 @@ function ChatInputInner({
   // Load currently configured work directory
   const loadWorkDir = useCallback(async () => {
     try {
+      // Optional config — check existence first so a missing file doesn't
+      // reject in the main process (which Electron logs as handler noise).
+      if (!(await window.ipc.invoke('workspace:exists', { path: 'config/workdir.json' })).exists) {
+        setWorkDir(null)
+        return
+      }
       const result = await window.ipc.invoke('workspace:readFile', { path: 'config/workdir.json' })
       const parsed = JSON.parse(result.data)
       const value = typeof parsed?.path === 'string' ? parsed.path.trim() : ''
@@ -314,9 +320,13 @@ function ChatInputInner({
       }
       let available = false
       try {
-        const raw = await window.ipc.invoke('workspace:readFile', { path: 'config/exa-search.json' })
-        const config = JSON.parse(raw.data)
-        if (config.apiKey) available = true
+        // Optional config — existence check first to avoid a main-process
+        // handler rejection (logged as noise) when the file isn't present.
+        if ((await window.ipc.invoke('workspace:exists', { path: 'config/exa-search.json' })).exists) {
+          const raw = await window.ipc.invoke('workspace:readFile', { path: 'config/exa-search.json' })
+          const config = JSON.parse(raw.data)
+          if (config.apiKey) available = true
+        }
       } catch { /* not configured */ }
       setSearchAvailable(available)
     }
