@@ -59,16 +59,28 @@ jobs:
           set -euo pipefail
 
           EXPECTED_BIN="apps/x/apps/main/out/Rowboat-linux-x64/rowboat"
-          BIN="$EXPECTED_BIN"
+          BIN=""
 
-          if [ ! -f "$BIN" ]; then
-            echo "Packaged binary not found at $EXPECTED_BIN; searching package output." >&2
-            find . -maxdepth 6 -type d -name out -print -exec find {} -maxdepth 3 -type f -print \; | sort | sed 's/^/  /' >&2
-            BIN="$(find . -path '*/out/*/rowboat' -type f -perm -111 | head -n 1)"
-          fi
+          for attempt in $(seq 1 60); do
+            if [ -f "$EXPECTED_BIN" ]; then
+              BIN="$EXPECTED_BIN"
+              break
+            fi
+
+            BIN="$(find . -path '*/out/*/rowboat' -type f -perm -111 -print -quit)"
+            if [ -n "$BIN" ]; then
+              break
+            fi
+
+            if [ "$attempt" -eq 1 ]; then
+              echo "Waiting for packaged binary from Forge..." >&2
+            fi
+            sleep 1
+          done
 
           if [ -z "${BIN:-}" ] || [ ! -f "$BIN" ]; then
-            echo "Packaged binary not found." >&2
+            echo "Packaged binary not found at $EXPECTED_BIN; searched package output." >&2
+            find . -maxdepth 6 -type d -name out -print -exec find {} -maxdepth 3 -type f -print \; | sort | sed 's/^/  /' >&2
             exit 1
           fi
 
