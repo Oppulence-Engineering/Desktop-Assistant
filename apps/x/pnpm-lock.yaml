@@ -123,6 +123,9 @@ importers:
       '@electron-forge/publisher-s3':
         specifier: ^7.10.2
         version: 7.11.2
+      '@electron/packager':
+        specifier: 18.4.4
+        version: 18.4.4
       '@types/electron-squirrel-startup':
         specifier: ^1.0.2
         version: 1.0.2

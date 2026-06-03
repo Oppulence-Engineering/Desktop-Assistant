@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'apps/x/**'
+      - '.github/scripts/x-smoke-package-linux.mjs'
       - '.github/workflows/x-smoke-test.yml'
 
 jobs:
@@ -48,10 +49,7 @@ jobs:
         working-directory: apps/x
 
       - name: Package electron app (no publish, no signing)
-        env:
-          npm_config_node_linker: hoisted
-        run: ./node_modules/.bin/electron-forge package --arch=x64 --platform=linux
-        working-directory: apps/x/apps/main
+        run: node .github/scripts/x-smoke-package-linux.mjs
 
       - name: Verify packaged binary exists
         id: packaged-binary
