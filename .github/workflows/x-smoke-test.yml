@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'apps/x/**'
+      - '.github/scripts/x-smoke-package-linux.mjs'
       - '.github/workflows/x-smoke-test.yml'
 
 jobs:
@@ -21,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 22
           cache: 'pnpm'
           cache-dependency-path: 'apps/x/pnpm-lock.yaml'
 
@@ -48,17 +49,40 @@ jobs:
         working-directory: apps/x
 
       - name: Package electron app (no publish, no signing)
-        run: npx electron-forge package --arch=x64 --platform=linux
-        working-directory: apps/x/apps/main
+        run: node .github/scripts/x-smoke-package-linux.mjs
 
       - name: Verify packaged binary exists
+        id: packaged-binary
         run: |
-          BIN="apps/x/apps/main/out/Rowboat-linux-x64/rowboat"
-          if [ ! -f "$BIN" ]; then
-            echo "Packaged binary not found at $BIN" >&2
-            ls -la apps/x/apps/main/out/ || true
+          set -euo pipefail
+
+          EXPECTED_BIN="apps/x/apps/main/out/Rowboat-linux-x64/rowboat"
+          BIN=""
+
+          for attempt in $(seq 1 60); do
+            if [ -f "$EXPECTED_BIN" ]; then
+              BIN="$EXPECTED_BIN"
+              break
+            fi
+
+            BIN="$(find . -path '*/out/*/rowboat' -type f -perm -111 -print -quit)"
+            if [ -n "$BIN" ]; then
+              break
+            fi
+
+            if [ "$attempt" -eq 1 ]; then
+              echo "Waiting for packaged binary from Forge..." >&2
+            fi
+            sleep 1
+          done
+
+          if [ -z "${BIN:-}" ] || [ ! -f "$BIN" ]; then
+            echo "Packaged binary not found at $EXPECTED_BIN; searched package output." >&2
+            find . -maxdepth 6 -type d -name out -print -exec find {} -maxdepth 3 -type f -print \; | sort | sed 's/^/  /' >&2
             exit 1
           fi
+
+          echo "bin=$BIN" >> "$GITHUB_OUTPUT"
           file "$BIN"
 
       - name: Boot app under xvfb (5 second smoke)
@@ -69,7 +93,7 @@ jobs:
           Xvfb :99 -screen 0 1280x720x24 &
           sleep 2
           # Launch and capture exit / pid liveness
-          ./apps/x/apps/main/out/Rowboat-linux-x64/rowboat --no-sandbox > smoke.log 2>&1 &
+          "${{ steps.packaged-binary.outputs.bin }}" --no-sandbox > smoke.log 2>&1 &
           APP_PID=$!
           sleep 5
           if ! kill -0 $APP_PID 2>/dev/null; then
