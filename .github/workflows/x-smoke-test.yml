@@ -52,13 +52,25 @@ jobs:
         working-directory: apps/x/apps/main
 
       - name: Verify packaged binary exists
+        id: packaged-binary
         run: |
-          BIN="apps/x/apps/main/out/Rowboat-linux-x64/rowboat"
+          set -euo pipefail
+
+          EXPECTED_BIN="apps/x/apps/main/out/Rowboat-linux-x64/rowboat"
+          BIN="$EXPECTED_BIN"
+
           if [ ! -f "$BIN" ]; then
-            echo "Packaged binary not found at $BIN" >&2
-            ls -la apps/x/apps/main/out/ || true
+            echo "Packaged binary not found at $EXPECTED_BIN; searching package output." >&2
+            find . -maxdepth 6 -type d -name out -print -exec find {} -maxdepth 3 -type f -print \; | sort | sed 's/^/  /' >&2
+            BIN="$(find . -path '*/out/*/rowboat' -type f -perm -111 | head -n 1)"
+          fi
+
+          if [ -z "${BIN:-}" ] || [ ! -f "$BIN" ]; then
+            echo "Packaged binary not found." >&2
             exit 1
           fi
+
+          echo "bin=$BIN" >> "$GITHUB_OUTPUT"
           file "$BIN"
 
       - name: Boot app under xvfb (5 second smoke)
@@ -69,7 +81,7 @@ jobs:
           Xvfb :99 -screen 0 1280x720x24 &
           sleep 2
           # Launch and capture exit / pid liveness
-          ./apps/x/apps/main/out/Rowboat-linux-x64/rowboat --no-sandbox > smoke.log 2>&1 &
+          "${{ steps.packaged-binary.outputs.bin }}" --no-sandbox > smoke.log 2>&1 &
           APP_PID=$!
           sleep 5
           if ! kill -0 $APP_PID 2>/dev/null; then
