@@ -48,7 +48,9 @@ jobs:
         working-directory: apps/x
 
       - name: Package electron app (no publish, no signing)
-        run: npx electron-forge package --arch=x64 --platform=linux
+        env:
+          npm_config_node_linker: hoisted
+        run: ./node_modules/.bin/electron-forge package --arch=x64 --platform=linux
         working-directory: apps/x/apps/main
 
       - name: Verify packaged binary exists
