@@ -51,6 +51,7 @@ import {
 } from "./deeplink.js";
 import { startCrashReporter, processPendingCrashDumps, registerLiveCrashListeners } from "./crash-reporter.js";
 import { initializeExecutionEnvironment } from "./execution-environment.js";
+import { disconnectGoogleIfScopesStale } from "./oauth-handler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -268,7 +269,7 @@ function createWindow() {
   return win;
 }
 
-function startBackgroundServices() {
+async function startBackgroundServices() {
   // PostHog identify() is idempotent — call it on every startup so existing
   // signed-in installs (and every cold start of v0.3.4+) get re-identified.
   // Otherwise main-process events stay anonymous until the user re-signs-in.
@@ -312,6 +313,11 @@ function startBackgroundServices() {
   registerConsumer(liveNoteEventConsumer);
   registerConsumer(backgroundTaskEventConsumer);
   initEventProcessor();
+
+  // If the stored Google grant predates a scope change (only old scopes),
+  // disconnect it now so the user re-connects with the current scopes before
+  // any Google sync runs against the stale grant.
+  await disconnectGoogleIfScopesStale();
 
   // start gmail sync
   initGmailSync();
@@ -390,7 +396,11 @@ app.whenReady().then(async () => {
     console.error('Failed to initialize execution environment:', error);
   });
 
-  setTimeout(startBackgroundServices, 750);
+  setTimeout(() => {
+    startBackgroundServices().catch((error) => {
+      console.error('[Main] Failed to start background services:', error);
+    });
+  }, 750);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
