@@ -39,14 +39,14 @@ probes:
     path: /healthz
     initialDelaySeconds: 15
     periodSeconds: 10
-    timeoutSeconds: 5
+    timeoutSeconds: 10
     failureThreshold: 6
   readiness:
     path: /readyz
     initialDelaySeconds: 10
     periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 6
+    timeoutSeconds: 30
+    failureThreshold: 12
 
 config:
   ENVIRONMENT: development
@@ -79,6 +79,23 @@ config:
   GOOGLE_AUTHORIZE_URL: http://localhost:18090/o/oauth2/v2/auth
   GOOGLE_TOKEN_URL: http://rowboat-api-devstack:8090/v1/google-oauth-mock/token
   GOOGLE_REDIRECT_URI: http://localhost:18080/oauth/google/callback
+  TEMPORAL_ENABLED: "true"
+  TEMPORAL_ADDRESS: rowboat-api-temporal:7233
+  TEMPORAL_NAMESPACE: default
+  TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
+  TEMPORAL_WORKER_ENABLED: "false"
+  READINESS_TIMEOUT: 20s
+
+worker:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
 
 existingSecret: rowboat-api-secrets
 secretValues: {}

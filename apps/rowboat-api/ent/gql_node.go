@@ -8,6 +8,10 @@ import (
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -23,6 +27,26 @@ import (
 type Noder interface {
 	IsNode()
 }
+
+var backgroundtaskImplementors = []string{"BackgroundTask", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*BackgroundTask) IsNode() {}
+
+var backgroundtaskartifactImplementors = []string{"BackgroundTaskArtifact", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*BackgroundTaskArtifact) IsNode() {}
+
+var backgroundtaskrunImplementors = []string{"BackgroundTaskRun", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*BackgroundTaskRun) IsNode() {}
+
+var backgroundtaskruneventImplementors = []string{"BackgroundTaskRunEvent", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*BackgroundTaskRunEvent) IsNode() {}
 
 var creditledgerImplementors = []string{"CreditLedger", "Node"}
 
@@ -117,6 +141,42 @@ func (c *Client) Noder(ctx context.Context, id uuid.UUID, opts ...NodeOption) (_
 
 func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, error) {
 	switch table {
+	case backgroundtask.Table:
+		query := c.BackgroundTask.Query().
+			Where(backgroundtask.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, backgroundtaskImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case backgroundtaskartifact.Table:
+		query := c.BackgroundTaskArtifact.Query().
+			Where(backgroundtaskartifact.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, backgroundtaskartifactImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case backgroundtaskrun.Table:
+		query := c.BackgroundTaskRun.Query().
+			Where(backgroundtaskrun.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, backgroundtaskrunImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case backgroundtaskrunevent.Table:
+		query := c.BackgroundTaskRunEvent.Query().
+			Where(backgroundtaskrunevent.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, backgroundtaskruneventImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case creditledger.Table:
 		query := c.CreditLedger.Query().
 			Where(creditledger.ID(id))
@@ -253,6 +313,70 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case backgroundtask.Table:
+		query := c.BackgroundTask.Query().
+			Where(backgroundtask.IDIn(ids...))
+		query, err := query.CollectFields(ctx, backgroundtaskImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case backgroundtaskartifact.Table:
+		query := c.BackgroundTaskArtifact.Query().
+			Where(backgroundtaskartifact.IDIn(ids...))
+		query, err := query.CollectFields(ctx, backgroundtaskartifactImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case backgroundtaskrun.Table:
+		query := c.BackgroundTaskRun.Query().
+			Where(backgroundtaskrun.IDIn(ids...))
+		query, err := query.CollectFields(ctx, backgroundtaskrunImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case backgroundtaskrunevent.Table:
+		query := c.BackgroundTaskRunEvent.Query().
+			Where(backgroundtaskrunevent.IDIn(ids...))
+		query, err := query.CollectFields(ctx, backgroundtaskruneventImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case creditledger.Table:
 		query := c.CreditLedger.Query().
 			Where(creditledger.IDIn(ids...))

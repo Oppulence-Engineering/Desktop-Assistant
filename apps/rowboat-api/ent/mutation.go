@@ -11,6 +11,10 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -37,6 +41,10 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeBackgroundTask         = "BackgroundTask"
+	TypeBackgroundTaskArtifact = "BackgroundTaskArtifact"
+	TypeBackgroundTaskRun      = "BackgroundTaskRun"
+	TypeBackgroundTaskRunEvent = "BackgroundTaskRunEvent"
 	TypeCreditLedger           = "CreditLedger"
 	TypeLLMUsage               = "LLMUsage"
 	TypeLLMUsageHistory        = "LLMUsageHistory"
@@ -50,6 +58,6043 @@ const (
 	TypeUser                   = "User"
 	TypeUserHistory            = "UserHistory"
 )
+
+// BackgroundTaskMutation represents an operation that mutates the BackgroundTask nodes in the graph.
+type BackgroundTaskMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *uuid.UUID
+	created_at        *time.Time
+	updated_at        *time.Time
+	slug              *string
+	name              *string
+	instructions      *string
+	active            *bool
+	triggers_json     *string
+	model             *string
+	provider          *string
+	execution_target  *string
+	task_created_at   *time.Time
+	last_attempt_at   *time.Time
+	last_run_id       *string
+	last_run_at       *time.Time
+	last_run_summary  *string
+	last_run_error    *string
+	revision          *int
+	addrevision       *int
+	clearedFields     map[string]struct{}
+	user              *uuid.UUID
+	cleareduser       bool
+	artifact          *uuid.UUID
+	clearedartifact   bool
+	runs              map[uuid.UUID]struct{}
+	removedruns       map[uuid.UUID]struct{}
+	clearedruns       bool
+	run_events        map[uuid.UUID]struct{}
+	removedrun_events map[uuid.UUID]struct{}
+	clearedrun_events bool
+	done              bool
+	oldValue          func(context.Context) (*BackgroundTask, error)
+	predicates        []predicate.BackgroundTask
+}
+
+var _ ent.Mutation = (*BackgroundTaskMutation)(nil)
+
+// backgroundtaskOption allows management of the mutation configuration using functional options.
+type backgroundtaskOption func(*BackgroundTaskMutation)
+
+// newBackgroundTaskMutation creates new mutation for the BackgroundTask entity.
+func newBackgroundTaskMutation(c config, op Op, opts ...backgroundtaskOption) *BackgroundTaskMutation {
+	m := &BackgroundTaskMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeBackgroundTask,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withBackgroundTaskID sets the ID field of the mutation.
+func withBackgroundTaskID(id uuid.UUID) backgroundtaskOption {
+	return func(m *BackgroundTaskMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *BackgroundTask
+		)
+		m.oldValue = func(ctx context.Context) (*BackgroundTask, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().BackgroundTask.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withBackgroundTask sets the old BackgroundTask of the mutation.
+func withBackgroundTask(node *BackgroundTask) backgroundtaskOption {
+	return func(m *BackgroundTaskMutation) {
+		m.oldValue = func(context.Context) (*BackgroundTask, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m BackgroundTaskMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m BackgroundTaskMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of BackgroundTask entities.
+func (m *BackgroundTaskMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *BackgroundTaskMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *BackgroundTaskMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().BackgroundTask.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *BackgroundTaskMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *BackgroundTaskMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *BackgroundTaskMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *BackgroundTaskMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *BackgroundTaskMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *BackgroundTaskMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSlug sets the "slug" field.
+func (m *BackgroundTaskMutation) SetSlug(s string) {
+	m.slug = &s
+}
+
+// Slug returns the value of the "slug" field in the mutation.
+func (m *BackgroundTaskMutation) Slug() (r string, exists bool) {
+	v := m.slug
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSlug returns the old "slug" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldSlug(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSlug is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSlug requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSlug: %w", err)
+	}
+	return oldValue.Slug, nil
+}
+
+// ResetSlug resets all changes to the "slug" field.
+func (m *BackgroundTaskMutation) ResetSlug() {
+	m.slug = nil
+}
+
+// SetName sets the "name" field.
+func (m *BackgroundTaskMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *BackgroundTaskMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *BackgroundTaskMutation) ResetName() {
+	m.name = nil
+}
+
+// SetInstructions sets the "instructions" field.
+func (m *BackgroundTaskMutation) SetInstructions(s string) {
+	m.instructions = &s
+}
+
+// Instructions returns the value of the "instructions" field in the mutation.
+func (m *BackgroundTaskMutation) Instructions() (r string, exists bool) {
+	v := m.instructions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInstructions returns the old "instructions" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldInstructions(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInstructions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInstructions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInstructions: %w", err)
+	}
+	return oldValue.Instructions, nil
+}
+
+// ResetInstructions resets all changes to the "instructions" field.
+func (m *BackgroundTaskMutation) ResetInstructions() {
+	m.instructions = nil
+}
+
+// SetActive sets the "active" field.
+func (m *BackgroundTaskMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *BackgroundTaskMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldActive(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *BackgroundTaskMutation) ResetActive() {
+	m.active = nil
+}
+
+// SetTriggersJSON sets the "triggers_json" field.
+func (m *BackgroundTaskMutation) SetTriggersJSON(s string) {
+	m.triggers_json = &s
+}
+
+// TriggersJSON returns the value of the "triggers_json" field in the mutation.
+func (m *BackgroundTaskMutation) TriggersJSON() (r string, exists bool) {
+	v := m.triggers_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTriggersJSON returns the old "triggers_json" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldTriggersJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTriggersJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTriggersJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTriggersJSON: %w", err)
+	}
+	return oldValue.TriggersJSON, nil
+}
+
+// ClearTriggersJSON clears the value of the "triggers_json" field.
+func (m *BackgroundTaskMutation) ClearTriggersJSON() {
+	m.triggers_json = nil
+	m.clearedFields[backgroundtask.FieldTriggersJSON] = struct{}{}
+}
+
+// TriggersJSONCleared returns if the "triggers_json" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) TriggersJSONCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldTriggersJSON]
+	return ok
+}
+
+// ResetTriggersJSON resets all changes to the "triggers_json" field.
+func (m *BackgroundTaskMutation) ResetTriggersJSON() {
+	m.triggers_json = nil
+	delete(m.clearedFields, backgroundtask.FieldTriggersJSON)
+}
+
+// SetModel sets the "model" field.
+func (m *BackgroundTaskMutation) SetModel(s string) {
+	m.model = &s
+}
+
+// Model returns the value of the "model" field in the mutation.
+func (m *BackgroundTaskMutation) Model() (r string, exists bool) {
+	v := m.model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModel returns the old "model" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
+	}
+	return oldValue.Model, nil
+}
+
+// ClearModel clears the value of the "model" field.
+func (m *BackgroundTaskMutation) ClearModel() {
+	m.model = nil
+	m.clearedFields[backgroundtask.FieldModel] = struct{}{}
+}
+
+// ModelCleared returns if the "model" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) ModelCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldModel]
+	return ok
+}
+
+// ResetModel resets all changes to the "model" field.
+func (m *BackgroundTaskMutation) ResetModel() {
+	m.model = nil
+	delete(m.clearedFields, backgroundtask.FieldModel)
+}
+
+// SetProvider sets the "provider" field.
+func (m *BackgroundTaskMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *BackgroundTaskMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldProvider(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ClearProvider clears the value of the "provider" field.
+func (m *BackgroundTaskMutation) ClearProvider() {
+	m.provider = nil
+	m.clearedFields[backgroundtask.FieldProvider] = struct{}{}
+}
+
+// ProviderCleared returns if the "provider" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) ProviderCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldProvider]
+	return ok
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *BackgroundTaskMutation) ResetProvider() {
+	m.provider = nil
+	delete(m.clearedFields, backgroundtask.FieldProvider)
+}
+
+// SetExecutionTarget sets the "execution_target" field.
+func (m *BackgroundTaskMutation) SetExecutionTarget(s string) {
+	m.execution_target = &s
+}
+
+// ExecutionTarget returns the value of the "execution_target" field in the mutation.
+func (m *BackgroundTaskMutation) ExecutionTarget() (r string, exists bool) {
+	v := m.execution_target
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExecutionTarget returns the old "execution_target" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldExecutionTarget(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExecutionTarget is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExecutionTarget requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExecutionTarget: %w", err)
+	}
+	return oldValue.ExecutionTarget, nil
+}
+
+// ResetExecutionTarget resets all changes to the "execution_target" field.
+func (m *BackgroundTaskMutation) ResetExecutionTarget() {
+	m.execution_target = nil
+}
+
+// SetTaskCreatedAt sets the "task_created_at" field.
+func (m *BackgroundTaskMutation) SetTaskCreatedAt(t time.Time) {
+	m.task_created_at = &t
+}
+
+// TaskCreatedAt returns the value of the "task_created_at" field in the mutation.
+func (m *BackgroundTaskMutation) TaskCreatedAt() (r time.Time, exists bool) {
+	v := m.task_created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTaskCreatedAt returns the old "task_created_at" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldTaskCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTaskCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTaskCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTaskCreatedAt: %w", err)
+	}
+	return oldValue.TaskCreatedAt, nil
+}
+
+// ClearTaskCreatedAt clears the value of the "task_created_at" field.
+func (m *BackgroundTaskMutation) ClearTaskCreatedAt() {
+	m.task_created_at = nil
+	m.clearedFields[backgroundtask.FieldTaskCreatedAt] = struct{}{}
+}
+
+// TaskCreatedAtCleared returns if the "task_created_at" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) TaskCreatedAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldTaskCreatedAt]
+	return ok
+}
+
+// ResetTaskCreatedAt resets all changes to the "task_created_at" field.
+func (m *BackgroundTaskMutation) ResetTaskCreatedAt() {
+	m.task_created_at = nil
+	delete(m.clearedFields, backgroundtask.FieldTaskCreatedAt)
+}
+
+// SetLastAttemptAt sets the "last_attempt_at" field.
+func (m *BackgroundTaskMutation) SetLastAttemptAt(t time.Time) {
+	m.last_attempt_at = &t
+}
+
+// LastAttemptAt returns the value of the "last_attempt_at" field in the mutation.
+func (m *BackgroundTaskMutation) LastAttemptAt() (r time.Time, exists bool) {
+	v := m.last_attempt_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastAttemptAt returns the old "last_attempt_at" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldLastAttemptAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastAttemptAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastAttemptAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastAttemptAt: %w", err)
+	}
+	return oldValue.LastAttemptAt, nil
+}
+
+// ClearLastAttemptAt clears the value of the "last_attempt_at" field.
+func (m *BackgroundTaskMutation) ClearLastAttemptAt() {
+	m.last_attempt_at = nil
+	m.clearedFields[backgroundtask.FieldLastAttemptAt] = struct{}{}
+}
+
+// LastAttemptAtCleared returns if the "last_attempt_at" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) LastAttemptAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldLastAttemptAt]
+	return ok
+}
+
+// ResetLastAttemptAt resets all changes to the "last_attempt_at" field.
+func (m *BackgroundTaskMutation) ResetLastAttemptAt() {
+	m.last_attempt_at = nil
+	delete(m.clearedFields, backgroundtask.FieldLastAttemptAt)
+}
+
+// SetLastRunID sets the "last_run_id" field.
+func (m *BackgroundTaskMutation) SetLastRunID(s string) {
+	m.last_run_id = &s
+}
+
+// LastRunID returns the value of the "last_run_id" field in the mutation.
+func (m *BackgroundTaskMutation) LastRunID() (r string, exists bool) {
+	v := m.last_run_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastRunID returns the old "last_run_id" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldLastRunID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastRunID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastRunID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastRunID: %w", err)
+	}
+	return oldValue.LastRunID, nil
+}
+
+// ClearLastRunID clears the value of the "last_run_id" field.
+func (m *BackgroundTaskMutation) ClearLastRunID() {
+	m.last_run_id = nil
+	m.clearedFields[backgroundtask.FieldLastRunID] = struct{}{}
+}
+
+// LastRunIDCleared returns if the "last_run_id" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) LastRunIDCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldLastRunID]
+	return ok
+}
+
+// ResetLastRunID resets all changes to the "last_run_id" field.
+func (m *BackgroundTaskMutation) ResetLastRunID() {
+	m.last_run_id = nil
+	delete(m.clearedFields, backgroundtask.FieldLastRunID)
+}
+
+// SetLastRunAt sets the "last_run_at" field.
+func (m *BackgroundTaskMutation) SetLastRunAt(t time.Time) {
+	m.last_run_at = &t
+}
+
+// LastRunAt returns the value of the "last_run_at" field in the mutation.
+func (m *BackgroundTaskMutation) LastRunAt() (r time.Time, exists bool) {
+	v := m.last_run_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastRunAt returns the old "last_run_at" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldLastRunAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastRunAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastRunAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastRunAt: %w", err)
+	}
+	return oldValue.LastRunAt, nil
+}
+
+// ClearLastRunAt clears the value of the "last_run_at" field.
+func (m *BackgroundTaskMutation) ClearLastRunAt() {
+	m.last_run_at = nil
+	m.clearedFields[backgroundtask.FieldLastRunAt] = struct{}{}
+}
+
+// LastRunAtCleared returns if the "last_run_at" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) LastRunAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldLastRunAt]
+	return ok
+}
+
+// ResetLastRunAt resets all changes to the "last_run_at" field.
+func (m *BackgroundTaskMutation) ResetLastRunAt() {
+	m.last_run_at = nil
+	delete(m.clearedFields, backgroundtask.FieldLastRunAt)
+}
+
+// SetLastRunSummary sets the "last_run_summary" field.
+func (m *BackgroundTaskMutation) SetLastRunSummary(s string) {
+	m.last_run_summary = &s
+}
+
+// LastRunSummary returns the value of the "last_run_summary" field in the mutation.
+func (m *BackgroundTaskMutation) LastRunSummary() (r string, exists bool) {
+	v := m.last_run_summary
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastRunSummary returns the old "last_run_summary" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldLastRunSummary(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastRunSummary is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastRunSummary requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastRunSummary: %w", err)
+	}
+	return oldValue.LastRunSummary, nil
+}
+
+// ClearLastRunSummary clears the value of the "last_run_summary" field.
+func (m *BackgroundTaskMutation) ClearLastRunSummary() {
+	m.last_run_summary = nil
+	m.clearedFields[backgroundtask.FieldLastRunSummary] = struct{}{}
+}
+
+// LastRunSummaryCleared returns if the "last_run_summary" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) LastRunSummaryCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldLastRunSummary]
+	return ok
+}
+
+// ResetLastRunSummary resets all changes to the "last_run_summary" field.
+func (m *BackgroundTaskMutation) ResetLastRunSummary() {
+	m.last_run_summary = nil
+	delete(m.clearedFields, backgroundtask.FieldLastRunSummary)
+}
+
+// SetLastRunError sets the "last_run_error" field.
+func (m *BackgroundTaskMutation) SetLastRunError(s string) {
+	m.last_run_error = &s
+}
+
+// LastRunError returns the value of the "last_run_error" field in the mutation.
+func (m *BackgroundTaskMutation) LastRunError() (r string, exists bool) {
+	v := m.last_run_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastRunError returns the old "last_run_error" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldLastRunError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastRunError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastRunError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastRunError: %w", err)
+	}
+	return oldValue.LastRunError, nil
+}
+
+// ClearLastRunError clears the value of the "last_run_error" field.
+func (m *BackgroundTaskMutation) ClearLastRunError() {
+	m.last_run_error = nil
+	m.clearedFields[backgroundtask.FieldLastRunError] = struct{}{}
+}
+
+// LastRunErrorCleared returns if the "last_run_error" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) LastRunErrorCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldLastRunError]
+	return ok
+}
+
+// ResetLastRunError resets all changes to the "last_run_error" field.
+func (m *BackgroundTaskMutation) ResetLastRunError() {
+	m.last_run_error = nil
+	delete(m.clearedFields, backgroundtask.FieldLastRunError)
+}
+
+// SetRevision sets the "revision" field.
+func (m *BackgroundTaskMutation) SetRevision(i int) {
+	m.revision = &i
+	m.addrevision = nil
+}
+
+// Revision returns the value of the "revision" field in the mutation.
+func (m *BackgroundTaskMutation) Revision() (r int, exists bool) {
+	v := m.revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRevision returns the old "revision" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldRevision(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRevision is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRevision requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRevision: %w", err)
+	}
+	return oldValue.Revision, nil
+}
+
+// AddRevision adds i to the "revision" field.
+func (m *BackgroundTaskMutation) AddRevision(i int) {
+	if m.addrevision != nil {
+		*m.addrevision += i
+	} else {
+		m.addrevision = &i
+	}
+}
+
+// AddedRevision returns the value that was added to the "revision" field in this mutation.
+func (m *BackgroundTaskMutation) AddedRevision() (r int, exists bool) {
+	v := m.addrevision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRevision resets all changes to the "revision" field.
+func (m *BackgroundTaskMutation) ResetRevision() {
+	m.revision = nil
+	m.addrevision = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *BackgroundTaskMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *BackgroundTaskMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *BackgroundTaskMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *BackgroundTaskMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *BackgroundTaskMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetArtifactID sets the "artifact" edge to the BackgroundTaskArtifact entity by id.
+func (m *BackgroundTaskMutation) SetArtifactID(id uuid.UUID) {
+	m.artifact = &id
+}
+
+// ClearArtifact clears the "artifact" edge to the BackgroundTaskArtifact entity.
+func (m *BackgroundTaskMutation) ClearArtifact() {
+	m.clearedartifact = true
+}
+
+// ArtifactCleared reports if the "artifact" edge to the BackgroundTaskArtifact entity was cleared.
+func (m *BackgroundTaskMutation) ArtifactCleared() bool {
+	return m.clearedartifact
+}
+
+// ArtifactID returns the "artifact" edge ID in the mutation.
+func (m *BackgroundTaskMutation) ArtifactID() (id uuid.UUID, exists bool) {
+	if m.artifact != nil {
+		return *m.artifact, true
+	}
+	return
+}
+
+// ArtifactIDs returns the "artifact" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ArtifactID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskMutation) ArtifactIDs() (ids []uuid.UUID) {
+	if id := m.artifact; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetArtifact resets all changes to the "artifact" edge.
+func (m *BackgroundTaskMutation) ResetArtifact() {
+	m.artifact = nil
+	m.clearedartifact = false
+}
+
+// AddRunIDs adds the "runs" edge to the BackgroundTaskRun entity by ids.
+func (m *BackgroundTaskMutation) AddRunIDs(ids ...uuid.UUID) {
+	if m.runs == nil {
+		m.runs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.runs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRuns clears the "runs" edge to the BackgroundTaskRun entity.
+func (m *BackgroundTaskMutation) ClearRuns() {
+	m.clearedruns = true
+}
+
+// RunsCleared reports if the "runs" edge to the BackgroundTaskRun entity was cleared.
+func (m *BackgroundTaskMutation) RunsCleared() bool {
+	return m.clearedruns
+}
+
+// RemoveRunIDs removes the "runs" edge to the BackgroundTaskRun entity by IDs.
+func (m *BackgroundTaskMutation) RemoveRunIDs(ids ...uuid.UUID) {
+	if m.removedruns == nil {
+		m.removedruns = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.runs, ids[i])
+		m.removedruns[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRuns returns the removed IDs of the "runs" edge to the BackgroundTaskRun entity.
+func (m *BackgroundTaskMutation) RemovedRunsIDs() (ids []uuid.UUID) {
+	for id := range m.removedruns {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RunsIDs returns the "runs" edge IDs in the mutation.
+func (m *BackgroundTaskMutation) RunsIDs() (ids []uuid.UUID) {
+	for id := range m.runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRuns resets all changes to the "runs" edge.
+func (m *BackgroundTaskMutation) ResetRuns() {
+	m.runs = nil
+	m.clearedruns = false
+	m.removedruns = nil
+}
+
+// AddRunEventIDs adds the "run_events" edge to the BackgroundTaskRunEvent entity by ids.
+func (m *BackgroundTaskMutation) AddRunEventIDs(ids ...uuid.UUID) {
+	if m.run_events == nil {
+		m.run_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.run_events[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRunEvents clears the "run_events" edge to the BackgroundTaskRunEvent entity.
+func (m *BackgroundTaskMutation) ClearRunEvents() {
+	m.clearedrun_events = true
+}
+
+// RunEventsCleared reports if the "run_events" edge to the BackgroundTaskRunEvent entity was cleared.
+func (m *BackgroundTaskMutation) RunEventsCleared() bool {
+	return m.clearedrun_events
+}
+
+// RemoveRunEventIDs removes the "run_events" edge to the BackgroundTaskRunEvent entity by IDs.
+func (m *BackgroundTaskMutation) RemoveRunEventIDs(ids ...uuid.UUID) {
+	if m.removedrun_events == nil {
+		m.removedrun_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.run_events, ids[i])
+		m.removedrun_events[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRunEvents returns the removed IDs of the "run_events" edge to the BackgroundTaskRunEvent entity.
+func (m *BackgroundTaskMutation) RemovedRunEventsIDs() (ids []uuid.UUID) {
+	for id := range m.removedrun_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RunEventsIDs returns the "run_events" edge IDs in the mutation.
+func (m *BackgroundTaskMutation) RunEventsIDs() (ids []uuid.UUID) {
+	for id := range m.run_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRunEvents resets all changes to the "run_events" edge.
+func (m *BackgroundTaskMutation) ResetRunEvents() {
+	m.run_events = nil
+	m.clearedrun_events = false
+	m.removedrun_events = nil
+}
+
+// Where appends a list predicates to the BackgroundTaskMutation builder.
+func (m *BackgroundTaskMutation) Where(ps ...predicate.BackgroundTask) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the BackgroundTaskMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *BackgroundTaskMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.BackgroundTask, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *BackgroundTaskMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *BackgroundTaskMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (BackgroundTask).
+func (m *BackgroundTaskMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *BackgroundTaskMutation) Fields() []string {
+	fields := make([]string, 0, 17)
+	if m.created_at != nil {
+		fields = append(fields, backgroundtask.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, backgroundtask.FieldUpdatedAt)
+	}
+	if m.slug != nil {
+		fields = append(fields, backgroundtask.FieldSlug)
+	}
+	if m.name != nil {
+		fields = append(fields, backgroundtask.FieldName)
+	}
+	if m.instructions != nil {
+		fields = append(fields, backgroundtask.FieldInstructions)
+	}
+	if m.active != nil {
+		fields = append(fields, backgroundtask.FieldActive)
+	}
+	if m.triggers_json != nil {
+		fields = append(fields, backgroundtask.FieldTriggersJSON)
+	}
+	if m.model != nil {
+		fields = append(fields, backgroundtask.FieldModel)
+	}
+	if m.provider != nil {
+		fields = append(fields, backgroundtask.FieldProvider)
+	}
+	if m.execution_target != nil {
+		fields = append(fields, backgroundtask.FieldExecutionTarget)
+	}
+	if m.task_created_at != nil {
+		fields = append(fields, backgroundtask.FieldTaskCreatedAt)
+	}
+	if m.last_attempt_at != nil {
+		fields = append(fields, backgroundtask.FieldLastAttemptAt)
+	}
+	if m.last_run_id != nil {
+		fields = append(fields, backgroundtask.FieldLastRunID)
+	}
+	if m.last_run_at != nil {
+		fields = append(fields, backgroundtask.FieldLastRunAt)
+	}
+	if m.last_run_summary != nil {
+		fields = append(fields, backgroundtask.FieldLastRunSummary)
+	}
+	if m.last_run_error != nil {
+		fields = append(fields, backgroundtask.FieldLastRunError)
+	}
+	if m.revision != nil {
+		fields = append(fields, backgroundtask.FieldRevision)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *BackgroundTaskMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case backgroundtask.FieldCreatedAt:
+		return m.CreatedAt()
+	case backgroundtask.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case backgroundtask.FieldSlug:
+		return m.Slug()
+	case backgroundtask.FieldName:
+		return m.Name()
+	case backgroundtask.FieldInstructions:
+		return m.Instructions()
+	case backgroundtask.FieldActive:
+		return m.Active()
+	case backgroundtask.FieldTriggersJSON:
+		return m.TriggersJSON()
+	case backgroundtask.FieldModel:
+		return m.Model()
+	case backgroundtask.FieldProvider:
+		return m.Provider()
+	case backgroundtask.FieldExecutionTarget:
+		return m.ExecutionTarget()
+	case backgroundtask.FieldTaskCreatedAt:
+		return m.TaskCreatedAt()
+	case backgroundtask.FieldLastAttemptAt:
+		return m.LastAttemptAt()
+	case backgroundtask.FieldLastRunID:
+		return m.LastRunID()
+	case backgroundtask.FieldLastRunAt:
+		return m.LastRunAt()
+	case backgroundtask.FieldLastRunSummary:
+		return m.LastRunSummary()
+	case backgroundtask.FieldLastRunError:
+		return m.LastRunError()
+	case backgroundtask.FieldRevision:
+		return m.Revision()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *BackgroundTaskMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case backgroundtask.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case backgroundtask.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case backgroundtask.FieldSlug:
+		return m.OldSlug(ctx)
+	case backgroundtask.FieldName:
+		return m.OldName(ctx)
+	case backgroundtask.FieldInstructions:
+		return m.OldInstructions(ctx)
+	case backgroundtask.FieldActive:
+		return m.OldActive(ctx)
+	case backgroundtask.FieldTriggersJSON:
+		return m.OldTriggersJSON(ctx)
+	case backgroundtask.FieldModel:
+		return m.OldModel(ctx)
+	case backgroundtask.FieldProvider:
+		return m.OldProvider(ctx)
+	case backgroundtask.FieldExecutionTarget:
+		return m.OldExecutionTarget(ctx)
+	case backgroundtask.FieldTaskCreatedAt:
+		return m.OldTaskCreatedAt(ctx)
+	case backgroundtask.FieldLastAttemptAt:
+		return m.OldLastAttemptAt(ctx)
+	case backgroundtask.FieldLastRunID:
+		return m.OldLastRunID(ctx)
+	case backgroundtask.FieldLastRunAt:
+		return m.OldLastRunAt(ctx)
+	case backgroundtask.FieldLastRunSummary:
+		return m.OldLastRunSummary(ctx)
+	case backgroundtask.FieldLastRunError:
+		return m.OldLastRunError(ctx)
+	case backgroundtask.FieldRevision:
+		return m.OldRevision(ctx)
+	}
+	return nil, fmt.Errorf("unknown BackgroundTask field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BackgroundTaskMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case backgroundtask.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case backgroundtask.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case backgroundtask.FieldSlug:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSlug(v)
+		return nil
+	case backgroundtask.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case backgroundtask.FieldInstructions:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInstructions(v)
+		return nil
+	case backgroundtask.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	case backgroundtask.FieldTriggersJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTriggersJSON(v)
+		return nil
+	case backgroundtask.FieldModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModel(v)
+		return nil
+	case backgroundtask.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
+	case backgroundtask.FieldExecutionTarget:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExecutionTarget(v)
+		return nil
+	case backgroundtask.FieldTaskCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTaskCreatedAt(v)
+		return nil
+	case backgroundtask.FieldLastAttemptAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastAttemptAt(v)
+		return nil
+	case backgroundtask.FieldLastRunID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastRunID(v)
+		return nil
+	case backgroundtask.FieldLastRunAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastRunAt(v)
+		return nil
+	case backgroundtask.FieldLastRunSummary:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastRunSummary(v)
+		return nil
+	case backgroundtask.FieldLastRunError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastRunError(v)
+		return nil
+	case backgroundtask.FieldRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRevision(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTask field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *BackgroundTaskMutation) AddedFields() []string {
+	var fields []string
+	if m.addrevision != nil {
+		fields = append(fields, backgroundtask.FieldRevision)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *BackgroundTaskMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case backgroundtask.FieldRevision:
+		return m.AddedRevision()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BackgroundTaskMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case backgroundtask.FieldRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRevision(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTask numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *BackgroundTaskMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(backgroundtask.FieldTriggersJSON) {
+		fields = append(fields, backgroundtask.FieldTriggersJSON)
+	}
+	if m.FieldCleared(backgroundtask.FieldModel) {
+		fields = append(fields, backgroundtask.FieldModel)
+	}
+	if m.FieldCleared(backgroundtask.FieldProvider) {
+		fields = append(fields, backgroundtask.FieldProvider)
+	}
+	if m.FieldCleared(backgroundtask.FieldTaskCreatedAt) {
+		fields = append(fields, backgroundtask.FieldTaskCreatedAt)
+	}
+	if m.FieldCleared(backgroundtask.FieldLastAttemptAt) {
+		fields = append(fields, backgroundtask.FieldLastAttemptAt)
+	}
+	if m.FieldCleared(backgroundtask.FieldLastRunID) {
+		fields = append(fields, backgroundtask.FieldLastRunID)
+	}
+	if m.FieldCleared(backgroundtask.FieldLastRunAt) {
+		fields = append(fields, backgroundtask.FieldLastRunAt)
+	}
+	if m.FieldCleared(backgroundtask.FieldLastRunSummary) {
+		fields = append(fields, backgroundtask.FieldLastRunSummary)
+	}
+	if m.FieldCleared(backgroundtask.FieldLastRunError) {
+		fields = append(fields, backgroundtask.FieldLastRunError)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *BackgroundTaskMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *BackgroundTaskMutation) ClearField(name string) error {
+	switch name {
+	case backgroundtask.FieldTriggersJSON:
+		m.ClearTriggersJSON()
+		return nil
+	case backgroundtask.FieldModel:
+		m.ClearModel()
+		return nil
+	case backgroundtask.FieldProvider:
+		m.ClearProvider()
+		return nil
+	case backgroundtask.FieldTaskCreatedAt:
+		m.ClearTaskCreatedAt()
+		return nil
+	case backgroundtask.FieldLastAttemptAt:
+		m.ClearLastAttemptAt()
+		return nil
+	case backgroundtask.FieldLastRunID:
+		m.ClearLastRunID()
+		return nil
+	case backgroundtask.FieldLastRunAt:
+		m.ClearLastRunAt()
+		return nil
+	case backgroundtask.FieldLastRunSummary:
+		m.ClearLastRunSummary()
+		return nil
+	case backgroundtask.FieldLastRunError:
+		m.ClearLastRunError()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTask nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *BackgroundTaskMutation) ResetField(name string) error {
+	switch name {
+	case backgroundtask.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case backgroundtask.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case backgroundtask.FieldSlug:
+		m.ResetSlug()
+		return nil
+	case backgroundtask.FieldName:
+		m.ResetName()
+		return nil
+	case backgroundtask.FieldInstructions:
+		m.ResetInstructions()
+		return nil
+	case backgroundtask.FieldActive:
+		m.ResetActive()
+		return nil
+	case backgroundtask.FieldTriggersJSON:
+		m.ResetTriggersJSON()
+		return nil
+	case backgroundtask.FieldModel:
+		m.ResetModel()
+		return nil
+	case backgroundtask.FieldProvider:
+		m.ResetProvider()
+		return nil
+	case backgroundtask.FieldExecutionTarget:
+		m.ResetExecutionTarget()
+		return nil
+	case backgroundtask.FieldTaskCreatedAt:
+		m.ResetTaskCreatedAt()
+		return nil
+	case backgroundtask.FieldLastAttemptAt:
+		m.ResetLastAttemptAt()
+		return nil
+	case backgroundtask.FieldLastRunID:
+		m.ResetLastRunID()
+		return nil
+	case backgroundtask.FieldLastRunAt:
+		m.ResetLastRunAt()
+		return nil
+	case backgroundtask.FieldLastRunSummary:
+		m.ResetLastRunSummary()
+		return nil
+	case backgroundtask.FieldLastRunError:
+		m.ResetLastRunError()
+		return nil
+	case backgroundtask.FieldRevision:
+		m.ResetRevision()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTask field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *BackgroundTaskMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.user != nil {
+		edges = append(edges, backgroundtask.EdgeUser)
+	}
+	if m.artifact != nil {
+		edges = append(edges, backgroundtask.EdgeArtifact)
+	}
+	if m.runs != nil {
+		edges = append(edges, backgroundtask.EdgeRuns)
+	}
+	if m.run_events != nil {
+		edges = append(edges, backgroundtask.EdgeRunEvents)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *BackgroundTaskMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case backgroundtask.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case backgroundtask.EdgeArtifact:
+		if id := m.artifact; id != nil {
+			return []ent.Value{*id}
+		}
+	case backgroundtask.EdgeRuns:
+		ids := make([]ent.Value, 0, len(m.runs))
+		for id := range m.runs {
+			ids = append(ids, id)
+		}
+		return ids
+	case backgroundtask.EdgeRunEvents:
+		ids := make([]ent.Value, 0, len(m.run_events))
+		for id := range m.run_events {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *BackgroundTaskMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removedruns != nil {
+		edges = append(edges, backgroundtask.EdgeRuns)
+	}
+	if m.removedrun_events != nil {
+		edges = append(edges, backgroundtask.EdgeRunEvents)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *BackgroundTaskMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case backgroundtask.EdgeRuns:
+		ids := make([]ent.Value, 0, len(m.removedruns))
+		for id := range m.removedruns {
+			ids = append(ids, id)
+		}
+		return ids
+	case backgroundtask.EdgeRunEvents:
+		ids := make([]ent.Value, 0, len(m.removedrun_events))
+		for id := range m.removedrun_events {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *BackgroundTaskMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.cleareduser {
+		edges = append(edges, backgroundtask.EdgeUser)
+	}
+	if m.clearedartifact {
+		edges = append(edges, backgroundtask.EdgeArtifact)
+	}
+	if m.clearedruns {
+		edges = append(edges, backgroundtask.EdgeRuns)
+	}
+	if m.clearedrun_events {
+		edges = append(edges, backgroundtask.EdgeRunEvents)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *BackgroundTaskMutation) EdgeCleared(name string) bool {
+	switch name {
+	case backgroundtask.EdgeUser:
+		return m.cleareduser
+	case backgroundtask.EdgeArtifact:
+		return m.clearedartifact
+	case backgroundtask.EdgeRuns:
+		return m.clearedruns
+	case backgroundtask.EdgeRunEvents:
+		return m.clearedrun_events
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *BackgroundTaskMutation) ClearEdge(name string) error {
+	switch name {
+	case backgroundtask.EdgeUser:
+		m.ClearUser()
+		return nil
+	case backgroundtask.EdgeArtifact:
+		m.ClearArtifact()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTask unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *BackgroundTaskMutation) ResetEdge(name string) error {
+	switch name {
+	case backgroundtask.EdgeUser:
+		m.ResetUser()
+		return nil
+	case backgroundtask.EdgeArtifact:
+		m.ResetArtifact()
+		return nil
+	case backgroundtask.EdgeRuns:
+		m.ResetRuns()
+		return nil
+	case backgroundtask.EdgeRunEvents:
+		m.ResetRunEvents()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTask edge %s", name)
+}
+
+// BackgroundTaskArtifactMutation represents an operation that mutates the BackgroundTaskArtifact nodes in the graph.
+type BackgroundTaskArtifactMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *uuid.UUID
+	created_at        *time.Time
+	updated_at        *time.Time
+	body              *string
+	revision          *int
+	addrevision       *int
+	updated_by_run_id *string
+	content_type      *string
+	clearedFields     map[string]struct{}
+	user              *uuid.UUID
+	cleareduser       bool
+	task              *uuid.UUID
+	clearedtask       bool
+	done              bool
+	oldValue          func(context.Context) (*BackgroundTaskArtifact, error)
+	predicates        []predicate.BackgroundTaskArtifact
+}
+
+var _ ent.Mutation = (*BackgroundTaskArtifactMutation)(nil)
+
+// backgroundtaskartifactOption allows management of the mutation configuration using functional options.
+type backgroundtaskartifactOption func(*BackgroundTaskArtifactMutation)
+
+// newBackgroundTaskArtifactMutation creates new mutation for the BackgroundTaskArtifact entity.
+func newBackgroundTaskArtifactMutation(c config, op Op, opts ...backgroundtaskartifactOption) *BackgroundTaskArtifactMutation {
+	m := &BackgroundTaskArtifactMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeBackgroundTaskArtifact,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withBackgroundTaskArtifactID sets the ID field of the mutation.
+func withBackgroundTaskArtifactID(id uuid.UUID) backgroundtaskartifactOption {
+	return func(m *BackgroundTaskArtifactMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *BackgroundTaskArtifact
+		)
+		m.oldValue = func(ctx context.Context) (*BackgroundTaskArtifact, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().BackgroundTaskArtifact.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withBackgroundTaskArtifact sets the old BackgroundTaskArtifact of the mutation.
+func withBackgroundTaskArtifact(node *BackgroundTaskArtifact) backgroundtaskartifactOption {
+	return func(m *BackgroundTaskArtifactMutation) {
+		m.oldValue = func(context.Context) (*BackgroundTaskArtifact, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m BackgroundTaskArtifactMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m BackgroundTaskArtifactMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of BackgroundTaskArtifact entities.
+func (m *BackgroundTaskArtifactMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *BackgroundTaskArtifactMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *BackgroundTaskArtifactMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().BackgroundTaskArtifact.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *BackgroundTaskArtifactMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *BackgroundTaskArtifactMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the BackgroundTaskArtifact entity.
+// If the BackgroundTaskArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskArtifactMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *BackgroundTaskArtifactMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *BackgroundTaskArtifactMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *BackgroundTaskArtifactMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the BackgroundTaskArtifact entity.
+// If the BackgroundTaskArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskArtifactMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *BackgroundTaskArtifactMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetBody sets the "body" field.
+func (m *BackgroundTaskArtifactMutation) SetBody(s string) {
+	m.body = &s
+}
+
+// Body returns the value of the "body" field in the mutation.
+func (m *BackgroundTaskArtifactMutation) Body() (r string, exists bool) {
+	v := m.body
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBody returns the old "body" field's value of the BackgroundTaskArtifact entity.
+// If the BackgroundTaskArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskArtifactMutation) OldBody(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBody is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBody requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBody: %w", err)
+	}
+	return oldValue.Body, nil
+}
+
+// ResetBody resets all changes to the "body" field.
+func (m *BackgroundTaskArtifactMutation) ResetBody() {
+	m.body = nil
+}
+
+// SetRevision sets the "revision" field.
+func (m *BackgroundTaskArtifactMutation) SetRevision(i int) {
+	m.revision = &i
+	m.addrevision = nil
+}
+
+// Revision returns the value of the "revision" field in the mutation.
+func (m *BackgroundTaskArtifactMutation) Revision() (r int, exists bool) {
+	v := m.revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRevision returns the old "revision" field's value of the BackgroundTaskArtifact entity.
+// If the BackgroundTaskArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskArtifactMutation) OldRevision(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRevision is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRevision requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRevision: %w", err)
+	}
+	return oldValue.Revision, nil
+}
+
+// AddRevision adds i to the "revision" field.
+func (m *BackgroundTaskArtifactMutation) AddRevision(i int) {
+	if m.addrevision != nil {
+		*m.addrevision += i
+	} else {
+		m.addrevision = &i
+	}
+}
+
+// AddedRevision returns the value that was added to the "revision" field in this mutation.
+func (m *BackgroundTaskArtifactMutation) AddedRevision() (r int, exists bool) {
+	v := m.addrevision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRevision resets all changes to the "revision" field.
+func (m *BackgroundTaskArtifactMutation) ResetRevision() {
+	m.revision = nil
+	m.addrevision = nil
+}
+
+// SetUpdatedByRunID sets the "updated_by_run_id" field.
+func (m *BackgroundTaskArtifactMutation) SetUpdatedByRunID(s string) {
+	m.updated_by_run_id = &s
+}
+
+// UpdatedByRunID returns the value of the "updated_by_run_id" field in the mutation.
+func (m *BackgroundTaskArtifactMutation) UpdatedByRunID() (r string, exists bool) {
+	v := m.updated_by_run_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedByRunID returns the old "updated_by_run_id" field's value of the BackgroundTaskArtifact entity.
+// If the BackgroundTaskArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskArtifactMutation) OldUpdatedByRunID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedByRunID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedByRunID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedByRunID: %w", err)
+	}
+	return oldValue.UpdatedByRunID, nil
+}
+
+// ClearUpdatedByRunID clears the value of the "updated_by_run_id" field.
+func (m *BackgroundTaskArtifactMutation) ClearUpdatedByRunID() {
+	m.updated_by_run_id = nil
+	m.clearedFields[backgroundtaskartifact.FieldUpdatedByRunID] = struct{}{}
+}
+
+// UpdatedByRunIDCleared returns if the "updated_by_run_id" field was cleared in this mutation.
+func (m *BackgroundTaskArtifactMutation) UpdatedByRunIDCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskartifact.FieldUpdatedByRunID]
+	return ok
+}
+
+// ResetUpdatedByRunID resets all changes to the "updated_by_run_id" field.
+func (m *BackgroundTaskArtifactMutation) ResetUpdatedByRunID() {
+	m.updated_by_run_id = nil
+	delete(m.clearedFields, backgroundtaskartifact.FieldUpdatedByRunID)
+}
+
+// SetContentType sets the "content_type" field.
+func (m *BackgroundTaskArtifactMutation) SetContentType(s string) {
+	m.content_type = &s
+}
+
+// ContentType returns the value of the "content_type" field in the mutation.
+func (m *BackgroundTaskArtifactMutation) ContentType() (r string, exists bool) {
+	v := m.content_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContentType returns the old "content_type" field's value of the BackgroundTaskArtifact entity.
+// If the BackgroundTaskArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskArtifactMutation) OldContentType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContentType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContentType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContentType: %w", err)
+	}
+	return oldValue.ContentType, nil
+}
+
+// ResetContentType resets all changes to the "content_type" field.
+func (m *BackgroundTaskArtifactMutation) ResetContentType() {
+	m.content_type = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *BackgroundTaskArtifactMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *BackgroundTaskArtifactMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *BackgroundTaskArtifactMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *BackgroundTaskArtifactMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskArtifactMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *BackgroundTaskArtifactMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetTaskID sets the "task" edge to the BackgroundTask entity by id.
+func (m *BackgroundTaskArtifactMutation) SetTaskID(id uuid.UUID) {
+	m.task = &id
+}
+
+// ClearTask clears the "task" edge to the BackgroundTask entity.
+func (m *BackgroundTaskArtifactMutation) ClearTask() {
+	m.clearedtask = true
+}
+
+// TaskCleared reports if the "task" edge to the BackgroundTask entity was cleared.
+func (m *BackgroundTaskArtifactMutation) TaskCleared() bool {
+	return m.clearedtask
+}
+
+// TaskID returns the "task" edge ID in the mutation.
+func (m *BackgroundTaskArtifactMutation) TaskID() (id uuid.UUID, exists bool) {
+	if m.task != nil {
+		return *m.task, true
+	}
+	return
+}
+
+// TaskIDs returns the "task" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TaskID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskArtifactMutation) TaskIDs() (ids []uuid.UUID) {
+	if id := m.task; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTask resets all changes to the "task" edge.
+func (m *BackgroundTaskArtifactMutation) ResetTask() {
+	m.task = nil
+	m.clearedtask = false
+}
+
+// Where appends a list predicates to the BackgroundTaskArtifactMutation builder.
+func (m *BackgroundTaskArtifactMutation) Where(ps ...predicate.BackgroundTaskArtifact) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the BackgroundTaskArtifactMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *BackgroundTaskArtifactMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.BackgroundTaskArtifact, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *BackgroundTaskArtifactMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *BackgroundTaskArtifactMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (BackgroundTaskArtifact).
+func (m *BackgroundTaskArtifactMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *BackgroundTaskArtifactMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.created_at != nil {
+		fields = append(fields, backgroundtaskartifact.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, backgroundtaskartifact.FieldUpdatedAt)
+	}
+	if m.body != nil {
+		fields = append(fields, backgroundtaskartifact.FieldBody)
+	}
+	if m.revision != nil {
+		fields = append(fields, backgroundtaskartifact.FieldRevision)
+	}
+	if m.updated_by_run_id != nil {
+		fields = append(fields, backgroundtaskartifact.FieldUpdatedByRunID)
+	}
+	if m.content_type != nil {
+		fields = append(fields, backgroundtaskartifact.FieldContentType)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *BackgroundTaskArtifactMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case backgroundtaskartifact.FieldCreatedAt:
+		return m.CreatedAt()
+	case backgroundtaskartifact.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case backgroundtaskartifact.FieldBody:
+		return m.Body()
+	case backgroundtaskartifact.FieldRevision:
+		return m.Revision()
+	case backgroundtaskartifact.FieldUpdatedByRunID:
+		return m.UpdatedByRunID()
+	case backgroundtaskartifact.FieldContentType:
+		return m.ContentType()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *BackgroundTaskArtifactMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case backgroundtaskartifact.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case backgroundtaskartifact.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case backgroundtaskartifact.FieldBody:
+		return m.OldBody(ctx)
+	case backgroundtaskartifact.FieldRevision:
+		return m.OldRevision(ctx)
+	case backgroundtaskartifact.FieldUpdatedByRunID:
+		return m.OldUpdatedByRunID(ctx)
+	case backgroundtaskartifact.FieldContentType:
+		return m.OldContentType(ctx)
+	}
+	return nil, fmt.Errorf("unknown BackgroundTaskArtifact field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BackgroundTaskArtifactMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case backgroundtaskartifact.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case backgroundtaskartifact.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case backgroundtaskartifact.FieldBody:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBody(v)
+		return nil
+	case backgroundtaskartifact.FieldRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRevision(v)
+		return nil
+	case backgroundtaskartifact.FieldUpdatedByRunID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedByRunID(v)
+		return nil
+	case backgroundtaskartifact.FieldContentType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContentType(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskArtifact field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *BackgroundTaskArtifactMutation) AddedFields() []string {
+	var fields []string
+	if m.addrevision != nil {
+		fields = append(fields, backgroundtaskartifact.FieldRevision)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *BackgroundTaskArtifactMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case backgroundtaskartifact.FieldRevision:
+		return m.AddedRevision()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BackgroundTaskArtifactMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case backgroundtaskartifact.FieldRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRevision(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskArtifact numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *BackgroundTaskArtifactMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(backgroundtaskartifact.FieldUpdatedByRunID) {
+		fields = append(fields, backgroundtaskartifact.FieldUpdatedByRunID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *BackgroundTaskArtifactMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *BackgroundTaskArtifactMutation) ClearField(name string) error {
+	switch name {
+	case backgroundtaskartifact.FieldUpdatedByRunID:
+		m.ClearUpdatedByRunID()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskArtifact nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *BackgroundTaskArtifactMutation) ResetField(name string) error {
+	switch name {
+	case backgroundtaskartifact.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case backgroundtaskartifact.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case backgroundtaskartifact.FieldBody:
+		m.ResetBody()
+		return nil
+	case backgroundtaskartifact.FieldRevision:
+		m.ResetRevision()
+		return nil
+	case backgroundtaskartifact.FieldUpdatedByRunID:
+		m.ResetUpdatedByRunID()
+		return nil
+	case backgroundtaskartifact.FieldContentType:
+		m.ResetContentType()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskArtifact field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *BackgroundTaskArtifactMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, backgroundtaskartifact.EdgeUser)
+	}
+	if m.task != nil {
+		edges = append(edges, backgroundtaskartifact.EdgeTask)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *BackgroundTaskArtifactMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case backgroundtaskartifact.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case backgroundtaskartifact.EdgeTask:
+		if id := m.task; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *BackgroundTaskArtifactMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *BackgroundTaskArtifactMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *BackgroundTaskArtifactMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, backgroundtaskartifact.EdgeUser)
+	}
+	if m.clearedtask {
+		edges = append(edges, backgroundtaskartifact.EdgeTask)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *BackgroundTaskArtifactMutation) EdgeCleared(name string) bool {
+	switch name {
+	case backgroundtaskartifact.EdgeUser:
+		return m.cleareduser
+	case backgroundtaskartifact.EdgeTask:
+		return m.clearedtask
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *BackgroundTaskArtifactMutation) ClearEdge(name string) error {
+	switch name {
+	case backgroundtaskartifact.EdgeUser:
+		m.ClearUser()
+		return nil
+	case backgroundtaskartifact.EdgeTask:
+		m.ClearTask()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskArtifact unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *BackgroundTaskArtifactMutation) ResetEdge(name string) error {
+	switch name {
+	case backgroundtaskartifact.EdgeUser:
+		m.ResetUser()
+		return nil
+	case backgroundtaskartifact.EdgeTask:
+		m.ResetTask()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskArtifact edge %s", name)
+}
+
+// BackgroundTaskRunMutation represents an operation that mutates the BackgroundTaskRun nodes in the graph.
+type BackgroundTaskRunMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *uuid.UUID
+	created_at           *time.Time
+	updated_at           *time.Time
+	run_id               *string
+	trigger              *string
+	status               *string
+	executor             *string
+	attempt              *int
+	addattempt           *int
+	model                *string
+	provider             *string
+	use_case             *string
+	sub_use_case         *string
+	previous_run_id      *string
+	retry_of_run_id      *string
+	local_run_id         *string
+	requested_context    *string
+	summary              *string
+	error                *string
+	error_code           *string
+	error_details        *string
+	temporal_workflow_id *string
+	temporal_run_id      *string
+	temporal_status      *string
+	temporal_started_at  *time.Time
+	temporal_closed_at   *time.Time
+	cancel_requested_at  *time.Time
+	progress_percent     *int
+	addprogress_percent  *int
+	progress_message     *string
+	last_heartbeat_at    *time.Time
+	started_at           *time.Time
+	completed_at         *time.Time
+	revision             *int
+	addrevision          *int
+	clearedFields        map[string]struct{}
+	user                 *uuid.UUID
+	cleareduser          bool
+	task                 *uuid.UUID
+	clearedtask          bool
+	events               map[uuid.UUID]struct{}
+	removedevents        map[uuid.UUID]struct{}
+	clearedevents        bool
+	done                 bool
+	oldValue             func(context.Context) (*BackgroundTaskRun, error)
+	predicates           []predicate.BackgroundTaskRun
+}
+
+var _ ent.Mutation = (*BackgroundTaskRunMutation)(nil)
+
+// backgroundtaskrunOption allows management of the mutation configuration using functional options.
+type backgroundtaskrunOption func(*BackgroundTaskRunMutation)
+
+// newBackgroundTaskRunMutation creates new mutation for the BackgroundTaskRun entity.
+func newBackgroundTaskRunMutation(c config, op Op, opts ...backgroundtaskrunOption) *BackgroundTaskRunMutation {
+	m := &BackgroundTaskRunMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeBackgroundTaskRun,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withBackgroundTaskRunID sets the ID field of the mutation.
+func withBackgroundTaskRunID(id uuid.UUID) backgroundtaskrunOption {
+	return func(m *BackgroundTaskRunMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *BackgroundTaskRun
+		)
+		m.oldValue = func(ctx context.Context) (*BackgroundTaskRun, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().BackgroundTaskRun.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withBackgroundTaskRun sets the old BackgroundTaskRun of the mutation.
+func withBackgroundTaskRun(node *BackgroundTaskRun) backgroundtaskrunOption {
+	return func(m *BackgroundTaskRunMutation) {
+		m.oldValue = func(context.Context) (*BackgroundTaskRun, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m BackgroundTaskRunMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m BackgroundTaskRunMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of BackgroundTaskRun entities.
+func (m *BackgroundTaskRunMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *BackgroundTaskRunMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *BackgroundTaskRunMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().BackgroundTaskRun.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *BackgroundTaskRunMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *BackgroundTaskRunMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *BackgroundTaskRunMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *BackgroundTaskRunMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *BackgroundTaskRunMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *BackgroundTaskRunMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetRunID sets the "run_id" field.
+func (m *BackgroundTaskRunMutation) SetRunID(s string) {
+	m.run_id = &s
+}
+
+// RunID returns the value of the "run_id" field in the mutation.
+func (m *BackgroundTaskRunMutation) RunID() (r string, exists bool) {
+	v := m.run_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRunID returns the old "run_id" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldRunID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRunID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRunID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRunID: %w", err)
+	}
+	return oldValue.RunID, nil
+}
+
+// ResetRunID resets all changes to the "run_id" field.
+func (m *BackgroundTaskRunMutation) ResetRunID() {
+	m.run_id = nil
+}
+
+// SetTrigger sets the "trigger" field.
+func (m *BackgroundTaskRunMutation) SetTrigger(s string) {
+	m.trigger = &s
+}
+
+// Trigger returns the value of the "trigger" field in the mutation.
+func (m *BackgroundTaskRunMutation) Trigger() (r string, exists bool) {
+	v := m.trigger
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTrigger returns the old "trigger" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldTrigger(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTrigger is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTrigger requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTrigger: %w", err)
+	}
+	return oldValue.Trigger, nil
+}
+
+// ResetTrigger resets all changes to the "trigger" field.
+func (m *BackgroundTaskRunMutation) ResetTrigger() {
+	m.trigger = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *BackgroundTaskRunMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *BackgroundTaskRunMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *BackgroundTaskRunMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetExecutor sets the "executor" field.
+func (m *BackgroundTaskRunMutation) SetExecutor(s string) {
+	m.executor = &s
+}
+
+// Executor returns the value of the "executor" field in the mutation.
+func (m *BackgroundTaskRunMutation) Executor() (r string, exists bool) {
+	v := m.executor
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExecutor returns the old "executor" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldExecutor(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExecutor is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExecutor requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExecutor: %w", err)
+	}
+	return oldValue.Executor, nil
+}
+
+// ResetExecutor resets all changes to the "executor" field.
+func (m *BackgroundTaskRunMutation) ResetExecutor() {
+	m.executor = nil
+}
+
+// SetAttempt sets the "attempt" field.
+func (m *BackgroundTaskRunMutation) SetAttempt(i int) {
+	m.attempt = &i
+	m.addattempt = nil
+}
+
+// Attempt returns the value of the "attempt" field in the mutation.
+func (m *BackgroundTaskRunMutation) Attempt() (r int, exists bool) {
+	v := m.attempt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAttempt returns the old "attempt" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldAttempt(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAttempt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAttempt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAttempt: %w", err)
+	}
+	return oldValue.Attempt, nil
+}
+
+// AddAttempt adds i to the "attempt" field.
+func (m *BackgroundTaskRunMutation) AddAttempt(i int) {
+	if m.addattempt != nil {
+		*m.addattempt += i
+	} else {
+		m.addattempt = &i
+	}
+}
+
+// AddedAttempt returns the value that was added to the "attempt" field in this mutation.
+func (m *BackgroundTaskRunMutation) AddedAttempt() (r int, exists bool) {
+	v := m.addattempt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAttempt resets all changes to the "attempt" field.
+func (m *BackgroundTaskRunMutation) ResetAttempt() {
+	m.attempt = nil
+	m.addattempt = nil
+}
+
+// SetModel sets the "model" field.
+func (m *BackgroundTaskRunMutation) SetModel(s string) {
+	m.model = &s
+}
+
+// Model returns the value of the "model" field in the mutation.
+func (m *BackgroundTaskRunMutation) Model() (r string, exists bool) {
+	v := m.model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModel returns the old "model" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
+	}
+	return oldValue.Model, nil
+}
+
+// ClearModel clears the value of the "model" field.
+func (m *BackgroundTaskRunMutation) ClearModel() {
+	m.model = nil
+	m.clearedFields[backgroundtaskrun.FieldModel] = struct{}{}
+}
+
+// ModelCleared returns if the "model" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) ModelCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldModel]
+	return ok
+}
+
+// ResetModel resets all changes to the "model" field.
+func (m *BackgroundTaskRunMutation) ResetModel() {
+	m.model = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldModel)
+}
+
+// SetProvider sets the "provider" field.
+func (m *BackgroundTaskRunMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *BackgroundTaskRunMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldProvider(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ClearProvider clears the value of the "provider" field.
+func (m *BackgroundTaskRunMutation) ClearProvider() {
+	m.provider = nil
+	m.clearedFields[backgroundtaskrun.FieldProvider] = struct{}{}
+}
+
+// ProviderCleared returns if the "provider" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) ProviderCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldProvider]
+	return ok
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *BackgroundTaskRunMutation) ResetProvider() {
+	m.provider = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldProvider)
+}
+
+// SetUseCase sets the "use_case" field.
+func (m *BackgroundTaskRunMutation) SetUseCase(s string) {
+	m.use_case = &s
+}
+
+// UseCase returns the value of the "use_case" field in the mutation.
+func (m *BackgroundTaskRunMutation) UseCase() (r string, exists bool) {
+	v := m.use_case
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUseCase returns the old "use_case" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldUseCase(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUseCase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUseCase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUseCase: %w", err)
+	}
+	return oldValue.UseCase, nil
+}
+
+// ClearUseCase clears the value of the "use_case" field.
+func (m *BackgroundTaskRunMutation) ClearUseCase() {
+	m.use_case = nil
+	m.clearedFields[backgroundtaskrun.FieldUseCase] = struct{}{}
+}
+
+// UseCaseCleared returns if the "use_case" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) UseCaseCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldUseCase]
+	return ok
+}
+
+// ResetUseCase resets all changes to the "use_case" field.
+func (m *BackgroundTaskRunMutation) ResetUseCase() {
+	m.use_case = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldUseCase)
+}
+
+// SetSubUseCase sets the "sub_use_case" field.
+func (m *BackgroundTaskRunMutation) SetSubUseCase(s string) {
+	m.sub_use_case = &s
+}
+
+// SubUseCase returns the value of the "sub_use_case" field in the mutation.
+func (m *BackgroundTaskRunMutation) SubUseCase() (r string, exists bool) {
+	v := m.sub_use_case
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubUseCase returns the old "sub_use_case" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldSubUseCase(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubUseCase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubUseCase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubUseCase: %w", err)
+	}
+	return oldValue.SubUseCase, nil
+}
+
+// ClearSubUseCase clears the value of the "sub_use_case" field.
+func (m *BackgroundTaskRunMutation) ClearSubUseCase() {
+	m.sub_use_case = nil
+	m.clearedFields[backgroundtaskrun.FieldSubUseCase] = struct{}{}
+}
+
+// SubUseCaseCleared returns if the "sub_use_case" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) SubUseCaseCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldSubUseCase]
+	return ok
+}
+
+// ResetSubUseCase resets all changes to the "sub_use_case" field.
+func (m *BackgroundTaskRunMutation) ResetSubUseCase() {
+	m.sub_use_case = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldSubUseCase)
+}
+
+// SetPreviousRunID sets the "previous_run_id" field.
+func (m *BackgroundTaskRunMutation) SetPreviousRunID(s string) {
+	m.previous_run_id = &s
+}
+
+// PreviousRunID returns the value of the "previous_run_id" field in the mutation.
+func (m *BackgroundTaskRunMutation) PreviousRunID() (r string, exists bool) {
+	v := m.previous_run_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPreviousRunID returns the old "previous_run_id" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldPreviousRunID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPreviousRunID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPreviousRunID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPreviousRunID: %w", err)
+	}
+	return oldValue.PreviousRunID, nil
+}
+
+// ClearPreviousRunID clears the value of the "previous_run_id" field.
+func (m *BackgroundTaskRunMutation) ClearPreviousRunID() {
+	m.previous_run_id = nil
+	m.clearedFields[backgroundtaskrun.FieldPreviousRunID] = struct{}{}
+}
+
+// PreviousRunIDCleared returns if the "previous_run_id" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) PreviousRunIDCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldPreviousRunID]
+	return ok
+}
+
+// ResetPreviousRunID resets all changes to the "previous_run_id" field.
+func (m *BackgroundTaskRunMutation) ResetPreviousRunID() {
+	m.previous_run_id = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldPreviousRunID)
+}
+
+// SetRetryOfRunID sets the "retry_of_run_id" field.
+func (m *BackgroundTaskRunMutation) SetRetryOfRunID(s string) {
+	m.retry_of_run_id = &s
+}
+
+// RetryOfRunID returns the value of the "retry_of_run_id" field in the mutation.
+func (m *BackgroundTaskRunMutation) RetryOfRunID() (r string, exists bool) {
+	v := m.retry_of_run_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRetryOfRunID returns the old "retry_of_run_id" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldRetryOfRunID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRetryOfRunID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRetryOfRunID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRetryOfRunID: %w", err)
+	}
+	return oldValue.RetryOfRunID, nil
+}
+
+// ClearRetryOfRunID clears the value of the "retry_of_run_id" field.
+func (m *BackgroundTaskRunMutation) ClearRetryOfRunID() {
+	m.retry_of_run_id = nil
+	m.clearedFields[backgroundtaskrun.FieldRetryOfRunID] = struct{}{}
+}
+
+// RetryOfRunIDCleared returns if the "retry_of_run_id" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) RetryOfRunIDCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldRetryOfRunID]
+	return ok
+}
+
+// ResetRetryOfRunID resets all changes to the "retry_of_run_id" field.
+func (m *BackgroundTaskRunMutation) ResetRetryOfRunID() {
+	m.retry_of_run_id = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldRetryOfRunID)
+}
+
+// SetLocalRunID sets the "local_run_id" field.
+func (m *BackgroundTaskRunMutation) SetLocalRunID(s string) {
+	m.local_run_id = &s
+}
+
+// LocalRunID returns the value of the "local_run_id" field in the mutation.
+func (m *BackgroundTaskRunMutation) LocalRunID() (r string, exists bool) {
+	v := m.local_run_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLocalRunID returns the old "local_run_id" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldLocalRunID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLocalRunID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLocalRunID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLocalRunID: %w", err)
+	}
+	return oldValue.LocalRunID, nil
+}
+
+// ClearLocalRunID clears the value of the "local_run_id" field.
+func (m *BackgroundTaskRunMutation) ClearLocalRunID() {
+	m.local_run_id = nil
+	m.clearedFields[backgroundtaskrun.FieldLocalRunID] = struct{}{}
+}
+
+// LocalRunIDCleared returns if the "local_run_id" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) LocalRunIDCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldLocalRunID]
+	return ok
+}
+
+// ResetLocalRunID resets all changes to the "local_run_id" field.
+func (m *BackgroundTaskRunMutation) ResetLocalRunID() {
+	m.local_run_id = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldLocalRunID)
+}
+
+// SetRequestedContext sets the "requested_context" field.
+func (m *BackgroundTaskRunMutation) SetRequestedContext(s string) {
+	m.requested_context = &s
+}
+
+// RequestedContext returns the value of the "requested_context" field in the mutation.
+func (m *BackgroundTaskRunMutation) RequestedContext() (r string, exists bool) {
+	v := m.requested_context
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestedContext returns the old "requested_context" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldRequestedContext(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestedContext is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestedContext requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestedContext: %w", err)
+	}
+	return oldValue.RequestedContext, nil
+}
+
+// ClearRequestedContext clears the value of the "requested_context" field.
+func (m *BackgroundTaskRunMutation) ClearRequestedContext() {
+	m.requested_context = nil
+	m.clearedFields[backgroundtaskrun.FieldRequestedContext] = struct{}{}
+}
+
+// RequestedContextCleared returns if the "requested_context" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) RequestedContextCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldRequestedContext]
+	return ok
+}
+
+// ResetRequestedContext resets all changes to the "requested_context" field.
+func (m *BackgroundTaskRunMutation) ResetRequestedContext() {
+	m.requested_context = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldRequestedContext)
+}
+
+// SetSummary sets the "summary" field.
+func (m *BackgroundTaskRunMutation) SetSummary(s string) {
+	m.summary = &s
+}
+
+// Summary returns the value of the "summary" field in the mutation.
+func (m *BackgroundTaskRunMutation) Summary() (r string, exists bool) {
+	v := m.summary
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSummary returns the old "summary" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldSummary(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSummary is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSummary requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSummary: %w", err)
+	}
+	return oldValue.Summary, nil
+}
+
+// ClearSummary clears the value of the "summary" field.
+func (m *BackgroundTaskRunMutation) ClearSummary() {
+	m.summary = nil
+	m.clearedFields[backgroundtaskrun.FieldSummary] = struct{}{}
+}
+
+// SummaryCleared returns if the "summary" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) SummaryCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldSummary]
+	return ok
+}
+
+// ResetSummary resets all changes to the "summary" field.
+func (m *BackgroundTaskRunMutation) ResetSummary() {
+	m.summary = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldSummary)
+}
+
+// SetError sets the "error" field.
+func (m *BackgroundTaskRunMutation) SetError(s string) {
+	m.error = &s
+}
+
+// Error returns the value of the "error" field in the mutation.
+func (m *BackgroundTaskRunMutation) Error() (r string, exists bool) {
+	v := m.error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldError returns the old "error" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldError: %w", err)
+	}
+	return oldValue.Error, nil
+}
+
+// ClearError clears the value of the "error" field.
+func (m *BackgroundTaskRunMutation) ClearError() {
+	m.error = nil
+	m.clearedFields[backgroundtaskrun.FieldError] = struct{}{}
+}
+
+// ErrorCleared returns if the "error" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) ErrorCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldError]
+	return ok
+}
+
+// ResetError resets all changes to the "error" field.
+func (m *BackgroundTaskRunMutation) ResetError() {
+	m.error = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldError)
+}
+
+// SetErrorCode sets the "error_code" field.
+func (m *BackgroundTaskRunMutation) SetErrorCode(s string) {
+	m.error_code = &s
+}
+
+// ErrorCode returns the value of the "error_code" field in the mutation.
+func (m *BackgroundTaskRunMutation) ErrorCode() (r string, exists bool) {
+	v := m.error_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorCode returns the old "error_code" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldErrorCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorCode: %w", err)
+	}
+	return oldValue.ErrorCode, nil
+}
+
+// ClearErrorCode clears the value of the "error_code" field.
+func (m *BackgroundTaskRunMutation) ClearErrorCode() {
+	m.error_code = nil
+	m.clearedFields[backgroundtaskrun.FieldErrorCode] = struct{}{}
+}
+
+// ErrorCodeCleared returns if the "error_code" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) ErrorCodeCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldErrorCode]
+	return ok
+}
+
+// ResetErrorCode resets all changes to the "error_code" field.
+func (m *BackgroundTaskRunMutation) ResetErrorCode() {
+	m.error_code = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldErrorCode)
+}
+
+// SetErrorDetails sets the "error_details" field.
+func (m *BackgroundTaskRunMutation) SetErrorDetails(s string) {
+	m.error_details = &s
+}
+
+// ErrorDetails returns the value of the "error_details" field in the mutation.
+func (m *BackgroundTaskRunMutation) ErrorDetails() (r string, exists bool) {
+	v := m.error_details
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorDetails returns the old "error_details" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldErrorDetails(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorDetails is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorDetails requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorDetails: %w", err)
+	}
+	return oldValue.ErrorDetails, nil
+}
+
+// ClearErrorDetails clears the value of the "error_details" field.
+func (m *BackgroundTaskRunMutation) ClearErrorDetails() {
+	m.error_details = nil
+	m.clearedFields[backgroundtaskrun.FieldErrorDetails] = struct{}{}
+}
+
+// ErrorDetailsCleared returns if the "error_details" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) ErrorDetailsCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldErrorDetails]
+	return ok
+}
+
+// ResetErrorDetails resets all changes to the "error_details" field.
+func (m *BackgroundTaskRunMutation) ResetErrorDetails() {
+	m.error_details = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldErrorDetails)
+}
+
+// SetTemporalWorkflowID sets the "temporal_workflow_id" field.
+func (m *BackgroundTaskRunMutation) SetTemporalWorkflowID(s string) {
+	m.temporal_workflow_id = &s
+}
+
+// TemporalWorkflowID returns the value of the "temporal_workflow_id" field in the mutation.
+func (m *BackgroundTaskRunMutation) TemporalWorkflowID() (r string, exists bool) {
+	v := m.temporal_workflow_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemporalWorkflowID returns the old "temporal_workflow_id" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldTemporalWorkflowID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemporalWorkflowID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemporalWorkflowID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemporalWorkflowID: %w", err)
+	}
+	return oldValue.TemporalWorkflowID, nil
+}
+
+// ClearTemporalWorkflowID clears the value of the "temporal_workflow_id" field.
+func (m *BackgroundTaskRunMutation) ClearTemporalWorkflowID() {
+	m.temporal_workflow_id = nil
+	m.clearedFields[backgroundtaskrun.FieldTemporalWorkflowID] = struct{}{}
+}
+
+// TemporalWorkflowIDCleared returns if the "temporal_workflow_id" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) TemporalWorkflowIDCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldTemporalWorkflowID]
+	return ok
+}
+
+// ResetTemporalWorkflowID resets all changes to the "temporal_workflow_id" field.
+func (m *BackgroundTaskRunMutation) ResetTemporalWorkflowID() {
+	m.temporal_workflow_id = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldTemporalWorkflowID)
+}
+
+// SetTemporalRunID sets the "temporal_run_id" field.
+func (m *BackgroundTaskRunMutation) SetTemporalRunID(s string) {
+	m.temporal_run_id = &s
+}
+
+// TemporalRunID returns the value of the "temporal_run_id" field in the mutation.
+func (m *BackgroundTaskRunMutation) TemporalRunID() (r string, exists bool) {
+	v := m.temporal_run_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemporalRunID returns the old "temporal_run_id" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldTemporalRunID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemporalRunID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemporalRunID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemporalRunID: %w", err)
+	}
+	return oldValue.TemporalRunID, nil
+}
+
+// ClearTemporalRunID clears the value of the "temporal_run_id" field.
+func (m *BackgroundTaskRunMutation) ClearTemporalRunID() {
+	m.temporal_run_id = nil
+	m.clearedFields[backgroundtaskrun.FieldTemporalRunID] = struct{}{}
+}
+
+// TemporalRunIDCleared returns if the "temporal_run_id" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) TemporalRunIDCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldTemporalRunID]
+	return ok
+}
+
+// ResetTemporalRunID resets all changes to the "temporal_run_id" field.
+func (m *BackgroundTaskRunMutation) ResetTemporalRunID() {
+	m.temporal_run_id = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldTemporalRunID)
+}
+
+// SetTemporalStatus sets the "temporal_status" field.
+func (m *BackgroundTaskRunMutation) SetTemporalStatus(s string) {
+	m.temporal_status = &s
+}
+
+// TemporalStatus returns the value of the "temporal_status" field in the mutation.
+func (m *BackgroundTaskRunMutation) TemporalStatus() (r string, exists bool) {
+	v := m.temporal_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemporalStatus returns the old "temporal_status" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldTemporalStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemporalStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemporalStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemporalStatus: %w", err)
+	}
+	return oldValue.TemporalStatus, nil
+}
+
+// ClearTemporalStatus clears the value of the "temporal_status" field.
+func (m *BackgroundTaskRunMutation) ClearTemporalStatus() {
+	m.temporal_status = nil
+	m.clearedFields[backgroundtaskrun.FieldTemporalStatus] = struct{}{}
+}
+
+// TemporalStatusCleared returns if the "temporal_status" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) TemporalStatusCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldTemporalStatus]
+	return ok
+}
+
+// ResetTemporalStatus resets all changes to the "temporal_status" field.
+func (m *BackgroundTaskRunMutation) ResetTemporalStatus() {
+	m.temporal_status = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldTemporalStatus)
+}
+
+// SetTemporalStartedAt sets the "temporal_started_at" field.
+func (m *BackgroundTaskRunMutation) SetTemporalStartedAt(t time.Time) {
+	m.temporal_started_at = &t
+}
+
+// TemporalStartedAt returns the value of the "temporal_started_at" field in the mutation.
+func (m *BackgroundTaskRunMutation) TemporalStartedAt() (r time.Time, exists bool) {
+	v := m.temporal_started_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemporalStartedAt returns the old "temporal_started_at" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldTemporalStartedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemporalStartedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemporalStartedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemporalStartedAt: %w", err)
+	}
+	return oldValue.TemporalStartedAt, nil
+}
+
+// ClearTemporalStartedAt clears the value of the "temporal_started_at" field.
+func (m *BackgroundTaskRunMutation) ClearTemporalStartedAt() {
+	m.temporal_started_at = nil
+	m.clearedFields[backgroundtaskrun.FieldTemporalStartedAt] = struct{}{}
+}
+
+// TemporalStartedAtCleared returns if the "temporal_started_at" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) TemporalStartedAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldTemporalStartedAt]
+	return ok
+}
+
+// ResetTemporalStartedAt resets all changes to the "temporal_started_at" field.
+func (m *BackgroundTaskRunMutation) ResetTemporalStartedAt() {
+	m.temporal_started_at = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldTemporalStartedAt)
+}
+
+// SetTemporalClosedAt sets the "temporal_closed_at" field.
+func (m *BackgroundTaskRunMutation) SetTemporalClosedAt(t time.Time) {
+	m.temporal_closed_at = &t
+}
+
+// TemporalClosedAt returns the value of the "temporal_closed_at" field in the mutation.
+func (m *BackgroundTaskRunMutation) TemporalClosedAt() (r time.Time, exists bool) {
+	v := m.temporal_closed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemporalClosedAt returns the old "temporal_closed_at" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldTemporalClosedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemporalClosedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemporalClosedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemporalClosedAt: %w", err)
+	}
+	return oldValue.TemporalClosedAt, nil
+}
+
+// ClearTemporalClosedAt clears the value of the "temporal_closed_at" field.
+func (m *BackgroundTaskRunMutation) ClearTemporalClosedAt() {
+	m.temporal_closed_at = nil
+	m.clearedFields[backgroundtaskrun.FieldTemporalClosedAt] = struct{}{}
+}
+
+// TemporalClosedAtCleared returns if the "temporal_closed_at" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) TemporalClosedAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldTemporalClosedAt]
+	return ok
+}
+
+// ResetTemporalClosedAt resets all changes to the "temporal_closed_at" field.
+func (m *BackgroundTaskRunMutation) ResetTemporalClosedAt() {
+	m.temporal_closed_at = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldTemporalClosedAt)
+}
+
+// SetCancelRequestedAt sets the "cancel_requested_at" field.
+func (m *BackgroundTaskRunMutation) SetCancelRequestedAt(t time.Time) {
+	m.cancel_requested_at = &t
+}
+
+// CancelRequestedAt returns the value of the "cancel_requested_at" field in the mutation.
+func (m *BackgroundTaskRunMutation) CancelRequestedAt() (r time.Time, exists bool) {
+	v := m.cancel_requested_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCancelRequestedAt returns the old "cancel_requested_at" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldCancelRequestedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCancelRequestedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCancelRequestedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCancelRequestedAt: %w", err)
+	}
+	return oldValue.CancelRequestedAt, nil
+}
+
+// ClearCancelRequestedAt clears the value of the "cancel_requested_at" field.
+func (m *BackgroundTaskRunMutation) ClearCancelRequestedAt() {
+	m.cancel_requested_at = nil
+	m.clearedFields[backgroundtaskrun.FieldCancelRequestedAt] = struct{}{}
+}
+
+// CancelRequestedAtCleared returns if the "cancel_requested_at" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) CancelRequestedAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldCancelRequestedAt]
+	return ok
+}
+
+// ResetCancelRequestedAt resets all changes to the "cancel_requested_at" field.
+func (m *BackgroundTaskRunMutation) ResetCancelRequestedAt() {
+	m.cancel_requested_at = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldCancelRequestedAt)
+}
+
+// SetProgressPercent sets the "progress_percent" field.
+func (m *BackgroundTaskRunMutation) SetProgressPercent(i int) {
+	m.progress_percent = &i
+	m.addprogress_percent = nil
+}
+
+// ProgressPercent returns the value of the "progress_percent" field in the mutation.
+func (m *BackgroundTaskRunMutation) ProgressPercent() (r int, exists bool) {
+	v := m.progress_percent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProgressPercent returns the old "progress_percent" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldProgressPercent(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProgressPercent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProgressPercent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProgressPercent: %w", err)
+	}
+	return oldValue.ProgressPercent, nil
+}
+
+// AddProgressPercent adds i to the "progress_percent" field.
+func (m *BackgroundTaskRunMutation) AddProgressPercent(i int) {
+	if m.addprogress_percent != nil {
+		*m.addprogress_percent += i
+	} else {
+		m.addprogress_percent = &i
+	}
+}
+
+// AddedProgressPercent returns the value that was added to the "progress_percent" field in this mutation.
+func (m *BackgroundTaskRunMutation) AddedProgressPercent() (r int, exists bool) {
+	v := m.addprogress_percent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearProgressPercent clears the value of the "progress_percent" field.
+func (m *BackgroundTaskRunMutation) ClearProgressPercent() {
+	m.progress_percent = nil
+	m.addprogress_percent = nil
+	m.clearedFields[backgroundtaskrun.FieldProgressPercent] = struct{}{}
+}
+
+// ProgressPercentCleared returns if the "progress_percent" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) ProgressPercentCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldProgressPercent]
+	return ok
+}
+
+// ResetProgressPercent resets all changes to the "progress_percent" field.
+func (m *BackgroundTaskRunMutation) ResetProgressPercent() {
+	m.progress_percent = nil
+	m.addprogress_percent = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldProgressPercent)
+}
+
+// SetProgressMessage sets the "progress_message" field.
+func (m *BackgroundTaskRunMutation) SetProgressMessage(s string) {
+	m.progress_message = &s
+}
+
+// ProgressMessage returns the value of the "progress_message" field in the mutation.
+func (m *BackgroundTaskRunMutation) ProgressMessage() (r string, exists bool) {
+	v := m.progress_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProgressMessage returns the old "progress_message" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldProgressMessage(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProgressMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProgressMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProgressMessage: %w", err)
+	}
+	return oldValue.ProgressMessage, nil
+}
+
+// ClearProgressMessage clears the value of the "progress_message" field.
+func (m *BackgroundTaskRunMutation) ClearProgressMessage() {
+	m.progress_message = nil
+	m.clearedFields[backgroundtaskrun.FieldProgressMessage] = struct{}{}
+}
+
+// ProgressMessageCleared returns if the "progress_message" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) ProgressMessageCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldProgressMessage]
+	return ok
+}
+
+// ResetProgressMessage resets all changes to the "progress_message" field.
+func (m *BackgroundTaskRunMutation) ResetProgressMessage() {
+	m.progress_message = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldProgressMessage)
+}
+
+// SetLastHeartbeatAt sets the "last_heartbeat_at" field.
+func (m *BackgroundTaskRunMutation) SetLastHeartbeatAt(t time.Time) {
+	m.last_heartbeat_at = &t
+}
+
+// LastHeartbeatAt returns the value of the "last_heartbeat_at" field in the mutation.
+func (m *BackgroundTaskRunMutation) LastHeartbeatAt() (r time.Time, exists bool) {
+	v := m.last_heartbeat_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastHeartbeatAt returns the old "last_heartbeat_at" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldLastHeartbeatAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastHeartbeatAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastHeartbeatAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastHeartbeatAt: %w", err)
+	}
+	return oldValue.LastHeartbeatAt, nil
+}
+
+// ClearLastHeartbeatAt clears the value of the "last_heartbeat_at" field.
+func (m *BackgroundTaskRunMutation) ClearLastHeartbeatAt() {
+	m.last_heartbeat_at = nil
+	m.clearedFields[backgroundtaskrun.FieldLastHeartbeatAt] = struct{}{}
+}
+
+// LastHeartbeatAtCleared returns if the "last_heartbeat_at" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) LastHeartbeatAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldLastHeartbeatAt]
+	return ok
+}
+
+// ResetLastHeartbeatAt resets all changes to the "last_heartbeat_at" field.
+func (m *BackgroundTaskRunMutation) ResetLastHeartbeatAt() {
+	m.last_heartbeat_at = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldLastHeartbeatAt)
+}
+
+// SetStartedAt sets the "started_at" field.
+func (m *BackgroundTaskRunMutation) SetStartedAt(t time.Time) {
+	m.started_at = &t
+}
+
+// StartedAt returns the value of the "started_at" field in the mutation.
+func (m *BackgroundTaskRunMutation) StartedAt() (r time.Time, exists bool) {
+	v := m.started_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStartedAt returns the old "started_at" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldStartedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStartedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStartedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartedAt: %w", err)
+	}
+	return oldValue.StartedAt, nil
+}
+
+// ClearStartedAt clears the value of the "started_at" field.
+func (m *BackgroundTaskRunMutation) ClearStartedAt() {
+	m.started_at = nil
+	m.clearedFields[backgroundtaskrun.FieldStartedAt] = struct{}{}
+}
+
+// StartedAtCleared returns if the "started_at" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) StartedAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldStartedAt]
+	return ok
+}
+
+// ResetStartedAt resets all changes to the "started_at" field.
+func (m *BackgroundTaskRunMutation) ResetStartedAt() {
+	m.started_at = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldStartedAt)
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (m *BackgroundTaskRunMutation) SetCompletedAt(t time.Time) {
+	m.completed_at = &t
+}
+
+// CompletedAt returns the value of the "completed_at" field in the mutation.
+func (m *BackgroundTaskRunMutation) CompletedAt() (r time.Time, exists bool) {
+	v := m.completed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompletedAt returns the old "completed_at" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldCompletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompletedAt: %w", err)
+	}
+	return oldValue.CompletedAt, nil
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (m *BackgroundTaskRunMutation) ClearCompletedAt() {
+	m.completed_at = nil
+	m.clearedFields[backgroundtaskrun.FieldCompletedAt] = struct{}{}
+}
+
+// CompletedAtCleared returns if the "completed_at" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) CompletedAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldCompletedAt]
+	return ok
+}
+
+// ResetCompletedAt resets all changes to the "completed_at" field.
+func (m *BackgroundTaskRunMutation) ResetCompletedAt() {
+	m.completed_at = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldCompletedAt)
+}
+
+// SetRevision sets the "revision" field.
+func (m *BackgroundTaskRunMutation) SetRevision(i int) {
+	m.revision = &i
+	m.addrevision = nil
+}
+
+// Revision returns the value of the "revision" field in the mutation.
+func (m *BackgroundTaskRunMutation) Revision() (r int, exists bool) {
+	v := m.revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRevision returns the old "revision" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldRevision(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRevision is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRevision requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRevision: %w", err)
+	}
+	return oldValue.Revision, nil
+}
+
+// AddRevision adds i to the "revision" field.
+func (m *BackgroundTaskRunMutation) AddRevision(i int) {
+	if m.addrevision != nil {
+		*m.addrevision += i
+	} else {
+		m.addrevision = &i
+	}
+}
+
+// AddedRevision returns the value that was added to the "revision" field in this mutation.
+func (m *BackgroundTaskRunMutation) AddedRevision() (r int, exists bool) {
+	v := m.addrevision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRevision resets all changes to the "revision" field.
+func (m *BackgroundTaskRunMutation) ResetRevision() {
+	m.revision = nil
+	m.addrevision = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *BackgroundTaskRunMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *BackgroundTaskRunMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *BackgroundTaskRunMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *BackgroundTaskRunMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskRunMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *BackgroundTaskRunMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetTaskID sets the "task" edge to the BackgroundTask entity by id.
+func (m *BackgroundTaskRunMutation) SetTaskID(id uuid.UUID) {
+	m.task = &id
+}
+
+// ClearTask clears the "task" edge to the BackgroundTask entity.
+func (m *BackgroundTaskRunMutation) ClearTask() {
+	m.clearedtask = true
+}
+
+// TaskCleared reports if the "task" edge to the BackgroundTask entity was cleared.
+func (m *BackgroundTaskRunMutation) TaskCleared() bool {
+	return m.clearedtask
+}
+
+// TaskID returns the "task" edge ID in the mutation.
+func (m *BackgroundTaskRunMutation) TaskID() (id uuid.UUID, exists bool) {
+	if m.task != nil {
+		return *m.task, true
+	}
+	return
+}
+
+// TaskIDs returns the "task" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TaskID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskRunMutation) TaskIDs() (ids []uuid.UUID) {
+	if id := m.task; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTask resets all changes to the "task" edge.
+func (m *BackgroundTaskRunMutation) ResetTask() {
+	m.task = nil
+	m.clearedtask = false
+}
+
+// AddEventIDs adds the "events" edge to the BackgroundTaskRunEvent entity by ids.
+func (m *BackgroundTaskRunMutation) AddEventIDs(ids ...uuid.UUID) {
+	if m.events == nil {
+		m.events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.events[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEvents clears the "events" edge to the BackgroundTaskRunEvent entity.
+func (m *BackgroundTaskRunMutation) ClearEvents() {
+	m.clearedevents = true
+}
+
+// EventsCleared reports if the "events" edge to the BackgroundTaskRunEvent entity was cleared.
+func (m *BackgroundTaskRunMutation) EventsCleared() bool {
+	return m.clearedevents
+}
+
+// RemoveEventIDs removes the "events" edge to the BackgroundTaskRunEvent entity by IDs.
+func (m *BackgroundTaskRunMutation) RemoveEventIDs(ids ...uuid.UUID) {
+	if m.removedevents == nil {
+		m.removedevents = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.events, ids[i])
+		m.removedevents[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEvents returns the removed IDs of the "events" edge to the BackgroundTaskRunEvent entity.
+func (m *BackgroundTaskRunMutation) RemovedEventsIDs() (ids []uuid.UUID) {
+	for id := range m.removedevents {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EventsIDs returns the "events" edge IDs in the mutation.
+func (m *BackgroundTaskRunMutation) EventsIDs() (ids []uuid.UUID) {
+	for id := range m.events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEvents resets all changes to the "events" edge.
+func (m *BackgroundTaskRunMutation) ResetEvents() {
+	m.events = nil
+	m.clearedevents = false
+	m.removedevents = nil
+}
+
+// Where appends a list predicates to the BackgroundTaskRunMutation builder.
+func (m *BackgroundTaskRunMutation) Where(ps ...predicate.BackgroundTaskRun) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the BackgroundTaskRunMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *BackgroundTaskRunMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.BackgroundTaskRun, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *BackgroundTaskRunMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *BackgroundTaskRunMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (BackgroundTaskRun).
+func (m *BackgroundTaskRunMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *BackgroundTaskRunMutation) Fields() []string {
+	fields := make([]string, 0, 31)
+	if m.created_at != nil {
+		fields = append(fields, backgroundtaskrun.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, backgroundtaskrun.FieldUpdatedAt)
+	}
+	if m.run_id != nil {
+		fields = append(fields, backgroundtaskrun.FieldRunID)
+	}
+	if m.trigger != nil {
+		fields = append(fields, backgroundtaskrun.FieldTrigger)
+	}
+	if m.status != nil {
+		fields = append(fields, backgroundtaskrun.FieldStatus)
+	}
+	if m.executor != nil {
+		fields = append(fields, backgroundtaskrun.FieldExecutor)
+	}
+	if m.attempt != nil {
+		fields = append(fields, backgroundtaskrun.FieldAttempt)
+	}
+	if m.model != nil {
+		fields = append(fields, backgroundtaskrun.FieldModel)
+	}
+	if m.provider != nil {
+		fields = append(fields, backgroundtaskrun.FieldProvider)
+	}
+	if m.use_case != nil {
+		fields = append(fields, backgroundtaskrun.FieldUseCase)
+	}
+	if m.sub_use_case != nil {
+		fields = append(fields, backgroundtaskrun.FieldSubUseCase)
+	}
+	if m.previous_run_id != nil {
+		fields = append(fields, backgroundtaskrun.FieldPreviousRunID)
+	}
+	if m.retry_of_run_id != nil {
+		fields = append(fields, backgroundtaskrun.FieldRetryOfRunID)
+	}
+	if m.local_run_id != nil {
+		fields = append(fields, backgroundtaskrun.FieldLocalRunID)
+	}
+	if m.requested_context != nil {
+		fields = append(fields, backgroundtaskrun.FieldRequestedContext)
+	}
+	if m.summary != nil {
+		fields = append(fields, backgroundtaskrun.FieldSummary)
+	}
+	if m.error != nil {
+		fields = append(fields, backgroundtaskrun.FieldError)
+	}
+	if m.error_code != nil {
+		fields = append(fields, backgroundtaskrun.FieldErrorCode)
+	}
+	if m.error_details != nil {
+		fields = append(fields, backgroundtaskrun.FieldErrorDetails)
+	}
+	if m.temporal_workflow_id != nil {
+		fields = append(fields, backgroundtaskrun.FieldTemporalWorkflowID)
+	}
+	if m.temporal_run_id != nil {
+		fields = append(fields, backgroundtaskrun.FieldTemporalRunID)
+	}
+	if m.temporal_status != nil {
+		fields = append(fields, backgroundtaskrun.FieldTemporalStatus)
+	}
+	if m.temporal_started_at != nil {
+		fields = append(fields, backgroundtaskrun.FieldTemporalStartedAt)
+	}
+	if m.temporal_closed_at != nil {
+		fields = append(fields, backgroundtaskrun.FieldTemporalClosedAt)
+	}
+	if m.cancel_requested_at != nil {
+		fields = append(fields, backgroundtaskrun.FieldCancelRequestedAt)
+	}
+	if m.progress_percent != nil {
+		fields = append(fields, backgroundtaskrun.FieldProgressPercent)
+	}
+	if m.progress_message != nil {
+		fields = append(fields, backgroundtaskrun.FieldProgressMessage)
+	}
+	if m.last_heartbeat_at != nil {
+		fields = append(fields, backgroundtaskrun.FieldLastHeartbeatAt)
+	}
+	if m.started_at != nil {
+		fields = append(fields, backgroundtaskrun.FieldStartedAt)
+	}
+	if m.completed_at != nil {
+		fields = append(fields, backgroundtaskrun.FieldCompletedAt)
+	}
+	if m.revision != nil {
+		fields = append(fields, backgroundtaskrun.FieldRevision)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *BackgroundTaskRunMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case backgroundtaskrun.FieldCreatedAt:
+		return m.CreatedAt()
+	case backgroundtaskrun.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case backgroundtaskrun.FieldRunID:
+		return m.RunID()
+	case backgroundtaskrun.FieldTrigger:
+		return m.Trigger()
+	case backgroundtaskrun.FieldStatus:
+		return m.Status()
+	case backgroundtaskrun.FieldExecutor:
+		return m.Executor()
+	case backgroundtaskrun.FieldAttempt:
+		return m.Attempt()
+	case backgroundtaskrun.FieldModel:
+		return m.Model()
+	case backgroundtaskrun.FieldProvider:
+		return m.Provider()
+	case backgroundtaskrun.FieldUseCase:
+		return m.UseCase()
+	case backgroundtaskrun.FieldSubUseCase:
+		return m.SubUseCase()
+	case backgroundtaskrun.FieldPreviousRunID:
+		return m.PreviousRunID()
+	case backgroundtaskrun.FieldRetryOfRunID:
+		return m.RetryOfRunID()
+	case backgroundtaskrun.FieldLocalRunID:
+		return m.LocalRunID()
+	case backgroundtaskrun.FieldRequestedContext:
+		return m.RequestedContext()
+	case backgroundtaskrun.FieldSummary:
+		return m.Summary()
+	case backgroundtaskrun.FieldError:
+		return m.Error()
+	case backgroundtaskrun.FieldErrorCode:
+		return m.ErrorCode()
+	case backgroundtaskrun.FieldErrorDetails:
+		return m.ErrorDetails()
+	case backgroundtaskrun.FieldTemporalWorkflowID:
+		return m.TemporalWorkflowID()
+	case backgroundtaskrun.FieldTemporalRunID:
+		return m.TemporalRunID()
+	case backgroundtaskrun.FieldTemporalStatus:
+		return m.TemporalStatus()
+	case backgroundtaskrun.FieldTemporalStartedAt:
+		return m.TemporalStartedAt()
+	case backgroundtaskrun.FieldTemporalClosedAt:
+		return m.TemporalClosedAt()
+	case backgroundtaskrun.FieldCancelRequestedAt:
+		return m.CancelRequestedAt()
+	case backgroundtaskrun.FieldProgressPercent:
+		return m.ProgressPercent()
+	case backgroundtaskrun.FieldProgressMessage:
+		return m.ProgressMessage()
+	case backgroundtaskrun.FieldLastHeartbeatAt:
+		return m.LastHeartbeatAt()
+	case backgroundtaskrun.FieldStartedAt:
+		return m.StartedAt()
+	case backgroundtaskrun.FieldCompletedAt:
+		return m.CompletedAt()
+	case backgroundtaskrun.FieldRevision:
+		return m.Revision()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *BackgroundTaskRunMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case backgroundtaskrun.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case backgroundtaskrun.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case backgroundtaskrun.FieldRunID:
+		return m.OldRunID(ctx)
+	case backgroundtaskrun.FieldTrigger:
+		return m.OldTrigger(ctx)
+	case backgroundtaskrun.FieldStatus:
+		return m.OldStatus(ctx)
+	case backgroundtaskrun.FieldExecutor:
+		return m.OldExecutor(ctx)
+	case backgroundtaskrun.FieldAttempt:
+		return m.OldAttempt(ctx)
+	case backgroundtaskrun.FieldModel:
+		return m.OldModel(ctx)
+	case backgroundtaskrun.FieldProvider:
+		return m.OldProvider(ctx)
+	case backgroundtaskrun.FieldUseCase:
+		return m.OldUseCase(ctx)
+	case backgroundtaskrun.FieldSubUseCase:
+		return m.OldSubUseCase(ctx)
+	case backgroundtaskrun.FieldPreviousRunID:
+		return m.OldPreviousRunID(ctx)
+	case backgroundtaskrun.FieldRetryOfRunID:
+		return m.OldRetryOfRunID(ctx)
+	case backgroundtaskrun.FieldLocalRunID:
+		return m.OldLocalRunID(ctx)
+	case backgroundtaskrun.FieldRequestedContext:
+		return m.OldRequestedContext(ctx)
+	case backgroundtaskrun.FieldSummary:
+		return m.OldSummary(ctx)
+	case backgroundtaskrun.FieldError:
+		return m.OldError(ctx)
+	case backgroundtaskrun.FieldErrorCode:
+		return m.OldErrorCode(ctx)
+	case backgroundtaskrun.FieldErrorDetails:
+		return m.OldErrorDetails(ctx)
+	case backgroundtaskrun.FieldTemporalWorkflowID:
+		return m.OldTemporalWorkflowID(ctx)
+	case backgroundtaskrun.FieldTemporalRunID:
+		return m.OldTemporalRunID(ctx)
+	case backgroundtaskrun.FieldTemporalStatus:
+		return m.OldTemporalStatus(ctx)
+	case backgroundtaskrun.FieldTemporalStartedAt:
+		return m.OldTemporalStartedAt(ctx)
+	case backgroundtaskrun.FieldTemporalClosedAt:
+		return m.OldTemporalClosedAt(ctx)
+	case backgroundtaskrun.FieldCancelRequestedAt:
+		return m.OldCancelRequestedAt(ctx)
+	case backgroundtaskrun.FieldProgressPercent:
+		return m.OldProgressPercent(ctx)
+	case backgroundtaskrun.FieldProgressMessage:
+		return m.OldProgressMessage(ctx)
+	case backgroundtaskrun.FieldLastHeartbeatAt:
+		return m.OldLastHeartbeatAt(ctx)
+	case backgroundtaskrun.FieldStartedAt:
+		return m.OldStartedAt(ctx)
+	case backgroundtaskrun.FieldCompletedAt:
+		return m.OldCompletedAt(ctx)
+	case backgroundtaskrun.FieldRevision:
+		return m.OldRevision(ctx)
+	}
+	return nil, fmt.Errorf("unknown BackgroundTaskRun field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BackgroundTaskRunMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case backgroundtaskrun.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case backgroundtaskrun.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case backgroundtaskrun.FieldRunID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRunID(v)
+		return nil
+	case backgroundtaskrun.FieldTrigger:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTrigger(v)
+		return nil
+	case backgroundtaskrun.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case backgroundtaskrun.FieldExecutor:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExecutor(v)
+		return nil
+	case backgroundtaskrun.FieldAttempt:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAttempt(v)
+		return nil
+	case backgroundtaskrun.FieldModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModel(v)
+		return nil
+	case backgroundtaskrun.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
+	case backgroundtaskrun.FieldUseCase:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUseCase(v)
+		return nil
+	case backgroundtaskrun.FieldSubUseCase:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubUseCase(v)
+		return nil
+	case backgroundtaskrun.FieldPreviousRunID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPreviousRunID(v)
+		return nil
+	case backgroundtaskrun.FieldRetryOfRunID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRetryOfRunID(v)
+		return nil
+	case backgroundtaskrun.FieldLocalRunID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLocalRunID(v)
+		return nil
+	case backgroundtaskrun.FieldRequestedContext:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestedContext(v)
+		return nil
+	case backgroundtaskrun.FieldSummary:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSummary(v)
+		return nil
+	case backgroundtaskrun.FieldError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetError(v)
+		return nil
+	case backgroundtaskrun.FieldErrorCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorCode(v)
+		return nil
+	case backgroundtaskrun.FieldErrorDetails:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorDetails(v)
+		return nil
+	case backgroundtaskrun.FieldTemporalWorkflowID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemporalWorkflowID(v)
+		return nil
+	case backgroundtaskrun.FieldTemporalRunID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemporalRunID(v)
+		return nil
+	case backgroundtaskrun.FieldTemporalStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemporalStatus(v)
+		return nil
+	case backgroundtaskrun.FieldTemporalStartedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemporalStartedAt(v)
+		return nil
+	case backgroundtaskrun.FieldTemporalClosedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemporalClosedAt(v)
+		return nil
+	case backgroundtaskrun.FieldCancelRequestedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCancelRequestedAt(v)
+		return nil
+	case backgroundtaskrun.FieldProgressPercent:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProgressPercent(v)
+		return nil
+	case backgroundtaskrun.FieldProgressMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProgressMessage(v)
+		return nil
+	case backgroundtaskrun.FieldLastHeartbeatAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastHeartbeatAt(v)
+		return nil
+	case backgroundtaskrun.FieldStartedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStartedAt(v)
+		return nil
+	case backgroundtaskrun.FieldCompletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompletedAt(v)
+		return nil
+	case backgroundtaskrun.FieldRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRevision(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRun field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *BackgroundTaskRunMutation) AddedFields() []string {
+	var fields []string
+	if m.addattempt != nil {
+		fields = append(fields, backgroundtaskrun.FieldAttempt)
+	}
+	if m.addprogress_percent != nil {
+		fields = append(fields, backgroundtaskrun.FieldProgressPercent)
+	}
+	if m.addrevision != nil {
+		fields = append(fields, backgroundtaskrun.FieldRevision)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *BackgroundTaskRunMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case backgroundtaskrun.FieldAttempt:
+		return m.AddedAttempt()
+	case backgroundtaskrun.FieldProgressPercent:
+		return m.AddedProgressPercent()
+	case backgroundtaskrun.FieldRevision:
+		return m.AddedRevision()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BackgroundTaskRunMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case backgroundtaskrun.FieldAttempt:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAttempt(v)
+		return nil
+	case backgroundtaskrun.FieldProgressPercent:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProgressPercent(v)
+		return nil
+	case backgroundtaskrun.FieldRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRevision(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRun numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *BackgroundTaskRunMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(backgroundtaskrun.FieldModel) {
+		fields = append(fields, backgroundtaskrun.FieldModel)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldProvider) {
+		fields = append(fields, backgroundtaskrun.FieldProvider)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldUseCase) {
+		fields = append(fields, backgroundtaskrun.FieldUseCase)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldSubUseCase) {
+		fields = append(fields, backgroundtaskrun.FieldSubUseCase)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldPreviousRunID) {
+		fields = append(fields, backgroundtaskrun.FieldPreviousRunID)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldRetryOfRunID) {
+		fields = append(fields, backgroundtaskrun.FieldRetryOfRunID)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldLocalRunID) {
+		fields = append(fields, backgroundtaskrun.FieldLocalRunID)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldRequestedContext) {
+		fields = append(fields, backgroundtaskrun.FieldRequestedContext)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldSummary) {
+		fields = append(fields, backgroundtaskrun.FieldSummary)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldError) {
+		fields = append(fields, backgroundtaskrun.FieldError)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldErrorCode) {
+		fields = append(fields, backgroundtaskrun.FieldErrorCode)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldErrorDetails) {
+		fields = append(fields, backgroundtaskrun.FieldErrorDetails)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldTemporalWorkflowID) {
+		fields = append(fields, backgroundtaskrun.FieldTemporalWorkflowID)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldTemporalRunID) {
+		fields = append(fields, backgroundtaskrun.FieldTemporalRunID)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldTemporalStatus) {
+		fields = append(fields, backgroundtaskrun.FieldTemporalStatus)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldTemporalStartedAt) {
+		fields = append(fields, backgroundtaskrun.FieldTemporalStartedAt)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldTemporalClosedAt) {
+		fields = append(fields, backgroundtaskrun.FieldTemporalClosedAt)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldCancelRequestedAt) {
+		fields = append(fields, backgroundtaskrun.FieldCancelRequestedAt)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldProgressPercent) {
+		fields = append(fields, backgroundtaskrun.FieldProgressPercent)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldProgressMessage) {
+		fields = append(fields, backgroundtaskrun.FieldProgressMessage)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldLastHeartbeatAt) {
+		fields = append(fields, backgroundtaskrun.FieldLastHeartbeatAt)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldStartedAt) {
+		fields = append(fields, backgroundtaskrun.FieldStartedAt)
+	}
+	if m.FieldCleared(backgroundtaskrun.FieldCompletedAt) {
+		fields = append(fields, backgroundtaskrun.FieldCompletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *BackgroundTaskRunMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *BackgroundTaskRunMutation) ClearField(name string) error {
+	switch name {
+	case backgroundtaskrun.FieldModel:
+		m.ClearModel()
+		return nil
+	case backgroundtaskrun.FieldProvider:
+		m.ClearProvider()
+		return nil
+	case backgroundtaskrun.FieldUseCase:
+		m.ClearUseCase()
+		return nil
+	case backgroundtaskrun.FieldSubUseCase:
+		m.ClearSubUseCase()
+		return nil
+	case backgroundtaskrun.FieldPreviousRunID:
+		m.ClearPreviousRunID()
+		return nil
+	case backgroundtaskrun.FieldRetryOfRunID:
+		m.ClearRetryOfRunID()
+		return nil
+	case backgroundtaskrun.FieldLocalRunID:
+		m.ClearLocalRunID()
+		return nil
+	case backgroundtaskrun.FieldRequestedContext:
+		m.ClearRequestedContext()
+		return nil
+	case backgroundtaskrun.FieldSummary:
+		m.ClearSummary()
+		return nil
+	case backgroundtaskrun.FieldError:
+		m.ClearError()
+		return nil
+	case backgroundtaskrun.FieldErrorCode:
+		m.ClearErrorCode()
+		return nil
+	case backgroundtaskrun.FieldErrorDetails:
+		m.ClearErrorDetails()
+		return nil
+	case backgroundtaskrun.FieldTemporalWorkflowID:
+		m.ClearTemporalWorkflowID()
+		return nil
+	case backgroundtaskrun.FieldTemporalRunID:
+		m.ClearTemporalRunID()
+		return nil
+	case backgroundtaskrun.FieldTemporalStatus:
+		m.ClearTemporalStatus()
+		return nil
+	case backgroundtaskrun.FieldTemporalStartedAt:
+		m.ClearTemporalStartedAt()
+		return nil
+	case backgroundtaskrun.FieldTemporalClosedAt:
+		m.ClearTemporalClosedAt()
+		return nil
+	case backgroundtaskrun.FieldCancelRequestedAt:
+		m.ClearCancelRequestedAt()
+		return nil
+	case backgroundtaskrun.FieldProgressPercent:
+		m.ClearProgressPercent()
+		return nil
+	case backgroundtaskrun.FieldProgressMessage:
+		m.ClearProgressMessage()
+		return nil
+	case backgroundtaskrun.FieldLastHeartbeatAt:
+		m.ClearLastHeartbeatAt()
+		return nil
+	case backgroundtaskrun.FieldStartedAt:
+		m.ClearStartedAt()
+		return nil
+	case backgroundtaskrun.FieldCompletedAt:
+		m.ClearCompletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRun nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *BackgroundTaskRunMutation) ResetField(name string) error {
+	switch name {
+	case backgroundtaskrun.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case backgroundtaskrun.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case backgroundtaskrun.FieldRunID:
+		m.ResetRunID()
+		return nil
+	case backgroundtaskrun.FieldTrigger:
+		m.ResetTrigger()
+		return nil
+	case backgroundtaskrun.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case backgroundtaskrun.FieldExecutor:
+		m.ResetExecutor()
+		return nil
+	case backgroundtaskrun.FieldAttempt:
+		m.ResetAttempt()
+		return nil
+	case backgroundtaskrun.FieldModel:
+		m.ResetModel()
+		return nil
+	case backgroundtaskrun.FieldProvider:
+		m.ResetProvider()
+		return nil
+	case backgroundtaskrun.FieldUseCase:
+		m.ResetUseCase()
+		return nil
+	case backgroundtaskrun.FieldSubUseCase:
+		m.ResetSubUseCase()
+		return nil
+	case backgroundtaskrun.FieldPreviousRunID:
+		m.ResetPreviousRunID()
+		return nil
+	case backgroundtaskrun.FieldRetryOfRunID:
+		m.ResetRetryOfRunID()
+		return nil
+	case backgroundtaskrun.FieldLocalRunID:
+		m.ResetLocalRunID()
+		return nil
+	case backgroundtaskrun.FieldRequestedContext:
+		m.ResetRequestedContext()
+		return nil
+	case backgroundtaskrun.FieldSummary:
+		m.ResetSummary()
+		return nil
+	case backgroundtaskrun.FieldError:
+		m.ResetError()
+		return nil
+	case backgroundtaskrun.FieldErrorCode:
+		m.ResetErrorCode()
+		return nil
+	case backgroundtaskrun.FieldErrorDetails:
+		m.ResetErrorDetails()
+		return nil
+	case backgroundtaskrun.FieldTemporalWorkflowID:
+		m.ResetTemporalWorkflowID()
+		return nil
+	case backgroundtaskrun.FieldTemporalRunID:
+		m.ResetTemporalRunID()
+		return nil
+	case backgroundtaskrun.FieldTemporalStatus:
+		m.ResetTemporalStatus()
+		return nil
+	case backgroundtaskrun.FieldTemporalStartedAt:
+		m.ResetTemporalStartedAt()
+		return nil
+	case backgroundtaskrun.FieldTemporalClosedAt:
+		m.ResetTemporalClosedAt()
+		return nil
+	case backgroundtaskrun.FieldCancelRequestedAt:
+		m.ResetCancelRequestedAt()
+		return nil
+	case backgroundtaskrun.FieldProgressPercent:
+		m.ResetProgressPercent()
+		return nil
+	case backgroundtaskrun.FieldProgressMessage:
+		m.ResetProgressMessage()
+		return nil
+	case backgroundtaskrun.FieldLastHeartbeatAt:
+		m.ResetLastHeartbeatAt()
+		return nil
+	case backgroundtaskrun.FieldStartedAt:
+		m.ResetStartedAt()
+		return nil
+	case backgroundtaskrun.FieldCompletedAt:
+		m.ResetCompletedAt()
+		return nil
+	case backgroundtaskrun.FieldRevision:
+		m.ResetRevision()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRun field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *BackgroundTaskRunMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.user != nil {
+		edges = append(edges, backgroundtaskrun.EdgeUser)
+	}
+	if m.task != nil {
+		edges = append(edges, backgroundtaskrun.EdgeTask)
+	}
+	if m.events != nil {
+		edges = append(edges, backgroundtaskrun.EdgeEvents)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *BackgroundTaskRunMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case backgroundtaskrun.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case backgroundtaskrun.EdgeTask:
+		if id := m.task; id != nil {
+			return []ent.Value{*id}
+		}
+	case backgroundtaskrun.EdgeEvents:
+		ids := make([]ent.Value, 0, len(m.events))
+		for id := range m.events {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *BackgroundTaskRunMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.removedevents != nil {
+		edges = append(edges, backgroundtaskrun.EdgeEvents)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *BackgroundTaskRunMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case backgroundtaskrun.EdgeEvents:
+		ids := make([]ent.Value, 0, len(m.removedevents))
+		for id := range m.removedevents {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *BackgroundTaskRunMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.cleareduser {
+		edges = append(edges, backgroundtaskrun.EdgeUser)
+	}
+	if m.clearedtask {
+		edges = append(edges, backgroundtaskrun.EdgeTask)
+	}
+	if m.clearedevents {
+		edges = append(edges, backgroundtaskrun.EdgeEvents)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) EdgeCleared(name string) bool {
+	switch name {
+	case backgroundtaskrun.EdgeUser:
+		return m.cleareduser
+	case backgroundtaskrun.EdgeTask:
+		return m.clearedtask
+	case backgroundtaskrun.EdgeEvents:
+		return m.clearedevents
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *BackgroundTaskRunMutation) ClearEdge(name string) error {
+	switch name {
+	case backgroundtaskrun.EdgeUser:
+		m.ClearUser()
+		return nil
+	case backgroundtaskrun.EdgeTask:
+		m.ClearTask()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRun unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *BackgroundTaskRunMutation) ResetEdge(name string) error {
+	switch name {
+	case backgroundtaskrun.EdgeUser:
+		m.ResetUser()
+		return nil
+	case backgroundtaskrun.EdgeTask:
+		m.ResetTask()
+		return nil
+	case backgroundtaskrun.EdgeEvents:
+		m.ResetEvents()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRun edge %s", name)
+}
+
+// BackgroundTaskRunEventMutation represents an operation that mutates the BackgroundTaskRunEvent nodes in the graph.
+type BackgroundTaskRunEventMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	created_at    *time.Time
+	updated_at    *time.Time
+	seq           *int
+	addseq        *int
+	event_type    *string
+	event_json    *string
+	received_at   *time.Time
+	clearedFields map[string]struct{}
+	user          *uuid.UUID
+	cleareduser   bool
+	task          *uuid.UUID
+	clearedtask   bool
+	run           *uuid.UUID
+	clearedrun    bool
+	done          bool
+	oldValue      func(context.Context) (*BackgroundTaskRunEvent, error)
+	predicates    []predicate.BackgroundTaskRunEvent
+}
+
+var _ ent.Mutation = (*BackgroundTaskRunEventMutation)(nil)
+
+// backgroundtaskruneventOption allows management of the mutation configuration using functional options.
+type backgroundtaskruneventOption func(*BackgroundTaskRunEventMutation)
+
+// newBackgroundTaskRunEventMutation creates new mutation for the BackgroundTaskRunEvent entity.
+func newBackgroundTaskRunEventMutation(c config, op Op, opts ...backgroundtaskruneventOption) *BackgroundTaskRunEventMutation {
+	m := &BackgroundTaskRunEventMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeBackgroundTaskRunEvent,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withBackgroundTaskRunEventID sets the ID field of the mutation.
+func withBackgroundTaskRunEventID(id uuid.UUID) backgroundtaskruneventOption {
+	return func(m *BackgroundTaskRunEventMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *BackgroundTaskRunEvent
+		)
+		m.oldValue = func(ctx context.Context) (*BackgroundTaskRunEvent, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().BackgroundTaskRunEvent.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withBackgroundTaskRunEvent sets the old BackgroundTaskRunEvent of the mutation.
+func withBackgroundTaskRunEvent(node *BackgroundTaskRunEvent) backgroundtaskruneventOption {
+	return func(m *BackgroundTaskRunEventMutation) {
+		m.oldValue = func(context.Context) (*BackgroundTaskRunEvent, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m BackgroundTaskRunEventMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m BackgroundTaskRunEventMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of BackgroundTaskRunEvent entities.
+func (m *BackgroundTaskRunEventMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *BackgroundTaskRunEventMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *BackgroundTaskRunEventMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().BackgroundTaskRunEvent.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *BackgroundTaskRunEventMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *BackgroundTaskRunEventMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the BackgroundTaskRunEvent entity.
+// If the BackgroundTaskRunEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunEventMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *BackgroundTaskRunEventMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *BackgroundTaskRunEventMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *BackgroundTaskRunEventMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the BackgroundTaskRunEvent entity.
+// If the BackgroundTaskRunEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunEventMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *BackgroundTaskRunEventMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSeq sets the "seq" field.
+func (m *BackgroundTaskRunEventMutation) SetSeq(i int) {
+	m.seq = &i
+	m.addseq = nil
+}
+
+// Seq returns the value of the "seq" field in the mutation.
+func (m *BackgroundTaskRunEventMutation) Seq() (r int, exists bool) {
+	v := m.seq
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSeq returns the old "seq" field's value of the BackgroundTaskRunEvent entity.
+// If the BackgroundTaskRunEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunEventMutation) OldSeq(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSeq is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSeq requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSeq: %w", err)
+	}
+	return oldValue.Seq, nil
+}
+
+// AddSeq adds i to the "seq" field.
+func (m *BackgroundTaskRunEventMutation) AddSeq(i int) {
+	if m.addseq != nil {
+		*m.addseq += i
+	} else {
+		m.addseq = &i
+	}
+}
+
+// AddedSeq returns the value that was added to the "seq" field in this mutation.
+func (m *BackgroundTaskRunEventMutation) AddedSeq() (r int, exists bool) {
+	v := m.addseq
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSeq resets all changes to the "seq" field.
+func (m *BackgroundTaskRunEventMutation) ResetSeq() {
+	m.seq = nil
+	m.addseq = nil
+}
+
+// SetEventType sets the "event_type" field.
+func (m *BackgroundTaskRunEventMutation) SetEventType(s string) {
+	m.event_type = &s
+}
+
+// EventType returns the value of the "event_type" field in the mutation.
+func (m *BackgroundTaskRunEventMutation) EventType() (r string, exists bool) {
+	v := m.event_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventType returns the old "event_type" field's value of the BackgroundTaskRunEvent entity.
+// If the BackgroundTaskRunEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunEventMutation) OldEventType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventType: %w", err)
+	}
+	return oldValue.EventType, nil
+}
+
+// ClearEventType clears the value of the "event_type" field.
+func (m *BackgroundTaskRunEventMutation) ClearEventType() {
+	m.event_type = nil
+	m.clearedFields[backgroundtaskrunevent.FieldEventType] = struct{}{}
+}
+
+// EventTypeCleared returns if the "event_type" field was cleared in this mutation.
+func (m *BackgroundTaskRunEventMutation) EventTypeCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrunevent.FieldEventType]
+	return ok
+}
+
+// ResetEventType resets all changes to the "event_type" field.
+func (m *BackgroundTaskRunEventMutation) ResetEventType() {
+	m.event_type = nil
+	delete(m.clearedFields, backgroundtaskrunevent.FieldEventType)
+}
+
+// SetEventJSON sets the "event_json" field.
+func (m *BackgroundTaskRunEventMutation) SetEventJSON(s string) {
+	m.event_json = &s
+}
+
+// EventJSON returns the value of the "event_json" field in the mutation.
+func (m *BackgroundTaskRunEventMutation) EventJSON() (r string, exists bool) {
+	v := m.event_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventJSON returns the old "event_json" field's value of the BackgroundTaskRunEvent entity.
+// If the BackgroundTaskRunEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunEventMutation) OldEventJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventJSON: %w", err)
+	}
+	return oldValue.EventJSON, nil
+}
+
+// ResetEventJSON resets all changes to the "event_json" field.
+func (m *BackgroundTaskRunEventMutation) ResetEventJSON() {
+	m.event_json = nil
+}
+
+// SetReceivedAt sets the "received_at" field.
+func (m *BackgroundTaskRunEventMutation) SetReceivedAt(t time.Time) {
+	m.received_at = &t
+}
+
+// ReceivedAt returns the value of the "received_at" field in the mutation.
+func (m *BackgroundTaskRunEventMutation) ReceivedAt() (r time.Time, exists bool) {
+	v := m.received_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceivedAt returns the old "received_at" field's value of the BackgroundTaskRunEvent entity.
+// If the BackgroundTaskRunEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunEventMutation) OldReceivedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceivedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceivedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceivedAt: %w", err)
+	}
+	return oldValue.ReceivedAt, nil
+}
+
+// ResetReceivedAt resets all changes to the "received_at" field.
+func (m *BackgroundTaskRunEventMutation) ResetReceivedAt() {
+	m.received_at = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *BackgroundTaskRunEventMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *BackgroundTaskRunEventMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *BackgroundTaskRunEventMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *BackgroundTaskRunEventMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskRunEventMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *BackgroundTaskRunEventMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetTaskID sets the "task" edge to the BackgroundTask entity by id.
+func (m *BackgroundTaskRunEventMutation) SetTaskID(id uuid.UUID) {
+	m.task = &id
+}
+
+// ClearTask clears the "task" edge to the BackgroundTask entity.
+func (m *BackgroundTaskRunEventMutation) ClearTask() {
+	m.clearedtask = true
+}
+
+// TaskCleared reports if the "task" edge to the BackgroundTask entity was cleared.
+func (m *BackgroundTaskRunEventMutation) TaskCleared() bool {
+	return m.clearedtask
+}
+
+// TaskID returns the "task" edge ID in the mutation.
+func (m *BackgroundTaskRunEventMutation) TaskID() (id uuid.UUID, exists bool) {
+	if m.task != nil {
+		return *m.task, true
+	}
+	return
+}
+
+// TaskIDs returns the "task" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TaskID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskRunEventMutation) TaskIDs() (ids []uuid.UUID) {
+	if id := m.task; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTask resets all changes to the "task" edge.
+func (m *BackgroundTaskRunEventMutation) ResetTask() {
+	m.task = nil
+	m.clearedtask = false
+}
+
+// SetRunID sets the "run" edge to the BackgroundTaskRun entity by id.
+func (m *BackgroundTaskRunEventMutation) SetRunID(id uuid.UUID) {
+	m.run = &id
+}
+
+// ClearRun clears the "run" edge to the BackgroundTaskRun entity.
+func (m *BackgroundTaskRunEventMutation) ClearRun() {
+	m.clearedrun = true
+}
+
+// RunCleared reports if the "run" edge to the BackgroundTaskRun entity was cleared.
+func (m *BackgroundTaskRunEventMutation) RunCleared() bool {
+	return m.clearedrun
+}
+
+// RunID returns the "run" edge ID in the mutation.
+func (m *BackgroundTaskRunEventMutation) RunID() (id uuid.UUID, exists bool) {
+	if m.run != nil {
+		return *m.run, true
+	}
+	return
+}
+
+// RunIDs returns the "run" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RunID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskRunEventMutation) RunIDs() (ids []uuid.UUID) {
+	if id := m.run; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRun resets all changes to the "run" edge.
+func (m *BackgroundTaskRunEventMutation) ResetRun() {
+	m.run = nil
+	m.clearedrun = false
+}
+
+// Where appends a list predicates to the BackgroundTaskRunEventMutation builder.
+func (m *BackgroundTaskRunEventMutation) Where(ps ...predicate.BackgroundTaskRunEvent) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the BackgroundTaskRunEventMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *BackgroundTaskRunEventMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.BackgroundTaskRunEvent, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *BackgroundTaskRunEventMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *BackgroundTaskRunEventMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (BackgroundTaskRunEvent).
+func (m *BackgroundTaskRunEventMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *BackgroundTaskRunEventMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.created_at != nil {
+		fields = append(fields, backgroundtaskrunevent.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, backgroundtaskrunevent.FieldUpdatedAt)
+	}
+	if m.seq != nil {
+		fields = append(fields, backgroundtaskrunevent.FieldSeq)
+	}
+	if m.event_type != nil {
+		fields = append(fields, backgroundtaskrunevent.FieldEventType)
+	}
+	if m.event_json != nil {
+		fields = append(fields, backgroundtaskrunevent.FieldEventJSON)
+	}
+	if m.received_at != nil {
+		fields = append(fields, backgroundtaskrunevent.FieldReceivedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *BackgroundTaskRunEventMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case backgroundtaskrunevent.FieldCreatedAt:
+		return m.CreatedAt()
+	case backgroundtaskrunevent.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case backgroundtaskrunevent.FieldSeq:
+		return m.Seq()
+	case backgroundtaskrunevent.FieldEventType:
+		return m.EventType()
+	case backgroundtaskrunevent.FieldEventJSON:
+		return m.EventJSON()
+	case backgroundtaskrunevent.FieldReceivedAt:
+		return m.ReceivedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *BackgroundTaskRunEventMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case backgroundtaskrunevent.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case backgroundtaskrunevent.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case backgroundtaskrunevent.FieldSeq:
+		return m.OldSeq(ctx)
+	case backgroundtaskrunevent.FieldEventType:
+		return m.OldEventType(ctx)
+	case backgroundtaskrunevent.FieldEventJSON:
+		return m.OldEventJSON(ctx)
+	case backgroundtaskrunevent.FieldReceivedAt:
+		return m.OldReceivedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown BackgroundTaskRunEvent field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BackgroundTaskRunEventMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case backgroundtaskrunevent.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case backgroundtaskrunevent.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case backgroundtaskrunevent.FieldSeq:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSeq(v)
+		return nil
+	case backgroundtaskrunevent.FieldEventType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventType(v)
+		return nil
+	case backgroundtaskrunevent.FieldEventJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventJSON(v)
+		return nil
+	case backgroundtaskrunevent.FieldReceivedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReceivedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRunEvent field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *BackgroundTaskRunEventMutation) AddedFields() []string {
+	var fields []string
+	if m.addseq != nil {
+		fields = append(fields, backgroundtaskrunevent.FieldSeq)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *BackgroundTaskRunEventMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case backgroundtaskrunevent.FieldSeq:
+		return m.AddedSeq()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BackgroundTaskRunEventMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case backgroundtaskrunevent.FieldSeq:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSeq(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRunEvent numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *BackgroundTaskRunEventMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(backgroundtaskrunevent.FieldEventType) {
+		fields = append(fields, backgroundtaskrunevent.FieldEventType)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *BackgroundTaskRunEventMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *BackgroundTaskRunEventMutation) ClearField(name string) error {
+	switch name {
+	case backgroundtaskrunevent.FieldEventType:
+		m.ClearEventType()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRunEvent nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *BackgroundTaskRunEventMutation) ResetField(name string) error {
+	switch name {
+	case backgroundtaskrunevent.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case backgroundtaskrunevent.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case backgroundtaskrunevent.FieldSeq:
+		m.ResetSeq()
+		return nil
+	case backgroundtaskrunevent.FieldEventType:
+		m.ResetEventType()
+		return nil
+	case backgroundtaskrunevent.FieldEventJSON:
+		m.ResetEventJSON()
+		return nil
+	case backgroundtaskrunevent.FieldReceivedAt:
+		m.ResetReceivedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRunEvent field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *BackgroundTaskRunEventMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.user != nil {
+		edges = append(edges, backgroundtaskrunevent.EdgeUser)
+	}
+	if m.task != nil {
+		edges = append(edges, backgroundtaskrunevent.EdgeTask)
+	}
+	if m.run != nil {
+		edges = append(edges, backgroundtaskrunevent.EdgeRun)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *BackgroundTaskRunEventMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case backgroundtaskrunevent.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case backgroundtaskrunevent.EdgeTask:
+		if id := m.task; id != nil {
+			return []ent.Value{*id}
+		}
+	case backgroundtaskrunevent.EdgeRun:
+		if id := m.run; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *BackgroundTaskRunEventMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *BackgroundTaskRunEventMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *BackgroundTaskRunEventMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.cleareduser {
+		edges = append(edges, backgroundtaskrunevent.EdgeUser)
+	}
+	if m.clearedtask {
+		edges = append(edges, backgroundtaskrunevent.EdgeTask)
+	}
+	if m.clearedrun {
+		edges = append(edges, backgroundtaskrunevent.EdgeRun)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *BackgroundTaskRunEventMutation) EdgeCleared(name string) bool {
+	switch name {
+	case backgroundtaskrunevent.EdgeUser:
+		return m.cleareduser
+	case backgroundtaskrunevent.EdgeTask:
+		return m.clearedtask
+	case backgroundtaskrunevent.EdgeRun:
+		return m.clearedrun
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *BackgroundTaskRunEventMutation) ClearEdge(name string) error {
+	switch name {
+	case backgroundtaskrunevent.EdgeUser:
+		m.ClearUser()
+		return nil
+	case backgroundtaskrunevent.EdgeTask:
+		m.ClearTask()
+		return nil
+	case backgroundtaskrunevent.EdgeRun:
+		m.ClearRun()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRunEvent unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *BackgroundTaskRunEventMutation) ResetEdge(name string) error {
+	switch name {
+	case backgroundtaskrunevent.EdgeUser:
+		m.ResetUser()
+		return nil
+	case backgroundtaskrunevent.EdgeTask:
+		m.ResetTask()
+		return nil
+	case backgroundtaskrunevent.EdgeRun:
+		m.ResetRun()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskRunEvent edge %s", name)
+}
 
 // CreditLedgerMutation represents an operation that mutates the CreditLedger nodes in the graph.
 type CreditLedgerMutation struct {
@@ -8787,32 +14832,44 @@ func (m *SubscriptionHistoryMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                       Op
-	typ                      string
-	id                       *uuid.UUID
-	created_at               *time.Time
-	updated_at               *time.Time
-	email                    *string
-	workos_user_id           *string
-	workos_org_id            *string
-	clearedFields            map[string]struct{}
-	subscription             *uuid.UUID
-	clearedsubscription      bool
-	ledger_entries           map[uuid.UUID]struct{}
-	removedledger_entries    map[uuid.UUID]struct{}
-	clearedledger_entries    bool
-	llm_usages               map[uuid.UUID]struct{}
-	removedllm_usages        map[uuid.UUID]struct{}
-	clearedllm_usages        bool
-	oauth_connections        map[uuid.UUID]struct{}
-	removedoauth_connections map[uuid.UUID]struct{}
-	clearedoauth_connections bool
-	mcp_connections          map[uuid.UUID]struct{}
-	removedmcp_connections   map[uuid.UUID]struct{}
-	clearedmcp_connections   bool
-	done                     bool
-	oldValue                 func(context.Context) (*User, error)
-	predicates               []predicate.User
+	op                                Op
+	typ                               string
+	id                                *uuid.UUID
+	created_at                        *time.Time
+	updated_at                        *time.Time
+	email                             *string
+	workos_user_id                    *string
+	workos_org_id                     *string
+	clearedFields                     map[string]struct{}
+	subscription                      *uuid.UUID
+	clearedsubscription               bool
+	ledger_entries                    map[uuid.UUID]struct{}
+	removedledger_entries             map[uuid.UUID]struct{}
+	clearedledger_entries             bool
+	llm_usages                        map[uuid.UUID]struct{}
+	removedllm_usages                 map[uuid.UUID]struct{}
+	clearedllm_usages                 bool
+	oauth_connections                 map[uuid.UUID]struct{}
+	removedoauth_connections          map[uuid.UUID]struct{}
+	clearedoauth_connections          bool
+	mcp_connections                   map[uuid.UUID]struct{}
+	removedmcp_connections            map[uuid.UUID]struct{}
+	clearedmcp_connections            bool
+	background_tasks                  map[uuid.UUID]struct{}
+	removedbackground_tasks           map[uuid.UUID]struct{}
+	clearedbackground_tasks           bool
+	background_task_artifacts         map[uuid.UUID]struct{}
+	removedbackground_task_artifacts  map[uuid.UUID]struct{}
+	clearedbackground_task_artifacts  bool
+	background_task_runs              map[uuid.UUID]struct{}
+	removedbackground_task_runs       map[uuid.UUID]struct{}
+	clearedbackground_task_runs       bool
+	background_task_run_events        map[uuid.UUID]struct{}
+	removedbackground_task_run_events map[uuid.UUID]struct{}
+	clearedbackground_task_run_events bool
+	done                              bool
+	oldValue                          func(context.Context) (*User, error)
+	predicates                        []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -9380,6 +15437,222 @@ func (m *UserMutation) ResetMcpConnections() {
 	m.removedmcp_connections = nil
 }
 
+// AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by ids.
+func (m *UserMutation) AddBackgroundTaskIDs(ids ...uuid.UUID) {
+	if m.background_tasks == nil {
+		m.background_tasks = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.background_tasks[ids[i]] = struct{}{}
+	}
+}
+
+// ClearBackgroundTasks clears the "background_tasks" edge to the BackgroundTask entity.
+func (m *UserMutation) ClearBackgroundTasks() {
+	m.clearedbackground_tasks = true
+}
+
+// BackgroundTasksCleared reports if the "background_tasks" edge to the BackgroundTask entity was cleared.
+func (m *UserMutation) BackgroundTasksCleared() bool {
+	return m.clearedbackground_tasks
+}
+
+// RemoveBackgroundTaskIDs removes the "background_tasks" edge to the BackgroundTask entity by IDs.
+func (m *UserMutation) RemoveBackgroundTaskIDs(ids ...uuid.UUID) {
+	if m.removedbackground_tasks == nil {
+		m.removedbackground_tasks = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.background_tasks, ids[i])
+		m.removedbackground_tasks[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBackgroundTasks returns the removed IDs of the "background_tasks" edge to the BackgroundTask entity.
+func (m *UserMutation) RemovedBackgroundTasksIDs() (ids []uuid.UUID) {
+	for id := range m.removedbackground_tasks {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// BackgroundTasksIDs returns the "background_tasks" edge IDs in the mutation.
+func (m *UserMutation) BackgroundTasksIDs() (ids []uuid.UUID) {
+	for id := range m.background_tasks {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetBackgroundTasks resets all changes to the "background_tasks" edge.
+func (m *UserMutation) ResetBackgroundTasks() {
+	m.background_tasks = nil
+	m.clearedbackground_tasks = false
+	m.removedbackground_tasks = nil
+}
+
+// AddBackgroundTaskArtifactIDs adds the "background_task_artifacts" edge to the BackgroundTaskArtifact entity by ids.
+func (m *UserMutation) AddBackgroundTaskArtifactIDs(ids ...uuid.UUID) {
+	if m.background_task_artifacts == nil {
+		m.background_task_artifacts = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.background_task_artifacts[ids[i]] = struct{}{}
+	}
+}
+
+// ClearBackgroundTaskArtifacts clears the "background_task_artifacts" edge to the BackgroundTaskArtifact entity.
+func (m *UserMutation) ClearBackgroundTaskArtifacts() {
+	m.clearedbackground_task_artifacts = true
+}
+
+// BackgroundTaskArtifactsCleared reports if the "background_task_artifacts" edge to the BackgroundTaskArtifact entity was cleared.
+func (m *UserMutation) BackgroundTaskArtifactsCleared() bool {
+	return m.clearedbackground_task_artifacts
+}
+
+// RemoveBackgroundTaskArtifactIDs removes the "background_task_artifacts" edge to the BackgroundTaskArtifact entity by IDs.
+func (m *UserMutation) RemoveBackgroundTaskArtifactIDs(ids ...uuid.UUID) {
+	if m.removedbackground_task_artifacts == nil {
+		m.removedbackground_task_artifacts = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.background_task_artifacts, ids[i])
+		m.removedbackground_task_artifacts[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBackgroundTaskArtifacts returns the removed IDs of the "background_task_artifacts" edge to the BackgroundTaskArtifact entity.
+func (m *UserMutation) RemovedBackgroundTaskArtifactsIDs() (ids []uuid.UUID) {
+	for id := range m.removedbackground_task_artifacts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// BackgroundTaskArtifactsIDs returns the "background_task_artifacts" edge IDs in the mutation.
+func (m *UserMutation) BackgroundTaskArtifactsIDs() (ids []uuid.UUID) {
+	for id := range m.background_task_artifacts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetBackgroundTaskArtifacts resets all changes to the "background_task_artifacts" edge.
+func (m *UserMutation) ResetBackgroundTaskArtifacts() {
+	m.background_task_artifacts = nil
+	m.clearedbackground_task_artifacts = false
+	m.removedbackground_task_artifacts = nil
+}
+
+// AddBackgroundTaskRunIDs adds the "background_task_runs" edge to the BackgroundTaskRun entity by ids.
+func (m *UserMutation) AddBackgroundTaskRunIDs(ids ...uuid.UUID) {
+	if m.background_task_runs == nil {
+		m.background_task_runs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.background_task_runs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearBackgroundTaskRuns clears the "background_task_runs" edge to the BackgroundTaskRun entity.
+func (m *UserMutation) ClearBackgroundTaskRuns() {
+	m.clearedbackground_task_runs = true
+}
+
+// BackgroundTaskRunsCleared reports if the "background_task_runs" edge to the BackgroundTaskRun entity was cleared.
+func (m *UserMutation) BackgroundTaskRunsCleared() bool {
+	return m.clearedbackground_task_runs
+}
+
+// RemoveBackgroundTaskRunIDs removes the "background_task_runs" edge to the BackgroundTaskRun entity by IDs.
+func (m *UserMutation) RemoveBackgroundTaskRunIDs(ids ...uuid.UUID) {
+	if m.removedbackground_task_runs == nil {
+		m.removedbackground_task_runs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.background_task_runs, ids[i])
+		m.removedbackground_task_runs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBackgroundTaskRuns returns the removed IDs of the "background_task_runs" edge to the BackgroundTaskRun entity.
+func (m *UserMutation) RemovedBackgroundTaskRunsIDs() (ids []uuid.UUID) {
+	for id := range m.removedbackground_task_runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// BackgroundTaskRunsIDs returns the "background_task_runs" edge IDs in the mutation.
+func (m *UserMutation) BackgroundTaskRunsIDs() (ids []uuid.UUID) {
+	for id := range m.background_task_runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetBackgroundTaskRuns resets all changes to the "background_task_runs" edge.
+func (m *UserMutation) ResetBackgroundTaskRuns() {
+	m.background_task_runs = nil
+	m.clearedbackground_task_runs = false
+	m.removedbackground_task_runs = nil
+}
+
+// AddBackgroundTaskRunEventIDs adds the "background_task_run_events" edge to the BackgroundTaskRunEvent entity by ids.
+func (m *UserMutation) AddBackgroundTaskRunEventIDs(ids ...uuid.UUID) {
+	if m.background_task_run_events == nil {
+		m.background_task_run_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.background_task_run_events[ids[i]] = struct{}{}
+	}
+}
+
+// ClearBackgroundTaskRunEvents clears the "background_task_run_events" edge to the BackgroundTaskRunEvent entity.
+func (m *UserMutation) ClearBackgroundTaskRunEvents() {
+	m.clearedbackground_task_run_events = true
+}
+
+// BackgroundTaskRunEventsCleared reports if the "background_task_run_events" edge to the BackgroundTaskRunEvent entity was cleared.
+func (m *UserMutation) BackgroundTaskRunEventsCleared() bool {
+	return m.clearedbackground_task_run_events
+}
+
+// RemoveBackgroundTaskRunEventIDs removes the "background_task_run_events" edge to the BackgroundTaskRunEvent entity by IDs.
+func (m *UserMutation) RemoveBackgroundTaskRunEventIDs(ids ...uuid.UUID) {
+	if m.removedbackground_task_run_events == nil {
+		m.removedbackground_task_run_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.background_task_run_events, ids[i])
+		m.removedbackground_task_run_events[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBackgroundTaskRunEvents returns the removed IDs of the "background_task_run_events" edge to the BackgroundTaskRunEvent entity.
+func (m *UserMutation) RemovedBackgroundTaskRunEventsIDs() (ids []uuid.UUID) {
+	for id := range m.removedbackground_task_run_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// BackgroundTaskRunEventsIDs returns the "background_task_run_events" edge IDs in the mutation.
+func (m *UserMutation) BackgroundTaskRunEventsIDs() (ids []uuid.UUID) {
+	for id := range m.background_task_run_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetBackgroundTaskRunEvents resets all changes to the "background_task_run_events" edge.
+func (m *UserMutation) ResetBackgroundTaskRunEvents() {
+	m.background_task_run_events = nil
+	m.clearedbackground_task_run_events = false
+	m.removedbackground_task_run_events = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -9596,7 +15869,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 9)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -9611,6 +15884,18 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.mcp_connections != nil {
 		edges = append(edges, user.EdgeMcpConnections)
+	}
+	if m.background_tasks != nil {
+		edges = append(edges, user.EdgeBackgroundTasks)
+	}
+	if m.background_task_artifacts != nil {
+		edges = append(edges, user.EdgeBackgroundTaskArtifacts)
+	}
+	if m.background_task_runs != nil {
+		edges = append(edges, user.EdgeBackgroundTaskRuns)
+	}
+	if m.background_task_run_events != nil {
+		edges = append(edges, user.EdgeBackgroundTaskRunEvents)
 	}
 	return edges
 }
@@ -9647,13 +15932,37 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeBackgroundTasks:
+		ids := make([]ent.Value, 0, len(m.background_tasks))
+		for id := range m.background_tasks {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeBackgroundTaskArtifacts:
+		ids := make([]ent.Value, 0, len(m.background_task_artifacts))
+		for id := range m.background_task_artifacts {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeBackgroundTaskRuns:
+		ids := make([]ent.Value, 0, len(m.background_task_runs))
+		for id := range m.background_task_runs {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeBackgroundTaskRunEvents:
+		ids := make([]ent.Value, 0, len(m.background_task_run_events))
+		for id := range m.background_task_run_events {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 9)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -9665,6 +15974,18 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedmcp_connections != nil {
 		edges = append(edges, user.EdgeMcpConnections)
+	}
+	if m.removedbackground_tasks != nil {
+		edges = append(edges, user.EdgeBackgroundTasks)
+	}
+	if m.removedbackground_task_artifacts != nil {
+		edges = append(edges, user.EdgeBackgroundTaskArtifacts)
+	}
+	if m.removedbackground_task_runs != nil {
+		edges = append(edges, user.EdgeBackgroundTaskRuns)
+	}
+	if m.removedbackground_task_run_events != nil {
+		edges = append(edges, user.EdgeBackgroundTaskRunEvents)
 	}
 	return edges
 }
@@ -9697,13 +16018,37 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeBackgroundTasks:
+		ids := make([]ent.Value, 0, len(m.removedbackground_tasks))
+		for id := range m.removedbackground_tasks {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeBackgroundTaskArtifacts:
+		ids := make([]ent.Value, 0, len(m.removedbackground_task_artifacts))
+		for id := range m.removedbackground_task_artifacts {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeBackgroundTaskRuns:
+		ids := make([]ent.Value, 0, len(m.removedbackground_task_runs))
+		for id := range m.removedbackground_task_runs {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeBackgroundTaskRunEvents:
+		ids := make([]ent.Value, 0, len(m.removedbackground_task_run_events))
+		for id := range m.removedbackground_task_run_events {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 9)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -9718,6 +16063,18 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedmcp_connections {
 		edges = append(edges, user.EdgeMcpConnections)
+	}
+	if m.clearedbackground_tasks {
+		edges = append(edges, user.EdgeBackgroundTasks)
+	}
+	if m.clearedbackground_task_artifacts {
+		edges = append(edges, user.EdgeBackgroundTaskArtifacts)
+	}
+	if m.clearedbackground_task_runs {
+		edges = append(edges, user.EdgeBackgroundTaskRuns)
+	}
+	if m.clearedbackground_task_run_events {
+		edges = append(edges, user.EdgeBackgroundTaskRunEvents)
 	}
 	return edges
 }
@@ -9736,6 +16093,14 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedoauth_connections
 	case user.EdgeMcpConnections:
 		return m.clearedmcp_connections
+	case user.EdgeBackgroundTasks:
+		return m.clearedbackground_tasks
+	case user.EdgeBackgroundTaskArtifacts:
+		return m.clearedbackground_task_artifacts
+	case user.EdgeBackgroundTaskRuns:
+		return m.clearedbackground_task_runs
+	case user.EdgeBackgroundTaskRunEvents:
+		return m.clearedbackground_task_run_events
 	}
 	return false
 }
@@ -9769,6 +16134,18 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeMcpConnections:
 		m.ResetMcpConnections()
+		return nil
+	case user.EdgeBackgroundTasks:
+		m.ResetBackgroundTasks()
+		return nil
+	case user.EdgeBackgroundTaskArtifacts:
+		m.ResetBackgroundTaskArtifacts()
+		return nil
+	case user.EdgeBackgroundTaskRuns:
+		m.ResetBackgroundTaskRuns()
+		return nil
+	case user.EdgeBackgroundTaskRunEvents:
+		m.ResetBackgroundTaskRunEvents()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

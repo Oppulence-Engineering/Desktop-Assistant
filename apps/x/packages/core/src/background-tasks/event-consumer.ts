@@ -6,8 +6,9 @@ import {
     getBackgroundTaskAgentModel,
     resolveProviderConfig,
 } from '../models/defaults.js';
-import { listTasks } from './fileops.js';
+import { fetchTask, listTasks } from './fileops.js';
 import { runBackgroundTask } from './runner.js';
+import { triggerCloudRun } from './cloud-sync.js';
 
 async function resolveRoutingModel() {
     const modelId = await getBackgroundTaskAgentModel();
@@ -57,6 +58,11 @@ export const backgroundTaskEventConsumer: EventConsumer = {
     },
 
     fireCandidate: async (event, slug) => {
+        const task = await fetchTask(slug);
+        if ((task?.executionTarget ?? 'desktop') === 'api') {
+            const run = await triggerCloudRun(slug, 'event', event.payload);
+            return { runId: run.runId };
+        }
         const result = await runBackgroundTask(slug, 'event', event.payload);
         return { runId: result.runId, error: result.error };
     },

@@ -11,6 +11,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -100,6 +104,1002 @@ func paginateLimit(first, last *int) int {
 		limit = *last + 1
 	}
 	return limit
+}
+
+// BackgroundTaskEdge is the edge representation of BackgroundTask.
+type BackgroundTaskEdge struct {
+	Node   *BackgroundTask `json:"node"`
+	Cursor Cursor          `json:"cursor"`
+}
+
+// BackgroundTaskConnection is the connection containing edges to BackgroundTask.
+type BackgroundTaskConnection struct {
+	Edges      []*BackgroundTaskEdge `json:"edges"`
+	PageInfo   PageInfo              `json:"pageInfo"`
+	TotalCount int                   `json:"totalCount"`
+}
+
+func (c *BackgroundTaskConnection) build(nodes []*BackgroundTask, pager *backgroundtaskPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *BackgroundTask
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *BackgroundTask {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *BackgroundTask {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*BackgroundTaskEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &BackgroundTaskEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// BackgroundTaskPaginateOption enables pagination customization.
+type BackgroundTaskPaginateOption func(*backgroundtaskPager) error
+
+// WithBackgroundTaskOrder configures pagination ordering.
+func WithBackgroundTaskOrder(order *BackgroundTaskOrder) BackgroundTaskPaginateOption {
+	if order == nil {
+		order = DefaultBackgroundTaskOrder
+	}
+	o := *order
+	return func(pager *backgroundtaskPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultBackgroundTaskOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithBackgroundTaskFilter configures pagination filter.
+func WithBackgroundTaskFilter(filter func(*BackgroundTaskQuery) (*BackgroundTaskQuery, error)) BackgroundTaskPaginateOption {
+	return func(pager *backgroundtaskPager) error {
+		if filter == nil {
+			return errors.New("BackgroundTaskQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type backgroundtaskPager struct {
+	reverse bool
+	order   *BackgroundTaskOrder
+	filter  func(*BackgroundTaskQuery) (*BackgroundTaskQuery, error)
+}
+
+func newBackgroundTaskPager(opts []BackgroundTaskPaginateOption, reverse bool) (*backgroundtaskPager, error) {
+	pager := &backgroundtaskPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultBackgroundTaskOrder
+	}
+	return pager, nil
+}
+
+func (p *backgroundtaskPager) applyFilter(query *BackgroundTaskQuery) (*BackgroundTaskQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskPager) toCursor(_m *BackgroundTask) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *backgroundtaskPager) applyCursors(query *BackgroundTaskQuery, after, before *Cursor) (*BackgroundTaskQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultBackgroundTaskOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskPager) applyOrder(query *BackgroundTaskQuery) *BackgroundTaskQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultBackgroundTaskOrder.Field {
+		query = query.Order(DefaultBackgroundTaskOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *backgroundtaskPager) orderExpr(query *BackgroundTaskQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultBackgroundTaskOrder.Field {
+			b.Comma().Ident(DefaultBackgroundTaskOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to BackgroundTask.
+func (_m *BackgroundTaskQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...BackgroundTaskPaginateOption,
+) (*BackgroundTaskConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newBackgroundTaskPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &BackgroundTaskConnection{Edges: []*BackgroundTaskEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// BackgroundTaskOrderField defines the ordering field of BackgroundTask.
+type BackgroundTaskOrderField struct {
+	// Value extracts the ordering value from the given BackgroundTask.
+	Value    func(*BackgroundTask) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) backgroundtask.OrderOption
+	toCursor func(*BackgroundTask) Cursor
+}
+
+// BackgroundTaskOrder defines the ordering of BackgroundTask.
+type BackgroundTaskOrder struct {
+	Direction OrderDirection            `json:"direction"`
+	Field     *BackgroundTaskOrderField `json:"field"`
+}
+
+// DefaultBackgroundTaskOrder is the default ordering of BackgroundTask.
+var DefaultBackgroundTaskOrder = &BackgroundTaskOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &BackgroundTaskOrderField{
+		Value: func(_m *BackgroundTask) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: backgroundtask.FieldID,
+		toTerm: backgroundtask.ByID,
+		toCursor: func(_m *BackgroundTask) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts BackgroundTask into BackgroundTaskEdge.
+func (_m *BackgroundTask) ToEdge(order *BackgroundTaskOrder) *BackgroundTaskEdge {
+	if order == nil {
+		order = DefaultBackgroundTaskOrder
+	}
+	return &BackgroundTaskEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// BackgroundTaskArtifactEdge is the edge representation of BackgroundTaskArtifact.
+type BackgroundTaskArtifactEdge struct {
+	Node   *BackgroundTaskArtifact `json:"node"`
+	Cursor Cursor                  `json:"cursor"`
+}
+
+// BackgroundTaskArtifactConnection is the connection containing edges to BackgroundTaskArtifact.
+type BackgroundTaskArtifactConnection struct {
+	Edges      []*BackgroundTaskArtifactEdge `json:"edges"`
+	PageInfo   PageInfo                      `json:"pageInfo"`
+	TotalCount int                           `json:"totalCount"`
+}
+
+func (c *BackgroundTaskArtifactConnection) build(nodes []*BackgroundTaskArtifact, pager *backgroundtaskartifactPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *BackgroundTaskArtifact
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *BackgroundTaskArtifact {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *BackgroundTaskArtifact {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*BackgroundTaskArtifactEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &BackgroundTaskArtifactEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// BackgroundTaskArtifactPaginateOption enables pagination customization.
+type BackgroundTaskArtifactPaginateOption func(*backgroundtaskartifactPager) error
+
+// WithBackgroundTaskArtifactOrder configures pagination ordering.
+func WithBackgroundTaskArtifactOrder(order *BackgroundTaskArtifactOrder) BackgroundTaskArtifactPaginateOption {
+	if order == nil {
+		order = DefaultBackgroundTaskArtifactOrder
+	}
+	o := *order
+	return func(pager *backgroundtaskartifactPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultBackgroundTaskArtifactOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithBackgroundTaskArtifactFilter configures pagination filter.
+func WithBackgroundTaskArtifactFilter(filter func(*BackgroundTaskArtifactQuery) (*BackgroundTaskArtifactQuery, error)) BackgroundTaskArtifactPaginateOption {
+	return func(pager *backgroundtaskartifactPager) error {
+		if filter == nil {
+			return errors.New("BackgroundTaskArtifactQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type backgroundtaskartifactPager struct {
+	reverse bool
+	order   *BackgroundTaskArtifactOrder
+	filter  func(*BackgroundTaskArtifactQuery) (*BackgroundTaskArtifactQuery, error)
+}
+
+func newBackgroundTaskArtifactPager(opts []BackgroundTaskArtifactPaginateOption, reverse bool) (*backgroundtaskartifactPager, error) {
+	pager := &backgroundtaskartifactPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultBackgroundTaskArtifactOrder
+	}
+	return pager, nil
+}
+
+func (p *backgroundtaskartifactPager) applyFilter(query *BackgroundTaskArtifactQuery) (*BackgroundTaskArtifactQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskartifactPager) toCursor(_m *BackgroundTaskArtifact) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *backgroundtaskartifactPager) applyCursors(query *BackgroundTaskArtifactQuery, after, before *Cursor) (*BackgroundTaskArtifactQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultBackgroundTaskArtifactOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskartifactPager) applyOrder(query *BackgroundTaskArtifactQuery) *BackgroundTaskArtifactQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultBackgroundTaskArtifactOrder.Field {
+		query = query.Order(DefaultBackgroundTaskArtifactOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *backgroundtaskartifactPager) orderExpr(query *BackgroundTaskArtifactQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultBackgroundTaskArtifactOrder.Field {
+			b.Comma().Ident(DefaultBackgroundTaskArtifactOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to BackgroundTaskArtifact.
+func (_m *BackgroundTaskArtifactQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...BackgroundTaskArtifactPaginateOption,
+) (*BackgroundTaskArtifactConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newBackgroundTaskArtifactPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &BackgroundTaskArtifactConnection{Edges: []*BackgroundTaskArtifactEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// BackgroundTaskArtifactOrderField defines the ordering field of BackgroundTaskArtifact.
+type BackgroundTaskArtifactOrderField struct {
+	// Value extracts the ordering value from the given BackgroundTaskArtifact.
+	Value    func(*BackgroundTaskArtifact) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) backgroundtaskartifact.OrderOption
+	toCursor func(*BackgroundTaskArtifact) Cursor
+}
+
+// BackgroundTaskArtifactOrder defines the ordering of BackgroundTaskArtifact.
+type BackgroundTaskArtifactOrder struct {
+	Direction OrderDirection                    `json:"direction"`
+	Field     *BackgroundTaskArtifactOrderField `json:"field"`
+}
+
+// DefaultBackgroundTaskArtifactOrder is the default ordering of BackgroundTaskArtifact.
+var DefaultBackgroundTaskArtifactOrder = &BackgroundTaskArtifactOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &BackgroundTaskArtifactOrderField{
+		Value: func(_m *BackgroundTaskArtifact) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: backgroundtaskartifact.FieldID,
+		toTerm: backgroundtaskartifact.ByID,
+		toCursor: func(_m *BackgroundTaskArtifact) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts BackgroundTaskArtifact into BackgroundTaskArtifactEdge.
+func (_m *BackgroundTaskArtifact) ToEdge(order *BackgroundTaskArtifactOrder) *BackgroundTaskArtifactEdge {
+	if order == nil {
+		order = DefaultBackgroundTaskArtifactOrder
+	}
+	return &BackgroundTaskArtifactEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// BackgroundTaskRunEdge is the edge representation of BackgroundTaskRun.
+type BackgroundTaskRunEdge struct {
+	Node   *BackgroundTaskRun `json:"node"`
+	Cursor Cursor             `json:"cursor"`
+}
+
+// BackgroundTaskRunConnection is the connection containing edges to BackgroundTaskRun.
+type BackgroundTaskRunConnection struct {
+	Edges      []*BackgroundTaskRunEdge `json:"edges"`
+	PageInfo   PageInfo                 `json:"pageInfo"`
+	TotalCount int                      `json:"totalCount"`
+}
+
+func (c *BackgroundTaskRunConnection) build(nodes []*BackgroundTaskRun, pager *backgroundtaskrunPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *BackgroundTaskRun
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *BackgroundTaskRun {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *BackgroundTaskRun {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*BackgroundTaskRunEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &BackgroundTaskRunEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// BackgroundTaskRunPaginateOption enables pagination customization.
+type BackgroundTaskRunPaginateOption func(*backgroundtaskrunPager) error
+
+// WithBackgroundTaskRunOrder configures pagination ordering.
+func WithBackgroundTaskRunOrder(order *BackgroundTaskRunOrder) BackgroundTaskRunPaginateOption {
+	if order == nil {
+		order = DefaultBackgroundTaskRunOrder
+	}
+	o := *order
+	return func(pager *backgroundtaskrunPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultBackgroundTaskRunOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithBackgroundTaskRunFilter configures pagination filter.
+func WithBackgroundTaskRunFilter(filter func(*BackgroundTaskRunQuery) (*BackgroundTaskRunQuery, error)) BackgroundTaskRunPaginateOption {
+	return func(pager *backgroundtaskrunPager) error {
+		if filter == nil {
+			return errors.New("BackgroundTaskRunQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type backgroundtaskrunPager struct {
+	reverse bool
+	order   *BackgroundTaskRunOrder
+	filter  func(*BackgroundTaskRunQuery) (*BackgroundTaskRunQuery, error)
+}
+
+func newBackgroundTaskRunPager(opts []BackgroundTaskRunPaginateOption, reverse bool) (*backgroundtaskrunPager, error) {
+	pager := &backgroundtaskrunPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultBackgroundTaskRunOrder
+	}
+	return pager, nil
+}
+
+func (p *backgroundtaskrunPager) applyFilter(query *BackgroundTaskRunQuery) (*BackgroundTaskRunQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskrunPager) toCursor(_m *BackgroundTaskRun) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *backgroundtaskrunPager) applyCursors(query *BackgroundTaskRunQuery, after, before *Cursor) (*BackgroundTaskRunQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultBackgroundTaskRunOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskrunPager) applyOrder(query *BackgroundTaskRunQuery) *BackgroundTaskRunQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultBackgroundTaskRunOrder.Field {
+		query = query.Order(DefaultBackgroundTaskRunOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *backgroundtaskrunPager) orderExpr(query *BackgroundTaskRunQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultBackgroundTaskRunOrder.Field {
+			b.Comma().Ident(DefaultBackgroundTaskRunOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to BackgroundTaskRun.
+func (_m *BackgroundTaskRunQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...BackgroundTaskRunPaginateOption,
+) (*BackgroundTaskRunConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newBackgroundTaskRunPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &BackgroundTaskRunConnection{Edges: []*BackgroundTaskRunEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// BackgroundTaskRunOrderField defines the ordering field of BackgroundTaskRun.
+type BackgroundTaskRunOrderField struct {
+	// Value extracts the ordering value from the given BackgroundTaskRun.
+	Value    func(*BackgroundTaskRun) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) backgroundtaskrun.OrderOption
+	toCursor func(*BackgroundTaskRun) Cursor
+}
+
+// BackgroundTaskRunOrder defines the ordering of BackgroundTaskRun.
+type BackgroundTaskRunOrder struct {
+	Direction OrderDirection               `json:"direction"`
+	Field     *BackgroundTaskRunOrderField `json:"field"`
+}
+
+// DefaultBackgroundTaskRunOrder is the default ordering of BackgroundTaskRun.
+var DefaultBackgroundTaskRunOrder = &BackgroundTaskRunOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &BackgroundTaskRunOrderField{
+		Value: func(_m *BackgroundTaskRun) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: backgroundtaskrun.FieldID,
+		toTerm: backgroundtaskrun.ByID,
+		toCursor: func(_m *BackgroundTaskRun) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts BackgroundTaskRun into BackgroundTaskRunEdge.
+func (_m *BackgroundTaskRun) ToEdge(order *BackgroundTaskRunOrder) *BackgroundTaskRunEdge {
+	if order == nil {
+		order = DefaultBackgroundTaskRunOrder
+	}
+	return &BackgroundTaskRunEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// BackgroundTaskRunEventEdge is the edge representation of BackgroundTaskRunEvent.
+type BackgroundTaskRunEventEdge struct {
+	Node   *BackgroundTaskRunEvent `json:"node"`
+	Cursor Cursor                  `json:"cursor"`
+}
+
+// BackgroundTaskRunEventConnection is the connection containing edges to BackgroundTaskRunEvent.
+type BackgroundTaskRunEventConnection struct {
+	Edges      []*BackgroundTaskRunEventEdge `json:"edges"`
+	PageInfo   PageInfo                      `json:"pageInfo"`
+	TotalCount int                           `json:"totalCount"`
+}
+
+func (c *BackgroundTaskRunEventConnection) build(nodes []*BackgroundTaskRunEvent, pager *backgroundtaskruneventPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *BackgroundTaskRunEvent
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *BackgroundTaskRunEvent {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *BackgroundTaskRunEvent {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*BackgroundTaskRunEventEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &BackgroundTaskRunEventEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// BackgroundTaskRunEventPaginateOption enables pagination customization.
+type BackgroundTaskRunEventPaginateOption func(*backgroundtaskruneventPager) error
+
+// WithBackgroundTaskRunEventOrder configures pagination ordering.
+func WithBackgroundTaskRunEventOrder(order *BackgroundTaskRunEventOrder) BackgroundTaskRunEventPaginateOption {
+	if order == nil {
+		order = DefaultBackgroundTaskRunEventOrder
+	}
+	o := *order
+	return func(pager *backgroundtaskruneventPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultBackgroundTaskRunEventOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithBackgroundTaskRunEventFilter configures pagination filter.
+func WithBackgroundTaskRunEventFilter(filter func(*BackgroundTaskRunEventQuery) (*BackgroundTaskRunEventQuery, error)) BackgroundTaskRunEventPaginateOption {
+	return func(pager *backgroundtaskruneventPager) error {
+		if filter == nil {
+			return errors.New("BackgroundTaskRunEventQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type backgroundtaskruneventPager struct {
+	reverse bool
+	order   *BackgroundTaskRunEventOrder
+	filter  func(*BackgroundTaskRunEventQuery) (*BackgroundTaskRunEventQuery, error)
+}
+
+func newBackgroundTaskRunEventPager(opts []BackgroundTaskRunEventPaginateOption, reverse bool) (*backgroundtaskruneventPager, error) {
+	pager := &backgroundtaskruneventPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultBackgroundTaskRunEventOrder
+	}
+	return pager, nil
+}
+
+func (p *backgroundtaskruneventPager) applyFilter(query *BackgroundTaskRunEventQuery) (*BackgroundTaskRunEventQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskruneventPager) toCursor(_m *BackgroundTaskRunEvent) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *backgroundtaskruneventPager) applyCursors(query *BackgroundTaskRunEventQuery, after, before *Cursor) (*BackgroundTaskRunEventQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultBackgroundTaskRunEventOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskruneventPager) applyOrder(query *BackgroundTaskRunEventQuery) *BackgroundTaskRunEventQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultBackgroundTaskRunEventOrder.Field {
+		query = query.Order(DefaultBackgroundTaskRunEventOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *backgroundtaskruneventPager) orderExpr(query *BackgroundTaskRunEventQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultBackgroundTaskRunEventOrder.Field {
+			b.Comma().Ident(DefaultBackgroundTaskRunEventOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to BackgroundTaskRunEvent.
+func (_m *BackgroundTaskRunEventQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...BackgroundTaskRunEventPaginateOption,
+) (*BackgroundTaskRunEventConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newBackgroundTaskRunEventPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &BackgroundTaskRunEventConnection{Edges: []*BackgroundTaskRunEventEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// BackgroundTaskRunEventOrderField defines the ordering field of BackgroundTaskRunEvent.
+type BackgroundTaskRunEventOrderField struct {
+	// Value extracts the ordering value from the given BackgroundTaskRunEvent.
+	Value    func(*BackgroundTaskRunEvent) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) backgroundtaskrunevent.OrderOption
+	toCursor func(*BackgroundTaskRunEvent) Cursor
+}
+
+// BackgroundTaskRunEventOrder defines the ordering of BackgroundTaskRunEvent.
+type BackgroundTaskRunEventOrder struct {
+	Direction OrderDirection                    `json:"direction"`
+	Field     *BackgroundTaskRunEventOrderField `json:"field"`
+}
+
+// DefaultBackgroundTaskRunEventOrder is the default ordering of BackgroundTaskRunEvent.
+var DefaultBackgroundTaskRunEventOrder = &BackgroundTaskRunEventOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &BackgroundTaskRunEventOrderField{
+		Value: func(_m *BackgroundTaskRunEvent) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: backgroundtaskrunevent.FieldID,
+		toTerm: backgroundtaskrunevent.ByID,
+		toCursor: func(_m *BackgroundTaskRunEvent) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts BackgroundTaskRunEvent into BackgroundTaskRunEventEdge.
+func (_m *BackgroundTaskRunEvent) ToEdge(order *BackgroundTaskRunEventOrder) *BackgroundTaskRunEventEdge {
+	if order == nil {
+		order = DefaultBackgroundTaskRunEventOrder
+	}
+	return &BackgroundTaskRunEventEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
 }
 
 // CreditLedgerEdge is the edge representation of CreditLedger.

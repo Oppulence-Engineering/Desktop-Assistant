@@ -1,0 +1,22 @@
+{{- if .Values.worker.enabled }}
+# Headless service exposing the worker's /metrics port for Prometheus scraping.
+# The worker has no inbound traffic; this exists only for the ServiceMonitor.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}-worker
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: {{ include "rowboat-api.name" . }}-worker
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: worker
+  ports:
+    - name: metrics
+      port: {{ .Values.ports.metrics }}
+      targetPort: metrics
+{{- end }}

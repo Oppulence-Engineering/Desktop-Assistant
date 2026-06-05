@@ -8,6 +8,218 @@ import (
 )
 
 var (
+	// BackgroundTasksColumns holds the columns for the "background_tasks" table.
+	BackgroundTasksColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "slug", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "instructions", Type: field.TypeString, Size: 2147483647},
+		{Name: "active", Type: field.TypeBool, Default: true},
+		{Name: "triggers_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "model", Type: field.TypeString, Nullable: true},
+		{Name: "provider", Type: field.TypeString, Nullable: true},
+		{Name: "execution_target", Type: field.TypeString, Default: "desktop"},
+		{Name: "task_created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_attempt_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_run_id", Type: field.TypeString, Nullable: true},
+		{Name: "last_run_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_run_summary", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "last_run_error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "revision", Type: field.TypeInt, Default: 1},
+		{Name: "user_background_tasks", Type: field.TypeUUID},
+	}
+	// BackgroundTasksTable holds the schema information for the "background_tasks" table.
+	BackgroundTasksTable = &schema.Table{
+		Name:       "background_tasks",
+		Columns:    BackgroundTasksColumns,
+		PrimaryKey: []*schema.Column{BackgroundTasksColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "background_tasks_users_background_tasks",
+				Columns:    []*schema.Column{BackgroundTasksColumns[18]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "backgroundtask_slug_user_background_tasks",
+				Unique:  true,
+				Columns: []*schema.Column{BackgroundTasksColumns[3], BackgroundTasksColumns[18]},
+			},
+		},
+	}
+	// BackgroundTaskArtifactsColumns holds the columns for the "background_task_artifacts" table.
+	BackgroundTaskArtifactsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "body", Type: field.TypeString, Size: 2147483647, Default: ""},
+		{Name: "revision", Type: field.TypeInt, Default: 1},
+		{Name: "updated_by_run_id", Type: field.TypeString, Nullable: true},
+		{Name: "content_type", Type: field.TypeString, Default: "text/markdown"},
+		{Name: "background_task_id", Type: field.TypeUUID, Unique: true},
+		{Name: "user_background_task_artifacts", Type: field.TypeUUID},
+	}
+	// BackgroundTaskArtifactsTable holds the schema information for the "background_task_artifacts" table.
+	BackgroundTaskArtifactsTable = &schema.Table{
+		Name:       "background_task_artifacts",
+		Columns:    BackgroundTaskArtifactsColumns,
+		PrimaryKey: []*schema.Column{BackgroundTaskArtifactsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "background_task_artifacts_background_tasks_artifact",
+				Columns:    []*schema.Column{BackgroundTaskArtifactsColumns[7]},
+				RefColumns: []*schema.Column{BackgroundTasksColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "background_task_artifacts_users_background_task_artifacts",
+				Columns:    []*schema.Column{BackgroundTaskArtifactsColumns[8]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "backgroundtaskartifact_background_task_id",
+				Unique:  true,
+				Columns: []*schema.Column{BackgroundTaskArtifactsColumns[7]},
+			},
+		},
+	}
+	// BackgroundTaskRunsColumns holds the columns for the "background_task_runs" table.
+	BackgroundTaskRunsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "run_id", Type: field.TypeString},
+		{Name: "trigger", Type: field.TypeString, Default: "manual"},
+		{Name: "status", Type: field.TypeString, Default: "running"},
+		{Name: "executor", Type: field.TypeString, Default: "desktop"},
+		{Name: "attempt", Type: field.TypeInt, Default: 1},
+		{Name: "model", Type: field.TypeString, Nullable: true},
+		{Name: "provider", Type: field.TypeString, Nullable: true},
+		{Name: "use_case", Type: field.TypeString, Nullable: true},
+		{Name: "sub_use_case", Type: field.TypeString, Nullable: true},
+		{Name: "previous_run_id", Type: field.TypeString, Nullable: true},
+		{Name: "retry_of_run_id", Type: field.TypeString, Nullable: true},
+		{Name: "local_run_id", Type: field.TypeString, Nullable: true},
+		{Name: "requested_context", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "summary", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "error_code", Type: field.TypeString, Nullable: true},
+		{Name: "error_details", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "temporal_workflow_id", Type: field.TypeString, Nullable: true},
+		{Name: "temporal_run_id", Type: field.TypeString, Nullable: true},
+		{Name: "temporal_status", Type: field.TypeString, Nullable: true},
+		{Name: "temporal_started_at", Type: field.TypeTime, Nullable: true},
+		{Name: "temporal_closed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "cancel_requested_at", Type: field.TypeTime, Nullable: true},
+		{Name: "progress_percent", Type: field.TypeInt, Nullable: true},
+		{Name: "progress_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "last_heartbeat_at", Type: field.TypeTime, Nullable: true},
+		{Name: "started_at", Type: field.TypeTime, Nullable: true},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revision", Type: field.TypeInt, Default: 1},
+		{Name: "background_task_id", Type: field.TypeUUID},
+		{Name: "user_background_task_runs", Type: field.TypeUUID},
+	}
+	// BackgroundTaskRunsTable holds the schema information for the "background_task_runs" table.
+	BackgroundTaskRunsTable = &schema.Table{
+		Name:       "background_task_runs",
+		Columns:    BackgroundTaskRunsColumns,
+		PrimaryKey: []*schema.Column{BackgroundTaskRunsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "background_task_runs_background_tasks_runs",
+				Columns:    []*schema.Column{BackgroundTaskRunsColumns[32]},
+				RefColumns: []*schema.Column{BackgroundTasksColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "background_task_runs_users_background_task_runs",
+				Columns:    []*schema.Column{BackgroundTaskRunsColumns[33]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "backgroundtaskrun_run_id_user_background_task_runs",
+				Unique:  true,
+				Columns: []*schema.Column{BackgroundTaskRunsColumns[3], BackgroundTaskRunsColumns[33]},
+			},
+			{
+				Name:    "backgroundtaskrun_status",
+				Unique:  false,
+				Columns: []*schema.Column{BackgroundTaskRunsColumns[5]},
+			},
+			{
+				Name:    "backgroundtaskrun_executor_status",
+				Unique:  false,
+				Columns: []*schema.Column{BackgroundTaskRunsColumns[6], BackgroundTaskRunsColumns[5]},
+			},
+			{
+				Name:    "backgroundtaskrun_temporal_workflow_id",
+				Unique:  false,
+				Columns: []*schema.Column{BackgroundTaskRunsColumns[20]},
+			},
+		},
+	}
+	// BackgroundTaskRunEventsColumns holds the columns for the "background_task_run_events" table.
+	BackgroundTaskRunEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "seq", Type: field.TypeInt},
+		{Name: "event_type", Type: field.TypeString, Nullable: true},
+		{Name: "event_json", Type: field.TypeString, Size: 2147483647},
+		{Name: "received_at", Type: field.TypeTime},
+		{Name: "background_task_id", Type: field.TypeUUID},
+		{Name: "background_task_run_id", Type: field.TypeUUID},
+		{Name: "user_background_task_run_events", Type: field.TypeUUID},
+	}
+	// BackgroundTaskRunEventsTable holds the schema information for the "background_task_run_events" table.
+	BackgroundTaskRunEventsTable = &schema.Table{
+		Name:       "background_task_run_events",
+		Columns:    BackgroundTaskRunEventsColumns,
+		PrimaryKey: []*schema.Column{BackgroundTaskRunEventsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "background_task_run_events_background_tasks_run_events",
+				Columns:    []*schema.Column{BackgroundTaskRunEventsColumns[7]},
+				RefColumns: []*schema.Column{BackgroundTasksColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "background_task_run_events_background_task_runs_events",
+				Columns:    []*schema.Column{BackgroundTaskRunEventsColumns[8]},
+				RefColumns: []*schema.Column{BackgroundTaskRunsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "background_task_run_events_users_background_task_run_events",
+				Columns:    []*schema.Column{BackgroundTaskRunEventsColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "backgroundtaskrunevent_seq_background_task_run_id",
+				Unique:  true,
+				Columns: []*schema.Column{BackgroundTaskRunEventsColumns[3], BackgroundTaskRunEventsColumns[8]},
+			},
+			{
+				Name:    "backgroundtaskrunevent_event_type",
+				Unique:  false,
+				Columns: []*schema.Column{BackgroundTaskRunEventsColumns[4]},
+			},
+		},
+	}
 	// CreditLedgersColumns holds the columns for the "credit_ledgers" table.
 	CreditLedgersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -349,6 +561,10 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		BackgroundTasksTable,
+		BackgroundTaskArtifactsTable,
+		BackgroundTaskRunsTable,
+		BackgroundTaskRunEventsTable,
 		CreditLedgersTable,
 		LlmUsagesTable,
 		LlmUsageHistoriesTable,
@@ -365,6 +581,14 @@ var (
 )
 
 func init() {
+	BackgroundTasksTable.ForeignKeys[0].RefTable = UsersTable
+	BackgroundTaskArtifactsTable.ForeignKeys[0].RefTable = BackgroundTasksTable
+	BackgroundTaskArtifactsTable.ForeignKeys[1].RefTable = UsersTable
+	BackgroundTaskRunsTable.ForeignKeys[0].RefTable = BackgroundTasksTable
+	BackgroundTaskRunsTable.ForeignKeys[1].RefTable = UsersTable
+	BackgroundTaskRunEventsTable.ForeignKeys[0].RefTable = BackgroundTasksTable
+	BackgroundTaskRunEventsTable.ForeignKeys[1].RefTable = BackgroundTaskRunsTable
+	BackgroundTaskRunEventsTable.ForeignKeys[2].RefTable = UsersTable
 	CreditLedgersTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	McpConnectionsTable.ForeignKeys[0].RefTable = UsersTable

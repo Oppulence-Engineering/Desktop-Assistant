@@ -9,8 +9,16 @@ import { ServiceEvent } from './service-events.js';
 import { LiveNoteAgentEvent, LiveNoteSchema } from './live-note.js';
 import {
     BackgroundTaskAgentEvent,
+    BackgroundTaskArtifactSyncSchema,
+    BackgroundTaskCloudRunEventSchema,
+    BackgroundTaskCloudRunSchema,
+    BackgroundTaskCloudRunStatusSchema,
+    BackgroundTaskRunExecutor,
+    BackgroundTaskRunStatus,
+    BackgroundTaskSignal,
     BackgroundTaskSchema,
     BackgroundTaskSummarySchema,
+    BackgroundTaskTrigger,
     TriggersSchema,
 } from './background-task.js';
 import { UserMessageContent } from './message.js';
@@ -823,6 +831,7 @@ const ipcSchemas = {
       success: z.boolean(),
       runId: z.string().nullable().optional(),
       summary: z.string().nullable().optional(),
+      run: BackgroundTaskCloudRunSchema.optional(),
       error: z.string().optional(),
     }),
   },
@@ -854,6 +863,7 @@ const ipcSchemas = {
       triggers: TriggersSchema.optional(),
       model: z.string().optional(),
       provider: z.string().optional(),
+      executionTarget: BackgroundTaskSchema.shape.executionTarget.optional(),
     }),
     res: z.object({
       success: z.boolean(),
@@ -900,6 +910,141 @@ const ipcSchemas = {
     }),
     res: z.object({
       runIds: z.array(z.string()),
+    }),
+  },
+  'bg-task:triggerCloudRun': {
+    req: z.object({
+      slug: z.string(),
+      trigger: BackgroundTaskTrigger.optional(),
+      context: z.string().optional(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      run: BackgroundTaskCloudRunSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  'bg-task:getCloudRunStatus': {
+    req: z.object({
+      slug: z.string(),
+      runId: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      status: BackgroundTaskCloudRunStatusSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  'bg-task:listCloudRuns': {
+    req: z.object({
+      slug: z.string(),
+      status: BackgroundTaskRunStatus.optional(),
+      executor: BackgroundTaskRunExecutor.optional(),
+      limit: z.number().int().positive().max(500).optional(),
+      cursor: z.string().optional(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      runs: z.array(BackgroundTaskCloudRunSchema),
+      nextCursor: z.string().optional(),
+      error: z.string().optional(),
+    }),
+  },
+  'bg-task:listCloudRunEvents': {
+    req: z.object({
+      slug: z.string(),
+      runId: z.string(),
+      afterSeq: z.number().int().nonnegative().optional(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      events: z.array(BackgroundTaskCloudRunEventSchema),
+      error: z.string().optional(),
+    }),
+  },
+  'bg-task:cancelCloudRun': {
+    req: z.object({
+      slug: z.string(),
+      runId: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      run: BackgroundTaskCloudRunSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  'bg-task:retryCloudRun': {
+    req: z.object({
+      slug: z.string(),
+      runId: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      run: BackgroundTaskCloudRunSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  'bg-task:signalCloudRun': {
+    req: z.object({
+      slug: z.string(),
+      runId: z.string(),
+      signal: BackgroundTaskSignal,
+      payload: z.record(z.string(), z.unknown()).optional(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      run: BackgroundTaskCloudRunSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  'bg-task:pullCloudArtifact': {
+    req: z.object({
+      slug: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
+  // Cross-task cloud run listing for the global Cloud Runs view.
+  'bg-task:listAllCloudRuns': {
+    req: z.object({
+      status: BackgroundTaskRunStatus.optional(),
+      trigger: BackgroundTaskTrigger.optional(),
+      executor: BackgroundTaskRunExecutor.optional(),
+      slug: z.string().optional(),
+      since: z.string().optional(),
+      until: z.string().optional(),
+      limit: z.number().int().positive().max(500).optional(),
+      cursor: z.string().optional(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      runs: z.array(BackgroundTaskCloudRunSchema),
+      nextCursor: z.string().optional(),
+      error: z.string().optional(),
+    }),
+  },
+  // Rerun-with-same-context: a fresh manual run reusing the original context.
+  'bg-task:rerunCloudRun': {
+    req: z.object({
+      slug: z.string(),
+      runId: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      run: BackgroundTaskCloudRunSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  'bg-task:getArtifactSyncState': {
+    req: z.object({
+      slug: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      sync: BackgroundTaskArtifactSyncSchema.optional(),
+      error: z.string().optional(),
     }),
   },
   // Embedded browser (WebContentsView) channels

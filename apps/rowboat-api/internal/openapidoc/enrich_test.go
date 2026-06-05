@@ -33,6 +33,13 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/auth/workos/exchange",
 		"/v1/auth/workos/refresh",
 		"/v1/me",
+		"/v1/background-tasks",
+		"/v1/background-tasks/{slug}",
+		"/v1/background-tasks/{slug}/artifact",
+		"/v1/background-tasks/{slug}/runs",
+		"/v1/background-tasks/{slug}/runs/{runId}",
+		"/v1/background-tasks/{slug}/runs/{runId}/events",
+		"/v1/background-tasks/{slug}/trigger",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
 		"/v1/llm/completions",
@@ -83,7 +90,7 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	}
 
 	schemas := asObj(components["schemas"])
-	for _, name := range []string{"MeResponse", "LLMChatCompletionsRequest", "Connector", "GraphQLRequest"} {
+	for _, name := range []string{"MeResponse", "BackgroundTask", "BackgroundTaskRun", "BackgroundTaskRunEventsAppendRequest", "RevisionConflictEnvelope", "LLMChatCompletionsRequest", "Connector", "GraphQLRequest"} {
 		if schemas[name] == nil {
 			t.Fatalf("missing runtime schema %s", name)
 		}
@@ -105,14 +112,14 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("parse checked-in openapi json: %v", err)
 	}
 	paths := asObj(spec["paths"])
-	if paths["/v1/me"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil {
+	if paths["/v1/me"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil {
 		t.Fatal("checked-in openapi json is missing mounted runtime API paths")
 	}
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("checked-in openapi json still contains unmounted ent CRUD paths")
 	}
 	schemas := asObj(asObj(spec["components"])["schemas"])
-	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil {
+	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["RevisionConflictEnvelope"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
 	}
 }

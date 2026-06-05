@@ -22,6 +22,18 @@ import { TriggersSchema, type Triggers, type TriggerWindow } from './live-note.j
 // Re-export triggers so callers don't need a second import.
 export { TriggersSchema, type Triggers, type TriggerWindow };
 
+export const BackgroundTaskExecutionTarget = z.enum(['desktop', 'api']);
+export type BackgroundTaskExecutionTargetType = z.infer<typeof BackgroundTaskExecutionTarget>;
+
+export const BackgroundTaskRunStatus = z.enum(['queued', 'running', 'succeeded', 'failed', 'stopped']);
+export type BackgroundTaskRunStatusType = z.infer<typeof BackgroundTaskRunStatus>;
+
+export const BackgroundTaskRunExecutor = z.enum(['desktop', 'api']);
+export type BackgroundTaskRunExecutorType = z.infer<typeof BackgroundTaskRunExecutor>;
+
+export const BackgroundTaskSignal = z.enum(['pause', 'resume', 'update_context']);
+export type BackgroundTaskSignalType = z.infer<typeof BackgroundTaskSignal>;
+
 export type BackgroundTask = {
     name: string;
     instructions: string;
@@ -29,6 +41,7 @@ export type BackgroundTask = {
     triggers?: Triggers;
     model?: string;
     provider?: string;
+    executionTarget: BackgroundTaskExecutionTargetType;
     createdAt: string;
     // Runtime-managed — never hand-write. Mirrors live-note's flat-field
     // pattern: `lastAttemptAt` is bumped at every run start (backoff anchor),
@@ -48,6 +61,7 @@ export type BackgroundTaskSummary = {
     instructions: string;
     active: boolean;
     triggers?: Triggers;
+    executionTarget: BackgroundTaskExecutionTargetType;
     createdAt: string;
     lastAttemptAt?: string;
     lastRunId?: string;
@@ -63,6 +77,7 @@ export const BackgroundTaskSchema = z.object({
     triggers: TriggersSchema.optional().describe('When the agent fires. Omit for manual-only.'),
     model: z.string().optional().describe('ADVANCED — leave unset. Per-task model override.'),
     provider: z.string().optional().describe('ADVANCED — leave unset. Per-task provider name override.'),
+    executionTarget: BackgroundTaskExecutionTarget.default('desktop').describe('Where this task executes. desktop runs in the local desktop agent; api runs through the Rowboat API Temporal worker.'),
     createdAt: z.string().describe('ISO timestamp set once at create-time.'),
     lastAttemptAt: z.string().optional().describe('Runtime-managed — never write this yourself. Bumped at the start of every agent run; used by the scheduler for backoff so failures do not retry-storm.'),
     lastRunId: z.string().optional().describe('Runtime-managed — never write this yourself. The id of the most recent run (success or failure); used by the bg-task:stop handler.'),
@@ -77,6 +92,7 @@ export const BackgroundTaskSummarySchema = z.object({
     instructions: z.string(),
     active: z.boolean(),
     triggers: TriggersSchema.optional(),
+    executionTarget: BackgroundTaskExecutionTarget.default('desktop'),
     createdAt: z.string(),
     lastAttemptAt: z.string().optional(),
     lastRunId: z.string().optional(),
@@ -91,6 +107,102 @@ export const BackgroundTaskSummarySchema = z.object({
 
 export const BackgroundTaskTrigger = z.enum(['manual', 'cron', 'window', 'event']);
 export type BackgroundTaskTriggerType = z.infer<typeof BackgroundTaskTrigger>;
+
+const NullableString = z.string().nullable().optional();
+
+export const BackgroundTaskCloudRunSchema = z.object({
+    id: z.string().optional(),
+    runId: z.string(),
+    previousRunId: z.string().optional(),
+    // retryOfRunId is set only on retry runs (the run this one re-executes);
+    // previousRunId is the plain prior-run pointer. They differ — see the API
+    // schema. attempt is the 1-based retry attempt number.
+    retryOfRunId: z.string().optional(),
+    localRunId: z.string().optional(),
+    slug: z.string(),
+    trigger: BackgroundTaskTrigger,
+    status: BackgroundTaskRunStatus,
+    executor: BackgroundTaskRunExecutor,
+    attempt: z.number().int().optional(),
+    model: z.string().optional(),
+    provider: z.string().optional(),
+    useCase: z.string().optional(),
+    subUseCase: z.string().optional(),
+    requestedContext: z.string().optional(),
+    summary: z.string().optional(),
+    error: z.string().optional(),
+    errorCode: z.string().optional(),
+    errorDetails: z.string().optional(),
+    temporalWorkflowId: z.string().optional(),
+    temporalRunId: z.string().optional(),
+    temporalStatus: z.string().optional(),
+    temporalStartedAt: NullableString,
+    temporalClosedAt: NullableString,
+    cancelRequestedAt: NullableString,
+    progressPercent: z.number().int().min(0).max(100).nullable().optional(),
+    progressMessage: z.string().optional(),
+    lastHeartbeatAt: NullableString,
+    startedAt: NullableString,
+    completedAt: NullableString,
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    revision: z.number().int(),
+});
+export type BackgroundTaskCloudRunType = z.infer<typeof BackgroundTaskCloudRunSchema>;
+
+export const BackgroundTaskCloudRunStatusSchema = z.object({
+    runId: z.string(),
+    slug: z.string(),
+    status: BackgroundTaskRunStatus,
+    executor: BackgroundTaskRunExecutor,
+    attempt: z.number().int().optional(),
+    temporalWorkflowId: z.string().optional(),
+    temporalRunId: z.string().optional(),
+    temporalStatus: z.string().optional(),
+    progressPercent: z.number().int().min(0).max(100).nullable().optional(),
+    progressMessage: z.string().optional(),
+    lastHeartbeatAt: NullableString,
+    startedAt: NullableString,
+    completedAt: NullableString,
+    cancelRequestedAt: NullableString,
+    error: z.string().optional(),
+    errorCode: z.string().optional(),
+    errorDetails: z.string().optional(),
+    revision: z.number().int(),
+});
+export type BackgroundTaskCloudRunStatusType = z.infer<typeof BackgroundTaskCloudRunStatusSchema>;
+
+// Artifact sync state describes how the locally-pulled bg-tasks/<slug>/index.md
+// relates to the latest remote artifact. `syncing` is a renderer-transient state
+// (set while a pull IPC is in flight); the core returns the other four.
+export const BackgroundTaskArtifactSyncState = z.enum([
+    'current',
+    'remote_newer',
+    'syncing',
+    'pull_failed',
+    'not_pulled',
+]);
+export type BackgroundTaskArtifactSyncStateType = z.infer<typeof BackgroundTaskArtifactSyncState>;
+
+export const BackgroundTaskArtifactSyncSchema = z.object({
+    state: BackgroundTaskArtifactSyncState,
+    localRevision: z.number().int().nullable(),
+    remoteRevision: z.number().int(),
+    updatedByRunId: z.string().optional(),
+    updatedAt: z.string().optional(),
+    contentType: z.string().optional(),
+    error: z.string().optional(),
+});
+export type BackgroundTaskArtifactSyncType = z.infer<typeof BackgroundTaskArtifactSyncSchema>;
+
+export const BackgroundTaskCloudRunEventSchema = z.object({
+    id: z.string(),
+    seq: z.number().int().nonnegative(),
+    type: z.string().optional(),
+    event: z.unknown(),
+    receivedAt: z.string(),
+});
+export type BackgroundTaskCloudRunEventType = z.infer<typeof BackgroundTaskCloudRunEventSchema>;
 
 export const BackgroundTaskAgentStartEvent = z.object({
     type: z.literal('background_task_agent_start'),

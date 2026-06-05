@@ -34,11 +34,18 @@ RUN --mount=type=cache,target=/go/pkg/mod \
       -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Commit=${COMMIT} \
       -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Date=${DATE}" \
     -o /out/rowboat-api ./cmd/server && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath \
+    -ldflags="-s -w \
+      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Version=${VERSION} \
+      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Commit=${COMMIT} \
+      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Date=${DATE}" \
+    -o /out/rowboat-api-worker ./cmd/worker && \
     CGO_ENABLED=0 GOOS=linux go build -trimpath -o /out/devstack ./cmd/devstack
 
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /
 COPY --from=build /out/rowboat-api /rowboat-api
+COPY --from=build /out/rowboat-api-worker /rowboat-api-worker
 COPY --from=build /out/devstack /devstack
 
 # 8080 = public HTTP/SSE · 8081 = gRPC · 9090 = Prometheus metrics

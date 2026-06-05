@@ -9,6 +9,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/proto/entpb"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtasks"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composio"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/config"
@@ -94,6 +96,24 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	configH := config.New(cfg)
 	docsH := docs.New()
 	billingH := billing.New(client, cfg.FreeTierCredits, database.Cached, log)
+	backgroundTasksH := backgroundtasks.New(client, log)
+	if cfg.TemporalEnabled {
+		tctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		temporalClient, err := backgroundtaskworkflow.Dial(tctx, cfg)
+		cancel()
+		if err != nil {
+			return err
+		}
+		backgroundTasksH.SetTemporal(backgroundtaskworkflow.NewStarter(temporalClient, cfg))
+		srv.AddReadyCheck("temporal", func(ctx context.Context) error {
+			_, err := temporalClient.CheckHealth(ctx, nil)
+			return err
+		})
+		go func() {
+			<-ctx.Done()
+			temporalClient.Close()
+		}()
+	}
 	llmH := llm.New(prices, gate, sec, client, log)
 	llmH.SetUpstreams(cfg.OpenAIBaseURL, cfg.OpenRouterBaseURL) // empty → provider defaults
 	voiceH := voice.New(prices, gate, sec, log)
@@ -165,6 +185,30 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		r.Use(rl.PerUser(ratelimit.GroupDefault, 600)) // sanity bucket
 
 		r.Get("/v1/me", billingH.Me)
+
+		r.Get("/v1/background-task-runs", backgroundTasksH.ListAllRuns)
+		r.Get("/v1/background-tasks", backgroundTasksH.List)
+		r.Post("/v1/background-tasks", backgroundTasksH.Create)
+		r.Route("/v1/background-tasks", func(r chi.Router) {
+			r.Get("/", backgroundTasksH.List)
+			r.Post("/", backgroundTasksH.Create)
+			r.Get("/{slug}", backgroundTasksH.Get)
+			r.Patch("/{slug}", backgroundTasksH.Patch)
+			r.Delete("/{slug}", backgroundTasksH.Delete)
+			r.Get("/{slug}/artifact", backgroundTasksH.GetArtifact)
+			r.Put("/{slug}/artifact", backgroundTasksH.PutArtifact)
+			r.Get("/{slug}/runs", backgroundTasksH.ListRuns)
+			r.Post("/{slug}/runs", backgroundTasksH.CreateRun)
+			r.Get("/{slug}/runs/{runId}", backgroundTasksH.GetRun)
+			r.Patch("/{slug}/runs/{runId}", backgroundTasksH.PatchRun)
+			r.Get("/{slug}/runs/{runId}/status", backgroundTasksH.RunStatus)
+			r.Post("/{slug}/runs/{runId}/cancel", backgroundTasksH.CancelRun)
+			r.Post("/{slug}/runs/{runId}/retry", backgroundTasksH.RetryRun)
+			r.Post("/{slug}/runs/{runId}/signal", backgroundTasksH.SignalRun)
+			r.Get("/{slug}/runs/{runId}/events", backgroundTasksH.ListRunEvents)
+			r.Post("/{slug}/runs/{runId}/events", backgroundTasksH.AppendRunEvents)
+			r.Post("/{slug}/trigger", backgroundTasksH.Trigger)
+		})
 
 		r.Route("/v1/llm", func(r chi.Router) {
 			r.Use(rl.PerUser(ratelimit.GroupLLM, 60))

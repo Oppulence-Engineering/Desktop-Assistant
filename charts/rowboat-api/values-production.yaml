@@ -24,6 +24,23 @@ config:
   AUTO_MIGRATE: "false"
   INFISICAL_ENABLED: "true"
   INFISICAL_ENVIRONMENT: production
+  # --- Temporal Cloud (API-native background task worker) -------------------
+  # Production executes API-target runs on Temporal Cloud (API-key auth over
+  # TLS). To enable: set TEMPORAL_ENABLED to "true", point ADDRESS/NAMESPACE at
+  # your Temporal Cloud namespace, add TEMPORAL_API_KEY to the
+  # rowboat-api-secrets Secret (never inline it here), and set worker.enabled:
+  # true below.
+  TEMPORAL_ENABLED: "false"
+  TEMPORAL_ADDRESS: <namespace>.<account>.tmprl.cloud:7233
+  TEMPORAL_NAMESPACE: <namespace>.<account>
+  TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
+  TEMPORAL_TLS_ENABLED: "true"
+  TEMPORAL_WORKER_ENABLED: "false"
+
+# Flip to true alongside TEMPORAL_ENABLED to run the durable worker.
+worker:
+  enabled: false
+  replicaCount: 2
 
 # Secrets live in the cluster Secret `rowboat-api-secrets` (sealed-secrets /
 # external-secrets / Infisical operator). Do NOT inline secret values here.

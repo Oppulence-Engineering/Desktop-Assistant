@@ -3,6 +3,17 @@
 
 replicaCount: 2
 
+worker:
+  enabled: false
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
 image:
   repository: ghcr.io/oppulence-engineering/rowboat-api
   pullPolicy: IfNotPresent
@@ -112,6 +123,11 @@ config:
   PUBLIC_BASE_URL: https://api.x.solomon-ai.co
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability:4318
   INFISICAL_ENABLED: "true"
+  TEMPORAL_ENABLED: "false"
+  TEMPORAL_ADDRESS: temporal-frontend.temporal:7233
+  TEMPORAL_NAMESPACE: default
+  TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
+  TEMPORAL_WORKER_ENABLED: "false"
 
 # Secret env. In production these are projected from an existing Secret
 # (existingSecret) rather than templated into the chart. When existingSecret is

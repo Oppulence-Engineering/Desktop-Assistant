@@ -5,6 +5,10 @@ import (
 	"errors"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -36,6 +40,34 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.CreditLedgerQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(creditledger.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.BackgroundTask.Intercept(intercept.TraverseBackgroundTask(
+		func(ctx context.Context, q *ent.BackgroundTaskQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(backgroundtask.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.BackgroundTaskArtifact.Intercept(intercept.TraverseBackgroundTaskArtifact(
+		func(ctx context.Context, q *ent.BackgroundTaskArtifactQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(backgroundtaskartifact.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.BackgroundTaskRun.Intercept(intercept.TraverseBackgroundTaskRun(
+		func(ctx context.Context, q *ent.BackgroundTaskRunQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(backgroundtaskrun.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.BackgroundTaskRunEvent.Intercept(intercept.TraverseBackgroundTaskRunEvent(
+		func(ctx context.Context, q *ent.BackgroundTaskRunEventQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(backgroundtaskrunevent.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

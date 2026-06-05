@@ -1,6 +1,7 @@
 import { PrefixLogger } from '@x/shared';
 import { listTasks } from './fileops.js';
 import { runBackgroundTask } from './runner.js';
+import { processRemoteTriggers, triggerCloudRunBestEffort } from './cloud-sync.js';
 import { backoffRemainingMs, dueTimedTrigger } from '../schedule/utils.js';
 
 const log = new PrefixLogger('BgTask:Scheduler');
@@ -13,7 +14,7 @@ function humanMs(ms: number): string {
     return `${m}m`;
 }
 
-async function processScheduledTasks(): Promise<void> {
+export async function processScheduledTasks(): Promise<void> {
     const { items } = await listTasks({ limit: 10_000 });
 
     const scannedCount = items.length;
@@ -61,9 +62,13 @@ async function processScheduledTasks(): Promise<void> {
 
         firedCount++;
         log.log(`${task.slug} — firing (matched ${source})`);
-        runBackgroundTask(task.slug, source).catch(err => {
-            log.log(`${task.slug} — fire error: ${err instanceof Error ? err.message : String(err)}`);
-        });
+        if ((task.executionTarget ?? 'desktop') === 'api') {
+            triggerCloudRunBestEffort(task.slug, source);
+        } else {
+            runBackgroundTask(task.slug, source).catch(err => {
+                log.log(`${task.slug} — fire error: ${err instanceof Error ? err.message : String(err)}`);
+            });
+        }
     }
 
     if (activeCount > 0 || firedCount > 0 || backoffCount > 0 || inFlightCount > 0) {
@@ -74,6 +79,12 @@ async function processScheduledTasks(): Promise<void> {
             (firedCount > 0 ? `, fired ${firedCount}` : '') +
             (backoffCount > 0 ? `, backoff ${backoffCount}` : ''),
         );
+    }
+
+    try {
+        await processRemoteTriggers();
+    } catch (err) {
+        log.log(`remote trigger sync error: ${err instanceof Error ? err.message : String(err)}`);
     }
 }
 

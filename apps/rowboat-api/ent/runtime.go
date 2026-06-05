@@ -5,6 +5,10 @@ package ent
 import (
 	"time"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -25,6 +29,206 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	backgroundtaskMixin := schema.BackgroundTask{}.Mixin()
+	backgroundtaskMixinFields0 := backgroundtaskMixin[0].Fields()
+	_ = backgroundtaskMixinFields0
+	backgroundtaskFields := schema.BackgroundTask{}.Fields()
+	_ = backgroundtaskFields
+	// backgroundtaskDescCreatedAt is the schema descriptor for created_at field.
+	backgroundtaskDescCreatedAt := backgroundtaskMixinFields0[1].Descriptor()
+	// backgroundtask.DefaultCreatedAt holds the default value on creation for the created_at field.
+	backgroundtask.DefaultCreatedAt = backgroundtaskDescCreatedAt.Default.(func() time.Time)
+	// backgroundtaskDescUpdatedAt is the schema descriptor for updated_at field.
+	backgroundtaskDescUpdatedAt := backgroundtaskMixinFields0[2].Descriptor()
+	// backgroundtask.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	backgroundtask.DefaultUpdatedAt = backgroundtaskDescUpdatedAt.Default.(func() time.Time)
+	// backgroundtask.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	backgroundtask.UpdateDefaultUpdatedAt = backgroundtaskDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// backgroundtaskDescSlug is the schema descriptor for slug field.
+	backgroundtaskDescSlug := backgroundtaskFields[0].Descriptor()
+	// backgroundtask.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	backgroundtask.SlugValidator = backgroundtaskDescSlug.Validators[0].(func(string) error)
+	// backgroundtaskDescName is the schema descriptor for name field.
+	backgroundtaskDescName := backgroundtaskFields[1].Descriptor()
+	// backgroundtask.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	backgroundtask.NameValidator = backgroundtaskDescName.Validators[0].(func(string) error)
+	// backgroundtaskDescInstructions is the schema descriptor for instructions field.
+	backgroundtaskDescInstructions := backgroundtaskFields[2].Descriptor()
+	// backgroundtask.InstructionsValidator is a validator for the "instructions" field. It is called by the builders before save.
+	backgroundtask.InstructionsValidator = backgroundtaskDescInstructions.Validators[0].(func(string) error)
+	// backgroundtaskDescActive is the schema descriptor for active field.
+	backgroundtaskDescActive := backgroundtaskFields[3].Descriptor()
+	// backgroundtask.DefaultActive holds the default value on creation for the active field.
+	backgroundtask.DefaultActive = backgroundtaskDescActive.Default.(bool)
+	// backgroundtaskDescTriggersJSON is the schema descriptor for triggers_json field.
+	backgroundtaskDescTriggersJSON := backgroundtaskFields[4].Descriptor()
+	// backgroundtask.TriggersJSONValidator is a validator for the "triggers_json" field. It is called by the builders before save.
+	backgroundtask.TriggersJSONValidator = backgroundtaskDescTriggersJSON.Validators[0].(func(string) error)
+	// backgroundtaskDescExecutionTarget is the schema descriptor for execution_target field.
+	backgroundtaskDescExecutionTarget := backgroundtaskFields[7].Descriptor()
+	// backgroundtask.DefaultExecutionTarget holds the default value on creation for the execution_target field.
+	backgroundtask.DefaultExecutionTarget = backgroundtaskDescExecutionTarget.Default.(string)
+	// backgroundtask.ExecutionTargetValidator is a validator for the "execution_target" field. It is called by the builders before save.
+	backgroundtask.ExecutionTargetValidator = backgroundtaskDescExecutionTarget.Validators[0].(func(string) error)
+	// backgroundtaskDescRevision is the schema descriptor for revision field.
+	backgroundtaskDescRevision := backgroundtaskFields[14].Descriptor()
+	// backgroundtask.DefaultRevision holds the default value on creation for the revision field.
+	backgroundtask.DefaultRevision = backgroundtaskDescRevision.Default.(int)
+	// backgroundtask.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
+	backgroundtask.RevisionValidator = backgroundtaskDescRevision.Validators[0].(func(int) error)
+	// backgroundtaskDescID is the schema descriptor for id field.
+	backgroundtaskDescID := backgroundtaskMixinFields0[0].Descriptor()
+	// backgroundtask.DefaultID holds the default value on creation for the id field.
+	backgroundtask.DefaultID = backgroundtaskDescID.Default.(func() uuid.UUID)
+	backgroundtaskartifactMixin := schema.BackgroundTaskArtifact{}.Mixin()
+	backgroundtaskartifactMixinFields0 := backgroundtaskartifactMixin[0].Fields()
+	_ = backgroundtaskartifactMixinFields0
+	backgroundtaskartifactFields := schema.BackgroundTaskArtifact{}.Fields()
+	_ = backgroundtaskartifactFields
+	// backgroundtaskartifactDescCreatedAt is the schema descriptor for created_at field.
+	backgroundtaskartifactDescCreatedAt := backgroundtaskartifactMixinFields0[1].Descriptor()
+	// backgroundtaskartifact.DefaultCreatedAt holds the default value on creation for the created_at field.
+	backgroundtaskartifact.DefaultCreatedAt = backgroundtaskartifactDescCreatedAt.Default.(func() time.Time)
+	// backgroundtaskartifactDescUpdatedAt is the schema descriptor for updated_at field.
+	backgroundtaskartifactDescUpdatedAt := backgroundtaskartifactMixinFields0[2].Descriptor()
+	// backgroundtaskartifact.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	backgroundtaskartifact.DefaultUpdatedAt = backgroundtaskartifactDescUpdatedAt.Default.(func() time.Time)
+	// backgroundtaskartifact.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	backgroundtaskartifact.UpdateDefaultUpdatedAt = backgroundtaskartifactDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// backgroundtaskartifactDescBody is the schema descriptor for body field.
+	backgroundtaskartifactDescBody := backgroundtaskartifactFields[0].Descriptor()
+	// backgroundtaskartifact.DefaultBody holds the default value on creation for the body field.
+	backgroundtaskartifact.DefaultBody = backgroundtaskartifactDescBody.Default.(string)
+	// backgroundtaskartifactDescRevision is the schema descriptor for revision field.
+	backgroundtaskartifactDescRevision := backgroundtaskartifactFields[1].Descriptor()
+	// backgroundtaskartifact.DefaultRevision holds the default value on creation for the revision field.
+	backgroundtaskartifact.DefaultRevision = backgroundtaskartifactDescRevision.Default.(int)
+	// backgroundtaskartifact.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
+	backgroundtaskartifact.RevisionValidator = backgroundtaskartifactDescRevision.Validators[0].(func(int) error)
+	// backgroundtaskartifactDescContentType is the schema descriptor for content_type field.
+	backgroundtaskartifactDescContentType := backgroundtaskartifactFields[3].Descriptor()
+	// backgroundtaskartifact.DefaultContentType holds the default value on creation for the content_type field.
+	backgroundtaskartifact.DefaultContentType = backgroundtaskartifactDescContentType.Default.(string)
+	// backgroundtaskartifactDescID is the schema descriptor for id field.
+	backgroundtaskartifactDescID := backgroundtaskartifactMixinFields0[0].Descriptor()
+	// backgroundtaskartifact.DefaultID holds the default value on creation for the id field.
+	backgroundtaskartifact.DefaultID = backgroundtaskartifactDescID.Default.(func() uuid.UUID)
+	backgroundtaskrunMixin := schema.BackgroundTaskRun{}.Mixin()
+	backgroundtaskrunMixinFields0 := backgroundtaskrunMixin[0].Fields()
+	_ = backgroundtaskrunMixinFields0
+	backgroundtaskrunFields := schema.BackgroundTaskRun{}.Fields()
+	_ = backgroundtaskrunFields
+	// backgroundtaskrunDescCreatedAt is the schema descriptor for created_at field.
+	backgroundtaskrunDescCreatedAt := backgroundtaskrunMixinFields0[1].Descriptor()
+	// backgroundtaskrun.DefaultCreatedAt holds the default value on creation for the created_at field.
+	backgroundtaskrun.DefaultCreatedAt = backgroundtaskrunDescCreatedAt.Default.(func() time.Time)
+	// backgroundtaskrunDescUpdatedAt is the schema descriptor for updated_at field.
+	backgroundtaskrunDescUpdatedAt := backgroundtaskrunMixinFields0[2].Descriptor()
+	// backgroundtaskrun.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	backgroundtaskrun.DefaultUpdatedAt = backgroundtaskrunDescUpdatedAt.Default.(func() time.Time)
+	// backgroundtaskrun.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	backgroundtaskrun.UpdateDefaultUpdatedAt = backgroundtaskrunDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// backgroundtaskrunDescRunID is the schema descriptor for run_id field.
+	backgroundtaskrunDescRunID := backgroundtaskrunFields[0].Descriptor()
+	// backgroundtaskrun.RunIDValidator is a validator for the "run_id" field. It is called by the builders before save.
+	backgroundtaskrun.RunIDValidator = backgroundtaskrunDescRunID.Validators[0].(func(string) error)
+	// backgroundtaskrunDescTrigger is the schema descriptor for trigger field.
+	backgroundtaskrunDescTrigger := backgroundtaskrunFields[1].Descriptor()
+	// backgroundtaskrun.DefaultTrigger holds the default value on creation for the trigger field.
+	backgroundtaskrun.DefaultTrigger = backgroundtaskrunDescTrigger.Default.(string)
+	// backgroundtaskrun.TriggerValidator is a validator for the "trigger" field. It is called by the builders before save.
+	backgroundtaskrun.TriggerValidator = backgroundtaskrunDescTrigger.Validators[0].(func(string) error)
+	// backgroundtaskrunDescStatus is the schema descriptor for status field.
+	backgroundtaskrunDescStatus := backgroundtaskrunFields[2].Descriptor()
+	// backgroundtaskrun.DefaultStatus holds the default value on creation for the status field.
+	backgroundtaskrun.DefaultStatus = backgroundtaskrunDescStatus.Default.(string)
+	// backgroundtaskrun.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	backgroundtaskrun.StatusValidator = backgroundtaskrunDescStatus.Validators[0].(func(string) error)
+	// backgroundtaskrunDescExecutor is the schema descriptor for executor field.
+	backgroundtaskrunDescExecutor := backgroundtaskrunFields[3].Descriptor()
+	// backgroundtaskrun.DefaultExecutor holds the default value on creation for the executor field.
+	backgroundtaskrun.DefaultExecutor = backgroundtaskrunDescExecutor.Default.(string)
+	// backgroundtaskrun.ExecutorValidator is a validator for the "executor" field. It is called by the builders before save.
+	backgroundtaskrun.ExecutorValidator = backgroundtaskrunDescExecutor.Validators[0].(func(string) error)
+	// backgroundtaskrunDescAttempt is the schema descriptor for attempt field.
+	backgroundtaskrunDescAttempt := backgroundtaskrunFields[4].Descriptor()
+	// backgroundtaskrun.DefaultAttempt holds the default value on creation for the attempt field.
+	backgroundtaskrun.DefaultAttempt = backgroundtaskrunDescAttempt.Default.(int)
+	// backgroundtaskrun.AttemptValidator is a validator for the "attempt" field. It is called by the builders before save.
+	backgroundtaskrun.AttemptValidator = backgroundtaskrunDescAttempt.Validators[0].(func(int) error)
+	// backgroundtaskrunDescProgressPercent is the schema descriptor for progress_percent field.
+	backgroundtaskrunDescProgressPercent := backgroundtaskrunFields[23].Descriptor()
+	// backgroundtaskrun.ProgressPercentValidator is a validator for the "progress_percent" field. It is called by the builders before save.
+	backgroundtaskrun.ProgressPercentValidator = func() func(int) error {
+		validators := backgroundtaskrunDescProgressPercent.Validators
+		fns := [...]func(int) error{
+			validators[0].(func(int) error),
+			validators[1].(func(int) error),
+		}
+		return func(progress_percent int) error {
+			for _, fn := range fns {
+				if err := fn(progress_percent); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// backgroundtaskrunDescRevision is the schema descriptor for revision field.
+	backgroundtaskrunDescRevision := backgroundtaskrunFields[28].Descriptor()
+	// backgroundtaskrun.DefaultRevision holds the default value on creation for the revision field.
+	backgroundtaskrun.DefaultRevision = backgroundtaskrunDescRevision.Default.(int)
+	// backgroundtaskrun.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
+	backgroundtaskrun.RevisionValidator = backgroundtaskrunDescRevision.Validators[0].(func(int) error)
+	// backgroundtaskrunDescID is the schema descriptor for id field.
+	backgroundtaskrunDescID := backgroundtaskrunMixinFields0[0].Descriptor()
+	// backgroundtaskrun.DefaultID holds the default value on creation for the id field.
+	backgroundtaskrun.DefaultID = backgroundtaskrunDescID.Default.(func() uuid.UUID)
+	backgroundtaskruneventMixin := schema.BackgroundTaskRunEvent{}.Mixin()
+	backgroundtaskruneventMixinFields0 := backgroundtaskruneventMixin[0].Fields()
+	_ = backgroundtaskruneventMixinFields0
+	backgroundtaskruneventFields := schema.BackgroundTaskRunEvent{}.Fields()
+	_ = backgroundtaskruneventFields
+	// backgroundtaskruneventDescCreatedAt is the schema descriptor for created_at field.
+	backgroundtaskruneventDescCreatedAt := backgroundtaskruneventMixinFields0[1].Descriptor()
+	// backgroundtaskrunevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	backgroundtaskrunevent.DefaultCreatedAt = backgroundtaskruneventDescCreatedAt.Default.(func() time.Time)
+	// backgroundtaskruneventDescUpdatedAt is the schema descriptor for updated_at field.
+	backgroundtaskruneventDescUpdatedAt := backgroundtaskruneventMixinFields0[2].Descriptor()
+	// backgroundtaskrunevent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	backgroundtaskrunevent.DefaultUpdatedAt = backgroundtaskruneventDescUpdatedAt.Default.(func() time.Time)
+	// backgroundtaskrunevent.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	backgroundtaskrunevent.UpdateDefaultUpdatedAt = backgroundtaskruneventDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// backgroundtaskruneventDescSeq is the schema descriptor for seq field.
+	backgroundtaskruneventDescSeq := backgroundtaskruneventFields[0].Descriptor()
+	// backgroundtaskrunevent.SeqValidator is a validator for the "seq" field. It is called by the builders before save.
+	backgroundtaskrunevent.SeqValidator = backgroundtaskruneventDescSeq.Validators[0].(func(int) error)
+	// backgroundtaskruneventDescEventJSON is the schema descriptor for event_json field.
+	backgroundtaskruneventDescEventJSON := backgroundtaskruneventFields[2].Descriptor()
+	// backgroundtaskrunevent.EventJSONValidator is a validator for the "event_json" field. It is called by the builders before save.
+	backgroundtaskrunevent.EventJSONValidator = func() func(string) error {
+		validators := backgroundtaskruneventDescEventJSON.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(event_json string) error {
+			for _, fn := range fns {
+				if err := fn(event_json); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// backgroundtaskruneventDescReceivedAt is the schema descriptor for received_at field.
+	backgroundtaskruneventDescReceivedAt := backgroundtaskruneventFields[3].Descriptor()
+	// backgroundtaskrunevent.DefaultReceivedAt holds the default value on creation for the received_at field.
+	backgroundtaskrunevent.DefaultReceivedAt = backgroundtaskruneventDescReceivedAt.Default.(func() time.Time)
+	// backgroundtaskruneventDescID is the schema descriptor for id field.
+	backgroundtaskruneventDescID := backgroundtaskruneventMixinFields0[0].Descriptor()
+	// backgroundtaskrunevent.DefaultID holds the default value on creation for the id field.
+	backgroundtaskrunevent.DefaultID = backgroundtaskruneventDescID.Default.(func() uuid.UUID)
 	creditledgerFields := schema.CreditLedger{}.Fields()
 	_ = creditledgerFields
 	// creditledgerDescTs is the schema descriptor for ts field.

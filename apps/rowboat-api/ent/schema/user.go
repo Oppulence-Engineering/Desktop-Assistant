@@ -57,5 +57,9 @@ func (User) Edges() []ent.Edge {
 		edge.To("llm_usages", LLMUsage.Type).Annotations(entproto.Skip()),
 		edge.To("oauth_connections", OAuthConnection.Type).Annotations(entproto.Skip()),
 		edge.To("mcp_connections", MCPConnection.Type).Annotations(entproto.Skip()),
+		edge.To("background_tasks", BackgroundTask.Type).Annotations(entproto.Skip()),
+		edge.To("background_task_artifacts", BackgroundTaskArtifact.Type).Annotations(entproto.Skip()),
+		edge.To("background_task_runs", BackgroundTaskRun.Type).Annotations(entproto.Skip()),
+		edge.To("background_task_run_events", BackgroundTaskRunEvent.Type).Annotations(entproto.Skip()),
 	}
 }

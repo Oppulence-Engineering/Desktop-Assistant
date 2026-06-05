@@ -9,6 +9,54 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
 
+// The BackgroundTaskFunc type is an adapter to allow the use of ordinary
+// function as BackgroundTask mutator.
+type BackgroundTaskFunc func(context.Context, *ent.BackgroundTaskMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BackgroundTaskFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BackgroundTaskMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BackgroundTaskMutation", m)
+}
+
+// The BackgroundTaskArtifactFunc type is an adapter to allow the use of ordinary
+// function as BackgroundTaskArtifact mutator.
+type BackgroundTaskArtifactFunc func(context.Context, *ent.BackgroundTaskArtifactMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BackgroundTaskArtifactFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BackgroundTaskArtifactMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BackgroundTaskArtifactMutation", m)
+}
+
+// The BackgroundTaskRunFunc type is an adapter to allow the use of ordinary
+// function as BackgroundTaskRun mutator.
+type BackgroundTaskRunFunc func(context.Context, *ent.BackgroundTaskRunMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BackgroundTaskRunFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BackgroundTaskRunMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BackgroundTaskRunMutation", m)
+}
+
+// The BackgroundTaskRunEventFunc type is an adapter to allow the use of ordinary
+// function as BackgroundTaskRunEvent mutator.
+type BackgroundTaskRunEventFunc func(context.Context, *ent.BackgroundTaskRunEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BackgroundTaskRunEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BackgroundTaskRunEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BackgroundTaskRunEventMutation", m)
+}
+
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary
 // function as CreditLedger mutator.
 type CreditLedgerFunc func(context.Context, *ent.CreditLedgerMutation) (ent.Value, error)

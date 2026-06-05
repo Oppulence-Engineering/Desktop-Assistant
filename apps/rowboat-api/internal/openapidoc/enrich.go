@@ -53,6 +53,7 @@ func Enrich(spec obj) {
 		obj{"name": "System", "description": "Health, readiness, and generated documentation endpoints."},
 		obj{"name": "Auth", "description": "WorkOS AuthKit broker endpoints used by the desktop before it has a bearer token."},
 		obj{"name": "Billing", "description": "Authenticated viewer identity, plan, and credit usage."},
+		obj{"name": "Background Tasks", "description": "Authenticated cloud mirror for desktop background task specs, artifacts, run state, JSONL events, and remote trigger queueing."},
 		obj{"name": "LLM", "description": "Credit-gated OpenAI-compatible text, chat, embedding, model-list, and streaming endpoints."},
 		obj{"name": "Voice", "description": "Credit-gated ElevenLabs text-to-speech proxy."},
 		obj{"name": "Search", "description": "Credit-gated Exa search proxy."},
@@ -142,6 +143,7 @@ func addRuntimeSchemas(schemas obj) {
 	}, "access_token", "expires_at", "token_type")
 
 	addBillingSchemas(schemas)
+	addBackgroundTaskSchemas(schemas)
 	addLLMSchemas(schemas)
 	addVendorProxySchemas(schemas)
 	addOAuthSchemas(schemas)
@@ -182,6 +184,211 @@ func addBillingSchemas(schemas obj) {
 		"user":    ref("CurrentUser"),
 		"billing": ref("BillingState"),
 	}, "user", "billing")
+}
+
+func addBackgroundTaskSchemas(schemas obj) {
+	triggerJSON := obj{
+		"description": "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
+		"nullable":    true,
+		"example":     obj{"cronExpr": "0 9 * * *", "timezone": "America/New_York"},
+	}
+	schemas["RevisionConflictEnvelope"] = objectSchema("Revision conflict returned when the caller edits a stale task, artifact, or run revision. Clients should refetch, merge, and retry with currentRevision.", obj{
+		"error":           stringEnum("Human-readable conflict message.", "revision conflict", "revision conflict"),
+		"code":            stringEnum("Stable machine-readable conflict code.", "conflict", "conflict"),
+		"currentRevision": intSchema("Current server revision for the resource that rejected the write.", 3),
+	}, "error", "code", "currentRevision")
+	schemas["BackgroundTask"] = objectSchema("Server-readable mirror of one background task. The API is the control plane; executionTarget=desktop runs locally in the desktop and executionTarget=api runs through the API Temporal worker.", obj{
+		"id":              uuidSchema("Stable server id for this mirrored task.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+		"slug":            stringSchema("Stable task slug matching the desktop bg-tasks/<slug> directory.", "daily-summary"),
+		"name":            stringSchema("Human-readable task name from task.yaml.", "Daily Account Summary"),
+		"instructions":    stringSchema("Task instructions from task.yaml. This is stored server-side so the API can audit, inspect, and eventually orchestrate task lifecycle actions.", "Summarize important account changes and draft follow-up notes."),
+		"active":          boolSchema("Whether the task is enabled for local scheduling and remote trigger pickup.", true),
+		"triggers":        triggerJSON,
+		"model":           stringSchema("Preferred desktop-facing model id for runs of this task.", "openai/gpt-4.1-mini", nullable()),
+		"provider":        stringSchema("Preferred provider slug for the model or execution backend.", "openai", nullable()),
+		"executionTarget": stringEnum("Where this task executes. desktop preserves the local-first path; api dispatches to the Temporal-backed API worker.", "desktop", "desktop", "api"),
+		"createdAt":       stringSchema("Original desktop task creation timestamp when known; otherwise the server row creation time.", "2026-06-04T20:38:00Z", obj{"format": "date-time"}),
+		"updatedAt":       stringSchema("Server timestamp for the last mirrored task update.", "2026-06-04T20:39:00Z", obj{"format": "date-time"}),
+		"lastAttemptAt":   stringSchema("Last time the desktop attempted to run this task.", "2026-06-04T21:00:00Z", obj{"format": "date-time"}, nullable()),
+		"lastRunId":       stringSchema("Last desktop or remote-trigger run id mirrored for this task.", "run-20260604-210000", nullable()),
+		"lastRunAt":       stringSchema("Last time the desktop completed or recorded a run for this task.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
+		"lastRunSummary":  stringSchema("Short summary from the latest run.", "No high-priority account changes.", nullable()),
+		"lastRunError":    stringSchema("Latest run error, empty when the latest run did not fail.", "", nullable()),
+		"revision":        intSchema("Optimistic-lock revision. PATCH and DELETE must send the current value.", 2),
+	}, "id", "slug", "name", "instructions", "active", "executionTarget", "createdAt", "updatedAt", "revision")
+	schemas["BackgroundTaskListResponse"] = objectSchema("Task list for the authenticated user, ordered by slug.", obj{
+		"tasks": arraySchema("Mirrored background tasks visible to this user.", ref("BackgroundTask")),
+	}, "tasks")
+	schemas["BackgroundTaskCreateRequest"] = objectSchema("Creates or first-syncs a desktop background task into the cloud mirror.", obj{
+		"slug":            stringSchema("Optional stable slug. If omitted, rowboat-api slugifies name.", "daily-summary", nullable()),
+		"name":            stringSchema("Human-readable task name.", "Daily Account Summary"),
+		"instructions":    stringSchema("Task instructions mirrored from task.yaml.", "Summarize important account changes and draft follow-up notes."),
+		"active":          boolSchema("Whether this task is active. Defaults to true.", true),
+		"triggers":        triggerJSON,
+		"model":           stringSchema("Preferred model id for new runs.", "openai/gpt-4.1-mini", nullable()),
+		"provider":        stringSchema("Preferred provider slug.", "openai", nullable()),
+		"executionTarget": stringEnum("Where this task should execute. Defaults to desktop.", "desktop", "desktop", "api"),
+		"createdAt":       stringSchema("Original desktop task creation timestamp.", "2026-06-04T20:38:00Z", obj{"format": "date-time"}, nullable()),
+		"lastAttemptAt":   stringSchema("Last attempt timestamp from local state.", "2026-06-04T21:00:00Z", obj{"format": "date-time"}, nullable()),
+		"lastRunId":       stringSchema("Last local run id from the desktop.", "run-20260604-210000", nullable()),
+		"lastRunAt":       stringSchema("Last local run timestamp.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
+		"lastRunSummary":  stringSchema("Latest local run summary.", "No high-priority account changes.", nullable()),
+		"lastRunError":    stringSchema("Latest local run error.", "", nullable()),
+	}, "name", "instructions")
+	schemas["BackgroundTaskPatchRequest"] = objectSchema("Revision-checked partial update for the task mirror. Omitted fields are left unchanged; triggers:null clears the trigger JSON.", obj{
+		"revision":        intSchema("Current task revision returned by the last GET/list/PATCH response.", 2),
+		"name":            stringSchema("New task name.", "Daily Account Summary", nullable()),
+		"instructions":    stringSchema("New task instructions.", "Summarize important account changes and draft follow-up notes.", nullable()),
+		"active":          boolSchema("Enable or disable local scheduling/remote pickup.", true),
+		"triggers":        triggerJSON,
+		"model":           stringSchema("Preferred model id for new runs.", "openai/gpt-4.1-mini", nullable()),
+		"provider":        stringSchema("Preferred provider slug.", "openai", nullable()),
+		"executionTarget": stringEnum("Where this task should execute.", "api", "desktop", "api"),
+		"createdAt":       stringSchema("Original desktop task creation timestamp.", "2026-06-04T20:38:00Z", obj{"format": "date-time"}, nullable()),
+		"lastAttemptAt":   stringSchema("Latest local attempt timestamp.", "2026-06-04T21:00:00Z", obj{"format": "date-time"}, nullable()),
+		"lastRunId":       stringSchema("Latest local run id.", "run-20260604-210000", nullable()),
+		"lastRunAt":       stringSchema("Latest local run timestamp.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
+		"lastRunSummary":  stringSchema("Latest local run summary.", "No high-priority account changes.", nullable()),
+		"lastRunError":    stringSchema("Latest local run error.", "", nullable()),
+	}, "revision")
+	schemas["BackgroundTaskArtifact"] = objectSchema("Markdown artifact body mirrored from bg-tasks/<slug>/index.md.", obj{
+		"slug":      stringSchema("Task slug this artifact belongs to.", "daily-summary"),
+		"body":      stringSchema("Full markdown body for the task artifact.", "# Daily Account Summary\n\nUse this context when summarizing account changes."),
+		"revision":  intSchema("Optimistic-lock revision for artifact writes. Empty artifacts that do not exist yet return revision 0.", 2),
+		"updatedAt": stringSchema("Server timestamp for the last artifact update.", "2026-06-04T20:39:00Z", obj{"format": "date-time"}),
+	}, "slug", "body", "revision", "updatedAt")
+	schemas["BackgroundTaskArtifactPutRequest"] = objectSchema("Creates or revision-checks an artifact mirror update. Omit revision or send 0 when creating a missing artifact.", obj{
+		"revision": intSchema("Current artifact revision. Required for updates to an existing artifact.", 2),
+		"body":     stringSchema("Full markdown body to store.", "# Daily Account Summary\n\nUpdated context."),
+	}, "body")
+	schemas["BackgroundTaskRun"] = objectSchema("One mirrored desktop execution, queued remote trigger, or API-worker Temporal execution for a background task.", obj{
+		"id":                 uuidSchema("Stable server id for this run mirror.", "77f5e632-a841-4557-a8e4-9b8f0d207ff4"),
+		"runId":              stringSchema("Cloud-visible run id. Desktop-created runs can use local ids; remote triggers use remote-trigger-<uuid> until claimed.", "run-20260604-210000"),
+		"previousRunId":      stringSchema("Previous run id when this run was created by retry.", "run-20260604-210000", nullable()),
+		"localRunId":         stringSchema("Actual desktop run id once a queued remote trigger has been claimed and executed locally.", "local-run-42", nullable()),
+		"slug":               stringSchema("Task slug this run belongs to.", "daily-summary"),
+		"trigger":            stringEnum("Trigger source for this run.", "manual", "manual", "cron", "window", "event"),
+		"status":             stringEnum("Run lifecycle state.", "running", "queued", "running", "succeeded", "failed", "stopped"),
+		"executor":           stringEnum("Execution backend that owns this run.", "desktop", "desktop", "api"),
+		"model":              stringSchema("Model id used by this run.", "openai/gpt-4.1-mini", nullable()),
+		"provider":           stringSchema("Provider used by this run.", "openai", nullable()),
+		"useCase":            stringSchema("High-level usage label for cost attribution.", "background-task", nullable()),
+		"subUseCase":         stringSchema("Task-specific usage label for cost attribution.", "daily-summary", nullable()),
+		"requestedContext":   stringSchema("Optional context supplied when a user remotely triggered the task.", "Run this now and focus on high-risk accounts.", nullable()),
+		"summary":            stringSchema("Short run summary from the desktop.", "No high-priority account changes.", nullable()),
+		"error":              stringSchema("Run error when status is failed or stopped unexpectedly.", "", nullable()),
+		"temporalWorkflowId": stringSchema("Temporal workflow id for API-worker runs.", "background-task/user/daily-summary/api-trigger-123", nullable()),
+		"temporalRunId":      stringSchema("Temporal run id for the current workflow execution.", "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16", nullable()),
+		"temporalStatus":     stringSchema("Last mirrored Temporal status, separate from the product status.", "Running", nullable()),
+		"temporalStartedAt":  stringSchema("Timestamp when Temporal execution started.", "2026-06-04T21:01:00Z", obj{"format": "date-time"}, nullable()),
+		"temporalClosedAt":   stringSchema("Timestamp when Temporal execution closed.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
+		"progressPercent":    intSchema("Best-known run progress for polling clients, 0-100.", 50, nullable()),
+		"progressMessage":    stringSchema("Human-readable progress message for polling clients.", "Building API-native task artifact.", nullable()),
+		"lastHeartbeatAt":    stringSchema("Latest worker heartbeat/progress timestamp.", "2026-06-04T21:01:30Z", obj{"format": "date-time"}, nullable()),
+		"startedAt":          stringSchema("Desktop run start timestamp.", "2026-06-04T21:01:00Z", obj{"format": "date-time"}, nullable()),
+		"completedAt":        stringSchema("Desktop run completion timestamp.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
+		"createdAt":          stringSchema("Server row creation timestamp.", "2026-06-04T21:00:30Z", obj{"format": "date-time"}),
+		"updatedAt":          stringSchema("Server row update timestamp.", "2026-06-04T21:02:05Z", obj{"format": "date-time"}),
+		"revision":           intSchema("Optimistic-lock revision for run PATCH writes.", 2),
+	}, "id", "runId", "slug", "trigger", "status", "executor", "createdAt", "updatedAt", "revision")
+	schemas["BackgroundTaskRunsResponse"] = objectSchema("Run list for one task or the authenticated account.", obj{
+		"runs":       arraySchema("Runs ordered by server creation time.", ref("BackgroundTaskRun")),
+		"nextCursor": stringSchema("RFC3339 cursor for the next page when more runs are available.", "2026-06-04T21:00:30Z", nullable()),
+	}, "runs")
+	schemas["BackgroundTaskRunStatusResponse"] = objectSchema("Compact polling response for one run.", obj{
+		"runId":              stringSchema("Cloud-visible run id.", "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"),
+		"slug":               stringSchema("Task slug.", "daily-summary"),
+		"status":             stringEnum("Product run status.", "running", "queued", "running", "succeeded", "failed", "stopped"),
+		"executor":           stringEnum("Execution backend.", "api", "desktop", "api"),
+		"temporalWorkflowId": stringSchema("Temporal workflow id for API-worker runs.", "background-task/user/daily-summary/api-trigger-123", nullable()),
+		"temporalRunId":      stringSchema("Temporal run id for API-worker runs.", "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16", nullable()),
+		"temporalStatus":     stringSchema("Last mirrored Temporal status.", "Running", nullable()),
+		"progressPercent":    intSchema("Best-known progress for polling clients.", 50, nullable()),
+		"progressMessage":    stringSchema("Progress message.", "Building API-native task artifact.", nullable()),
+		"lastHeartbeatAt":    stringSchema("Latest worker heartbeat/progress timestamp.", "2026-06-04T21:01:30Z", obj{"format": "date-time"}, nullable()),
+		"startedAt":          stringSchema("Run start timestamp.", "2026-06-04T21:01:00Z", obj{"format": "date-time"}, nullable()),
+		"completedAt":        stringSchema("Run completion timestamp.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
+		"error":              stringSchema("Terminal error, when present.", "", nullable()),
+		"revision":           intSchema("Current run revision.", 2),
+	}, "runId", "slug", "status", "executor", "revision")
+	schemas["BackgroundTaskRunCreateRequest"] = objectSchema("Creates a run mirror for a desktop execution. Remote/manual queue creation usually uses POST /trigger instead.", obj{
+		"runId":              stringSchema("Cloud-visible run id from the desktop.", "run-20260604-210000"),
+		"previousRunId":      stringSchema("Previous run id when this is a retry.", "run-20260604-205000", nullable()),
+		"localRunId":         stringSchema("Desktop-local run id if different from runId.", "local-run-42", nullable()),
+		"trigger":            stringEnum("Trigger source. Defaults to manual.", "manual", "manual", "cron", "window", "event"),
+		"status":             stringEnum("Initial status. Defaults to running.", "running", "queued", "running", "succeeded", "failed", "stopped"),
+		"executor":           stringEnum("Execution backend. Defaults from task.executionTarget.", "desktop", "desktop", "api"),
+		"model":              stringSchema("Model id used by this run.", "openai/gpt-4.1-mini", nullable()),
+		"provider":           stringSchema("Provider used by this run.", "openai", nullable()),
+		"useCase":            stringSchema("High-level usage label.", "background-task", nullable()),
+		"subUseCase":         stringSchema("Task-specific usage label.", "daily-summary", nullable()),
+		"requestedContext":   stringSchema("Remote trigger context if this run was queued by the API.", "Run this now.", nullable()),
+		"summary":            stringSchema("Initial run summary.", "started", nullable()),
+		"error":              stringSchema("Initial run error.", "", nullable()),
+		"temporalWorkflowId": stringSchema("Temporal workflow id for API-worker runs.", "background-task/user/daily-summary/api-trigger-123", nullable()),
+		"temporalRunId":      stringSchema("Temporal run id.", "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16", nullable()),
+		"temporalStatus":     stringSchema("Last mirrored Temporal status.", "Started", nullable()),
+		"progressPercent":    intSchema("Initial progress for polling clients.", 0, nullable()),
+		"progressMessage":    stringSchema("Initial progress message.", "Queued for API worker.", nullable()),
+		"lastHeartbeatAt":    stringSchema("Latest heartbeat timestamp.", "2026-06-04T21:01:30Z", obj{"format": "date-time"}, nullable()),
+		"startedAt":          stringSchema("Run start timestamp.", "2026-06-04T21:01:00Z", obj{"format": "date-time"}, nullable()),
+		"completedAt":        stringSchema("Run completion timestamp.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
+	}, "runId")
+	schemas["BackgroundTaskRunPatchRequest"] = objectSchema("Revision-checked update for mirrored run state.", obj{
+		"revision":           intSchema("Current run revision.", 1),
+		"previousRunId":      stringSchema("Previous run id when this is a retry.", "run-20260604-205000", nullable()),
+		"localRunId":         stringSchema("Desktop-local run id after a queued trigger is claimed.", "local-run-42", nullable()),
+		"trigger":            stringEnum("Trigger source.", "manual", "manual", "cron", "window", "event"),
+		"status":             stringEnum("Run lifecycle state.", "succeeded", "queued", "running", "succeeded", "failed", "stopped"),
+		"executor":           stringEnum("Execution backend.", "api", "desktop", "api"),
+		"model":              stringSchema("Model id used by this run.", "openai/gpt-4.1-mini", nullable()),
+		"provider":           stringSchema("Provider used by this run.", "openai", nullable()),
+		"useCase":            stringSchema("High-level usage label.", "background-task", nullable()),
+		"subUseCase":         stringSchema("Task-specific usage label.", "daily-summary", nullable()),
+		"requestedContext":   stringSchema("Remote trigger context.", "Run this now.", nullable()),
+		"summary":            stringSchema("Latest run summary.", "No high-priority account changes.", nullable()),
+		"error":              stringSchema("Latest run error.", "", nullable()),
+		"temporalWorkflowId": stringSchema("Temporal workflow id for API-worker runs.", "background-task/user/daily-summary/api-trigger-123", nullable()),
+		"temporalRunId":      stringSchema("Temporal run id.", "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16", nullable()),
+		"temporalStatus":     stringSchema("Last mirrored Temporal status.", "Running", nullable()),
+		"temporalStartedAt":  stringSchema("Temporal start timestamp.", "2026-06-04T21:01:00Z", obj{"format": "date-time"}, nullable()),
+		"temporalClosedAt":   stringSchema("Temporal close timestamp.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
+		"progressPercent":    intSchema("Progress for polling clients, 0-100.", 50, nullable()),
+		"progressMessage":    stringSchema("Progress message.", "Building API-native task artifact.", nullable()),
+		"lastHeartbeatAt":    stringSchema("Latest heartbeat timestamp.", "2026-06-04T21:01:30Z", obj{"format": "date-time"}, nullable()),
+		"startedAt":          stringSchema("Run start timestamp.", "2026-06-04T21:01:00Z", obj{"format": "date-time"}, nullable()),
+		"completedAt":        stringSchema("Run completion timestamp.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
+	}, "revision")
+	schemas["BackgroundTaskRunEvent"] = objectSchema("One JSONL event mirrored from a desktop run log.", obj{
+		"id":         uuidSchema("Stable server id for the event row.", "06227adb-924f-46f1-b324-1b10d080a660"),
+		"seq":        intSchema("Zero-based sequence number within the run log. Duplicate seq values for a run are ignored on append.", 1),
+		"type":       stringSchema("Event type, either supplied explicitly or copied from event.type.", "completed", nullable()),
+		"event":      freeFormSchema("Original JSON event object from the desktop run log."),
+		"receivedAt": stringSchema("Server timestamp when the event was stored.", "2026-06-04T21:02:05Z", obj{"format": "date-time"}),
+	}, "id", "seq", "event", "receivedAt")
+	schemas["BackgroundTaskRunEventsResponse"] = objectSchema("Ordered event list for a run.", obj{
+		"events": arraySchema("Run events ordered by seq.", ref("BackgroundTaskRunEvent")),
+	}, "events")
+	schemas["BackgroundTaskRunEventInput"] = objectSchema("One event to append to a run log mirror.", obj{
+		"seq":   intSchema("Zero-based sequence number within the run log.", 1),
+		"type":  stringSchema("Optional event type. If omitted, rowboat-api reads event.type when present.", "completed", nullable()),
+		"event": freeFormSchema("Original JSON event object from the desktop run log."),
+	}, "seq", "event")
+	schemas["BackgroundTaskRunEventsAppendRequest"] = objectSchema("Batch append for JSONL run events. Existing seq values are skipped to make retries idempotent.", obj{
+		"events": arraySchema("Events to append.", ref("BackgroundTaskRunEventInput")),
+	}, "events")
+	schemas["BackgroundTaskRunEventsAppendResponse"] = objectSchema("Append result counts.", obj{
+		"stored":  intSchema("Number of events inserted.", 2),
+		"skipped": intSchema("Number of duplicate seq events ignored.", 1),
+	}, "stored", "skipped")
+	schemas["BackgroundTaskTriggerRequest"] = objectSchema("Queues a remote run request. The desktop sync loop claims queued runs and executes them locally.", obj{
+		"trigger": stringEnum("Trigger source for the queued run. Defaults to manual.", "manual", "manual", "cron", "window", "event"),
+		"context": stringSchema("Optional user-supplied execution context passed to the desktop when it claims the queued run.", "Run this now and focus on high-risk accounts.", nullable()),
+	})
+	schemas["BackgroundTaskSignalRequest"] = objectSchema("Control signal sent to a Temporal-backed API-worker run.", obj{
+		"signal":  stringEnum("Supported control signal.", "pause", "pause", "resume", "update_context"),
+		"payload": freeFormSchema("Optional signal payload. update_context can carry replacement context."),
+	}, "signal")
 }
 
 func addLLMSchemas(schemas obj) {
@@ -365,6 +572,7 @@ func addRuntimePaths(paths obj) {
 
 	addAuthPaths(paths)
 	addBillingPaths(paths)
+	addBackgroundTaskPaths(paths)
 	addLLMPaths(paths)
 	addVendorProxyPaths(paths)
 	addGoogleOAuthPaths(paths)
@@ -396,6 +604,209 @@ func addBillingPaths(paths obj) {
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
+}
+
+func addBackgroundTaskPaths(paths obj) {
+	paths["/v1/background-task-runs"] = obj{
+		"get": operation("Background Tasks", "List account background task runs", "Lists all background task runs visible to the authenticated user. Use this for dashboards and polling views that need queued, running, failed, or API-worker Temporal runs without knowing a task slug first.", "listBackgroundTaskRunsForAccount", bearer(), runListQueryParams(true), nil, obj{
+			"200": jsonResponse("Account run list.", ref("BackgroundTaskRunsResponse"), obj{"runs": []any{backgroundTaskRunExample()}}),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-tasks"] = obj{
+		"get": operation("Background Tasks", "List background tasks", "Lists the authenticated user's server-readable desktop background task mirrors ordered by slug. This is the primary sync pull for the desktop task registry.", "listBackgroundTasks", bearer(), nil, nil, obj{
+			"200": jsonResponse("Task list.", ref("BackgroundTaskListResponse"), obj{"tasks": []any{backgroundTaskExample()}}),
+			"401": responseRef("401"),
+			"500": responseRef("500"),
+		}),
+		"post": operation("Background Tasks", "Create background task mirror", "Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, rowboat-api derives one from name. Slugs are unique per authenticated user.", "createBackgroundTask", bearer(), nil, jsonRequest("Task mirror payload.", ref("BackgroundTaskCreateRequest"), obj{
+			"slug":         "daily-summary",
+			"name":         "Daily Account Summary",
+			"instructions": "Summarize important account changes and draft follow-up notes.",
+			"active":       true,
+			"triggers":     obj{"cronExpr": "0 9 * * *", "timezone": "America/New_York"},
+			"model":        "openai/gpt-4.1-mini",
+			"provider":     "openai",
+			"createdAt":    "2026-06-04T20:38:00Z",
+		}), obj{
+			"201": jsonResponse("Created task mirror.", ref("BackgroundTask"), backgroundTaskExample()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"409": jsonResponse("A task with this slug already exists for the user.", ref("ErrorEnvelope"), obj{"error": "background task already exists", "code": "conflict"}),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}"] = obj{
+		"get": operation("Background Tasks", "Get background task mirror", "Fetches one task mirror by slug for the authenticated user. Tenant scoping ensures the same slug can exist for different users without leaking data.", "getBackgroundTask", bearer(), slugParam(), nil, obj{
+			"200": jsonResponse("Task mirror.", ref("BackgroundTask"), backgroundTaskExample()),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+		"patch": operation("Background Tasks", "Patch background task mirror", "Applies a partial task update using optimistic locking. The desktop should send the current revision from its last read; stale writes return currentRevision for merge/retry.", "patchBackgroundTask", bearer(), slugParam(), jsonRequest("Revision-checked task patch.", ref("BackgroundTaskPatchRequest"), obj{
+			"revision":       2,
+			"name":           "Daily Account Summary",
+			"triggers":       nil,
+			"lastRunSummary": "No high-priority account changes.",
+			"lastRunAt":      "2026-06-04T21:02:00Z",
+		}), obj{
+			"200": jsonResponse("Updated task mirror.", ref("BackgroundTask"), backgroundTaskExample()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"409": revisionConflictResponse(),
+			"500": responseRef("500"),
+		}),
+		"delete": operation("Background Tasks", "Delete background task mirror", "Deletes the task mirror and its artifact, runs, and run events after verifying the supplied task revision. This supports full local lifecycle parity when a desktop task is removed.", "deleteBackgroundTask", bearer(), append(slugParam(), revisionQueryParam()), nil, obj{
+			"204": obj{"description": "Task mirror and child rows deleted."},
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"409": revisionConflictResponse(),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}/artifact"] = obj{
+		"get": operation("Background Tasks", "Get task artifact", "Returns the markdown artifact mirrored from bg-tasks/<slug>/index.md. If no artifact exists yet, the API returns an empty body with revision 0 so the desktop can create it with PUT.", "getBackgroundTaskArtifact", bearer(), slugParam(), nil, obj{
+			"200": jsonResponse("Task artifact.", ref("BackgroundTaskArtifact"), backgroundTaskArtifactExample()),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+		"put": operation("Background Tasks", "Put task artifact", "Creates or updates the markdown artifact mirror. Updates require the current artifact revision; creation can omit revision or send revision 0.", "putBackgroundTaskArtifact", bearer(), slugParam(), jsonRequest("Artifact body and optional revision.", ref("BackgroundTaskArtifactPutRequest"), obj{
+			"revision": 2,
+			"body":     "# Daily Account Summary\n\nUpdated context.",
+		}), obj{
+			"200": jsonResponse("Saved task artifact.", ref("BackgroundTaskArtifact"), backgroundTaskArtifactExample()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"409": revisionConflictResponse(),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}/runs"] = obj{
+		"get": operation("Background Tasks", "List task runs", "Lists mirrored runs for a task. Poll with status, executor, limit, and cursor filters to drive desktop queue pickup, dashboards, and API-worker Temporal status views.", "listBackgroundTaskRuns", bearer(), append(slugParam(), runListQueryParams(false)...), nil, obj{
+			"200": jsonResponse("Task runs.", ref("BackgroundTaskRunsResponse"), obj{"runs": []any{backgroundTaskRunExample()}}),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+		"post": operation("Background Tasks", "Create task run mirror", "Creates a run mirror for a desktop execution. Use this for local scheduler/manual runs; use /trigger when a remote user action should queue a new local execution.", "createBackgroundTaskRun", bearer(), slugParam(), jsonRequest("Run mirror payload.", ref("BackgroundTaskRunCreateRequest"), obj{
+			"runId":      "run-20260604-210000",
+			"trigger":    "manual",
+			"status":     "running",
+			"startedAt":  "2026-06-04T21:01:00Z",
+			"model":      "openai/gpt-4.1-mini",
+			"provider":   "openai",
+			"useCase":    "background-task",
+			"subUseCase": "daily-summary",
+		}), obj{
+			"201": jsonResponse("Created run mirror.", ref("BackgroundTaskRun"), backgroundTaskRunExample()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"409": jsonResponse("A run with this runId already exists for the user.", ref("ErrorEnvelope"), obj{"error": "run already exists", "code": "conflict"}),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}/runs/{runId}"] = obj{
+		"get": operation("Background Tasks", "Get task run", "Fetches the full mirrored state for one desktop or API-worker run, including Temporal ids and polling progress when present.", "getBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), nil, obj{
+			"200": jsonResponse("Run mirror.", ref("BackgroundTaskRun"), backgroundTaskRunExample()),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+		"patch": operation("Background Tasks", "Patch task run mirror", "Updates run state with optimistic locking. Desktop should patch queued remote-trigger runs to running/succeeded/failed as it claims and completes them locally.", "patchBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), jsonRequest("Revision-checked run patch.", ref("BackgroundTaskRunPatchRequest"), obj{
+			"revision":    1,
+			"localRunId":  "local-run-42",
+			"status":      "succeeded",
+			"summary":     "No high-priority account changes.",
+			"completedAt": "2026-06-04T21:02:00Z",
+		}), obj{
+			"200": jsonResponse("Updated run mirror.", ref("BackgroundTaskRun"), backgroundTaskRunExample()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"409": revisionConflictResponse(),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}/runs/{runId}/status"] = obj{
+		"get": operation("Background Tasks", "Poll task run status", "Returns a compact polling payload for one run. Clients should poll this Rowboat API endpoint rather than Temporal directly.", "getBackgroundTaskRunStatus", bearer(), append(slugParam(), runIDParam()...), nil, obj{
+			"200": jsonResponse("Compact run status.", ref("BackgroundTaskRunStatusResponse"), backgroundTaskRunStatusExample()),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"] = obj{
+		"post": operation("Background Tasks", "Cancel API-worker run", "Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Rowboat. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.", "cancelBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), nil, obj{
+			"202": jsonResponse("Cancellation accepted.", ref("BackgroundTaskRun"), backgroundTaskQueuedRunExample()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"503": responseRef("503"),
+			"502": responseRef("502"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}/runs/{runId}/retry"] = obj{
+		"post": operation("Background Tasks", "Retry API-worker run", "Creates a new API-worker run linked by previousRunId and starts a fresh Temporal workflow using the previous trigger/context.", "retryBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), nil, obj{
+			"202": jsonResponse("Retry run queued.", ref("BackgroundTaskRun"), backgroundTaskAPIRunExample()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"503": responseRef("503"),
+			"502": responseRef("502"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}/runs/{runId}/signal"] = obj{
+		"post": operation("Background Tasks", "Signal API-worker run", "Sends a constrained control signal to the Temporal workflow. V1 accepts pause, resume, and update_context signals for workflow versions that know how to consume them.", "signalBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), jsonRequest("Signal payload.", ref("BackgroundTaskSignalRequest"), obj{"signal": "pause", "payload": obj{"reason": "operator requested"}}), obj{
+			"202": jsonResponse("Signal accepted.", ref("BackgroundTaskRun"), backgroundTaskAPIRunExample()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"503": responseRef("503"),
+			"502": responseRef("502"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}/runs/{runId}/events"] = obj{
+		"get": operation("Background Tasks", "List task run events", "Returns mirrored JSONL events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.", "listBackgroundTaskRunEvents", bearer(), append(append(slugParam(), runIDParam()...), queryParam("afterSeq", "Optional sequence cursor. When provided, only events with seq greater than this value are returned.", false, intSchema("Last seen event seq.", 0))), nil, obj{
+			"200": jsonResponse("Run events.", ref("BackgroundTaskRunEventsResponse"), obj{"events": []any{backgroundTaskRunEventExample()}}),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+		"post": operation("Background Tasks", "Append task run events", "Appends a batch of JSONL run events. The unique (run, seq) key makes retries idempotent: duplicate seq values are counted as skipped.", "appendBackgroundTaskRunEvents", bearer(), append(slugParam(), runIDParam()...), jsonRequest("Run event batch.", ref("BackgroundTaskRunEventsAppendRequest"), obj{
+			"events": []any{
+				obj{"seq": 0, "event": obj{"type": "started"}},
+				obj{"seq": 1, "type": "completed", "event": obj{"type": "completed", "summary": "ok"}},
+			},
+		}), obj{
+			"200": jsonResponse("Append counts.", ref("BackgroundTaskRunEventsAppendResponse"), obj{"stored": 2, "skipped": 0}),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}/trigger"] = obj{
+		"post": operation("Background Tasks", "Queue or start task trigger", "For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Rowboat run status endpoints.", "triggerBackgroundTask", bearer(), slugParam(), jsonRequestOptional("Optional trigger context.", ref("BackgroundTaskTriggerRequest"), obj{
+			"trigger": "manual",
+			"context": "Run this now and focus on high-risk accounts.",
+		}), obj{
+			"202": jsonResponse("Queued or started run mirror.", ref("BackgroundTaskRun"), backgroundTaskQueuedRunExample()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"502": responseRef("502"),
+			"503": responseRef("503"),
+			"500": responseRef("500"),
+		}),
+	}
 }
 
 func addLLMPaths(paths obj) {
@@ -550,6 +961,11 @@ func enrichEntitySchemas(schemas obj) {
 		"OAuthPending":           "Ephemeral one-time OAuth handoff ticket with sealed payload and expiry.",
 		"MCPConnection":          "Per-user connector credential state for MCP products. Stores sealed OAuth refresh tokens or API keys.",
 		"MCPConnectionHistory":   "Audit history for MCPConnection rows.",
+		"BackgroundTask":         "Server-readable mirror of one desktop background task spec. Owned by a user and keyed by slug per user.",
+		"BackgroundTaskHistory":  "Audit history for BackgroundTask rows.",
+		"BackgroundTaskArtifact": "Markdown artifact mirror for bg-tasks/<slug>/index.md.",
+		"BackgroundTaskRun":      "Mirrored run state for one desktop background task execution or queued remote trigger.",
+		"BackgroundTaskRunEvent": "Mirrored JSONL event from a background task run log.",
 	} {
 		if s := asObj(schemas[name]); s != nil {
 			s["description"] = desc
@@ -567,7 +983,7 @@ func enrichEntitySchemas(schemas obj) {
 		"workos_user_id":          {"description": "WorkOS user id used to resolve bearer tokens into local users.", "example": "user_01HABCDEF"},
 		"workos_org_id":           {"description": "Optional WorkOS organization id for B2B/workspace contexts.", "example": "org_01HABCDEF"},
 		"plan":                    {"description": "Billing plan slug.", "enum": []any{"free", "starter", "pro"}, "example": "free"},
-		"status":                  {"description": "Billing subscription status.", "enum": []any{"active", "trialing", "past_due", "canceled"}, "example": "active"},
+		"status":                  {"description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.", "example": "active"},
 		"trial_expires_at":        {"description": "Trial expiry timestamp when the user is trialing.", "example": "2026-07-01T00:00:00Z", "nullable": true},
 		"sanctioned_credits":      {"description": "Credits granted by the current subscription.", "example": 10000},
 		"stripe_customer_id":      {"description": "Stripe customer id when billing is backed by Stripe.", "example": "cus_123"},
@@ -583,7 +999,7 @@ func enrichEntitySchemas(schemas obj) {
 		"input_tokens":            {"description": "Input tokens reported by the upstream or estimated by rowboat-api.", "example": 812},
 		"output_tokens":           {"description": "Output tokens reported by the upstream.", "example": 210},
 		"cost_units":              {"description": "Settled credit cost for the request.", "example": 8},
-		"provider":                {"description": "OAuth provider slug.", "example": "google"},
+		"provider":                {"description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.", "example": "openai"},
 		"state":                   {"description": "Opaque one-time OAuth state/session ticket.", "example": "state_abc123"},
 		"payload_encrypted":       {"description": "AES-GCM sealed OAuth handoff payload. Internal storage field.", "format": "byte", "writeOnly": true},
 		"expires_at":              {"description": "Credential or one-time ticket expiry timestamp.", "example": "2026-06-04T20:48:00Z"},
@@ -612,6 +1028,74 @@ func enrichEntitySchemas(schemas obj) {
 				for k, v := range doc {
 					p[k] = v
 				}
+			}
+		}
+	}
+
+	backgroundPropDocs := map[string]obj{
+		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
+		"name":                 {"description": "Human-readable background task name.", "example": "Daily Account Summary"},
+		"instructions":         {"description": "Background task instructions mirrored from task.yaml.", "example": "Summarize important account changes."},
+		"active":               {"description": "Whether the background task is active for scheduling and remote trigger pickup.", "example": true},
+		"triggers_json":        {"description": "Raw JSON trigger configuration from task.yaml.", "example": map[string]any{"cronExpr": "0 9 * * *", "timezone": "America/New_York"}},
+		"execution_target":     {"description": "Execution target for the task. desktop runs locally; api starts a Temporal-backed API worker run.", "enum": []any{"desktop", "api"}, "example": "desktop"},
+		"task_created_at":      {"description": "Original desktop task creation timestamp when known.", "example": "2026-06-04T20:38:00Z"},
+		"last_attempt_at":      {"description": "Latest local attempt timestamp for this task.", "example": "2026-06-04T21:00:00Z", "nullable": true},
+		"last_run_id":          {"description": "Latest mirrored local or remote-trigger run id.", "example": "run-20260604-210000"},
+		"last_run_at":          {"description": "Latest local run timestamp.", "example": "2026-06-04T21:02:00Z", "nullable": true},
+		"last_run_summary":     {"description": "Short summary from the latest run.", "example": "No high-priority account changes."},
+		"last_run_error":       {"description": "Latest run error, empty when there was no error.", "example": ""},
+		"revision":             {"description": "Optimistic-lock revision used by write endpoints.", "example": 2},
+		"body":                 {"description": "Markdown artifact body for a background task.", "example": "# Daily Account Summary\n\nContext."},
+		"run_id":               {"description": "Cloud-visible id for a mirrored run.", "example": "run-20260604-210000"},
+		"previous_run_id":      {"description": "Previous run id when this run was created by retry.", "example": "run-20260604-205000"},
+		"local_run_id":         {"description": "Actual desktop run id when different from run_id, especially after claiming a queued remote trigger.", "example": "local-run-42"},
+		"trigger":              {"description": "Trigger source for a task run.", "enum": []any{"manual", "cron", "window", "event"}, "example": "manual"},
+		"status":               {"description": "Background task run lifecycle state.", "enum": []any{"queued", "running", "succeeded", "failed", "stopped"}, "example": "succeeded"},
+		"executor":             {"description": "Execution backend that owns this run.", "enum": []any{"desktop", "api"}, "example": "api"},
+		"requested_context":    {"description": "Optional context supplied by a remote trigger request.", "example": "Run this now and focus on high-risk accounts."},
+		"summary":              {"description": "Run summary mirrored from the desktop.", "example": "No high-priority account changes."},
+		"error":                {"description": "Run error mirrored from the desktop.", "example": ""},
+		"temporal_workflow_id": {"description": "Temporal workflow id for API-worker runs.", "example": "background-task/user/daily-summary/api-trigger-123"},
+		"temporal_run_id":      {"description": "Temporal run id for API-worker runs.", "example": "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16"},
+		"temporal_status":      {"description": "Last mirrored Temporal status, separate from the product run status.", "example": "Running"},
+		"temporal_started_at":  {"description": "Timestamp when Temporal execution started.", "example": "2026-06-04T21:01:00Z", "nullable": true},
+		"temporal_closed_at":   {"description": "Timestamp when Temporal execution closed.", "example": "2026-06-04T21:02:00Z", "nullable": true},
+		"progress_percent":     {"description": "Best-known progress percentage for polling clients.", "example": 50},
+		"progress_message":     {"description": "Human-readable progress message.", "example": "Building API-native task artifact."},
+		"last_heartbeat_at":    {"description": "Latest worker heartbeat/progress timestamp.", "example": "2026-06-04T21:01:30Z", "nullable": true},
+		"started_at":           {"description": "Desktop run start timestamp.", "example": "2026-06-04T21:01:00Z", "nullable": true},
+		"completed_at":         {"description": "Desktop run completion timestamp.", "example": "2026-06-04T21:02:00Z", "nullable": true},
+		"seq":                  {"description": "Zero-based sequence number for a mirrored JSONL run event.", "example": 1},
+		"event_type":           {"description": "Run event type, copied from the payload when not provided explicitly.", "example": "completed"},
+		"event_json":           {"description": "Raw JSON event object from the desktop run log.", "example": map[string]any{"type": "completed", "summary": "ok"}},
+		"received_at":          {"description": "Server timestamp when a run event was accepted.", "example": "2026-06-04T21:02:05Z"},
+		"artifact":             {"description": "Markdown artifact mirror for the task."},
+		"runs":                 {"description": "Mirrored runs for the task."},
+		"run_events":           {"description": "Mirrored run events for the task."},
+		"task":                 {"description": "Background task that owns this row."},
+		"run":                  {"description": "Background task run that owns this event."},
+	}
+	for _, schemaName := range []string{"BackgroundTask", "BackgroundTaskArtifact", "BackgroundTaskRun", "BackgroundTaskRunEvent"} {
+		if s := asObj(schemas[schemaName]); s != nil {
+			props := asObj(s["properties"])
+			for name, doc := range backgroundPropDocs {
+				if p := asObj(props[name]); p != nil {
+					merge(p, doc)
+				}
+			}
+		}
+	}
+	if s := asObj(schemas["User"]); s != nil {
+		props := asObj(s["properties"])
+		for name, doc := range map[string]obj{
+			"background_tasks":           {"description": "Background task mirrors owned by the user."},
+			"background_task_artifacts":  {"description": "Background task artifact mirrors owned by the user."},
+			"background_task_runs":       {"description": "Background task run mirrors owned by the user."},
+			"background_task_run_events": {"description": "Background task run event mirrors owned by the user."},
+		} {
+			if p := asObj(props[name]); p != nil {
+				merge(p, doc)
 			}
 		}
 	}
@@ -659,6 +1143,31 @@ func connectorNameParam() []any {
 	return []any{pathParam("name", "Connector slug, for example canvas, corinthian, or wispr.", stringSchema("Connector slug.", "canvas"))}
 }
 
+func slugParam() []any {
+	return []any{pathParam("slug", "Background task slug, matching bg-tasks/<slug> locally.", stringSchema("Task slug.", "daily-summary"))}
+}
+
+func runIDParam() []any {
+	return []any{pathParam("runId", "Cloud-visible run id for a background task run.", stringSchema("Run id.", "run-20260604-210000"))}
+}
+
+func runListQueryParams(includeSlug bool) []any {
+	params := []any{
+		queryParam("status", "Optional run status filter. Use queued for desktop pickup or running/failed/succeeded for polling dashboards.", false, stringEnum("Run status.", "queued", "queued", "running", "succeeded", "failed", "stopped")),
+		queryParam("executor", "Optional execution backend filter.", false, stringEnum("Run executor.", "api", "desktop", "api")),
+		queryParam("limit", "Maximum runs to return, from 1 to 500. Defaults to 100.", false, intSchema("Page size.", 100)),
+		queryParam("cursor", "RFC3339 cursor returned as nextCursor from a previous page.", false, stringSchema("Pagination cursor.", "2026-06-04T21:00:30Z", obj{"format": "date-time"})),
+	}
+	if includeSlug {
+		params = append(params, queryParam("slug", "Optional task slug filter for account-wide run polling.", false, stringSchema("Task slug.", "daily-summary")))
+	}
+	return params
+}
+
+func revisionQueryParam() any {
+	return queryParam("revision", "Current task revision required for delete.", true, intSchema("Task revision.", 2))
+}
+
 func operation(tag, summary, description, id string, security []any, parameters []any, requestBody any, responses obj) obj {
 	op := obj{
 		"tags":        []any{tag},
@@ -691,6 +1200,12 @@ func jsonRequest(description string, schema any, example any) obj {
 	}
 }
 
+func jsonRequestOptional(description string, schema any, example any) obj {
+	body := jsonRequest(description, schema, example)
+	body["required"] = false
+	return body
+}
+
 func jsonResponse(description string, schema any, example any) obj {
 	media := obj{"schema": schema}
 	if example != nil {
@@ -718,6 +1233,128 @@ func redirectResponse(description string) obj {
 
 func responseRef(code string) obj {
 	return obj{"$ref": "#/components/responses/" + code}
+}
+
+func revisionConflictResponse() obj {
+	return jsonResponse("Revision conflict. The caller wrote with a stale revision and should retry with currentRevision.", ref("RevisionConflictEnvelope"), obj{"error": "revision conflict", "code": "conflict", "currentRevision": 3})
+}
+
+func backgroundTaskExample() obj {
+	return obj{
+		"id":              "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+		"slug":            "daily-summary",
+		"name":            "Daily Account Summary",
+		"instructions":    "Summarize important account changes and draft follow-up notes.",
+		"active":          true,
+		"triggers":        obj{"cronExpr": "0 9 * * *", "timezone": "America/New_York"},
+		"model":           "openai/gpt-4.1-mini",
+		"provider":        "openai",
+		"executionTarget": "desktop",
+		"createdAt":       "2026-06-04T20:38:00Z",
+		"updatedAt":       "2026-06-04T20:39:00Z",
+		"lastAttemptAt":   "2026-06-04T21:00:00Z",
+		"lastRunId":       "run-20260604-210000",
+		"lastRunAt":       "2026-06-04T21:02:00Z",
+		"lastRunSummary":  "No high-priority account changes.",
+		"lastRunError":    "",
+		"revision":        2,
+	}
+}
+
+func backgroundTaskArtifactExample() obj {
+	return obj{
+		"slug":      "daily-summary",
+		"body":      "# Daily Account Summary\n\nUse this context when summarizing account changes.",
+		"revision":  2,
+		"updatedAt": "2026-06-04T20:39:00Z",
+	}
+}
+
+func backgroundTaskRunExample() obj {
+	return obj{
+		"id":              "77f5e632-a841-4557-a8e4-9b8f0d207ff4",
+		"runId":           "run-20260604-210000",
+		"previousRunId":   "",
+		"localRunId":      "local-run-42",
+		"slug":            "daily-summary",
+		"trigger":         "manual",
+		"status":          "succeeded",
+		"executor":        "desktop",
+		"model":           "openai/gpt-4.1-mini",
+		"provider":        "openai",
+		"useCase":         "background-task",
+		"subUseCase":      "daily-summary",
+		"summary":         "No high-priority account changes.",
+		"error":           "",
+		"progressPercent": 100,
+		"progressMessage": "Completed.",
+		"startedAt":       "2026-06-04T21:01:00Z",
+		"completedAt":     "2026-06-04T21:02:00Z",
+		"createdAt":       "2026-06-04T21:00:30Z",
+		"updatedAt":       "2026-06-04T21:02:05Z",
+		"revision":        2,
+	}
+}
+
+func backgroundTaskAPIRunExample() obj {
+	run := backgroundTaskRunExample()
+	run["runId"] = "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"
+	run["localRunId"] = ""
+	run["executor"] = "api"
+	run["status"] = "queued"
+	run["temporalWorkflowId"] = "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"
+	run["temporalRunId"] = "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16"
+	run["temporalStatus"] = "Started"
+	run["progressPercent"] = 0
+	run["progressMessage"] = "Queued for API worker."
+	run["startedAt"] = nil
+	run["completedAt"] = nil
+	run["revision"] = 2
+	return run
+}
+
+func backgroundTaskRunStatusExample() obj {
+	return obj{
+		"runId":              "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
+		"slug":               "daily-summary",
+		"status":             "running",
+		"executor":           "api",
+		"temporalWorkflowId": "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
+		"temporalRunId":      "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16",
+		"temporalStatus":     "Running",
+		"progressPercent":    50,
+		"progressMessage":    "Building API-native task artifact.",
+		"lastHeartbeatAt":    "2026-06-04T21:01:30Z",
+		"startedAt":          "2026-06-04T21:01:00Z",
+		"completedAt":        nil,
+		"error":              "",
+		"revision":           3,
+	}
+}
+
+func backgroundTaskQueuedRunExample() obj {
+	run := backgroundTaskRunExample()
+	run["runId"] = "remote-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"
+	run["localRunId"] = ""
+	run["executor"] = "desktop"
+	run["trigger"] = "manual"
+	run["status"] = "queued"
+	run["requestedContext"] = "Run this now and focus on high-risk accounts."
+	run["summary"] = ""
+	run["startedAt"] = nil
+	run["completedAt"] = nil
+	run["revision"] = 1
+	return run
+}
+
+func backgroundTaskRunEventExample() obj {
+	return obj{
+		"id":         "06227adb-924f-46f1-b324-1b10d080a660",
+		"seq":        1,
+		"type":       "completed",
+		"event":      obj{"type": "completed", "summary": "ok"},
+		"receivedAt": "2026-06-04T21:02:05Z",
+	}
 }
 
 func ref(name string) obj {
@@ -785,8 +1422,10 @@ func uuidSchema(description string, example string) obj {
 	return stringSchema(description, example, obj{"format": "uuid"})
 }
 
-func intSchema(description string, example int) obj {
-	return obj{"type": "integer", "description": description, "example": example}
+func intSchema(description string, example int, extra ...obj) obj {
+	s := obj{"type": "integer", "description": description, "example": example}
+	merge(s, extra...)
+	return s
 }
 
 func int64Schema(description string, example int64) obj {

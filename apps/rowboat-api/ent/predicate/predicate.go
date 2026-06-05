@@ -6,6 +6,18 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// BackgroundTask is the predicate function for backgroundtask builders.
+type BackgroundTask func(*sql.Selector)
+
+// BackgroundTaskArtifact is the predicate function for backgroundtaskartifact builders.
+type BackgroundTaskArtifact func(*sql.Selector)
+
+// BackgroundTaskRun is the predicate function for backgroundtaskrun builders.
+type BackgroundTaskRun func(*sql.Selector)
+
+// BackgroundTaskRunEvent is the predicate function for backgroundtaskrunevent builders.
+type BackgroundTaskRunEvent func(*sql.Selector)
+
 // CreditLedger is the predicate function for creditledger builders.
 type CreditLedger func(*sql.Selector)
 

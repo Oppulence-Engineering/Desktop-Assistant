@@ -17,6 +17,10 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -36,6 +40,14 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// BackgroundTask is the client for interacting with the BackgroundTask builders.
+	BackgroundTask *BackgroundTaskClient
+	// BackgroundTaskArtifact is the client for interacting with the BackgroundTaskArtifact builders.
+	BackgroundTaskArtifact *BackgroundTaskArtifactClient
+	// BackgroundTaskRun is the client for interacting with the BackgroundTaskRun builders.
+	BackgroundTaskRun *BackgroundTaskRunClient
+	// BackgroundTaskRunEvent is the client for interacting with the BackgroundTaskRunEvent builders.
+	BackgroundTaskRunEvent *BackgroundTaskRunEventClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
 	// LLMUsage is the client for interacting with the LLMUsage builders.
@@ -76,6 +88,10 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.BackgroundTask = NewBackgroundTaskClient(c.config)
+	c.BackgroundTaskArtifact = NewBackgroundTaskArtifactClient(c.config)
+	c.BackgroundTaskRun = NewBackgroundTaskRunClient(c.config)
+	c.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(c.config)
 	c.CreditLedger = NewCreditLedgerClient(c.config)
 	c.LLMUsage = NewLLMUsageClient(c.config)
 	c.LLMUsageHistory = NewLLMUsageHistoryClient(c.config)
@@ -213,6 +229,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                    ctx,
 		config:                 cfg,
+		BackgroundTask:         NewBackgroundTaskClient(cfg),
+		BackgroundTaskArtifact: NewBackgroundTaskArtifactClient(cfg),
+		BackgroundTaskRun:      NewBackgroundTaskRunClient(cfg),
+		BackgroundTaskRunEvent: NewBackgroundTaskRunEventClient(cfg),
 		CreditLedger:           NewCreditLedgerClient(cfg),
 		LLMUsage:               NewLLMUsageClient(cfg),
 		LLMUsageHistory:        NewLLMUsageHistoryClient(cfg),
@@ -244,6 +264,10 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                    ctx,
 		config:                 cfg,
+		BackgroundTask:         NewBackgroundTaskClient(cfg),
+		BackgroundTaskArtifact: NewBackgroundTaskArtifactClient(cfg),
+		BackgroundTaskRun:      NewBackgroundTaskRunClient(cfg),
+		BackgroundTaskRunEvent: NewBackgroundTaskRunEventClient(cfg),
 		CreditLedger:           NewCreditLedgerClient(cfg),
 		LLMUsage:               NewLLMUsageClient(cfg),
 		LLMUsageHistory:        NewLLMUsageHistoryClient(cfg),
@@ -262,7 +286,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		CreditLedger.
+//		BackgroundTask.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -285,9 +309,11 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.CreditLedger, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
-		c.MCPConnectionHistory, c.OAuthConnection, c.OAuthConnectionHistory,
-		c.OAuthPending, c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
+		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
+		c.BackgroundTaskRunEvent, c.CreditLedger, c.LLMUsage, c.LLMUsageHistory,
+		c.MCPConnection, c.MCPConnectionHistory, c.OAuthConnection,
+		c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
+		c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Use(hooks...)
 	}
@@ -297,9 +323,11 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.CreditLedger, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
-		c.MCPConnectionHistory, c.OAuthConnection, c.OAuthConnectionHistory,
-		c.OAuthPending, c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
+		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
+		c.BackgroundTaskRunEvent, c.CreditLedger, c.LLMUsage, c.LLMUsageHistory,
+		c.MCPConnection, c.MCPConnectionHistory, c.OAuthConnection,
+		c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
+		c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -308,6 +336,14 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *BackgroundTaskMutation:
+		return c.BackgroundTask.mutate(ctx, m)
+	case *BackgroundTaskArtifactMutation:
+		return c.BackgroundTaskArtifact.mutate(ctx, m)
+	case *BackgroundTaskRunMutation:
+		return c.BackgroundTaskRun.mutate(ctx, m)
+	case *BackgroundTaskRunEventMutation:
+		return c.BackgroundTaskRunEvent.mutate(ctx, m)
 	case *CreditLedgerMutation:
 		return c.CreditLedger.mutate(ctx, m)
 	case *LLMUsageMutation:
@@ -334,6 +370,730 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UserHistory.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// BackgroundTaskClient is a client for the BackgroundTask schema.
+type BackgroundTaskClient struct {
+	config
+}
+
+// NewBackgroundTaskClient returns a client for the BackgroundTask from the given config.
+func NewBackgroundTaskClient(c config) *BackgroundTaskClient {
+	return &BackgroundTaskClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `backgroundtask.Hooks(f(g(h())))`.
+func (c *BackgroundTaskClient) Use(hooks ...Hook) {
+	c.hooks.BackgroundTask = append(c.hooks.BackgroundTask, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `backgroundtask.Intercept(f(g(h())))`.
+func (c *BackgroundTaskClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BackgroundTask = append(c.inters.BackgroundTask, interceptors...)
+}
+
+// Create returns a builder for creating a BackgroundTask entity.
+func (c *BackgroundTaskClient) Create() *BackgroundTaskCreate {
+	mutation := newBackgroundTaskMutation(c.config, OpCreate)
+	return &BackgroundTaskCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BackgroundTask entities.
+func (c *BackgroundTaskClient) CreateBulk(builders ...*BackgroundTaskCreate) *BackgroundTaskCreateBulk {
+	return &BackgroundTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BackgroundTaskClient) MapCreateBulk(slice any, setFunc func(*BackgroundTaskCreate, int)) *BackgroundTaskCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BackgroundTaskCreateBulk{err: fmt.Errorf("calling to BackgroundTaskClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BackgroundTaskCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BackgroundTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BackgroundTask.
+func (c *BackgroundTaskClient) Update() *BackgroundTaskUpdate {
+	mutation := newBackgroundTaskMutation(c.config, OpUpdate)
+	return &BackgroundTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BackgroundTaskClient) UpdateOne(_m *BackgroundTask) *BackgroundTaskUpdateOne {
+	mutation := newBackgroundTaskMutation(c.config, OpUpdateOne, withBackgroundTask(_m))
+	return &BackgroundTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BackgroundTaskClient) UpdateOneID(id uuid.UUID) *BackgroundTaskUpdateOne {
+	mutation := newBackgroundTaskMutation(c.config, OpUpdateOne, withBackgroundTaskID(id))
+	return &BackgroundTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BackgroundTask.
+func (c *BackgroundTaskClient) Delete() *BackgroundTaskDelete {
+	mutation := newBackgroundTaskMutation(c.config, OpDelete)
+	return &BackgroundTaskDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BackgroundTaskClient) DeleteOne(_m *BackgroundTask) *BackgroundTaskDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BackgroundTaskClient) DeleteOneID(id uuid.UUID) *BackgroundTaskDeleteOne {
+	builder := c.Delete().Where(backgroundtask.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BackgroundTaskDeleteOne{builder}
+}
+
+// Query returns a query builder for BackgroundTask.
+func (c *BackgroundTaskClient) Query() *BackgroundTaskQuery {
+	return &BackgroundTaskQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBackgroundTask},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BackgroundTask entity by its id.
+func (c *BackgroundTaskClient) Get(ctx context.Context, id uuid.UUID) (*BackgroundTask, error) {
+	return c.Query().Where(backgroundtask.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BackgroundTaskClient) GetX(ctx context.Context, id uuid.UUID) *BackgroundTask {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a BackgroundTask.
+func (c *BackgroundTaskClient) QueryUser(_m *BackgroundTask) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtask.Table, backgroundtask.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtask.UserTable, backgroundtask.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryArtifact queries the artifact edge of a BackgroundTask.
+func (c *BackgroundTaskClient) QueryArtifact(_m *BackgroundTask) *BackgroundTaskArtifactQuery {
+	query := (&BackgroundTaskArtifactClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtask.Table, backgroundtask.FieldID, id),
+			sqlgraph.To(backgroundtaskartifact.Table, backgroundtaskartifact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, backgroundtask.ArtifactTable, backgroundtask.ArtifactColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRuns queries the runs edge of a BackgroundTask.
+func (c *BackgroundTaskClient) QueryRuns(_m *BackgroundTask) *BackgroundTaskRunQuery {
+	query := (&BackgroundTaskRunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtask.Table, backgroundtask.FieldID, id),
+			sqlgraph.To(backgroundtaskrun.Table, backgroundtaskrun.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, backgroundtask.RunsTable, backgroundtask.RunsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRunEvents queries the run_events edge of a BackgroundTask.
+func (c *BackgroundTaskClient) QueryRunEvents(_m *BackgroundTask) *BackgroundTaskRunEventQuery {
+	query := (&BackgroundTaskRunEventClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtask.Table, backgroundtask.FieldID, id),
+			sqlgraph.To(backgroundtaskrunevent.Table, backgroundtaskrunevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, backgroundtask.RunEventsTable, backgroundtask.RunEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BackgroundTaskClient) Hooks() []Hook {
+	return c.hooks.BackgroundTask
+}
+
+// Interceptors returns the client interceptors.
+func (c *BackgroundTaskClient) Interceptors() []Interceptor {
+	return c.inters.BackgroundTask
+}
+
+func (c *BackgroundTaskClient) mutate(ctx context.Context, m *BackgroundTaskMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BackgroundTaskCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BackgroundTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BackgroundTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BackgroundTaskDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BackgroundTask mutation op: %q", m.Op())
+	}
+}
+
+// BackgroundTaskArtifactClient is a client for the BackgroundTaskArtifact schema.
+type BackgroundTaskArtifactClient struct {
+	config
+}
+
+// NewBackgroundTaskArtifactClient returns a client for the BackgroundTaskArtifact from the given config.
+func NewBackgroundTaskArtifactClient(c config) *BackgroundTaskArtifactClient {
+	return &BackgroundTaskArtifactClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `backgroundtaskartifact.Hooks(f(g(h())))`.
+func (c *BackgroundTaskArtifactClient) Use(hooks ...Hook) {
+	c.hooks.BackgroundTaskArtifact = append(c.hooks.BackgroundTaskArtifact, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `backgroundtaskartifact.Intercept(f(g(h())))`.
+func (c *BackgroundTaskArtifactClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BackgroundTaskArtifact = append(c.inters.BackgroundTaskArtifact, interceptors...)
+}
+
+// Create returns a builder for creating a BackgroundTaskArtifact entity.
+func (c *BackgroundTaskArtifactClient) Create() *BackgroundTaskArtifactCreate {
+	mutation := newBackgroundTaskArtifactMutation(c.config, OpCreate)
+	return &BackgroundTaskArtifactCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BackgroundTaskArtifact entities.
+func (c *BackgroundTaskArtifactClient) CreateBulk(builders ...*BackgroundTaskArtifactCreate) *BackgroundTaskArtifactCreateBulk {
+	return &BackgroundTaskArtifactCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BackgroundTaskArtifactClient) MapCreateBulk(slice any, setFunc func(*BackgroundTaskArtifactCreate, int)) *BackgroundTaskArtifactCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BackgroundTaskArtifactCreateBulk{err: fmt.Errorf("calling to BackgroundTaskArtifactClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BackgroundTaskArtifactCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BackgroundTaskArtifactCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BackgroundTaskArtifact.
+func (c *BackgroundTaskArtifactClient) Update() *BackgroundTaskArtifactUpdate {
+	mutation := newBackgroundTaskArtifactMutation(c.config, OpUpdate)
+	return &BackgroundTaskArtifactUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BackgroundTaskArtifactClient) UpdateOne(_m *BackgroundTaskArtifact) *BackgroundTaskArtifactUpdateOne {
+	mutation := newBackgroundTaskArtifactMutation(c.config, OpUpdateOne, withBackgroundTaskArtifact(_m))
+	return &BackgroundTaskArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BackgroundTaskArtifactClient) UpdateOneID(id uuid.UUID) *BackgroundTaskArtifactUpdateOne {
+	mutation := newBackgroundTaskArtifactMutation(c.config, OpUpdateOne, withBackgroundTaskArtifactID(id))
+	return &BackgroundTaskArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BackgroundTaskArtifact.
+func (c *BackgroundTaskArtifactClient) Delete() *BackgroundTaskArtifactDelete {
+	mutation := newBackgroundTaskArtifactMutation(c.config, OpDelete)
+	return &BackgroundTaskArtifactDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BackgroundTaskArtifactClient) DeleteOne(_m *BackgroundTaskArtifact) *BackgroundTaskArtifactDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BackgroundTaskArtifactClient) DeleteOneID(id uuid.UUID) *BackgroundTaskArtifactDeleteOne {
+	builder := c.Delete().Where(backgroundtaskartifact.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BackgroundTaskArtifactDeleteOne{builder}
+}
+
+// Query returns a query builder for BackgroundTaskArtifact.
+func (c *BackgroundTaskArtifactClient) Query() *BackgroundTaskArtifactQuery {
+	return &BackgroundTaskArtifactQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBackgroundTaskArtifact},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BackgroundTaskArtifact entity by its id.
+func (c *BackgroundTaskArtifactClient) Get(ctx context.Context, id uuid.UUID) (*BackgroundTaskArtifact, error) {
+	return c.Query().Where(backgroundtaskartifact.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BackgroundTaskArtifactClient) GetX(ctx context.Context, id uuid.UUID) *BackgroundTaskArtifact {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a BackgroundTaskArtifact.
+func (c *BackgroundTaskArtifactClient) QueryUser(_m *BackgroundTaskArtifact) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskartifact.Table, backgroundtaskartifact.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtaskartifact.UserTable, backgroundtaskartifact.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTask queries the task edge of a BackgroundTaskArtifact.
+func (c *BackgroundTaskArtifactClient) QueryTask(_m *BackgroundTaskArtifact) *BackgroundTaskQuery {
+	query := (&BackgroundTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskartifact.Table, backgroundtaskartifact.FieldID, id),
+			sqlgraph.To(backgroundtask.Table, backgroundtask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, backgroundtaskartifact.TaskTable, backgroundtaskartifact.TaskColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BackgroundTaskArtifactClient) Hooks() []Hook {
+	return c.hooks.BackgroundTaskArtifact
+}
+
+// Interceptors returns the client interceptors.
+func (c *BackgroundTaskArtifactClient) Interceptors() []Interceptor {
+	return c.inters.BackgroundTaskArtifact
+}
+
+func (c *BackgroundTaskArtifactClient) mutate(ctx context.Context, m *BackgroundTaskArtifactMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BackgroundTaskArtifactCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BackgroundTaskArtifactUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BackgroundTaskArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BackgroundTaskArtifactDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BackgroundTaskArtifact mutation op: %q", m.Op())
+	}
+}
+
+// BackgroundTaskRunClient is a client for the BackgroundTaskRun schema.
+type BackgroundTaskRunClient struct {
+	config
+}
+
+// NewBackgroundTaskRunClient returns a client for the BackgroundTaskRun from the given config.
+func NewBackgroundTaskRunClient(c config) *BackgroundTaskRunClient {
+	return &BackgroundTaskRunClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `backgroundtaskrun.Hooks(f(g(h())))`.
+func (c *BackgroundTaskRunClient) Use(hooks ...Hook) {
+	c.hooks.BackgroundTaskRun = append(c.hooks.BackgroundTaskRun, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `backgroundtaskrun.Intercept(f(g(h())))`.
+func (c *BackgroundTaskRunClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BackgroundTaskRun = append(c.inters.BackgroundTaskRun, interceptors...)
+}
+
+// Create returns a builder for creating a BackgroundTaskRun entity.
+func (c *BackgroundTaskRunClient) Create() *BackgroundTaskRunCreate {
+	mutation := newBackgroundTaskRunMutation(c.config, OpCreate)
+	return &BackgroundTaskRunCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BackgroundTaskRun entities.
+func (c *BackgroundTaskRunClient) CreateBulk(builders ...*BackgroundTaskRunCreate) *BackgroundTaskRunCreateBulk {
+	return &BackgroundTaskRunCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BackgroundTaskRunClient) MapCreateBulk(slice any, setFunc func(*BackgroundTaskRunCreate, int)) *BackgroundTaskRunCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BackgroundTaskRunCreateBulk{err: fmt.Errorf("calling to BackgroundTaskRunClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BackgroundTaskRunCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BackgroundTaskRunCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BackgroundTaskRun.
+func (c *BackgroundTaskRunClient) Update() *BackgroundTaskRunUpdate {
+	mutation := newBackgroundTaskRunMutation(c.config, OpUpdate)
+	return &BackgroundTaskRunUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BackgroundTaskRunClient) UpdateOne(_m *BackgroundTaskRun) *BackgroundTaskRunUpdateOne {
+	mutation := newBackgroundTaskRunMutation(c.config, OpUpdateOne, withBackgroundTaskRun(_m))
+	return &BackgroundTaskRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BackgroundTaskRunClient) UpdateOneID(id uuid.UUID) *BackgroundTaskRunUpdateOne {
+	mutation := newBackgroundTaskRunMutation(c.config, OpUpdateOne, withBackgroundTaskRunID(id))
+	return &BackgroundTaskRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BackgroundTaskRun.
+func (c *BackgroundTaskRunClient) Delete() *BackgroundTaskRunDelete {
+	mutation := newBackgroundTaskRunMutation(c.config, OpDelete)
+	return &BackgroundTaskRunDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BackgroundTaskRunClient) DeleteOne(_m *BackgroundTaskRun) *BackgroundTaskRunDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BackgroundTaskRunClient) DeleteOneID(id uuid.UUID) *BackgroundTaskRunDeleteOne {
+	builder := c.Delete().Where(backgroundtaskrun.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BackgroundTaskRunDeleteOne{builder}
+}
+
+// Query returns a query builder for BackgroundTaskRun.
+func (c *BackgroundTaskRunClient) Query() *BackgroundTaskRunQuery {
+	return &BackgroundTaskRunQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBackgroundTaskRun},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BackgroundTaskRun entity by its id.
+func (c *BackgroundTaskRunClient) Get(ctx context.Context, id uuid.UUID) (*BackgroundTaskRun, error) {
+	return c.Query().Where(backgroundtaskrun.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BackgroundTaskRunClient) GetX(ctx context.Context, id uuid.UUID) *BackgroundTaskRun {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a BackgroundTaskRun.
+func (c *BackgroundTaskRunClient) QueryUser(_m *BackgroundTaskRun) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskrun.Table, backgroundtaskrun.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtaskrun.UserTable, backgroundtaskrun.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTask queries the task edge of a BackgroundTaskRun.
+func (c *BackgroundTaskRunClient) QueryTask(_m *BackgroundTaskRun) *BackgroundTaskQuery {
+	query := (&BackgroundTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskrun.Table, backgroundtaskrun.FieldID, id),
+			sqlgraph.To(backgroundtask.Table, backgroundtask.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtaskrun.TaskTable, backgroundtaskrun.TaskColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEvents queries the events edge of a BackgroundTaskRun.
+func (c *BackgroundTaskRunClient) QueryEvents(_m *BackgroundTaskRun) *BackgroundTaskRunEventQuery {
+	query := (&BackgroundTaskRunEventClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskrun.Table, backgroundtaskrun.FieldID, id),
+			sqlgraph.To(backgroundtaskrunevent.Table, backgroundtaskrunevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, backgroundtaskrun.EventsTable, backgroundtaskrun.EventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BackgroundTaskRunClient) Hooks() []Hook {
+	return c.hooks.BackgroundTaskRun
+}
+
+// Interceptors returns the client interceptors.
+func (c *BackgroundTaskRunClient) Interceptors() []Interceptor {
+	return c.inters.BackgroundTaskRun
+}
+
+func (c *BackgroundTaskRunClient) mutate(ctx context.Context, m *BackgroundTaskRunMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BackgroundTaskRunCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BackgroundTaskRunUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BackgroundTaskRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BackgroundTaskRunDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BackgroundTaskRun mutation op: %q", m.Op())
+	}
+}
+
+// BackgroundTaskRunEventClient is a client for the BackgroundTaskRunEvent schema.
+type BackgroundTaskRunEventClient struct {
+	config
+}
+
+// NewBackgroundTaskRunEventClient returns a client for the BackgroundTaskRunEvent from the given config.
+func NewBackgroundTaskRunEventClient(c config) *BackgroundTaskRunEventClient {
+	return &BackgroundTaskRunEventClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `backgroundtaskrunevent.Hooks(f(g(h())))`.
+func (c *BackgroundTaskRunEventClient) Use(hooks ...Hook) {
+	c.hooks.BackgroundTaskRunEvent = append(c.hooks.BackgroundTaskRunEvent, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `backgroundtaskrunevent.Intercept(f(g(h())))`.
+func (c *BackgroundTaskRunEventClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BackgroundTaskRunEvent = append(c.inters.BackgroundTaskRunEvent, interceptors...)
+}
+
+// Create returns a builder for creating a BackgroundTaskRunEvent entity.
+func (c *BackgroundTaskRunEventClient) Create() *BackgroundTaskRunEventCreate {
+	mutation := newBackgroundTaskRunEventMutation(c.config, OpCreate)
+	return &BackgroundTaskRunEventCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BackgroundTaskRunEvent entities.
+func (c *BackgroundTaskRunEventClient) CreateBulk(builders ...*BackgroundTaskRunEventCreate) *BackgroundTaskRunEventCreateBulk {
+	return &BackgroundTaskRunEventCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BackgroundTaskRunEventClient) MapCreateBulk(slice any, setFunc func(*BackgroundTaskRunEventCreate, int)) *BackgroundTaskRunEventCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BackgroundTaskRunEventCreateBulk{err: fmt.Errorf("calling to BackgroundTaskRunEventClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BackgroundTaskRunEventCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BackgroundTaskRunEventCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BackgroundTaskRunEvent.
+func (c *BackgroundTaskRunEventClient) Update() *BackgroundTaskRunEventUpdate {
+	mutation := newBackgroundTaskRunEventMutation(c.config, OpUpdate)
+	return &BackgroundTaskRunEventUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BackgroundTaskRunEventClient) UpdateOne(_m *BackgroundTaskRunEvent) *BackgroundTaskRunEventUpdateOne {
+	mutation := newBackgroundTaskRunEventMutation(c.config, OpUpdateOne, withBackgroundTaskRunEvent(_m))
+	return &BackgroundTaskRunEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BackgroundTaskRunEventClient) UpdateOneID(id uuid.UUID) *BackgroundTaskRunEventUpdateOne {
+	mutation := newBackgroundTaskRunEventMutation(c.config, OpUpdateOne, withBackgroundTaskRunEventID(id))
+	return &BackgroundTaskRunEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BackgroundTaskRunEvent.
+func (c *BackgroundTaskRunEventClient) Delete() *BackgroundTaskRunEventDelete {
+	mutation := newBackgroundTaskRunEventMutation(c.config, OpDelete)
+	return &BackgroundTaskRunEventDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BackgroundTaskRunEventClient) DeleteOne(_m *BackgroundTaskRunEvent) *BackgroundTaskRunEventDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BackgroundTaskRunEventClient) DeleteOneID(id uuid.UUID) *BackgroundTaskRunEventDeleteOne {
+	builder := c.Delete().Where(backgroundtaskrunevent.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BackgroundTaskRunEventDeleteOne{builder}
+}
+
+// Query returns a query builder for BackgroundTaskRunEvent.
+func (c *BackgroundTaskRunEventClient) Query() *BackgroundTaskRunEventQuery {
+	return &BackgroundTaskRunEventQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBackgroundTaskRunEvent},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BackgroundTaskRunEvent entity by its id.
+func (c *BackgroundTaskRunEventClient) Get(ctx context.Context, id uuid.UUID) (*BackgroundTaskRunEvent, error) {
+	return c.Query().Where(backgroundtaskrunevent.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BackgroundTaskRunEventClient) GetX(ctx context.Context, id uuid.UUID) *BackgroundTaskRunEvent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a BackgroundTaskRunEvent.
+func (c *BackgroundTaskRunEventClient) QueryUser(_m *BackgroundTaskRunEvent) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskrunevent.Table, backgroundtaskrunevent.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtaskrunevent.UserTable, backgroundtaskrunevent.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTask queries the task edge of a BackgroundTaskRunEvent.
+func (c *BackgroundTaskRunEventClient) QueryTask(_m *BackgroundTaskRunEvent) *BackgroundTaskQuery {
+	query := (&BackgroundTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskrunevent.Table, backgroundtaskrunevent.FieldID, id),
+			sqlgraph.To(backgroundtask.Table, backgroundtask.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtaskrunevent.TaskTable, backgroundtaskrunevent.TaskColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRun queries the run edge of a BackgroundTaskRunEvent.
+func (c *BackgroundTaskRunEventClient) QueryRun(_m *BackgroundTaskRunEvent) *BackgroundTaskRunQuery {
+	query := (&BackgroundTaskRunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskrunevent.Table, backgroundtaskrunevent.FieldID, id),
+			sqlgraph.To(backgroundtaskrun.Table, backgroundtaskrun.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtaskrunevent.RunTable, backgroundtaskrunevent.RunColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BackgroundTaskRunEventClient) Hooks() []Hook {
+	return c.hooks.BackgroundTaskRunEvent
+}
+
+// Interceptors returns the client interceptors.
+func (c *BackgroundTaskRunEventClient) Interceptors() []Interceptor {
+	return c.inters.BackgroundTaskRunEvent
+}
+
+func (c *BackgroundTaskRunEventClient) mutate(ctx context.Context, m *BackgroundTaskRunEventMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BackgroundTaskRunEventCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BackgroundTaskRunEventUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BackgroundTaskRunEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BackgroundTaskRunEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BackgroundTaskRunEvent mutation op: %q", m.Op())
 	}
 }
 
@@ -1935,6 +2695,70 @@ func (c *UserClient) QueryMcpConnections(_m *User) *MCPConnectionQuery {
 	return query
 }
 
+// QueryBackgroundTasks queries the background_tasks edge of a User.
+func (c *UserClient) QueryBackgroundTasks(_m *User) *BackgroundTaskQuery {
+	query := (&BackgroundTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(backgroundtask.Table, backgroundtask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTasksTable, user.BackgroundTasksColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBackgroundTaskArtifacts queries the background_task_artifacts edge of a User.
+func (c *UserClient) QueryBackgroundTaskArtifacts(_m *User) *BackgroundTaskArtifactQuery {
+	query := (&BackgroundTaskArtifactClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(backgroundtaskartifact.Table, backgroundtaskartifact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTaskArtifactsTable, user.BackgroundTaskArtifactsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBackgroundTaskRuns queries the background_task_runs edge of a User.
+func (c *UserClient) QueryBackgroundTaskRuns(_m *User) *BackgroundTaskRunQuery {
+	query := (&BackgroundTaskRunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(backgroundtaskrun.Table, backgroundtaskrun.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTaskRunsTable, user.BackgroundTaskRunsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBackgroundTaskRunEvents queries the background_task_run_events edge of a User.
+func (c *UserClient) QueryBackgroundTaskRunEvents(_m *User) *BackgroundTaskRunEventQuery {
+	query := (&BackgroundTaskRunEventClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(backgroundtaskrunevent.Table, backgroundtaskrunevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTaskRunEventsTable, user.BackgroundTaskRunEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -2096,13 +2920,15 @@ func (c *UserHistoryClient) mutate(ctx context.Context, m *UserHistoryMutation) 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		CreditLedger, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
-		OAuthConnection, OAuthConnectionHistory, OAuthPending, Subscription,
-		SubscriptionHistory, User, UserHistory []ent.Hook
+		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
+		BackgroundTaskRunEvent, CreditLedger, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Subscription, SubscriptionHistory, User, UserHistory []ent.Hook
 	}
 	inters struct {
-		CreditLedger, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
-		OAuthConnection, OAuthConnectionHistory, OAuthPending, Subscription,
-		SubscriptionHistory, User, UserHistory []ent.Interceptor
+		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
+		BackgroundTaskRunEvent, CreditLedger, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Subscription, SubscriptionHistory, User, UserHistory []ent.Interceptor
 	}
 )

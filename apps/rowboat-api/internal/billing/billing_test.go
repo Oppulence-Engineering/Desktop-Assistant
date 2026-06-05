@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
@@ -37,8 +38,9 @@ func TestMeReturnsBillingShape(t *testing.T) {
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(ctx)
 	// Spend 1579 credits across two calls.
-	client.CreditLedger.Create().SetUser(u).SetDelta(-1000).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(ctx)
-	client.CreditLedger.Create().SetUser(u).SetDelta(-579).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(ctx)
+	now := time.Now().UTC()
+	client.CreditLedger.Create().SetUser(u).SetDelta(-1000).SetReason("llm_call").SetRequestID(uuid.New()).SetTs(now).SaveX(ctx)
+	client.CreditLedger.Create().SetUser(u).SetDelta(-579).SetReason("llm_call").SetRequestID(uuid.New()).SetTs(now).SaveX(ctx)
 
 	h := billing.New(client, 10000, nil, zap.NewNop())
 

@@ -12,6 +12,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -25,21 +29,29 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx                       *QueryContext
-	order                     []user.OrderOption
-	inters                    []Interceptor
-	predicates                []predicate.User
-	withSubscription          *SubscriptionQuery
-	withLedgerEntries         *CreditLedgerQuery
-	withLlmUsages             *LLMUsageQuery
-	withOauthConnections      *OAuthConnectionQuery
-	withMcpConnections        *MCPConnectionQuery
-	modifiers                 []func(*sql.Selector)
-	loadTotal                 []func(context.Context, []*User) error
-	withNamedLedgerEntries    map[string]*CreditLedgerQuery
-	withNamedLlmUsages        map[string]*LLMUsageQuery
-	withNamedOauthConnections map[string]*OAuthConnectionQuery
-	withNamedMcpConnections   map[string]*MCPConnectionQuery
+	ctx                              *QueryContext
+	order                            []user.OrderOption
+	inters                           []Interceptor
+	predicates                       []predicate.User
+	withSubscription                 *SubscriptionQuery
+	withLedgerEntries                *CreditLedgerQuery
+	withLlmUsages                    *LLMUsageQuery
+	withOauthConnections             *OAuthConnectionQuery
+	withMcpConnections               *MCPConnectionQuery
+	withBackgroundTasks              *BackgroundTaskQuery
+	withBackgroundTaskArtifacts      *BackgroundTaskArtifactQuery
+	withBackgroundTaskRuns           *BackgroundTaskRunQuery
+	withBackgroundTaskRunEvents      *BackgroundTaskRunEventQuery
+	modifiers                        []func(*sql.Selector)
+	loadTotal                        []func(context.Context, []*User) error
+	withNamedLedgerEntries           map[string]*CreditLedgerQuery
+	withNamedLlmUsages               map[string]*LLMUsageQuery
+	withNamedOauthConnections        map[string]*OAuthConnectionQuery
+	withNamedMcpConnections          map[string]*MCPConnectionQuery
+	withNamedBackgroundTasks         map[string]*BackgroundTaskQuery
+	withNamedBackgroundTaskArtifacts map[string]*BackgroundTaskArtifactQuery
+	withNamedBackgroundTaskRuns      map[string]*BackgroundTaskRunQuery
+	withNamedBackgroundTaskRunEvents map[string]*BackgroundTaskRunEventQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -179,6 +191,94 @@ func (_q *UserQuery) QueryMcpConnections() *MCPConnectionQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(mcpconnection.Table, mcpconnection.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.McpConnectionsTable, user.McpConnectionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBackgroundTasks chains the current query on the "background_tasks" edge.
+func (_q *UserQuery) QueryBackgroundTasks() *BackgroundTaskQuery {
+	query := (&BackgroundTaskClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(backgroundtask.Table, backgroundtask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTasksTable, user.BackgroundTasksColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBackgroundTaskArtifacts chains the current query on the "background_task_artifacts" edge.
+func (_q *UserQuery) QueryBackgroundTaskArtifacts() *BackgroundTaskArtifactQuery {
+	query := (&BackgroundTaskArtifactClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(backgroundtaskartifact.Table, backgroundtaskartifact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTaskArtifactsTable, user.BackgroundTaskArtifactsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBackgroundTaskRuns chains the current query on the "background_task_runs" edge.
+func (_q *UserQuery) QueryBackgroundTaskRuns() *BackgroundTaskRunQuery {
+	query := (&BackgroundTaskRunClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(backgroundtaskrun.Table, backgroundtaskrun.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTaskRunsTable, user.BackgroundTaskRunsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBackgroundTaskRunEvents chains the current query on the "background_task_run_events" edge.
+func (_q *UserQuery) QueryBackgroundTaskRunEvents() *BackgroundTaskRunEventQuery {
+	query := (&BackgroundTaskRunEventClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(backgroundtaskrunevent.Table, backgroundtaskrunevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTaskRunEventsTable, user.BackgroundTaskRunEventsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -373,16 +473,20 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:               _q.config,
-		ctx:                  _q.ctx.Clone(),
-		order:                append([]user.OrderOption{}, _q.order...),
-		inters:               append([]Interceptor{}, _q.inters...),
-		predicates:           append([]predicate.User{}, _q.predicates...),
-		withSubscription:     _q.withSubscription.Clone(),
-		withLedgerEntries:    _q.withLedgerEntries.Clone(),
-		withLlmUsages:        _q.withLlmUsages.Clone(),
-		withOauthConnections: _q.withOauthConnections.Clone(),
-		withMcpConnections:   _q.withMcpConnections.Clone(),
+		config:                      _q.config,
+		ctx:                         _q.ctx.Clone(),
+		order:                       append([]user.OrderOption{}, _q.order...),
+		inters:                      append([]Interceptor{}, _q.inters...),
+		predicates:                  append([]predicate.User{}, _q.predicates...),
+		withSubscription:            _q.withSubscription.Clone(),
+		withLedgerEntries:           _q.withLedgerEntries.Clone(),
+		withLlmUsages:               _q.withLlmUsages.Clone(),
+		withOauthConnections:        _q.withOauthConnections.Clone(),
+		withMcpConnections:          _q.withMcpConnections.Clone(),
+		withBackgroundTasks:         _q.withBackgroundTasks.Clone(),
+		withBackgroundTaskArtifacts: _q.withBackgroundTaskArtifacts.Clone(),
+		withBackgroundTaskRuns:      _q.withBackgroundTaskRuns.Clone(),
+		withBackgroundTaskRunEvents: _q.withBackgroundTaskRunEvents.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -441,6 +545,50 @@ func (_q *UserQuery) WithMcpConnections(opts ...func(*MCPConnectionQuery)) *User
 		opt(query)
 	}
 	_q.withMcpConnections = query
+	return _q
+}
+
+// WithBackgroundTasks tells the query-builder to eager-load the nodes that are connected to
+// the "background_tasks" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithBackgroundTasks(opts ...func(*BackgroundTaskQuery)) *UserQuery {
+	query := (&BackgroundTaskClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withBackgroundTasks = query
+	return _q
+}
+
+// WithBackgroundTaskArtifacts tells the query-builder to eager-load the nodes that are connected to
+// the "background_task_artifacts" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithBackgroundTaskArtifacts(opts ...func(*BackgroundTaskArtifactQuery)) *UserQuery {
+	query := (&BackgroundTaskArtifactClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withBackgroundTaskArtifacts = query
+	return _q
+}
+
+// WithBackgroundTaskRuns tells the query-builder to eager-load the nodes that are connected to
+// the "background_task_runs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithBackgroundTaskRuns(opts ...func(*BackgroundTaskRunQuery)) *UserQuery {
+	query := (&BackgroundTaskRunClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withBackgroundTaskRuns = query
+	return _q
+}
+
+// WithBackgroundTaskRunEvents tells the query-builder to eager-load the nodes that are connected to
+// the "background_task_run_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithBackgroundTaskRunEvents(opts ...func(*BackgroundTaskRunEventQuery)) *UserQuery {
+	query := (&BackgroundTaskRunEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withBackgroundTaskRunEvents = query
 	return _q
 }
 
@@ -522,12 +670,16 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [9]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withLlmUsages != nil,
 			_q.withOauthConnections != nil,
 			_q.withMcpConnections != nil,
+			_q.withBackgroundTasks != nil,
+			_q.withBackgroundTaskArtifacts != nil,
+			_q.withBackgroundTaskRuns != nil,
+			_q.withBackgroundTaskRunEvents != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -585,6 +737,40 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withBackgroundTasks; query != nil {
+		if err := _q.loadBackgroundTasks(ctx, query, nodes,
+			func(n *User) { n.Edges.BackgroundTasks = []*BackgroundTask{} },
+			func(n *User, e *BackgroundTask) { n.Edges.BackgroundTasks = append(n.Edges.BackgroundTasks, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withBackgroundTaskArtifacts; query != nil {
+		if err := _q.loadBackgroundTaskArtifacts(ctx, query, nodes,
+			func(n *User) { n.Edges.BackgroundTaskArtifacts = []*BackgroundTaskArtifact{} },
+			func(n *User, e *BackgroundTaskArtifact) {
+				n.Edges.BackgroundTaskArtifacts = append(n.Edges.BackgroundTaskArtifacts, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withBackgroundTaskRuns; query != nil {
+		if err := _q.loadBackgroundTaskRuns(ctx, query, nodes,
+			func(n *User) { n.Edges.BackgroundTaskRuns = []*BackgroundTaskRun{} },
+			func(n *User, e *BackgroundTaskRun) {
+				n.Edges.BackgroundTaskRuns = append(n.Edges.BackgroundTaskRuns, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withBackgroundTaskRunEvents; query != nil {
+		if err := _q.loadBackgroundTaskRunEvents(ctx, query, nodes,
+			func(n *User) { n.Edges.BackgroundTaskRunEvents = []*BackgroundTaskRunEvent{} },
+			func(n *User, e *BackgroundTaskRunEvent) {
+				n.Edges.BackgroundTaskRunEvents = append(n.Edges.BackgroundTaskRunEvents, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -610,6 +796,34 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadMcpConnections(ctx, query, nodes,
 			func(n *User) { n.appendNamedMcpConnections(name) },
 			func(n *User, e *MCPConnection) { n.appendNamedMcpConnections(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedBackgroundTasks {
+		if err := _q.loadBackgroundTasks(ctx, query, nodes,
+			func(n *User) { n.appendNamedBackgroundTasks(name) },
+			func(n *User, e *BackgroundTask) { n.appendNamedBackgroundTasks(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedBackgroundTaskArtifacts {
+		if err := _q.loadBackgroundTaskArtifacts(ctx, query, nodes,
+			func(n *User) { n.appendNamedBackgroundTaskArtifacts(name) },
+			func(n *User, e *BackgroundTaskArtifact) { n.appendNamedBackgroundTaskArtifacts(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedBackgroundTaskRuns {
+		if err := _q.loadBackgroundTaskRuns(ctx, query, nodes,
+			func(n *User) { n.appendNamedBackgroundTaskRuns(name) },
+			func(n *User, e *BackgroundTaskRun) { n.appendNamedBackgroundTaskRuns(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedBackgroundTaskRunEvents {
+		if err := _q.loadBackgroundTaskRunEvents(ctx, query, nodes,
+			func(n *User) { n.appendNamedBackgroundTaskRunEvents(name) },
+			func(n *User, e *BackgroundTaskRunEvent) { n.appendNamedBackgroundTaskRunEvents(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -773,6 +987,130 @@ func (_q *UserQuery) loadMcpConnections(ctx context.Context, query *MCPConnectio
 	}
 	return nil
 }
+func (_q *UserQuery) loadBackgroundTasks(ctx context.Context, query *BackgroundTaskQuery, nodes []*User, init func(*User), assign func(*User, *BackgroundTask)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.BackgroundTask(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.BackgroundTasksColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_background_tasks
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_background_tasks" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_background_tasks" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadBackgroundTaskArtifacts(ctx context.Context, query *BackgroundTaskArtifactQuery, nodes []*User, init func(*User), assign func(*User, *BackgroundTaskArtifact)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.BackgroundTaskArtifact(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.BackgroundTaskArtifactsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_background_task_artifacts
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_background_task_artifacts" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_background_task_artifacts" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadBackgroundTaskRuns(ctx context.Context, query *BackgroundTaskRunQuery, nodes []*User, init func(*User), assign func(*User, *BackgroundTaskRun)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.BackgroundTaskRun(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.BackgroundTaskRunsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_background_task_runs
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_background_task_runs" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_background_task_runs" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadBackgroundTaskRunEvents(ctx context.Context, query *BackgroundTaskRunEventQuery, nodes []*User, init func(*User), assign func(*User, *BackgroundTaskRunEvent)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.BackgroundTaskRunEvent(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.BackgroundTaskRunEventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_background_task_run_events
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_background_task_run_events" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_background_task_run_events" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -911,6 +1249,62 @@ func (_q *UserQuery) WithNamedMcpConnections(name string, opts ...func(*MCPConne
 		_q.withNamedMcpConnections = make(map[string]*MCPConnectionQuery)
 	}
 	_q.withNamedMcpConnections[name] = query
+	return _q
+}
+
+// WithNamedBackgroundTasks tells the query-builder to eager-load the nodes that are connected to the "background_tasks"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedBackgroundTasks(name string, opts ...func(*BackgroundTaskQuery)) *UserQuery {
+	query := (&BackgroundTaskClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedBackgroundTasks == nil {
+		_q.withNamedBackgroundTasks = make(map[string]*BackgroundTaskQuery)
+	}
+	_q.withNamedBackgroundTasks[name] = query
+	return _q
+}
+
+// WithNamedBackgroundTaskArtifacts tells the query-builder to eager-load the nodes that are connected to the "background_task_artifacts"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedBackgroundTaskArtifacts(name string, opts ...func(*BackgroundTaskArtifactQuery)) *UserQuery {
+	query := (&BackgroundTaskArtifactClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedBackgroundTaskArtifacts == nil {
+		_q.withNamedBackgroundTaskArtifacts = make(map[string]*BackgroundTaskArtifactQuery)
+	}
+	_q.withNamedBackgroundTaskArtifacts[name] = query
+	return _q
+}
+
+// WithNamedBackgroundTaskRuns tells the query-builder to eager-load the nodes that are connected to the "background_task_runs"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedBackgroundTaskRuns(name string, opts ...func(*BackgroundTaskRunQuery)) *UserQuery {
+	query := (&BackgroundTaskRunClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedBackgroundTaskRuns == nil {
+		_q.withNamedBackgroundTaskRuns = make(map[string]*BackgroundTaskRunQuery)
+	}
+	_q.withNamedBackgroundTaskRuns[name] = query
+	return _q
+}
+
+// WithNamedBackgroundTaskRunEvents tells the query-builder to eager-load the nodes that are connected to the "background_task_run_events"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedBackgroundTaskRunEvents(name string, opts ...func(*BackgroundTaskRunEventQuery)) *UserQuery {
+	query := (&BackgroundTaskRunEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedBackgroundTaskRunEvents == nil {
+		_q.withNamedBackgroundTaskRunEvents = make(map[string]*BackgroundTaskRunEventQuery)
+	}
+	_q.withNamedBackgroundTaskRunEvents[name] = query
 	return _q
 }
 

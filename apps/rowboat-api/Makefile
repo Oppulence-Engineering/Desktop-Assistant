@@ -15,6 +15,7 @@ all: generate build test
 .PHONY: build
 build:
 	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/rowboat-api ./cmd/server
+	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/rowboat-api-worker ./cmd/worker
 
 .PHONY: run
 run:

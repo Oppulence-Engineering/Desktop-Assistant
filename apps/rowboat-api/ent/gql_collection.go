@@ -6,6 +6,10 @@ import (
 	"context"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -14,6 +18,692 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 )
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *BackgroundTaskQuery) CollectFields(ctx context.Context, satisfies ...string) (*BackgroundTaskQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *BackgroundTaskQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(backgroundtask.Columns))
+		selectedFields = []string{backgroundtask.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "artifact":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskArtifactClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskartifactImplementors)...); err != nil {
+				return err
+			}
+			_q.withArtifact = query
+
+		case "runs":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskRunClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskrunImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRuns(alias, func(wq *BackgroundTaskRunQuery) {
+				*wq = *query
+			})
+
+		case "runEvents":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskRunEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskruneventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRunEvents(alias, func(wq *BackgroundTaskRunEventQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[backgroundtask.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldCreatedAt)
+				fieldSeen[backgroundtask.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[backgroundtask.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldUpdatedAt)
+				fieldSeen[backgroundtask.FieldUpdatedAt] = struct{}{}
+			}
+		case "slug":
+			if _, ok := fieldSeen[backgroundtask.FieldSlug]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldSlug)
+				fieldSeen[backgroundtask.FieldSlug] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[backgroundtask.FieldName]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldName)
+				fieldSeen[backgroundtask.FieldName] = struct{}{}
+			}
+		case "instructions":
+			if _, ok := fieldSeen[backgroundtask.FieldInstructions]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldInstructions)
+				fieldSeen[backgroundtask.FieldInstructions] = struct{}{}
+			}
+		case "active":
+			if _, ok := fieldSeen[backgroundtask.FieldActive]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldActive)
+				fieldSeen[backgroundtask.FieldActive] = struct{}{}
+			}
+		case "triggersJSON":
+			if _, ok := fieldSeen[backgroundtask.FieldTriggersJSON]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldTriggersJSON)
+				fieldSeen[backgroundtask.FieldTriggersJSON] = struct{}{}
+			}
+		case "model":
+			if _, ok := fieldSeen[backgroundtask.FieldModel]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldModel)
+				fieldSeen[backgroundtask.FieldModel] = struct{}{}
+			}
+		case "provider":
+			if _, ok := fieldSeen[backgroundtask.FieldProvider]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldProvider)
+				fieldSeen[backgroundtask.FieldProvider] = struct{}{}
+			}
+		case "executionTarget":
+			if _, ok := fieldSeen[backgroundtask.FieldExecutionTarget]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldExecutionTarget)
+				fieldSeen[backgroundtask.FieldExecutionTarget] = struct{}{}
+			}
+		case "taskCreatedAt":
+			if _, ok := fieldSeen[backgroundtask.FieldTaskCreatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldTaskCreatedAt)
+				fieldSeen[backgroundtask.FieldTaskCreatedAt] = struct{}{}
+			}
+		case "lastAttemptAt":
+			if _, ok := fieldSeen[backgroundtask.FieldLastAttemptAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldLastAttemptAt)
+				fieldSeen[backgroundtask.FieldLastAttemptAt] = struct{}{}
+			}
+		case "lastRunID":
+			if _, ok := fieldSeen[backgroundtask.FieldLastRunID]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldLastRunID)
+				fieldSeen[backgroundtask.FieldLastRunID] = struct{}{}
+			}
+		case "lastRunAt":
+			if _, ok := fieldSeen[backgroundtask.FieldLastRunAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldLastRunAt)
+				fieldSeen[backgroundtask.FieldLastRunAt] = struct{}{}
+			}
+		case "lastRunSummary":
+			if _, ok := fieldSeen[backgroundtask.FieldLastRunSummary]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldLastRunSummary)
+				fieldSeen[backgroundtask.FieldLastRunSummary] = struct{}{}
+			}
+		case "lastRunError":
+			if _, ok := fieldSeen[backgroundtask.FieldLastRunError]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldLastRunError)
+				fieldSeen[backgroundtask.FieldLastRunError] = struct{}{}
+			}
+		case "revision":
+			if _, ok := fieldSeen[backgroundtask.FieldRevision]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldRevision)
+				fieldSeen[backgroundtask.FieldRevision] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type backgroundtaskPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []BackgroundTaskPaginateOption
+}
+
+func newBackgroundTaskPaginateArgs(rv map[string]any) *backgroundtaskPaginateArgs {
+	args := &backgroundtaskPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*BackgroundTaskWhereInput); ok {
+		args.opts = append(args.opts, WithBackgroundTaskFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *BackgroundTaskArtifactQuery) CollectFields(ctx context.Context, satisfies ...string) (*BackgroundTaskArtifactQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *BackgroundTaskArtifactQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(backgroundtaskartifact.Columns))
+		selectedFields = []string{backgroundtaskartifact.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "task":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskImplementors)...); err != nil {
+				return err
+			}
+			_q.withTask = query
+		case "createdAt":
+			if _, ok := fieldSeen[backgroundtaskartifact.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskartifact.FieldCreatedAt)
+				fieldSeen[backgroundtaskartifact.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[backgroundtaskartifact.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskartifact.FieldUpdatedAt)
+				fieldSeen[backgroundtaskartifact.FieldUpdatedAt] = struct{}{}
+			}
+		case "body":
+			if _, ok := fieldSeen[backgroundtaskartifact.FieldBody]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskartifact.FieldBody)
+				fieldSeen[backgroundtaskartifact.FieldBody] = struct{}{}
+			}
+		case "revision":
+			if _, ok := fieldSeen[backgroundtaskartifact.FieldRevision]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskartifact.FieldRevision)
+				fieldSeen[backgroundtaskartifact.FieldRevision] = struct{}{}
+			}
+		case "updatedByRunID":
+			if _, ok := fieldSeen[backgroundtaskartifact.FieldUpdatedByRunID]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskartifact.FieldUpdatedByRunID)
+				fieldSeen[backgroundtaskartifact.FieldUpdatedByRunID] = struct{}{}
+			}
+		case "contentType":
+			if _, ok := fieldSeen[backgroundtaskartifact.FieldContentType]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskartifact.FieldContentType)
+				fieldSeen[backgroundtaskartifact.FieldContentType] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type backgroundtaskartifactPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []BackgroundTaskArtifactPaginateOption
+}
+
+func newBackgroundTaskArtifactPaginateArgs(rv map[string]any) *backgroundtaskartifactPaginateArgs {
+	args := &backgroundtaskartifactPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*BackgroundTaskArtifactWhereInput); ok {
+		args.opts = append(args.opts, WithBackgroundTaskArtifactFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *BackgroundTaskRunQuery) CollectFields(ctx context.Context, satisfies ...string) (*BackgroundTaskRunQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *BackgroundTaskRunQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(backgroundtaskrun.Columns))
+		selectedFields = []string{backgroundtaskrun.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "task":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskImplementors)...); err != nil {
+				return err
+			}
+			_q.withTask = query
+
+		case "events":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskRunEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskruneventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedEvents(alias, func(wq *BackgroundTaskRunEventQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldCreatedAt)
+				fieldSeen[backgroundtaskrun.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldUpdatedAt)
+				fieldSeen[backgroundtaskrun.FieldUpdatedAt] = struct{}{}
+			}
+		case "runID":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldRunID]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldRunID)
+				fieldSeen[backgroundtaskrun.FieldRunID] = struct{}{}
+			}
+		case "trigger":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldTrigger]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldTrigger)
+				fieldSeen[backgroundtaskrun.FieldTrigger] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldStatus)
+				fieldSeen[backgroundtaskrun.FieldStatus] = struct{}{}
+			}
+		case "executor":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldExecutor]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldExecutor)
+				fieldSeen[backgroundtaskrun.FieldExecutor] = struct{}{}
+			}
+		case "attempt":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldAttempt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldAttempt)
+				fieldSeen[backgroundtaskrun.FieldAttempt] = struct{}{}
+			}
+		case "model":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldModel]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldModel)
+				fieldSeen[backgroundtaskrun.FieldModel] = struct{}{}
+			}
+		case "provider":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldProvider]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldProvider)
+				fieldSeen[backgroundtaskrun.FieldProvider] = struct{}{}
+			}
+		case "useCase":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldUseCase]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldUseCase)
+				fieldSeen[backgroundtaskrun.FieldUseCase] = struct{}{}
+			}
+		case "subUseCase":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldSubUseCase]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldSubUseCase)
+				fieldSeen[backgroundtaskrun.FieldSubUseCase] = struct{}{}
+			}
+		case "previousRunID":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldPreviousRunID]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldPreviousRunID)
+				fieldSeen[backgroundtaskrun.FieldPreviousRunID] = struct{}{}
+			}
+		case "retryOfRunID":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldRetryOfRunID]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldRetryOfRunID)
+				fieldSeen[backgroundtaskrun.FieldRetryOfRunID] = struct{}{}
+			}
+		case "localRunID":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldLocalRunID]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldLocalRunID)
+				fieldSeen[backgroundtaskrun.FieldLocalRunID] = struct{}{}
+			}
+		case "requestedContext":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldRequestedContext]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldRequestedContext)
+				fieldSeen[backgroundtaskrun.FieldRequestedContext] = struct{}{}
+			}
+		case "summary":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldSummary]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldSummary)
+				fieldSeen[backgroundtaskrun.FieldSummary] = struct{}{}
+			}
+		case "error":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldError]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldError)
+				fieldSeen[backgroundtaskrun.FieldError] = struct{}{}
+			}
+		case "errorCode":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldErrorCode]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldErrorCode)
+				fieldSeen[backgroundtaskrun.FieldErrorCode] = struct{}{}
+			}
+		case "errorDetails":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldErrorDetails]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldErrorDetails)
+				fieldSeen[backgroundtaskrun.FieldErrorDetails] = struct{}{}
+			}
+		case "temporalWorkflowID":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldTemporalWorkflowID]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldTemporalWorkflowID)
+				fieldSeen[backgroundtaskrun.FieldTemporalWorkflowID] = struct{}{}
+			}
+		case "temporalRunID":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldTemporalRunID]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldTemporalRunID)
+				fieldSeen[backgroundtaskrun.FieldTemporalRunID] = struct{}{}
+			}
+		case "temporalStatus":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldTemporalStatus]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldTemporalStatus)
+				fieldSeen[backgroundtaskrun.FieldTemporalStatus] = struct{}{}
+			}
+		case "temporalStartedAt":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldTemporalStartedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldTemporalStartedAt)
+				fieldSeen[backgroundtaskrun.FieldTemporalStartedAt] = struct{}{}
+			}
+		case "temporalClosedAt":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldTemporalClosedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldTemporalClosedAt)
+				fieldSeen[backgroundtaskrun.FieldTemporalClosedAt] = struct{}{}
+			}
+		case "cancelRequestedAt":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldCancelRequestedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldCancelRequestedAt)
+				fieldSeen[backgroundtaskrun.FieldCancelRequestedAt] = struct{}{}
+			}
+		case "progressPercent":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldProgressPercent]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldProgressPercent)
+				fieldSeen[backgroundtaskrun.FieldProgressPercent] = struct{}{}
+			}
+		case "progressMessage":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldProgressMessage]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldProgressMessage)
+				fieldSeen[backgroundtaskrun.FieldProgressMessage] = struct{}{}
+			}
+		case "lastHeartbeatAt":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldLastHeartbeatAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldLastHeartbeatAt)
+				fieldSeen[backgroundtaskrun.FieldLastHeartbeatAt] = struct{}{}
+			}
+		case "startedAt":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldStartedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldStartedAt)
+				fieldSeen[backgroundtaskrun.FieldStartedAt] = struct{}{}
+			}
+		case "completedAt":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldCompletedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldCompletedAt)
+				fieldSeen[backgroundtaskrun.FieldCompletedAt] = struct{}{}
+			}
+		case "revision":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldRevision]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldRevision)
+				fieldSeen[backgroundtaskrun.FieldRevision] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type backgroundtaskrunPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []BackgroundTaskRunPaginateOption
+}
+
+func newBackgroundTaskRunPaginateArgs(rv map[string]any) *backgroundtaskrunPaginateArgs {
+	args := &backgroundtaskrunPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*BackgroundTaskRunWhereInput); ok {
+		args.opts = append(args.opts, WithBackgroundTaskRunFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *BackgroundTaskRunEventQuery) CollectFields(ctx context.Context, satisfies ...string) (*BackgroundTaskRunEventQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *BackgroundTaskRunEventQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(backgroundtaskrunevent.Columns))
+		selectedFields = []string{backgroundtaskrunevent.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "task":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskImplementors)...); err != nil {
+				return err
+			}
+			_q.withTask = query
+
+		case "run":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskRunClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskrunImplementors)...); err != nil {
+				return err
+			}
+			_q.withRun = query
+		case "createdAt":
+			if _, ok := fieldSeen[backgroundtaskrunevent.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrunevent.FieldCreatedAt)
+				fieldSeen[backgroundtaskrunevent.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[backgroundtaskrunevent.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrunevent.FieldUpdatedAt)
+				fieldSeen[backgroundtaskrunevent.FieldUpdatedAt] = struct{}{}
+			}
+		case "seq":
+			if _, ok := fieldSeen[backgroundtaskrunevent.FieldSeq]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrunevent.FieldSeq)
+				fieldSeen[backgroundtaskrunevent.FieldSeq] = struct{}{}
+			}
+		case "eventType":
+			if _, ok := fieldSeen[backgroundtaskrunevent.FieldEventType]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrunevent.FieldEventType)
+				fieldSeen[backgroundtaskrunevent.FieldEventType] = struct{}{}
+			}
+		case "eventJSON":
+			if _, ok := fieldSeen[backgroundtaskrunevent.FieldEventJSON]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrunevent.FieldEventJSON)
+				fieldSeen[backgroundtaskrunevent.FieldEventJSON] = struct{}{}
+			}
+		case "receivedAt":
+			if _, ok := fieldSeen[backgroundtaskrunevent.FieldReceivedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrunevent.FieldReceivedAt)
+				fieldSeen[backgroundtaskrunevent.FieldReceivedAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type backgroundtaskruneventPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []BackgroundTaskRunEventPaginateOption
+}
+
+func newBackgroundTaskRunEventPaginateArgs(rv map[string]any) *backgroundtaskruneventPaginateArgs {
+	args := &backgroundtaskruneventPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*BackgroundTaskRunEventWhereInput); ok {
+		args.opts = append(args.opts, WithBackgroundTaskRunEventFilter(v.Filter))
+	}
+	return args
+}
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *CreditLedgerQuery) CollectFields(ctx context.Context, satisfies ...string) (*CreditLedgerQuery, error) {
@@ -714,6 +1404,58 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedMcpConnections(alias, func(wq *MCPConnectionQuery) {
+				*wq = *query
+			})
+
+		case "backgroundTasks":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedBackgroundTasks(alias, func(wq *BackgroundTaskQuery) {
+				*wq = *query
+			})
+
+		case "backgroundTaskArtifacts":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskArtifactClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskartifactImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedBackgroundTaskArtifacts(alias, func(wq *BackgroundTaskArtifactQuery) {
+				*wq = *query
+			})
+
+		case "backgroundTaskRuns":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskRunClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskrunImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedBackgroundTaskRuns(alias, func(wq *BackgroundTaskRunQuery) {
+				*wq = *query
+			})
+
+		case "backgroundTaskRunEvents":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskRunEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskruneventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedBackgroundTaskRunEvents(alias, func(wq *BackgroundTaskRunEventQuery) {
 				*wq = *query
 			})
 		case "createdAt":
