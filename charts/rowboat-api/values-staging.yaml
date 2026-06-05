@@ -22,6 +22,10 @@ config:
   JWKS_URL: https://oauth.staging.solomon-ai.co/.well-known/jwks.json
   ORY_PUBLIC_URL: https://oauth.staging.solomon-ai.co
   PUBLIC_BASE_URL: https://api.x.staging.solomon-ai.co
+  # Google OAuth broker callback. MUST be the API host (where /oauth/google/callback
+  # is served), not APP_URL — the default falls back to APP_URL, which is the app
+  # host in staging/prod. Register this exact URI in the Google Cloud OAuth client.
+  GOOGLE_REDIRECT_URI: https://api.x.staging.solomon-ai.co/oauth/google/callback
   INFISICAL_ENVIRONMENT: staging
   # --- Temporal Cloud (API-native background task worker) -------------------
   # Staging/production execute API-target runs on Temporal Cloud (API-key auth

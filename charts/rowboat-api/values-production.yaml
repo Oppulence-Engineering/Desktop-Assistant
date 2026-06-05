@@ -22,6 +22,11 @@ config:
   ENVIRONMENT: production
   LOG_LEVEL: info
   AUTO_MIGRATE: "false"
+  APP_URL: https://app.solomon-ai.co
+  PUBLIC_BASE_URL: https://api.x.solomon-ai.co
+  # Google OAuth broker callback — the API host serving /oauth/google/callback (NOT
+  # APP_URL, which the default would use). Register this exact URI in Google Cloud.
+  GOOGLE_REDIRECT_URI: https://api.x.solomon-ai.co/oauth/google/callback
   INFISICAL_ENABLED: "true"
   INFISICAL_ENVIRONMENT: production
   # --- Temporal Cloud (API-native background task worker) -------------------
