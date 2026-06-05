@@ -16,9 +16,18 @@ spec:
     - name: http
       port: 80
       targetPort: http
+      {{- with .Values.service.nodePorts.http }}
+      nodePort: {{ . }}
+      {{- end }}
     - name: grpc
       port: {{ .Values.ports.grpc }}
       targetPort: grpc
+      {{- with .Values.service.nodePorts.grpc }}
+      nodePort: {{ . }}
+      {{- end }}
     - name: metrics
       port: {{ .Values.ports.metrics }}
       targetPort: metrics
+      {{- with .Values.service.nodePorts.metrics }}
+      nodePort: {{ . }}
+      {{- end }}

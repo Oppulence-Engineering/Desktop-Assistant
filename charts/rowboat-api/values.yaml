@@ -26,6 +26,10 @@ ports:
 service:
   type: ClusterIP
   annotations: {}
+  nodePorts: {}
+    # http: 30080
+    # grpc: 30081
+    # metrics: 30090
 
 ingress:
   enabled: true
@@ -61,10 +65,14 @@ probes:
     path: /healthz
     initialDelaySeconds: 5
     periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
   readiness:
     path: /readyz
     initialDelaySeconds: 5
     periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
 
 # Prometheus Operator ServiceMonitor (set false if using annotation scraping).
 serviceMonitor:

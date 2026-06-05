@@ -896,6 +896,7 @@ function ToolsLibrarySettings({ dialogOpen, rowboatConnected }: { dialogOpen: bo
   // Toolkit browsing state
   const [toolkits, setToolkits] = useState<ToolkitInfo[]>([])
   const [toolkitsLoading, setToolkitsLoading] = useState(false)
+  const [toolkitsUnavailableMessage, setToolkitsUnavailableMessage] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
   // Connection state
@@ -928,11 +929,21 @@ function ToolsLibrarySettings({ dialogOpen, rowboatConnected }: { dialogOpen: bo
   // Load toolkits
   const loadToolkits = useCallback(async () => {
     setToolkitsLoading(true)
+    setToolkitsUnavailableMessage(null)
     try {
       const result = await window.ipc.invoke("composio:list-toolkits", {})
-      setToolkits(result.items)
-    } catch {
+      setToolkits(result.items || [])
+      if (result.providerConfigured === false) {
+        setToolkitsUnavailableMessage(result.message || "Tool integrations are disabled for this Rowboat API.")
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : ""
+      if (message.includes("provider_unconfigured") || message.includes("composio not configured")) {
+        setToolkits([])
+        setToolkitsUnavailableMessage("Tool integrations are disabled because this Rowboat API is running without Composio credentials.")
+      } else {
       toast.error("Failed to load toolkits")
+      }
     } finally {
       setToolkitsLoading(false)
     }
@@ -1098,6 +1109,12 @@ function ToolsLibrarySettings({ dialogOpen, rowboatConnected }: { dialogOpen: bo
         <>
           <div className="space-y-2">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Available Toolkits</span>
+            {toolkitsUnavailableMessage && (
+              <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <span>{toolkitsUnavailableMessage}</span>
+              </div>
+            )}
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input

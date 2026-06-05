@@ -1604,6 +1604,10 @@ async function* streamLlm(
         signal?.throwIfAborted();
         console.log("-> \t\tstream event", JSON.stringify(event));
         switch (event.type) {
+            case "start":
+            case "start-step":
+            case "finish":
+                break;
             case "error":
                 yield {
                     type: "error",

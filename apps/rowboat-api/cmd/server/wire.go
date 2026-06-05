@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/docs"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/gqlapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
@@ -91,6 +92,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 
 	// --- Handlers -----------------------------------------------------------
 	configH := config.New(cfg)
+	docsH := docs.New()
 	billingH := billing.New(client, cfg.FreeTierCredits, database.Cached, log)
 	llmH := llm.New(prices, gate, sec, client, log)
 	llmH.SetUpstreams(cfg.OpenAIBaseURL, cfg.OpenRouterBaseURL) // empty → provider defaults
@@ -121,6 +123,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	r := srv.Router()
 
 	// Public (no auth).
+	r.Get("/docs", docsH.Scalar)
+	r.Get("/docs/", docsH.Scalar)
+	r.Get("/openapi.json", docsH.OpenAPI)
+	r.Get("/docs/openapi.json", docsH.OpenAPI)
 	r.Get("/v1/config", configH.Config)
 
 	// WorkOS sign-in broker (public: the caller has no bearer yet; the

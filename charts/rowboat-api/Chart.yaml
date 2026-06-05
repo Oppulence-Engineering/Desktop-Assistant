@@ -4,6 +4,7 @@ description: Rowboat desktop backend (Go) — billing, credits, LLM gateway, ven
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
+icon: https://raw.githubusercontent.com/Oppulence-Engineering/rowboat/main/assets/rb-logo.png
 maintainers:
   - name: Oppulence Engineering
 home: https://github.com/Oppulence-Engineering/rowboat

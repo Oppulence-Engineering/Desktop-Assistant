@@ -61,7 +61,19 @@ func TestMeReturnsBillingShape(t *testing.T) {
 			Status string `json:"status"`
 			Usage  struct {
 				SanctionedCredits int `json:"sanctionedCredits"`
+				UsedCredits       int `json:"usedCredits"`
 				AvailableCredits  int `json:"availableCredits"`
+				Monthly           struct {
+					SanctionedCredits int `json:"sanctionedCredits"`
+					UsedCredits       int `json:"usedCredits"`
+					AvailableCredits  int `json:"availableCredits"`
+				} `json:"monthly"`
+				Daily struct {
+					SanctionedCredits int    `json:"sanctionedCredits"`
+					UsedCredits       int    `json:"usedCredits"`
+					AvailableCredits  int    `json:"availableCredits"`
+					UsageDay          string `json:"usageDay"`
+				} `json:"daily"`
 			} `json:"usage"`
 		} `json:"billing"`
 	}
@@ -77,8 +89,20 @@ func TestMeReturnsBillingShape(t *testing.T) {
 	if body.Billing.Usage.SanctionedCredits != 10000 {
 		t.Errorf("sanctioned = %d", body.Billing.Usage.SanctionedCredits)
 	}
+	if body.Billing.Usage.UsedCredits != 1579 {
+		t.Errorf("used = %d, want 1579", body.Billing.Usage.UsedCredits)
+	}
 	if body.Billing.Usage.AvailableCredits != 8421 { // 10000 - 1579
 		t.Errorf("available = %d, want 8421", body.Billing.Usage.AvailableCredits)
+	}
+	if body.Billing.Usage.Monthly.UsedCredits != 1579 || body.Billing.Usage.Monthly.AvailableCredits != 8421 {
+		t.Errorf("monthly usage = %+v, want used 1579 available 8421", body.Billing.Usage.Monthly)
+	}
+	if body.Billing.Usage.Daily.UsedCredits != 1579 || body.Billing.Usage.Daily.AvailableCredits != 8421 {
+		t.Errorf("daily usage = %+v, want used 1579 available 8421", body.Billing.Usage.Daily)
+	}
+	if body.Billing.Usage.Daily.UsageDay == "" {
+		t.Error("daily usageDay is empty")
 	}
 }
 

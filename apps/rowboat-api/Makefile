@@ -54,10 +54,10 @@ GOBIN := $(shell go env GOPATH)/bin
 .PHONY: generate
 generate: ent-generate proto-generate gql-generate
 
-# ent + enthistory + entoas + entgql (schema, history tables, OpenAPI, GraphQL SDL).
+# ent + enthistory + entoas + OpenAPI enrichment + entgql (schema, history tables, OpenAPI, GraphQL SDL).
 .PHONY: ent-generate
 ent-generate:
-	go generate ./ent/...
+	go generate ./ent
 
 # entproto (.proto) + protoc (Go messages, gRPC service, ent-backed impl).
 .PHONY: proto-generate
