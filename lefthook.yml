@@ -49,15 +49,16 @@ commit-msg:
     commitlint:
       run: pnpm exec commitlint --edit {1}
 
-# pre-push runs the slower checks (typecheck + unit tests) once, before sharing
-# code — too slow for every commit, faster than waiting on CI. Skip on WIP
-# branches with `LEFTHOOK=0 git push`.
+# pre-push runs the slower checks once, before sharing code — too slow for every
+# commit, faster than waiting on CI. Skip on WIP branches with `LEFTHOOK=0 git push`.
+#
+# One sequential command on purpose: the renderer typecheck needs a FRESH
+# @x/shared/@x/preload build, and `pnpm test` rebuilds @x/shared too — running
+# them in parallel races on packages/shared/dist (a half-rebuilt dist makes tsc
+# fail with "Cannot find @x/shared/dist/*.js"). `typecheck` builds deps first,
+# then tsc -b; tests run after.
 pre-push:
-  parallel: true
   commands:
-    renderer-typecheck:
-      root: "apps/x/apps/renderer/"
-      run: pnpm exec tsc -b
-    unit-tests:
+    desktop-checks:
       root: "apps/x/"
-      run: pnpm test
+      run: pnpm run typecheck && pnpm test
