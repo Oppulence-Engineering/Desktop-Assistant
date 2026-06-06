@@ -61,6 +61,7 @@ import { extractConferenceLink } from "@/lib/calendar-event";
 import { useBilling } from "@/hooks/useBilling";
 import { toast } from "@/lib/toast";
 import { ServiceEvent } from "@x/shared/src/service-events.js";
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, getProductProviderState } from "@x/shared/dist/branding.js";
 import z from "zod";
 
 interface TreeNode {
@@ -464,10 +465,10 @@ export function SidebarContentPanel({
   const [openConnectionsAfterClose, setOpenConnectionsAfterClose] =
     useState(false);
   const connectorsButtonRef = useRef<HTMLButtonElement | null>(null);
-  const [isRowboatConnected, setIsRowboatConnected] = useState(false);
+  const [isSolomonConnected, setIsSolomonConnected] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const [appUrl, setAppUrl] = useState<string | null>(null);
-  const { billing } = useBilling(isRowboatConnected);
+  const { billing } = useBilling(isSolomonConnected);
 
   // Nav previews: unread important emails + next upcoming meetings (top 2 each).
   const [unreadEmailCount, setUnreadEmailCount] = useState(0);
@@ -729,11 +730,11 @@ export function SidebarContentPanel({
     return () => clearInterval(tick);
   }, [bgTaskSummaries]);
 
-  const handleRowboatLogin = useCallback(async () => {
+  const handleSolomonLogin = useCallback(async () => {
     try {
       setLoggingIn(true);
       const result = await window.ipc.invoke("oauth:connect", {
-        provider: "rowboat",
+        provider: PRODUCT_PROVIDER_ID,
       });
       if (!result.success) {
         setLoggingIn(false);
@@ -753,17 +754,17 @@ export function SidebarContentPanel({
         const hasError = Object.values(config).some((entry) =>
           Boolean(entry?.error),
         );
-        const connected = config["rowboat"]?.connected ?? false;
+        const connected = getProductProviderState(config)?.connected ?? false;
         if (mounted) {
           setHasOauthError(hasError);
-          setIsRowboatConnected(connected);
+          setIsSolomonConnected(connected);
           if (!hasError) {
             setShowOauthAlert(true);
           }
         }
         if (connected && mounted) {
           try {
-            const account = await window.ipc.invoke("account:getRowboat", null);
+            const account = await window.ipc.invoke("account:getSolomon", null);
             if (mounted) setAppUrl(account.config?.appUrl ?? null);
           } catch {
             /* ignore */
@@ -773,7 +774,7 @@ export function SidebarContentPanel({
         console.error("Failed to fetch OAuth state:", error);
         if (mounted) {
           setHasOauthError(false);
-          setIsRowboatConnected(false);
+          setIsSolomonConnected(false);
           setShowOauthAlert(true);
         }
       }
@@ -1108,7 +1109,7 @@ export function SidebarContentPanel({
         </SidebarGroup>
       </SidebarContent>
       {/* Billing / upgrade CTA or Log in CTA */}
-      {isRowboatConnected && billing ? (
+      {isSolomonConnected && billing ? (
         <div className="px-3 py-2">
           <div className="flex items-center justify-between rounded-none border border-sidebar-border bg-sidebar-accent/20 px-3 py-2">
             <div className="min-w-0">
@@ -1151,14 +1152,14 @@ export function SidebarContentPanel({
         </div>
       ) : null}
       {/* Sign in CTA */}
-      {!isRowboatConnected && (
+      {!isSolomonConnected && (
         <div className="px-3 py-2">
           <button
-            onClick={handleRowboatLogin}
+            onClick={handleSolomonLogin}
             disabled={loggingIn}
             className="flex w-full items-center justify-center rounded-none border border-sidebar-border bg-sidebar-accent/20 px-3 py-2.5 text-xs font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/40 disabled:opacity-50"
           >
-            {loggingIn ? "Signing in…" : "Sign in to Rowboat"}
+            {loggingIn ? "Signing in..." : `Sign in to ${PRODUCT_NAME}`}
           </button>
         </div>
       )}

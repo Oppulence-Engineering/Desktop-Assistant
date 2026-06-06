@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const RowboatApiConfig = z.object({
+export const SolomonApiConfig = z.object({
   appUrl: z.string(),
   websocketApiUrl: z.string(),
   // supabaseUrl is retained for backward compatibility; the backend now emits

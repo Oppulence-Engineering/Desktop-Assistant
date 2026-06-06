@@ -45,6 +45,7 @@ import { ElectronBrowserControlService } from "./browser/control-service.js";
 import { ElectronNotificationService } from "./notification/electron-notification-service.js";
 import {
   DEEP_LINK_SCHEME,
+  LEGACY_DEEP_LINK_SCHEME,
   dispatchUrl,
   extractDeepLinkFromArgv,
   setMainWindowForDeepLinks,
@@ -82,7 +83,10 @@ process.on('unhandledRejection', (reason) => {
 // can catch crashes that happen during initialization (before app.whenReady).
 startCrashReporter();
 
-const remoteDebuggingPort = process.env.ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT?.trim();
+const remoteDebuggingPort = (
+  process.env.SOLOMON_ELECTRON_REMOTE_DEBUGGING_PORT
+  ?? process.env.ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT
+)?.trim();
 if (remoteDebuggingPort) {
   app.commandLine.appendSwitch("remote-debugging-port", remoteDebuggingPort);
 }
@@ -90,24 +94,26 @@ if (remoteDebuggingPort) {
 // run this as early in the main process as possible
 if (started) app.quit();
 
-// Single-instance lock: route a second launch (e.g. clicking a rowboat:// link)
+// Single-instance lock: route a second launch (e.g. clicking a solomon-ai:// link)
 // back into the existing process via the 'second-instance' event.
 if (app.isPackaged && !app.requestSingleInstanceLock()) {
-  console.error('[Main] Another Rowboat instance is already running; exiting this process.');
+  console.error('[Main] Another Solomon AI instance is already running; exiting this process.');
   app.quit();
   process.exit(0);
 }
 
-// Register as the OS handler for rowboat:// URLs.
+// Register as the OS handler for solomon-ai:// URLs.
 // In dev, point at the right argv so the OS can re-invoke us correctly.
-if (process.defaultApp) {
-  if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME, process.execPath, [
-      path.resolve(process.argv[1]),
-    ]);
+for (const scheme of [DEEP_LINK_SCHEME, LEGACY_DEEP_LINK_SCHEME]) {
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient(scheme, process.execPath, [
+        path.resolve(process.argv[1]),
+      ]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient(scheme);
   }
-} else {
-  app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME);
 }
 
 // First-launch URL on Windows/Linux comes through argv.
@@ -345,7 +351,7 @@ async function startBackgroundServices() {
   // start note tagging service
   initNoteTagging();
 
-  // start inline task service (@rowboat: mentions)
+  // start inline task service (@solomon: mentions)
   initInlineTasks();
 
   // start background agent runner (scheduled agents)
@@ -377,7 +383,7 @@ app.whenReady().then(async () => {
     updateElectronApp({
       updateSource: {
         type: UpdateSourceType.ElectronPublicUpdateService,
-        repo: "Oppulence-Engineering/rowboat",
+        repo: "Oppulence-Engineering/Desktop-Assistant",
       },
       notifyUser: true, // Shows native dialog when update is available
     });

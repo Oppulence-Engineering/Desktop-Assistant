@@ -34,6 +34,7 @@ import { GoogleClientIdModal } from "@/components/google-client-id-modal";
 import { setGoogleCredentials } from "@/lib/google-credentials-store";
 import { toast } from "sonner";
 import { ComposioApiKeyModal } from "@/components/composio-api-key-modal";
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, getProductProviderState, isProductProvider } from "@x/shared/dist/branding.js";
 
 interface ProviderState {
   isConnected: boolean;
@@ -717,12 +718,12 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
     return cleanup;
   }, []);
 
-  // Auto-advance from Rowboat sign-in step when OAuth completes
+  // Auto-advance from Solomon AI sign-in step when OAuth completes
   useEffect(() => {
     if (onboardingPath !== "rowboat" || currentStep !== 0) return;
 
     const cleanup = window.ipc.on("oauth:didConnect", (event) => {
-      if (event.provider === "rowboat" && event.success) {
+      if (isProductProvider(event.provider) && event.success) {
         setCurrentStep(3 as Step);
       }
     });
@@ -789,12 +790,12 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
   const handleConnect = useCallback(
     async (provider: string) => {
       if (provider === "google") {
-        // Signed-in users use the rowboat (managed-credentials) flow: opens
+        // Signed-in users use the Solomon AI managed-credentials flow: opens
         // the webapp in the browser, no BYOK modal. Falls back to BYOK modal
         // for not-signed-in users. (Mirrors useConnectors.handleConnect.)
-        const isSignedIntoRowboat =
-          providerStates.rowboat?.isConnected ?? false;
-        if (isSignedIntoRowboat) {
+        const isSignedIntoSolomon =
+          getProductProviderState(providerStates)?.isConnected ?? false;
+        if (isSignedIntoSolomon) {
           await startConnect("google");
           return;
         }
@@ -1100,9 +1101,9 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
     </div>
   );
 
-  // Step 0: Sign in to Rowboat (with BYOK option)
+  // Step 0: Sign in to Solomon AI (with BYOK option)
   const renderSignInStep = () => {
-    const rowboatState = providerStates["rowboat"] || {
+    const solomonState = getProductProviderState(providerStates) || {
       isConnected: false,
       isLoading: false,
       isConnecting: false,
@@ -1116,18 +1117,18 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
           </span>
         </div>
         <DialogHeader className="space-y-3 mb-8">
-          <DialogTitle className="text-2xl">Sign in to Rowboat</DialogTitle>
+          <DialogTitle className="text-2xl">Sign in to {PRODUCT_NAME}</DialogTitle>
           <DialogDescription className="text-base max-w-md mx-auto">
-            Connect your Rowboat account for instant access to all models
+            Connect your {PRODUCT_NAME} account for instant access to all models
             through our gateway — no API keys needed.
           </DialogDescription>
         </DialogHeader>
 
-        {rowboatState.isConnected ? (
+        {solomonState.isConnected ? (
           <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-2 text-green-600">
               <CheckCircle2 className="size-5" />
-              <span className="text-sm font-medium">Connected to Rowboat</span>
+              <span className="text-sm font-medium">Connected to {PRODUCT_NAME}</span>
             </div>
             <Button
               onClick={() => setCurrentStep(3 as Step)}
@@ -1142,22 +1143,22 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
             <Button
               onClick={() => {
                 setOnboardingPath("rowboat");
-                startConnect("rowboat");
+                startConnect(PRODUCT_PROVIDER_ID);
               }}
               size="lg"
               className="w-full"
-              disabled={rowboatState.isConnecting}
+              disabled={solomonState.isConnecting}
             >
-              {rowboatState.isConnecting ? (
+              {solomonState.isConnecting ? (
                 <>
                   <Loader2 className="size-4 animate-spin mr-2" />
                   Waiting for sign in...
                 </>
               ) : (
-                "Sign in with Rowboat"
+                `Sign in with ${PRODUCT_NAME}`
               )}
             </Button>
-            {rowboatState.isConnecting && (
+            {solomonState.isConnecting && (
               <p className="text-xs text-muted-foreground">
                 Complete sign in in your browser, then return here.
               </p>
@@ -1180,13 +1181,13 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
     );
   };
 
-  // Step 1: BYOK upsell — explain benefits of Rowboat before continuing with BYOK
+  // Step 1: BYOK upsell — explain benefits of Solomon AI before continuing with BYOK
   const renderByokUpsellStep = () => (
     <div className="flex flex-col">
       <DialogHeader className="text-center mb-6">
         <DialogTitle className="text-2xl">Before you continue</DialogTitle>
         <DialogDescription className="text-base max-w-md mx-auto">
-          With a Rowboat account, you get:
+          With a {PRODUCT_NAME} account, you get:
         </DialogDescription>
       </DialogHeader>
 
@@ -1226,7 +1227,7 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
 
       <p className="text-sm text-muted-foreground text-center mb-6">
         By continuing, you'll set up your own API keys instead of using
-        Rowboat's managed gateway.
+        {PRODUCT_NAME}'s managed gateway.
       </p>
 
       <div className="flex items-center justify-between">
@@ -1765,7 +1766,7 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
           size="lg"
           className="mt-8 w-full max-w-xs"
         >
-          Start Using Rowboat
+          Start Using {PRODUCT_NAME}
         </Button>
       </div>
     );

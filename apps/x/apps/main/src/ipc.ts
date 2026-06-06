@@ -45,11 +45,11 @@ import { IAgentScheduleStateRepo } from '@x/core/dist/agent-schedule/state-repo.
 import { triggerRun as triggerAgentScheduleRun } from '@x/core/dist/agent-schedule/runner.js';
 import { search } from '@x/core/dist/search/search.js';
 import { versionHistory, voice } from '@x/core';
-import { classifySchedule, processRowboatInstruction } from '@x/core/dist/knowledge/inline_tasks.js';
+import { classifySchedule, processSolomonInstruction } from '@x/core/dist/knowledge/inline_tasks.js';
 import { getBillingInfo } from '@x/core/dist/billing/billing.js';
 import { summarizeMeeting } from '@x/core/dist/knowledge/summarize_meeting.js';
 import { getAccessToken } from '@x/core/dist/auth/tokens.js';
-import { getRowboatConfig } from '@x/core/dist/config/rowboat.js';
+import { getSolomonConfig } from '@x/core/dist/config/solomon.js';
 import { runLiveNoteAgent } from '@x/core/dist/knowledge/live-note/runner.js';
 import { listImportantThreads, listEverythingElseThreads, saveMessageBodyHeight, triggerSync as triggerGmailSync, sendThreadReply, archiveThread, trashThread, markThreadRead, getAccountEmail, getConnectionStatus as getGmailConnectionStatus } from '@x/core/dist/knowledge/sync_gmail.js';
 import { liveNoteBus } from '@x/core/dist/knowledge/live-note/bus.js';
@@ -453,6 +453,22 @@ export function stopServicesWatcher(): void {
  * Register all IPC handlers
  * Add new handlers here as you add channels to IPCChannels
  */
+async function getSolomonAccountState() {
+  const signedIn = await isSignedIn();
+  if (!signedIn) {
+    return { signedIn: false, accessToken: null, config: null };
+  }
+
+  const config = await getSolomonConfig();
+
+  try {
+    const accessToken = await getAccessToken();
+    return { signedIn: true, accessToken, config };
+  } catch {
+    return { signedIn: true, accessToken: null, config };
+  }
+}
+
 export function setupIpcHandlers() {
   // Forward knowledge commit events to renderer for panel refresh
   versionHistory.onCommit(() => emitKnowledgeCommitEvent());
@@ -628,20 +644,9 @@ export function setupIpcHandlers() {
       const config = await repo.getClientFacingConfig();
       return { config };
     },
+    'account:getSolomon': async () => getSolomonAccountState(),
     'account:getRowboat': async () => {
-      const signedIn = await isSignedIn();
-      if (!signedIn) {
-        return { signedIn: false, accessToken: null, config: null };
-      }
-
-      const config = await getRowboatConfig();
-
-      try {
-        const accessToken = await getAccessToken();
-        return { signedIn: true, accessToken, config };
-      } catch {
-        return { signedIn: true, accessToken: null, config };
-      }
+      return getSolomonAccountState();
     },
     'granola:getConfig': async () => {
       const repo = container.resolve<IGranolaConfigRepo>('granolaConfigRepo');
@@ -920,7 +925,7 @@ export function setupIpcHandlers() {
       return { schedule };
     },
     'inline-task:process': async (_event, args) => {
-      return await processRowboatInstruction(args.instruction, args.noteContent, args.notePath);
+      return await processSolomonInstruction(args.instruction, args.noteContent, args.notePath);
     },
     'voice:getConfig': async () => {
       return voice.getVoiceConfig();

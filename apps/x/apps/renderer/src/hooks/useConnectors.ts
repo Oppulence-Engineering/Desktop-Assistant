@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { setGoogleCredentials, clearGoogleCredentials } from "@/lib/google-credentials-store"
 import { toast } from "sonner"
+import { PRODUCT_NAME, getProductProviderState, isProductProvider } from "@x/shared/dist/branding.js"
 
 export interface ProviderState {
   isConnected: boolean
@@ -312,7 +313,7 @@ export function useConnectors(active: boolean) {
       const result = await window.ipc.invoke('oauth:connect', { provider, clientId: credentials?.clientId, clientSecret: credentials?.clientSecret })
 
       if (!result.success) {
-        toast.error(result.error || (provider === 'rowboat' ? 'Failed to log in to Rowboat' : `Failed to connect to ${provider}`))
+        toast.error(result.error || (isProductProvider(provider) ? `Failed to log in to ${PRODUCT_NAME}` : `Failed to connect to ${provider}`))
         setProviderStates(prev => ({
           ...prev,
           [provider]: { ...prev[provider], isConnecting: false }
@@ -320,7 +321,7 @@ export function useConnectors(active: boolean) {
       }
     } catch (error) {
       console.error('Failed to connect:', error)
-      toast.error(provider === 'rowboat' ? 'Failed to log in to Rowboat' : `Failed to connect to ${provider}`)
+      toast.error(isProductProvider(provider) ? `Failed to log in to ${PRODUCT_NAME}` : `Failed to connect to ${provider}`)
       setProviderStates(prev => ({
         ...prev,
         [provider]: { ...prev[provider], isConnecting: false }
@@ -330,12 +331,12 @@ export function useConnectors(active: boolean) {
 
   const handleConnect = useCallback(async (provider: string) => {
     if (provider === 'google') {
-      // Signed-in users use the rowboat (managed-credentials) flow: opens
+      // Signed-in users use the Solomon AI managed-credentials flow: opens
       // the webapp in the browser, no BYOK modal. Main process detects
       // signed-in via isSignedIn() when oauth:connect arrives without creds.
       // Falls back to the BYOK modal for not-signed-in users.
-      const isSignedIntoRowboat = providerStates.rowboat?.isConnected ?? false
-      if (isSignedIntoRowboat) {
+      const isSignedIntoSolomon = getProductProviderState(providerStates)?.isConnected ?? false
+      if (isSignedIntoSolomon) {
         await startConnect('google')
         return
       }
@@ -355,12 +356,12 @@ export function useConnectors(active: boolean) {
   }, [startConnect])
 
   // Reconnect flow used by the "Reconnect" button. Mirrors handleConnect's
-  // rowboat-vs-BYOK branching for Google so signed-in users don't get the
+  // Solomon AI-vs-BYOK branching for Google so signed-in users don't get the
   // client-ID modal — they just re-run the managed-credentials browser flow.
   const handleReconnect = useCallback(async (provider: string) => {
     if (provider === 'google') {
-      const isSignedIntoRowboat = providerStates.rowboat?.isConnected ?? false
-      if (isSignedIntoRowboat) {
+      const isSignedIntoSolomon = getProductProviderState(providerStates)?.isConnected ?? false
+      if (isSignedIntoSolomon) {
         await startConnect('google')
         return
       }
@@ -387,7 +388,7 @@ export function useConnectors(active: boolean) {
           clearGoogleCredentials()
         }
         const displayName = provider === 'fireflies-ai' ? 'Fireflies' : provider.charAt(0).toUpperCase() + provider.slice(1)
-        toast.success(provider === 'rowboat' ? 'Logged out of Rowboat' : `Disconnected from ${displayName}`)
+        toast.success(isProductProvider(provider) ? `Logged out of ${PRODUCT_NAME}` : `Disconnected from ${displayName}`)
         setProviderStates(prev => ({
           ...prev,
           [provider]: {
@@ -397,7 +398,7 @@ export function useConnectors(active: boolean) {
           }
         }))
       } else {
-        toast.error(provider === 'rowboat' ? 'Failed to log out of Rowboat' : `Failed to disconnect from ${provider}`)
+        toast.error(isProductProvider(provider) ? `Failed to log out of ${PRODUCT_NAME}` : `Failed to disconnect from ${provider}`)
         setProviderStates(prev => ({
           ...prev,
           [provider]: { ...prev[provider], isLoading: false }
@@ -405,7 +406,7 @@ export function useConnectors(active: boolean) {
       }
     } catch (error) {
       console.error('Failed to disconnect:', error)
-      toast.error(provider === 'rowboat' ? 'Failed to log out of Rowboat' : `Failed to disconnect from ${provider}`)
+      toast.error(isProductProvider(provider) ? `Failed to log out of ${PRODUCT_NAME}` : `Failed to disconnect from ${provider}`)
       setProviderStates(prev => ({
         ...prev,
         [provider]: { ...prev[provider], isLoading: false }
@@ -486,8 +487,8 @@ export function useConnectors(active: boolean) {
 
       if (success) {
         const displayName = provider === 'fireflies-ai' ? 'Fireflies' : provider.charAt(0).toUpperCase() + provider.slice(1)
-        if (provider === 'rowboat') {
-          toast.success('Logged in to Rowboat')
+        if (isProductProvider(provider)) {
+          toast.success(`Logged in to ${PRODUCT_NAME}`)
         } else if (provider === 'google' || provider === 'fireflies-ai') {
           toast.success(`Connected to ${displayName}`, {
             description: 'Syncing your data in the background. This may take a few minutes before changes appear.',

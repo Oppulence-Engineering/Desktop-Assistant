@@ -33,8 +33,8 @@ func TestOpenAPIServesGeneratedSpec(t *testing.T) {
 	if spec.OpenAPI == "" {
 		t.Fatal("openapi version is empty")
 	}
-	if spec.Info.Title != "rowboat-api" {
-		t.Fatalf("title = %q, want rowboat-api", spec.Info.Title)
+	if spec.Info.Title != "Solomon AI API" {
+		t.Fatalf("title = %q, want Solomon AI API", spec.Info.Title)
 	}
 }
 

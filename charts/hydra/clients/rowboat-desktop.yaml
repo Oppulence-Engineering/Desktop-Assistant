@@ -1,12 +1,12 @@
-# Provisions the OAuth 2.0 clients Rowboat needs, via a one-shot Job that calls
+# Provisions the OAuth 2.0 clients Solomon AI needs, via a one-shot Job that calls
 # the Hydra Admin API (cluster-internal). Idempotent: re-running updates the
 # clients. Apply after Hydra is up:
 #
 #   kubectl apply -n ory -f charts/hydra/clients/rowboat-desktop.yaml
 #
 # Two clients are created:
-#   1. rowboat-desktop          — PUBLIC client (PKCE, no secret) for sign-in.
-#   2. rowboat-connector-broker — CONFIDENTIAL client used by rowboat-api to
+#   1. solomon-desktop          — PUBLIC client (PKCE, no secret) for sign-in.
+#   2. solomon-connector-broker — CONFIDENTIAL client used by rowboat-api to
 #      broker per-product connector tokens (auth-code + refresh).
 apiVersion: batch/v1
 kind: Job
@@ -39,22 +39,24 @@ spec:
             - -c
             - |
               set -e
-              echo "Creating rowboat-desktop (public, PKCE)..."
+              echo "Creating solomon-desktop (public, PKCE)..."
               hydra create oauth2-client \
                 --endpoint "$HYDRA_ADMIN_URL" \
-                --name "Rowboat Desktop" \
+                --id solomon-desktop \
+                --name "Solomon AI Desktop" \
                 --grant-type authorization_code,refresh_token \
                 --response-type code \
                 --token-endpoint-auth-method none \
                 --scope openid,offline_access,email,profile \
                 --redirect-uri "http://127.0.0.1/callback" \
-                --redirect-uri "rowboat://callback" \
-                --skip-consent=false || echo "rowboat-desktop may already exist"
+                --redirect-uri "solomon-ai://callback" \
+                --skip-consent=false || echo "solomon-desktop may already exist"
 
-              echo "Creating rowboat-connector-broker (confidential)..."
+              echo "Creating solomon-connector-broker (confidential)..."
               hydra create oauth2-client \
                 --endpoint "$HYDRA_ADMIN_URL" \
-                --name "Rowboat Connector Broker" \
+                --id solomon-connector-broker \
+                --name "Solomon AI Connector Broker" \
                 --grant-type authorization_code,refresh_token \
                 --response-type code \
                 --token-endpoint-auth-method client_secret_basic \

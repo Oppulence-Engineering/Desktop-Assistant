@@ -1,31 +1,31 @@
 import { z } from 'zod';
 import { useCallback, useEffect, useState } from 'react';
-import { RowboatApiConfig } from '@x/shared/dist/rowboat-account.js';
+import { SolomonApiConfig } from '@x/shared/dist/solomon-account.js';
+import { PRODUCT_PROVIDER_ID } from '@x/shared/dist/branding.js';
 
-
-interface RowboatAccountState {
+interface SolomonAccountState {
   signedIn: boolean;
   accessToken: string | null;
-  config: z.infer<typeof RowboatApiConfig> | null;
+  config: z.infer<typeof SolomonApiConfig> | null;
 }
 
-export type RowboatAccountSnapshot = RowboatAccountState;
+export type SolomonAccountSnapshot = SolomonAccountState;
 
-const DEFAULT_STATE: RowboatAccountState = {
+const DEFAULT_STATE: SolomonAccountState = {
   signedIn: false,
   accessToken: null,
   config: null,
 };
 
-export function useRowboatAccount() {
-  const [state, setState] = useState<RowboatAccountState>(DEFAULT_STATE);
+export function useSolomonAccount() {
+  const [state, setState] = useState<SolomonAccountState>(DEFAULT_STATE);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const refresh = useCallback(async (): Promise<RowboatAccountSnapshot | null> => {
+  const refresh = useCallback(async (): Promise<SolomonAccountSnapshot | null> => {
     try {
       setIsLoading(true);
-      const result = await window.ipc.invoke('account:getRowboat', null);
-      const next: RowboatAccountSnapshot = {
+      const result = await window.ipc.invoke('account:getSolomon', null);
+      const next: SolomonAccountSnapshot = {
         signedIn: result.signedIn,
         accessToken: result.accessToken,
         config: result.config,
@@ -33,7 +33,7 @@ export function useRowboatAccount() {
       setState(next);
       return next;
     } catch (error) {
-      console.error('Failed to load Rowboat account state:', error);
+      console.error('Failed to load Solomon AI account state:', error);
       setState(DEFAULT_STATE);
       return null;
     } finally {
@@ -47,7 +47,7 @@ export function useRowboatAccount() {
 
   useEffect(() => {
     const cleanup = window.ipc.on('oauth:didConnect', (event) => {
-      if (event.provider !== 'rowboat') {
+      if (event.provider !== PRODUCT_PROVIDER_ID) {
         return;
       }
       refresh();

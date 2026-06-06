@@ -4,6 +4,7 @@ import { X, ExternalLink, Copy, Check, MessageSquare, ChevronDown } from 'lucide
 import { blocks } from '@x/shared'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTheme } from '@/contexts/theme-context'
+import { PRODUCT_NAME } from '@x/shared/dist/branding.js'
 
 // --- Helpers ---
 
@@ -165,7 +166,7 @@ function EmailExpandedBody({
             onClick={(e) => { e.stopPropagation(); draftWithAssistant() }}
           >
             <MessageSquare size={13} />
-            Draft with Rowboat
+            Draft with {PRODUCT_NAME}
           </button>
         </div>
       )}
@@ -194,7 +195,7 @@ function EmailExpandedBody({
               onClick={(e) => { e.stopPropagation(); draftWithAssistant() }}
             >
               <MessageSquare size={13} />
-              {hasDraft ? 'Refine with Rowboat' : 'Draft with Rowboat'}
+              {hasDraft ? `Refine with ${PRODUCT_NAME}` : `Draft with ${PRODUCT_NAME}`}
             </button>
             <button
               className="email-gmail-btn"

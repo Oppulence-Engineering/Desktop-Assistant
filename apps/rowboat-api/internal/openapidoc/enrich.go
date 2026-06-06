@@ -30,13 +30,13 @@ func EnrichFile(path string) error {
 	return nil
 }
 
-// Enrich turns the entoas document into the runtime rowboat-api document.
+// Enrich turns the entoas document into the mounted Solomon AI API document.
 func Enrich(spec obj) {
 	spec["openapi"] = "3.0.3"
 	spec["info"] = obj{
-		"title":   "rowboat-api",
+		"title":   "Solomon AI API",
 		"version": "0.1.0",
-		"description": "Rowboat's desktop API. The API brokers WorkOS sign-in, billing and credit state, " +
+		"description": "Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, " +
 			"OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, " +
 			"Composio proxying, internal webhooks, and admin GraphQL. The ent-generated entity models " +
 			"remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.",
@@ -46,7 +46,7 @@ func Enrich(spec obj) {
 		"url":         "https://github.com/Oppulence-Engineering/rowboat/blob/main/docs/LOCAL_KIND_ROWBOAT_API.md",
 	}
 	spec["servers"] = []any{
-		obj{"url": "/", "description": "Current rowboat-api origin"},
+		obj{"url": "/", "description": "Current Solomon AI API origin"},
 		obj{"url": "http://localhost:18080", "description": "Local kind API"},
 	}
 	spec["tags"] = []any{
@@ -100,7 +100,7 @@ func addSecuritySchemes(schemes obj) {
 }
 
 func addRuntimeSchemas(schemas obj) {
-	schemas["ErrorEnvelope"] = objectSchema("Canonical JSON error returned by rowboat-api handlers.", obj{
+	schemas["ErrorEnvelope"] = objectSchema("Canonical JSON error returned by Solomon AI API handlers.", obj{
 		"error": stringSchema("Human-readable error message.", "missing bearer token"),
 		"code":  stringSchema("Stable machine-readable error code.", "unauthorized"),
 	}, "error", "code")
@@ -121,10 +121,10 @@ func addRuntimeSchemas(schemas obj) {
 		"oidcIssuerUrl":   stringSchema("OIDC issuer the desktop signs into.", "http://localhost:18090"),
 		"supabaseUrl":     stringSchema("Compatibility alias for oidcIssuerUrl used by older desktop builds.", "http://localhost:18090"),
 		"websocketApiUrl": stringSchema("Optional WebSocket API origin. Empty when not configured.", ""),
-		"oauthClientId":   stringSchema("Pre-registered OAuth/OIDC client id. Empty means the desktop may fall back to dynamic registration.", "rowboat-desktop-kind"),
+		"oauthClientId":   stringSchema("Pre-registered OAuth/OIDC client id. Empty means the desktop may fall back to dynamic registration.", "solomon-desktop-kind"),
 	}, "appUrl", "oidcIssuerUrl", "supabaseUrl", "websocketApiUrl", "oauthClientId")
 	schemas["WorkOSLoginURLResponse"] = objectSchema("AuthKit authorize URL for the desktop to open in a browser.", obj{
-		"url": stringSchema("Fully-qualified WorkOS AuthKit authorize URL with PKCE and state query parameters.", "http://localhost:18090/user_management/authorize?client_id=rowboat-desktop-kind&response_type=code&state=abc"),
+		"url": stringSchema("Fully-qualified WorkOS AuthKit authorize URL with PKCE and state query parameters.", "http://localhost:18090/user_management/authorize?client_id=solomon-desktop-kind&response_type=code&state=abc"),
 	}, "url")
 	schemas["WorkOSExchangeRequest"] = objectSchema("Authorization-code exchange request sent by the desktop after AuthKit redirects back.", obj{
 		"code":         stringSchema("Authorization code returned by WorkOS AuthKit.", "auth_code_123"),
@@ -134,7 +134,7 @@ func addRuntimeSchemas(schemas obj) {
 		"refreshToken": stringSchema("Refresh token previously returned by the WorkOS broker.", "refresh_token_123"),
 	}, "refreshToken")
 	schemas["WorkOSTokenBundle"] = objectSchema("Desktop-facing token bundle normalized from WorkOS authenticate responses.", obj{
-		"access_token":  stringSchema("JWT access token used as Authorization: Bearer for authenticated rowboat-api calls.", "eyJhbGciOiJSUzI1NiIs..."),
+		"access_token":  stringSchema("JWT access token used as Authorization: Bearer for authenticated Solomon AI API calls.", "eyJhbGciOiJSUzI1NiIs..."),
 		"refresh_token": stringSchema("Refresh token for obtaining a new WorkOS access token.", "refresh_token_123", nullable()),
 		"expires_at":    int64Schema("Unix timestamp in seconds when the access token expires.", 1790784000),
 		"token_type":    stringEnum("Token type.", "Bearer", "Bearer"),
@@ -152,8 +152,8 @@ func addRuntimeSchemas(schemas obj) {
 }
 
 func addBillingSchemas(schemas obj) {
-	schemas["CurrentUser"] = objectSchema("Authenticated rowboat user resolved from the bearer token.", obj{
-		"id":    uuidSchema("Local rowboat user id.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+	schemas["CurrentUser"] = objectSchema("Authenticated Solomon AI user resolved from the bearer token.", obj{
+		"id":    uuidSchema("Local Solomon AI user id.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
 		"email": stringSchema("Best-known user email from WorkOS enrichment.", "kind@solomon-ai.co"),
 	}, "id", "email")
 	schemas["CreditUsageBucket"] = objectSchema("Credit bucket totals. One credit is currently modeled as $0.0001 of usage.", obj{
@@ -442,8 +442,8 @@ func addLLMSchemas(schemas obj) {
 }
 
 func addVendorProxySchemas(schemas obj) {
-	schemas["VoiceTextToSpeechRequest"] = objectSchema("ElevenLabs text-to-speech request body. rowboat-api reads text for credit charging and forwards the full JSON body unchanged.", obj{
-		"text":     stringSchema("Text to synthesize. Charged per Unicode character.", "Hello from Rowboat."),
+	schemas["VoiceTextToSpeechRequest"] = objectSchema("ElevenLabs text-to-speech request body. Solomon AI API reads text for credit charging and forwards the full JSON body unchanged.", obj{
+		"text":     stringSchema("Text to synthesize. Charged per Unicode character.", "Hello from Solomon AI."),
 		"model_id": stringSchema("Optional ElevenLabs model id.", "eleven_multilingual_v2", nullable()),
 		"voice_settings": objectSchema("Optional ElevenLabs voice settings forwarded unchanged.", obj{
 			"stability":         numberSchema("Voice stability.", 0.5),
@@ -452,7 +452,7 @@ func addVendorProxySchemas(schemas obj) {
 			"use_speaker_boost": boolSchema("Speaker boost toggle.", true),
 		}),
 	}, "text")
-	schemas["ExaSearchRequest"] = objectSchema("Exa search request body. rowboat-api applies a flat credit charge and forwards the JSON body unchanged to Exa /search.", obj{
+	schemas["ExaSearchRequest"] = objectSchema("Exa search request body. Solomon AI API applies a flat credit charge and forwards the JSON body unchanged to Exa /search.", obj{
 		"query":          stringSchema("Natural-language or keyword search query.", "recent fintech accounts receivable trends"),
 		"numResults":     intSchema("Maximum result count requested from Exa.", 5),
 		"type":           stringSchema("Exa search type, for example neural or keyword.", "neural"),
@@ -567,7 +567,7 @@ func addRuntimePaths(paths obj) {
 		"200": obj{"description": "OpenAPI 3.0 JSON document.", "content": obj{"application/json": obj{"schema": freeFormSchema("OpenAPI document.")}}},
 	})}
 	paths["/v1/config"] = obj{"get": operation("System", "Fetch desktop bootstrap config", "Public endpoint fetched by the desktop before sign-in. Values identify the app origin, OIDC issuer, optional WebSocket API, and static OAuth client id.", "getConfig", nil, nil, nil, obj{
-		"200": jsonResponse("Desktop bootstrap config.", ref("ConfigResponse"), obj{"appUrl": "http://localhost:18080", "oidcIssuerUrl": "http://localhost:18090", "supabaseUrl": "http://localhost:18090", "websocketApiUrl": "", "oauthClientId": "rowboat-desktop-kind"}),
+		"200": jsonResponse("Desktop bootstrap config.", ref("ConfigResponse"), obj{"appUrl": "http://localhost:18080", "oidcIssuerUrl": "http://localhost:18090", "supabaseUrl": "http://localhost:18090", "websocketApiUrl": "", "oauthClientId": "solomon-desktop-kind"}),
 	})}
 
 	addAuthPaths(paths)
@@ -586,7 +586,7 @@ func addAuthPaths(paths obj) {
 		queryParam("state", "Opaque state generated by the desktop and echoed through the login flow.", true, stringSchema("OAuth state.", "kind-smoke")),
 		queryParam("code_challenge", "Optional S256 PKCE code challenge.", false, stringSchema("PKCE challenge.", "kind-smoke-challenge")),
 	}, nil, obj{
-		"200": jsonResponse("Authorize URL.", ref("WorkOSLoginURLResponse"), obj{"url": "http://localhost:18090/user_management/authorize?client_id=rowboat-desktop-kind&response_type=code&state=kind-smoke"}),
+		"200": jsonResponse("Authorize URL.", ref("WorkOSLoginURLResponse"), obj{"url": "http://localhost:18090/user_management/authorize?client_id=solomon-desktop-kind&response_type=code&state=kind-smoke"}),
 		"400": responseRef("400"),
 		"502": responseRef("502"),
 	})}
@@ -621,7 +621,7 @@ func addBackgroundTaskPaths(paths obj) {
 			"401": responseRef("401"),
 			"500": responseRef("500"),
 		}),
-		"post": operation("Background Tasks", "Create background task mirror", "Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, rowboat-api derives one from name. Slugs are unique per authenticated user.", "createBackgroundTask", bearer(), nil, jsonRequest("Task mirror payload.", ref("BackgroundTaskCreateRequest"), obj{
+		"post": operation("Background Tasks", "Create background task mirror", "Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, Solomon AI API derives one from name. Slugs are unique per authenticated user.", "createBackgroundTask", bearer(), nil, jsonRequest("Task mirror payload.", ref("BackgroundTaskCreateRequest"), obj{
 			"slug":         "daily-summary",
 			"name":         "Daily Account Summary",
 			"instructions": "Summarize important account changes and draft follow-up notes.",
@@ -736,7 +736,7 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks/{slug}/runs/{runId}/status"] = obj{
-		"get": operation("Background Tasks", "Poll task run status", "Returns a compact polling payload for one run. Clients should poll this Rowboat API endpoint rather than Temporal directly.", "getBackgroundTaskRunStatus", bearer(), append(slugParam(), runIDParam()...), nil, obj{
+		"get": operation("Background Tasks", "Poll task run status", "Returns a compact polling payload for one run. Clients should poll this Solomon AI API endpoint rather than Temporal directly.", "getBackgroundTaskRunStatus", bearer(), append(slugParam(), runIDParam()...), nil, obj{
 			"200": jsonResponse("Compact run status.", ref("BackgroundTaskRunStatusResponse"), backgroundTaskRunStatusExample()),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
@@ -744,7 +744,7 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"] = obj{
-		"post": operation("Background Tasks", "Cancel API-worker run", "Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Rowboat. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.", "cancelBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), nil, obj{
+		"post": operation("Background Tasks", "Cancel API-worker run", "Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Solomon AI. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.", "cancelBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), nil, obj{
 			"202": jsonResponse("Cancellation accepted.", ref("BackgroundTaskRun"), backgroundTaskQueuedRunExample()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
@@ -794,7 +794,7 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks/{slug}/trigger"] = obj{
-		"post": operation("Background Tasks", "Queue or start task trigger", "For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Rowboat run status endpoints.", "triggerBackgroundTask", bearer(), slugParam(), jsonRequestOptional("Optional trigger context.", ref("BackgroundTaskTriggerRequest"), obj{
+		"post": operation("Background Tasks", "Queue or start task trigger", "For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Solomon AI run status endpoints.", "triggerBackgroundTask", bearer(), slugParam(), jsonRequestOptional("Optional trigger context.", ref("BackgroundTaskTriggerRequest"), obj{
 			"trigger": "manual",
 			"context": "Run this now and focus on high-risk accounts.",
 		}), obj{
@@ -823,7 +823,7 @@ func addLLMPaths(paths obj) {
 func addVendorProxyPaths(paths obj) {
 	paths["/v1/voice/text-to-speech/{voiceId}"] = obj{"post": operation("Voice", "Generate speech audio", "Credit-gated ElevenLabs proxy. The text field is used for per-character credit charging and the full body is forwarded to ElevenLabs. Successful responses stream audio bytes back to the desktop.", "textToSpeech", bearer(), []any{
 		pathParam("voiceId", "ElevenLabs voice id.", stringSchema("Voice id.", "21m00Tcm4TlvDq8ikWAM")),
-	}, jsonRequest("ElevenLabs text-to-speech request body.", ref("VoiceTextToSpeechRequest"), obj{"text": "Hello from Rowboat.", "model_id": "eleven_multilingual_v2"}), obj{
+	}, jsonRequest("ElevenLabs text-to-speech request body.", ref("VoiceTextToSpeechRequest"), obj{"text": "Hello from Solomon AI.", "model_id": "eleven_multilingual_v2"}), obj{
 		"200": binaryResponse("Audio stream returned by ElevenLabs.", "audio/mpeg"),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
@@ -841,7 +841,7 @@ func addVendorProxyPaths(paths obj) {
 	})}
 	composioOps := obj{}
 	for _, method := range []string{"get", "post", "put", "patch", "delete"} {
-		composioOps[method] = operation("Composio", "Proxy Composio v3 "+methodName(method), "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Rowboat-User is attached, and request/response bodies are passed through unchanged.", "proxyComposio"+methodName(method), bearer(), []any{
+		composioOps[method] = operation("Composio", "Proxy Composio v3 "+methodName(method), "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.", "proxyComposio"+methodName(method), bearer(), []any{
 			pathParam("path", "Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard.", stringSchema("Composio path.", "toolkits")),
 		}, nil, obj{
 			"200": jsonResponse("Composio response body, proxied unchanged.", ref("ComposioProxyResponse"), obj{"items": []any{}}),
@@ -864,7 +864,7 @@ func addGoogleOAuthPaths(paths obj) {
 		queryParam("code", "Authorization code returned by Google.", false, stringSchema("Authorization code.", "4/0AfJoh...")),
 		queryParam("error", "OAuth error returned by Google when the user cancels or consent fails.", false, stringSchema("OAuth error.", "access_denied")),
 	}, nil, obj{
-		"200": htmlResponse("HTML page that redirects to rowboat://oauth/google/done."),
+		"200": htmlResponse("HTML page that redirects to solomon-ai://oauth/google/done."),
 		"400": htmlResponse("HTML error page for missing or expired state/code."),
 	})}
 	paths["/v1/google-oauth/claim"] = obj{"post": operation("Google OAuth", "Claim Google OAuth token bundle", "Consumes a one-time Google OAuth session ticket, verifies it belongs to the authenticated user when bound, persists the refresh token when present, and returns the token bundle to the desktop.", "claimGoogleOAuth", bearer(), nil, jsonRequest("Google OAuth session ticket.", ref("GoogleClaimRequest"), obj{"session": "state_abc123"}), obj{
@@ -907,7 +907,7 @@ func addConnectorPaths(paths obj) {
 		queryParam("code", "Authorization code from Ory.", false, stringSchema("Authorization code.", "code_abc123")),
 		queryParam("error", "OAuth error from Ory.", false, stringSchema("OAuth error.", "access_denied")),
 	), nil, obj{
-		"302": redirectResponse("Redirect to rowboat://connection-complete with connector and status."),
+		"302": redirectResponse("Redirect to solomon-ai://connection-complete with connector and status."),
 		"400": responseRef("400"),
 		"500": responseRef("500"),
 	})}
@@ -993,10 +993,10 @@ func enrichEntitySchemas(schemas obj) {
 		"request_id":              {"description": "Idempotency and trace anchor for a metered request.", "example": "9e2fb15a-936d-4f39-9372-73cfe0476ca8"},
 		"ts":                      {"description": "Usage or ledger event timestamp.", "example": "2026-06-04T20:38:00Z"},
 		"model":                   {"description": "Desktop-facing LLM model id.", "example": "openai/gpt-4.1-mini"},
-		"use_case":                {"description": "Optional x-rowboat-use-case header captured for cost allocation.", "example": "collections"},
-		"sub_use_case":            {"description": "Optional x-rowboat-sub-use-case header captured for cost allocation.", "example": "invoice-summary"},
-		"agent_name":              {"description": "Optional x-rowboat-agent-name header captured for cost allocation.", "example": "desktop-assistant"},
-		"input_tokens":            {"description": "Input tokens reported by the upstream or estimated by rowboat-api.", "example": 812},
+		"use_case":                {"description": "Optional x-solomon-use-case header captured for cost allocation.", "example": "collections"},
+		"sub_use_case":            {"description": "Optional x-solomon-sub-use-case header captured for cost allocation.", "example": "invoice-summary"},
+		"agent_name":              {"description": "Optional x-solomon-agent-name header captured for cost allocation.", "example": "desktop-assistant"},
+		"input_tokens":            {"description": "Input tokens reported by the upstream or estimated by Solomon AI API.", "example": 812},
 		"output_tokens":           {"description": "Output tokens reported by the upstream.", "example": 210},
 		"cost_units":              {"description": "Settled credit cost for the request.", "example": 8},
 		"provider":                {"description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.", "example": "openai"},
@@ -1133,9 +1133,9 @@ func llmResponses(stream bool) obj {
 
 func llmHeaderParams() []any {
 	return []any{
-		headerParam("x-rowboat-use-case", "Optional feature/use-case label recorded in LLMUsage for cost allocation.", false),
-		headerParam("x-rowboat-sub-use-case", "Optional sub-use-case label recorded in LLMUsage.", false),
-		headerParam("x-rowboat-agent-name", "Optional agent name recorded in LLMUsage.", false),
+		headerParam("x-solomon-use-case", "Optional feature/use-case label recorded in LLMUsage for cost allocation.", false),
+		headerParam("x-solomon-sub-use-case", "Optional sub-use-case label recorded in LLMUsage.", false),
+		headerParam("x-solomon-agent-name", "Optional agent name recorded in LLMUsage.", false),
 	}
 }
 

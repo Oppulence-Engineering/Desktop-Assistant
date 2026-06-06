@@ -81,7 +81,7 @@ func (h *Handler) rewrite(pr *httputil.ProxyRequest) {
 	// auth_configs depends on the Composio tenancy model (plan Open Question §6);
 	// this header is the hook for it once decided.
 	if u, ok := auth.UserFromCtx(pr.In.Context()); ok {
-		pr.Out.Header.Set("X-Rowboat-User", u.ID.String())
+		pr.Out.Header.Set("X-Solomon-User", u.ID.String())
 	}
 }
 

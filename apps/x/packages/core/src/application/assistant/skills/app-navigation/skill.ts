@@ -1,7 +1,7 @@
 export const skill = String.raw`
 # App Navigation Skill
 
-You have access to the **app-navigation** tool which lets you control the Rowboat UI directly — opening notes, switching views, filtering the knowledge base, and creating saved views.
+You have access to the **app-navigation** tool which lets you control the Solomon AI UI directly — opening notes, switching views, filtering the knowledge base, and creating saved views.
 
 ## Actions
 

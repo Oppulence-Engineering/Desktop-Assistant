@@ -5,68 +5,80 @@
 const path = require('path');
 const pkg = require('./package.json');
 
-module.exports = {
-    packagerConfig: {
-        executableName: 'rowboat',
-        icon: './icons/icon',  // .icns extension added automatically
-        appBundleId: 'com.rowboat.app',
-        appCategoryType: 'public.app-category.productivity',
-        protocols: [
-            { name: 'Rowboat', schemes: ['rowboat'] },
-        ],
-        extendInfo: {
-            NSAudioCaptureUsageDescription: 'Rowboat needs access to system audio to transcribe meetings from other apps (Zoom, Meet, etc.)',
-        },
-        osxSign: {
-            batchCodesignCalls: true,
-            optionsForFile: () => ({
-                entitlements: path.join(__dirname, 'entitlements.plist'),
-                'entitlements-inherit': path.join(__dirname, 'entitlements.plist'),
-            }),
-        },
-        osxNotarize: {
-            appleId: process.env.APPLE_ID,
-            appleIdPassword: process.env.APPLE_PASSWORD,
-            teamId: process.env.APPLE_TEAM_ID
-        },
-        // Since we bundle everything with esbuild, we don't need node_modules at all.
-        // These settings prevent Forge's dependency walker (flora-colossus) from trying
-        // to analyze/copy node_modules, which fails with pnpm's symlinked workspaces.
-        prune: false,
-        ignore: [
-            /src\//,
-            /node_modules\//,
-            /.gitignore/,
-            /bundle\.mjs/,
-            /tsconfig.json/,
-        ],
+const PRODUCT_NAME = 'Solomon AI';
+const PRODUCT_SLUG = 'solomon-ai';
+const PRODUCT_ARTIFACT_NAME = 'Solomon-AI';
+const LEGACY_DEEP_LINK_SCHEME = 'rowboat';
+const appleSigningConfigured = Boolean(process.env.APPLE_ID && process.env.APPLE_PASSWORD && process.env.APPLE_TEAM_ID);
+
+const packagerConfig = {
+    name: PRODUCT_NAME,
+    executableName: PRODUCT_SLUG,
+    icon: './icons/icon',  // .icns extension added automatically
+    appBundleId: 'co.solomon-ai.desktop',
+    appCategoryType: 'public.app-category.productivity',
+    protocols: [
+        { name: PRODUCT_NAME, schemes: [PRODUCT_SLUG, LEGACY_DEEP_LINK_SCHEME] },
+    ],
+    extendInfo: {
+        NSAudioCaptureUsageDescription: `${PRODUCT_NAME} needs access to system audio to transcribe meetings from other apps (Zoom, Meet, etc.)`,
     },
+    // Since we bundle everything with esbuild, we don't need node_modules at all.
+    // These settings prevent Forge's dependency walker (flora-colossus) from trying
+    // to analyze/copy node_modules, which fails with pnpm's symlinked workspaces.
+    prune: false,
+    ignore: [
+        /src\//,
+        /node_modules\//,
+        /.gitignore/,
+        /bundle\.mjs/,
+        /tsconfig.json/,
+    ],
+};
+
+if (appleSigningConfigured) {
+    packagerConfig.osxSign = {
+        batchCodesignCalls: true,
+        optionsForFile: () => ({
+            entitlements: path.join(__dirname, 'entitlements.plist'),
+            'entitlements-inherit': path.join(__dirname, 'entitlements.plist'),
+        }),
+    };
+    packagerConfig.osxNotarize = {
+        appleId: process.env.APPLE_ID,
+        appleIdPassword: process.env.APPLE_PASSWORD,
+        teamId: process.env.APPLE_TEAM_ID
+    };
+}
+
+module.exports = {
+    packagerConfig,
     makers: [
         {
             name: '@electron-forge/maker-dmg',
             config: (arch) => ({
                 format: 'ULFO',
-                name: `Rowboat-darwin-${arch}-${pkg.version}`,  // Architecture-specific name to avoid conflicts
+                name: `${PRODUCT_ARTIFACT_NAME}-darwin-${arch}-${pkg.version}`,  // Architecture-specific name to avoid conflicts
             })
         },
         {
             name: '@electron-forge/maker-squirrel',
             config: (arch) => ({
-                authors: 'rowboatlabs',
+                authors: 'Solomon AI',
                 description: 'AI coworker with memory',
-                name: `Rowboat-win32-${arch}`,
-                setupExe: `Rowboat-win32-${arch}-${pkg.version}-setup.exe`,
+                name: `${PRODUCT_ARTIFACT_NAME}-win32-${arch}`,
+                setupExe: `${PRODUCT_ARTIFACT_NAME}-win32-${arch}-${pkg.version}-setup.exe`,
             })
         },
         {
             name: '@electron-forge/maker-deb',
             config: (arch) => ({
                 options: {
-                    name: `Rowboat-linux`,
-                    bin: "rowboat",
+                    name: `${PRODUCT_ARTIFACT_NAME}-linux`,
+                    bin: PRODUCT_SLUG,
                     description: 'AI coworker with memory',
-                    maintainer: 'rowboatlabs',
-                    homepage: 'https://rowboatlabs.com'
+                    maintainer: 'Solomon AI',
+                    homepage: 'https://solomon-ai.co'
                 }
             })
         },
@@ -74,10 +86,10 @@ module.exports = {
             name: '@electron-forge/maker-rpm',
             config: {
                 options: {
-                    name: `Rowboat-linux`,
-                    bin: "rowboat",
+                    name: `${PRODUCT_ARTIFACT_NAME}-linux`,
+                    bin: PRODUCT_SLUG,
                     description: 'AI coworker with memory',
-                    homepage: 'https://rowboatlabs.com'
+                    homepage: 'https://solomon-ai.co'
                 }
             }
         },
@@ -92,7 +104,7 @@ module.exports = {
             config: {
                 repository: {
                     owner: 'Oppulence-Engineering',
-                    name: 'rowboat'
+                    name: 'Desktop-Assistant'
                 },
                 // GitHub releases are published as stable (not pre-release).
                 // This matches what release-please publishes; flipping back to `true`

@@ -79,8 +79,8 @@ You have full read access to the existing knowledge directory. Use this extensiv
 2. **knowledge_folder**: Path to Obsidian vault (read/write access)
 3. **user**: Information about the owner of this memory
    - name: e.g., "Arj"
-   - email: e.g., "arj@rowboat.com"
-   - domain: e.g., "rowboat.com"
+   - email: e.g., "arj@solomon-ai.co"
+   - domain: e.g., "solomon-ai.co"
 4. **knowledge_index**: A pre-built index of all existing notes (provided in the message)
 
 # Knowledge Base Index

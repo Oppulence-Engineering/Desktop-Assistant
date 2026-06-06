@@ -64,7 +64,7 @@ export function RowboatMentionPopover({ open, anchor, initialText = '', onAdd, o
     >
       <div className="relative border border-input rounded-none bg-popover shadow-sm">
         <div className="flex items-start gap-1.5 px-3 pt-2 pb-8">
-          <span className="text-sm text-muted-foreground select-none shrink-0 leading-[1.5]">@rowboat</span>
+          <span className="text-sm text-muted-foreground select-none shrink-0 leading-[1.5]">@solomon</span>
           <textarea
             ref={textareaRef}
             className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none resize-none leading-[1.5]"

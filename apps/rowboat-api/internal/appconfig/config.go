@@ -119,7 +119,7 @@ type Config struct {
 	// Cloud. Empty → derived from AppURL. Must match Google exactly.
 	GoogleRedirectURI string
 
-	// Desktop deep-link scheme for connector callbacks (rowboat://...).
+	// Desktop deep-link scheme for connector callbacks (solomon-ai://...).
 	DesktopDeepLinkScheme string
 
 	// Free-tier credit grant minted on first sign-in.
@@ -220,7 +220,7 @@ func Load() Config {
 		GoogleAuthorizeURL:      getenv("GOOGLE_AUTHORIZE_URL", ""),
 		GoogleRedirectURI:       getenv("GOOGLE_REDIRECT_URI", ""),
 
-		DesktopDeepLinkScheme: getenv("DESKTOP_DEEPLINK_SCHEME", "rowboat"),
+		DesktopDeepLinkScheme: getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
 		FreeTierCredits:       getint("FREE_TIER_CREDITS", 10000),
 		PricingJSON:           getenv("PRICING_JSON", ""),
 		OpenAIBaseURL:         getenv("OPENAI_BASE_URL", ""),

@@ -96,7 +96,8 @@ Examples:
 
 const { workdir, steps, concurrency } = parseArgs();
 
-// Set env BEFORE importing core modules (WorkDir is read at module load time)
+// Set env BEFORE importing core modules (WorkDir is read at module load time).
+process.env.SOLOMON_WORKDIR = workdir;
 process.env.ROWBOAT_WORKDIR = workdir;
 
 // --- Now import core modules ---

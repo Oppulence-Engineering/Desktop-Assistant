@@ -123,7 +123,7 @@ const definitions: SkillDefinition[] = [
   {
     id: "notify-user",
     title: "Notify User",
-    summary: "Send native desktop notifications with optional clickable links — including rowboat:// deep links that open a specific note, chat, or view inside the app.",
+    summary: "Send native desktop notifications with optional clickable links — including solomon-ai:// deep links that open a specific note, chat, or view inside the app.",
     content: notifyUserSkill,
   },
 ];
@@ -140,7 +140,7 @@ const catalogSections = skillEntries.map((entry) => [
 ].join("\n"));
 
 export const skillCatalog = [
-  "# Rowboat Skill Catalog",
+  "# Solomon AI Skill Catalog",
   "",
   "Use this catalog to see which specialized skills you can load. Each entry lists the exact skill file plus a short description of when it helps.",
   "",
@@ -160,7 +160,7 @@ export function buildSkillCatalog(options?: { excludeIds?: string[] }): string {
     `- **Use it for:** ${entry.summary}`,
   ].join("\n"));
   return [
-    "# Rowboat Skill Catalog",
+    "# Solomon AI Skill Catalog",
     "",
     "Use this catalog to see which specialized skills you can load. Each entry lists the exact skill file plus a short description of when it helps.",
     "",

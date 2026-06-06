@@ -12,7 +12,8 @@ type ThemeContextProps = {
 
 const ThemeContext = React.createContext<ThemeContextProps | null>(null)
 
-const STORAGE_KEY = "rowboat-theme"
+const STORAGE_KEY = "solomon-ai-theme"
+const LEGACY_STORAGE_KEY = "rowboat-theme"
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light"
@@ -36,7 +37,10 @@ export function ThemeProvider({
 }) {
   const [theme, setThemeState] = React.useState<Theme>(() => {
     if (typeof window === "undefined") return defaultTheme
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null
+    const stored = (
+      localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem(LEGACY_STORAGE_KEY)
+    ) as Theme | null
     return stored || defaultTheme
   })
 
@@ -73,6 +77,7 @@ export function ThemeProvider({
 
   const setTheme = React.useCallback((newTheme: Theme) => {
     localStorage.setItem(STORAGE_KEY, newTheme)
+    localStorage.removeItem(LEGACY_STORAGE_KEY)
     setThemeState(newTheme)
   }, [])
 

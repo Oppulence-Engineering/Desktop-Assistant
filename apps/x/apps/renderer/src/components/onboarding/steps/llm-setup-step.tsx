@@ -23,6 +23,7 @@ import type {
   OnboardingState,
   LlmProviderFlavor,
 } from "../use-onboarding-state";
+import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
 
 interface LlmSetupStepProps {
   state: OnboardingState;
@@ -175,7 +176,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
         Select a provider and configure your API key
       </p>
 
-      {/* Inline Rowboat upsell callout */}
+      {/* Inline Solomon AI upsell callout */}
       {!upsellDismissed && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
@@ -187,7 +188,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
           <div className="flex-1 min-w-0">
             <p className="text-sm text-foreground">
               <span className="font-medium">Tip:</span> Hosted models
-              recommended. Locally run LLMs can struggle with Rowboat's parallel
+              recommended. Locally run LLMs can struggle with {PRODUCT_NAME}'s parallel
               background agents. Bring your own API keys below, or sign in for
               instant access.
             </p>

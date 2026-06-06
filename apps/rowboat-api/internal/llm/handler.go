@@ -75,11 +75,18 @@ type telemetry struct {
 	agentName  string
 }
 
+func headerOrLegacy(r *http.Request, primary, legacy string) string {
+	if v := r.Header.Get(primary); v != "" {
+		return v
+	}
+	return r.Header.Get(legacy)
+}
+
 func telemetryFrom(r *http.Request) telemetry {
 	return telemetry{
-		useCase:    r.Header.Get("x-rowboat-use-case"),
-		subUseCase: r.Header.Get("x-rowboat-sub-use-case"),
-		agentName:  r.Header.Get("x-rowboat-agent-name"),
+		useCase:    headerOrLegacy(r, "x-solomon-use-case", "x-rowboat-use-case"),
+		subUseCase: headerOrLegacy(r, "x-solomon-sub-use-case", "x-rowboat-sub-use-case"),
+		agentName:  headerOrLegacy(r, "x-solomon-agent-name", "x-rowboat-agent-name"),
 	}
 }
 
@@ -162,7 +169,7 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	upReq.Header.Set("Authorization", "Bearer "+up.apiKey)
 	if up.provider == "openrouter" {
 		upReq.Header.Set("HTTP-Referer", "https://app.solomon-ai.co")
-		upReq.Header.Set("X-Title", "Rowboat")
+		upReq.Header.Set("X-Title", "Solomon AI")
 	}
 
 	resp, err := h.http.Do(upReq)

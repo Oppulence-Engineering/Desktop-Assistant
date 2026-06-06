@@ -161,7 +161,7 @@ function envForCommand(command: string): NodeJS.ProcessEnv | undefined {
 
 export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     loadSkill: {
-        description: "Load a Rowboat skill definition into context by fetching its guidance string",
+        description: "Load a Solomon AI skill definition into context by fetching its guidance string",
         inputSchema: z.object({
             skillName: z.string().describe("Skill identifier or path (e.g., 'workflow-run-ops' or 'src/application/assistant/skills/workflow-run-ops/skill.ts')"),
         }),
@@ -410,7 +410,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     },
 
     'file-remove': {
-        description: 'Remove a file or directory. Files are moved to the Rowboat trash by default for safety.',
+        description: 'Remove a file or directory. Files are moved to the Solomon AI trash by default for safety.',
         inputSchema: z.object({
             path: z.string().min(1).describe('Path to remove'),
             recursive: z.boolean().optional().describe('Required for directories (default: false)'),
@@ -1335,7 +1335,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     },
 
     'composio-execute-tool': {
-        description: 'Execute a Composio tool by its slug. You MUST pass the arguments field with all required parameters from the search results inputSchema. Example: composio-execute-tool({ toolSlug: "GITHUB_ISSUES_LIST_FOR_REPO", toolkitSlug: "github", arguments: { owner: "rowboatlabs", repo: "rowboat", state: "open", per_page: 100 } })',
+        description: 'Execute a Composio tool by its slug. You MUST pass the arguments field with all required parameters from the search results inputSchema. Example: composio-execute-tool({ toolSlug: "GITHUB_ISSUES_LIST_FOR_REPO", toolkitSlug: "github", arguments: { owner: "octocat", repo: "Hello-World", state: "open", per_page: 100 } })',
         inputSchema: z.object({
             toolSlug: z.string().describe('EXACT tool slug from search results (e.g., "GITHUB_ISSUES_LIST_FOR_REPO"). Copy it exactly — do not modify it.'),
             toolkitSlug: z.string().describe('The toolkit slug (e.g., "gmail", "github")'),
@@ -1358,7 +1358,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
             try {
                 return await executeComposioAction(toolSlug, {
                     connected_account_id: account.id,
-                    user_id: 'rowboat-user',
+                    user_id: 'solomon-user',
                     version: 'latest',
                     arguments: toolArgs,
                 });
@@ -1507,18 +1507,18 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     },
 
     'notify-user': {
-        description: "Show a native OS notification to the user. Clicking the notification opens the provided link in the default browser, or focuses the Rowboat app if no link is given.",
+        description: "Show a native OS notification to the user. Clicking the notification opens the provided link in the default browser, or focuses the Solomon AI app if no link is given.",
         inputSchema: z.object({
-            title: z.string().min(1).max(120).optional().describe("Bold headline shown at the top of the notification. Defaults to 'Rowboat'."),
+            title: z.string().min(1).max(120).optional().describe("Bold headline shown at the top of the notification. Defaults to 'Solomon AI'."),
             message: z.string().min(1).describe("Body text of the notification."),
-            link: z.string().url().refine((v) => /^(https?|rowboat):\/\//i.test(v), {
-                message: "link must be an http(s):// or rowboat:// URL",
-            }).optional().describe("Optional URL opened when the user clicks the notification. Accepts http(s):// (opens in browser) or rowboat:// (opens a view inside Rowboat — see the notify-user skill for deep-link shapes)."),
+            link: z.string().url().refine((v) => /^(https?|solomon-ai|rowboat):\/\//i.test(v), {
+                message: "link must be an http(s)://, solomon-ai://, or rowboat:// URL",
+            }).optional().describe("Optional URL opened when the user clicks the notification. Accepts http(s):// (opens in browser) or solomon-ai:// (opens a view inside Solomon AI — see the notify-user skill for deep-link shapes)."),
             actionLabel: z.string().min(1).max(20).optional().describe("Optional label for an inline action button on the notification (e.g. 'Open', 'View', 'Take Notes'). Only shown when `link` is set. Click on the button triggers the same action as clicking the notification body."),
             secondaryActions: z.array(z.object({
                 label: z.string().min(1).max(30),
-                link: z.string().url().refine((v) => /^(https?|rowboat):\/\//i.test(v), {
-                    message: "secondary action link must be an http(s):// or rowboat:// URL",
+                link: z.string().url().refine((v) => /^(https?|solomon-ai|rowboat):\/\//i.test(v), {
+                    message: "secondary action link must be an http(s)://, solomon-ai://, or rowboat:// URL",
                 }),
             })).max(4).optional().describe("Additional action buttons. macOS shows them in the chevron menu next to the primary button (or all inline in Alert style). Each has its own label and link — clicking the button triggers that link, independent of the primary `link`."),
         }),

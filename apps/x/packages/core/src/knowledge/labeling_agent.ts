@@ -135,7 +135,7 @@ System-generated messages that require no decision:
 
 # Meeting vs Scheduling (Critical Distinction)
 
-- **topic: meeting** (CREATE) — A calendar invite or scheduling email for a real meeting with a **named person** you have a relationship with: an investor, customer, partner, candidate, advisor, team member. Examples: "Invitation: Zoom: Rowboat Labs <> Dalton Caldwell", "YC between Peer Richelsen and Arjun", "Rowboat <> Smash Capital". The key signal is a specific person or company in the subject/body.
+- **topic: meeting** (CREATE) — A calendar invite or scheduling email for a real meeting with a **named person** you have a relationship with: an investor, customer, partner, candidate, advisor, team member. Examples: "Invitation: Zoom: Solomon AI <> Dalton Caldwell", "YC between Peer Richelsen and Arjun", "Solomon AI <> Smash Capital". The key signal is a specific person or company in the subject/body.
 - **filter: scheduling** (SKIP) — Automated reminders and scheduling tool notifications with **no named person or meaningful context**: "Reminder: your meeting is about to start", "Our meeting in an hour", generic ChiliPiper/Calendly confirmations. These are system-generated noise.
 
 **Rule of thumb:** If the email names who you're meeting with, it's \`topic: meeting\`. If it's just a system ping about a time slot, it's \`filter: scheduling\`.

@@ -22,7 +22,7 @@ import {
     TriggersSchema,
 } from './background-task.js';
 import { UserMessageContent } from './message.js';
-import { RowboatApiConfig } from './rowboat-account.js';
+import { SolomonApiConfig } from './solomon-account.js';
 import { ZListToolkitsResponse } from './composio.js';
 import { BrowserStateSchema } from './browser-control.js';
 import { BillingInfoSchema } from './billing.js';
@@ -387,12 +387,20 @@ const ipcSchemas = {
       })),
     }),
   },
+  'account:getSolomon': {
+    req: z.null(),
+    res: z.object({
+      signedIn: z.boolean(),
+      accessToken: z.string().nullable(),
+      config: SolomonApiConfig.nullable(),
+    }),
+  },
   'account:getRowboat': {
     req: z.null(),
     res: z.object({
       signedIn: z.boolean(),
       accessToken: z.string().nullable(),
-      config: RowboatApiConfig.nullable(),
+      config: SolomonApiConfig.nullable(),
     }),
   },
   'oauth:didConnect': {

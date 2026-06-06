@@ -9,7 +9,7 @@ import (
 func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 	spec := obj{
 		"openapi": "3.0.3",
-		"info":    obj{"title": "rowboat-api"},
+		"info":    obj{"title": "Solomon AI API"},
 		"paths": obj{
 			"/credit-ledgers": obj{"get": obj{"summary": "generated but not mounted"}},
 		},

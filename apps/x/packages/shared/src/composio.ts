@@ -30,7 +30,7 @@ export const ZListToolkitsResponse = z.object({
 });
 
 /**
- * Curated Composio toolkits available to Rowboat users.
+ * Curated Composio toolkits available to Solomon AI users.
  * Single source of truth for slugs, display names, and categories.
  * Sorted by slug (ASC) for maintainability.
  */

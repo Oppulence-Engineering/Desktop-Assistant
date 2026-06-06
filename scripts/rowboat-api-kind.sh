@@ -345,8 +345,8 @@ validate_stack() {
   echo "openapi:"
   local openapi_json
   openapi_json="$(curl_smoke "http://localhost:${API_PORT}/openapi.json")"
-  if ! grep -Eq '"openapi"[[:space:]]*:' <<<"$openapi_json" || ! grep -Eq '"title"[[:space:]]*:[[:space:]]*"rowboat-api"' <<<"$openapi_json"; then
-    echo "/openapi.json response is missing the generated rowboat-api OpenAPI document" >&2
+  if ! grep -Eq '"openapi"[[:space:]]*:' <<<"$openapi_json" || ! grep -Eq '"title"[[:space:]]*:[[:space:]]*"Solomon AI API"' <<<"$openapi_json"; then
+    echo "/openapi.json response is missing the generated Solomon AI API OpenAPI document" >&2
     exit 1
   fi
   echo "ok"

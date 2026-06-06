@@ -2,13 +2,14 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import type { OnboardingState } from "../use-onboarding-state";
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, getProductProviderState } from "@x/shared/dist/branding.js";
 
 interface WelcomeStepProps {
   state: OnboardingState;
 }
 
 export function WelcomeStep({ state }: WelcomeStepProps) {
-  const rowboatState = state.providerStates["rowboat"] || {
+  const solomonState = getProductProviderState(state.providerStates) || {
     isConnected: false,
     isLoading: false,
     isConnecting: false,
@@ -24,7 +25,7 @@ export function WelcomeStep({ state }: WelcomeStepProps) {
         className="relative mb-8"
       >
         <div className="absolute inset-0 size-16 rounded-none bg-primary/10 blur-xl scale-[2.5]" />
-        <img src="/logo-only.png" alt="Rowboat" className="relative size-16" />
+        <img src="/logo-only.png" alt={PRODUCT_NAME} className="relative size-16" />
       </motion.div>
 
       {/* Tagline badge */}
@@ -45,7 +46,7 @@ export function WelcomeStep({ state }: WelcomeStepProps) {
         transition={{ delay: 0.2 }}
         className="text-3xl font-bold tracking-tight mb-3"
       >
-        Welcome to Rowboat
+        Welcome to {PRODUCT_NAME}
       </motion.h1>
       <motion.p
         initial={{ opacity: 0 }}
@@ -53,7 +54,7 @@ export function WelcomeStep({ state }: WelcomeStepProps) {
         transition={{ delay: 0.3 }}
         className="text-base text-muted-foreground leading-relaxed max-w-sm mb-10"
       >
-        Rowboat connects to your work, builds a knowledge graph, and uses that
+        {PRODUCT_NAME} connects to your work, builds a knowledge graph, and uses that
         context to help you get things done. Private and on your machine.
       </motion.p>
 
@@ -64,11 +65,11 @@ export function WelcomeStep({ state }: WelcomeStepProps) {
         transition={{ delay: 0.4 }}
         className="w-full max-w-xs"
       >
-        {rowboatState.isConnected ? (
+        {solomonState.isConnected ? (
           <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
               <CheckCircle2 className="size-5" />
-              <span className="text-sm font-medium">Connected to Rowboat</span>
+              <span className="text-sm font-medium">Connected to {PRODUCT_NAME}</span>
             </div>
             <Button
               onClick={() => {
@@ -86,22 +87,22 @@ export function WelcomeStep({ state }: WelcomeStepProps) {
             <Button
               onClick={() => {
                 state.setOnboardingPath("rowboat");
-                state.startConnect("rowboat");
+                state.startConnect(PRODUCT_PROVIDER_ID);
               }}
               size="lg"
               className="w-full h-12 text-base font-medium"
-              disabled={rowboatState.isConnecting}
+              disabled={solomonState.isConnecting}
             >
-              {rowboatState.isConnecting ? (
+              {solomonState.isConnecting ? (
                 <>
                   <Loader2 className="size-5 animate-spin mr-2" />
                   Waiting for sign in...
                 </>
               ) : (
-                "Sign in with Rowboat"
+                `Sign in with ${PRODUCT_NAME}`
               )}
             </Button>
-            {rowboatState.isConnecting && (
+            {solomonState.isConnecting && (
               <p className="text-xs text-muted-foreground animate-pulse">
                 Complete sign in in your browser, then return here.
               </p>

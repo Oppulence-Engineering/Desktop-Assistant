@@ -15,7 +15,7 @@ func TestConfigEndpointShape(t *testing.T) {
 		AppURL:          "https://app.solomon-ai.co",
 		OIDCIssuerURL:   "https://oauth.solomon-ai.co",
 		WebsocketAPIURL: "wss://realtime.solomon-ai.co",
-		OAuthClientID:   "rowboat-desktop",
+		OAuthClientID:   "solomon-desktop",
 	})
 
 	rec := httptest.NewRecorder()
@@ -48,7 +48,7 @@ func TestConfigEndpointShape(t *testing.T) {
 	if body.WebsocketAPIURL != "wss://realtime.solomon-ai.co" {
 		t.Errorf("websocketApiUrl = %q", body.WebsocketAPIURL)
 	}
-	if body.OAuthClientID != "rowboat-desktop" {
+	if body.OAuthClientID != "solomon-desktop" {
 		t.Errorf("oauthClientId = %q", body.OAuthClientID)
 	}
 }

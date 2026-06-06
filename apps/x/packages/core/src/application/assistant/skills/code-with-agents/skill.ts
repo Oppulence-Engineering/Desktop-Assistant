@@ -3,7 +3,7 @@ export const skill = String.raw`
 
 Use this skill whenever the user asks you to write code, build a project, create scripts, fix bugs, read/explain code, or do any software development task — even simple file creations like "make a .c file".
 
-Coding agents operate on **arbitrary file paths** (including paths outside the Rowboat workspace root, like \`G:/4th sem/CN\` or \`~/projects/foo\`). Do NOT raise "outside workspace" concerns, and do NOT fall back to your own \`executeCommand\` (PowerShell / bash) or workspace file tools to do code work yourself.
+Coding agents operate on **arbitrary file paths** (including paths outside the Solomon AI workspace root, like \`G:/4th sem/CN\` or \`~/projects/foo\`). Do NOT raise "outside workspace" concerns, and do NOT fall back to your own \`executeCommand\` (PowerShell / bash) or workspace file tools to do code work yourself.
 
 ---
 
@@ -25,7 +25,7 @@ ask-human({
   options: [
     "Use code mode (Claude Code)",
     "Use code mode (Codex)",
-    "Continue with default Rowboat"
+    "Continue in Solomon AI"
   ]
 })
 \`\`\`
@@ -35,7 +35,7 @@ This is non-negotiable. The user gets clickable buttons. Free-text "which agent?
 **Branch on the response:**
 - "Use code mode (Claude Code)" → proceed to Step 2 with agent = \`claude\`.
 - "Use code mode (Codex)" → proceed to Step 2 with agent = \`codex\`.
-- "Continue with default Rowboat" → ABANDON this skill. Handle the request yourself using your own tools (workspace file tools, \`executeCommand\` shell, etc.). The rest of this skill does not apply for this turn.
+- "Continue in Solomon AI" → ABANDON this skill. Handle the request yourself using your own tools (workspace file tools, \`executeCommand\` shell, etc.). The rest of this skill does not apply for this turn.
 
 ---
 
@@ -59,7 +59,7 @@ Pick \`<agent>\` (\`claude\` or \`codex\`) by, in priority order:
 - The agent chosen in Step 1 / the "# Code Mode (Active)" block.
 
 Pick \`<session-name>\` — **stable for this whole chat**:
-- If the "# Code Mode (Active)" block gives a session name (e.g. \`rowboat-<runId>\`), use that exact name.
+- If the "# Code Mode (Active)" block gives a session name (e.g. \`solomon-<runId>\`), use that exact name.
 - Otherwise pick one short, kebab-case name and **reuse it for every coding call this turn and in follow-ups** — never a new name each time.
 
 **\`-s\` resumes an existing session; it does NOT create one.** So ensure the session exists once at the start, then prompt:
@@ -122,7 +122,7 @@ After the command finishes:
 - Only add your own explanation if the command failed (non-zero exit):
   - Exit code 5 — permissions were denied (shouldn't happen with \`--approve-all\`; flag it).
   - Exit code 4 / "No acpx session found" — the \`-s <session-name>\` session doesn't exist yet. Create it once with \`npx acpx@latest --approve-all --cwd <folder> <agent> sessions ensure --name <session-name>\`, then retry the prompt. (\`-s\` only resumes; it never creates.)
-  - "command not found" / agent not installed, or an auth/sign-in error — the agent isn't set up. Tell the user to install or sign in to the agent via **Settings → Code Mode**, where Rowboat shows the install and sign-in status.
+  - "command not found" / agent not installed, or an auth/sign-in error — the agent isn't set up. Tell the user to install or sign in to the agent via **Settings → Code Mode**, where Solomon AI shows the install and sign-in status.
 
 ---
 

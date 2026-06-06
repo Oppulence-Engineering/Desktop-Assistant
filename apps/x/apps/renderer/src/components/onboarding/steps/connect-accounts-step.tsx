@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GmailIcon, FirefliesIcon } from "../provider-icons";
 import type { OnboardingState, ProviderState } from "../use-onboarding-state";
+import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
 
 interface ConnectAccountsStepProps {
   state: OnboardingState;
@@ -122,7 +123,7 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
         Connect Your Accounts
       </h2>
       <p className="text-base text-muted-foreground text-center leading-relaxed mb-8">
-        Rowboat gets smarter the more it knows about your work. Connect your
+        {PRODUCT_NAME} gets smarter the more it knows about your work. Connect your
         accounts to get started. You can find more tools in Settings.
       </p>
 
@@ -158,7 +159,7 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
               ) : (
                 <ProviderCard
                   name="Google"
-                  description="Rowboat uses your email and calendar to provide personalized, context-aware assistance"
+                  description={`${PRODUCT_NAME} uses your email and calendar to provide personalized, context-aware assistance`}
                   icon={<GmailIcon />}
                   iconBg="bg-red-500/10"
                   iconColor="text-red-500"
@@ -205,7 +206,7 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-semibold">
-                    Rowboat Meeting Notes
+                    {PRODUCT_NAME} Meeting Notes
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
                     Built in. Ready to use.

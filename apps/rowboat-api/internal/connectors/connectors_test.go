@@ -52,7 +52,7 @@ func setup(t *testing.T, registry *connectors.Registry) (*ent.Client, *ent.User,
 		OryBrokerClientID:     "broker",
 		OryBrokerClientSecret: "secret",
 		PublicBaseURL:         "https://api.test",
-		DeepLinkScheme:        "rowboat",
+		DeepLinkScheme:        "solomon-ai",
 	}, zap.NewNop())
 	return d.Client, u, h
 }
@@ -101,7 +101,7 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	if cbRec.Code != http.StatusFound {
 		t.Fatalf("callback: want 302, got %d: %s", cbRec.Code, cbRec.Body.String())
 	}
-	if loc := cbRec.Header().Get("Location"); !strings.Contains(loc, "rowboat://connection-complete") || !strings.Contains(loc, "status=success") {
+	if loc := cbRec.Header().Get("Location"); !strings.Contains(loc, "solomon-ai://connection-complete") || !strings.Contains(loc, "status=success") {
 		t.Fatalf("callback redirect = %q", loc)
 	}
 	// Connection persisted.

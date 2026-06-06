@@ -77,7 +77,7 @@ export const BackgroundTaskSchema = z.object({
     triggers: TriggersSchema.optional().describe('When the agent fires. Omit for manual-only.'),
     model: z.string().optional().describe('ADVANCED — leave unset. Per-task model override.'),
     provider: z.string().optional().describe('ADVANCED — leave unset. Per-task provider name override.'),
-    executionTarget: BackgroundTaskExecutionTarget.default('desktop').describe('Where this task executes. desktop runs in the local desktop agent; api runs through the Rowboat API Temporal worker.'),
+    executionTarget: BackgroundTaskExecutionTarget.default('desktop').describe('Where this task executes. desktop runs in the local desktop agent; api runs through the Solomon AI API Temporal worker.'),
     createdAt: z.string().describe('ISO timestamp set once at create-time.'),
     lastAttemptAt: z.string().optional().describe('Runtime-managed — never write this yourself. Bumped at the start of every agent run; used by the scheduler for backoff so failures do not retry-storm.'),
     lastRunId: z.string().optional().describe('Runtime-managed — never write this yourself. The id of the most recent run (success or failure); used by the bg-task:stop handler.'),

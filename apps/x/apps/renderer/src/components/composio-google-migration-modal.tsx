@@ -17,7 +17,7 @@ interface ComposioGoogleMigrationModalProps {
 
 /**
  * One-time modal shown to signed-in users who had Gmail/Calendar connected
- * via Composio before the native rowboat-mode OAuth flow shipped. By the
+ * via Composio before the native managed OAuth flow shipped. By the
  * time this opens, the Composio Google accounts have already been
  * disconnected (fire-and-forget, on the qualification IPC) — the modal
  * just explains what happened and offers a one-click reconnect.

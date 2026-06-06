@@ -41,7 +41,7 @@ type Handler struct {
 // New builds the connectors handler.
 func New(client *ent.Client, sealer *crypto.Sealer, registry *Registry, cfg Config, log *zap.Logger) *Handler {
 	if cfg.DeepLinkScheme == "" {
-		cfg.DeepLinkScheme = "rowboat"
+		cfg.DeepLinkScheme = "solomon-ai"
 	}
 	return &Handler{
 		client:   client,

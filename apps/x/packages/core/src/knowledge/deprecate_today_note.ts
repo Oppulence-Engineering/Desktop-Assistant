@@ -8,9 +8,10 @@ import { splitFrontmatter, joinFrontmatter } from '../application/lib/parse-fron
 const KNOWLEDGE_DIR = path.join(WorkDir, 'knowledge');
 const TODAY_NOTE_PATH = path.join(KNOWLEDGE_DIR, 'Today.md');
 const STATE_FILE = path.join(WorkDir, 'config', 'today-note-deprecation.json');
-const NOTICE_MARKER = '<!-- rowboat-today-md-deprecated -->';
+const NOTICE_MARKER = '<!-- solomon-today-md-deprecated -->';
+const LEGACY_NOTICE_MARKER = '<!-- rowboat-today-md-deprecated -->';
 const DEPRECATION_NOTICE = `${NOTICE_MARKER}
-> Rowboat's Today.md live dashboard is paused for now while we work on a better experience. You can keep using this note as a regular markdown file. If you want Rowboat to keep updating it automatically, re-enable the live note settings; automatic updates may use credits.
+> Solomon AI's Today.md live dashboard is paused for now while we work on a better experience. You can keep using this note as a regular markdown file. If you want Solomon AI to keep updating it automatically, re-enable the live note settings; automatic updates may use credits.
 
 `;
 
@@ -69,7 +70,7 @@ function disableLiveBlock(frontmatter: Record<string, unknown>): Record<string, 
 }
 
 function prependNotice(body: string): string {
-    if (body.includes(NOTICE_MARKER)) return body;
+    if (body.includes(NOTICE_MARKER) || body.includes(LEGACY_NOTICE_MARKER)) return body;
     return `${DEPRECATION_NOTICE}${body}`;
 }
 

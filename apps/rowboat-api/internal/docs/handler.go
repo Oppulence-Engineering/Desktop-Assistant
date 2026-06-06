@@ -30,7 +30,7 @@ func (h *Handler) Scalar(w http.ResponseWriter, _ *http.Request) {
 const scalarHTML = `<!doctype html>
 <html lang="en">
   <head>
-    <title>rowboat-api Reference</title>
+    <title>Solomon AI API Reference</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>

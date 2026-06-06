@@ -34,7 +34,7 @@ export type { BrowserPageSnapshot, BrowserState, BrowserTabState };
  * standard Chrome UA so sites like Google (OAuth) don't reject it.
  */
 
-export const BROWSER_PARTITION = 'persist:rowboat-browser';
+export const BROWSER_PARTITION = 'persist:solomon-browser';
 
 // Claims Chrome 130 on macOS — close enough to recent stable for OAuth servers
 // that sniff the UA looking for "real browser" shapes.

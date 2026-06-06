@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { getRowboatConfig } from '../config/rowboat.js';
+import { getSolomonConfig } from '../config/solomon.js';
+import { PRODUCT_PROVIDER_ID, isProductProvider } from '@x/shared/dist/branding.js';
 
 /**
  * Discovery configuration - how to get OAuth endpoints
@@ -52,7 +53,7 @@ export type ProviderConfigEntry = ProviderConfig[string];
  * All configured OAuth providers
  */
 const providerConfigs: ProviderConfig = {
-  rowboat: {
+  [PRODUCT_PROVIDER_ID]: {
     discovery: {
       mode: 'issuer',
       issuer: "TBD",
@@ -99,26 +100,27 @@ const providerConfigs: ProviderConfig = {
  */
 export async function getProviderConfig(providerName: string): Promise<ProviderConfigEntry> {
   const config = providerConfigs[providerName];
-  if (!config) {
+  if (!config && !isProductProvider(providerName)) {
     throw new Error(`Unknown OAuth provider: ${providerName}`);
   }
-  if (providerName === 'rowboat') {
-    const rowboatConfig = await getRowboatConfig();
+  const resolvedConfig = config ?? providerConfigs[PRODUCT_PROVIDER_ID];
+  if (isProductProvider(providerName)) {
+    const solomonConfig = await getSolomonConfig();
     // Use the OIDC issuer (Ory Hydra) directly — the client discovers endpoints
     // from `${issuer}/.well-known/oauth-authorization-server`. Fall back to the
     // legacy supabaseUrl during the migration.
-    const issuer = rowboatConfig.oidcIssuerUrl || rowboatConfig.supabaseUrl;
-    config.discovery = {
+    const issuer = solomonConfig.oidcIssuerUrl || solomonConfig.supabaseUrl;
+    resolvedConfig.discovery = {
       mode: 'issuer',
       issuer,
     };
     // Prefer a static, pre-registered client when the backend supplies one;
     // otherwise keep dynamic client registration.
-    config.client = rowboatConfig.oauthClientId
-      ? { mode: 'static', clientId: rowboatConfig.oauthClientId }
+    resolvedConfig.client = solomonConfig.oauthClientId
+      ? { mode: 'static', clientId: solomonConfig.oauthClientId }
       : { mode: 'dcr' };
   }
-  return config;
+  return resolvedConfig;
 }
 
 /**

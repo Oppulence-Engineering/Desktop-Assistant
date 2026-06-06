@@ -1065,15 +1065,16 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const text = $from.parent.textBetween(0, $from.parent.content.size, '\n', '\n')
     const textBefore = text.slice(0, $from.parentOffset)
 
-    // Match @rowboat at a word boundary (preceded by nothing or whitespace)
-    const match = textBefore.match(/(^|\s)@rowboat$/)
+    // Match the current @solomon trigger, with @rowboat kept as a legacy trigger.
+    const match = textBefore.match(/(^|\s)@(solomon|rowboat)$/)
     if (!match) {
       setActiveRowboatMention(null)
       setRowboatAnchorTop(null)
       return
     }
 
-    const triggerStart = textBefore.length - '@rowboat'.length
+    const triggerLength = `@${match[2]}`.length
+    const triggerStart = textBefore.length - triggerLength
     const from = selection.from - (textBefore.length - triggerStart)
     const to = selection.from
     setActiveRowboatMention({ range: { from, to } })
@@ -1132,8 +1133,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     const query = atMatch[2] // text after @
 
-    // If the full "@rowboat" is already typed, let updateRowboatMentionState handle it
-    if (query === 'rowboat') {
+    // If the full product mention is already typed, let updateRowboatMentionState handle it.
+    if (query === 'solomon' || query === 'rowboat') {
       setActiveAtMention(null)
       setAtAnchorPosition(null)
       return
@@ -1188,7 +1189,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
   }, [editor, updateAtMentionState])
 
-  // When a tell-rowboat block is clicked, compute anchor and open popover
+  // When an inline task block is clicked, compute anchor and open popover
   useEffect(() => {
     if (!rowboatBlockEdit || !editor) return
     const wrapper = wrapperRef.current
@@ -1532,7 +1533,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
   // @ mention autocomplete options
   const atMentionOptions = useMemo(() => [
-    { value: 'rowboat', label: '@rowboat', description: 'Research, schedule, or run tasks with AI' },
+    { value: 'solomon', label: '@solomon', description: 'Research, schedule, or run tasks with AI' },
   ], [])
 
   const filteredAtOptions = useMemo(() => {
@@ -1566,14 +1567,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   const handleSelectAtMention = useCallback((value: string) => {
     if (!editor || !activeAtMention) return
 
-    if (value === 'rowboat') {
-      // Replace "@<partial>" with "@rowboat" — this triggers updateRowboatMentionState
+    if (value === 'solomon') {
+      // Replace "@<partial>" with "@solomon" — this triggers updateRowboatMentionState
       editor
         .chain()
         .focus()
         .insertContentAt(
           { from: activeAtMention.range.from, to: activeAtMention.range.to },
-          '@rowboat'
+          '@solomon'
         )
         .run()
     }

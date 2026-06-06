@@ -9,16 +9,16 @@ const authedFetch: typeof fetch = async (input, init) => {
     const headers = new Headers(init?.headers);
     headers.set('Authorization', `Bearer ${token}`);
     const ctx = getCurrentUseCase();
-    if (ctx?.useCase) headers.set('x-rowboat-use-case', ctx.useCase);
-    if (ctx?.subUseCase) headers.set('x-rowboat-sub-use-case', ctx.subUseCase);
-    if (ctx?.agentName) headers.set('x-rowboat-agent-name', ctx.agentName);
+    if (ctx?.useCase) headers.set('x-solomon-use-case', ctx.useCase);
+    if (ctx?.subUseCase) headers.set('x-solomon-sub-use-case', ctx.subUseCase);
+    if (ctx?.agentName) headers.set('x-solomon-agent-name', ctx.agentName);
     return fetch(input, { ...init, headers });
 };
 
 export function getGatewayProvider(): ProviderV2 {
     return createOpenRouter({
         baseURL: `${API_URL}/v1/llm`,
-        apiKey: 'managed-by-rowboat',
+        apiKey: 'managed-by-solomon',
         fetch: authedFetch,
     });
 }
@@ -45,8 +45,8 @@ export async function listGatewayModels(): Promise<{ providers: ProviderSummary[
     const models = body.data.map((m) => ({ id: m.id }));
     return {
         providers: [{
-            id: 'rowboat',
-            name: 'Rowboat',
+            id: 'solomon',
+            name: 'Solomon AI',
             models,
         }],
     };
