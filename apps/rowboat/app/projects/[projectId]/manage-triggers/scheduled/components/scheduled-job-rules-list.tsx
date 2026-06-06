@@ -174,7 +174,7 @@ export function ScheduledJobRulesList({ projectId }: { projectId: string }) {
                                             {sectionItems.map((item) => (
                                                 <div
                                                     key={item.id}
-                                                    className="block p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                                                    className="block p-4 bg-white dark:bg-gray-800 rounded-none border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
                                                 >
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">

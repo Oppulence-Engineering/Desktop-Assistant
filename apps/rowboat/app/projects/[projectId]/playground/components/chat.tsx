@@ -435,7 +435,7 @@ export function Chat({
                 <div className="bg-white dark:bg-zinc-900 pt-4 pb-6">
                     {showSuccessMessage && (
                         <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 
-                                      rounded-lg flex gap-2 justify-between items-center">
+                                      rounded-none flex gap-2 justify-between items-center">
                             <p className="text-green-600 dark:text-green-400 text-sm">Skipper will suggest fixes for you now.</p>
                             <Button
                                 size="sm"
@@ -448,7 +448,7 @@ export function Chat({
                     )}
                     {showExplainSuccess && (
                         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 
-                                      rounded-lg flex gap-2 justify-between items-center">
+                                      rounded-none flex gap-2 justify-between items-center">
                             <p className="text-blue-600 dark:text-blue-400 text-sm">Skipper will explain this for you now.</p>
                             <Button
                                 size="sm"
@@ -461,7 +461,7 @@ export function Chat({
                     )}
                     {error && (
                         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 
-                                      rounded-lg flex gap-2 justify-between items-center">
+                                      rounded-none flex gap-2 justify-between items-center">
                             <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
                             <Button
                                 size="sm"

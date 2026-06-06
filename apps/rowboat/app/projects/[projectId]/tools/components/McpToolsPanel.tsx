@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Checkbox, Input } from '@heroui/react';
-import { Search, X } from 'lucide-react';
-import { Workflow, WorkflowTool } from '@/app/lib/types/workflow_types';
-import { z } from 'zod';
-import { SlidePanel } from '@/components/ui/slide-panel';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Button, Checkbox, Input } from "@heroui/react";
+import { Search, X } from "lucide-react";
+import { Workflow, WorkflowTool } from "@/app/lib/types/workflow_types";
+import { z } from "zod";
+import { SlidePanel } from "@/components/ui/slide-panel";
 
 interface McpToolsPanelProps {
   server: {
@@ -21,10 +21,10 @@ interface McpToolsPanelProps {
   toolsError: string | null;
 }
 
-export function McpToolsPanel({ 
-  server, 
-  isOpen, 
-  onClose, 
+export function McpToolsPanel({
+  server,
+  isOpen,
+  onClose,
   tools: workflowTools,
   onAddTool,
   serverTools,
@@ -33,13 +33,13 @@ export function McpToolsPanel({
 }: McpToolsPanelProps) {
   const [selectedTools, setSelectedTools] = useState<Set<string>>(new Set());
   const [hasChanges, setHasChanges] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
   // Filter out already selected tools
   const selectedToolNames = workflowTools
-    .filter(tool => tool.isMcp && tool.mcpServerName === server?.name)
-    .map(tool => tool.name);
+    .filter((tool) => tool.isMcp && tool.mcpServerName === server?.name)
+    .map((tool) => tool.name);
 
   // Debounce search query
   useEffect(() => {
@@ -53,51 +53,59 @@ export function McpToolsPanel({
   // Filter tools based on search query
   const filteredTools = useMemo(() => {
     if (!debouncedSearchQuery) return serverTools;
-    
+
     const query = debouncedSearchQuery.toLowerCase();
-    return serverTools.filter(tool => 
-      tool.name.toLowerCase().includes(query) || 
-      tool.description.toLowerCase().includes(query)
+    return serverTools.filter(
+      (tool) =>
+        tool.name.toLowerCase().includes(query) ||
+        tool.description.toLowerCase().includes(query),
     );
   }, [serverTools, debouncedSearchQuery]);
 
   // Filter out already added tools
-  const availableTools = filteredTools.filter(tool => !selectedToolNames.includes(tool.name));
+  const availableTools = filteredTools.filter(
+    (tool) => !selectedToolNames.includes(tool.name),
+  );
 
-  const handleToolSelectionChange = useCallback((toolName: string, selected: boolean) => {
-    setSelectedTools(prev => {
-      const next = new Set(prev);
-      if (selected) {
-        next.add(toolName);
-      } else {
-        next.delete(toolName);
-      }
-      setHasChanges(true);
-      return next;
-    });
-  }, []);
+  const handleToolSelectionChange = useCallback(
+    (toolName: string, selected: boolean) => {
+      setSelectedTools((prev) => {
+        const next = new Set(prev);
+        if (selected) {
+          next.add(toolName);
+        } else {
+          next.delete(toolName);
+        }
+        setHasChanges(true);
+        return next;
+      });
+    },
+    [],
+  );
 
   const handleAddSelectedTools = useCallback(() => {
     // Convert selected tool names to actual tool objects and add them
-    const selectedToolObjects = serverTools.filter(tool => selectedTools.has(tool.name));
-    
-    selectedToolObjects.forEach(tool => {
+    const selectedToolObjects = serverTools.filter((tool) =>
+      selectedTools.has(tool.name),
+    );
+
+    selectedToolObjects.forEach((tool) => {
       onAddTool(tool);
     });
-    
+
     onClose();
   }, [selectedTools, serverTools, onAddTool, onClose]);
 
   const handleClose = useCallback(() => {
     setSelectedTools(new Set());
     setHasChanges(false);
-    setSearchQuery('');
-    setDebouncedSearchQuery('');
+    setSearchQuery("");
+    setDebouncedSearchQuery("");
     onClose();
   }, [onClose]);
 
   const handleClearSearch = useCallback(() => {
-    setSearchQuery('');
+    setSearchQuery("");
   }, []);
 
   if (!server) return null;
@@ -108,7 +116,7 @@ export function McpToolsPanel({
       onClose={handleClose}
       title={
         <div className="flex items-center gap-3">
-          <div className="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center">
+          <div className="w-6 h-6 bg-blue-500 rounded-none flex items-center justify-center">
             <span className="text-white text-xs font-bold">MCP</span>
           </div>
           <span>{server.name}</span>
@@ -120,7 +128,9 @@ export function McpToolsPanel({
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Select Tools</h4>
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Select Tools
+              </h4>
             </div>
             {hasChanges && (
               <Button
@@ -160,8 +170,10 @@ export function McpToolsPanel({
 
         {/* Error Display */}
         {toolsError && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <p className="text-sm text-red-700 dark:text-red-300">{toolsError}</p>
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-none">
+            <p className="text-sm text-red-700 dark:text-red-300">
+              {toolsError}
+            </p>
           </div>
         )}
 
@@ -171,26 +183,30 @@ export function McpToolsPanel({
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800 dark:border-gray-200 mx-auto"></div>
               <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                {searchQuery ? 'Searching tools...' : 'Loading tools...'}
+                {searchQuery ? "Searching tools..." : "Loading tools..."}
               </p>
             </div>
           ) : availableTools.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {searchQuery ? 'No tools found matching your search.' : 'No tools available.'}
+                {searchQuery
+                  ? "No tools found matching your search."
+                  : "No tools available."}
               </p>
             </div>
           ) : (
             <div className="space-y-3">
               {availableTools.map((tool) => (
-                <div 
-                  key={tool.name} 
-                  className="group p-4 rounded-lg transition-all duration-200 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                <div
+                  key={tool.name}
+                  className="group p-4 rounded-none transition-all duration-200 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                 >
                   <div className="flex items-start gap-3">
                     <Checkbox
                       isSelected={selectedTools.has(tool.name)}
-                      onValueChange={(selected) => handleToolSelectionChange(tool.name, selected)}
+                      onValueChange={(selected) =>
+                        handleToolSelectionChange(tool.name, selected)
+                      }
                       size="sm"
                     />
                     <div className="flex-1 text-left flex flex-col gap-1">
@@ -214,7 +230,8 @@ export function McpToolsPanel({
             <div className="text-sm text-gray-500 dark:text-gray-400">
               {availableTools.length > 0 && (
                 <span>
-                  {availableTools.length} tool{availableTools.length !== 1 ? 's' : ''} found
+                  {availableTools.length} tool
+                  {availableTools.length !== 1 ? "s" : ""} found
                   {searchQuery && ` for "${searchQuery}"`}
                 </span>
               )}
@@ -234,4 +251,4 @@ export function McpToolsPanel({
       </div>
     </SlidePanel>
   );
-} 
+}

@@ -33,7 +33,7 @@ export function ListItem({
         <button
             ref={selectedRef as any}
             onClick={onClick}
-            className={clsx("flex items-center justify-between rounded-md px-2 py-1", {
+            className={clsx("flex items-center justify-between rounded-none px-2 py-1", {
                 "bg-gray-100 dark:bg-gray-700": isSelected,
                 "hover:bg-gray-50 dark:hover:bg-gray-800": !isSelected,
             })}

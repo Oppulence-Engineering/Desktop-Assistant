@@ -221,7 +221,7 @@ export function TriggerConfigForm({
                       <select
                         value={fieldValue}
                         onChange={(e) => handleFieldChange(fieldName, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-none
                           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                           focus:outline-none focus:ring-0 focus:ring-transparent focus:ring-offset-0
                           focus:border-blue-500 dark:focus:border-blue-400

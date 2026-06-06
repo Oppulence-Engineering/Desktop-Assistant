@@ -12,7 +12,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, children, selected, onClick }
   return (
     <button
       className={clsx(
-        "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
+        "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-none transition-colors",
         "hover:bg-gray-100 dark:hover:bg-gray-800",
         {
           "bg-gray-100 dark:bg-gray-800": selected,

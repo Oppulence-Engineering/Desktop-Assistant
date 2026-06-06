@@ -32,10 +32,27 @@ import {
   PromptInputHeader,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
-import { Conversation, ConversationContent } from "@/components/ai-elements/conversation";
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
-import { Reasoning, ReasoningTrigger, ReasoningContent } from "@/components/ai-elements/reasoning";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
+import {
+  Conversation,
+  ConversationContent,
+} from "@/components/ai-elements/conversation";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
+import {
+  Reasoning,
+  ReasoningTrigger,
+  ReasoningContent,
+} from "@/components/ai-elements/reasoning";
 import {
   Artifact,
   ArtifactAction,
@@ -46,7 +63,13 @@ import {
   ArtifactHeader,
   ArtifactTitle,
 } from "@/components/ai-elements/artifact";
-import { useState, useEffect, useRef, type ReactNode, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  type ReactNode,
+  useCallback,
+} from "react";
 import { MicIcon, Save, Loader2, Lock } from "lucide-react";
 import {
   Select,
@@ -62,25 +85,25 @@ import { MarkdownViewer } from "@/components/markdown-viewer";
 
 interface ChatMessage {
   id: string;
-  type: 'message';
-  role: 'user' | 'assistant';
+  type: "message";
+  role: "user" | "assistant";
   content: string;
   timestamp: number;
 }
 
 interface ToolCall {
   id: string;
-  type: 'tool';
+  type: "tool";
   name: string;
   input: unknown;
   result?: unknown;
-  status: 'pending' | 'running' | 'completed' | 'error';
+  status: "pending" | "running" | "completed" | "error";
   timestamp: number;
 }
 
 interface ReasoningBlock {
   id: string;
-  type: 'reasoning';
+  type: "reasoning";
   content: string;
   isStreaming: boolean;
   timestamp: number;
@@ -96,7 +119,7 @@ type SelectedResource = {
 };
 
 type ToolCallContentPart = {
-  type: 'tool-call';
+  type: "tool-call";
   toolCallId: string;
   toolName: string;
   arguments: unknown;
@@ -108,23 +131,27 @@ type RunEvent = {
 };
 
 function PageBody() {
-  const [apiBase, setApiBase] = useState<string>("http://localhost:3000")
+  const [apiBase, setApiBase] = useState<string>("http://localhost:3000");
   const streamUrl = "/api/stream";
   const [text, setText] = useState<string>("");
   const [useMicrophone, setUseMicrophone] = useState<boolean>(false);
-  const [status, setStatus] = useState<"submitted" | "streaming" | "ready" | "error">("ready");
+  const [status, setStatus] = useState<
+    "submitted" | "streaming" | "ready" | "error"
+  >("ready");
 
   // Chat state
   const [runId, setRunId] = useState<string | null>(null);
   const [isRunProcessing, setIsRunProcessing] = useState(false);
   const [conversation, setConversation] = useState<ConversationItem[]>([]);
-  const [currentAssistantMessage, setCurrentAssistantMessage] = useState<string>("");
+  const [currentAssistantMessage, setCurrentAssistantMessage] =
+    useState<string>("");
   const [currentReasoning, setCurrentReasoning] = useState<string>("");
   const eventSourceRef = useRef<EventSource | null>(null);
   const committedMessageIds = useRef<Set<string>>(new Set());
   const isEmptyConversation =
     conversation.length === 0 && !currentAssistantMessage && !currentReasoning;
-  const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
+  const [selectedResource, setSelectedResource] =
+    useState<SelectedResource | null>(null);
   const [artifactTitle, setArtifactTitle] = useState("");
   const [artifactSubtitle, setArtifactSubtitle] = useState("");
   const [artifactText, setArtifactText] = useState("");
@@ -132,7 +159,9 @@ function PageBody() {
   const [artifactLoading, setArtifactLoading] = useState(false);
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [artifactReadOnly, setArtifactReadOnly] = useState(false);
-  const [artifactFileType, setArtifactFileType] = useState<"json" | "markdown">("json");
+  const [artifactFileType, setArtifactFileType] = useState<"json" | "markdown">(
+    "json",
+  );
   const [agentOptions, setAgentOptions] = useState<string[]>(["copilot"]);
   const [selectedAgent, setSelectedAgent] = useState<string>("copilot");
 
@@ -140,58 +169,63 @@ function PageBody() {
   const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, "");
   const detectFileType = (name: string): "json" | "markdown" =>
     name.toLowerCase().match(/\.(md|markdown)$/) ? "markdown" : "json";
-  
+
   useEffect(() => {
     setApiBase(window.config.apiBase);
   }, []);
 
-  const requestJson = useCallback(async (
-    url: string,
-    options?: (RequestInit & { allow404?: boolean }) | undefined
-  ) => {
-    const fullUrl = new URL(url, apiBase).toString();
-    console.log('fullUrl', fullUrl);
-    const { allow404, ...rest } = options || {};
-    const res = await fetch(fullUrl, {
-      ...rest,
-      headers: {
-        "Content-Type": "application/json",
-        ...(rest.headers || {}),
-      },
-    });
+  const requestJson = useCallback(
+    async (
+      url: string,
+      options?: (RequestInit & { allow404?: boolean }) | undefined,
+    ) => {
+      const fullUrl = new URL(url, apiBase).toString();
+      console.log("fullUrl", fullUrl);
+      const { allow404, ...rest } = options || {};
+      const res = await fetch(fullUrl, {
+        ...rest,
+        headers: {
+          "Content-Type": "application/json",
+          ...(rest.headers || {}),
+        },
+      });
 
-    const contentType = res.headers.get("content-type")?.toLowerCase() ?? "";
-    const isJson = contentType.includes("application/json");
-    const text = await res.text();
+      const contentType = res.headers.get("content-type")?.toLowerCase() ?? "";
+      const isJson = contentType.includes("application/json");
+      const text = await res.text();
 
-    if (!res.ok) {
-      if (res.status === 404 && allow404) return null;
-      if (isJson) {
-        try {
-          const errObj = JSON.parse(text);
-          const errMsg =
-            typeof errObj === "string"
-              ? errObj
-              : errObj?.message || errObj?.error || JSON.stringify(errObj);
-          throw new Error(errMsg || `Request failed: ${res.status} ${res.statusText}`);
-        } catch {
-          /* fall through to generic error */
+      if (!res.ok) {
+        if (res.status === 404 && allow404) return null;
+        if (isJson) {
+          try {
+            const errObj = JSON.parse(text);
+            const errMsg =
+              typeof errObj === "string"
+                ? errObj
+                : errObj?.message || errObj?.error || JSON.stringify(errObj);
+            throw new Error(
+              errMsg || `Request failed: ${res.status} ${res.statusText}`,
+            );
+          } catch {
+            /* fall through to generic error */
+          }
         }
+        if (res.status === 404) {
+          throw new Error("Resource not found on the CLI backend (404)");
+        }
+        throw new Error(`Request failed: ${res.status} ${res.statusText}`);
       }
-      if (res.status === 404) {
-        throw new Error("Resource not found on the CLI backend (404)");
-      }
-      throw new Error(`Request failed: ${res.status} ${res.statusText}`);
-    }
 
-    if (!text) return null;
-    if (!isJson) return null;
-    try {
-      return JSON.parse(text);
-    } catch {
-      return null;
-    }
-  }, [apiBase]);
+      if (!text) return null;
+      if (!isJson) return null;
+      try {
+        return JSON.parse(text);
+      } catch {
+        return null;
+      }
+    },
+    [apiBase],
+  );
 
   const renderPromptInput = () => (
     <PromptInput globalDrop multiple onSubmit={handleSubmit}>
@@ -253,11 +287,11 @@ function PageBody() {
   useEffect(() => {
     // Prevent multiple connections
     if (eventSourceRef.current) {
-      console.log('⚠️ EventSource already exists, not creating new one');
+      console.log("⚠️ EventSource already exists, not creating new one");
       return;
     }
 
-    console.log('🔌 Creating new EventSource connection');
+    console.log("🔌 Creating new EventSource connection");
     const eventSource = new EventSource(streamUrl);
     eventSourceRef.current = eventSource;
 
@@ -266,7 +300,7 @@ function PageBody() {
         const event: RunEvent = JSON.parse(e.data);
         handleEvent(event);
       } catch (error) {
-        console.error('Failed to parse event:', error);
+        console.error("Failed to parse event:", error);
       }
     };
 
@@ -275,21 +309,21 @@ function PageBody() {
 
       // Only log if it's not a normal close
       if (target.readyState === EventSource.CLOSED) {
-        console.log('SSE connection closed, will reconnect on next message');
+        console.log("SSE connection closed, will reconnect on next message");
       } else if (target.readyState === EventSource.CONNECTING) {
-        console.log('SSE reconnecting...');
+        console.log("SSE reconnecting...");
       } else {
-        console.error('SSE error:', e);
+        console.error("SSE error:", e);
       }
     };
 
-    eventSource.addEventListener('message', handleMessage);
-    eventSource.addEventListener('error', handleError);
+    eventSource.addEventListener("message", handleMessage);
+    eventSource.addEventListener("error", handleError);
 
     return () => {
-      console.log('🔌 Closing EventSource connection');
-      eventSource.removeEventListener('message', handleMessage);
-      eventSource.removeEventListener('error', handleError);
+      console.log("🔌 Closing EventSource connection");
+      eventSource.removeEventListener("message", handleMessage);
+      eventSource.removeEventListener("error", handleError);
       eventSource.close();
       eventSourceRef.current = null;
     };
@@ -297,115 +331,123 @@ function PageBody() {
 
   // Handle different event types from the copilot
   const handleEvent = (event: RunEvent) => {
-    console.log('Event received:', event.type, event);
+    console.log("Event received:", event.type, event);
 
     switch (event.type) {
-      case 'run-processing-start':
+      case "run-processing-start":
         setIsRunProcessing(true);
-        setStatus((prev) => (prev === 'error' ? prev : 'streaming'));
+        setStatus((prev) => (prev === "error" ? prev : "streaming"));
         break;
 
-      case 'run-processing-end':
+      case "run-processing-end":
         setIsRunProcessing(false);
-        setStatus('ready');
+        setStatus("ready");
         break;
 
-      case 'start':
-        setStatus('streaming');
-        setCurrentAssistantMessage('');
-        setCurrentReasoning('');
+      case "start":
+        setStatus("streaming");
+        setCurrentAssistantMessage("");
+        setCurrentReasoning("");
         break;
 
-      case 'llm-stream-event':
+      case "llm-stream-event":
         {
-          const llmEvent = (event.event as {
-            type?: string;
-            delta?: string;
-            toolCallId?: string;
-            toolName?: string;
-            input?: unknown;
-          }) || {};
-          console.log('LLM stream event type:', llmEvent.type);
+          const llmEvent =
+            (event.event as {
+              type?: string;
+              delta?: string;
+              toolCallId?: string;
+              toolName?: string;
+              input?: unknown;
+            }) || {};
+          console.log("LLM stream event type:", llmEvent.type);
 
-          if (llmEvent.type === 'reasoning-delta' && llmEvent.delta) {
-            setCurrentReasoning(prev => prev + llmEvent.delta);
-          } else if (llmEvent.type === 'reasoning-end') {
+          if (llmEvent.type === "reasoning-delta" && llmEvent.delta) {
+            setCurrentReasoning((prev) => prev + llmEvent.delta);
+          } else if (llmEvent.type === "reasoning-end") {
             // Commit reasoning block if we have content
-            setCurrentReasoning(reasoning => {
+            setCurrentReasoning((reasoning) => {
               if (reasoning) {
-                setConversation(prev => [...prev, {
-                  id: `reasoning-${Date.now()}`,
-                  type: 'reasoning',
-                  content: reasoning,
-                  isStreaming: false,
-                  timestamp: Date.now(),
-                }]);
+                setConversation((prev) => [
+                  ...prev,
+                  {
+                    id: `reasoning-${Date.now()}`,
+                    type: "reasoning",
+                    content: reasoning,
+                    isStreaming: false,
+                    timestamp: Date.now(),
+                  },
+                ]);
               }
-              return '';
+              return "";
             });
-          } else if (llmEvent.type === 'text-delta' && llmEvent.delta) {
-            setCurrentAssistantMessage(prev => prev + llmEvent.delta);
-            setStatus('streaming');
-          } else if (llmEvent.type === 'text-end') {
-            console.log('TEXT END received - waiting for message event');
-          } else if (llmEvent.type === 'tool-call') {
+          } else if (llmEvent.type === "text-delta" && llmEvent.delta) {
+            setCurrentAssistantMessage((prev) => prev + llmEvent.delta);
+            setStatus("streaming");
+          } else if (llmEvent.type === "text-end") {
+            console.log("TEXT END received - waiting for message event");
+          } else if (llmEvent.type === "tool-call") {
             // Add tool call to conversation immediately
-            setConversation(prev => [...prev, {
-              id: llmEvent.toolCallId || `tool-${Date.now()}`,
-              type: 'tool',
-              name: llmEvent.toolName || 'tool',
-              input: llmEvent.input,
-              status: 'running',
-              timestamp: Date.now(),
-            }]);
-          } else if (llmEvent.type === 'finish-step') {
-            console.log('FINISH STEP received - waiting for message event');
+            setConversation((prev) => [
+              ...prev,
+              {
+                id: llmEvent.toolCallId || `tool-${Date.now()}`,
+                type: "tool",
+                name: llmEvent.toolName || "tool",
+                input: llmEvent.input,
+                status: "running",
+                timestamp: Date.now(),
+              },
+            ]);
+          } else if (llmEvent.type === "finish-step") {
+            console.log("FINISH STEP received - waiting for message event");
           }
         }
         break;
 
-      case 'message': {
-        console.log('MESSAGE event received:', event);
-        const message = (event.message as { role?: string; content?: unknown }) || {};
-        if (message.role !== 'assistant') {
+      case "message": {
+        console.log("MESSAGE event received:", event);
+        const message =
+          (event.message as { role?: string; content?: unknown }) || {};
+        if (message.role !== "assistant") {
           break;
         }
 
         if (Array.isArray(message.content)) {
           const toolCalls = message.content.filter(
             (part): part is ToolCallContentPart =>
-              (part as ToolCallContentPart)?.type === 'tool-call'
+              (part as ToolCallContentPart)?.type === "tool-call",
           );
           if (toolCalls.length) {
             setConversation((prev) => {
               let updated: ConversationItem[] = prev.map((item) => {
-                if (item.type !== 'tool') return item;
+                if (item.type !== "tool") return item;
                 const match = toolCalls.find(
-                  (part) => part.toolCallId === item.id
+                  (part) => part.toolCallId === item.id,
                 );
                 return match
                   ? {
-                    ...item,
-                    name: match.toolName,
-                    input: match.arguments,
-                    status: 'pending',
-                  }
+                      ...item,
+                      name: match.toolName,
+                      input: match.arguments,
+                      status: "pending",
+                    }
                   : item;
               });
 
               for (const part of toolCalls) {
                 const exists = updated.some(
-                  (item) => item.type === 'tool' && item.id === part.toolCallId
+                  (item) => item.type === "tool" && item.id === part.toolCallId,
                 );
                 if (!exists) {
                   updated = [
                     ...updated,
                     {
                       id: part.toolCallId,
-                      type: 'tool',
+                      type: "tool",
                       name: part.toolName,
                       input: part.arguments,
-                      status: 'pending',
+                      status: "pending",
                       timestamp: Date.now(),
                     },
                   ];
@@ -422,70 +464,82 @@ function PageBody() {
             : `assistant-${Date.now()}`;
 
         if (committedMessageIds.current.has(messageId)) {
-          console.log('⚠️ Message already committed, skipping:', messageId);
+          console.log("⚠️ Message already committed, skipping:", messageId);
           break;
         }
 
         committedMessageIds.current.add(messageId);
 
-        setCurrentAssistantMessage(currentMsg => {
-          console.log('✅ Committing message:', messageId, currentMsg);
+        setCurrentAssistantMessage((currentMsg) => {
+          console.log("✅ Committing message:", messageId, currentMsg);
           if (currentMsg) {
-            setConversation(prev => {
-              const exists = prev.some(m => m.id === messageId);
+            setConversation((prev) => {
+              const exists = prev.some((m) => m.id === messageId);
               if (exists) {
-                console.log('⚠️ Message ID already in array, skipping:', messageId);
+                console.log(
+                  "⚠️ Message ID already in array, skipping:",
+                  messageId,
+                );
                 return prev;
               }
-              return [...prev, {
-                id: messageId,
-                type: 'message',
-                role: 'assistant',
-                content: currentMsg,
-                timestamp: Date.now(),
-              }];
+              return [
+                ...prev,
+                {
+                  id: messageId,
+                  type: "message",
+                  role: "assistant",
+                  content: currentMsg,
+                  timestamp: Date.now(),
+                },
+              ];
             });
           }
-          return '';
+          return "";
         });
-        setStatus('ready');
-        console.log('Status set to ready');
+        setStatus("ready");
+        console.log("Status set to ready");
         break;
       }
 
-      case 'tool-invocation':
-        setConversation(prev => prev.map(item =>
-          item.type === 'tool' && (item.id === event.toolCallId || item.name === event.toolName)
-            ? { ...item, status: 'running' as const }
-            : item
-        ));
+      case "tool-invocation":
+        setConversation((prev) =>
+          prev.map((item) =>
+            item.type === "tool" &&
+            (item.id === event.toolCallId || item.name === event.toolName)
+              ? { ...item, status: "running" as const }
+              : item,
+          ),
+        );
         break;
 
-      case 'tool-result':
-        setConversation(prev => prev.map(item =>
-          item.type === 'tool' && (item.id === event.toolCallId || item.name === event.toolName)
-            ? { ...item, result: event.result, status: 'completed' as const }
-            : item
-        ));
+      case "tool-result":
+        setConversation((prev) =>
+          prev.map((item) =>
+            item.type === "tool" &&
+            (item.id === event.toolCallId || item.name === event.toolName)
+              ? { ...item, result: event.result, status: "completed" as const }
+              : item,
+          ),
+        );
         break;
 
-      case 'error':
+      case "error":
         // Only set error status for actual errors, not connection issues
         {
           const errorMsg = typeof event.error === "string" ? event.error : "";
-          if (errorMsg && !errorMsg.includes('terminated')) {
-            setStatus('error');
-            console.error('Agent error:', errorMsg);
+          if (errorMsg && !errorMsg.includes("terminated")) {
+            setStatus("error");
+            console.error("Agent error:", errorMsg);
           } else {
-            console.log('Connection error (will auto-reconnect):', errorMsg);
-            setStatus('ready');
+            console.log("Connection error (will auto-reconnect):", errorMsg);
+            setStatus("ready");
           }
           setIsRunProcessing(false);
         }
         break;
 
       default:
-        console.log('Unhandled event type:', event.type);
+        console.log("Unhandled event type:", event.type);
     }
   };
 
@@ -497,17 +551,20 @@ function PageBody() {
       return;
     }
 
-    const userMessage = message.text || '';
+    const userMessage = message.text || "";
 
     // Add user message immediately with unique ID
     const userMessageId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    setConversation(prev => [...prev, {
-      id: userMessageId,
-      type: 'message',
-      role: 'user',
-      content: userMessage,
-      timestamp: Date.now(),
-    }]);
+    setConversation((prev) => [
+      ...prev,
+      {
+        id: userMessageId,
+        type: "message",
+        role: "user",
+        content: userMessage,
+        timestamp: Date.now(),
+      },
+    ]);
 
     setStatus("submitted");
     setText("");
@@ -536,11 +593,11 @@ function PageBody() {
         }),
       });
 
-      setStatus('streaming');
+      setStatus("streaming");
     } catch (error) {
-      console.error('Failed to send message:', error);
-      setStatus('error');
-      setTimeout(() => setStatus('ready'), 2000);
+      console.error("Failed to send message:", error);
+      setStatus("error");
+      setTimeout(() => setStatus("ready"), 2000);
     }
   };
 
@@ -565,13 +622,15 @@ function PageBody() {
           if (isMarkdown) {
             subtitle = "Agent (Markdown)";
             const response = await fetch(
-              `/api/rowboat/agent?file=${encodeURIComponent(raw)}`
+              `/api/rowboat/agent?file=${encodeURIComponent(raw)}`,
             );
             if (!response.ok) {
               if (response.status === 404) {
                 text = "";
               } else {
-                throw new Error(`Failed to load agent file: ${response.status}`);
+                throw new Error(
+                  `Failed to load agent file: ${response.status}`,
+                );
               }
             } else {
               const data = await response.json();
@@ -592,14 +651,16 @@ function PageBody() {
             // Load markdown file as plain text from local API
             try {
               const response = await fetch(
-                `/api/rowboat/config?file=${encodeURIComponent(selectedResource.name)}`
+                `/api/rowboat/config?file=${encodeURIComponent(selectedResource.name)}`,
               );
               if (!response.ok) {
                 if (response.status === 404) {
                   // File doesn't exist, start with empty content
                   text = "";
                 } else {
-                  throw new Error(`Failed to load markdown file: ${response.status}`);
+                  throw new Error(
+                    `Failed to load markdown file: ${response.status}`,
+                  );
                 }
               } else {
                 const data = await response.json();
@@ -629,7 +690,9 @@ function PageBody() {
           } else {
             // Try to load as JSON by default
             try {
-              const data = await requestJson(`/config/${encodeURIComponent(selectedResource.name)}`);
+              const data = await requestJson(
+                `/config/${encodeURIComponent(selectedResource.name)}`,
+              );
               subtitle = "Config";
               text = JSON.stringify(data ?? {}, null, 2);
               setArtifactFileType("json");
@@ -643,7 +706,7 @@ function PageBody() {
           setArtifactFileType(detectedType);
 
           const local = await requestJson(
-            `/api/rowboat/run?file=${encodeURIComponent(selectedResource.name)}`
+            `/api/rowboat/run?file=${encodeURIComponent(selectedResource.name)}`,
           );
           if (local?.parsed) {
             text = JSON.stringify(local.parsed, null, 2);
@@ -718,7 +781,7 @@ function PageBody() {
               method: "PUT",
               headers: { "Content-Type": "text/plain" },
               body: artifactText,
-            }
+            },
           );
           if (!response.ok) {
             throw new Error("Failed to save agent file");
@@ -746,7 +809,7 @@ function PageBody() {
               method: "PUT",
               headers: { "Content-Type": "text/plain" },
               body: artifactText,
-            }
+            },
           );
           if (!response.ok) {
             throw new Error("Failed to save markdown file");
@@ -761,18 +824,25 @@ function PageBody() {
             const newProviders = parsed.providers || {};
             const oldProviders = previous.providers || {};
             const toDelete = Object.keys(oldProviders).filter(
-              (name) => !Object.prototype.hasOwnProperty.call(newProviders, name)
+              (name) =>
+                !Object.prototype.hasOwnProperty.call(newProviders, name),
             );
             for (const name of toDelete) {
-              await requestJson(`/models/providers/${encodeURIComponent(name)}`, {
-                method: "DELETE",
-              });
+              await requestJson(
+                `/models/providers/${encodeURIComponent(name)}`,
+                {
+                  method: "DELETE",
+                },
+              );
             }
             for (const name of Object.keys(newProviders)) {
-              await requestJson(`/models/providers/${encodeURIComponent(name)}`, {
-                method: "PUT",
-                body: JSON.stringify(newProviders[name]),
-              });
+              await requestJson(
+                `/models/providers/${encodeURIComponent(name)}`,
+                {
+                  method: "PUT",
+                  body: JSON.stringify(newProviders[name]),
+                },
+              );
             }
             if (parsed.defaults) {
               await requestJson("/models/default", {
@@ -784,7 +854,7 @@ function PageBody() {
             const newServers = parsed.mcpServers || parsed || {};
             const oldServers = previous.mcpServers || {};
             const toDelete = Object.keys(oldServers).filter(
-              (name) => !Object.prototype.hasOwnProperty.call(newServers, name)
+              (name) => !Object.prototype.hasOwnProperty.call(newServers, name),
             );
             for (const name of toDelete) {
               await requestJson(`/mcp/${encodeURIComponent(name)}`, {
@@ -849,28 +919,28 @@ function PageBody() {
               <div className="pointer-events-none sticky bottom-0 z-10 h-16 bg-gradient-to-t from-background via-background/80 to-transparent" />
               <ConversationContent className="!flex !flex-col !items-center !gap-8 !p-4 pt-4 pb-32">
                 <div className="w-full max-w-3xl mx-auto space-y-4">
-
                   {/* Render conversation items in order */}
                   {conversation.map((item) => {
-                    if (item.type === 'message') {
+                    if (item.type === "message") {
                       return (
-                        <Message
-                          key={item.id}
-                          from={item.role}
-                        >
+                        <Message key={item.id} from={item.role}>
                           <MessageContent>
-                            <MessageResponse>
-                              {item.content}
-                            </MessageResponse>
+                            <MessageResponse>{item.content}</MessageResponse>
                           </MessageContent>
                         </Message>
                       );
-                    } else if (item.type === 'tool') {
-                      const stateMap: Record<ToolCall['status'], 'input-streaming' | 'input-available' | 'output-available' | 'output-error'> = {
-                        pending: 'input-streaming',
-                        running: 'input-available',
-                        completed: 'output-available',
-                        error: 'output-error',
+                    } else if (item.type === "tool") {
+                      const stateMap: Record<
+                        ToolCall["status"],
+                        | "input-streaming"
+                        | "input-available"
+                        | "output-available"
+                        | "output-error"
+                      > = {
+                        pending: "input-streaming",
+                        running: "input-available",
+                        completed: "output-available",
+                        error: "output-error",
                       };
 
                       return (
@@ -879,7 +949,7 @@ function PageBody() {
                             <ToolHeader
                               title={item.name}
                               type="tool-call"
-                              state={stateMap[item.status] || 'input-streaming'}
+                              state={stateMap[item.status] || "input-streaming"}
                             />
                             <ToolContent>
                               <ToolInput input={item.input} />
@@ -893,14 +963,12 @@ function PageBody() {
                           </Tool>
                         </div>
                       );
-                    } else if (item.type === 'reasoning') {
+                    } else if (item.type === "reasoning") {
                       return (
                         <div key={item.id} className="mb-2">
                           <Reasoning isStreaming={item.isStreaming}>
                             <ReasoningTrigger />
-                            <ReasoningContent>
-                              {item.content}
-                            </ReasoningContent>
+                            <ReasoningContent>{item.content}</ReasoningContent>
                           </Reasoning>
                         </div>
                       );
@@ -913,9 +981,7 @@ function PageBody() {
                     <div className="mb-2">
                       <Reasoning isStreaming={true}>
                         <ReasoningTrigger />
-                        <ReasoningContent>
-                          {currentReasoning}
-                        </ReasoningContent>
+                        <ReasoningContent>{currentReasoning}</ReasoningContent>
                       </Reasoning>
                     </div>
                   )}
@@ -959,7 +1025,9 @@ function PageBody() {
               <Artifact className="flex-1 min-h-0 h-full">
                 <ArtifactHeader>
                   <div className="flex flex-col">
-                    <ArtifactTitle className="truncate">{artifactTitle}</ArtifactTitle>
+                    <ArtifactTitle className="truncate">
+                      {artifactTitle}
+                    </ArtifactTitle>
                     <ArtifactDescription className="text-xs">
                       {artifactSubtitle || selectedResource.kind}
                       {artifactReadOnly && (
@@ -1001,7 +1069,7 @@ function PageBody() {
                         artifactFileType === "markdown" ? (
                           <MarkdownViewer content={artifactText} />
                         ) : (
-                          <pre className="h-full min-h-[240px] max-h-[70vh] w-full overflow-auto whitespace-pre-wrap rounded-md border bg-background p-4 font-mono text-sm leading-relaxed text-foreground">
+                          <pre className="h-full min-h-[240px] max-h-[70vh] w-full overflow-auto whitespace-pre-wrap rounded-none border bg-background p-4 font-mono text-sm leading-relaxed text-foreground">
                             {artifactText}
                           </pre>
                         )
@@ -1021,7 +1089,8 @@ function PageBody() {
                       )}
                       {artifactReadOnly && (
                         <p className="text-xs text-muted-foreground">
-                          Runs are read-only; use the API to replay or inspect in detail.
+                          Runs are read-only; use the API to replay or inspect
+                          in detail.
                         </p>
                       )}
                     </div>

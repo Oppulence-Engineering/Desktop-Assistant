@@ -60,11 +60,12 @@ Three shifts in 2025 made this category buildable:
 
 ## Why we win
 
-We don't claim a structural moat — the category doesn't have one (neither does Cursor, Granola, or v0). We claim three compounding advantages:
+We don't claim a structural moat — the category doesn't have one (neither does Cursor, Granola, or v0). We claim four compounding advantages:
 
 1. **Integration breadth.** Twelve to eighteen months of Gmail / Calendar / Fireflies / MCP plumbing that actually works under load. Each integration is its own ongoing reliability tax — painful for late entrants to clone.
 2. **Local-first as the trust closer.** Microsoft Copilot won enterprise sovereignty with contractual data controls; we win the *individual operator who refuses to paste client data into a hosted product* with a Markdown vault on their machine. Different segment, different sale, defensible because Granola is structurally cloud.
 3. **Two-surface flywheel.** Desktop produces the personal knowledge primitive; Platform extends the same primitive into embeddable agents for products and teams. One engineering investment, two go-to-market motions — a position that compounds over 24 months.
+4. **Portfolio compounding — owning the loop, not renting it.** The same runtime federates the Oppulence portfolio of financial systems-of-record (Canvas/AR, Cadence/AP, Corinthian/collections) plus two intelligence faculties — **Conduit** (binds every invoice email, reply, and dispute to the record it explains) and **Eigen** (continuous, whole-business stress-testing) — into one autonomous loop: *perceive → foresee → act*, on a durable cloud execution plane the customer's data never leaves. Tool-execution vendors (Composio et al.) rent agents a runtime; we own the entire loop over data the customer keeps. Each new plane is near-zero marginal cost — it inherits scheduling, event-reactivity, metering, and audit the moment it mounts one MCP interface — so portfolio value compounds combinatorially, not additively. This is the wedge from a $30–80/mo individual coworker to a metered autonomous tier sold into financial operations.
 
 ---
 

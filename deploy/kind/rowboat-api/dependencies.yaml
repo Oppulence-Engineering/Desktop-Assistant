@@ -6,6 +6,8 @@ metadata:
     app.kubernetes.io/name: rowboat-api-postgres
     app.kubernetes.io/part-of: rowboat-api-local
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
@@ -35,8 +37,8 @@ spec:
               command: ["pg_isready", "-U", "rowboat"]
             initialDelaySeconds: 10
             periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 6
+            timeoutSeconds: 10
+            failureThreshold: 12
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
@@ -67,6 +69,8 @@ metadata:
     app.kubernetes.io/name: rowboat-api-redis
     app.kubernetes.io/part-of: rowboat-api-local
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
@@ -89,8 +93,8 @@ spec:
               command: ["redis-cli", "ping"]
             initialDelaySeconds: 10
             periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 6
+            timeoutSeconds: 10
+            failureThreshold: 12
 ---
 apiVersion: v1
 kind: Service
@@ -110,11 +114,86 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: rowboat-api-temporal
+  labels:
+    app.kubernetes.io/name: rowboat-api-temporal
+    app.kubernetes.io/part-of: rowboat-api-local
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rowboat-api-temporal
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rowboat-api-temporal
+        app.kubernetes.io/part-of: rowboat-api-local
+    spec:
+      containers:
+        - name: temporal
+          image: temporalio/auto-setup:1.27.2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: frontend
+              containerPort: 7233
+          env:
+            - name: DB
+              value: postgres12
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_SEEDS
+              value: rowboat-api-postgres
+            - name: POSTGRES_USER
+              value: rowboat
+            - name: POSTGRES_PWD
+              value: rowboat
+            - name: ENABLE_ES
+              value: "false"
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - tctl --address "$(hostname -i):7233" cluster health | grep -q SERVING
+            initialDelaySeconds: 180
+            periodSeconds: 10
+            timeoutSeconds: 20
+            failureThreshold: 18
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rowboat-api-temporal
+  labels:
+    app.kubernetes.io/name: rowboat-api-temporal
+    app.kubernetes.io/part-of: rowboat-api-local
+spec:
+  selector:
+    app.kubernetes.io/name: rowboat-api-temporal
+  ports:
+    - name: frontend
+      port: 7233
+      targetPort: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: rowboat-api-devstack
   labels:
     app.kubernetes.io/name: rowboat-api-devstack
     app.kubernetes.io/part-of: rowboat-api-local
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
@@ -146,8 +225,8 @@ spec:
               port: http
             initialDelaySeconds: 15
             periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 6
+            timeoutSeconds: 10
+            failureThreshold: 12
 ---
 apiVersion: v1
 kind: Service

@@ -121,7 +121,7 @@ function HelpSettings() {
         className="w-full justify-start gap-3 h-auto py-3"
         onClick={() => window.open("https://github.com/rowboatlabs/rowboat/issues/new", "_blank")}
       >
-        <div className="flex size-8 items-center justify-center rounded-md bg-destructive/10">
+        <div className="flex size-8 items-center justify-center rounded-none bg-destructive/10">
           <Bug className="size-4 text-destructive" />
         </div>
         <div className="flex flex-col items-start">
@@ -134,7 +134,7 @@ function HelpSettings() {
         className="w-full justify-start gap-3 h-auto py-3"
         onClick={() => window.open("https://discord.com/invite/wajrgmJQ6b", "_blank")}
       >
-        <div className="flex size-8 items-center justify-center rounded-md bg-[#5865F2]">
+        <div className="flex size-8 items-center justify-center rounded-none bg-[#5865F2]">
           <MessageCircle className="size-4 text-white" />
         </div>
         <div className="flex flex-col items-start">
@@ -147,7 +147,7 @@ function HelpSettings() {
         className="w-full justify-start gap-3 h-auto py-3"
         onClick={() => window.open("mailto:contact@rowboatlabs.com", "_blank")}
       >
-        <div className="flex size-8 items-center justify-center rounded-md bg-muted">
+        <div className="flex size-8 items-center justify-center rounded-none bg-muted">
           <Mail className="size-4" />
         </div>
         <div className="flex flex-col items-start">
@@ -195,7 +195,7 @@ function ThemeOption({
     <button
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
+        "flex flex-col items-center gap-2 p-4 rounded-none border-2 transition-all",
         isSelected
           ? "border-primary bg-primary/5"
           : "border-border hover:border-primary/50 hover:bg-muted/50"
@@ -575,7 +575,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           setTestState({ status: "idle" })
         }}
         className={cn(
-          "rounded-md border px-3 py-2.5 text-left transition-colors relative",
+          "rounded-none border px-3 py-2.5 text-left transition-colors relative",
           isSelected
             ? "border-primary bg-primary/5"
             : "border-border hover:bg-accent"
@@ -1110,7 +1110,7 @@ function ToolsLibrarySettings({ dialogOpen, rowboatConnected }: { dialogOpen: bo
           <div className="space-y-2">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Available Toolkits</span>
             {toolkitsUnavailableMessage && (
-              <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+              <div className="flex gap-2 rounded-none border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                 <span>{toolkitsUnavailableMessage}</span>
               </div>
@@ -1138,7 +1138,7 @@ function ToolsLibrarySettings({ dialogOpen, rowboatConnected }: { dialogOpen: bo
                 const isConnecting = connectingToolkit === toolkit.slug
 
                 return (
-                  <div key={toolkit.slug} className="border rounded-lg overflow-hidden">
+                  <div key={toolkit.slug} className="border rounded-none overflow-hidden">
                     <div className="flex items-center gap-3 px-3 py-2.5">
                       {/* Logo */}
                       {toolkit.meta.logo ? (
@@ -1405,7 +1405,7 @@ function TagGroupTable({
         </Button>
       </div>
       {!collapsed && group.tags.length > 0 && (
-        <div className="border rounded-md overflow-hidden">
+        <div className="border rounded-none overflow-hidden">
           <div className={cn(
             "gap-1 bg-muted/50 px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider grid",
             isEmail ? "grid-cols-[100px_1fr_1fr_60px_24px]" : "grid-cols-[100px_1fr_1fr_24px]"
@@ -1690,7 +1690,7 @@ function AgentStatusRow({
   const ready = status?.installed && status?.signedIn
   const needsSignInOnly = status?.installed && !status?.signedIn
   return (
-    <div className="rounded-md border px-3 py-2.5 flex items-center gap-3">
+    <div className="rounded-none border px-3 py-2.5 flex items-center gap-3">
       <Terminal className="size-4 text-muted-foreground shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium">{name}</div>
@@ -1836,7 +1836,7 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
         </div>
       </div>
 
-      <div className="rounded-md border px-3 py-3 flex items-start gap-3">
+      <div className="rounded-none border px-3 py-3 flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium">Enable code mode</div>
           <div className="text-xs text-muted-foreground mt-0.5">
@@ -1851,7 +1851,7 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
       </div>
 
       {enabled && status && !anyReady && (
-        <div className="rounded-md border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 px-3 py-2.5 flex items-start gap-2 text-xs">
+        <div className="rounded-none border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 px-3 py-2.5 flex items-start gap-2 text-xs">
           <AlertTriangle className="size-4 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
           <div className="text-amber-900 dark:text-amber-200">
             Neither Claude Code nor Codex is ready. Install at least one and sign in with a subscription
@@ -1992,7 +1992,7 @@ export function SettingsDialog({ children, defaultTab = "account", open: control
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
                   className={cn(
-                    "flex items-center gap-2 px-2 py-2 rounded-md text-sm transition-colors text-left",
+                    "flex items-center gap-2 px-2 py-2 rounded-none text-sm transition-colors text-left",
                     activeTab === tab.id
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-background/50"
@@ -2053,7 +2053,7 @@ export function SettingsDialog({ children, defaultTab = "account", open: control
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-full resize-none bg-muted/50 rounded-md p-3 font-mono text-sm border-0 focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="w-full h-full resize-none bg-muted/50 rounded-none p-3 font-mono text-sm border-0 focus:outline-none focus:ring-1 focus:ring-ring"
                   spellCheck={false}
                   placeholder="Loading configuration..."
                 />

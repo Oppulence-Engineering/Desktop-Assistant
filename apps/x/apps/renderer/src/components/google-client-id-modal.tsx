@@ -1,25 +1,25 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const GOOGLE_CLIENT_ID_SETUP_GUIDE_URL =
-  "https://github.com/rowboatlabs/rowboat/blob/main/google-setup.md"
+  "https://github.com/rowboatlabs/rowboat/blob/main/google-setup.md";
 
 interface GoogleClientIdModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (clientId: string, clientSecret: string) => void
-  isSubmitting?: boolean
-  description?: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (clientId: string, clientSecret: string) => void;
+  isSubmitting?: boolean;
+  description?: string;
 }
 
 export function GoogleClientIdModal({
@@ -29,39 +29,45 @@ export function GoogleClientIdModal({
   isSubmitting = false,
   description,
 }: GoogleClientIdModalProps) {
-  const [clientId, setClientId] = useState("")
-  const [clientSecret, setClientSecret] = useState("")
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
 
   useEffect(() => {
     if (!open) {
-      setClientId("")
-      setClientSecret("")
+      setClientId("");
+      setClientSecret("");
     }
-  }, [open])
+  }, [open]);
 
-  const trimmedClientId = clientId.trim()
-  const trimmedClientSecret = clientSecret.trim()
-  const isValid = trimmedClientId.length > 0 && trimmedClientSecret.length > 0
+  const trimmedClientId = clientId.trim();
+  const trimmedClientSecret = clientSecret.trim();
+  const isValid = trimmedClientId.length > 0 && trimmedClientSecret.length > 0;
 
   const handleSubmit = () => {
-    if (!isValid || isSubmitting) return
-    onSubmit(trimmedClientId, trimmedClientSecret)
-  }
+    if (!isValid || isSubmitting) return;
+    onSubmit(trimmedClientId, trimmedClientSecret);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(28rem,calc(100%-2rem))] max-w-md p-0 gap-0 overflow-hidden rounded-xl">
+      <DialogContent className="w-[min(28rem,calc(100%-2rem))] max-w-md p-0 gap-0 overflow-hidden rounded-none">
         <div className="p-6 pb-0">
           <DialogHeader className="space-y-1.5">
-            <DialogTitle className="text-lg font-semibold">Google OAuth Credentials</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">
+              Google OAuth Credentials
+            </DialogTitle>
             <DialogDescription className="text-sm">
-              {description ?? "Enter the credentials for your Google OAuth app to connect."}
+              {description ??
+                "Enter the credentials for your Google OAuth app to connect."}
             </DialogDescription>
           </DialogHeader>
         </div>
         <div className="px-6 py-4 space-y-3">
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block" htmlFor="google-client-id">
+            <label
+              className="text-xs font-medium text-muted-foreground mb-1.5 block"
+              htmlFor="google-client-id"
+            >
               Client ID
             </label>
             <Input
@@ -71,8 +77,8 @@ export function GoogleClientIdModal({
               onChange={(event) => setClientId(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
-                  event.preventDefault()
-                  handleSubmit()
+                  event.preventDefault();
+                  handleSubmit();
                 }
               }}
               className="font-mono text-xs"
@@ -80,7 +86,10 @@ export function GoogleClientIdModal({
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block" htmlFor="google-client-secret">
+            <label
+              className="text-xs font-medium text-muted-foreground mb-1.5 block"
+              htmlFor="google-client-secret"
+            >
               Client Secret
             </label>
             <Input
@@ -91,8 +100,8 @@ export function GoogleClientIdModal({
               onChange={(event) => setClientSecret(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
-                  event.preventDefault()
-                  handleSubmit()
+                  event.preventDefault();
+                  handleSubmit();
                 }
               }}
               className="font-mono text-xs"
@@ -119,11 +128,15 @@ export function GoogleClientIdModal({
           >
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={!isValid || isSubmitting}>
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={!isValid || isSubmitting}
+          >
             Continue
           </Button>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

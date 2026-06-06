@@ -193,7 +193,7 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
             Loading plan details...
           </div>
         ) : billing ? (
-          <div className="rounded-lg border p-4 space-y-3">
+          <div className="rounded-none border p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium capitalize">

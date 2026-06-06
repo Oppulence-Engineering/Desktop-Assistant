@@ -24,7 +24,7 @@ export function Section({
     title: string;
     children: React.ReactNode;
 }) {
-    return <div className="w-full flex flex-col gap-4 border border p-4 rounded-md">
+    return <div className="w-full flex flex-col gap-4 border border p-4 rounded-none">
         <h2 className="font-semibold pb-2 border-b border">{title}</h2>
         {children}
     </div>;

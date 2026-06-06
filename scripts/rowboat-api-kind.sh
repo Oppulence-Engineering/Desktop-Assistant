@@ -206,6 +206,7 @@ deploy_dependencies() {
   kubectl apply -n "$NAMESPACE" -f "$DEPS_FILE"
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-postgres --timeout=180s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-redis --timeout=180s
+  kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-temporal --timeout=240s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-devstack --timeout=180s
 }
 
@@ -224,7 +225,11 @@ deploy_chart() {
   # existingSecret, so re-sync after upgrade before restarting pods.
   sync_infisical_cli_secret
   kubectl rollout restart -n "$NAMESPACE" deployment/rowboat-api
+  if kubectl get deployment -n "$NAMESPACE" rowboat-api-worker >/dev/null 2>&1; then
+    kubectl rollout restart -n "$NAMESPACE" deployment/rowboat-api-worker
+  fi
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api --timeout=180s
+  kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-worker --timeout=180s
 }
 
 port_in_use() {
@@ -378,6 +383,86 @@ validate_stack() {
   echo "authenticated /v1/llm/models:"
   curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/llm/models"
   echo
+
+  validate_temporal_background_task "$token"
+}
+
+validate_temporal_background_task() {
+  local token="$1"
+  local slug="kind-api-worker-$(date +%s)"
+
+  echo "authenticated api-worker background task:"
+  local task_json
+  task_json="$(curl_smoke \
+    -H "Authorization: Bearer ${token}" \
+    -H "Content-Type: application/json" \
+    -X POST \
+    --data "{\"slug\":\"${slug}\",\"name\":\"Kind API Worker Smoke\",\"instructions\":\"Write a short status artifact for the local Temporal smoke test.\",\"executionTarget\":\"api\"}" \
+    "http://localhost:${API_PORT}/v1/background-tasks")"
+  echo "$task_json"
+
+  local revision
+  revision="$(sed -n 's/.*"revision"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' <<<"$task_json" | head -1)"
+
+  local trigger_json
+  trigger_json="$(curl_smoke \
+    -H "Authorization: Bearer ${token}" \
+    -H "Content-Type: application/json" \
+    -X POST \
+    --data '{"context":"Run from kind validation."}' \
+    "http://localhost:${API_PORT}/v1/background-tasks/${slug}/trigger")"
+  echo "$trigger_json"
+
+  local run_id
+  run_id="$(sed -n 's/.*"runId"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' <<<"$trigger_json" | head -1)"
+  if [[ -z "$run_id" ]]; then
+    echo "could not parse api-worker runId" >&2
+    exit 1
+  fi
+
+  local status_json=""
+  for _ in $(seq 1 40); do
+    status_json="$(curl_smoke \
+      -H "Authorization: Bearer ${token}" \
+      "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs/${run_id}/status")"
+    if [[ "$status_json" == *'"status":"succeeded"'* ]]; then
+      echo "$status_json"
+      break
+    fi
+    if [[ "$status_json" == *'"status":"failed"'* ]]; then
+      echo "$status_json" >&2
+      echo "api-worker background task failed" >&2
+      exit 1
+    fi
+    sleep 2
+  done
+  if [[ "$status_json" != *'"status":"succeeded"'* ]]; then
+    echo "$status_json" >&2
+    echo "api-worker background task did not complete before timeout" >&2
+    exit 1
+  fi
+
+  local events_json
+  events_json="$(curl_smoke \
+    -H "Authorization: Bearer ${token}" \
+    "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs/${run_id}/events?afterSeq=0")"
+  if [[ "$events_json" != *'"events"'* ]]; then
+    echo "api-worker events polling failed" >&2
+    exit 1
+  fi
+  echo "api-worker background task: ok"
+
+  local latest_task_json
+  latest_task_json="$(curl_smoke \
+    -H "Authorization: Bearer ${token}" \
+    "http://localhost:${API_PORT}/v1/background-tasks/${slug}")"
+  revision="$(sed -n 's/.*"revision"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' <<<"$latest_task_json" | head -1)"
+  if [[ -n "$revision" ]]; then
+    curl_smoke \
+      -H "Authorization: Bearer ${token}" \
+      -X DELETE \
+      "http://localhost:${API_PORT}/v1/background-tasks/${slug}?revision=${revision}" >/dev/null || true
+  fi
 }
 
 helm_validate() {
@@ -431,12 +516,15 @@ validate_kubernetes() {
   echo "rollouts:"
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-postgres --timeout=180s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-redis --timeout=180s
+  kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-temporal --timeout=240s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-devstack --timeout=180s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api --timeout=180s
+  kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-worker --timeout=180s
 
   echo "service EndpointSlices:"
   validate_service_endpoints rowboat-api
   validate_service_endpoints rowboat-api-devstack
+  validate_service_endpoints rowboat-api-temporal
 }
 
 validate_service_endpoints() {

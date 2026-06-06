@@ -346,7 +346,7 @@ export function BrowserPane({ onClose, forceHidden = false }: BrowserPaneProps) 
           onClick={handleBack}
           disabled={!activeTab?.canGoBack}
           className={cn(
-            'flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors',
+            'flex h-7 w-7 items-center justify-center rounded-none text-muted-foreground transition-colors',
             activeTab?.canGoBack ? 'hover:bg-accent hover:text-foreground' : 'opacity-40',
           )}
           aria-label="Back"
@@ -358,7 +358,7 @@ export function BrowserPane({ onClose, forceHidden = false }: BrowserPaneProps) 
           onClick={handleForward}
           disabled={!activeTab?.canGoForward}
           className={cn(
-            'flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors',
+            'flex h-7 w-7 items-center justify-center rounded-none text-muted-foreground transition-colors',
             activeTab?.canGoForward ? 'hover:bg-accent hover:text-foreground' : 'opacity-40',
           )}
           aria-label="Forward"
@@ -370,7 +370,7 @@ export function BrowserPane({ onClose, forceHidden = false }: BrowserPaneProps) 
           onClick={handleReload}
           disabled={!activeTab}
           className={cn(
-            'flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors',
+            'flex h-7 w-7 items-center justify-center rounded-none text-muted-foreground transition-colors',
             activeTab ? 'hover:bg-accent hover:text-foreground' : 'opacity-40',
           )}
           aria-label="Reload"
@@ -396,7 +396,7 @@ export function BrowserPane({ onClose, forceHidden = false }: BrowserPaneProps) 
             }}
             placeholder="Enter URL or search..."
             className={cn(
-              'h-7 w-full rounded-md border border-transparent bg-background px-3 text-sm text-foreground',
+              'h-7 w-full rounded-none border border-transparent bg-background px-3 text-sm text-foreground',
               'placeholder:text-muted-foreground/60',
               'focus:border-border focus:outline-hidden',
             )}
@@ -408,7 +408,7 @@ export function BrowserPane({ onClose, forceHidden = false }: BrowserPaneProps) 
         <button
           type="button"
           onClick={onClose}
-          className="ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-none text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           aria-label="Close browser"
         >
           <X className="size-4" />

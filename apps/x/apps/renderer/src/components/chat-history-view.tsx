@@ -73,7 +73,7 @@ export function ChatHistoryView({
             <button
               type="button"
               onClick={onOpenSearch}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-accent"
+              className="inline-flex items-center gap-1.5 rounded-none border border-border bg-background px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-accent"
             >
               <SearchIcon className="size-4" />
               <span>Search</span>

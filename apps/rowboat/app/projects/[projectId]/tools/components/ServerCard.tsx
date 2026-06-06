@@ -1,15 +1,20 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import { PictureImg } from '@/components/ui/picture-img';
-import clsx from 'clsx';
-import { z } from 'zod';
-import { Chip } from '@heroui/react';
-import { Server, MoreVertical } from 'lucide-react';
-import { Workflow, WorkflowTool } from '@/app/lib/types/workflow_types';
+import { useCallback, useEffect, useState } from "react";
+import { PictureImg } from "@/components/ui/picture-img";
+import clsx from "clsx";
+import { z } from "zod";
+import { Chip } from "@heroui/react";
+import { Server, MoreVertical } from "lucide-react";
+import { Workflow, WorkflowTool } from "@/app/lib/types/workflow_types";
 import { fetchTools } from "@/app/actions/custom-mcp-server.actions";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/react';
-import { Button } from '@heroui/react';
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/react";
+import { Button } from "@heroui/react";
 
 type ServerCardProps = {
   serverName: string;
@@ -20,22 +25,22 @@ type ServerCardProps = {
 };
 
 const serverCardStyles = {
-    base: clsx(
-        "group p-6 rounded-xl transition-all duration-200 cursor-pointer",
-        "bg-white dark:bg-gray-900",
-        "border border-gray-200 dark:border-gray-700",
-        "shadow-md dark:shadow-gray-900/20",
-        "hover:shadow-lg dark:hover:shadow-gray-900/30",
-        "hover:border-blue-300 dark:hover:border-blue-600",
-        "hover:bg-gray-50/50 dark:hover:bg-gray-800/50",
-        "hover:-translate-y-1",
-        "min-h-[200px] flex flex-col"
-    ),
+  base: clsx(
+    "group p-6 rounded-none transition-all duration-200 cursor-pointer",
+    "bg-white dark:bg-gray-900",
+    "border border-gray-200 dark:border-gray-700",
+    "shadow-md dark:shadow-gray-900/20",
+    "hover:shadow-lg dark:hover:shadow-gray-900/30",
+    "hover:border-blue-300 dark:hover:border-blue-600",
+    "hover:bg-gray-50/50 dark:hover:bg-gray-800/50",
+    "hover:-translate-y-1",
+    "min-h-[200px] flex flex-col",
+  ),
 };
 
-export function ServerCard({ 
-  serverName, 
-  serverUrl, 
+export function ServerCard({
+  serverName,
+  serverUrl,
   workflowTools,
   onSelectServer,
   onDeleteServer,
@@ -53,7 +58,7 @@ export function ServerCard({
         const fetched = await fetchTools(serverUrl, serverName);
         setTools(fetched);
       } catch (err: any) {
-        setToolsError(err?.message || 'Failed to fetch tools');
+        setToolsError(err?.message || "Failed to fetch tools");
         setTools([]);
       } finally {
         setToolsLoading(false);
@@ -68,16 +73,16 @@ export function ServerCard({
   }, [onSelectServer]);
 
   // Calculate selected tools count for this server
-  const selectedToolsCount = workflowTools
-    .filter(tool => tool.isMcp && tool.mcpServerName === serverName)
-    .length;
+  const selectedToolsCount = workflowTools.filter(
+    (tool) => tool.isMcp && tool.mcpServerName === serverName,
+  ).length;
 
   return (
     <div className={serverCardStyles.base} onClick={handleCardClick}>
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="flex items-start gap-3 mb-4">
-          <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 bg-blue-500 rounded-none flex items-center justify-center flex-shrink-0">
             <Server className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1 min-w-0">
@@ -86,40 +91,27 @@ export function ServerCard({
             </h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               {toolsLoading ? (
-                <Chip
-                  color="secondary"
-                  variant="faded"
-                  size="sm"
-                >
+                <Chip color="secondary" variant="faded" size="sm">
                   Loading tools...
                 </Chip>
               ) : toolsError ? (
-                <Chip
-                  color="danger"
-                  variant="faded"
-                  size="sm"
-                >
+                <Chip color="danger" variant="faded" size="sm">
                   Error loading tools
                 </Chip>
               ) : (
-                <Chip
-                  color="secondary"
-                  variant="faded"
-                  size="sm"
-                >
-                  {selectedToolsCount > 0 
+                <Chip color="secondary" variant="faded" size="sm">
+                  {selectedToolsCount > 0
                     ? `${tools.length} tools, ${selectedToolsCount} selected`
-                    : `${tools.length} tools`
-                  }
+                    : `${tools.length} tools`}
                 </Chip>
               )}
             </div>
           </div>
           <Dropdown>
             <DropdownTrigger>
-              <Button 
-                variant="light" 
-                size="sm" 
+              <Button
+                variant="light"
+                size="sm"
                 isIconOnly
                 title="More options"
                 aria-label="More options"
@@ -140,7 +132,7 @@ export function ServerCard({
             </DropdownMenu>
           </Dropdown>
         </div>
-        
+
         {/* Description */}
         <div className="flex-1">
           <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
@@ -152,11 +144,7 @@ export function ServerCard({
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Chip
-                color='success'
-                variant='flat'
-                size="sm"
-              >
+              <Chip color="success" variant="flat" size="sm">
                 Custom Server
               </Chip>
             </div>
@@ -165,4 +153,4 @@ export function ServerCard({
       </div>
     </div>
   );
-} 
+}

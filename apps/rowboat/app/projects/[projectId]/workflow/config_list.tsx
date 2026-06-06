@@ -28,9 +28,9 @@ export function ListItem({
 }) {
     return <div className="flex items-center gap-2">
         <div className="bg-gray-400 rounded-full w-1 h-1"></div>
-        <div className="flex items-center gap-2 bg-gray-100 rounded-md px-2 py-1 group">
+        <div className="flex items-center gap-2 bg-gray-100 rounded-none px-2 py-1 group">
             <div className="grow text-sm">{children}</div>
-            <button onClick={onRemove} className="hidden rounded-md hover:bg-gray-500 text-gray-500 hover:text-white group-hover:block">
+            <button onClick={onRemove} className="hidden rounded-none hover:bg-gray-500 text-gray-500 hover:text-white group-hover:block">
                 <XIcon size={16} />
             </button>
         </div>

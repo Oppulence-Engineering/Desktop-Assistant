@@ -58,8 +58,8 @@ export const AskHumanRequest = ({
   return (
     <div
       className={cn(
-        "not-prose mb-4 w-full rounded-md border border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20",
-        className
+        "not-prose mb-4 w-full rounded-none border border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20",
+        className,
       )}
       {...props}
     >

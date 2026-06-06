@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Dialog,
@@ -6,13 +6,13 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface ComposioGoogleMigrationModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onReconnect: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onReconnect: () => void;
 }
 
 /**
@@ -33,7 +33,7 @@ export function ComposioGoogleMigrationModal({
 }: ComposioGoogleMigrationModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(28rem,calc(100%-2rem))] max-w-md p-0 gap-0 overflow-hidden rounded-xl">
+      <DialogContent className="w-[min(28rem,calc(100%-2rem))] max-w-md p-0 gap-0 overflow-hidden rounded-none">
         <div className="p-6 pb-0">
           <DialogHeader className="space-y-1.5">
             <DialogTitle className="text-lg font-semibold">
@@ -51,18 +51,14 @@ export function ComposioGoogleMigrationModal({
           </DialogHeader>
         </div>
         <div className="flex justify-end gap-2 px-6 py-4 mt-6 border-t bg-muted/30">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
             I&apos;ll do this later
           </Button>
           <Button
             size="sm"
             onClick={() => {
-              onReconnect()
-              onOpenChange(false)
+              onReconnect();
+              onOpenChange(false);
             }}
           >
             Reconnect Google
@@ -70,5 +66,5 @@ export function ComposioGoogleMigrationModal({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

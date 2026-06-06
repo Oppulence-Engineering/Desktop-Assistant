@@ -485,28 +485,28 @@ export function DataSourceConfig({
     const statusIndicator = () => {
         if (isPending) {
             return (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400">
                     <Spinner size="sm" color="warning" />
                     <span className="text-sm font-medium">Processing</span>
                 </div>
             );
         } else if (isError) {
             return (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
                     <AlertTriangle className="w-4 h-4" />
                     <span className="text-sm font-medium">Error</span>
                 </div>
             );
         } else if (isActive) {
             return (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
                     <CheckCircle className="w-4 h-4" />
                     <span className="text-sm font-medium">Active</span>
                 </div>
             );
         } else {
             return (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400">
                     <Circle className="w-4 h-4" />
                     <span className="text-sm font-medium">Inactive</span>
                 </div>
@@ -566,7 +566,7 @@ export function DataSourceConfig({
                         <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Status</h3>
                         {statusIndicator()}
                         {isError && dataSource.error && (
-                            <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-md">
+                            <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-none">
                                 <p className="text-sm text-red-700 dark:text-red-400">{dataSource.error}</p>
                             </div>
                         )}
@@ -607,7 +607,7 @@ export function DataSourceConfig({
                     {dataSource.description && (
                         <div className="space-y-3">
                             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Description</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-none">
                                 {dataSource.description}
                             </p>
                         </div>
@@ -625,7 +625,7 @@ export function DataSourceConfig({
                             {/* File Upload Area */}
                             <div
                                 {...getRootProps()}
-                                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
+                                className={`border-2 border-dashed rounded-none p-6 text-center cursor-pointer transition-colors
                                     ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-gray-300 dark:border-gray-700'}`}
                             >
                                 <input {...getInputProps()} />
@@ -650,12 +650,12 @@ export function DataSourceConfig({
                             </div>
                             
                             {filesLoading ? (
-                                <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-none">
                                     <Spinner size="sm" />
                                     <p className="text-gray-600 dark:text-gray-300">Loading files...</p>
                                 </div>
                             ) : files.length === 0 ? (
-                                <div className="text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <div className="text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-none">
                                     <FileIcon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                                     <p className="text-gray-500 dark:text-gray-400">No files uploaded yet</p>
                                 </div>
@@ -664,7 +664,7 @@ export function DataSourceConfig({
                                     {files.map((file) => (
                                         <div
                                             key={file.id}
-                                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border"
+                                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-none border"
                                         >
                                             <div className="flex items-center gap-3 flex-1 min-w-0">
                                                 <FileIcon className="w-4 h-4 text-gray-500 flex-shrink-0" />
@@ -740,7 +740,7 @@ export function DataSourceConfig({
                             ) : (
                                 <form 
                                     action={handleAddUrls}
-                                    className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border"
+                                    className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-none border"
                                 >
                                     <div className="space-y-2">
                                         <label className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -779,12 +779,12 @@ export function DataSourceConfig({
                             )}
                             
                             {urlsLoading ? (
-                                <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-none">
                                     <Spinner size="sm" />
                                     <p className="text-gray-600 dark:text-gray-300">Loading URLs...</p>
                                 </div>
                             ) : urls.length === 0 ? (
-                                <div className="text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <div className="text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-none">
                                     <GlobeIcon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                                     <p className="text-gray-500 dark:text-gray-400">No URLs added yet</p>
                                 </div>
@@ -793,7 +793,7 @@ export function DataSourceConfig({
                                     {urls.map((url) => (
                                         <div
                                             key={url.id}
-                                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border"
+                                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-none border"
                                         >
                                             <div className="flex items-center gap-3 flex-1 min-w-0">
                                                 <GlobeIcon className="w-4 h-4 text-gray-500 flex-shrink-0" />
@@ -857,7 +857,7 @@ export function DataSourceConfig({
                             </div>
                             
                             {textLoading ? (
-                                <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-none">
                                     <Spinner size="sm" />
                                     <p className="text-gray-600 dark:text-gray-300">Loading content...</p>
                                 </div>
@@ -888,7 +888,7 @@ export function DataSourceConfig({
                     {/* Usage Information */}
                     <div className="space-y-3">
                         <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Usage</h3>
-                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-none">
                             <div className="flex items-start gap-3">
                                 <div className="w-5 h-5 text-blue-500 mt-0.5">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">

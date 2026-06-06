@@ -39,7 +39,7 @@ export function Nav({
         </Tooltip>
         {!collapsed && <div className="flex flex-col gap-1">
             <Tooltip content="Change project" showArrow placement="bottom-end" delay={0} closeDelay={0}>
-                <Link className="relative group flex flex-col px-2 py-2 border border-gray-200 rounded-md hover:border-gray-500 transition-colors duration-100" href="/projects">
+                <Link className="relative group flex flex-col px-2 py-2 border border-gray-200 rounded-none hover:border-gray-500 transition-colors duration-100" href="/projects">
                     <div className="flex flex-row items-center gap-2">
                         <FolderOpenIcon size={16} />
                         <div className="truncate text-sm">

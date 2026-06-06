@@ -181,7 +181,7 @@ export function ScrapeSource({
                                     name="urls"
                                     rows={5}
                                     placeholder="https://example.com"
-                                    className="rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750"
+                                    className="rounded-none p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750"
                                 />
                             </div>
                             <div className="flex gap-2">

@@ -275,7 +275,7 @@ const App = forwardRef<{ handleCopyChat: () => void; handleUserMessage: (message
                 </div>
                 <div className="shrink-0 px-0 pb-10">
                     {responseError && (
-                        <div className="mb-4 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex gap-2 justify-between items-center text-sm">
+                        <div className="mb-4 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-none flex gap-2 justify-between items-center text-sm">
                             <p className="text-red-600 dark:text-red-400">{responseError}</p>
                             <Button
                                 size="sm"

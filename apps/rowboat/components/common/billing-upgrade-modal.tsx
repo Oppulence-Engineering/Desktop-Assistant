@@ -146,7 +146,7 @@ export function BillingUpgradeModal({ isOpen, onClose, errorMessage }: BillingUp
                                 {visiblePlans.map((plan) => (
                                     <div 
                                         key={plan.plan}
-                                        className={`relative rounded-lg border p-6 ${
+                                        className={`relative rounded-none border p-6 ${
                                             plan.recommended 
                                                 ? 'border-blue-500 bg-gray-50 dark:bg-gray-800' 
                                                 : 'border-gray-200 dark:border-gray-700'

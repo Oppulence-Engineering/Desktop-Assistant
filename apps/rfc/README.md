@@ -1,0 +1,327 @@
+# Cloud-Native Background Workflows — RFC Set
+
+This directory holds the forward-looking RFCs that take Rowboat's background tasks from
+**cloud-executed but desktop-driven** to **fully cloud-native** — scheduled, event-driven,
+and useful while the desktop app is closed.
+
+They decompose the parent design docs into shippable, dependency-ordered work:
+
+- [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md) — the canonical reference for what exists today (data model, API surface, Temporal worker, desktop integration) and the gap analysis these RFCs close.
+- [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md) — the API-side execution plan and conventions.
+
+> **The thesis in one sentence:** today an `executionTarget: api` task is *executed* in the
+> cloud (Temporal worker) but *initiated* by the desktop's 15-second poll — so closing the
+> laptop silently pauses every scheduled and event-driven cloud job. These RFCs move
+> initiation (cron, windows, events) and a real execution runtime into the Rowboat API,
+> and turn the desktop into the **control plane** that observes it.
+
+## The RFCs
+
+| # | Title | Layer | What it adds |
+| --- | --- | --- | --- |
+| [001](./001-api-owned-scheduler.md) | API-Owned Scheduler | rowboat-api | A scheduler process that evaluates cron/window triggers server-side and fires runs while the desktop is offline. |
+| [002](./002-durable-schedule-state.md) | Durable Schedule State & Leases | ent / Postgres | A `BackgroundTaskScheduleState` entity + atomic lease so N scheduler replicas fire each cycle exactly once. |
+| [003](./003-cloud-event-ingestion.md) | Cloud Event Ingestion | rowboat-api | An event envelope + ingestion/routing layer that starts `trigger=event` cloud runs from Gmail/Calendar/Slack/webhooks. |
+| [004](./004-cloud-agent-runtime.md) | Cloud-Safe Agent Runtime | Temporal worker | The first production runtime: LLM access, a scoped/audited tool surface, connector reads, and enforced limits. |
+| [005](./005-temporal-schedule-integration.md) | Temporal Schedule Integration | Temporal | Exact-cron triggers via durable Temporal Schedules (windows/events stay in Rowboat code). |
+| [006](./006-desktop-cloud-control-plane.md) | Desktop as Control Plane | apps/x | Makes cloud-managed schedules legible: next run, schedule health, runs-while-closed, event→run links. |
+| [007](./007-production-cloud-enablement.md) | Production Enablement | Helm / infra | Flips Temporal Cloud on in staging→production with SLOs, PromQL alerts, and runbooks. |
+| [008](./008-conduit-eigen-faculties.md) | Conduit & Eigen Faculties | cross-portfolio | Plugs the **evidence** (Conduit) and **foresight** (Eigen) planes into the event bus + runtime — the federated financial brain. |
+
+RFCs 001–007 build the execution plane; **008** is the first *faculty* RFC that proves the
+fabric extends to new portfolio planes. All are **Draft**. Each carries a metadata block,
+grounded `file:line` references into the current codebase, mermaid diagrams, a **Decisions**
+section (resolved forks), and a test plan.
+
+## Dependency graph
+
+```mermaid
+flowchart TD
+    P[Parent RFC + API Plan<br/>docs/CLOUD_NATIVE_*] --> R001 & R002 & R003 & R004 & R005 & R006 & R007
+
+    subgraph found[Foundations]
+      S0[WP0 · Extract shared Starter<br/>refactor of handler.triggerAPIRun]
+    end
+
+    S0 --> R001[RFC 001 · Scheduler loop]
+    S0 --> R003[RFC 003 · Event router]
+    S0 --> R005[RFC 005 · Temporal Schedules]
+
+    R002[RFC 002 · Schedule state + lease] -->|lease| R001
+    R001 -->|exact cron migrates to| R005
+    R004[RFC 004 · Cloud runtime] -->|runs become useful| R001
+    R004 -->|consumes event context| R003
+    R007[RFC 007 · Temporal Cloud on] -.enables staging soak of.-> R001 & R003 & R004 & R005
+    R001 & R002 & R003 & R005 -->|surfaced by| R006[RFC 006 · Desktop control plane]
+    R004 -->|gates useful GA| R007
+    R003 & R004 -->|new planes on the fabric| R008[RFC 008 · Conduit + Eigen faculties]
+    R008 -->|evidence + foresight| COCK[Cross-portfolio cockpit]
+```
+
+`★ Critical path ─────────────────────────────────`
+The spine is **WP0 (shared `Starter`) → RFC 002 (lease) → RFC 001 (loop)**. Everything that
+creates a cloud run (the loop, the event router, the Temporal-schedule workflow) funnels
+through the one `Starter`, so extracting it first prevents run-provenance drift. RFC 002
+lands just before RFC 001's loop so the scheduler is lease-aware on day one and going from
+one replica to many is a `replicaCount` change, not a code change.
+`──────────────────────────────────────────────────`
+
+## Implementation order
+
+Two tracks run in parallel: **Track A** builds capabilities; **Track B** lights up the
+environment they soak in. Each phase ends in a hard gate.
+
+```mermaid
+flowchart LR
+    subgraph Ph0[Phase 0 · Foundations]
+      A0[A0 Starter refactor] 
+      B0[B0 Staging Temporal Cloud on<br/>+ manual-run validation]
+    end
+    subgraph Ph1[Phase 1 · API scheduling]
+      W11[1.1 RFC 002 state+lease]
+      W12[1.2 RFC 001 loop + cmd/scheduler]
+      W13[1.3 RFC 006 schedule labels + offline return]
+    end
+    subgraph Ph2[Phase 2 · Runtime]
+      W21[2.1 RFC 004 runtime + tools + limits]
+    end
+    subgraph Ph3[Phase 3 · Temporal cron]
+      W31[3.1 RFC 005 schedules + reconciler]
+      W32[3.2 RFC 006 cron health chip]
+    end
+    subgraph Ph4[Phase 4 · Events]
+      W41[4.1 RFC 003 ingest+store]
+      W42[4.2 RFC 003 router+route-workflow]
+      W43[4.3 RFC 003 provider webhooks]
+      W44[4.4 RFC 006 event→run link]
+    end
+    subgraph Ph5[Phase 5 · Production GA]
+      W51[5.1 allowlist dogfood]
+      W52[5.2 remove allowlist · GA]
+    end
+    subgraph Ph6[Phase 6 · Faculties]
+      W81[8.1 Conduit Read/Mirror]
+      W82[8.2 Conduit Watch]
+      W83[8.3 Eigen tool]
+      W84[8.4 Eigen jobs]
+      W85[8.5 Loop + Act-audit]
+    end
+    A0 --> W11 --> W12 --> W13
+    B0 --> W12
+    A0 --> W21
+    W12 --> W31 --> W32
+    A0 --> W41 --> W42 --> W43 --> W44
+    W21 --> W42
+    W21 --> W51 --> W52
+    W13 & W32 & W44 --> W52
+    A0 --> W81
+    W42 --> W82
+    W21 --> W83 --> W84
+    W31 --> W84
+    W82 & W84 & W52 --> W85
+```
+
+### Phase 0 — Foundations & environment
+
+| WP | RFC | Work | Done when |
+| --- | --- | --- | --- |
+| **0·A** | 001 | Extract `handler.triggerAPIRun`'s "create queued run → emit `temporal.queued` → `StartBackgroundTaskRun` → persist Temporal ids → `metrics.Triggered`" into an internal `Starter.Start`. Pure refactor; HTTP path behavior unchanged. | `handler_cloud_test.go` green; HTTP trigger output byte-identical (`viewRun`). |
+| **0·B** | 007 | Provision the staging Temporal Cloud namespace + key (into `rowboat-api-secrets` via Infisical); flip staging `TEMPORAL_ENABLED=true`, `worker.enabled: true` (1 replica). | API `/readyz` shows passing `temporal` check; a manual api-target run from desktop→staging reaches `succeeded`. |
+
+> 0·A and 0·B are independent and run together. 0·B reuses the **already-shipped** manual
+> cloud-run path, so it validates Temporal Cloud connectivity before any new code lands.
+
+### Phase 1 — API-owned timed scheduling (the core offline win)
+
+| WP | RFC | Work | Done when |
+| --- | --- | --- | --- |
+| **1.1** | 002 | `BackgroundTaskScheduleState` ent schema + additive migration (`make migrate-dump`), lease primitives (`Acquire`/`Complete`/`Release`), **Postgres testcontainer** concurrency tests. | Concurrent `Acquire` on one key → exactly one winner (Postgres test). |
+| **1.2** | 001 | `internal/backgroundscheduler` due-math (`gronx`, ported from `schedule/utils.ts`) + lease-wired loop + `cmd/scheduler` binary + `scheduler-deployment.yaml`, behind `CLOUD_SCHEDULER_ENABLED=false`. | kind: desktop killed, cron task fires within two grace windows. |
+| **1.3** | 006 | Desktop `Cloud scheduled` vs `Runs when desktop is open` labels; `GET /v1/background-tasks/{slug}/schedule-state` + `bg-task:getCloudScheduleState`; offline-return badge. | Renderer tests for both labels + the error states. |
+
+**Gate 1:** kind E2E desktop-closed cron fires; staging **multi-replica** scheduler produces
+exactly one run per cycle (`cloud_scheduler_duplicate_suppressed_total` > 0).
+
+### Phase 2 — Useful cloud runtime *(parallel with Phase 1)*
+
+| WP | RFC | Work | Done when |
+| --- | --- | --- | --- |
+| **2.1** | 004 | `internal/backgroundtaskruntime` (`Runtime`/`ToolRegistry`/`ArtifactStore`/`EventSink`/`LLMClient`), `DefaultRuntime` (gateway LLM, Gmail+Calendar read tools, enforced limits, heartbeats) + `NoopRuntime`; extend `errcodes.go` + `metrics.go`; flag `CLOUD_RUNTIME_ENABLED`. | Staging api-target task produces an LLM-generated artifact; `Lookup("shell")` → denied; each limit fails with its `error_code`. |
+
+**Gate 2:** runtime soaks in staging with the deterministic `NoopRuntime` as instant
+rollback. **This gate blocks *useful* GA** (Phase 5) — you don't GA scheduled runs that only
+emit static artifacts.
+
+### Phase 3 — Exact cron via Temporal Schedules
+
+| WP | RFC | Work | Done when |
+| --- | --- | --- | --- |
+| **3.1** | 005 | `SchedulerWorkflow` (`rowboat.background_tasks.schedule.v1`) + `CreateScheduledRun` activity + schedule upsert/delete/pause hooks in `Create`/`Patch`/`Delete` + reconciler + `schedule_sync_state` field; behind `TEMPORAL_SCHEDULES_ENABLED=false`. | A Temporal Schedule fires → run row exists → `BackgroundTaskWorkflow` runs (test env). |
+| **3.2** | 006 | Desktop cron sync-health chip (`current/syncing/failed/paused`) + next-fire from `ScheduleClient.Describe`. | Renderer shows health + next-fire. |
+
+**Gate 3:** cron fires via a Temporal Schedule with the desktop closed; the reconciler repairs
+induced drift (deleted/orphaned/wrong-pause). RFC 001 loop remains the fallback.
+
+### Phase 4 — Event-triggered cloud runs
+
+| WP | RFC | Work | Done when |
+| --- | --- | --- | --- |
+| **4.1** | 003 | `CloudEvent` schema (encrypted `payload_json`) + `POST /v1/events` + dedupe (store only). | Duplicate `dedupeKey` → one row, `deduped=true`. |
+| **4.2** | 003 | Temporal route-workflow (`rowboat.cloud_events.route.v1`) + two-pass router (threshold `0.7`) → `Starter.Start(trigger=event)`; link runs via `cloud_event_id`; flag `CLOUD_EVENTS_ROUTING_ENABLED`. | devstack event → linked `trigger=event` run; no duplicate runs. |
+| **4.3** | 003 | Gmail/Calendar webhook ingestion (signature verify); Slack/webhook later. | Signed provider event ingests; bad/stale signature rejected. |
+| **4.4** | 006 | Event→run link in the transcript ("Triggered by …"). | Transcript shows the source event. |
+
+**Gate 4:** devstack event with the desktop closed fires a linked run; signature + dedupe
+hold.
+
+### Phase 5 — Production GA
+
+| WP | RFC | Work | Done when |
+| --- | --- | --- | --- |
+| **5.1** | 007 | Enable the production worker; gate api-target **task creation** behind the user-id allowlist; dogfood internally. | Internal dogfood tasks run in prod; no regressions. |
+| **5.2** | 007 | Remove the allowlist after SLOs hold; enable user-facing api-execution controls. | SLOs (success ≥ 99%, queue p95 ≤ 30s) hold over the soak; alerts + runbooks live. |
+
+### Phase 6 — Faculties (Conduit + Eigen) — [RFC 008](./008-conduit-eigen-faculties.md)
+
+The portfolio-brain layer. Conduit Read/Mirror is independent (parallel with Phase 1); the
+autonomous loop builds on the event bus (RFC 003) + runtime (RFC 004) + scheduler (RFC 001/005).
+
+| WP | RFC | Work | Done when |
+| --- | --- | --- | --- |
+| **8.1** | 008 | Conduit **Read/Mirror**: connector entry + `sync_conduit.ts` → invoice notes carry their correspondence. *(parallel w/ Phase 1)* | An invoice note shows its dispute/reply thread. |
+| **8.2** | 008 | Conduit **Watch**: extend RFC 003 `source` enum + `POST /v1/webhooks/conduit` + routing. *(after Phase 4)* | A dispute event wakes the owning agent, desktop closed. |
+| **8.3** | 008 | Eigen **tool**: `eigen.simulate` in the RFC 004 registry. *(after Phase 2)* | An agent quantifies an action's runway impact mid-run. |
+| **8.4** | 008 | Eigen **jobs**: `rowboat.eigen.stress.v1` scheduled + event-triggered re-runs + `eigen.breach`. *(after Phase 3)* | Nightly stress note in the corpus; a breach wakes an agent. |
+| **8.5** | 008 | **Combined loop + Act-audit**: dual-review send → Conduit bind-back; RFC 006 surfacing. *(after Phase 5)* | Dispute → forecast → reviewed action → bound-back evidence, end to end. |
+
+**Gate 6:** the Conduit→Eigen→Agent→Conduit loop runs desktop-closed with end-to-end
+provenance; reads are scoped, money-touching actions double-gated, Eigen never moves money.
+
+## Consolidated decisions
+
+The forks each RFC raised, resolved. (Each RFC's own **Decisions** section links here.)
+
+### Cross-cutting
+
+| Decision | Choice | Affects |
+| --- | --- | --- |
+| **Run creation** | One extracted `Starter.Start` is the *only* way an `executor=api` run is created — HTTP, scheduler, event router, and the Temporal schedule-workflow all call it. | 001, 003, 005 |
+| **Timezone (v1)** | Evaluate cron prev-occurrence and window bands in **UTC** (`CLOUD_SCHEDULER_TIMEZONE=UTC`); "once per day" = UTC day. | 001, 002, 005, 006 |
+| **Per-task timezone** | Committed **fast-follow** (post-v1): a task-level `timezone` field adds a TZ segment to the RFC 002 schedule key, sets Temporal `TimeZoneName` (RFC 005), and gets a desktop label (RFC 006). | 001, 002, 005, 006 |
+| **Everything ships dark** | Each capability lands behind a default-off flag (`CLOUD_SCHEDULER_ENABLED`, `CLOUD_RUNTIME_ENABLED`, `TEMPORAL_SCHEDULES_ENABLED`, `CLOUD_EVENTS_ROUTING_ENABLED`) and rolls kind → staging → prod. | all |
+
+### Per-RFC
+
+- **001** — Separate `cmd/scheduler` Deployment (not a goroutine in `cmd/server`); cron via
+  **`github.com/adhocore/gronx`** (`PrevTick`); lease-aware from day one.
+- **002** — Row-based ent lease (not advisory locks/Redis); **30-day** retention for fired
+  cycles; write `last_evaluated_at` only on state transitions; **Postgres testcontainer** in
+  CI for the `ON CONFLICT` guard.
+- **003** — Linkage **option (A)** (`cloud_event_id` FK + `routing_json` summary);
+  **encrypt `payload_json`** at rest (`crypto.Sealer`); **async routing via a Temporal
+  route-workflow**; match threshold **`0.7`, fixed in v1**; `GET /v1/events` admin-scoped
+  (desktop shows only the event→run *link*).
+- **004** — **Hand-rolled** bounded agent loop; **Temporal heartbeats wired in v1**; v1
+  connector tools = **Gmail + Google Calendar read**; **per-tenant** limits (no per-task
+  override); `CLOUD_RUNTIME_ENABLED` selects `Default`/`Noop` runtime.
+- **005** — Overlap policy **`SKIP`**; persisted **`schedule_sync_state`** task field
+  (reconciler is authority); UTC v1; loop-first then per-task cutover (loop stays fallback).
+- **006** — Offline-return = **activity badge + opt-in OS notification**; **event→run link**
+  in the transcript; auto-pull **latest successful artifact per task** since `lastSeenCloudRunAt`.
+- **007** — Worker: staging **1** replica, prod starts at **2** (`200m/256Mi`→`1/512Mi`),
+  re-tuned from soak; **single-region** worker + one Temporal namespace per env; Phase-3
+  allowlist = a **DB/env user-id list**.
+- **008** — Conduit ingests **via RFC 003** (offline-capable), payload encrypted; faculties
+  are **read-only at the tool layer** (`conduit.read` / `eigen.simulate`) — all
+  money-touching action stays behind the **dual-review** gate and Eigen never moves money;
+  Eigen plugs in as **both** a runtime tool *and* a scheduled/triggered job; **mirror durable
+  identity, query volatile numbers**; breach threshold is config (`EIGEN_LIQUIDITY_FLOOR_WEEKS`),
+  not per-task.
+
+## Conventions
+
+Implementers across all eight RFCs share these so the system stays coherent.
+
+### New Go packages
+
+| Package | Owns |
+| --- | --- |
+| `internal/backgroundtaskruns` | the shared `Starter` (extracted from the handler) |
+| `internal/backgroundscheduler` | RFC 001 loop, `gronx` due-math, RFC 002 lease helpers, scheduler metrics |
+| `internal/cloudevents` | RFC 003 ingestion, router, normalization, metrics |
+| `internal/backgroundtaskruntime` | RFC 004 runtime, tool registry, limits |
+| `internal/backgroundtaskworkflow` *(extend)* | RFC 005 `SchedulerWorkflow` + schedule helpers; RFC 004 activity delegates to the runtime |
+| `internal/faculties` *(thin)* | RFC 008 Conduit/Eigen glue: `conduit.read`/`eigen.simulate` tools, `rowboat.eigen.stress.v1`, faculty metrics — mostly reuses RFC 003/004 |
+
+New binaries mirror `cmd/worker/main.go` (config load → telemetry → db → `/metrics` +
+`/healthz` → signal-aware loop): `cmd/scheduler`.
+
+### Config keys (env)
+
+All new keys land in `internal/appconfig/config.go` (`Config` struct + `Load` defaults), in
+the `TEMPORAL_*` style, surfaced via the Helm ConfigMap.
+
+| Prefix | RFC | Examples |
+| --- | --- | --- |
+| `CLOUD_SCHEDULER_*` | 001/002 | `ENABLED`, `POLL_INTERVAL=15s`, `LEASE_TTL=60s`, `REPLICA_ID`, `TIMEZONE=UTC` |
+| `CLOUD_RUNTIME_*` | 004 | `ENABLED`, `MAX_DURATION=4m`, `MAX_LLM_CALLS=12`, `MAX_TOOL_CALLS=24`, `MAX_ARTIFACT_BYTES`, `MAX_EVENT_BYTES` |
+| `CLOUD_EVENTS_*` | 003 | `ROUTING_ENABLED`, `MATCH_THRESHOLD=0.7` |
+| `TEMPORAL_SCHEDULE*` | 005 | `TEMPORAL_SCHEDULES_ENABLED`, `TEMPORAL_SCHEDULE_CATCHUP=1m`, `TEMPORAL_SCHEDULE_RECONCILE_INTERVAL=5m` |
+| `FACULTY_* / EIGEN_* / CONDUIT_*` | 008 | `FACULTY_CONDUIT_ENABLED`, `FACULTY_EIGEN_ENABLED`, `EIGEN_BASE_URL`, `CONDUIT_BASE_URL`, `EIGEN_STRESS_SCHEDULE=0 6 * * *`, `EIGEN_LIQUIDITY_FLOOR_WEEKS=8` |
+
+### Metric families
+
+All Prometheus series live in leaf metrics packages (the pattern in
+`internal/backgroundtaskmetrics/metrics.go`) so the HTTP API, scheduler, and worker can each
+emit and expose them on their own `/metrics`. **Cardinality rule (hard):** label only by
+bounded dimensions — `trigger`, `error_code`, `source`, `tool` (fixed allowlist). **Never**
+by `taskSlug` / `userId` / `runId` — those go to logs and traces.
+
+| Family | RFC |
+| --- | --- |
+| `cloud_runs_*`, `cloud_run_*` (exists) | base |
+| `cloud_scheduler_*` | 001, 002 |
+| `cloud_events_*`, `cloud_event_*` | 003 |
+| `cloud_runtime_*` | 004 |
+| `temporal_schedule*` | 005 |
+| `faculty_eigen_*`, `faculty_conduit_*` | 008 |
+
+### Vocabularies & ids
+
+- **Run id prefixes:** `api-trigger-` (manual), `retry-`, `remote-trigger-` (existing);
+  `sched-cron-`, `sched-window-` (RFC 001), `sched-temporal-` (RFC 005), `event-` (RFC 003),
+  `eigen-stress-` (RFC 008).
+- **Event sources** (`CloudEvent.source`, RFC 003): `gmail`, `google_calendar`, `slack`,
+  `webhook`, `internal`; RFC 008 adds the portfolio + faculties: `canvas`, `cadence`,
+  `corinthian`, `conduit`, `eigen`.
+- **Lifecycle events:** the `temporal.*` vocabulary in
+  `internal/backgroundtaskworkflow/events.go` — emitters use the constants; consumers may
+  rely on the set; unknown types are logged, not rejected.
+- **Error codes:** the taxonomy in `internal/backgroundtaskworkflow/errcodes.go` +
+  `ClassifyRunError`. RFC 004 extends it (`runtime_*`, `llm_call_failed`, `tool_*`,
+  `connector_unavailable`); keep the desktop mirror in sync (per the file's own comment).
+- **Workflow id:** `background-task/{userID}/{slug}/{runID}` (`workflow.go`); schedule id:
+  `background-task-schedule/{userID}/{slug}/cron` (RFC 005).
+
+### ent + migrations
+
+Schema change → `make generate` (`go generate ./ent`) → `make migrate-dump name=<desc>`
+(Atlas) → review the SQL → `make migrate-apply`. New entities (RFC 002 `BackgroundTaskScheduleState`,
+RFC 003 `CloudEvent`) and additive fields (RFC 005 `schedule_sync_state`, RFC 003
+`cloud_event_id` FK) are **additive, no backfill** — safe to apply ahead of the code that
+reads them. Every entity uses `mixin.BaseMixin` (UUID `id`, `created_at`, `updated_at`) and
+is per-user scoped via a `user` edge; the ORM interceptors
+(`internal/db/interceptors.go`) enforce tenant isolation. System components (scheduler,
+worker, router) run under `auth.WithInternal(ctx)` and take **no external input**.
+
+## Status legend & process
+
+- **Draft** — under design; safe to comment/iterate.
+- **Accepted** — design agreed; implementation may start.
+- **Implemented** — shipped; the RFC becomes historical record (move detail to the parent
+  reference doc).
+
+To change a decision: edit the RFC's **Decisions** section, update the row here under
+[Consolidated decisions](#consolidated-decisions), and note the change in the affected RFC's
+metadata `Last updated`. Keep cross-references (`./00X-*.md`) intact — every RFC links its
+dependencies in its metadata block.
