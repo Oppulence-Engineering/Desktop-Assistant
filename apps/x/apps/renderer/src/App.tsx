@@ -2013,6 +2013,47 @@ function App() {
             if (existingTool) {
               existingTool.result = event.result
               existingTool.status = 'completed'
+              existingTool.pendingCodePermission = null
+            }
+            break
+          }
+          case 'code-run-event': {
+            const existingTool = toolCallMap.get(event.toolCallId)
+            if (existingTool) {
+              existingTool.codeRunEvents = [...(existingTool.codeRunEvents ?? []), event.event]
+              if (event.event.type === 'permission') {
+                existingTool.pendingCodePermission = null
+              }
+            } else {
+              const toolCall: ToolCall = {
+                id: event.toolCallId,
+                name: 'code_agent_run',
+                input: {},
+                status: 'running',
+                timestamp: event.ts ? new Date(event.ts).getTime() : Date.now(),
+                codeRunEvents: [event.event],
+              }
+              toolCallMap.set(toolCall.id, toolCall)
+              items.push(toolCall)
+            }
+            break
+          }
+          case 'code-run-permission-request': {
+            const existingTool = toolCallMap.get(event.toolCallId)
+            const pendingCodePermission = { requestId: event.requestId, ask: event.ask }
+            if (existingTool) {
+              existingTool.pendingCodePermission = pendingCodePermission
+            } else {
+              const toolCall: ToolCall = {
+                id: event.toolCallId,
+                name: 'code_agent_run',
+                input: {},
+                status: 'running',
+                timestamp: event.ts ? new Date(event.ts).getTime() : Date.now(),
+                pendingCodePermission,
+              }
+              toolCallMap.set(toolCall.id, toolCall)
+              items.push(toolCall)
             }
             break
           }

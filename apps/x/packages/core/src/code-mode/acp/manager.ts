@@ -157,10 +157,13 @@ export class CodeModeManager {
         }
         if (existing) this.dispose(runId); // agent/cwd changed — start over
 
-        const client = new AcpClient({ agent, cwd, broker, onEvent });
+        // session/load can replay prior conversation items. Do not publish those
+        // into the current tool card; attach the live sink only after resume.
+        const client = new AcpClient({ agent, cwd, broker, onEvent: () => {} });
         await client.start();
 
         const sessionId = await this.openSession(runId, agent, cwd, client);
+        client.setHandlers(broker, onEvent);
         const run: ActiveRun = { client, sessionId, agent, cwd, inflight: 0 };
         this.runs.set(runId, run);
         return run;

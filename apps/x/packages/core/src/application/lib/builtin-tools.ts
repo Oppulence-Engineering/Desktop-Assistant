@@ -832,13 +832,15 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
             const manager = container.resolve<CodeModeManager>('codeModeManager');
             const registry = container.resolve<CodePermissionRegistry>('codePermissionRegistry');
 
-            // Approval policy from settings; default to asking the user.
             let policy: ApprovalPolicy = 'ask';
             try {
                 const cfg = await container.resolve<ICodeModeConfigRepo>('codeModeConfigRepo').getConfig();
+                if (!cfg.enabled) {
+                    return { success: false, message: 'Code Mode is disabled. Enable Code Mode in Settings before running code_agent_run.' };
+                }
                 if (cfg.approvalPolicy) policy = cfg.approvalPolicy;
             } catch {
-                // fall back to 'ask'
+                return { success: false, message: 'Code Mode settings are unavailable. Cannot run code_agent_run.' };
             }
 
             // On stop, unblock any pending approval card so the broker stops waiting for
