@@ -15,7 +15,7 @@ import {
   ChevronRightIcon,
   PaperclipIcon,
   XIcon,
-} from "lucide-react";
+} from "@/lib/icons";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import { createContext, memo, useContext, useEffect, useState } from "react";
 import { Streamdown } from "streamdown";

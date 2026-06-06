@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 ROWBOAT_KIND_SCRIPT := scripts/rowboat-api-kind.sh
 
-.PHONY: help all stack api-up desktop smoke-desktop helm-validate infisical-validate validate validate-full validate-all status logs down delete-cluster
+.PHONY: help all stack api-up desktop smoke-desktop perf-desktop perf-desktop-full perf-desktop-deep perf-desktop-baseline perf-desktop-quick helm-validate infisical-validate validate validate-full validate-all status logs down delete-cluster
 
 help:
 	@printf "%s\n" \
@@ -13,6 +13,11 @@ help:
 	  "  make api-up         Build/deploy rowboat-api in kind and run smoke checks" \
 	  "  make desktop        Run the desktop against the kind API" \
 	  "  make smoke-desktop  Drive the Electron app against the kind API" \
+	  "  make perf-desktop   Package, drive, profile, and budget-check the desktop app" \
+	  "  make perf-desktop-full Run the desktop perf gate including the cloud workflow" \
+	  "  make perf-desktop-deep Run the full desktop perf gate with deep scale/leak loops" \
+	  "  make perf-desktop-baseline Capture/update this machine's desktop perf baseline" \
+	  "  make perf-desktop-quick Run the desktop perf gate reusing the existing package" \
 	  "  make helm-validate  Run Helm lint/template checks for kind/stage/prod values" \
 	  "  make infisical-validate Validate Infisical sync for kind secrets" \
 	  "  make validate       Run API smoke checks against the kind stack" \
@@ -38,6 +43,21 @@ desktop:
 
 smoke-desktop:
 	$(ROWBOAT_KIND_SCRIPT) desktop-smoke
+
+perf-desktop:
+	$(ROWBOAT_KIND_SCRIPT) desktop-perf
+
+perf-desktop-full:
+	ROWBOAT_DESKTOP_PERF_TIER=full ROWBOAT_DESKTOP_PERF_INCLUDE_CLOUD=1 $(ROWBOAT_KIND_SCRIPT) desktop-perf
+
+perf-desktop-deep:
+	ROWBOAT_DESKTOP_PERF_TIER=deep ROWBOAT_DESKTOP_PERF_INCLUDE_CLOUD=1 $(ROWBOAT_KIND_SCRIPT) desktop-perf
+
+perf-desktop-baseline:
+	ROWBOAT_DESKTOP_PERF_UPDATE_BASELINE=1 $(ROWBOAT_KIND_SCRIPT) desktop-perf
+
+perf-desktop-quick:
+	ROWBOAT_DESKTOP_PERF_INCLUDE_CLOUD=0 ROWBOAT_DESKTOP_PERF_SKIP_PACKAGE=1 $(ROWBOAT_KIND_SCRIPT) desktop-perf
 
 helm-validate:
 	$(ROWBOAT_KIND_SCRIPT) helm-validate

@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/react'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
-import { CalendarClock, Loader2, X } from 'lucide-react'
+import { CalendarClock, Loader2, X } from '@/lib/icons'
 import { inlineTask } from '@x/shared'
 
 function formatDateTime(iso: string): string {

@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { CheckCircle2Icon, ShieldAlertIcon, Terminal } from "lucide-react";
+import { CheckCircle2Icon, ShieldAlertIcon, Terminal } from "@/lib/icons";
 import type { ComponentProps } from "react";
 import { ToolCallPart } from "@x/shared/dist/message.js";
 import { ToolPermissionMetadata } from "@x/shared/dist/runs.js";

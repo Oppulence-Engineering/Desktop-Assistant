@@ -1,5 +1,5 @@
 import * as React from "react"
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle2 } from "@/lib/icons"
 import { cn } from "@/lib/utils"
 import type { Step, OnboardingPath } from "./use-onboarding-state"
 

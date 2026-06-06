@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/react'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
-import { ChevronDown, FileText } from 'lucide-react'
+import { ChevronDown, FileText } from '@/lib/icons'
 import { blocks } from '@x/shared'
 import { useState, useMemo } from 'react'
 

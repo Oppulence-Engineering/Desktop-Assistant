@@ -4,7 +4,7 @@ import {
   ExternalLinkIcon,
   FileTextIcon,
   Loader2Icon,
-} from "lucide-react";
+} from "@/lib/icons";
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 

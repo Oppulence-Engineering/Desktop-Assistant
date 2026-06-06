@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Bot,
+  Workflow,
   ChevronRight,
   FileText,
   FilePlus,
@@ -20,7 +20,7 @@ import {
   Settings,
   Square,
   Video,
-} from "lucide-react";
+} from "@/lib/icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,7 +61,11 @@ import { extractConferenceLink } from "@/lib/calendar-event";
 import { useBilling } from "@/hooks/useBilling";
 import { toast } from "@/lib/toast";
 import { ServiceEvent } from "@x/shared/src/service-events.js";
-import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, getProductProviderState } from "@x/shared/dist/branding.js";
+import {
+  PRODUCT_NAME,
+  PRODUCT_PROVIDER_ID,
+  getProductProviderState,
+} from "@x/shared/dist/branding.js";
 import z from "zod";
 
 interface TreeNode {
@@ -392,7 +396,7 @@ function SyncStatusBar() {
                   {logEvents.map((event, idx) => (
                     <div
                       key={`${event.runId}-${event.ts}-${idx}`}
-                      className="flex items-start gap-2 rounded px-2 py-1 text-xs hover:bg-accent"
+                      className="flex items-start gap-2 rounded-none px-2 py-1 text-xs hover:bg-accent"
                     >
                       <span className="shrink-0 text-[10px] leading-4 text-muted-foreground/70">
                         {formatEventTime(event.ts)}
@@ -400,7 +404,7 @@ function SyncStatusBar() {
                       <span className="shrink-0">
                         <span
                           className={cn(
-                            "inline-block rounded px-1 py-0.5 text-[10px] font-medium leading-none",
+                            "inline-block rounded-md px-1 py-0.5 text-[10px] font-medium leading-none",
                             event.level === "error"
                               ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                               : event.level === "warn"
@@ -934,7 +938,7 @@ export function SidebarContentPanel({
                             onToggleMeetingRecording?.();
                           }}
                           onMouseDown={(e) => e.stopPropagation()}
-                          className="flex aspect-square w-5 items-center justify-center rounded-none text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                          className="flex aspect-square w-5 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-50"
                         >
                           {meetingIsBusy ? (
                             <LoaderIcon className="size-4 animate-spin" />
@@ -964,7 +968,7 @@ export function SidebarContentPanel({
                             triggerMeetingCapture(previewMeeting, false);
                           }}
                           onMouseDown={(e) => e.stopPropagation()}
-                          className="flex aspect-square w-5 items-center justify-center rounded-none text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          className="flex aspect-square w-5 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         >
                           <Mic className="size-4" />
                         </button>
@@ -982,7 +986,7 @@ export function SidebarContentPanel({
                               triggerMeetingCapture(previewMeeting, true);
                             }}
                             onMouseDown={(e) => e.stopPropagation()}
-                            className="flex aspect-square w-5 items-center justify-center rounded-none text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            className="flex aspect-square w-5 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           >
                             <Video className="size-4" />
                           </button>
@@ -1025,7 +1029,7 @@ export function SidebarContentPanel({
                   onClick={onOpenBgTasks}
                   className={bgAgentsLabel ? "h-auto py-1.5" : undefined}
                 >
-                  <Bot className="size-4 shrink-0 text-muted-foreground" />
+                  <Workflow className="size-4 shrink-0 text-muted-foreground" />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-muted-foreground">
                       Background agents
@@ -1097,7 +1101,7 @@ export function SidebarContentPanel({
                     <SidebarMenuItem key={item.key}>
                       <SidebarMenuButton onClick={item.onClick}>
                         {item.type === "agent" ? (
-                          <Bot className="size-4 shrink-0 text-muted-foreground" />
+                          <Workflow className="size-4 shrink-0 text-muted-foreground" />
                         ) : item.type === "chat" ? (
                           <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
                         ) : (
@@ -1491,7 +1495,7 @@ path: ${currentRelativePath}
   const actionClass =
     "flex h-9 flex-1 items-center justify-center rounded-none border border-sidebar-border text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors";
   const iconClass =
-    "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded p-1.5 transition-colors";
+    "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-none p-1.5 transition-colors";
 
   return (
     <Tooltip>

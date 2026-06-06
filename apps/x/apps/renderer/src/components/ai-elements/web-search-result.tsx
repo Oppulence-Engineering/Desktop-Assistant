@@ -6,7 +6,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { ChevronDownIcon, GlobeIcon, LoaderIcon } from "lucide-react";
+import { ChevronDownIcon, GlobeIcon, LoaderIcon } from "@/lib/icons";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ExternalLinkIcon, FileVideoIcon } from 'lucide-react'
+import { ExternalLinkIcon, FileVideoIcon } from '@/lib/icons'
 
 interface VideoFileViewerProps {
   path: string

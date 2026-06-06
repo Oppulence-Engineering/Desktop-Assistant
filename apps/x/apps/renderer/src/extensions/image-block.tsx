@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/react'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
-import { X, ImageIcon } from 'lucide-react'
+import { X, ImageIcon } from '@/lib/icons'
 import { blocks } from '@x/shared'
 
 function ImageBlockView({ node, deleteNode }: { node: { attrs: Record<string, unknown> }; deleteNode: () => void }) {

@@ -1,11 +1,11 @@
 import {
   ArrowUpRight,
-  Bot,
+  Workflow,
   Mail,
   MessageSquare,
   Sparkles,
-  Telescope,
-} from "lucide-react";
+  ScanSearch,
+} from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/relative-time";
@@ -39,13 +39,13 @@ const SUGGESTED_ACTIONS: {
     prompt: "Let's draft a reply to [name]'s email",
   },
   {
-    icon: Bot,
+    icon: Workflow,
     title: "Set up a background agent",
     sub: "that automates tasks",
     prompt: "Set up a background agent that automates [task]",
   },
   {
-    icon: Telescope,
+    icon: ScanSearch,
     title: "Research a topic",
     sub: "create a local wiki for me",
     prompt: "Research [topic] and create a local wiki for me",

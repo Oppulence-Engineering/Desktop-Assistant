@@ -1,6 +1,6 @@
 import type * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 
 export type GraphNode = {

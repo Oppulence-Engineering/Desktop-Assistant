@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/react'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
-import { Globe, X } from 'lucide-react'
+import { Globe, X } from '@/lib/icons'
 import { blocks } from '@x/shared'
 import { useEffect, useRef, useState } from 'react'
 

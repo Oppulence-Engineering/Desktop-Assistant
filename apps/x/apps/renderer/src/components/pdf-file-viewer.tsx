@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ExternalLinkIcon, FileTextIcon, Loader2Icon } from 'lucide-react'
+import { ExternalLinkIcon, FileTextIcon, Loader2Icon } from '@/lib/icons'
 
 interface PdfFileViewerProps {
   path: string

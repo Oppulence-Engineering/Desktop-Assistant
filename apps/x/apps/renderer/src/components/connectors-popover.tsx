@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useState } from "react"
-import { AlertTriangle, Loader2, Mic, Mail, Calendar, User } from "lucide-react"
+import { AlertTriangle, Loader2, Mic, Mail, Calendar, User } from "@/lib/icons"
 
 import {
   Popover,

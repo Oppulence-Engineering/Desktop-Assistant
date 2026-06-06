@@ -1,15 +1,22 @@
-name: x Smoke Test
+name: x CI
 
+# Layered PR gate for the desktop app (cheapest checks first, VS Code style):
+# install → build deps → renderer typecheck → lint → unit tests → package →
+# Playwright-Electron smoke (drives the packaged build via _electron.launch).
 on:
   pull_request:
     paths:
-      - 'apps/x/**'
-      - '.github/scripts/x-smoke-package-linux.mjs'
-      - '.github/workflows/x-smoke-test.yml'
+      - "apps/x/**"
+      - ".github/scripts/x-smoke-package-linux.mjs"
+      - ".github/workflows/x-smoke-test.yml"
 
 jobs:
-  smoke-test-linux:
+  x-ci-linux:
+    name: typecheck · lint · unit · package · e2e
     runs-on: ubuntu-latest
+    env:
+      # _electron.launch uses the app's own Electron — no Playwright browsers needed.
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -23,8 +30,8 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'pnpm'
-          cache-dependency-path: 'apps/x/pnpm-lock.yaml'
+          cache: "pnpm"
+          cache-dependency-path: "apps/x/pnpm-lock.yaml"
 
       - name: Cache Electron binaries
         uses: actions/cache@v4
@@ -44,10 +51,20 @@ jobs:
         run: npm run deps
         working-directory: apps/x
 
+      # ----- cheapest gates first: typecheck → lint → unit -----
+      - name: Typecheck renderer
+        run: pnpm exec tsc -b
+        working-directory: apps/x/apps/renderer
+
       - name: Lint apps/x
         run: npm run lint
         working-directory: apps/x
 
+      - name: Unit tests
+        run: npm test
+        working-directory: apps/x
+
+      # ----- build the product, then drive it -----
       - name: Package electron app (no publish, no signing)
         run: node .github/scripts/x-smoke-package-linux.mjs
 
@@ -82,25 +99,29 @@ jobs:
             exit 1
           fi
 
-          echo "bin=$BIN" >> "$GITHUB_OUTPUT"
-          file "$BIN"
+          # Emit an absolute path so the e2e step (run from apps/x/apps/main) resolves it.
+          BIN_ABS="$(cd "$(dirname "$BIN")" && pwd)/$(basename "$BIN")"
+          echo "bin=$BIN_ABS" >> "$GITHUB_OUTPUT"
+          file "$BIN_ABS"
 
-      - name: Boot app under xvfb (5 second smoke)
+      - name: Install xvfb
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
-          export DISPLAY=:99
-          Xvfb :99 -screen 0 1280x720x24 &
-          sleep 2
-          # Launch and capture exit / pid liveness
-          "${{ steps.packaged-binary.outputs.bin }}" --no-sandbox > smoke.log 2>&1 &
-          APP_PID=$!
-          sleep 5
-          if ! kill -0 $APP_PID 2>/dev/null; then
-            echo "App died within 5 seconds" >&2
-            cat smoke.log
-            exit 1
-          fi
-          echo "App still alive after 5s (pid $APP_PID) — smoke test passed"
-          kill $APP_PID || true
-          tail -n 50 smoke.log || true
+
+      - name: Playwright-Electron smoke (xvfb)
+        run: xvfb-run -a pnpm exec playwright test
+        working-directory: apps/x/apps/main
+        env:
+          ELECTRON_APP_BINARY: ${{ steps.packaged-binary.outputs.bin }}
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/x/apps/main/playwright-report/
+            apps/x/apps/main/test-results/
+          if-no-files-found: ignore
+          retention-days: 7

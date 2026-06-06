@@ -45,7 +45,7 @@ import {
   PlusIcon,
   SquareIcon,
   XIcon,
-} from "lucide-react";
+} from "@/lib/icons";
 import { nanoid } from "nanoid";
 import { useMentionDetection } from "@/hooks/use-mention-detection";
 import { MentionPopover } from "@/components/mention-popover";

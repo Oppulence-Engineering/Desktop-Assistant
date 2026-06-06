@@ -1,4 +1,4 @@
-import { Mail, Calendar, FolderOpen, FileText, Presentation } from 'lucide-react'
+import { Mail, Calendar, FolderOpen, FileText, Presentation } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
 export interface Suggestion {

@@ -1,0 +1,100 @@
+name: x e2e nightly
+
+# Nightly Playwright-Electron regression matrix (Linux + macOS): package the app
+# unsigned and drive the built binary via _electron.launch. The same smoke spec
+# the PR gate runs, exercised on both desktop platforms. PRs run only the Linux
+# leg (x-smoke-test.yml) to keep them fast; this widens coverage off the critical
+# path. No APPLE_* secrets are provided, so macOS packages unsigned.
+on:
+  schedule:
+    - cron: "30 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: x-e2e-nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: Playwright-Electron (${{ matrix.platform }}-${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - os: macos-latest
+            platform: darwin
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      SMOKE_PACKAGE_PLATFORM: ${{ matrix.platform }}
+      SMOKE_PACKAGE_ARCH: ${{ matrix.arch }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: "pnpm"
+          cache-dependency-path: "apps/x/pnpm-lock.yaml"
+
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: apps/x
+
+      - name: Build shared/core/preload (TypeScript)
+        run: npm run deps
+        working-directory: apps/x
+
+      - name: Install xvfb (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Package electron app (unsigned)
+        run: node .github/scripts/x-smoke-package-linux.mjs
+
+      - name: Playwright-Electron e2e
+        working-directory: apps/x/apps/main
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run -a pnpm exec playwright test
+          else
+            pnpm exec playwright test
+          fi
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            apps/x/apps/main/playwright-report/
+            apps/x/apps/main/test-results/
+          if-no-files-found: ignore
+          retention-days: 7

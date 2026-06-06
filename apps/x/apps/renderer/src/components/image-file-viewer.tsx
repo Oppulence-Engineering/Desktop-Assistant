@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ExternalLinkIcon, FileImageIcon, Loader2Icon } from "lucide-react";
+import { ExternalLinkIcon, FileImageIcon, Loader2Icon } from "@/lib/icons";
 
 interface ImageFileViewerProps {
   path: string;

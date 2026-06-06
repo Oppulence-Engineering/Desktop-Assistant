@@ -8,7 +8,7 @@ import {
   LoaderIcon,
   NetworkIcon,
   PlusCircleIcon,
-} from "lucide-react";
+} from "@/lib/icons";
 import type { AppActionCardData } from "@/lib/chat-conversation";
 
 interface AppActionCardProps {

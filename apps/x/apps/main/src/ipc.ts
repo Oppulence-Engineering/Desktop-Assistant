@@ -876,7 +876,12 @@ export function setupIpcHandlers() {
           show: false,
           width: 800,
           height: 600,
-          webPreferences: { offscreen: true },
+          webPreferences: {
+            offscreen: true,
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true,
+          },
         });
         await hiddenWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
         // Small delay to ensure CSS/fonts render

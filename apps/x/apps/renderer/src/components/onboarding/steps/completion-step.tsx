@@ -1,4 +1,4 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "@/lib/icons";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import type { OnboardingState } from "../use-onboarding-state";

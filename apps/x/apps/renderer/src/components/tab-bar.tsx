@@ -1,5 +1,5 @@
 import * as React from "react";
-import { X } from "lucide-react";
+import { X } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 export type ChatTab = {
@@ -65,7 +65,7 @@ export function TabBar<T>({
                   ? "min-w-[140px] max-w-[240px]"
                   : "min-w-0 max-w-[220px]",
                 isActive
-                  ? "bg-background text-foreground"
+                  ? "bg-background text-foreground font-medium"
                   : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
               )}
               style={
