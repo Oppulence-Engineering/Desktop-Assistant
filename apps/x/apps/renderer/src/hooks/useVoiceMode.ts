@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { buildDeepgramListenUrl } from '@/lib/deepgram-listen-url';
-import { useRowboatAccount } from '@/hooks/useRowboatAccount';
+import { useSolomonAccount } from '@/hooks/useSolomonAccount';
 import posthog from 'posthog-js';
 import * as analytics from '@/lib/analytics';
 
@@ -21,10 +21,10 @@ const DEEPGRAM_PARAMS = new URLSearchParams({
 const DEEPGRAM_LISTEN_URL = `wss://api.deepgram.com/v1/listen?${DEEPGRAM_PARAMS.toString()}`;
 
 // Cache auth details so we don't need IPC round-trips on every mic click
-let cachedAuth: { type: 'rowboat'; url: string; token: string } | { type: 'local'; apiKey: string } | null = null;
+let cachedAuth: { type: 'solomon'; url: string; token: string } | { type: 'local'; apiKey: string } | null = null;
 
 export function useVoiceMode() {
-    const { refresh: refreshRowboatAccount } = useRowboatAccount();
+    const { refresh: refreshSolomonAccount } = useSolomonAccount();
     const [state, setState] = useState<VoiceState>('idle');
     const [interimText, setInterimText] = useState('');
     const wsRef = useRef<WebSocket | null>(null);
@@ -38,20 +38,20 @@ export function useVoiceMode() {
 
     // Refresh cached auth details (called on warmup, not on mic click)
     const refreshAuth = useCallback(async () => {
-        const account = await refreshRowboatAccount();
+        const account = await refreshSolomonAccount();
         if (
             account?.signedIn &&
             account.accessToken &&
             account.config?.websocketApiUrl
         ) {
-            cachedAuth = { type: 'rowboat', url: account.config.websocketApiUrl, token: account.accessToken };
+            cachedAuth = { type: 'solomon', url: account.config.websocketApiUrl, token: account.accessToken };
         } else {
             const config = await window.ipc.invoke('voice:getConfig', null);
             if (config?.deepgram) {
                 cachedAuth = { type: 'local', apiKey: config.deepgram.apiKey };
             }
         }
-    }, [refreshRowboatAccount]);
+    }, [refreshSolomonAccount]);
 
     // Create and connect a Deepgram WebSocket using cached auth.
     // Starts the connection and returns immediately (does not wait for open).
@@ -65,7 +65,7 @@ export function useVoiceMode() {
         if (!cachedAuth) return;
 
         let ws: WebSocket;
-        if (cachedAuth.type === 'rowboat') {
+        if (cachedAuth.type === 'solomon') {
             const listenUrl = buildDeepgramListenUrl(cachedAuth.url, DEEPGRAM_PARAMS);
             ws = new WebSocket(listenUrl, ['bearer', cachedAuth.token]);
         } else {

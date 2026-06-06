@@ -39,6 +39,7 @@ const SOURCE_FOLDERS = [
     'gmail_sync',
     path.join('knowledge', 'Meetings', 'fireflies'),
     path.join('knowledge', 'Meetings', 'granola'),
+    path.join('knowledge', 'Meetings', 'solomon'),
     path.join('knowledge', 'Meetings', 'rowboat'),
 ];
 
@@ -420,7 +421,7 @@ async function buildGraphWithFiles(
 
             // Commit knowledge changes to version history
             try {
-                await commitAll('Knowledge update', 'Rowboat');
+                await commitAll('Knowledge update', 'Solomon AI');
             } catch (err) {
                 console.error(`[GraphBuilder] Failed to commit version history:`, err);
             }
@@ -593,7 +594,7 @@ async function processVoiceMemosForKnowledge(): Promise<boolean> {
 
             // Commit knowledge changes to version history
             try {
-                await commitAll('Knowledge update', 'Rowboat');
+                await commitAll('Knowledge update', 'Solomon AI');
             } catch (err) {
                 console.error(`[GraphBuilder] Failed to commit version history:`, err);
             }

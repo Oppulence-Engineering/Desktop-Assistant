@@ -56,7 +56,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          EXPECTED_BIN="apps/x/apps/main/out/Rowboat-linux-x64/rowboat"
+          EXPECTED_BIN="apps/x/apps/main/out/Solomon AI-linux-x64/solomon-ai"
           BIN=""
 
           for attempt in $(seq 1 60); do
@@ -65,7 +65,7 @@ jobs:
               break
             fi
 
-            BIN="$(find . -path '*/out/*/rowboat' -type f -perm -111 -print -quit)"
+            BIN="$(find . -path '*/out/*/solomon-ai' -type f -perm -111 -print -quit)"
             if [ -n "$BIN" ]; then
               break
             fi

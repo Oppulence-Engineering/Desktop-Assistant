@@ -11,8 +11,9 @@ import {
     TransientRefreshError,
     refreshTokensViaBackend,
 } from '../auth/google-backend-oauth.js';
+import { LEGACY_PRODUCT_PROVIDER_ID, PRODUCT_PROVIDER_ID } from '@x/shared/dist/branding.js';
 
-type Mode = 'byok' | 'rowboat';
+type Mode = 'byok' | typeof PRODUCT_PROVIDER_ID | typeof LEGACY_PRODUCT_PROVIDER_ID;
 
 /**
  * Factory for creating and managing Google OAuth2Client instances.
@@ -21,14 +22,14 @@ type Mode = 'byok' | 'rowboat';
  * Two connection modes share the same `oauth.json` provider entry:
  *   - `byok`    user supplied client_id+secret; refresh runs locally via
  *               openid-client; OAuth2Client built with creds.
- *   - `rowboat` signed-in user; client_id+secret never on the desktop;
+ *   - `solomon` signed-in user; client_id+secret never on the desktop;
  *               refresh goes through the api at /v1/google-oauth/refresh;
  *               OAuth2Client built without creds and without refresh_token
  *               (we own all refreshes — see note below).
  *
- * **Auto-refresh disabled in rowboat mode:** google-auth-library's
+ * **Auto-refresh disabled in managed mode:** google-auth-library's
  * OAuth2Client will, on a 401 from a Google API call, try to refresh using
- * the refresh_token + client secret it has on hand. In rowboat mode we have
+ * the refresh_token + client secret it has on hand. In managed mode we have
  * no secret, so that would 401-loop. We block this by passing only
  * access_token + expiry_date in setCredentials (no refresh_token), which
  * leaves the library nothing to refresh with. Our proactive expiry check
@@ -106,7 +107,7 @@ export class GoogleClientFactory {
             this.clearCache();
         }
 
-        // BYOK needs an openid-client Configuration for local refresh; rowboat doesn't.
+        // BYOK needs an openid-client Configuration for local refresh; managed auth doesn't.
         if (mode === 'byok') {
             try {
                 await this.initializeConfigCache();
@@ -151,7 +152,7 @@ export class GoogleClientFactory {
             const existingScopes = tokens.scopes;
 
             let refreshedTokens: OAuthTokens;
-            if (mode === 'rowboat') {
+            if (mode === PRODUCT_PROVIDER_ID || mode === LEGACY_PRODUCT_PROVIDER_ID) {
                 refreshedTokens = await refreshTokensViaBackend(tokens.refresh_token!, existingScopes);
             } else {
                 if (!this.cache.config) {
@@ -183,7 +184,7 @@ export class GoogleClientFactory {
             const message = error instanceof Error ? error.message : 'Failed to refresh token for Google';
             await oauthRepo.upsert(this.PROVIDER_NAME, { error: message });
             console.error('[OAuth] Failed to refresh token for Google:', error);
-            // Walk cause chain so we can see e.g. `Not signed into Rowboat`
+            // Walk cause chain so we can see e.g. `Not signed into Solomon AI`
             // showing up under a generic `fetch failed` outer error.
             let cause: unknown = error;
             while (cause != null && typeof cause === 'object' && 'cause' in cause) {
@@ -202,8 +203,8 @@ export class GoogleClientFactory {
             this.cache.clientSecret = creds.clientSecret ?? null;
         }
 
-        const client = mode === 'rowboat'
-            ? this.createRowboatClient(tokens)
+        const client = (mode === PRODUCT_PROVIDER_ID || mode === LEGACY_PRODUCT_PROVIDER_ID)
+            ? this.createManagedClient(tokens)
             : this.createByokClient(tokens, this.cache.clientId!, this.cache.clientSecret ?? undefined);
 
         this.cache.mode = mode;
@@ -267,7 +268,7 @@ export class GoogleClientFactory {
     }
 
     /**
-     * Initialize cached configuration for BYOK mode (rowboat doesn't need it).
+     * Initialize cached configuration for BYOK mode (managed auth doesn't need it).
      */
     private static async initializeConfigCache(): Promise<void> {
         const { clientId, clientSecret } = await this.resolveByokCredentials();
@@ -341,7 +342,7 @@ export class GoogleClientFactory {
     }
 
     /**
-     * Rowboat OAuth2Client — no client_id/secret, no refresh_token.
+     * Managed OAuth2Client — no client_id/secret, no refresh_token.
      * Library auto-refresh is disabled by absence of refresh_token; our
      * proactive refresh in getClient() is the only refresh path.
      *
@@ -351,7 +352,7 @@ export class GoogleClientFactory {
      * "No refresh token is set." and the API call fails — even though
      * our proactive refresh would have handled it on the next tick.
      */
-    private static createRowboatClient(tokens: OAuthTokens): OAuth2Client {
+    private static createManagedClient(tokens: OAuthTokens): OAuth2Client {
         const client = new OAuth2Client();
         client.eagerRefreshThresholdMillis = 0;
         client.setCredentials({

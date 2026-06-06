@@ -18,6 +18,8 @@ import { isSignedIn } from '@x/core/dist/account/account.js';
 import { getWebappUrl } from '@x/core/dist/config/remote-config.js';
 import { claimTokensViaBackend } from '@x/core/dist/auth/google-backend-oauth.js';
 import { getWorkosLoginUrl, exchangeWorkosCode } from '@x/core/dist/auth/workos-backend.js';
+import { PRODUCT_PROVIDER_ID, isProductProvider } from '@x/shared/dist/branding.js';
+import { isManagedAuthMode } from '@x/core/dist/auth/repo.js';
 
 function buildRedirectUri(port: number): string {
   return `http://localhost:${port}/oauth/callback`;
@@ -205,16 +207,16 @@ async function getProviderConfiguration(
 }
 
 /**
- * Rowboat sign-in via the rowboat-api WorkOS broker. The desktop runs the
- * browser authorize + PKCE and the loopback callback; rowboat-api completes the
+ * Solomon AI sign-in via the API WorkOS broker. The desktop runs the
+ * browser authorize + PKCE and the loopback callback; the API completes the
  * confidential code exchange (it holds the WorkOS API key) and returns tokens.
  */
-async function connectRowboatViaBroker(): Promise<{ success: boolean; error?: string }> {
+async function connectSolomonViaBroker(): Promise<{ success: boolean; error?: string }> {
   const oauthRepo = getOAuthRepo();
   const { verifier: codeVerifier, challenge: codeChallenge } = await oauthClient.generatePKCE();
   const state = oauthClient.generateState();
 
-  // rowboat-api builds the WorkOS AuthKit authorize URL (keeps WorkOS's
+  // The API builds the WorkOS AuthKit authorize URL (keeps WorkOS's
   // endpoint layout server-side).
   const loginUrl = await getWorkosLoginUrl(REDIRECT_URI, state, codeChallenge);
 
@@ -233,10 +235,10 @@ async function connectRowboatViaBroker(): Promise<{ success: boolean; error?: st
     }
 
     try {
-      console.log('[OAuth] Exchanging WorkOS code via rowboat-api broker...');
+      console.log('[OAuth] Exchanging WorkOS code via Solomon AI API broker...');
       const tokens = await exchangeWorkosCode(code, codeVerifier);
-      await oauthRepo.upsert('rowboat', { tokens, error: null });
-      console.log('[OAuth] Rowboat sign-in successful');
+      await oauthRepo.upsert(PRODUCT_PROVIDER_ID, { tokens, error: null });
+      console.log('[OAuth] Solomon AI sign-in successful');
 
       // Ensure user + Stripe customer exist before notifying the renderer.
       let signedInUserId: string | undefined;
@@ -259,14 +261,14 @@ async function connectRowboatViaBroker(): Promise<{ success: boolean; error?: st
       }
 
       emitOAuthEvent({
-        provider: 'rowboat',
+        provider: PRODUCT_PROVIDER_ID,
         success: true,
         ...(signedInUserId ? { userId: signedInUserId } : {}),
       });
     } catch (error) {
-      console.error('[OAuth] Rowboat sign-in failed:', error);
+      console.error('[OAuth] Solomon AI sign-in failed:', error);
       emitOAuthEvent({
-        provider: 'rowboat',
+        provider: PRODUCT_PROVIDER_ID,
         success: false,
         error: error instanceof Error ? error.message : 'Sign-in failed',
       });
@@ -282,12 +284,12 @@ async function connectRowboatViaBroker(): Promise<{ success: boolean; error?: st
 
   const cleanupTimeout = setTimeout(() => {
     if (activeFlow?.state === state) {
-      console.log('[OAuth] Cleaning up abandoned rowboat sign-in (timeout)');
+      console.log('[OAuth] Cleaning up abandoned Solomon AI sign-in (timeout)');
       cancelActiveFlow('timed_out');
     }
   }, 2 * 60 * 1000);
 
-  activeFlow = { provider: 'rowboat', state, server, cleanupTimeout };
+  activeFlow = { provider: PRODUCT_PROVIDER_ID, state, server, cleanupTimeout };
 
   shell.openExternal(loginUrl);
   return { success: true };
@@ -334,11 +336,11 @@ export async function connectProvider(provider: string, credentials?: { clientId
     // Cancel any existing flow before starting a new one
     cancelActiveFlow('new_flow_started');
 
-    // Rowboat sign-in goes through the WorkOS broker in rowboat-api (WorkOS is
+    // Solomon AI sign-in goes through the WorkOS broker in the API (WorkOS is
     // a confidential client; the desktop can't hold the API key). The browser
     // authorize + PKCE happen here; the code exchange is server-side.
-    if (provider === 'rowboat') {
-      return await connectRowboatViaBroker();
+    if (isProductProvider(provider)) {
+      return await connectSolomonViaBroker();
     }
 
     const oauthRepo = getOAuthRepo();
@@ -346,17 +348,17 @@ export async function connectProvider(provider: string, credentials?: { clientId
 
     if (provider === 'google') {
       if (!credentials?.clientId || !credentials?.clientSecret) {
-        // No credentials → rowboat mode if the user is signed in to Rowboat
+        // No credentials → managed mode if the user is signed in to Solomon AI
         // (we use the company-owned Google client via the api + webapp).
         // Otherwise it's BYOK with missing creds → error.
         if (await isSignedIn()) {
           try {
             const webappUrl = await getWebappUrl();
             await shell.openExternal(`${webappUrl}/oauth/google/start`);
-            console.log('[OAuth] Started rowboat-mode Google connect (browser opened to webapp)');
+            console.log('[OAuth] Started Solomon AI-managed Google connect (browser opened to webapp)');
             return { success: true };
           } catch (error) {
-            console.error('[OAuth] Failed to start rowboat-mode Google connect:', error);
+            console.error('[OAuth] Failed to start Solomon AI-managed Google connect:', error);
             return {
               success: false,
               error: error instanceof Error ? error.message : 'Failed to open browser',
@@ -414,9 +416,9 @@ export async function connectProvider(provider: string, credentials?: { clientId
           );
 
           // Save tokens and credentials. For Google, BYOK is the only path
-          // that reaches this token exchange (rowboat path returns above
+          // that reaches this token exchange (managed path returns above
           // before any local server runs); stamp mode: 'byok' so a future
-          // refresh / reconnect can't get confused with a rowboat entry.
+          // refresh / reconnect can't get confused with a managed entry.
           console.log(`[OAuth] Token exchange successful for ${provider}`);
           await oauthRepo.upsert(provider, {
             tokens,
@@ -433,11 +435,11 @@ export async function connectProvider(provider: string, credentials?: { clientId
             triggerFirefliesSync();
           }
 
-          // For Rowboat sign-in, ensure user + Stripe customer exist before
+          // For Solomon AI sign-in, ensure user + Stripe customer exist before
           // notifying the renderer. Without this, parallel API calls from
           // multiple renderer hooks race to create the user, causing duplicates.
           let signedInUserId: string | undefined;
-          if (provider === 'rowboat') {
+          if (isProductProvider(provider)) {
             try {
               const billing = await getBillingInfo();
               if (billing.userId) {
@@ -559,20 +561,20 @@ export async function connectProvider(provider: string, credentials?: { clientId
 }
 
 /**
- * Complete a rowboat-mode Google connect: claim the tokens parked under
+ * Complete a Solomon AI-managed Google connect: claim the tokens parked under
  * `state` by the webapp callback, persist them locally, and trigger sync.
  *
  * Called by the deep-link dispatcher (deeplink.ts) when the OS hands us a
- * rowboat://oauth/google/done?session=<state> URL.
+ * solomon-ai://oauth/google/done?session=<state> URL.
  */
-export async function completeRowboatGoogleConnect(state: string): Promise<void> {
+export async function completeSolomonGoogleConnect(state: string): Promise<void> {
   try {
-    console.log('[OAuth] Claiming rowboat-mode Google tokens...');
+    console.log('[OAuth] Claiming Solomon AI-managed Google tokens...');
     const tokens = await claimTokensViaBackend(state);
     const oauthRepo = getOAuthRepo();
     await oauthRepo.upsert('google', {
       tokens,
-      mode: 'rowboat',
+      mode: PRODUCT_PROVIDER_ID,
       // Explicitly null these — no client_id/secret on the desktop in this mode.
       clientId: null,
       clientSecret: null,
@@ -581,9 +583,9 @@ export async function completeRowboatGoogleConnect(state: string): Promise<void>
     triggerGmailSync();
     triggerCalendarSync();
     emitOAuthEvent({ provider: 'google', success: true });
-    console.log('[OAuth] Rowboat-mode Google connect complete');
+    console.log('[OAuth] Solomon AI-managed Google connect complete');
   } catch (error) {
-    console.error('[OAuth] Failed to complete rowboat-mode Google connect:', error);
+    console.error('[OAuth] Failed to complete Solomon AI-managed Google connect:', error);
     emitOAuthEvent({
       provider: 'google',
       success: false,
@@ -599,12 +601,12 @@ export async function disconnectProvider(provider: string): Promise<{ success: b
   try {
     const oauthRepo = getOAuthRepo();
 
-    // For rowboat-mode Google, best-effort revoke at Google before clearing
+    // For Solomon AI-managed Google, best-effort revoke at Google before clearing
     // local state. Google's revoke endpoint accepts an unauthenticated POST
     // with the access_token; failure is logged but doesn't block disconnect.
     if (provider === 'google') {
       const connection = await oauthRepo.read(provider);
-      if (connection.mode === 'rowboat' && connection.tokens?.access_token) {
+      if (isManagedAuthMode(connection.mode) && connection.tokens?.access_token) {
         try {
           const revokeUrl = `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(connection.tokens.access_token)}`;
           const res = await fetch(revokeUrl, { method: 'POST', signal: AbortSignal.timeout(5000) });
@@ -618,7 +620,7 @@ export async function disconnectProvider(provider: string): Promise<{ success: b
     }
 
     await oauthRepo.delete(provider);
-    if (provider === 'rowboat') {
+    if (isProductProvider(provider)) {
       analyticsCapture('user_signed_out');
       analyticsReset();
     }
@@ -678,8 +680,8 @@ export async function disconnectGoogleIfScopesStale(): Promise<void> {
       'invalidating it so the user is prompted to reconnect with the new scopes.'
     );
 
-    // Best-effort revoke at Google for rowboat-mode grants (mirrors disconnectProvider).
-    if (connection.mode === 'rowboat' && connection.tokens.access_token) {
+    // Best-effort revoke at Google for Solomon AI-managed grants (mirrors disconnectProvider).
+    if (isManagedAuthMode(connection.mode) && connection.tokens.access_token) {
       try {
         const revokeUrl = `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(connection.tokens.access_token)}`;
         const res = await fetch(revokeUrl, { method: 'POST', signal: AbortSignal.timeout(5000) });

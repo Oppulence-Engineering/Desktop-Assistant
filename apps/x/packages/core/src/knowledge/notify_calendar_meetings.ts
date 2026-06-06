@@ -4,6 +4,7 @@ import type { Dirent } from "node:fs";
 import { WorkDir } from "../config/config.js";
 import container from "../di/container.js";
 import type { INotificationService } from "../application/notification/service.js";
+import { DEEP_LINK_SCHEME } from "@x/shared/dist/branding.js";
 
 const TICK_INTERVAL_MS = 30_000;
 // Notify when an event is between 30s in the past (started just now) and
@@ -135,7 +136,7 @@ async function tick(state: NotificationState): Promise<{ state: NotificationStat
                 // Single labeled button — adding a secondary action would force
                 // macOS to bundle them into an "Options" dropdown, hiding the
                 // primary label.
-                link: `rowboat://action?type=join-and-take-meeting-notes&eventId=${eid}`,
+                link: `${DEEP_LINK_SCHEME}://action?type=join-and-take-meeting-notes&eventId=${eid}`,
                 actionLabel: "Join & Notes",
             });
             console.log(`[CalendarNotify] notified for "${summary}" (${eventId})`);

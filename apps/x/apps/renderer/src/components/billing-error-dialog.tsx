@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button"
 import type { BillingErrorMatch } from "@/lib/billing-error"
 
-interface BillingRowboatAccount {
+interface BillingSolomonAccount {
   config?: {
     appUrl?: string | null
   } | null
@@ -28,8 +28,8 @@ export function BillingErrorDialog({ open, match, onOpenChange }: BillingErrorDi
   useEffect(() => {
     if (!open) return
     window.ipc
-      .invoke('account:getRowboat', null)
-      .then((account: BillingRowboatAccount) => setAppUrl(account.config?.appUrl ?? null))
+      .invoke('account:getSolomon', null)
+      .then((account: BillingSolomonAccount) => setAppUrl(account.config?.appUrl ?? null))
       .catch(() => {})
   }, [open])
 

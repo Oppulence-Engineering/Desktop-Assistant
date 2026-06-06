@@ -1,5 +1,5 @@
 /**
- * Merge Deepgram query params onto a Rowboat WebSocket base URL from account config.
+ * Merge Deepgram query params onto a Solomon AI WebSocket base URL from account config.
  */
 export function buildDeepgramListenUrl(baseWsUrl: string, params: URLSearchParams): string {
   const url = new URL("/deepgram/v1/listen", baseWsUrl);

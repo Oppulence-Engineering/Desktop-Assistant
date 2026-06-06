@@ -34,7 +34,7 @@ beforeEach(() => {
   };
 
   mockOAuthRepo = {
-    read: vi.fn(async () => ({ tokens: storedTokens, mode: 'rowboat' as const })),
+    read: vi.fn(async () => ({ tokens: storedTokens, mode: 'solomon' as const })),
     upsert: vi.fn(async () => undefined),
     delete: vi.fn(async () => undefined),
     getClientFacingConfig: vi.fn(async () => ({})),
@@ -113,7 +113,7 @@ describe('GoogleClientFactory.getClient', () => {
       token_type: 'Bearer',
       scopes: ['https://www.googleapis.com/auth/gmail.modify'],
     };
-    mockOAuthRepo.read = vi.fn(async () => ({ tokens: storedTokens, mode: 'rowboat' as const }));
+    mockOAuthRepo.read = vi.fn(async () => ({ tokens: storedTokens, mode: 'solomon' as const }));
 
     const { GoogleClientFactory } = await import('./google-client-factory.js');
     GoogleClientFactory.clearCache();

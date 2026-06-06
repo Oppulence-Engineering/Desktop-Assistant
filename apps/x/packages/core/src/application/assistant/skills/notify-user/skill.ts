@@ -12,12 +12,12 @@ Load this skill when you need to send a desktop notification to the user — e.g
 Triggers a native macOS notification. The call returns immediately; it does not block waiting for the user to click.
 
 ### Parameters
-- **\`title\`** (optional, defaults to \`"Rowboat"\`) — bold headline at the top.
+- **\`title\`** (optional, defaults to \`"Solomon AI"\`) — bold headline at the top.
 - **\`message\`** (required) — body text. Keep it short — macOS truncates after a couple of lines.
 - **\`link\`** (optional) — URL to open when the user clicks the notification. Two kinds accepted:
   - **\`https://...\` / \`http://...\`** — opens in the default browser
-  - **\`rowboat://...\`** — opens a view inside Rowboat (see deep links below)
-  - If omitted, clicking the notification focuses the Rowboat app.
+  - **\`solomon-ai://...\`** — opens a view inside Solomon AI (see deep links below)
+  - If omitted, clicking the notification focuses the Solomon AI app.
 
 ### Examples
 
@@ -38,25 +38,25 @@ External link:
 }
 \`\`\`
 
-Deep link into a Rowboat note:
+Deep link into a Solomon AI note:
 \`\`\`json
 {
   "message": "Daily brief is ready",
-  "link": "rowboat://open?type=file&path=knowledge/Daily/2026-04-25.md"
+  "link": "solomon-ai://open?type=file&path=knowledge/Daily/2026-04-25.md"
 }
 \`\`\`
 
-## Deep links: \`rowboat://\`
+## Deep links: \`solomon-ai://\`
 
-Use these as the \`link\` parameter to land the user on a specific view in Rowboat instead of an external site. URL-encode paths/names that contain spaces or special characters.
+Use these as the \`link\` parameter to land the user on a specific view in Solomon AI instead of an external site. URL-encode paths/names that contain spaces or special characters.
 
 | Target | Format | Example |
 |---|---|---|
-| Open a file | \`rowboat://open?type=file&path=<workspace-relative path>\` | \`rowboat://open?type=file&path=knowledge/People/Acme.md\` |
-| Open chat | \`rowboat://open?type=chat\` (optional \`&runId=<id>\`) | \`rowboat://open?type=chat&runId=abc123\` |
-| Knowledge graph | \`rowboat://open?type=graph\` | — |
-| Background task view | \`rowboat://open?type=task&name=<task-name>\` | \`rowboat://open?type=task&name=daily-brief\` |
-| Suggested topics | \`rowboat://open?type=suggested-topics\` | — |
+| Open a file | \`solomon-ai://open?type=file&path=<workspace-relative path>\` | \`solomon-ai://open?type=file&path=knowledge/People/Acme.md\` |
+| Open chat | \`solomon-ai://open?type=chat\` (optional \`&runId=<id>\`) | \`solomon-ai://open?type=chat&runId=abc123\` |
+| Knowledge graph | \`solomon-ai://open?type=graph\` | - |
+| Background task view | \`solomon-ai://open?type=task&name=<task-name>\` | \`solomon-ai://open?type=task&name=daily-brief\` |
+| Suggested topics | \`solomon-ai://open?type=suggested-topics\` | - |
 
 The \`type=file\` path is workspace-relative (the same path you'd pass to \`file-readText\`).
 

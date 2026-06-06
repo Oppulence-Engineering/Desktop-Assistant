@@ -7,6 +7,7 @@ import {
   useRef,
 } from "react";
 import { workspace } from "@x/shared";
+import { DEEP_LINK_SCHEME, LEGACY_DEEP_LINK_SCHEME, PRODUCT_NAME, getProductProviderState, isProductProvider } from "@x/shared/dist/branding.js";
 import { RunEvent, ListRunsResponse } from "@x/shared/src/runs.js";
 import type { LanguageModelUsage, ToolUIPart } from "ai";
 import "./App.css";
@@ -593,7 +594,7 @@ function sortNodes(nodes: TreeNode[]): TreeNode[] {
 /**
  * Organize Meetings/ source folders into date-grouped subfolders.
  *
- * - rowboat:  rowboat/2026-03-20/meeting-xxx.md  → keeps date folders as-is
+ * - solomon:  solomon/2026-03-20/meeting-xxx.md  → keeps date folders as-is
  * - granola:  granola/2026/03/18/Title.md         → collapses into "2026-03-18" folders
  * - Files directly under a source folder (no date subfolder) are grouped
  *   by the date prefix in their filename (e.g. meeting-2026-03-17T...).
@@ -737,10 +738,10 @@ function viewStatesEqual(a: ViewState, b: ViewState): boolean {
 }
 
 /**
- * Parse a rowboat:// deep link into a ViewState. Returns null if the URL is
+ * Parse a solomon-ai:// deep link into a ViewState. Returns null if the URL is
  * malformed or names an unknown target.
  *
- * Shape: rowboat://open?type=<file|chat|graph|task|suggested-topics|meetings|live-notes>&...
+ * Shape: solomon-ai://open?type=<file|chat|graph|task|suggested-topics|meetings|live-notes>&...
  *   file:             ?type=file&path=knowledge/foo.md
  *   chat:             ?type=chat&runId=abc123        (runId optional)
  *   graph:            ?type=graph
@@ -750,9 +751,10 @@ function viewStatesEqual(a: ViewState, b: ViewState): boolean {
  *   live-notes:       ?type=live-notes
  */
 function parseDeepLink(input: string): ViewState | null {
-  const SCHEME = "rowboat://";
-  if (!input.startsWith(SCHEME)) return null;
-  const rest = input.slice(SCHEME.length);
+  const prefixes = [`${DEEP_LINK_SCHEME}://`, `${LEGACY_DEEP_LINK_SCHEME}://`];
+  const prefix = prefixes.find((candidate) => input.startsWith(candidate));
+  if (!prefix) return null;
+  const rest = input.slice(prefix.length);
   const queryIdx = rest.indexOf("?");
   const host = (queryIdx >= 0 ? rest.slice(0, queryIdx) : rest).replace(
     /\/$/,
@@ -1124,10 +1126,10 @@ function App() {
       window.ipc.invoke("oauth:getState", null),
     ])
       .then(([config, oauthState]) => {
-        const rowboatConnected = oauthState.config?.rowboat?.connected ?? false;
-        const hasVoice = !!config.deepgram || rowboatConnected;
+        const solomonConnected = getProductProviderState(oauthState.config)?.connected ?? false;
+        const hasVoice = !!config.deepgram || solomonConnected;
         setVoiceAvailable(hasVoice);
-        setTtsAvailable(!!config.elevenlabs || rowboatConnected);
+        setTtsAvailable(!!config.elevenlabs || solomonConnected);
         // Pre-cache auth details so mic click skips IPC round-trips
         if (hasVoice) {
           voice.warmup();
@@ -1148,7 +1150,7 @@ function App() {
   }, [refreshVoiceAvailability]);
 
   // One-time Composio→native Google migration check. Runs on mount and again
-  // after the user signs in to Rowboat (so we catch users who weren't signed
+  // after the user signs in to Solomon AI (so we catch users who weren't signed
   // in at startup). The IPC is idempotent — once `dismissed_at` is set on the
   // main side, every subsequent call returns `{shouldShow: false}`.
   useEffect(() => {
@@ -1167,7 +1169,7 @@ function App() {
     };
     void run();
     const cleanup = window.ipc.on("oauth:didConnect", (event) => {
-      if (event.provider === "rowboat" && event.success) {
+      if (isProductProvider(event.provider) && event.success) {
         void run();
       }
     });
@@ -7798,10 +7800,10 @@ function App() {
         open={showComposioGoogleMigration}
         onOpenChange={setShowComposioGoogleMigration}
         onReconnect={() => {
-          // Trigger the rowboat-mode Google connect flow. With no credentials
-          // and the user signed in to Rowboat, the main process opens the
+          // Trigger the Solomon AI-managed Google connect flow. With no credentials
+          // and the user signed in to Solomon AI, the main process opens the
           // webapp `/oauth/google/start` URL. The deep link returns and
-          // completeRowboatGoogleConnect persists the tokens.
+          // completeSolomonGoogleConnect persists the tokens.
           void window.ipc.invoke("oauth:connect", { provider: "google" });
         }}
       />
@@ -7813,7 +7815,7 @@ function App() {
           <DialogHeader>
             <DialogTitle>Screen recording permission required</DialogTitle>
             <DialogDescription>
-              Rowboat needs <strong>Screen Recording</strong> permission to
+              {PRODUCT_NAME} needs <strong>Screen Recording</strong> permission to
               capture meeting audio from other apps (Zoom, Meet, etc.). This
               feature won't work without it.
             </DialogDescription>
@@ -7827,7 +7829,7 @@ function App() {
                 <strong>Screen Recording</strong>
               </li>
               <li>
-                Toggle on <strong>Rowboat</strong>
+                Toggle on <strong>{PRODUCT_NAME}</strong>
               </li>
               <li>You may need to restart the app after granting permission</li>
             </ol>

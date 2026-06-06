@@ -144,7 +144,7 @@ interface InlineTask {
 }
 
 /**
- * Parse the tell-rowboat block content (JSON format).
+ * Parse the inline task block content (JSON format).
  * Returns { instruction, schedule } or null if not valid JSON.
  * Also supports legacy @rowboat format.
  */
@@ -171,10 +171,10 @@ function parseBlockContent(contentLines: string[]): { instruction: string; sched
             };
         }
     } catch {
-        // Legacy format: @rowboat lines + optional schedule: JSON line
+        // Legacy format: @solomon/@rowboat lines + optional schedule: JSON line
     }
 
-    // Legacy fallback: parse @rowboat instruction and schedule: line
+    // Legacy fallback: parse @solomon/@rowboat instruction and schedule: line
     let schedule: InlineTaskSchedule | null = null;
     const instructionLines: string[] = [];
     for (const cl of contentLines) {
@@ -190,9 +190,9 @@ function parseBlockContent(contentLines: string[]): { instruction: string; sched
             instructionLines.push(cl);
         }
     }
-    const firstRowboatLine = instructionLines.find(l => l.trim().startsWith('@rowboat'));
-    const rawInstruction = firstRowboatLine?.trim() ?? instructionLines.join('\n').trim();
-    const instruction = rawInstruction.replace(/^@rowboat:?\s*/, '');
+    const firstProductLine = instructionLines.find(l => /^@(solomon|rowboat)\b/.test(l.trim()));
+    const rawInstruction = firstProductLine?.trim() ?? instructionLines.join('\n').trim();
+    const instruction = rawInstruction.replace(/^@(solomon|rowboat):?\s*/, '');
     if (!instruction) return null;
     return { instruction, schedule, lastRunAt: null, targetId: null };
 }
@@ -255,7 +255,7 @@ function isScheduledTaskDue(schedule: InlineTaskSchedule, lastRunAt: string | nu
 
 
 /**
- * Find ```tell-rowboat code blocks in a note body and return tasks that are pending execution.
+ * Find inline task code blocks in a note body and return tasks that are pending execution.
  */
 function findPendingTasks(body: string): InlineTask[] {
     const tasks: InlineTask[] = [];
@@ -263,7 +263,7 @@ function findPendingTasks(body: string): InlineTask[] {
     let i = 0;
     while (i < lines.length) {
         const trimmed = lines[i].trim();
-        if (trimmed.startsWith('```task') || trimmed.startsWith('```tell-rowboat')) {
+        if (trimmed.startsWith('```task') || trimmed.startsWith('```tell-solomon') || trimmed.startsWith('```tell-rowboat')) {
             const startLine = i;
             i++;
             const contentLines: string[] = [];
@@ -295,7 +295,7 @@ function findPendingTasks(body: string): InlineTask[] {
 }
 
 /**
- * Insert the agent result below the tell-rowboat code block in the body.
+ * Insert the agent result below the inline task code block in the body.
  * Returns the updated body string.
  */
 function insertResultBelow(body: string, endLine: number, result: string): string {
@@ -333,7 +333,7 @@ function replaceTargetRegion(body: string, targetId: string, result: string, end
 }
 
 /**
- * Determine if a note has any "live" tell-rowboat tasks.
+ * Determine if a note has any "live" inline tasks.
  * A task is live if:
  *   - It's a one-time task that hasn't been completed yet
  *   - It's a scheduled task whose endDate hasn't passed (or has no endDate)
@@ -345,7 +345,7 @@ function hasLiveTasks(body: string): boolean {
     let i = 0;
     while (i < lines.length) {
         const trimmed = lines[i].trim();
-        if (trimmed.startsWith('```task') || trimmed.startsWith('```tell-rowboat')) {
+        if (trimmed.startsWith('```task') || trimmed.startsWith('```tell-solomon') || trimmed.startsWith('```tell-rowboat')) {
             i++;
             const contentLines: string[] = [];
             while (i < lines.length && lines[i].trim() !== '```') {
@@ -536,7 +536,7 @@ async function processInlineTasks(): Promise<void> {
 }
 
 /**
- * Process a @rowboat instruction via the inline task agent.
+ * Process a @solomon instruction via the inline task agent.
  * The agent can execute one-off tasks and/or detect scheduling intent.
  * Returns schedule info (if any), a schedule label, and optional response text.
  */
@@ -545,7 +545,7 @@ type ScheduleWithoutLabel =
     | { type: 'window'; cron: string; startTime: string; endTime: string; startDate: string; endDate: string }
     | { type: 'once'; runAt: string };
 
-export async function processRowboatInstruction(
+export async function processSolomonInstruction(
     instruction: string,
     noteContent: string,
     notePath: string,
@@ -563,7 +563,7 @@ export async function processRowboatInstruction(
     });
 
     const message = [
-        `Process the following @rowboat instruction from the note "${notePath}":`,
+        `Process the following @solomon instruction from the note "${notePath}":`,
         '',
         `**Instruction:** ${instruction}`,
         '',
@@ -582,11 +582,11 @@ export async function processRowboatInstruction(
     }
 
     // Parse out the schedule marker if present (allow multiline JSON)
-    const scheduleMarkerRegex = /<!--rowboat-schedule:([\s\S]*?)-->/;
+    const scheduleMarkerRegex = /<!--(?:solomon|rowboat)-schedule:([\s\S]*?)-->/;
     const scheduleMatch = rawResponse.match(scheduleMarkerRegex);
 
     // Parse out the instruction marker if present
-    const instructionMarkerRegex = /<!--rowboat-instruction:([\s\S]*?)-->/;
+    const instructionMarkerRegex = /<!--(?:solomon|rowboat)-instruction:([\s\S]*?)-->/;
     const instructionMatch = rawResponse.match(instructionMarkerRegex);
 
     let schedule: ScheduleWithoutLabel | null = null;
@@ -617,6 +617,8 @@ export async function processRowboatInstruction(
     const response = rawResponse.trim() || null;
     return { instruction: refinedInstruction, schedule: null, scheduleLabel: null, response };
 }
+
+export const processRowboatInstruction = processSolomonInstruction;
 
 /**
  * Classify whether an instruction contains a scheduling intent using the user's configured LLM.

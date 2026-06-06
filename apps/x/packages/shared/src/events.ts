@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
-// Rowboat events — the shared queue feeding the live-note + bg-task consumers.
+// Solomon AI events — the shared queue feeding the live-note + bg-task consumers.
 //
 // Producers (gmail/calendar sync) write JSON files to `$WorkDir/events/pending/`
 // using IDs from the monotonically increasing ID generator. The processor in

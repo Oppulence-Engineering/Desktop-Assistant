@@ -2,6 +2,7 @@ import { CheckCircle2 } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import type { OnboardingState } from "../use-onboarding-state";
+import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
 
 interface CompletionStepProps {
   state: OnboardingState;
@@ -136,7 +137,7 @@ export function CompletionStep({ state }: CompletionStepProps) {
           size="lg"
           className="w-full max-w-xs h-12 text-base font-medium"
         >
-          Start Using Rowboat
+          Start Using {PRODUCT_NAME}
         </Button>
       </motion.div>
     </div>

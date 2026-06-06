@@ -1,11 +1,17 @@
 import path from "path";
 import fs from "fs";
 import { homedir } from "os";
+import { DEFAULT_WORKDIR_NAME, LEGACY_WORKDIR_ENV, LEGACY_WORKDIR_NAME, WORKDIR_ENV } from "@x/shared/dist/branding.js";
 
 function resolveWorkDir(): string {
-    const configured = process.env.ROWBOAT_WORKDIR;
+    const configured = process.env[WORKDIR_ENV] || process.env[LEGACY_WORKDIR_ENV];
     if (!configured) {
-        return path.join(homedir(), ".rowboat");
+        const nextDefault = path.join(homedir(), DEFAULT_WORKDIR_NAME);
+        const legacyDefault = path.join(homedir(), LEGACY_WORKDIR_NAME);
+        if (!fs.existsSync(nextDefault) && fs.existsSync(legacyDefault)) {
+            return legacyDefault;
+        }
+        return nextDefault;
     }
 
     const expanded = configured === "~"
@@ -18,7 +24,8 @@ function resolveWorkDir(): string {
 }
 
 // Resolve app root relative to compiled file location (dist/...)
-// Allow override via ROWBOAT_WORKDIR env var for standalone pipeline usage.
+// Allow override via SOLOMON_WORKDIR env var for standalone pipeline usage.
+// ROWBOAT_WORKDIR remains supported as a legacy alias.
 // Normalize to an absolute path so workspace boundary checks behave consistently.
 export const WorkDir = resolveWorkDir();
 

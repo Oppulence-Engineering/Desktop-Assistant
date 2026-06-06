@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import posthog from 'posthog-js'
 import { identifyUser, resetAnalyticsIdentity } from '@/lib/analytics'
+import { LEGACY_PRODUCT_PROVIDER_ID, PRODUCT_PROVIDER_ID, getProductProviderState, isProductProvider } from '@x/shared/dist/branding.js'
 
 const MAX_NOTE_COUNT_DIRECTORY_READS = 50
 
@@ -19,7 +20,7 @@ function requestIdleTask(callback: () => void): () => void {
 }
 
 /**
- * Identifies the user in PostHog when signed into Rowboat,
+ * Identifies the user in PostHog when signed into Solomon AI,
  * and sets user properties for connected OAuth providers.
  * Call once at the App level.
  */
@@ -31,18 +32,19 @@ export function useAnalyticsIdentity() {
         const result = await window.ipc.invoke('oauth:getState', null)
         const config = result.config || {}
 
-        // Identify if Rowboat account is connected
-        const rowboat = config.rowboat
-        if (rowboat?.connected && rowboat?.userId) {
-          identifyUser(rowboat.userId)
+        // Identify if Solomon AI account is connected
+        const solomon = getProductProviderState(config)
+        if (solomon?.connected && solomon?.userId) {
+          identifyUser(solomon.userId)
         }
 
         // Set provider connection flags
-        const providers = ['gmail', 'calendar', 'slack', 'rowboat']
-        const props: Record<string, boolean> = { signed_in: !!rowboat?.connected }
+        const providers = ['gmail', 'calendar', 'slack', PRODUCT_PROVIDER_ID]
+        const props: Record<string, boolean> = { signed_in: !!solomon?.connected }
         for (const p of providers) {
           props[`${p}_connected`] = !!config[p]?.connected
         }
+        props[`${LEGACY_PRODUCT_PROVIDER_ID}_connected`] = !!solomon?.connected
         posthog.people.set(props)
 
       } catch {
@@ -95,7 +97,7 @@ export function useAnalyticsIdentity() {
   // Listen for OAuth connect/disconnect events to update identity
   useEffect(() => {
     const cleanup = window.ipc.on('oauth:didConnect', (event) => {
-      if (event.provider !== 'rowboat') {
+      if (!isProductProvider(event.provider)) {
         // Other providers: just toggle the connection flag
         if (event.success) {
           posthog.people.set({ [`${event.provider}_connected`]: true })
@@ -103,19 +105,19 @@ export function useAnalyticsIdentity() {
         return
       }
 
-      // Rowboat sign-in
+      // Solomon AI sign-in
       if (event.success) {
         if (event.userId) {
           identifyUser(event.userId)
         }
-        posthog.people.set({ signed_in: true, rowboat_connected: true })
+        posthog.people.set({ signed_in: true, solomon_connected: true, rowboat_connected: true })
         posthog.capture('user_signed_in')
         return
       }
 
-      // Rowboat sign-out — flip flags, capture, and reset distinct_id so
+      // Solomon AI sign-out — flip flags, capture, and reset distinct_id so
       // future events on this device don't get attributed to the prior user.
-      posthog.people.set({ signed_in: false, rowboat_connected: false })
+      posthog.people.set({ signed_in: false, solomon_connected: false, rowboat_connected: false })
       posthog.capture('user_signed_out')
       resetAnalyticsIdentity()
     })

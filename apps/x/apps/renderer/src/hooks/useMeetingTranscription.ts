@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { buildDeepgramListenUrl } from '@/lib/deepgram-listen-url';
-import { useRowboatAccount } from '@/hooks/useRowboatAccount';
+import { useSolomonAccount } from '@/hooks/useSolomonAccount';
 
 export type MeetingTranscriptionState = 'idle' | 'connecting' | 'recording' | 'stopping';
 
@@ -64,7 +64,7 @@ function formatTranscript(entries: TranscriptEntry[], date: string, calendarEven
     const lines = [
         '---',
         'type: meeting',
-        'source: rowboat',
+        'source: solomon',
         `title: ${noteTitle}`,
         `date: "${date}"`,
     ];
@@ -108,7 +108,7 @@ function formatTranscript(entries: TranscriptEntry[], date: string, calendarEven
 // Hook
 // ---------------------------------------------------------------------------
 export function useMeetingTranscription(onAutoStop?: () => void) {
-    const { refresh: refreshRowboatAccount } = useRowboatAccount();
+    const { refresh: refreshSolomonAccount } = useSolomonAccount();
     const [state, setState] = useState<MeetingTranscriptionState>('idle');
     const wsRef = useRef<WebSocket | null>(null);
     const micStreamRef = useRef<MediaStream | null>(null);
@@ -198,7 +198,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
             detectHeadphones(),
             // 2. Set up Deepgram WebSocket (account refresh + connect + wait for open)
             (async () => {
-                const account = await refreshRowboatAccount();
+                const account = await refreshSolomonAccount();
                 let ws: WebSocket;
                 if (
                     account?.signedIn &&
@@ -206,7 +206,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
                     account.config?.websocketApiUrl
                 ) {
                     const listenUrl = buildDeepgramListenUrl(account.config.websocketApiUrl, DEEPGRAM_PARAMS);
-                    console.log('[meeting] Using Rowboat WebSocket');
+                    console.log('[meeting] Using Solomon AI WebSocket');
                     ws = new WebSocket(listenUrl, ['bearer', account.accessToken]);
                 } else {
                     const config = await window.ipc.invoke('voice:getConfig', null);
@@ -388,7 +388,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
         const filename = calendarEvent?.summary
             ? calendarEvent.summary.replace(/[\\/*?:"<>|]/g, '').replace(/\s+/g, '_').substring(0, 100).trim()
             : `meeting-${timestamp}`;
-        const notePath = `knowledge/Meetings/rowboat/${dateFolder}/${filename}.md`;
+        const notePath = `knowledge/Meetings/solomon/${dateFolder}/${filename}.md`;
         notePathRef.current = notePath;
         calendarEventRef.current = calendarEvent;
         const initialContent = formatTranscript([], dateStr, calendarEvent);
@@ -400,7 +400,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
 
         setState('recording');
         return notePath;
-    }, [state, cleanup, scheduleDebouncedWrite, refreshRowboatAccount]);
+    }, [state, cleanup, scheduleDebouncedWrite, refreshSolomonAccount]);
 
     const stop = useCallback(async () => {
         if (state !== 'recording') return;

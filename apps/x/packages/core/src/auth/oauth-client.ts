@@ -101,7 +101,7 @@ export async function registerClient(
   issuerUrl: string,
   redirectUris: string[],
   scopes: string[],
-  clientName: string = 'RowboatX Desktop App'
+  clientName: string = 'Solomon AI Desktop App'
 ): Promise<{ config: client.Configuration; registration: ClientRegistrationResponse }> {
   console.log(`[OAuth] Registering client via DCR at ${issuerUrl}...`);
   const config = await client.dynamicClientRegistration(
@@ -249,4 +249,3 @@ export function getCachedConfiguration(issuerUrl: string, clientId: string): cli
 
 // Re-export Configuration type for external use
 export type { Configuration } from 'openid-client';
-

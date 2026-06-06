@@ -197,7 +197,7 @@ async function ensureUserEmail(): Promise<string | null> {
         return existing.email;
     }
 
-    // Try direct Google OAuth (covers both BYOK and rowboat modes)
+    // Try direct Google OAuth (covers both BYOK and managed modes)
     try {
         const auth = await GoogleClientFactory.getClient();
         if (auth) {

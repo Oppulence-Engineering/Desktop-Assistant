@@ -26,10 +26,10 @@ async function writeOAuthToken(): Promise<void> {
     await fs.writeFile(path.join(workDir, 'config', 'oauth.json'), JSON.stringify({
         version: 2,
         providers: {
-            rowboat: {
-                mode: 'rowboat',
+            solomon: {
+                mode: 'solomon',
                 tokens: {
-                    access_token: 'test-rowboat-token',
+                    access_token: 'test-solomon-token',
                     refresh_token: null,
                     expires_at: Math.floor(Date.now() / 1000) + 3600,
                     token_type: 'Bearer',
@@ -89,16 +89,16 @@ function requestMethod(init: RequestInit | undefined): string {
 }
 
 beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'rowboat-cloud-workflows-test-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'solomon-cloud-workflows-test-'));
     workDir = path.join(tmpDir, 'workspace');
-    process.env.ROWBOAT_WORKDIR = workDir;
-    process.env.API_URL = 'http://rowboat-api.test';
+    process.env.SOLOMON_WORKDIR = workDir;
+    process.env.API_URL = 'http://solomon-api.test';
     vi.resetModules();
     mockConfigSideEffects();
 });
 
 afterEach(async () => {
-    delete process.env.ROWBOAT_WORKDIR;
+    delete process.env.SOLOMON_WORKDIR;
     delete process.env.API_URL;
     vi.unstubAllGlobals();
     vi.doUnmock('../knowledge/version_history.js');

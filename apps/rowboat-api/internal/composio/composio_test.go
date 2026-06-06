@@ -22,7 +22,7 @@ func TestProxySwapsAuthAndRewritesPath(t *testing.T) {
 		gotQuery = r.URL.RawQuery
 		gotKey = r.Header.Get("x-api-key")
 		gotAuth = r.Header.Get("Authorization")
-		gotUser = r.Header.Get("X-Rowboat-User")
+		gotUser = r.Header.Get("X-Solomon-User")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"items":[]}`))
 	}))
@@ -57,7 +57,7 @@ func TestProxySwapsAuthAndRewritesPath(t *testing.T) {
 		t.Errorf("user Authorization must be stripped, got %q", gotAuth)
 	}
 	if gotUser != u.ID.String() {
-		t.Errorf("X-Rowboat-User = %q, want %q", gotUser, u.ID.String())
+		t.Errorf("X-Solomon-User = %q, want %q", gotUser, u.ID.String())
 	}
 }
 

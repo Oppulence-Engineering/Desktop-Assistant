@@ -1,6 +1,6 @@
 {
-    "name": "rowboat",
-    "productName": "Rowboat",
+    "name": "solomon-ai",
+    "productName": "Solomon AI",
     "description": "AI coworker with memory",
     "type": "module",
     "version": "0.1.9",

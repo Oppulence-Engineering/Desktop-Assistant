@@ -64,6 +64,7 @@ export function createProvider(config: z.infer<typeof Provider>): ProviderV2 {
                 baseURL,
                 headers,
             }) as unknown as ProviderV2;
+        case "solomon":
         case "rowboat":
             return getGatewayProvider();
         default:

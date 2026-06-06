@@ -148,7 +148,8 @@ jobs:
           const [platform, archCsv] = process.argv.slice(2);
           const arches = archCsv.split(',');
           const packagerConfig = forgeConfig.packagerConfig ?? {};
-          const executableName = packagerConfig.executableName ?? 'rowboat';
+          const executableName = packagerConfig.executableName ?? 'solomon-ai';
+          const appName = packagerConfig.name ?? 'Solomon AI';
 
           if (forgeConfig.hooks?.generateAssets) {
             await forgeConfig.hooks.generateAssets(forgeConfig, platform, arches[0]);
@@ -158,7 +159,7 @@ jobs:
             const outputPaths = await packager({
               ...packagerConfig,
               dir: appDir,
-              name: 'Rowboat',
+              name: appName,
               platform,
               arch,
               out: path.join(appDir, 'out'),
@@ -170,8 +171,8 @@ jobs:
             }
 
             const binaryPath = platform === 'darwin'
-              ? path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, 'Rowboat.app', 'Contents', 'MacOS', executableName)
-              : path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, platform === 'win32' ? `${executableName}.exe` : executableName);
+              ? path.join(appDir, 'out', `${appName}-${platform}-${arch}`, `${appName}.app`, 'Contents', 'MacOS', executableName)
+              : path.join(appDir, 'out', `${appName}-${platform}-${arch}`, platform === 'win32' ? `${executableName}.exe` : executableName);
             await access(binaryPath);
             console.log(`Verified packaged binary: ${path.relative(appDir, binaryPath)}`);
           }
@@ -278,7 +279,8 @@ jobs:
           const [platform, archCsv] = process.argv.slice(2);
           const arches = archCsv.split(',');
           const packagerConfig = forgeConfig.packagerConfig ?? {};
-          const executableName = packagerConfig.executableName ?? 'rowboat';
+          const executableName = packagerConfig.executableName ?? 'solomon-ai';
+          const appName = packagerConfig.name ?? 'Solomon AI';
 
           if (forgeConfig.hooks?.generateAssets) {
             await forgeConfig.hooks.generateAssets(forgeConfig, platform, arches[0]);
@@ -288,7 +290,7 @@ jobs:
             const outputPaths = await packager({
               ...packagerConfig,
               dir: appDir,
-              name: 'Rowboat',
+              name: appName,
               platform,
               arch,
               out: path.join(appDir, 'out'),
@@ -300,8 +302,8 @@ jobs:
             }
 
             const binaryPath = platform === 'darwin'
-              ? path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, 'Rowboat.app', 'Contents', 'MacOS', executableName)
-              : path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, platform === 'win32' ? `${executableName}.exe` : executableName);
+              ? path.join(appDir, 'out', `${appName}-${platform}-${arch}`, `${appName}.app`, 'Contents', 'MacOS', executableName)
+              : path.join(appDir, 'out', `${appName}-${platform}-${arch}`, platform === 'win32' ? `${executableName}.exe` : executableName);
             await access(binaryPath);
             console.log(`Verified packaged binary: ${path.relative(appDir, binaryPath)}`);
           }
@@ -395,7 +397,8 @@ jobs:
           const [platform, archCsv] = process.argv.slice(2);
           const arches = archCsv.split(',');
           const packagerConfig = forgeConfig.packagerConfig ?? {};
-          const executableName = packagerConfig.executableName ?? 'rowboat';
+          const executableName = packagerConfig.executableName ?? 'solomon-ai';
+          const appName = packagerConfig.name ?? 'Solomon AI';
 
           if (forgeConfig.hooks?.generateAssets) {
             await forgeConfig.hooks.generateAssets(forgeConfig, platform, arches[0]);
@@ -405,7 +408,7 @@ jobs:
             const outputPaths = await packager({
               ...packagerConfig,
               dir: appDir,
-              name: 'Rowboat',
+              name: appName,
               platform,
               arch,
               out: path.join(appDir, 'out'),
@@ -417,8 +420,8 @@ jobs:
             }
 
             const binaryPath = platform === 'darwin'
-              ? path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, 'Rowboat.app', 'Contents', 'MacOS', executableName)
-              : path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, platform === 'win32' ? `${executableName}.exe` : executableName);
+              ? path.join(appDir, 'out', `${appName}-${platform}-${arch}`, `${appName}.app`, 'Contents', 'MacOS', executableName)
+              : path.join(appDir, 'out', `${appName}-${platform}-${arch}`, platform === 'win32' ? `${executableName}.exe` : executableName);
             await access(binaryPath);
             console.log(`Verified packaged binary: ${path.relative(appDir, binaryPath)}`);
           }
@@ -476,7 +479,7 @@ jobs:
         with:
           path: ./apps/x
           format: spdx-json
-          output-file: rowboat-x-${{ needs.release-context.outputs.version }}.spdx.json
+          output-file: solomon-ai-x-${{ needs.release-context.outputs.version }}.spdx.json
           upload-artifact: true
           upload-artifact-retention: 30
 
@@ -485,7 +488,7 @@ jobs:
         with:
           path: ./apps/x
           format: cyclonedx-json
-          output-file: rowboat-x-${{ needs.release-context.outputs.version }}.cdx.json
+          output-file: solomon-ai-x-${{ needs.release-context.outputs.version }}.cdx.json
           upload-artifact: true
           upload-artifact-retention: 30
 
@@ -494,6 +497,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ needs.release-context.outputs.tag_name }}" \
-            "rowboat-x-${{ needs.release-context.outputs.version }}.spdx.json" \
-            "rowboat-x-${{ needs.release-context.outputs.version }}.cdx.json" \
+            "solomon-ai-x-${{ needs.release-context.outputs.version }}.spdx.json" \
+            "solomon-ai-x-${{ needs.release-context.outputs.version }}.cdx.json" \
             --clobber

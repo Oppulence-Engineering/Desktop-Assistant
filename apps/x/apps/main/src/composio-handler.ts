@@ -98,7 +98,7 @@ export async function initiateConnection(toolkitSlug: string): Promise<{
                 toolkit: { slug: toolkitSlug },
                 auth_config: {
                     type: 'use_composio_managed_auth',
-                    name: `rowboat-${toolkitSlug}`,
+                    name: `solomon-${toolkitSlug}`,
                 },
             });
             authConfigId = created.auth_config.id;
@@ -109,7 +109,7 @@ export async function initiateConnection(toolkitSlug: string): Promise<{
         const response = await composioClient.createConnectedAccount({
             auth_config: { id: authConfigId },
             connection: {
-                user_id: 'rowboat-user',
+                user_id: 'solomon-user',
                 callback_url: callbackUrl,
             },
         });
@@ -324,7 +324,7 @@ export async function listToolkits() {
                 totalItems: 0,
                 providerConfigured: false,
                 error: 'provider_unconfigured',
-                message: 'Tool integrations are disabled because this Rowboat API is running without Composio credentials.',
+                message: 'Tool integrations are disabled because this Solomon AI API is running without Composio credentials.',
             };
         }
         throw error;

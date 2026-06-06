@@ -3,12 +3,13 @@ import { LlmProvider } from "@x/shared/dist/models.js";
 import { IModelConfigRepo } from "./repo.js";
 import { isSignedIn } from "../account/account.js";
 import container from "../di/container.js";
+import { PRODUCT_PROVIDER_ID, LEGACY_PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/dist/branding.js";
 
-// Signed-in defaults must be ids the rowboat-api gateway actually serves (see
+// Signed-in defaults must be ids the Solomon AI gateway actually serves (see
 // its pricing/catalog: openai/*, anthropic/*, google/gemini-2.5*). openai/* is
 // routed to real OpenAI; the others need an OpenRouter key or hit the dev mock.
 const SIGNED_IN_DEFAULT_MODEL = "openai/gpt-4.1-mini";
-const SIGNED_IN_DEFAULT_PROVIDER = "rowboat";
+const SIGNED_IN_DEFAULT_PROVIDER = PRODUCT_PROVIDER_ID;
 const SIGNED_IN_KG_MODEL = "openai/gpt-4.1-mini";
 const SIGNED_IN_LIVE_NOTE_AGENT_MODEL = "openai/gpt-4.1-mini";
 
@@ -31,14 +32,14 @@ export async function getDefaultModelAndProvider(): Promise<{ model: string; pro
  * getDefaultModelAndProvider) into the full LlmProvider config that
  * createProvider expects (apiKey/baseURL/headers).
  *
- * - "rowboat" → gateway provider (auth via OAuth bearer; no creds field).
+ * - "solomon" → gateway provider (auth via OAuth bearer; no creds field).
  * - other names → look up models.json's `providers[name]` map.
  * - fallback: if the name matches the active default's flavor (legacy
  *   single-provider configs that didn't write to the providers map yet).
  */
 export async function resolveProviderConfig(name: string): Promise<z.infer<typeof LlmProvider>> {
-    if (name === "rowboat") {
-        return { flavor: "rowboat" };
+    if (isProductProvider(name)) {
+        return { flavor: name === LEGACY_PRODUCT_PROVIDER_ID ? LEGACY_PRODUCT_PROVIDER_ID : PRODUCT_PROVIDER_ID };
     }
     const repo = container.resolve<IModelConfigRepo>("modelConfigRepo");
     const cfg = await repo.getConfig();

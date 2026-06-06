@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { OAuthTokens } from './types.js';
 import z from 'zod';
+import { LEGACY_PRODUCT_PROVIDER_ID, PRODUCT_PROVIDER_ID, isProductProvider } from '@x/shared/dist/branding.js';
 
 const ProviderConnectionSchema = z.object({
   tokens: OAuthTokens.nullable().optional(),
@@ -11,10 +12,10 @@ const ProviderConnectionSchema = z.object({
   /**
    * `byok` (default for absent) — user provides their own client_id+secret;
    * tokens stored locally; refresh handled locally via openid-client.
-   * `rowboat` — signed-in user; client_id+secret never on the desktop;
+   * `solomon` — signed-in user; client_id+secret never on the desktop;
    * tokens stored locally but refresh goes through the api.
    */
-  mode: z.enum(['byok', 'rowboat']).optional(),
+  mode: z.enum(['byok', PRODUCT_PROVIDER_ID, LEGACY_PRODUCT_PROVIDER_ID]).optional(),
   error: z.string().nullable().optional(),
 });
 
@@ -35,6 +36,10 @@ const DEFAULT_CONFIG: z.infer<typeof OAuthConfigSchema> = {
   version: 2,
   providers: {},
 };
+
+export function isManagedAuthMode(mode: string | null | undefined): boolean {
+  return mode === PRODUCT_PROVIDER_ID || mode === LEGACY_PRODUCT_PROVIDER_ID;
+}
 
 export interface IOAuthRepo {
   read(provider: string): Promise<z.infer<typeof ProviderConnectionSchema>>;
@@ -62,7 +67,7 @@ export class FSOAuthRepo implements IOAuthRepo {
     // check if payload conforms to updated schema
     const result = OAuthConfigSchema.safeParse(payload);
     if (result.success) {
-      return { config: result.data, migrated: false };
+      return this.migrateProductProvider(result.data, false);
     }
 
     // otherwise attempt to parse as legacy schema
@@ -76,7 +81,19 @@ export class FSOAuthRepo implements IOAuthRepo {
         tokens,
       };
     }
-    return { config: updatedConfig, migrated: true };
+    return this.migrateProductProvider(updatedConfig, true);
+  }
+
+  private migrateProductProvider(
+    config: z.infer<typeof OAuthConfigSchema>,
+    migrated: boolean,
+  ): { config: z.infer<typeof OAuthConfigSchema>; migrated: boolean } {
+    const legacy = config.providers[LEGACY_PRODUCT_PROVIDER_ID];
+    if (legacy && !config.providers[PRODUCT_PROVIDER_ID]) {
+      config.providers[PRODUCT_PROVIDER_ID] = legacy;
+      migrated = true;
+    }
+    return { config, migrated };
   }
 
   private async readConfig(): Promise<z.infer<typeof OAuthConfigSchema>> {
@@ -99,16 +116,26 @@ export class FSOAuthRepo implements IOAuthRepo {
 
   async read(provider: string): Promise<z.infer<typeof ProviderConnectionSchema>> {
     const config = await this.readConfig();
+    if (isProductProvider(provider)) {
+      return config.providers[PRODUCT_PROVIDER_ID] ?? config.providers[LEGACY_PRODUCT_PROVIDER_ID] ?? {};
+    }
     return config.providers[provider] ?? {};
   }
   async upsert(provider: string, connection: Partial<z.infer<typeof ProviderConnectionSchema>>): Promise<void> {
     const config = await this.readConfig();
-    config.providers[provider] = { ...config.providers[provider] ?? {}, ...connection };
+    const providerKey = isProductProvider(provider) ? PRODUCT_PROVIDER_ID : provider;
+    config.providers[providerKey] = { ...config.providers[providerKey] ?? {}, ...connection };
     await this.writeConfig(config);
   }
 
   async delete(provider: string): Promise<void> {
     const config = await this.readConfig();
+    if (isProductProvider(provider)) {
+      delete config.providers[PRODUCT_PROVIDER_ID];
+      delete config.providers[LEGACY_PRODUCT_PROVIDER_ID];
+      await this.writeConfig(config);
+      return;
+    }
     delete config.providers[provider];
     await this.writeConfig(config);
   }
@@ -122,6 +149,11 @@ export class FSOAuthRepo implements IOAuthRepo {
         error: providerConfig.error,
         clientId: providerConfig.clientId ?? null,
       };
+    }
+    const productState = clientFacingConfig[PRODUCT_PROVIDER_ID] ?? clientFacingConfig[LEGACY_PRODUCT_PROVIDER_ID];
+    if (productState) {
+      clientFacingConfig[PRODUCT_PROVIDER_ID] = productState;
+      clientFacingConfig[LEGACY_PRODUCT_PROVIDER_ID] = productState;
     }
     return ClientFacingConfigSchema.parse(clientFacingConfig);
   } 

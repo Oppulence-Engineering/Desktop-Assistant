@@ -13,7 +13,8 @@ const forgeConfig = requireFromApp('./forge.config.cjs');
 const platform = process.env.SMOKE_PACKAGE_PLATFORM ?? 'linux';
 const arch = process.env.SMOKE_PACKAGE_ARCH ?? 'x64';
 const packagerConfig = forgeConfig.packagerConfig ?? {};
-const executableName = packagerConfig.executableName ?? 'rowboat';
+const executableName = packagerConfig.executableName ?? 'solomon-ai';
+const appName = packagerConfig.name ?? 'Solomon AI';
 
 process.chdir(appDir);
 
@@ -23,7 +24,7 @@ if (forgeConfig.hooks?.generateAssets) {
 
 const outputPaths = await packager({
   dir: appDir,
-  name: 'Rowboat',
+  name: appName,
   platform,
   arch,
   out: path.join(appDir, 'out'),
@@ -42,7 +43,7 @@ for (const outputPath of outputPaths) {
 }
 
 const binaryName = platform === 'win32' ? `${executableName}.exe` : executableName;
-const binaryPath = path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, binaryName);
+const binaryPath = path.join(appDir, 'out', `${appName}-${platform}-${arch}`, binaryName);
 
 await access(binaryPath);
 console.log(`Packaged smoke binary: ${path.relative(repoRoot, binaryPath)}`);

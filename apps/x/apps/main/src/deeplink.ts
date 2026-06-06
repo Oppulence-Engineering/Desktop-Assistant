@@ -2,9 +2,10 @@ import { BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { WorkDir } from "@x/core/dist/config/config.js";
+import { DEEP_LINK_SCHEME, LEGACY_DEEP_LINK_SCHEME } from "@x/shared/dist/branding.js";
 
-export const DEEP_LINK_SCHEME = "rowboat";
-const URL_PREFIX = `${DEEP_LINK_SCHEME}://`;
+export { DEEP_LINK_SCHEME, LEGACY_DEEP_LINK_SCHEME };
+const URL_PREFIXES = [`${DEEP_LINK_SCHEME}://`, `${LEGACY_DEEP_LINK_SCHEME}://`];
 const ACTION_HOST = "action";
 
 let pendingUrl: string | null = null;
@@ -22,17 +23,24 @@ export function consumePendingDeepLink(): string | null {
 
 export function extractDeepLinkFromArgv(argv: readonly string[]): string | null {
     for (const arg of argv) {
-        if (typeof arg === "string" && arg.startsWith(URL_PREFIX)) return arg;
+        if (typeof arg === "string" && getDeepLinkPayload(arg) !== null) return arg;
+    }
+    return null;
+}
+
+function getDeepLinkPayload(url: string): string | null {
+    for (const prefix of URL_PREFIXES) {
+        if (url.startsWith(prefix)) return url.slice(prefix.length);
     }
     return null;
 }
 
 /**
- * Dispatch any rowboat:// URL — chooses among action / oauth-completion /
+ * Dispatch any solomon-ai:// URL — chooses among action / oauth-completion /
  * navigation automatically. Use this from notification click handlers and
  * other URL entry points.
  *
- * OAuth completion (rowboat://oauth/google/done?session=<state>) is handled
+ * OAuth completion (solomon-ai://oauth/google/done?session=<state>) is handled
  * in main, not the renderer, because claiming tokens writes oauth.json and
  * triggers sync — both main-process concerns.
  */
@@ -47,7 +55,7 @@ export function dispatchUrl(url: string): void {
 }
 
 export function dispatchDeepLink(url: string): void {
-    if (!url.startsWith(URL_PREFIX)) return;
+    if (getDeepLinkPayload(url) === null) return;
 
     pendingUrl = url;
 
@@ -69,8 +77,8 @@ interface MeetingNotesAction {
 type ParsedAction = MeetingNotesAction;
 
 function parseAction(url: string): ParsedAction | null {
-    if (!url.startsWith(URL_PREFIX)) return null;
-    const rest = url.slice(URL_PREFIX.length);
+    const rest = getDeepLinkPayload(url);
+    if (rest === null) return null;
     const queryIdx = rest.indexOf("?");
     const host = (queryIdx >= 0 ? rest.slice(0, queryIdx) : rest).replace(/\/$/, "");
     if (host !== ACTION_HOST) return null;
@@ -118,7 +126,7 @@ async function handleTakeMeetingNotes(eventId: string, openMeeting: boolean): Pr
     win.webContents.send("app:takeMeetingNotes", payload);
 }
 
-// --- OAuth completion (rowboat-mode Google connect) ---
+// --- OAuth completion (Solomon AI-managed Google connect) ---
 
 interface OAuthCompletion {
     provider: "google";
@@ -126,13 +134,13 @@ interface OAuthCompletion {
 }
 
 /**
- * Match rowboat://oauth/google/done?session=<state>. Returns null for
+ * Match solomon-ai://oauth/google/done?session=<state>. Returns null for
  * anything else — including paths with the right shape but wrong provider
  * or a missing `session` query param.
  */
 function parseOAuthCompletion(url: string): OAuthCompletion | null {
-    if (!url.startsWith(URL_PREFIX)) return null;
-    const rest = url.slice(URL_PREFIX.length);
+    const rest = getDeepLinkPayload(url);
+    if (rest === null) return null;
     const queryIdx = rest.indexOf("?");
     const path = queryIdx >= 0 ? rest.slice(0, queryIdx) : rest;
     const parts = path.split("/").filter(Boolean);
@@ -148,14 +156,14 @@ async function dispatchOAuthCompletion(url: string): Promise<void> {
     if (!parsed) return;
 
     // Bring the app to the front so the renderer can react to the
-    // oauthEvent IPC that completeRowboatGoogleConnect emits.
+    // oauthEvent IPC that completeSolomonGoogleConnect emits.
     const win = mainWindowRef;
     if (win && !win.isDestroyed()) focusWindow(win);
 
     // Lazy-import to keep deeplink.ts free of OAuth deps and avoid a
     // potential circular dep with oauth-handler.ts.
-    const { completeRowboatGoogleConnect } = await import("./oauth-handler.js");
-    await completeRowboatGoogleConnect(parsed.state);
+    const { completeSolomonGoogleConnect } = await import("./oauth-handler.js");
+    await completeSolomonGoogleConnect(parsed.state);
 }
 
 function focusWindow(win: BrowserWindow): void {

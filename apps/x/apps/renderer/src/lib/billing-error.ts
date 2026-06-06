@@ -1,8 +1,10 @@
+import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+
 export const BILLING_ERROR_PATTERNS = [
   {
     pattern: /upgrade required/i,
     title: 'A subscription is required',
-    subtitle: 'Get started with a plan to access AI features in Rowboat.',
+    subtitle: `Get started with a plan to access AI features in ${PRODUCT_NAME}.`,
     cta: 'Subscribe',
   },
   {

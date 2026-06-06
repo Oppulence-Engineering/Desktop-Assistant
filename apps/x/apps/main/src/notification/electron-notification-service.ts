@@ -1,9 +1,10 @@
 import { BrowserWindow, Notification, shell } from "electron";
 import type { INotificationService, NotifyInput } from "@x/core/dist/application/notification/service.js";
 import { dispatchUrl } from "../deeplink.js";
+import { DEEP_LINK_SCHEME, LEGACY_DEEP_LINK_SCHEME, PRODUCT_NAME } from "@x/shared/dist/branding.js";
 
 const HTTP_URL = /^https?:\/\//i;
-const ROWBOAT_URL = /^rowboat:\/\//i;
+const APP_URL = new RegExp(`^(?:${DEEP_LINK_SCHEME}|${LEGACY_DEEP_LINK_SCHEME})://`, "i");
 
 export class ElectronNotificationService implements INotificationService {
     // Holds strong references to active Notification instances so the GC can't
@@ -15,7 +16,7 @@ export class ElectronNotificationService implements INotificationService {
         return Notification.isSupported();
     }
 
-    notify({ title = "Rowboat", message, link, actionLabel, secondaryActions }: NotifyInput): void {
+    notify({ title = PRODUCT_NAME, message, link, actionLabel, secondaryActions }: NotifyInput): void {
         // Build the actions array AND a parallel index → link map.
         // macOS shows actions[0] inline (Banner) or all of them (Alert);
         // additional ones live behind the chevron menu.
@@ -44,7 +45,7 @@ export class ElectronNotificationService implements INotificationService {
         const release = () => { this.active.delete(notification); };
 
         const openLink = (target: string | undefined) => {
-            if (target && ROWBOAT_URL.test(target)) {
+            if (target && APP_URL.test(target)) {
                 dispatchUrl(target);
             } else if (target && HTTP_URL.test(target)) {
                 shell.openExternal(target).catch((err) => {

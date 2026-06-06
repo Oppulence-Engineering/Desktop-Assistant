@@ -158,7 +158,8 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	h.deepLink(w, state, "success")
 }
 
-// deepLink bounces the browser back to the desktop via the rowboat:// scheme;
+// deepLink bounces the browser back to the desktop via the configured desktop
+// scheme (solomon-ai:// by default);
 // the desktop claims the parked tokens with its bearer. An HTML page is used
 // because a bare 302 to a custom scheme is unreliable across browsers.
 func (h *Handler) deepLink(w http.ResponseWriter, state, status string) {

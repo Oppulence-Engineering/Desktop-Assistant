@@ -57,6 +57,7 @@ import {
   usePromptInputController,
 } from "@/components/ai-elements/prompt-input";
 import { toast } from "sonner";
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, getProductProviderState } from "@x/shared/dist/branding.js";
 
 export type StagedAttachment = {
   id: string;
@@ -78,7 +79,8 @@ const providerDisplayNames: Record<string, string> = {
   openrouter: "OpenRouter",
   aigateway: "AI Gateway",
   "openai-compatible": "OpenAI-Compatible",
-  rowboat: "Rowboat",
+  solomon: PRODUCT_NAME,
+  rowboat: PRODUCT_NAME,
 };
 
 type ProviderName =
@@ -89,6 +91,7 @@ type ProviderName =
   | "aigateway"
   | "ollama"
   | "openai-compatible"
+  | "solomon"
   | "rowboat";
 
 interface ConfiguredModel {
@@ -231,12 +234,12 @@ function ChatInputInner({
     };
   }, [runId]);
 
-  // Check Rowboat sign-in state
+  // Check Solomon AI sign-in state
   useEffect(() => {
     window.ipc
       .invoke("oauth:getState", null)
       .then((result) => {
-        setIsRowboatConnected(result.config?.rowboat?.connected ?? false);
+        setIsRowboatConnected(getProductProviderState(result.config)?.connected ?? false);
       })
       .catch(() => setIsRowboatConnected(false));
   }, [isActive]);
@@ -247,7 +250,7 @@ function ChatInputInner({
       window.ipc
         .invoke("oauth:getState", null)
         .then((result) => {
-          setIsRowboatConnected(result.config?.rowboat?.connected ?? false);
+          setIsRowboatConnected(getProductProviderState(result.config)?.connected ?? false);
         })
         .catch(() => setIsRowboatConnected(false));
     });
@@ -260,11 +263,11 @@ function ChatInputInner({
     try {
       if (isRowboatConnected) {
         const listResult = await window.ipc.invoke("models:list", null);
-        const rowboatProvider = listResult.providers?.find(
-          (p: { id: string }) => p.id === "rowboat",
+        const solomonProvider = listResult.providers?.find(
+          (p: { id: string }) => p.id === PRODUCT_PROVIDER_ID,
         );
-        const models: ConfiguredModel[] = (rowboatProvider?.models || []).map(
-          (m: { id: string }) => ({ provider: "rowboat", model: m.id }),
+        const models: ConfiguredModel[] = (solomonProvider?.models || []).map(
+          (m: { id: string }) => ({ provider: PRODUCT_PROVIDER_ID, model: m.id }),
         );
         setConfiguredModels(models);
       } else {

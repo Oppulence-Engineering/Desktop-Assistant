@@ -2,6 +2,7 @@ import { app, crashReporter } from 'electron';
 import { readdir, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { captureNativeCrash } from '@x/core/dist/analytics/posthog.js';
+import { PRODUCT_NAME, PRODUCT_SLUG } from '@x/shared/dist/branding.js';
 
 /**
  * Reasons reported by Electron's render-process-gone / child-process-gone
@@ -34,7 +35,7 @@ const CRASH_REASONS = new Set([
 export function startCrashReporter(): void {
   try {
     crashReporter.start({
-      productName: 'rowboat',
+      productName: PRODUCT_SLUG,
       companyName: 'Oppulence Engineering',
       submitURL: '',
       uploadToServer: false,
@@ -42,6 +43,7 @@ export function startCrashReporter(): void {
       ignoreSystemCrashHandler: false,
       extra: {
         version: app.getVersion(),
+        productName: PRODUCT_NAME,
         platform: process.platform,
         arch: process.arch,
       },

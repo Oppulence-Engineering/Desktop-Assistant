@@ -1448,7 +1448,7 @@
           },
           "oauthClientId": {
             "description": "Pre-registered OAuth/OIDC client id. Empty means the desktop may fall back to dynamic registration.",
-            "example": "rowboat-desktop-kind",
+            "example": "solomon-desktop-kind",
             "type": "string"
           },
           "oidcIssuerUrl": {
@@ -1661,7 +1661,7 @@
         "type": "object"
       },
       "CurrentUser": {
-        "description": "Authenticated rowboat user resolved from the bearer token.",
+        "description": "Authenticated Solomon AI user resolved from the bearer token.",
         "properties": {
           "email": {
             "description": "Best-known WorkOS primary email for the user.",
@@ -1714,7 +1714,7 @@
         "type": "object"
       },
       "ErrorEnvelope": {
-        "description": "Canonical JSON error returned by rowboat-api handlers.",
+        "description": "Canonical JSON error returned by Solomon AI API handlers.",
         "properties": {
           "code": {
             "description": "Stable machine-readable error code.",
@@ -1735,7 +1735,7 @@
       },
       "ExaSearchRequest": {
         "additionalProperties": true,
-        "description": "Exa search request body. rowboat-api applies a flat credit charge and forwards the JSON body unchanged to Exa /search.",
+        "description": "Exa search request body. Solomon AI API applies a flat credit charge and forwards the JSON body unchanged to Exa /search.",
         "properties": {
           "contents": {
             "additionalProperties": true,
@@ -2110,7 +2110,7 @@
         "description": "One LLM gateway call with token counts, settled credit cost, request id, and feature telemetry.",
         "properties": {
           "agent_name": {
-            "description": "Optional x-rowboat-agent-name header captured for cost allocation.",
+            "description": "Optional x-solomon-agent-name header captured for cost allocation.",
             "example": "desktop-assistant",
             "type": "string"
           },
@@ -2126,7 +2126,7 @@
             "type": "string"
           },
           "input_tokens": {
-            "description": "Input tokens reported by the upstream or estimated by rowboat-api.",
+            "description": "Input tokens reported by the upstream or estimated by Solomon AI API.",
             "example": 812,
             "type": "integer"
           },
@@ -2147,7 +2147,7 @@
             "type": "string"
           },
           "sub_use_case": {
-            "description": "Optional x-rowboat-sub-use-case header captured for cost allocation.",
+            "description": "Optional x-solomon-sub-use-case header captured for cost allocation.",
             "example": "invoice-summary",
             "type": "string"
           },
@@ -2158,7 +2158,7 @@
             "type": "string"
           },
           "use_case": {
-            "description": "Optional x-rowboat-use-case header captured for cost allocation.",
+            "description": "Optional x-solomon-use-case header captured for cost allocation.",
             "example": "collections",
             "type": "string"
           },
@@ -2183,7 +2183,7 @@
         "description": "Audit history for LLMUsage rows.",
         "properties": {
           "agent_name": {
-            "description": "Optional x-rowboat-agent-name header captured for cost allocation.",
+            "description": "Optional x-solomon-agent-name header captured for cost allocation.",
             "example": "desktop-assistant",
             "type": "string"
           },
@@ -2205,7 +2205,7 @@
             "type": "string"
           },
           "input_tokens": {
-            "description": "Input tokens reported by the upstream or estimated by rowboat-api.",
+            "description": "Input tokens reported by the upstream or estimated by Solomon AI API.",
             "example": 812,
             "type": "integer"
           },
@@ -2242,7 +2242,7 @@
             "type": "string"
           },
           "sub_use_case": {
-            "description": "Optional x-rowboat-sub-use-case header captured for cost allocation.",
+            "description": "Optional x-solomon-sub-use-case header captured for cost allocation.",
             "example": "invoice-summary",
             "type": "string"
           },
@@ -2253,7 +2253,7 @@
             "type": "string"
           },
           "use_case": {
-            "description": "Optional x-rowboat-use-case header captured for cost allocation.",
+            "description": "Optional x-solomon-use-case header captured for cost allocation.",
             "example": "collections",
             "type": "string"
           }
@@ -3242,7 +3242,7 @@
         "type": "object"
       },
       "VoiceTextToSpeechRequest": {
-        "description": "ElevenLabs text-to-speech request body. rowboat-api reads text for credit charging and forwards the full JSON body unchanged.",
+        "description": "ElevenLabs text-to-speech request body. Solomon AI API reads text for credit charging and forwards the full JSON body unchanged.",
         "properties": {
           "model_id": {
             "description": "Optional ElevenLabs model id.",
@@ -3252,7 +3252,7 @@
           },
           "text": {
             "description": "Text to synthesize. Charged per Unicode character.",
-            "example": "Hello from Rowboat.",
+            "example": "Hello from Solomon AI.",
             "type": "string"
           },
           "voice_settings": {
@@ -3312,7 +3312,7 @@
         "properties": {
           "url": {
             "description": "Fully-qualified WorkOS AuthKit authorize URL with PKCE and state query parameters.",
-            "example": "http://localhost:18090/user_management/authorize?client_id=rowboat-desktop-kind\u0026response_type=code\u0026state=abc",
+            "example": "http://localhost:18090/user_management/authorize?client_id=solomon-desktop-kind\u0026response_type=code\u0026state=abc",
             "type": "string"
           }
         },
@@ -3339,7 +3339,7 @@
         "description": "Desktop-facing token bundle normalized from WorkOS authenticate responses.",
         "properties": {
           "access_token": {
-            "description": "JWT access token used as Authorization: Bearer for authenticated rowboat-api calls.",
+            "description": "JWT access token used as Authorization: Bearer for authenticated Solomon AI API calls.",
             "example": "eyJhbGciOiJSUzI1NiIs...",
             "type": "string"
           },
@@ -3410,8 +3410,8 @@
     "url": "https://github.com/Oppulence-Engineering/rowboat/blob/main/docs/LOCAL_KIND_ROWBOAT_API.md"
   },
   "info": {
-    "description": "Rowboat's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, Composio proxying, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.",
-    "title": "rowboat-api",
+    "description": "Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, Composio proxying, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.",
+    "title": "Solomon AI API",
     "version": "0.1.0"
   },
   "openapi": "3.0.3",
@@ -3602,7 +3602,7 @@
                 }
               }
             },
-            "description": "HTML page that redirects to rowboat://oauth/google/done."
+            "description": "HTML page that redirects to solomon-ai://oauth/google/done."
           },
           "400": {
             "content": {
@@ -3815,7 +3815,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "url": "http://localhost:18090/user_management/authorize?client_id=rowboat-desktop-kind\u0026response_type=code\u0026state=kind-smoke"
+                  "url": "http://localhost:18090/user_management/authorize?client_id=solomon-desktop-kind\u0026response_type=code\u0026state=kind-smoke"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/WorkOSLoginURLResponse"
@@ -4081,7 +4081,7 @@
         ]
       },
       "post": {
-        "description": "Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, rowboat-api derives one from name. Slugs are unique per authenticated user.",
+        "description": "Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, Solomon AI API derives one from name. Slugs are unique per authenticated user.",
         "operationId": "createBackgroundTask",
         "requestBody": {
           "content": {
@@ -5006,7 +5006,7 @@
     },
     "/v1/background-tasks/{slug}/runs/{runId}/cancel": {
       "post": {
-        "description": "Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Rowboat. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.",
+        "description": "Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Solomon AI. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.",
         "operationId": "cancelBackgroundTaskRun",
         "parameters": [
           {
@@ -5476,7 +5476,7 @@
     },
     "/v1/background-tasks/{slug}/runs/{runId}/status": {
       "get": {
-        "description": "Returns a compact polling payload for one run. Clients should poll this Rowboat API endpoint rather than Temporal directly.",
+        "description": "Returns a compact polling payload for one run. Clients should poll this Solomon AI API endpoint rather than Temporal directly.",
         "operationId": "getBackgroundTaskRunStatus",
         "parameters": [
           {
@@ -5552,7 +5552,7 @@
     },
     "/v1/background-tasks/{slug}/trigger": {
       "post": {
-        "description": "For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Rowboat run status endpoints.",
+        "description": "For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Solomon AI run status endpoints.",
         "operationId": "triggerBackgroundTask",
         "parameters": [
           {
@@ -5649,7 +5649,7 @@
     },
     "/v1/composio/{path}": {
       "delete": {
-        "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Rowboat-User is attached, and request/response bodies are passed through unchanged.",
+        "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
         "operationId": "proxyComposioDelete",
         "parameters": [
           {
@@ -5699,7 +5699,7 @@
         ]
       },
       "get": {
-        "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Rowboat-User is attached, and request/response bodies are passed through unchanged.",
+        "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
         "operationId": "proxyComposioGet",
         "parameters": [
           {
@@ -5749,7 +5749,7 @@
         ]
       },
       "patch": {
-        "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Rowboat-User is attached, and request/response bodies are passed through unchanged.",
+        "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
         "operationId": "proxyComposioPatch",
         "parameters": [
           {
@@ -5799,7 +5799,7 @@
         ]
       },
       "post": {
-        "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Rowboat-User is attached, and request/response bodies are passed through unchanged.",
+        "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
         "operationId": "proxyComposioPost",
         "parameters": [
           {
@@ -5849,7 +5849,7 @@
         ]
       },
       "put": {
-        "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Rowboat-User is attached, and request/response bodies are passed through unchanged.",
+        "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
         "operationId": "proxyComposioPut",
         "parameters": [
           {
@@ -5909,7 +5909,7 @@
               "application/json": {
                 "example": {
                   "appUrl": "http://localhost:18080",
-                  "oauthClientId": "rowboat-desktop-kind",
+                  "oauthClientId": "solomon-desktop-kind",
                   "oidcIssuerUrl": "http://localhost:18090",
                   "supabaseUrl": "http://localhost:18090",
                   "websocketApiUrl": ""
@@ -6022,7 +6022,7 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirect to rowboat://connection-complete with connector and status.",
+            "description": "Redirect to solomon-ai://connection-complete with connector and status.",
             "headers": {
               "Location": {
                 "description": "Redirect target.",
@@ -6411,7 +6411,7 @@
           {
             "description": "Optional feature/use-case label recorded in LLMUsage for cost allocation.",
             "in": "header",
-            "name": "x-rowboat-use-case",
+            "name": "x-solomon-use-case",
             "required": false,
             "schema": {
               "type": "string"
@@ -6420,7 +6420,7 @@
           {
             "description": "Optional sub-use-case label recorded in LLMUsage.",
             "in": "header",
-            "name": "x-rowboat-sub-use-case",
+            "name": "x-solomon-sub-use-case",
             "required": false,
             "schema": {
               "type": "string"
@@ -6429,7 +6429,7 @@
           {
             "description": "Optional agent name recorded in LLMUsage.",
             "in": "header",
-            "name": "x-rowboat-agent-name",
+            "name": "x-solomon-agent-name",
             "required": false,
             "schema": {
               "type": "string"
@@ -6513,7 +6513,7 @@
           {
             "description": "Optional feature/use-case label recorded in LLMUsage for cost allocation.",
             "in": "header",
-            "name": "x-rowboat-use-case",
+            "name": "x-solomon-use-case",
             "required": false,
             "schema": {
               "type": "string"
@@ -6522,7 +6522,7 @@
           {
             "description": "Optional sub-use-case label recorded in LLMUsage.",
             "in": "header",
-            "name": "x-rowboat-sub-use-case",
+            "name": "x-solomon-sub-use-case",
             "required": false,
             "schema": {
               "type": "string"
@@ -6531,7 +6531,7 @@
           {
             "description": "Optional agent name recorded in LLMUsage.",
             "in": "header",
-            "name": "x-rowboat-agent-name",
+            "name": "x-solomon-agent-name",
             "required": false,
             "schema": {
               "type": "string"
@@ -6610,7 +6610,7 @@
           {
             "description": "Optional feature/use-case label recorded in LLMUsage for cost allocation.",
             "in": "header",
-            "name": "x-rowboat-use-case",
+            "name": "x-solomon-use-case",
             "required": false,
             "schema": {
               "type": "string"
@@ -6619,7 +6619,7 @@
           {
             "description": "Optional sub-use-case label recorded in LLMUsage.",
             "in": "header",
-            "name": "x-rowboat-sub-use-case",
+            "name": "x-solomon-sub-use-case",
             "required": false,
             "schema": {
               "type": "string"
@@ -6628,7 +6628,7 @@
           {
             "description": "Optional agent name recorded in LLMUsage.",
             "in": "header",
-            "name": "x-rowboat-agent-name",
+            "name": "x-solomon-agent-name",
             "required": false,
             "schema": {
               "type": "string"
@@ -6889,7 +6889,7 @@
             "application/json": {
               "example": {
                 "model_id": "eleven_multilingual_v2",
-                "text": "Hello from Rowboat."
+                "text": "Hello from Solomon AI."
               },
               "schema": {
                 "$ref": "#/components/schemas/VoiceTextToSpeechRequest"
@@ -6941,7 +6941,7 @@
   },
   "servers": [
     {
-      "description": "Current rowboat-api origin",
+      "description": "Current Solomon AI API origin",
       "url": "/"
     },
     {

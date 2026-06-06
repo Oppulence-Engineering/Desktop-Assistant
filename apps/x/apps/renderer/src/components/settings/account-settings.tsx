@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator"
 import { useBilling } from "@/hooks/useBilling"
 import { toast } from "sonner"
 import type { BillingUsageBucket } from "@x/shared/dist/billing.js"
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, getProductProviderState, isProductProvider } from "@x/shared/dist/branding.js"
 
 interface AccountSettingsProps {
   dialogOpen: boolean
@@ -56,22 +57,22 @@ function CreditUsageBar({ label, bucket, helper }: {
 }
 
 export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
-  const [isRowboatConnected, setIsRowboatConnected] = useState(false)
+  const [isSolomonConnected, setIsSolomonConnected] = useState(false)
   const [connectionLoading, setConnectionLoading] = useState(true)
   const [disconnecting, setDisconnecting] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [appUrl, setAppUrl] = useState<string | null>(null)
-  const { billing, isLoading: billingLoading } = useBilling(isRowboatConnected)
+  const { billing, isLoading: billingLoading } = useBilling(isSolomonConnected)
   const hasPaidSubscription = billing?.subscriptionPlan === 'starter' || billing?.subscriptionPlan === 'pro'
 
   const checkConnection = useCallback(async () => {
     try {
       setConnectionLoading(true)
       const result = await window.ipc.invoke('oauth:getState', null)
-      const connected = result.config?.rowboat?.connected ?? false
-      setIsRowboatConnected(connected)
+      const connected = getProductProviderState(result.config)?.connected ?? false
+      setIsSolomonConnected(connected)
     } catch {
-      setIsRowboatConnected(false)
+      setIsSolomonConnected(false)
     } finally {
       setConnectionLoading(false)
     }
@@ -84,20 +85,20 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
   }, [dialogOpen, checkConnection])
 
   useEffect(() => {
-    if (isRowboatConnected) {
-      window.ipc.invoke('account:getRowboat', null)
+    if (isSolomonConnected) {
+      window.ipc.invoke('account:getSolomon', null)
         .then((account) => setAppUrl(account.config?.appUrl ?? null))
         .catch(() => {})
     }
-  }, [isRowboatConnected])
+  }, [isSolomonConnected])
 
   useEffect(() => {
     const cleanup = window.ipc.on('oauth:didConnect', (event) => {
-      if (event.provider === 'rowboat') {
-        setIsRowboatConnected(event.success)
+      if (isProductProvider(event.provider)) {
+        setIsSolomonConnected(event.success)
         setConnecting(false)
         if (event.success) {
-          toast.success('Logged in to Rowboat')
+          toast.success(`Logged in to ${PRODUCT_NAME}`)
         }
       }
     })
@@ -107,13 +108,13 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
   const handleConnect = useCallback(async () => {
     try {
       setConnecting(true)
-      const result = await window.ipc.invoke('oauth:connect', { provider: 'rowboat' })
+      const result = await window.ipc.invoke('oauth:connect', { provider: PRODUCT_PROVIDER_ID })
       if (!result.success) {
-        toast.error(result.error || 'Failed to log in to Rowboat')
+        toast.error(result.error || `Failed to log in to ${PRODUCT_NAME}`)
         setConnecting(false)
       }
     } catch {
-      toast.error('Failed to log in to Rowboat')
+      toast.error(`Failed to log in to ${PRODUCT_NAME}`)
       setConnecting(false)
     }
   }, [])
@@ -121,15 +122,15 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
   const handleDisconnect = useCallback(async () => {
     try {
       setDisconnecting(true)
-      const result = await window.ipc.invoke('oauth:disconnect', { provider: 'rowboat' })
+      const result = await window.ipc.invoke('oauth:disconnect', { provider: PRODUCT_PROVIDER_ID })
       if (result.success) {
-        setIsRowboatConnected(false)
-        toast.success('Logged out of Rowboat')
+        setIsSolomonConnected(false)
+        toast.success(`Logged out of ${PRODUCT_NAME}`)
       } else {
-        toast.error('Failed to log out of Rowboat')
+        toast.error(`Failed to log out of ${PRODUCT_NAME}`)
       }
     } catch {
-      toast.error('Failed to log out of Rowboat')
+      toast.error(`Failed to log out of ${PRODUCT_NAME}`)
     } finally {
       setDisconnecting(false)
     }
@@ -143,7 +144,7 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
     )
   }
 
-  if (!isRowboatConnected) {
+  if (!isSolomonConnected) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
         <div className="flex size-14 items-center justify-center rounded-full bg-muted">
@@ -151,11 +152,11 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
         </div>
         <div className="text-center space-y-1">
           <p className="text-sm font-medium">Not logged in</p>
-          <p className="text-xs text-muted-foreground">Log in to your Rowboat account to access premium features</p>
+          <p className="text-xs text-muted-foreground">Log in to your {PRODUCT_NAME} account to access premium features</p>
         </div>
         <Button onClick={handleConnect} disabled={connecting}>
           {connecting ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-          Log in to Rowboat
+          Log in to {PRODUCT_NAME}
         </Button>
       </div>
     )
@@ -173,7 +174,7 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
             <p className="text-sm font-medium">
               {billing?.userEmail ?? 'Loading...'}
             </p>
-            <p className="text-xs text-muted-foreground">Rowboat Account</p>
+            <p className="text-xs text-muted-foreground">{PRODUCT_NAME} Account</p>
           </div>
         </div>
       </div>
@@ -266,7 +267,7 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
           <h4 className="text-sm font-medium">Log Out</h4>
         </div>
         <p className="text-xs text-muted-foreground">
-          Logging out will remove access to synced data and Rowboat-provided models.
+          Logging out will remove access to synced data and {PRODUCT_NAME}-provided models.
         </p>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -276,9 +277,9 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Log out of your Rowboat account?</AlertDialogTitle>
+              <AlertDialogTitle>Log out of your {PRODUCT_NAME} account?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will remove access to synced data and Rowboat-provided models. You can log back in at any time.
+                This will remove access to synced data and {PRODUCT_NAME}-provided models. You can log back in at any time.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

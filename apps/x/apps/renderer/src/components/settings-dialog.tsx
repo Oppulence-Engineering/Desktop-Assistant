@@ -25,6 +25,7 @@ import { useTheme } from "@/contexts/theme-context"
 import { toast } from "sonner"
 import { AccountSettings } from "@/components/settings/account-settings"
 import { ConnectedAccountsSettings } from "@/components/settings/connected-accounts-settings"
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, getProductProviderState } from "@x/shared/dist/branding.js"
 
 type ConfigTab = "account" | "connections" | "models" | "mcp" | "security" | "code-mode" | "appearance" | "note-tagging" | "help"
 
@@ -41,7 +42,7 @@ const tabs: TabConfig[] = [
     id: "account",
     label: "Account",
     icon: User,
-    description: "Manage your Rowboat account",
+    description: `Manage your ${PRODUCT_NAME} account`,
   },
   {
     id: "connections",
@@ -119,14 +120,14 @@ function HelpSettings() {
       <Button
         variant="outline"
         className="w-full justify-start gap-3 h-auto py-3"
-        onClick={() => window.open("https://github.com/rowboatlabs/rowboat/issues/new", "_blank")}
+        onClick={() => window.open("https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/new", "_blank")}
       >
         <div className="flex size-8 items-center justify-center rounded-none bg-destructive/10">
           <Bug className="size-4 text-destructive" />
         </div>
         <div className="flex flex-col items-start">
           <span className="text-sm font-medium">Report a bug</span>
-          <span className="text-xs text-muted-foreground">Send feedback to the Rowboat team</span>
+          <span className="text-xs text-muted-foreground">Send feedback to the {PRODUCT_NAME} team</span>
         </div>
       </Button>
       <Button
@@ -145,19 +146,19 @@ function HelpSettings() {
       <Button
         variant="outline"
         className="w-full justify-start gap-3 h-auto py-3"
-        onClick={() => window.open("mailto:contact@rowboatlabs.com", "_blank")}
+        onClick={() => window.open("mailto:contact@solomon-ai.co", "_blank")}
       >
         <div className="flex size-8 items-center justify-center rounded-none bg-muted">
           <Mail className="size-4" />
         </div>
         <div className="flex flex-col items-start">
           <span className="text-sm font-medium">Contact us</span>
-          <span className="text-xs text-muted-foreground">contact@rowboatlabs.com</span>
+          <span className="text-xs text-muted-foreground">contact@solomon-ai.co</span>
         </div>
       </Button>
       <div className="flex gap-3 text-xs text-muted-foreground">
         <a
-          href="https://www.rowboatlabs.com/terms-of-service"
+          href="https://www.solomon-ai.co/terms-of-service"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-foreground transition-colors"
@@ -166,7 +167,7 @@ function HelpSettings() {
         </a>
         <span>·</span>
         <a
-          href="https://www.rowboatlabs.com/privacy-policy"
+          href="https://www.solomon-ai.co/privacy-policy"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-foreground transition-colors"
@@ -934,13 +935,13 @@ function ToolsLibrarySettings({ dialogOpen, rowboatConnected }: { dialogOpen: bo
       const result = await window.ipc.invoke("composio:list-toolkits", {})
       setToolkits(result.items || [])
       if (result.providerConfigured === false) {
-        setToolkitsUnavailableMessage(result.message || "Tool integrations are disabled for this Rowboat API.")
+        setToolkitsUnavailableMessage(result.message || `Tool integrations are disabled for this ${PRODUCT_NAME} API.`)
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : ""
       if (message.includes("provider_unconfigured") || message.includes("composio not configured")) {
         setToolkits([])
-        setToolkitsUnavailableMessage("Tool integrations are disabled because this Rowboat API is running without Composio credentials.")
+        setToolkitsUnavailableMessage(`Tool integrations are disabled because this ${PRODUCT_NAME} API is running without Composio credentials.`)
       } else {
       toast.error("Failed to load toolkits")
       }
@@ -1211,9 +1212,9 @@ function ToolsLibrarySettings({ dialogOpen, rowboatConnected }: { dialogOpen: bo
   )
 }
 
-// --- Rowboat Model Settings (when signed in via Rowboat) ---
+// --- Solomon AI Model Settings (when signed in via Solomon AI) ---
 
-function RowboatModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
+function SolomonModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [gatewayModels, setGatewayModels] = useState<LlmModelOption[]>([])
   const [selectedModel, setSelectedModel] = useState("")
   const [selectedKgModel, setSelectedKgModel] = useState("")
@@ -1228,8 +1229,8 @@ function RowboatModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
       try {
         // Fetch gateway models
         const listResult = await window.ipc.invoke("models:list", null)
-        const rowboatProvider = listResult.providers?.find((p: { id: string }) => p.id === "rowboat")
-        const models = rowboatProvider?.models || []
+        const solomonProvider = listResult.providers?.find((p: { id: string }) => p.id === PRODUCT_PROVIDER_ID)
+        const models = solomonProvider?.models || []
         setGatewayModels(models)
 
         // Read current selection from config
@@ -1281,7 +1282,7 @@ function RowboatModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
-        Select the models Rowboat uses. These are provided through your Rowboat account.
+        Select the models {PRODUCT_NAME} uses. These are provided through your {PRODUCT_NAME} account.
       </p>
 
       {/* Assistant model */}
@@ -1878,25 +1879,25 @@ export function SettingsDialog({ children, defaultTab = "account", open: control
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [rowboatConnected, setRowboatConnected] = useState(false)
+  const [solomonConnected, setSolomonConnected] = useState(false)
 
   // Reset to the requested default tab each time the dialog is opened
   useEffect(() => {
     if (open) setActiveTab(defaultTab)
   }, [open, defaultTab])
 
-  // Check if user is signed in to Rowboat
+  // Check if user is signed in to Solomon AI
   useEffect(() => {
     if (!open) return
     window.ipc.invoke('oauth:getState', null).then((result) => {
-      const connected = result.config?.rowboat?.connected ?? false
-      setRowboatConnected(connected)
+      const connected = getProductProviderState(result.config)?.connected ?? false
+      setSolomonConnected(connected)
     }).catch(() => {
-      setRowboatConnected(false)
+      setSolomonConnected(false)
     })
   }, [open])
 
-  const visibleTabs = useMemo(() => rowboatConnected ? tabs.filter(t => t.id !== "models") : tabs, [rowboatConnected])
+  const visibleTabs = useMemo(() => solomonConnected ? tabs.filter(t => t.id !== "models") : tabs, [solomonConnected])
 
   const activeTabConfig = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0]
   const isJsonTab = activeTab === "mcp" || activeTab === "security"
@@ -2011,7 +2012,7 @@ export function SettingsDialog({ children, defaultTab = "account", open: control
             <div className="px-4 py-3 border-b">
               <h3 className="font-medium text-sm">{activeTabConfig.label}</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {activeTab === "models" && rowboatConnected
+                {activeTab === "models" && solomonConnected
                   ? "Select your default models"
                   : activeTabConfig.description}
               </p>
@@ -2030,12 +2031,12 @@ export function SettingsDialog({ children, defaultTab = "account", open: control
                   <Separator />
                   <div className="space-y-2">
                     <h4 className="text-sm font-semibold">Library</h4>
-                    <ToolsLibrarySettings dialogOpen={open} rowboatConnected={rowboatConnected} />
+                    <ToolsLibrarySettings dialogOpen={open} rowboatConnected={solomonConnected} />
                   </div>
                 </div>
               ) : activeTab === "models" ? (
-                rowboatConnected
-                  ? <RowboatModelSettings dialogOpen={open} />
+                solomonConnected
+                  ? <SolomonModelSettings dialogOpen={open} />
                   : <ModelSettings dialogOpen={open} />
               ) : activeTab === "note-tagging" ? (
                 <NoteTaggingSettings dialogOpen={open} />

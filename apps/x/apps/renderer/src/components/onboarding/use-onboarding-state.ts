@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { setGoogleCredentials } from "@/lib/google-credentials-store"
 import { toast } from "sonner"
+import { getProductProviderState, isProductProvider } from "@x/shared/dist/branding.js"
 
 export interface ProviderState {
   isConnected: boolean
@@ -516,12 +517,12 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     return cleanup
   }, [])
 
-  // Auto-advance from Rowboat sign-in step when OAuth completes
+  // Auto-advance from Solomon AI sign-in step when OAuth completes
   useEffect(() => {
     if (onboardingPath !== 'rowboat' || currentStep !== 0) return
 
     const cleanup = window.ipc.on('oauth:didConnect', async (event) => {
-      if (event.provider === 'rowboat' && event.success) {
+      if (isProductProvider(event.provider) && event.success) {
         // (Composio Gmail/Calendar flag re-check removed — sync was deleted.)
         setCurrentStep(2) // Go to Connect Accounts
       }
@@ -582,11 +583,11 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
   // Connect to a provider
   const handleConnect = useCallback(async (provider: string) => {
     if (provider === 'google') {
-      // Signed-in users use the rowboat (managed-credentials) flow: opens
+      // Signed-in users use the Solomon AI managed-credentials flow: opens
       // the webapp in the browser, no BYOK modal. Falls back to BYOK modal
       // for not-signed-in users. (Mirrors useConnectors.handleConnect.)
-      const isSignedIntoRowboat = providerStates.rowboat?.isConnected ?? false
-      if (isSignedIntoRowboat) {
+      const isSignedIntoSolomon = getProductProviderState(providerStates)?.isConnected ?? false
+      if (isSignedIntoSolomon) {
         await startConnect('google')
         return
       }
@@ -603,7 +604,7 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     startConnect('google', { clientId, clientSecret })
   }, [startConnect])
 
-  // Switch to rowboat path from BYOK inline callout
+  // Switch to Solomon AI path from BYOK inline callout
   const handleSwitchToRowboat = useCallback(() => {
     setOnboardingPath('rowboat')
     setCurrentStep(0)
