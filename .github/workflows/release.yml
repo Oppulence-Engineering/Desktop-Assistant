@@ -92,7 +92,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 22
           cache: 'pnpm'
           cache-dependency-path: 'apps/x/pnpm-lock.yaml'
 
@@ -236,7 +236,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 22
           cache: 'pnpm'
           cache-dependency-path: 'apps/x/pnpm-lock.yaml'
 
@@ -357,7 +357,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 22
           cache: 'pnpm'
           cache-dependency-path: 'apps/x/pnpm-lock.yaml'
 
@@ -421,6 +421,7 @@ jobs:
           }
           '@
           $packageScript | node --input-type=module - win32 x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npx electron-forge make --skip-package --arch=x64 --platform=win32 --targets "@electron-forge/maker-squirrel,@electron-forge/maker-zip"
         working-directory: apps/x/apps/main
 
