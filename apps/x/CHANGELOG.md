@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.9](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.8...v0.1.9) (2026-06-06)
+
+
+### Features
+
+* **background-tasks:** make API-native cloud runs operable, observable & verifiable ([a731abb](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a731abb64c7c77bb54e13c24db05e4abe03f544e))
+* redesign web search & tool-call cards (rolling reveal, shared surface, action summaries) ([#579](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/579)) ([b89b912](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/b89b91258e4fdca66251e1222cc90784c81f96d5))
+* render and edit docx files in-app ([#589](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/589)) ([5368751](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/5368751f61e1b61b56ea0ef297276e929bad38c8))
+* rowboat-api backend with WorkOS-direct auth + Google OAuth broker ([f9ae9e4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f9ae9e4207565a2f2ba05f9c28ba709fadc92c2e))
+* rowboat-api backend with WorkOS-direct auth + Google OAuth broker ([89b0cc8](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/89b0cc8cc53714159f1da51d30eedb3d3a17e37d))
+
+
+### Bug Fixes
+
+* notes — in-note section links, deep-note wiki resolution, file links ([#571](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/571)) ([a59c42e](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a59c42e22bb47175077d2fbef06456a693ee7f5b))
+* scope chat work directory per-run instead of globally ([#578](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/578)) ([d981fa9](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/d981fa9206a21ac9aa83ae21ac4b1ede8eba0eb2))
+
 ## [0.1.8](https://github.com/Oppulence-Engineering/rowboat/compare/v0.1.7...v0.1.8) (2026-05-21)
 
 
