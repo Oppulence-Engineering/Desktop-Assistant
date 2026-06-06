@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
-import { ExternalLinkIcon, FileTextIcon, Loader2Icon } from "lucide-react";
+import { ExternalLinkIcon, FileTextIcon, Loader2Icon } from "@/lib/icons";
 import type { DocxEditorRef } from "@eigenpal/docx-editor-react";
 
 // The editor (and its CSS) is heavy and only needed when a .docx is open, so it

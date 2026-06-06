@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ExternalLinkIcon, FileAudioIcon } from 'lucide-react'
+import { ExternalLinkIcon, FileAudioIcon } from '@/lib/icons'
 
 interface AudioFileViewerProps {
   path: string

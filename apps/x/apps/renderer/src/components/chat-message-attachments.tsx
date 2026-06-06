@@ -6,7 +6,7 @@ import {
   FileSpreadsheet,
   FileText,
   FileVideo,
-} from "lucide-react";
+} from "@/lib/icons";
 import { useEffect, useMemo, useState } from "react";
 
 import type { MessageAttachment } from "@/lib/chat-conversation";

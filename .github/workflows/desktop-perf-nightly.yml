@@ -1,0 +1,192 @@
+name: Desktop Performance Nightly
+
+on:
+  schedule:
+    # Full tier every night at 08:15 UTC.
+    - cron: '15 8 * * *'
+    # Deep tier weekly on Sundays at 08:45 UTC.
+    - cron: '45 8 * * 0'
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: 'Performance tier to run'
+        required: true
+        default: full
+        type: choice
+        options:
+          - full
+          - deep
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-perf-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.tier || github.event.schedule }}
+  cancel-in-progress: false
+
+jobs:
+  desktop-perf:
+    name: Desktop perf
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
+      INFISICAL_DISABLE_UPDATE_CHECK: 'true'
+      ROWBOAT_DESKTOP_PERF_ARTIFACT_DIR: ${{ github.workspace }}/.rowboat-kind/desktop-perf/nightly
+      ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT: '9333'
+      DISPLAY: ':99'
+      # Keep the relative-regression check active AND roll the baseline forward
+      # on a green run, so the next night fails on a >maxPercent regression vs
+      # this night. Absolute budgets (budget.json) still cap the ceiling.
+      ROWBOAT_DESKTOP_PERF_REFRESH_BASELINE_ON_PASS: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Resolve performance tier
+        id: tier
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            tier="${{ inputs.tier }}"
+          elif [[ "${{ github.event.schedule }}" == "45 8 * * 0" ]]; then
+            tier="deep"
+          else
+            tier="full"
+          fi
+
+          case "$tier" in
+            full)
+              target="perf-desktop-full"
+              ;;
+            deep)
+              target="perf-desktop-deep"
+              ;;
+            *)
+              echo "unsupported tier: $tier" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "tier=$tier" >> "$GITHUB_OUTPUT"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+
+          # Tier-specific rolling baseline path (full/deep gate different metrics).
+          echo "ROWBOAT_DESKTOP_PERF_BASELINE=${{ github.workspace }}/.rowboat-kind/desktop-perf/ci-baseline-$tier.json" >> "$GITHUB_ENV"
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${INFISICAL_TOKEN:-}" ]]; then
+            echo "Missing repository secret INFISICAL_TOKEN for kind secret sync." >&2
+            exit 1
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/x/pnpm-lock.yaml
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: tools/desktop-perf/go.mod
+          cache-dependency-path: tools/desktop-perf/go.sum
+
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Install desktop dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: apps/x
+
+      - name: Build shared desktop packages
+        run: npm run deps
+        working-directory: apps/x
+
+      - name: Install CI tools
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update
+          sudo apt-get install -y curl xvfb libnss3 libatk-bridge2.0-0 libgtk-3-0 libgbm1
+          sudo apt-get install -y libasound2t64 || sudo apt-get install -y libasound2
+
+          npm install -g agent-browser@0.27.1 @infisical/cli@0.43.91
+
+          curl -fsSL -o kind "https://kind.sigs.k8s.io/dl/v0.26.0/kind-linux-amd64"
+          chmod +x kind
+          sudo mv kind /usr/local/bin/kind
+
+          curl -fsSL -o kubectl "https://dl.k8s.io/release/v1.31.4/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/kubectl
+
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Start virtual display
+        shell: bash
+        run: |
+          set -euo pipefail
+          Xvfb "${DISPLAY}" -screen 0 1440x1000x24 >/tmp/xvfb.log 2>&1 &
+          sleep 2
+
+      - name: Restore rolling perf baseline
+        uses: actions/cache@v4
+        with:
+          # Rolling cache: a unique key per run saves the refreshed baseline at
+          # job end; restore-keys pulls the most recent prior baseline to compare
+          # against. Tier- and runner-scoped so hardware classes don't cross-talk.
+          path: .rowboat-kind/desktop-perf/ci-baseline-${{ steps.tier.outputs.tier }}.json
+          key: desktop-perf-baseline-${{ runner.os }}-${{ steps.tier.outputs.tier }}-${{ github.run_id }}
+          restore-keys: |
+            desktop-perf-baseline-${{ runner.os }}-${{ steps.tier.outputs.tier }}-
+
+      - name: Run desktop performance gate
+        shell: bash
+        run: make "${{ steps.tier.outputs.target }}"
+
+      - name: Collect kind diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p .rowboat-kind/diagnostics
+          kubectl get all -A > .rowboat-kind/diagnostics/kubernetes-all.txt 2>&1
+          kubectl describe pods -n rowboat-api > .rowboat-kind/diagnostics/rowboat-api-pods.txt 2>&1
+          kubectl logs -n rowboat-api deployment/rowboat-api -c rowboat-api --tail=300 > .rowboat-kind/diagnostics/rowboat-api.log 2>&1
+          kubectl logs -n rowboat-api deployment/rowboat-api-worker --tail=300 > .rowboat-kind/diagnostics/rowboat-api-worker.log 2>&1
+          true
+
+      - name: Upload desktop perf artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: desktop-perf-${{ steps.tier.outputs.tier }}-${{ github.run_id }}
+          path: |
+            .rowboat-kind/desktop-perf
+            .rowboat-kind/diagnostics
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Tear down kind cluster
+        if: always()
+        continue-on-error: true
+        run: make delete-cluster

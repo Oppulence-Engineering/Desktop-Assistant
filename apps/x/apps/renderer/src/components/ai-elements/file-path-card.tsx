@@ -8,7 +8,7 @@ import {
   Pause,
   Play,
   Video,
-} from "lucide-react";
+} from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { useFileCard } from "@/contexts/file-card-context";
 import { useSidebarSection } from "@/contexts/sidebar-context";

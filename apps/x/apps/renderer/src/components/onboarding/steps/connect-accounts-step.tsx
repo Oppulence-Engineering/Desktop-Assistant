@@ -4,7 +4,7 @@ import {
   ArrowLeft,
   Calendar,
   FileText,
-} from "lucide-react";
+} from "@/lib/icons";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

@@ -18,7 +18,7 @@ import {
   LoaderIcon,
   ShieldCheckIcon,
   XCircleIcon,
-} from "lucide-react";
+} from "@/lib/icons";
 import { type ComponentProps, type ReactNode, isValidElement, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { ToolCall, ToolGroup as ToolGroupType } from "@/lib/chat-conversation";

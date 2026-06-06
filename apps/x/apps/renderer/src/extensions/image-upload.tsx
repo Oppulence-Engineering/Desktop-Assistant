@@ -2,7 +2,7 @@ import { mergeAttributes } from "@tiptap/react";
 import { Node } from "@tiptap/react";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import type { Editor } from "@tiptap/react";
-import { Loader2, ImageIcon } from "lucide-react";
+import { Loader2, ImageIcon } from "@/lib/icons";
 
 // Component for the upload placeholder
 function ImageUploadPlaceholder({

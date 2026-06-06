@@ -1,8 +1,12 @@
-import { ArrowUpRight, ChevronDown, MessageSquare, Plus } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, MessageSquare, Plus } from "@/lib/icons";
 
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,22 +14,22 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { formatRelativeTime } from '@/lib/relative-time'
+} from "@/components/ui/dropdown-menu";
+import { formatRelativeTime } from "@/lib/relative-time";
 
 export interface ChatHeaderRecentRun {
-  id: string
-  title?: string
-  createdAt: string
+  id: string;
+  title?: string;
+  createdAt: string;
 }
 
 export interface ChatHeaderProps {
-  activeTitle: string
-  onNewChatTab: () => void
-  recentRuns?: ChatHeaderRecentRun[]
-  activeRunId?: string | null
-  onSelectRun?: (runId: string) => void
-  onOpenChatHistory?: () => void
+  activeTitle: string;
+  onNewChatTab: () => void;
+  recentRuns?: ChatHeaderRecentRun[];
+  activeRunId?: string | null;
+  onSelectRun?: (runId: string) => void;
+  onOpenChatHistory?: () => void;
 }
 
 /**
@@ -43,7 +47,7 @@ export function ChatHeader({
   onSelectRun,
   onOpenChatHistory,
 }: ChatHeaderProps) {
-  const hasHistory = recentRuns.length > 0 || Boolean(onOpenChatHistory)
+  const hasHistory = recentRuns.length > 0 || Boolean(onOpenChatHistory);
 
   return (
     <>
@@ -70,9 +74,11 @@ export function ChatHeader({
               <DropdownMenuItem
                 key={run.id}
                 onClick={() => onSelectRun?.(run.id)}
-                className={cn('gap-2', activeRunId === run.id && 'bg-accent')}
+                className={cn("gap-2", activeRunId === run.id && "bg-accent")}
               >
-                <span className="min-w-0 flex-1 truncate">{run.title || '(Untitled chat)'}</span>
+                <span className="min-w-0 flex-1 truncate">
+                  {run.title || "(Untitled chat)"}
+                </span>
                 <span className="shrink-0 text-[11px] text-muted-foreground">
                   {formatRelativeTime(run.createdAt)}
                 </span>
@@ -81,7 +87,10 @@ export function ChatHeader({
             {onOpenChatHistory && (
               <>
                 {recentRuns.length > 0 && <DropdownMenuSeparator />}
-                <DropdownMenuItem onClick={onOpenChatHistory} className="gap-2 text-primary">
+                <DropdownMenuItem
+                  onClick={onOpenChatHistory}
+                  className="gap-2 text-primary"
+                >
                   <ArrowUpRight className="size-4" />
                   View all chats
                 </DropdownMenuItem>
@@ -110,5 +119,5 @@ export function ChatHeader({
         <TooltipContent side="bottom">New chat</TooltipContent>
       </Tooltip>
     </>
-  )
+  );
 }

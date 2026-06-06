@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Bug, MoreHorizontal } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Bug, MoreHorizontal } from '@/lib/icons'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -548,7 +548,7 @@ export function ChatSidebar({
       {showContent && (
         <>
           <header
-            className="titlebar-drag-region flex h-10 shrink-0 items-stretch border-b border-border bg-sidebar"
+            className="titlebar-drag-region flex h-10 shrink-0 items-stretch border-b border-border bg-background"
             style={{
               paddingLeft: isMaximized && sidebarState === 'collapsed' ? collapsedLeftPaddingPx : undefined,
               paddingRight: isMaximized ? 12 : undefined,
@@ -746,7 +746,7 @@ export function ChatSidebar({
                 })}
               </div>
 
-              <div className="sticky bottom-0 z-10 bg-background pb-12 pt-0 shadow-lg">
+              <div className="sticky bottom-0 z-10 bg-background pb-12 pt-0">
                 <div className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-linear-to-t from-background to-transparent" />
                 <div className="mx-auto w-full max-w-4xl px-3">
                   {chatTabs.map((tab) => {

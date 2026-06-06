@@ -1,6 +1,6 @@
 # Solomon AI Design Language
 
-Solomon AI should feel like a command center for people who live in notes, agents, email, meetings, and files all day. The launch direction is quiet, fast, and prosumer: dense enough for repeated work, warm enough to feel personal, and explicit about what the AI is doing.
+Solomon AI should feel like an ElevenLabs-style developer console for people who live in notes, agents, email, meetings, and files all day. The launch direction is quiet, fast, and prosumer: dense enough for repeated work, neutral enough for repeated use, and explicit about what the AI is doing.
 
 ## Principles
 
@@ -8,7 +8,7 @@ Solomon AI should feel like a command center for people who live in notes, agent
    Keep the interface compact and scannable. Use tighter rows, restrained borders, and low-contrast panels so users can keep many contexts open without the app feeling heavy.
 
 2. **Command first**
-   Primary actions should feel like instant commands, not marketing CTAs. Side navigation, search, model selection, and composer controls use compact icon-led affordances with clear hover and selected states.
+   Primary actions should feel like instant commands, not marketing CTAs. Side navigation, search, model selection, and composer controls use compact Lucide icon-led affordances with clear hover and selected states.
 
 3. **Visible work state**
    AI actions, sync, saving, meeting capture, and background tasks need clear status surfaces. Prefer small persistent indicators over large banners.
@@ -17,16 +17,17 @@ Solomon AI should feel like a command center for people who live in notes, agent
    The editor and conversation stay visually dominant. Chrome is supportive, not decorative. Avoid nested cards and oversized empty states in work surfaces.
 
 5. **Neutral precision**
-   The palette follows the dev color system: white and graphite surfaces, black/white primary actions, neutral command tools, and reserved semantic colors for destructive and chart states.
+   The palette follows the ElevenLabs developer-console color system: white and graphite surfaces, black/white primary actions, neutral command tools, and reserved semantic colors for destructive and chart states.
 
 ## Tokens
 
-- Radius: `8px` for controls and cards, smaller where density matters.
-- Backgrounds: dev defaults in light and dark mode.
+- Radius: square corners throughout (`0`) — no rounded borders on panels, cards, buttons, inputs, dialogs, or tabs. The only exceptions are genuinely circular elements (avatars, status dots, spinners, and anything `rounded-full`).
+- Backgrounds: white and very light neutral surfaces in light mode; graphite equivalents in dark mode.
 - Borders: one-step darker than surfaces, quiet enough to separate panels without tinting them.
 - Shadows: reserved for the composer, menus, dialogs, and active segmented controls.
 - Type: system sans with tabular-feeling OpenType features enabled; no negative tracking.
-- Accent use: primary and command affordances use the neutral dev palette. Extra hues are reserved for semantic states and charts.
+- Accent use: primary and command affordances use the neutral developer palette. Extra hues are reserved for semantic states and charts.
+- Icons: app UI icons come from **Lucide** (`lucide-react`) — the same icon library the ElevenLabs design system (ElevenLabs UI, built on shadcn/ui) ships with. Import from `@/lib/icons`, which re-exports Lucide with the ElevenLabs console conventions: 16px default size, a thin 1.5 stroke, and `currentColor`. The 1.5 stroke is also enforced app-wide via `svg.lucide { stroke-width: 1.5 }` in `App.css`, so every icon reads with the ElevenLabs weight. **Providers and integrations use their authentic logomark** — a monochrome, single-path SVG filled with `currentColor` (official Simple Icons glyphs in `components/onboarding/provider-icons.tsx`) — never a whimsical Lucide stand-in (no cartoon robots, sparkles, or magnifying glasses for brands). Long-tail providers without an official mark fall back to a clean geometric Lucide glyph.
 
 ## Core Surfaces
 

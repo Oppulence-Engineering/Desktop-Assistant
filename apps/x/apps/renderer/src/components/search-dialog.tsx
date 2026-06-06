@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import posthog from "posthog-js";
 import * as analytics from "@/lib/analytics";
-import { FileTextIcon, MessageSquareIcon } from "lucide-react";
+import { FileTextIcon, MessageSquareIcon } from "@/lib/icons";
 import {
   CommandDialog,
   CommandInput,

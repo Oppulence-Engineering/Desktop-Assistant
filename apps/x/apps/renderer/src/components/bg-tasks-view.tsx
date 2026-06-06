@@ -33,7 +33,7 @@ import {
   Pause,
   Download,
   CheckCircle2,
-} from "lucide-react";
+} from "@/lib/icons";
 import type { z } from "zod";
 import type {
   BackgroundTask,

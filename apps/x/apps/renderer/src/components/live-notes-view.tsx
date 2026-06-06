@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Radio, Loader2, Square, AlertCircle } from "lucide-react";
+import { Radio, Loader2, Square, AlertCircle } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";

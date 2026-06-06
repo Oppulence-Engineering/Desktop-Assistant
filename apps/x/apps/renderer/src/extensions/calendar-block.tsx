@@ -1,6 +1,6 @@
 import { mergeAttributes, Node as TiptapNode } from '@tiptap/react'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
-import { X, Calendar, Video, ChevronDown, Mic } from 'lucide-react'
+import { X, Calendar, Video, ChevronDown, Mic } from '@/lib/icons'
 import { blocks } from '@x/shared'
 import { useState, useEffect, useRef } from 'react'
 import { extractConferenceLink } from '../lib/calendar-event'
