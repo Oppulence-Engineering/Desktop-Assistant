@@ -22,6 +22,10 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Review dependency changes
+        # Advisory for now: the action errors "Dependency review is not supported
+        # on this repository" until Dependency Graph is enabled in
+        # Settings → Code security. Flip this to false once enabled to enforce.
+        continue-on-error: true
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
