@@ -79,7 +79,13 @@
   overflow: hidden;
   background: var(--gm-bg);
   color: var(--gm-text);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   font-feature-settings: "ss01", "cv11";
 }
 
@@ -165,7 +171,9 @@
   background: transparent;
   color: var(--gm-text-muted);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
 }
 
 .gmail-icon-button:hover {
@@ -278,7 +286,9 @@
   background: transparent;
   color: var(--gm-text-muted);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
 }
 
 .gmail-row-action:hover {
@@ -564,7 +574,9 @@
 
 .gmail-message-pre {
   margin: 0;
-  font: 14px/1.6 Arial, sans-serif;
+  font:
+    14px/1.6 Arial,
+    sans-serif;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
@@ -589,7 +601,10 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
 }
 
 .gmail-quote-toggle:hover {
@@ -625,7 +640,10 @@
   font: inherit;
   font-size: 12px;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
 .gmail-attachment:hover {
@@ -667,7 +685,9 @@
   font: inherit;
   font-size: 12px;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
 }
 
 .gmail-thread-actions button:hover {
@@ -922,7 +942,9 @@
   background: transparent;
   color: var(--gm-text-muted);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
 }
 
 .gmail-compose-tool:hover {
@@ -1050,7 +1072,10 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
 .gmail-refine-button:hover {
@@ -1248,7 +1273,14 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     text-rendering: optimizeLegibility;
     /* Crisp, even glyph weight — the clean ElevenLabs type rendering on macOS. */
@@ -1426,35 +1458,33 @@
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sidebar-border) 80%, transparent);
 }
 
-/* ── Lucide icon system ──────────────────────────────────────────────────────
-   A systematic, modern treatment for every Lucide glyph. Lucide is the library
+/* ── App icon system (Heroicons) ──────────────────────────────────────────────────────
+   A systematic, modern treatment for every app icon (Heroicons). Heroicons is the library
    the ElevenLabs design system ships with; this block gives it a premium feel:
    thin even weight, round joinery, pixel-crisp curves, edge-safe painting,
    optical centering, and smooth, tactile state transitions — all driven from
-   the tokens below, so the whole set is tunable from one place. Lucide emits
-   `stroke-width="2"` as a presentation attribute on each <svg.lucide>, which
+   the tokens below, so the whole set is tunable from one place. Heroicons render as <svg> elements; the `@/lib/icons` wrapper adds the   `stroke-width="2"` as a presentation attribute on each <svg.app-icon>, which
    these author rules override app-wide without touching any of the 80+ call
-   sites. (We intentionally don't force `stroke`/`fill` here — Lucide already
+   sites. (We intentionally don't force `stroke`/`fill` here — Heroicons already
    sets `stroke="currentColor" fill="none"` as attributes, and forcing them in
    CSS would clobber an intentional `stroke-*`/`fill-*` utility.) */
 :root {
-  --lucide-stroke: 1.5;
-  --lucide-stroke-strong: 1.75; /* hover "firm-up" weight */
-  --lucide-duration: 160ms;
-  --lucide-ease: cubic-bezier(0.4, 0, 0.2, 1); /* standard, for color/opacity */
-  --lucide-ease-spring: cubic-bezier(0.16, 1, 0.3, 1); /* snappy ease-out, for transforms */
+  --icon-stroke: 1.5;
+  --icon-stroke-strong: 1.75; /* hover "firm-up" weight */
+  --icon-duration: 160ms;
+  --icon-ease: cubic-bezier(0.4, 0, 0.2, 1); /* standard, for color/opacity */
+  --icon-ease-spring: cubic-bezier(0.16, 1, 0.3, 1); /* snappy ease-out, for transforms */
   /* Shared non-transform transition — applied to every icon. Transform is added
      only for interactive icons (below) so it can't fight JS-driven motion. */
-  --lucide-transition-base:
-    color var(--lucide-duration) var(--lucide-ease),
-    stroke var(--lucide-duration) var(--lucide-ease),
-    stroke-width var(--lucide-duration) var(--lucide-ease),
-    opacity var(--lucide-duration) var(--lucide-ease);
+  --icon-transition-base:
+    color var(--icon-duration) var(--icon-ease), stroke var(--icon-duration) var(--icon-ease),
+    stroke-width var(--icon-duration) var(--icon-ease),
+    opacity var(--icon-duration) var(--icon-ease);
 }
 
-svg.lucide {
+svg.app-icon {
   /* Thin, even weight + soft, continuous corners on every joint and line end. */
-  stroke-width: var(--lucide-stroke);
+  stroke-width: var(--icon-stroke);
   stroke-linecap: round;
   stroke-linejoin: round;
 
@@ -1471,7 +1501,7 @@ svg.lucide {
   transform-origin: center;
 
   /* Smooth color/weight/opacity. (No transform here — added per-context below.) */
-  transition: var(--lucide-transition-base);
+  transition: var(--icon-transition-base);
 }
 
 /* Interactive icons additionally ease their transform — so toggled chevrons,
@@ -1479,11 +1509,22 @@ svg.lucide {
    snapping. Broadened across every interactive surface (buttons, links, menu
    items, options, tabs, disclosures) so the feel is consistent, yet still scoped
    to controls so it can't interfere with motion-animated decorative icons. */
-:is(button, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"],
-  [role="menuitemradio"], [role="option"], [role="tab"], summary, label)
-  svg.lucide {
-  transition: var(--lucide-transition-base),
-    transform var(--lucide-duration) var(--lucide-ease-spring);
+:is(
+    button,
+    a,
+    [role="button"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"],
+    [role="tab"],
+    summary,
+    label
+  )
+  svg.app-icon {
+  transition:
+    var(--icon-transition-base),
+    transform var(--icon-duration) var(--icon-ease-spring);
 }
 
 /* Firm-up: icons gain a hair of weight (1.5 → 1.75) when their control is
@@ -1491,34 +1532,64 @@ svg.lucide {
    selected / current / pressed / checked one — so the active affordance always
    reads a touch bolder. Selected-state hooks are item-level only (never the
    Radix `data-state` that also lands on open content panels). */
-:is(button, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"],
-  [role="menuitemradio"], [role="option"], [role="tab"], summary, label):not(:disabled):hover
-  svg.lucide,
-:is(button, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"],
-  [role="menuitemradio"], [role="option"], [role="tab"], summary, label):not(:disabled):focus-visible
-  svg.lucide,
-[aria-current]:not([aria-current="false"]) svg.lucide,
-[aria-selected="true"] svg.lucide,
-[aria-pressed="true"] svg.lucide,
-[data-active="true"] svg.lucide,
-[data-state="on"] svg.lucide,
-[data-state="checked"] svg.lucide {
-  stroke-width: var(--lucide-stroke-strong);
+:is(
+    button,
+    a,
+    [role="button"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"],
+    [role="tab"],
+    summary,
+    label
+  ):not(:disabled):hover
+  svg.app-icon,
+:is(
+    button,
+    a,
+    [role="button"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"],
+    [role="tab"],
+    summary,
+    label
+  ):not(:disabled):focus-visible
+  svg.app-icon,
+[aria-current]:not([aria-current="false"]) svg.app-icon,
+[aria-selected="true"] svg.app-icon,
+[aria-pressed="true"] svg.app-icon,
+[data-active="true"] svg.app-icon,
+[data-state="on"] svg.app-icon,
+[data-state="checked"] svg.app-icon {
+  stroke-width: var(--icon-stroke-strong);
 }
 
 /* Press "dip": the icon you click pulls in slightly — a tactile micro-bounce.
    Excludes glyphs positioned with a transform utility so we never clobber an
    existing translate/rotate (inline-style transforms are immune — they outrank
    this selector — so only class-based ones need excluding). */
-:is(button, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"],
-  [role="menuitemradio"], [role="option"], [role="tab"], summary, label):not(:disabled):active
-  svg.lucide:not([class*="translate"]):not([class*="rotate"]) {
+:is(
+    button,
+    a,
+    [role="button"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"],
+    [role="tab"],
+    summary,
+    label
+  ):not(:disabled):active
+  svg.app-icon:not([class*="translate"]):not([class*="rotate"]) {
   transform: scale(0.9);
 }
 
 /* Spinners drive their own transform via @keyframes — opt them out of the
    transition so the easing can't fight the spin, and keep them dead-centered. */
-svg.lucide.animate-spin {
+svg.app-icon.animate-spin {
   transition: none;
   transform-origin: center;
 }
@@ -1526,9 +1597,19 @@ svg.lucide.animate-spin {
 /* Honor "reduce motion": drop the press-dip scale for motion-sensitive users.
    The firm-up weight change (no motion) still applies; spinners are untouched. */
 @media (prefers-reduced-motion: reduce) {
-  :is(button, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"],
-    [role="menuitemradio"], [role="option"], [role="tab"], summary, label):active
-    svg.lucide:not(.animate-spin) {
+  :is(
+      button,
+      a,
+      [role="button"],
+      [role="menuitem"],
+      [role="menuitemcheckbox"],
+      [role="menuitemradio"],
+      [role="option"],
+      [role="tab"],
+      summary,
+      label
+    ):active
+    svg.app-icon:not(.animate-spin) {
     transform: none;
   }
 }
@@ -1536,16 +1617,16 @@ svg.lucide.animate-spin {
 /* Windows high-contrast / forced-colors: tie glyphs to the system text color so
    they never wash out against a forced background. */
 @media (forced-colors: active) {
-  svg.lucide {
+  svg.app-icon {
     stroke: currentColor;
   }
 }
 
-/* Non-Lucide inline SVGs that act as standalone control affordances still get
+/* Non-app-icon inline SVGs that act as standalone control affordances still get
    the thin ElevenLabs stroke in the primary chrome. */
-.rowboat-sidebar [data-sidebar="menu-button"] svg:not(.lucide),
-.rowboat-titlebar svg:not(.lucide),
-.rowboat-chat-input svg:not(.lucide) {
+.rowboat-sidebar [data-sidebar="menu-button"] svg:not(.app-icon),
+.rowboat-titlebar svg:not(.app-icon),
+.rowboat-chat-input svg:not(.app-icon) {
   stroke-width: 1.5;
 }
 
@@ -1637,7 +1718,7 @@ svg.lucide.animate-spin {
 }
 
 .graph-view::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background-image: radial-gradient(#1f2937 1px, transparent 1px);
@@ -1669,7 +1750,7 @@ svg.lucide.animate-spin {
 }
 
 .upgrade-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   /* Monochrome shimmer: a grayscale grain texture over a single neutral sheen
@@ -1684,7 +1765,9 @@ svg.lucide.animate-spin {
       color-mix(in srgb, var(--upgrade-sheen) 40%, transparent) 70%,
       transparent 100%
     );
-  background-size: 110px 110px, 100% 100%;
+  background-size:
+    110px 110px,
+    100% 100%;
   transform: translateX(-120%);
   opacity: 0;
   z-index: 1;
