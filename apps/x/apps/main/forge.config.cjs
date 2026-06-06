@@ -68,6 +68,7 @@ module.exports = {
                 description: 'AI coworker with memory',
                 name: `${PRODUCT_ARTIFACT_NAME}-win32-${arch}`,
                 setupExe: `${PRODUCT_ARTIFACT_NAME}-win32-${arch}-${pkg.version}-setup.exe`,
+                setupIcon: path.join(__dirname, 'icons/icon.ico'),
             })
         },
         {
@@ -78,7 +79,12 @@ module.exports = {
                     bin: PRODUCT_SLUG,
                     description: 'AI coworker with memory',
                     maintainer: 'Solomon AI',
-                    homepage: 'https://solomon-ai.co'
+                    homepage: 'https://solomon-ai.co',
+                    icon: path.join(__dirname, 'icons/icon.png'),
+                    mimeType: [
+                        `x-scheme-handler/${PRODUCT_SLUG}`,
+                        `x-scheme-handler/${LEGACY_DEEP_LINK_SCHEME}`,
+                    ],
                 }
             })
         },
@@ -89,7 +95,12 @@ module.exports = {
                     name: `${PRODUCT_ARTIFACT_NAME}-linux`,
                     bin: PRODUCT_SLUG,
                     description: 'AI coworker with memory',
-                    homepage: 'https://solomon-ai.co'
+                    homepage: 'https://solomon-ai.co',
+                    icon: path.join(__dirname, 'icons/icon.png'),
+                    mimeType: [
+                        `x-scheme-handler/${PRODUCT_SLUG}`,
+                        `x-scheme-handler/${LEGACY_DEEP_LINK_SCHEME}`,
+                    ],
                 }
             }
         },

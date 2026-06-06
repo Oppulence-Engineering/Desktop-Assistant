@@ -2249,6 +2249,7 @@ function TaskDetail({
   const [artifactSync, setArtifactSync] =
     useState<BackgroundTaskArtifactSyncType | null>(null);
   const [pullingArtifact, setPullingArtifact] = useState(false);
+  const sidebarInitialized = useRef(false);
 
   const agentStatus = useBackgroundTaskAgentStatus();
   const liveStatus = agentStatus.get(slug);
@@ -2271,6 +2272,22 @@ function TaskDetail({
       if (result.success && result.task) {
         setTask(result.task);
         setDraft(result.task);
+        // On first open, collapse the details sidebar when the agent already
+        // has output so the user can read it without extra chrome.
+        if (!sidebarInitialized.current) {
+          sidebarInitialized.current = true;
+          try {
+            const out = await window.ipc.invoke("workspace:readFile", {
+              path: `bg-tasks/${slug}/index.md`,
+            });
+            const body = (out.data ?? "").trim();
+            if (body && body !== `# ${result.task.name}`) {
+              setSidebarOpen(false);
+            }
+          } catch {
+            // No output file yet — keep the sidebar open.
+          }
+        }
         if (
           executionTargetOf(result.task) === "api" &&
           result.task.lastRunId &&
@@ -2300,6 +2317,7 @@ function TaskDetail({
     setCloudRunId(null);
     setCloudRunStatus(null);
     setArtifactSync(null);
+    sidebarInitialized.current = false;
   }, [slug]);
 
   const loadArtifactSync = useCallback(async () => {

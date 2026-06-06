@@ -3,17 +3,35 @@
 import * as React from "react"
 
 export type Theme = "light" | "dark" | "system"
+export type ChatPanePlacement = "right" | "middle"
+export type ChatPaneSize = "chat-smaller" | "chat-equal" | "chat-bigger"
 
 type ThemeContextProps = {
   theme: Theme
   resolvedTheme: "light" | "dark"
   setTheme: (theme: Theme) => void
+  chatPanePlacement: ChatPanePlacement
+  setChatPanePlacement: (placement: ChatPanePlacement) => void
+  chatPaneSize: ChatPaneSize
+  setChatPaneSize: (size: ChatPaneSize) => void
 }
 
 const ThemeContext = React.createContext<ThemeContextProps | null>(null)
 
 const STORAGE_KEY = "solomon-ai-theme"
 const LEGACY_STORAGE_KEY = "rowboat-theme"
+const CHAT_PANE_PLACEMENT_STORAGE_KEY = "solomon-ai-chat-pane-placement"
+const LEGACY_CHAT_PANE_PLACEMENT_STORAGE_KEY = "rowboat-chat-pane-placement"
+const CHAT_PANE_SIZE_STORAGE_KEY = "solomon-ai-chat-pane-size"
+const LEGACY_CHAT_PANE_SIZE_STORAGE_KEY = "rowboat-chat-pane-size"
+
+function isChatPanePlacement(value: string | null): value is ChatPanePlacement {
+  return value === "right" || value === "middle"
+}
+
+function isChatPaneSize(value: string | null): value is ChatPaneSize {
+  return value === "chat-smaller" || value === "chat-equal" || value === "chat-bigger"
+}
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light"
@@ -42,6 +60,16 @@ export function ThemeProvider({
       localStorage.getItem(LEGACY_STORAGE_KEY)
     ) as Theme | null
     return stored || defaultTheme
+  })
+  const [chatPanePlacement, setChatPanePlacementState] = React.useState<ChatPanePlacement>(() => {
+    if (typeof window === "undefined") return "right"
+    const stored = localStorage.getItem(CHAT_PANE_PLACEMENT_STORAGE_KEY) || localStorage.getItem(LEGACY_CHAT_PANE_PLACEMENT_STORAGE_KEY)
+    return isChatPanePlacement(stored) ? stored : "right"
+  })
+  const [chatPaneSize, setChatPaneSizeState] = React.useState<ChatPaneSize>(() => {
+    if (typeof window === "undefined") return "chat-smaller"
+    const stored = localStorage.getItem(CHAT_PANE_SIZE_STORAGE_KEY) || localStorage.getItem(LEGACY_CHAT_PANE_SIZE_STORAGE_KEY)
+    return isChatPaneSize(stored) ? stored : "chat-smaller"
   })
 
   const [resolvedTheme, setResolvedTheme] = React.useState<"light" | "dark">(() => {
@@ -81,13 +109,29 @@ export function ThemeProvider({
     setThemeState(newTheme)
   }, [])
 
+  const setChatPanePlacement = React.useCallback((placement: ChatPanePlacement) => {
+    localStorage.setItem(CHAT_PANE_PLACEMENT_STORAGE_KEY, placement)
+    localStorage.removeItem(LEGACY_CHAT_PANE_PLACEMENT_STORAGE_KEY)
+    setChatPanePlacementState(placement)
+  }, [])
+
+  const setChatPaneSize = React.useCallback((size: ChatPaneSize) => {
+    localStorage.setItem(CHAT_PANE_SIZE_STORAGE_KEY, size)
+    localStorage.removeItem(LEGACY_CHAT_PANE_SIZE_STORAGE_KEY)
+    setChatPaneSizeState(size)
+  }, [])
+
   const contextValue = React.useMemo<ThemeContextProps>(
     () => ({
       theme,
       resolvedTheme,
       setTheme,
+      chatPanePlacement,
+      setChatPanePlacement,
+      chatPaneSize,
+      setChatPaneSize,
     }),
-    [theme, resolvedTheme, setTheme]
+    [theme, resolvedTheme, setTheme, chatPanePlacement, setChatPanePlacement, chatPaneSize, setChatPaneSize]
   )
 
   return (

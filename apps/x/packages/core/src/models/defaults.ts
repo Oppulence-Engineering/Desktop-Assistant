@@ -12,6 +12,7 @@ const SIGNED_IN_DEFAULT_MODEL = "openai/gpt-4.1-mini";
 const SIGNED_IN_DEFAULT_PROVIDER = PRODUCT_PROVIDER_ID;
 const SIGNED_IN_KG_MODEL = "openai/gpt-4.1-mini";
 const SIGNED_IN_LIVE_NOTE_AGENT_MODEL = "openai/gpt-4.1-mini";
+const SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL = "openai/gpt-4.1-mini";
 
 /**
  * The single source of truth for "what model+provider should we use when
@@ -78,6 +79,17 @@ export async function getLiveNoteAgentModel(): Promise<string> {
     if (await isSignedIn()) return SIGNED_IN_LIVE_NOTE_AGENT_MODEL;
     const cfg = await container.resolve<IModelConfigRepo>("modelConfigRepo").getConfig();
     return cfg.liveNoteAgentModel ?? cfg.model;
+}
+
+/**
+ * Model used by the auto-permission classifier.
+ * Signed-in: curated default. BYOK: user override
+ * (`autoPermissionDecisionModel`) or assistant model.
+ */
+export async function getAutoPermissionDecisionModel(): Promise<string> {
+    if (await isSignedIn()) return SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL;
+    const cfg = await container.resolve<IModelConfigRepo>("modelConfigRepo").getConfig();
+    return cfg.autoPermissionDecisionModel ?? cfg.model;
 }
 
 /**
