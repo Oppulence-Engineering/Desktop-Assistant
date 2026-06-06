@@ -25,7 +25,13 @@ jobs:
         id: release
         uses: googleapis/release-please-action@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # The enterprise policy blocks the default GITHUB_TOKEN (the
+          # github-actions identity) from creating/approving PRs, so release-please
+          # can't open its release PR with it. Use a PAT / GitHub App token instead
+          # (creates the PR as a user/app, which the policy permits). Create a
+          # fine-grained PAT scoped to this repo with Contents: read+write and
+          # Pull requests: read+write, and add it as the RELEASE_PLEASE_TOKEN secret.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
