@@ -65,7 +65,20 @@
 50. [Appendix K — WER computation](#appendix-k--wer-computation)
 51. [Appendix L — GBNF grammar (custom vocabulary)](#appendix-l--gbnf-grammar-custom-vocabulary)
 52. [Appendix M — PCM conversion & resampling](#appendix-m--pcm-conversion--resampling)
-53. [References](#references)
+53. [Appendix N — Streaming & VAD algorithm (full reference)](#appendix-n--streaming--vad-algorithm-full-reference)
+54. [Appendix O — Proxy-side meeting-minutes quota API](#appendix-o--proxy-side-meeting-minutes-quota-api)
+55. [Appendix P — Full `model-manager.ts` reference implementation](#appendix-p--full-model-managerts-reference-implementation)
+56. [Appendix Q — Full `runner.ts` reference implementation](#appendix-q--full-runnerts-reference-implementation)
+57. [Appendix R — IPC handler wiring (main + shared schemas)](#appendix-r--ipc-handler-wiring-main--shared-schemas)
+58. [Appendix S — Renderer `useVoiceMode` whisper branch](#appendix-s--renderer-usevoicemode-whisper-branch)
+59. [Appendix T — `transcription-settings.tsx` component](#appendix-t--transcription-settingstsx-component)
+60. [Appendix U — Full `capability.ts` reference implementation](#appendix-u--full-capabilityts-reference-implementation)
+61. [Appendix V — Eval corpus & WER CI harness](#appendix-v--eval-corpus--wer-ci-harness)
+62. [Appendix W — Packaging files (`bin.ts`, Forge, entitlements, build)](#appendix-w--packaging-files-bints-forge-entitlements-build)
+63. [Appendix X — Full `service.ts` facade](#appendix-x--full-servicets-facade)
+64. [Appendix Y — End-to-end worked trace](#appendix-y--end-to-end-worked-trace)
+65. [Appendix Z — Rollout & observability playbook](#appendix-z--rollout--observability-playbook)
+66. [References](#references)
 
 ---
 
@@ -1531,6 +1544,1963 @@ function deinterleaveStereoI16(inter: Int16Array): { mic: Int16Array; sys: Int16
 ```
 
 Dithering is unnecessary at 16-bit for speech ASR; we skip it. Clipping is clamped, not wrapped.
+
+## Appendix N — Streaming & VAD algorithm (full reference)
+
+This appendix specifies the **meeting-mode** near-real-time pipeline (P2) in implementation detail:
+the problem, the VAD/segmentation algorithm, the per-channel session, backpressure, and a complete
+`streaming.ts` reference.
+
+### N.1 The problem
+
+Whisper decodes **30-second batches** — there is no token-by-token streaming. To feel near-real-time
+in meetings we **segment the audio on speech boundaries** and batch-transcribe each closed segment as
+soon as it ends. Latency per final ≈ `silenceHangover + segmentTranscribeTime`. With `base.en` + Metal
+that's ~0.7 s hangover + a fraction of a second → a final within ~1–1.5 s of someone finishing a
+sentence. Good enough for a meeting note; not as instant as Deepgram's per-word partials (documented
+tradeoff, §32).
+
+### N.2 Two-stage VAD
+
+We use a **hybrid**:
+
+1. **Stage 1 — cheap JS energy VAD (segmentation boundaries).** A real-time RMS/energy gate with an
+   adaptive noise floor decides _where to cut_. It's O(1) per frame, runs in the main process on the
+   incoming PCM, and never blocks. It produces segment boundaries with **pre-roll** (keep ~300 ms
+   before onset so word-starts aren't clipped) and **hangover** (wait ~700 ms of silence before
+   closing, so we don't cut mid-pause).
+2. **Stage 2 — Silero VAD inside whisper-cli (`--vad`).** When we batch-transcribe a closed segment,
+   we still pass `--vad --vad-model silero…` so whisper.cpp trims residual silence and suppresses
+   non-speech hallucinations _within_ the segment. Stage 1 controls latency/boundaries cheaply; Stage
+   2 cleans each segment with the high-quality neural VAD.
+
+> Why not run Silero in JS for Stage 1? It needs onnxruntime/a model in the renderer/main hot path.
+> The energy gate is adequate for _boundaries_; Silero does the _quality_ pass where we already pay
+> for a whisper-cli spawn. If energy VAD proves too noisy in practice, swap Stage 1 for Silero-via-
+> whisper-cli streaming chunks (Open Question).
+
+### N.3 Energy-VAD segmenter — algorithm
+
+State machine per channel:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Silence
+    Silence --> Maybe: frame energy > onThreshold
+    Maybe --> Speech: sustained > minOnFrames
+    Maybe --> Silence: dropped before minOnFrames
+    Speech --> Trailing: frame energy < offThreshold
+    Trailing --> Speech: energy rises again (reset hangover)
+    Trailing --> Emit: silence sustained > hangoverFrames
+    Speech --> Emit: segment length ≥ maxSegmentMs (forced cut)
+    Emit --> Silence: emit [preRoll..end] to transcribe queue
+```
+
+Parameters (tunable, defaults):
+
+| Param                  | Default          | Meaning                                                            |
+| ---------------------- | ---------------- | ------------------------------------------------------------------ |
+| `frameMs`              | 30               | analysis frame (480 samples @ 16 kHz)                              |
+| `onThreshold`          | noiseFloor × 3.0 | RMS above → speech onset candidate                                 |
+| `offThreshold`         | noiseFloor × 1.8 | RMS below → trailing silence (hysteresis: off < on)                |
+| `minOnFrames`          | 3 (~90 ms)       | sustained speech to confirm onset (debounce clicks)                |
+| `hangoverMs`           | 700              | trailing silence before closing a segment                          |
+| `preRollMs`            | 300              | audio kept before onset (avoid clipped word-starts)                |
+| `minSegmentMs`         | 400              | drop sub-400 ms blips (coughs)                                     |
+| `maxSegmentMs`         | 28000            | force-cut before Whisper's 30 s context                            |
+| `noiseFloorHalfLifeMs` | 2000             | EMA half-life for the adaptive floor (updates only during silence) |
+
+Adaptive noise floor: an exponential moving average of RMS computed **only while in `Silence`**, so a
+loud talker doesn't raise the floor. `onThreshold`/`offThreshold` are multiples of it → robust to
+quiet rooms and noisy cafés alike.
+
+### N.4 Per-channel & speaker labelling
+
+Meetings capture **two channels** (mic = ch0 = "You", system = ch1 = "Other"; `useMeetingTranscription`
+already merges/gates these). We run **one segmenter per channel** on the deinterleaved streams
+(Appendix M) so a closed mic segment and a closed system segment are transcribed independently and
+tagged `you` / `other`. Finals are merged into the note **ordered by segment start time**; consecutive
+finals from the same speaker coalesce into one paragraph (reusing today's note format). In-room
+multi-speaker diarization within the system channel is **not** attempted in v2 (§31).
+
+### N.5 Session lifecycle & backpressure
+
+- `whisper:openStream` creates a `Session` keyed by `streamId`, returns a `MessagePortMain`
+  (Appendix G). The renderer posts transferable PCM frames with a **credit** (default 3) it decrements
+  per send and the main replenishes per `ack`.
+- The Session keeps a **bounded ring buffer per channel** (cap ~60 s; if exceeded under backpressure
+  it **drops oldest silence**, never speech, and logs `stream_backpressure`).
+- A **single-flight transcribe worker** drains the closed-segment queue serially (one whisper-cli at a
+  time per session) so a slow device degrades to higher latency, not unbounded memory. With Metal the
+  worker keeps up well above realtime.
+- `flush` (renderer signals end-of-utterance / stop) transcribes the open tail; `close` tears down
+  (kill any process, free buffers, post a terminal `ack`).
+
+### N.6 Reference implementation (`whisper/streaming.ts`, abridged but complete)
+
+```ts
+import { MessagePortMain } from "electron";
+import { run } from "./runner";
+import { deinterleaveStereoI16 } from "./wav";
+import type { WhisperErrorCode } from "@x/shared";
+
+const RATE = 16000;
+const FRAME = 480; // 30 ms @ 16 kHz
+
+interface SegParams {
+  onMul: number;
+  offMul: number;
+  minOnFrames: number;
+  hangoverMs: number;
+  preRollMs: number;
+  minSegmentMs: number;
+  maxSegmentMs: number;
+}
+const DEFAULTS: SegParams = {
+  onMul: 3.0,
+  offMul: 1.8,
+  minOnFrames: 3,
+  hangoverMs: 700,
+  preRollMs: 300,
+  minSegmentMs: 400,
+  maxSegmentMs: 28000,
+};
+
+type Channel = "you" | "other";
+interface ClosedSegment {
+  channel: Channel;
+  startSec: number;
+  endSec: number;
+  pcm: Int16Array;
+}
+
+/** Real-time energy VAD segmenter for one channel. Feed Int16 frames; get closed segments. */
+class EnergyVadSegmenter {
+  private state: "silence" | "maybe" | "speech" | "trailing" = "silence";
+  private noiseFloor = 200; // adaptive RMS floor (int16 units)
+  private onFrames = 0;
+  private hangoverFrames = 0;
+  private buf: Int16Array[] = []; // current segment frames (incl. pre-roll)
+  private preRoll: Int16Array[] = []; // rolling pre-roll ring
+  private framesSeen = 0; // for timestamps
+  private readonly hangoverLimit: number;
+  private readonly preRollLimit: number;
+  private readonly minSegFrames: number;
+  private readonly maxSegFrames: number;
+
+  constructor(
+    private p: SegParams = DEFAULTS,
+    private onSegment?: (s: { startSec: number; endSec: number; pcm: Int16Array }) => void,
+  ) {
+    this.hangoverLimit = Math.round((p.hangoverMs / 1000) * (RATE / FRAME));
+    this.preRollLimit = Math.round((p.preRollMs / 1000) * (RATE / FRAME));
+    this.minSegFrames = Math.round((p.minSegmentMs / 1000) * (RATE / FRAME));
+    this.maxSegFrames = Math.round((p.maxSegmentMs / 1000) * (RATE / FRAME));
+  }
+
+  private rms(frame: Int16Array): number {
+    let s = 0;
+    for (let i = 0; i < frame.length; i++) s += frame[i] * frame[i];
+    return Math.sqrt(s / frame.length);
+  }
+
+  /** Feed exactly one FRAME-sized Int16 frame. */
+  pushFrame(frame: Int16Array): void {
+    const e = this.rms(frame);
+    const on = this.noiseFloor * this.p.onMul;
+    const off = this.noiseFloor * this.p.offMul;
+    this.framesSeen++;
+
+    // maintain pre-roll ring while idle
+    this.preRoll.push(frame);
+    if (this.preRoll.length > this.preRollLimit) this.preRoll.shift();
+
+    switch (this.state) {
+      case "silence":
+        // adapt floor only during silence (EMA)
+        this.noiseFloor = this.noiseFloor * 0.95 + e * 0.05;
+        if (e > on) {
+          this.state = "maybe";
+          this.onFrames = 1;
+        }
+        break;
+      case "maybe":
+        if (e > on) {
+          if (++this.onFrames >= this.p.minOnFrames) {
+            this.state = "speech";
+            this.buf = [...this.preRoll]; // seed with pre-roll so onset isn't clipped
+          }
+        } else {
+          this.state = "silence";
+          this.onFrames = 0;
+        }
+        break;
+      case "speech":
+        this.buf.push(frame);
+        if (e < off) {
+          this.state = "trailing";
+          this.hangoverFrames = 1;
+        }
+        if (this.buf.length >= this.maxSegFrames) this.emit(); // forced cut
+        break;
+      case "trailing":
+        this.buf.push(frame);
+        if (e >= off) {
+          this.state = "speech";
+          this.hangoverFrames = 0;
+        } else if (++this.hangoverFrames >= this.hangoverLimit) this.emit();
+        break;
+    }
+  }
+
+  private emit(): void {
+    const frames = this.buf;
+    this.buf = [];
+    this.state = "silence";
+    this.onFrames = 0;
+    this.hangoverFrames = 0;
+    if (frames.length < this.minSegFrames) return; // drop blips
+    const endFrame = this.framesSeen;
+    const startFrame = endFrame - frames.length;
+    const pcm = concatI16(frames);
+    this.onSegment?.({
+      startSec: (startFrame * FRAME) / RATE,
+      endSec: (endFrame * FRAME) / RATE,
+      pcm,
+    });
+  }
+
+  /** End of stream: flush an open segment. */
+  flush(): void {
+    if (this.state === "speech" || this.state === "trailing") this.emit();
+  }
+}
+
+function concatI16(frames: Int16Array[]): Int16Array {
+  const n = frames.reduce((a, f) => a + f.length, 0);
+  const out = new Int16Array(n);
+  let o = 0;
+  for (const f of frames) {
+    out.set(f, o);
+    o += f.length;
+  }
+  return out;
+}
+
+/** One meeting transcription session. */
+export class Session {
+  private chans: Record<Channel, EnergyVadSegmenter>;
+  private leftover: Record<Channel, Int16Array> = {
+    you: new Int16Array(0),
+    other: new Int16Array(0),
+  };
+  private queue: ClosedSegment[] = [];
+  private draining = false;
+  private credits = 3;
+  private closed = false;
+
+  constructor(
+    private port: MessagePortMain,
+    private opts: { modelPath: string; vadModelPath: string; channels: 1 | 2 },
+  ) {
+    const mk = (channel: Channel) =>
+      new EnergyVadSegmenter(DEFAULTS, (s) => this.enqueue({ channel, ...s }));
+    this.chans = { you: mk("you"), other: mk("other") };
+    port.on("message", (e) => this.onMessage(e.data));
+    port.start();
+  }
+
+  private onMessage(m: any): void {
+    if (m?.type === "audio") {
+      const { mic, sys } =
+        this.opts.channels === 2
+          ? deinterleaveStereoI16(new Int16Array(m.pcm16))
+          : { mic: new Int16Array(m.pcm16), sys: new Int16Array(0) };
+      this.feed("you", mic);
+      if (this.opts.channels === 2) this.feed("other", sys);
+      this.port.postMessage({ v: 1, type: "ack", seq: m.seq, credits: ++this.credits });
+    } else if (m?.type === "flush") {
+      this.chans.you.flush();
+      this.chans.other.flush();
+    } else if (m?.type === "close") {
+      this.close();
+    }
+  }
+
+  /** Re-frame an arbitrary chunk into exact FRAME-sized frames (carry leftover). */
+  private feed(ch: Channel, chunk: Int16Array): void {
+    const merged = concatI16([this.leftover[ch], chunk]);
+    let i = 0;
+    for (; i + FRAME <= merged.length; i += FRAME)
+      this.chans[ch].pushFrame(merged.subarray(i, i + FRAME));
+    this.leftover[ch] = merged.subarray(i); // keep the partial frame
+  }
+
+  private enqueue(seg: ClosedSegment): void {
+    this.queue.push(seg);
+    void this.drain();
+  }
+
+  /** Single-flight: transcribe closed segments serially. */
+  private async drain(): Promise<void> {
+    if (this.draining || this.closed) return;
+    this.draining = true;
+    try {
+      while (this.queue.length) {
+        const seg = this.queue.shift()!;
+        // optional: emit a 'partial' immediately if you want a placeholder
+        const wavPath = await writeTempWav(seg.pcm, { sampleRate: RATE, channels: 1 });
+        try {
+          const r = await run(wavPath, {
+            modelPath: this.opts.modelPath,
+            vadModelPath: this.opts.vadModelPath,
+            lang: "en",
+            threads: autoThreads(),
+            audioSeconds: seg.endSec - seg.startSec,
+            timeoutMs: Math.max(15000, (seg.endSec - seg.startSec) * 3000),
+          });
+          if (r.text) {
+            this.port.postMessage({
+              v: 1,
+              type: "final",
+              segment: { start: seg.startSec, end: seg.endSec, text: r.text, speaker: seg.channel },
+            });
+          }
+        } catch (err) {
+          this.port.postMessage({ v: 1, type: "error", code: codeOf(err) as WhisperErrorCode });
+        } finally {
+          await unlinkQuiet(wavPath);
+        }
+      }
+    } finally {
+      this.draining = false;
+    }
+  }
+
+  close(): void {
+    if (this.closed) return;
+    this.closed = true;
+    this.chans.you.flush();
+    this.chans.other.flush();
+    // let the drain finish the tail, then close the port
+    void this.drain().finally(() => this.port.close());
+  }
+}
+```
+
+### N.7 Tuning & failure notes
+
+- **Cafés / noise:** the adaptive floor + hysteresis handles steady noise; sudden bursts (door slam)
+  may open a short segment that Stage-2 Silero discards (empty text → no final). Acceptable.
+- **Cross-talk:** if both speak at once, both channels emit overlapping segments with overlapping
+  timestamps; the note interleaves by start time (acceptable; perfect overlap handling is future
+  work).
+- **Long monologue:** `maxSegmentMs` force-cuts at ~28 s; a mid-sentence cut can split a word —
+  mitigated by Whisper's context but documented.
+- **CPU-only weak device:** the single-flight worker falls behind → backpressure drops oldest
+  **silence**; if it can't keep up at all, surface "transcription is behind" and offer cloud.
+
+---
+
+## Appendix O — Proxy-side meeting-minutes quota API
+
+Free users get a monthly allowance of **cloud** meeting minutes; past it, the desktop falls back to
+**local** transcription (§16). This appendix specifies the `rowboat-api` (Go) side, mirroring the
+existing conventions: `internal/quota.Gate` (Reserve/Settle/Refund over the credit ledger),
+`internal/voice/handler.go` (the Deepgram proxy, already wired to `quota.Gate` + `pricing.Table`),
+`internal/config/handler.go` (the payload the desktop reads), ent + Atlas migrations, and the
+`*_total` metrics + `httpx.Error` patterns from the cloud-workflows RFCs.
+
+### O.1 Model — minutes as a metered, period-reset allowance
+
+Two viable shapes; we choose **(B)** for clarity and because meeting-minutes are a _free allowance_,
+not priced credits:
+
+- **(A) Price minutes as credits** — reuse `quota.Gate.Reserve/Settle` directly (minutes × price →
+  credits). Zero new schema, but conflates "free meeting minutes" with paid LLM credits and makes the
+  desktop's "180 free minutes left" hard to compute.
+- **(B) Dedicated monthly minutes ledger** — a small `MeetingMinuteUsage` entity per user per UTC
+  month; a `MinutesGate` mirrors `quota.Gate`'s Reserve/Settle/Refund shape. The free allowance is a
+  plan attribute; **paid plans and BYOK bypass** the gate entirely (unlimited cloud). **Chosen.**
+
+### O.2 ent schema — `internal/ent/schema/meeting_minute_usage.go`
+
+Additive, no backfill (safe to apply ahead of the code, per the RFC-set convention). One row per user
+per period; `used_seconds` is the metered counter; `reserved_seconds` holds in-flight reservations.
+
+```go
+package schema
+
+import (
+	"entgo.io/ent"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/index"
+	"github.com/Oppulence-Engineering/rowboat-api/internal/ent/mixin"
+)
+
+type MeetingMinuteUsage struct{ ent.Schema }
+
+func (MeetingMinuteUsage) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} } // uuid id, created_at, updated_at
+
+func (MeetingMinuteUsage) Fields() []ent.Field {
+	return []ent.Field{
+		field.String("period").Immutable(),                 // "2026-06" (UTC month)
+		field.Int("used_seconds").Default(0).NonNegative(),
+		field.Int("reserved_seconds").Default(0).NonNegative(),
+	}
+}
+
+func (MeetingMinuteUsage) Edges() []ent.Edge {
+	return []ent.Edge{ edge.To("user", User.Type).Unique().Required() } // per-user scoped (interceptors enforce tenant isolation)
+}
+
+func (MeetingMinuteUsage) Indexes() []ent.Index {
+	return []ent.Index{ index.Fields("period").Edges("user").Unique() } // one row per (user, period)
+}
+```
+
+Then: `make generate` → `make migrate-dump name=meeting_minute_usage` → review SQL → `make
+migrate-apply` (additive). System components run under `auth.WithInternal(ctx)`.
+
+### O.3 `MinutesGate` — `internal/quota/minutes.go`
+
+Mirrors `quota.Gate`'s Reserve/Settle/Refund; atomic `ON CONFLICT` upsert per (user, period); the free
+allowance comes from the plan. **Reservation** (estimated seconds) on stream open; **settle** to actual
+on close; **refund** on early failure — idempotent by `requestID`.
+
+```go
+package quota
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/google/uuid"
+	"go.uber.org/zap"
+	"github.com/Oppulence-Engineering/rowboat-api/internal/ent"
+)
+
+var ErrMinutesExhausted = errors.New("free meeting minutes exhausted")
+
+type MinutesGate struct {
+	client *ent.Client
+	log    *zap.Logger
+	allowance func(plan string) int // seconds/month; -1 = unlimited (paid)
+}
+
+func NewMinutesGate(c *ent.Client, log *zap.Logger, allowance func(string) int) *MinutesGate {
+	return &MinutesGate{client: c, log: log, allowance: allowance}
+}
+
+type MinutesCharge struct {
+	gate     *MinutesGate
+	userID   uuid.UUID
+	period   string
+	reserved int
+	settled  bool
+}
+
+func period(now time.Time) string { return now.UTC().Format("2006-01") }
+
+// Remaining: allowance - (used + reserved). Unlimited (paid) returns a large sentinel.
+func (g *MinutesGate) Remaining(ctx context.Context, userID uuid.UUID, plan string) (int, error) {
+	allow := g.allowance(plan)
+	if allow < 0 { return 1 << 30, nil } // unlimited
+	row, err := g.row(ctx, userID, period(time.Now()))
+	if err != nil { return 0, err }
+	rem := allow - (row.UsedSeconds + row.ReservedSeconds)
+	if rem < 0 { rem = 0 }
+	return rem, nil
+}
+
+// Reserve debits estimated seconds in a tx after an allowance check. Paid/BYOK callers skip this.
+func (g *MinutesGate) Reserve(ctx context.Context, userID uuid.UUID, plan string, estSeconds int, requestID uuid.UUID) (*MinutesCharge, error) {
+	allow := g.allowance(plan)
+	if allow < 0 { return &MinutesCharge{gate: g, userID: userID, period: period(time.Now()), reserved: 0}, nil } // unlimited
+	p := period(time.Now())
+	tx, err := g.client.Tx(ctx)
+	if err != nil { return nil, err }
+	row, err := upsertForUpdate(ctx, tx, userID, p) // SELECT … FOR UPDATE / upsert
+	if err != nil { _ = tx.Rollback(); return nil, err }
+	if row.UsedSeconds+row.ReservedSeconds+estSeconds > allow {
+		_ = tx.Rollback()
+		return nil, ErrMinutesExhausted
+	}
+	if _, err := tx.MeetingMinuteUsage.UpdateOne(row).AddReservedSeconds(estSeconds).Save(ctx); err != nil {
+		_ = tx.Rollback(); return nil, err
+	}
+	if err := tx.Commit(); err != nil { return nil, err }
+	return &MinutesCharge{gate: g, userID: userID, period: p, reserved: estSeconds}, nil
+}
+
+// Settle: reservation → actual (release the difference, count the real usage).
+func (c *MinutesCharge) Settle(ctx context.Context, actualSeconds int) error {
+	if c.settled || c.reserved == 0 { return nil }
+	c.settled = true
+	row, err := c.gate.row(ctx, c.userID, c.period)
+	if err != nil { return err }
+	_, err = c.gate.client.MeetingMinuteUsage.UpdateOne(row).
+		AddUsedSeconds(actualSeconds).
+		AddReservedSeconds(-c.reserved).
+		Save(ctx)
+	return err
+}
+
+// Refund: release the whole reservation (stream failed before metering).
+func (c *MinutesCharge) Refund(ctx context.Context) error {
+	if c.settled || c.reserved == 0 { return nil }
+	c.settled = true
+	row, err := c.gate.row(ctx, c.userID, c.period)
+	if err != nil { return err }
+	_, err = c.gate.client.MeetingMinuteUsage.UpdateOne(row).AddReservedSeconds(-c.reserved).Save(ctx)
+	return err
+}
+```
+
+(`row`/`upsertForUpdate` are small helpers: get-or-create the (user, period) row, `FOR UPDATE` inside
+the tx so concurrent reserves serialize — the same `ON CONFLICT` discipline RFC 002 uses for the
+scheduler lease.)
+
+### O.4 Plan allowance & config — `internal/appconfig`
+
+```go
+// Config additions (TEMPORAL_*-style env keys, surfaced via the Helm ConfigMap)
+FreeMeetingSecondsPerMonth int  // FREE_MEETING_SECONDS_PER_MONTH, e.g. 10800 (180 min)
+// remote transcription defaults the desktop reads (A/B-able without a desktop release)
+TranscriptionVoiceDefault   string // TRANSCRIPTION_VOICE_DEFAULT   = "whisper-local"
+TranscriptionMeetingDefault string // TRANSCRIPTION_MEETING_DEFAULT = "deepgram"
+
+func allowanceFor(plan string) int {
+	switch plan {
+	case "pro", "team", "enterprise": return -1 // unlimited
+	default: return cfg.FreeMeetingSecondsPerMonth
+	}
+}
+```
+
+### O.5 Enforcement in the Deepgram-listen proxy — `internal/voice/handler.go`
+
+The proxy that bridges the desktop ↔ Deepgram for _meetings_ gains a reserve→settle wrapper. BYOK
+(the desktop went **direct** to Deepgram with its own key) never hits us, so it's inherently bypassed.
+
+```go
+// New: the meeting variant of the listen proxy (mic+system, multichannel). Voice-mode push-to-talk
+// stays as-is (and increasingly runs local, so it doesn't bill).
+func (h *Handler) ListenMeeting(w http.ResponseWriter, r *http.Request) {
+	u := auth.UserFromContext(r.Context())
+	if u == nil { httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "sign in"); return }
+
+	// reserve a conservative estimate (e.g. 15 min); settle to actual on close.
+	const estSeconds = 15 * 60
+	charge, err := h.minutes.Reserve(r.Context(), u.ID, u.Plan, estSeconds, uuid.New())
+	if errors.Is(err, quota.ErrMinutesExhausted) {
+		// typed code → desktop falls back to LOCAL for this meeting (no hard failure)
+		httpx.Error(w, http.StatusPaymentRequired, "meeting_minutes_exhausted",
+			"free cloud meeting minutes used; switch to on-device")
+		voicemetrics.MeetingMinutesExhaustedTotal.Inc()
+		return
+	}
+	if err != nil { httpx.Error(w, http.StatusInternalServerError, "quota_error", "try again"); return }
+
+	start := time.Now()
+	defer func() {
+		actual := int(time.Since(start).Seconds())
+		if e := charge.Settle(r.Context(), actual); e != nil { h.log.Warn("settle minutes", zap.Error(e)) }
+		voicemetrics.MeetingMinutesUsedSecondsTotal.Add(float64(actual))
+	}()
+
+	// … existing Deepgram WS bridge (upgrade, proxy frames both directions) …
+	if err := h.bridgeDeepgram(w, r); err != nil {
+		_ = charge.Refund(r.Context()) // nothing metered if the bridge never started
+		return
+	}
+}
+```
+
+Route registration (in `cmd/server/wire.go` style): `GET /deepgram/v1/listen` keeps the voice path;
+**meetings** call `GET /deepgram/v1/listen/meeting` (or pass `?mode=meeting`) so only metered meeting
+streams go through `ListenMeeting`. Push-to-talk voice via the proxy stays unmetered/cheap and is
+increasingly local.
+
+### O.6 Per-user quota endpoint + account payload
+
+The desktop needs `remaining` to decide the meeting default. Two surfaces:
+
+1. **Dedicated read** — `GET /v1/transcription/quota` (auth-scoped):
+
+```go
+func (h *Handler) Quota(w http.ResponseWriter, r *http.Request) {
+	u := auth.UserFromContext(r.Context())
+	rem, err := h.minutes.Remaining(r.Context(), u.ID, u.Plan)
+	if err != nil { httpx.Error(w, 500, "quota_error", "try again"); return }
+	httpx.JSON(w, 200, map[string]any{
+		"meetingMinutesRemaining": rem / 60,
+		"unlimited":               h.minutes.IsUnlimited(u.Plan),
+		"transcriptionDefaults": map[string]string{
+			"voiceProvider":   h.cfg.TranscriptionVoiceDefault,
+			"meetingProvider": h.cfg.TranscriptionMeetingDefault,
+		},
+	})
+}
+```
+
+2. **Account payload extension** — the existing per-user account/config the desktop already fetches
+   (`useSolomonAccount`) gains the same fields, so the desktop gets them with the data it already
+   loads (avoids an extra round-trip). The **static** `configResponse` (`internal/config/handler.go`,
+   `websocketApiUrl` etc.) stays static; per-user quota lives on the authenticated account endpoint.
+
+### O.7 Metrics — `internal/voice/metrics.go`
+
+Per the cardinality rule (label only by bounded dims; never by userId):
+
+```go
+MeetingMinutesUsedSecondsTotal = promauto.NewCounter(prometheus.CounterOpts{
+	Name: "voice_meeting_minutes_used_seconds_total", Help: "Cloud meeting seconds metered." })
+MeetingMinutesExhaustedTotal = promauto.NewCounter(prometheus.CounterOpts{
+	Name: "voice_meeting_minutes_exhausted_total", Help: "Streams rejected for exhausted free minutes." })
+MeetingMinutesReserveErrorsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+	Name: "voice_meeting_minutes_reserve_errors_total" }, []string{"reason"})
+```
+
+### O.8 Desktop wiring
+
+- `useSolomonAccount` exposes `meetingMinutesRemaining` + `transcriptionDefaults`.
+- `resolveMeetingProvider()` (§12): `userOverride ?? remoteDefault ?? 'deepgram'`; if resolved
+  `deepgram`/`solomon` **and** `meetingMinutesRemaining <= 0` → switch to `whisper-local` and show the
+  "free cloud minutes used — on-device" notice (§17/§35 #13).
+- On a live `meeting_minutes_exhausted` (mid-attempt, e.g. raced to 0), the desktop catches the typed
+  code and **restarts the meeting locally** without losing the recording (it re-points the same PCM
+  pipeline at `whisper:openStream`).
+
+### O.9 Edge cases
+
+| Case                               | Handling                                                                                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Reservation outlives a crash       | reservations are released by Settle/Refund on close; a **sweeper** (cron, like RFC 001) zeroes `reserved_seconds` for rows untouched > 1 h |
+| Month rollover mid-meeting         | period is fixed at reserve time; a meeting spanning midnight UTC settles to the reserve period (acceptable)                                |
+| Concurrent meetings (multi-window) | each reserves independently; the `FOR UPDATE` upsert serializes; total can't exceed allowance                                              |
+| Clock skew                         | server time is authoritative for `period`                                                                                                  |
+| BYOK                               | desktop streams **direct** to Deepgram → never reaches us → unmetered by construction                                                      |
+| Plan upgrade mid-period            | `allowanceFor` reads live plan → becomes unlimited immediately                                                                             |
+
+---
+
+## Appendix P — Full `model-manager.ts` reference implementation
+
+A complete reference for `packages/core/src/voice/whisper/model-manager.ts`: catalog merge, resumable
+
+- checksummed download, atomic install, disk guard, Core ML sidecar, concurrency coalescing,
+  retry/backoff, GC, and the self-healing ledger. (Imports/types elided where obvious; error codes from
+  §11/§18.)
+
+```ts
+import { createHash } from "node:crypto";
+import { createReadStream, createWriteStream } from "node:fs";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import { pipeline } from "node:stream/promises";
+import { CATALOG, type ModelEntry } from "./catalog";
+
+export type ModelProgress = {
+  id: string;
+  receivedMb: number;
+  totalMb: number;
+  phase: "download" | "verify";
+};
+type WhisperErrorCode =
+  | "model_not_installed"
+  | "download_failed"
+  | "checksum_mismatch"
+  | "insufficient_disk"
+  | "engine_unavailable";
+
+export class ModelError extends Error {
+  constructor(
+    public code: WhisperErrorCode,
+    message?: string,
+  ) {
+    super(message ?? code);
+  }
+}
+
+interface LedgerEntry {
+  path: string;
+  bytes: number;
+  sha256: string;
+  installedAt: string;
+  lastVerifiedAt: string;
+  coreml?: boolean;
+}
+interface Ledger {
+  schemaVersion: 1;
+  installed: Record<string, LedgerEntry>;
+  capability?: unknown;
+}
+
+const VERIFY_TTL_MS = 30 * 24 * 3600 * 1000;
+const MAX_RETRIES = 4;
+
+export class ModelManager {
+  private ledger: Ledger | null = null;
+  private inflight = new Map<string, Promise<string>>(); // coalesce concurrent ensure()
+
+  constructor(
+    private dir: string /* ~/.rowboat/models */,
+    private emit: (p: ModelProgress) => void,
+  ) {}
+
+  // ---- public API ----
+
+  async list(): Promise<Array<ModelEntry & { installed: boolean }>> {
+    const led = await this.loadLedger();
+    return CATALOG.map((m) => ({ ...m, installed: !!led.installed[m.id] }));
+  }
+
+  pathFor(id: string): string {
+    const m = this.entry(id);
+    return path.join(this.dir, path.basename(m.url)); // ggml-<name>.bin
+  }
+
+  /** Ensure a model (+ its Core ML sidecar on macOS, + the VAD model) is present and verified. */
+  async ensure(id: string, opts: { withVad?: boolean } = {}): Promise<string> {
+    if (this.inflight.has(id)) return this.inflight.get(id)!; // coalesce
+    const p = this.ensureInner(id, opts).finally(() => this.inflight.delete(id));
+    this.inflight.set(id, p);
+    return p;
+  }
+
+  async remove(id: string): Promise<void> {
+    const led = await this.loadLedger();
+    const e = led.installed[id];
+    if (!e) return;
+    await rmQuiet(path.join(this.dir, e.path));
+    if (e.coreml)
+      await rmQuiet(path.join(this.dir, e.path.replace(/\.bin$/, "-encoder.mlmodelc")), {
+        recursive: true,
+      });
+    delete led.installed[id];
+    await this.saveLedger(led);
+  }
+
+  /** Free space for everything except the active model + the VAD model. */
+  async gc(activeId: string): Promise<number> {
+    const led = await this.loadLedger();
+    let freed = 0;
+    for (const id of Object.keys(led.installed)) {
+      if (id === activeId || this.entry(id).family === ("vad" as any)) continue;
+      freed += led.installed[id].bytes;
+      await this.remove(id);
+    }
+    return freed;
+  }
+
+  // ---- internals ----
+
+  private entry(id: string): ModelEntry {
+    const m = CATALOG.find((x) => x.id === id);
+    if (!m) throw new ModelError("model_not_installed", `unknown model ${id}`);
+    return m;
+  }
+
+  private async ensureInner(id: string, opts: { withVad?: boolean }): Promise<string> {
+    const m = this.entry(id);
+    const dest = this.pathFor(id);
+    const led = await this.loadLedger();
+
+    // already installed + (lazily) verified?
+    const rec = led.installed[id];
+    if (rec && (await exists(dest))) {
+      if (Date.now() - Date.parse(rec.lastVerifiedAt) > VERIFY_TTL_MS) {
+        const ok = await this.verify(dest, m.sha256, id);
+        if (!ok) {
+          await rmQuiet(dest);
+          delete led.installed[id];
+          await this.saveLedger(led);
+        } else {
+          rec.lastVerifiedAt = new Date().toISOString();
+          await this.saveLedger(led);
+          return dest;
+        }
+      } else return dest;
+    }
+
+    await this.assertDisk(m.sizeMb);
+    await fs.mkdir(this.dir, { recursive: true });
+    await this.downloadWithResume(m, dest);
+    if (!(await this.verify(dest, m.sha256, id))) {
+      await rmQuiet(dest);
+      throw new ModelError("checksum_mismatch", `sha256 mismatch for ${id}`);
+    }
+
+    let coreml = false;
+    if (process.platform === "darwin" && m.coreml) {
+      try {
+        await this.downloadCoreML(m);
+        coreml = true;
+      } catch {
+        /* best-effort; CPU/Metal still works */
+      }
+    }
+
+    const bytes = (await fs.stat(dest)).size;
+    led.installed[id] = {
+      path: path.basename(dest),
+      bytes,
+      sha256: m.sha256,
+      installedAt: new Date().toISOString(),
+      lastVerifiedAt: new Date().toISOString(),
+      coreml,
+    };
+    await this.saveLedger(led);
+
+    if (opts.withVad) await this.ensure("silero-v5.1.2"); // recursion is coalesced
+    return dest;
+  }
+
+  /** Resumable download to <dest>.part with exponential backoff; atomic rename on success. */
+  private async downloadWithResume(m: ModelEntry, dest: string): Promise<void> {
+    const part = `${dest}.part`;
+    const totalMb = m.sizeMb;
+    for (let attempt = 0; ; attempt++) {
+      let from = 0;
+      try {
+        from = (await fs.stat(part)).size;
+      } catch {
+        /* no partial */
+      }
+      try {
+        const res = await fetch(m.url, { headers: from > 0 ? { Range: `bytes=${from}-` } : {} });
+        if (!res.ok || !res.body) throw new ModelError("download_failed", `HTTP ${res.status}`);
+        if (from > 0 && res.status !== 206) {
+          await rmQuiet(part);
+          from = 0;
+        } // server ignored Range → restart
+        const out = createWriteStream(part, { flags: from > 0 ? "a" : "w" });
+        let received = from;
+        const reader = (res.body as any).getReader?.()
+          ? streamFromWebReadable(res.body as any) // node/electron interop
+          : (res.body as any);
+        await pipeline(
+          reader,
+          async function* (src: AsyncIterable<Uint8Array>) {
+            for await (const chunk of src) {
+              received += chunk.length;
+              yieldProgress(received, totalMb);
+              yield chunk;
+            }
+          },
+          out,
+        );
+        await fs.rename(part, dest); // atomic install
+        return;
+      } catch (err) {
+        if (attempt >= MAX_RETRIES)
+          throw err instanceof ModelError ? err : new ModelError("download_failed", String(err));
+        await sleep(backoff(attempt)); // 0.5s, 1s, 2s, 4s + jitter
+      }
+    }
+    function yieldProgress(received: number, totalMb: number) {
+      // throttled emit (every ~1MB) handled by the caller binding `this.emit`
+    }
+  }
+
+  private async downloadCoreML(m: ModelEntry): Promise<void> {
+    // download <…-encoder.mlmodelc.zip>, verify, unzip next to the model; first run compiles to ANE.
+    if (!m.coreml) return;
+    const zip = path.join(this.dir, path.basename(m.coreml.url));
+    await this.downloadWithResume(
+      { ...m, url: m.coreml.url, sha256: m.coreml.sha256, sizeMb: 0 } as ModelEntry,
+      zip,
+    );
+    if (!(await this.verify(zip, m.coreml.sha256, m.id + "-coreml"))) {
+      await rmQuiet(zip);
+      throw new ModelError("checksum_mismatch");
+    }
+    await unzipInto(zip, this.dir);
+    await rmQuiet(zip);
+  }
+
+  private async verify(file: string, sha256: string, id: string): Promise<boolean> {
+    this.emit({ id, phase: "verify", receivedMb: 0, totalMb: 0 });
+    const h = createHash("sha256");
+    await pipeline(createReadStream(file), h);
+    return h.digest("hex") === sha256;
+  }
+
+  private async assertDisk(sizeMb: number): Promise<void> {
+    const free = await freeBytes(this.dir); // statfs / check-disk-space
+    if (free < sizeMb * 1024 * 1024 * 1.2)
+      throw new ModelError("insufficient_disk", `need ~${Math.ceil(sizeMb * 1.2)}MB`);
+  }
+
+  // ---- ledger (self-healing) ----
+
+  private async loadLedger(): Promise<Ledger> {
+    if (this.ledger) return this.ledger;
+    const p = path.join(this.dir, ".catalog-state.json");
+    try {
+      const raw = JSON.parse(await fs.readFile(p, "utf8")) as Ledger;
+      if (raw.schemaVersion === 1) {
+        this.ledger = raw;
+        return raw;
+      }
+    } catch {
+      /* missing/corrupt → rescan */
+    }
+    this.ledger = await this.rescan(); // rebuild from disk + re-hash present files
+    await this.saveLedger(this.ledger);
+    return this.ledger;
+  }
+
+  private async saveLedger(l: Ledger): Promise<void> {
+    this.ledger = l;
+    const p = path.join(this.dir, ".catalog-state.json");
+    const tmp = `${p}.tmp`;
+    await fs.writeFile(tmp, JSON.stringify(l, null, 2));
+    await fs.rename(tmp, p); // atomic
+  }
+
+  private async rescan(): Promise<Ledger> {
+    const led: Ledger = { schemaVersion: 1, installed: {} };
+    let files: string[] = [];
+    try {
+      files = await fs.readdir(this.dir);
+    } catch {
+      return led;
+    }
+    for (const m of CATALOG) {
+      const base = path.basename(m.url);
+      if (!files.includes(base)) continue;
+      const full = path.join(this.dir, base);
+      const ok = await this.verify(full, m.sha256, m.id);
+      if (!ok) {
+        await rmQuiet(full);
+        continue;
+      } // drop corrupt
+      const bytes = (await fs.stat(full)).size;
+      led.installed[m.id] = {
+        path: base,
+        bytes,
+        sha256: m.sha256,
+        installedAt: new Date().toISOString(),
+        lastVerifiedAt: new Date().toISOString(),
+        coreml: files.includes(base.replace(/\.bin$/, "-encoder.mlmodelc")),
+      };
+    }
+    return led;
+  }
+}
+
+// ---- small helpers (sketch) ----
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const backoff = (n: number) => Math.min(8000, 500 * 2 ** n) + Math.random() * 250;
+async function exists(p: string) {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+async function rmQuiet(p: string, opts: any = {}) {
+  try {
+    await fs.rm(p, { force: true, ...opts });
+  } catch {}
+}
+```
+
+### P.1 Design notes
+
+- **Coalescing** (`inflight`): two UI actions that both `ensure('base.en')` share one download promise
+  — no double fetch, one progress stream.
+- **Atomicity**: a model is "installed" only after `rename(.part → .bin)` _and_ a ledger write; a crash
+  mid-download leaves a `.part` that the next attempt resumes via `Range`.
+- **Self-healing ledger**: a missing/corrupt `.catalog-state.json` triggers a `rescan()` that re-hashes
+  present files — the filesystem is the source of truth, the ledger is a cache.
+- **Verify-on-use TTL**: re-hash the active model at most monthly (cheap tamper/bit-rot insurance).
+- **Core ML is best-effort**: a sidecar failure doesn't fail the install — Metal/CPU still run.
+- **Disk guard** with 1.2× headroom avoids a half-written model filling the disk.
+- **Backoff with jitter** survives HF rate-limits / flaky networks; capped retries surface
+  `download_failed` to the UI for a manual retry.
+- **GC** never removes the active or VAD models; surfaced as "remove unused" in settings (§17).
+
+---
+
+## Appendix Q — Full `runner.ts` reference implementation
+
+`packages/core/src/voice/whisper/runner.ts` — the spawn boundary: build args, run with a hard timeout,
+parse JSON, classify errors, and serialize batch work behind a semaphore.
+
+```ts
+import { spawn } from "node:child_process";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
+import { performance } from "node:perf_hooks";
+import { binaryPath } from "./bin";
+import { pcm16ToWav } from "./wav";
+
+export type WhisperErrorCode =
+  | "engine_unavailable"
+  | "engine_timeout"
+  | "engine_crashed"
+  | "audio_invalid";
+
+export class WhisperError extends Error {
+  constructor(
+    public code: WhisperErrorCode,
+    message?: string,
+  ) {
+    super(message ?? code);
+  }
+}
+
+export interface RunOpts {
+  modelPath: string;
+  vadModelPath?: string;
+  lang?: string; // 'en' | 'auto'
+  threads?: number;
+  audioSeconds: number;
+  timeoutMs?: number;
+}
+export interface Segment {
+  start: number;
+  end: number;
+  text: string;
+}
+export interface RunResult {
+  text: string;
+  segments: Segment[];
+  rtf: number;
+  durationMs: number;
+}
+
+/** Batch transcription is CPU/GPU-heavy → at most one at a time per process. */
+class Semaphore {
+  private q: Array<() => void> = [];
+  private taken = false;
+  async acquire(): Promise<() => void> {
+    if (!this.taken) {
+      this.taken = true;
+      return () => this.release();
+    }
+    return new Promise((res) => this.q.push(() => res(() => this.release())));
+  }
+  private release() {
+    const next = this.q.shift();
+    if (next) next();
+    else this.taken = false;
+  }
+}
+const batchSem = new Semaphore();
+
+export function autoThreads(): number {
+  const cores = os.cpus()?.length ?? 4;
+  return Math.max(1, Math.min(8, cores - 1));
+}
+
+/** Transcribe an Int16 mono PCM buffer. Writes a temp WAV, spawns whisper-cli, parses out.json. */
+export async function transcribePcm(pcm: Int16Array, opts: RunOpts): Promise<RunResult> {
+  if (pcm.length === 0) throw new WhisperError("audio_invalid", "empty audio");
+  const release = await batchSem.acquire();
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-whisper-"));
+  const wavPath = path.join(dir, "in.wav");
+  try {
+    await fs.writeFile(wavPath, pcm16ToWav(pcm.buffer, { sampleRate: 16000, channels: 1 }), {
+      mode: 0o600,
+    });
+    return await run(wavPath, opts);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+    release();
+  }
+}
+
+export async function run(wavPath: string, o: RunOpts): Promise<RunResult> {
+  const outPrefix = path.join(path.dirname(wavPath), "out");
+  const args = [
+    "-m",
+    o.modelPath,
+    "-f",
+    wavPath,
+    "-l",
+    o.lang ?? "en",
+    "-t",
+    String(o.threads ?? autoThreads()),
+    "-oj",
+    "-of",
+    outPrefix,
+    "-nt",
+    "-np",
+  ];
+  if (o.vadModelPath) args.push("--vad", "--vad-model", o.vadModelPath);
+
+  const timeoutMs = o.timeoutMs ?? Math.max(15_000, o.audioSeconds * 3_000);
+  const t0 = performance.now();
+  const { code, signal, stderr } = await spawnWithTimeout(binaryPath(), args, timeoutMs);
+  const durationMs = performance.now() - t0;
+
+  if (signal === "SIGKILL") throw new WhisperError("engine_timeout", `killed after ${timeoutMs}ms`);
+  if (code !== 0) throw classify(code, stderr);
+
+  let json: any;
+  try {
+    json = JSON.parse(await fs.readFile(`${outPrefix}.json`, "utf8"));
+  } catch (e) {
+    throw new WhisperError("engine_crashed", `no/invalid json: ${String(e)}`);
+  }
+
+  const segments: Segment[] = (json.transcription ?? [])
+    .map((s: any) => ({
+      start: (s.offsets?.from ?? 0) / 1000,
+      end: (s.offsets?.to ?? 0) / 1000,
+      text: String(s.text ?? "").trim(),
+    }))
+    .filter((s: Segment) => s.text.length > 0);
+
+  const text = segments
+    .map((s) => s.text)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return { text, segments, rtf: o.audioSeconds / (durationMs / 1000), durationMs };
+}
+
+interface SpawnResult {
+  code: number | null;
+  signal: NodeJS.Signals | null;
+  stderr: string;
+}
+function spawnWithTimeout(bin: string, args: string[], timeoutMs: number): Promise<SpawnResult> {
+  return new Promise((resolve, reject) => {
+    let stderr = "";
+    let done = false;
+    const child = spawn(bin, args, { stdio: ["ignore", "ignore", "pipe"] }); // no shell, arg array
+    const timer = setTimeout(() => {
+      if (!done) {
+        done = true;
+        child.kill("SIGKILL");
+      }
+    }, timeoutMs);
+    child.stderr.on("data", (d) => {
+      if (stderr.length < 4096) stderr += d.toString();
+    });
+    child.on("error", (err) => {
+      if (!done) {
+        done = true;
+        clearTimeout(timer);
+        reject(new WhisperError("engine_unavailable", err.message));
+      }
+    });
+    child.on("close", (code, signal) => {
+      if (!done) {
+        done = true;
+        clearTimeout(timer);
+        resolve({ code, signal, stderr });
+      }
+    });
+  });
+}
+
+function classify(code: number | null, stderr: string): WhisperError {
+  const s = stderr.toLowerCase();
+  if (s.includes("failed to load model") || s.includes("no such file"))
+    return new WhisperError("engine_unavailable", stderr.slice(0, 300));
+  if (s.includes("out of memory") || s.includes("bad_alloc"))
+    return new WhisperError("engine_crashed", "oom");
+  return new WhisperError("engine_crashed", `exit ${code}: ${stderr.slice(0, 300)}`);
+}
+```
+
+---
+
+## Appendix R — IPC handler wiring (main + shared schemas)
+
+### R.1 Shared channel types — `packages/shared/src/ipc.ts`
+
+The preload validates `invoke` args against zod schemas (`preload.ts:14`). Add the whisper channels to
+the existing channel map:
+
+```ts
+import { z } from "zod";
+
+export const whisperChannels = {
+  "whisper:capability": {
+    request: z.null(),
+    response: z.object({
+      supported: z.boolean(),
+      accel: z.enum(["coreml", "metal", "cuda", "vulkan", "cpu"]),
+      cores: z.number(),
+      reason: z.string().optional(),
+    }),
+  },
+  "whisper:listModels": {
+    request: z.null(),
+    response: z.object({
+      models: z.array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          sizeMb: z.number(),
+          installed: z.boolean(),
+          recommended: z.boolean(),
+        }),
+      ),
+    }),
+  },
+  "whisper:ensureModel": {
+    request: z.object({ id: z.string() }),
+    response: z.object({ success: z.boolean(), code: z.string().optional() }),
+  },
+  "whisper:removeModel": {
+    request: z.object({ id: z.string() }),
+    response: z.object({ success: z.boolean() }),
+  },
+  "whisper:transcribe": {
+    request: z.object({
+      pcm16: z.instanceof(ArrayBuffer),
+      sampleRate: z.literal(16000),
+      channels: z.union([z.literal(1), z.literal(2)]),
+      model: z.string().optional(),
+      lang: z.string().optional(),
+    }),
+    response: z.object({
+      success: z.boolean(),
+      text: z.string().optional(),
+      segments: z
+        .array(
+          z.object({
+            start: z.number(),
+            end: z.number(),
+            text: z.string(),
+            speaker: z.enum(["you", "other"]).optional(),
+          }),
+        )
+        .optional(),
+      rtf: z.number().optional(),
+      durationMs: z.number().optional(),
+      code: z.string().optional(),
+      message: z.string().optional(),
+    }),
+  },
+  "whisper:closeStream": {
+    request: z.object({ streamId: z.string() }),
+    response: z.object({ success: z.boolean() }),
+  },
+} as const;
+// 'whisper:openStream' is handled out-of-band (MessageChannel) — see R.3.
+// Events (ipc.on): 'whisper:modelProgress'.
+```
+
+### R.2 Main handlers — `apps/x/apps/main/src/ipc.ts`
+
+Registered beside the existing `voice:*` handlers (`ipc.ts:941`):
+
+```ts
+import { WhisperService } from "@x/core/voice/whisper/service";
+const whisper = new WhisperService(WorkDir, (p) =>
+  mainWindow?.webContents.send("whisper:modelProgress", p),
+);
+
+const handlers = {
+  // … existing handlers …
+  "whisper:capability": async () => whisper.capability(),
+  "whisper:listModels": async () => ({ models: await whisper.listModels() }),
+  "whisper:ensureModel": async (_e, { id }) => {
+    try {
+      await whisper.ensureModel(id);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, code: err?.code ?? "download_failed" };
+    }
+  },
+  "whisper:removeModel": async (_e, { id }) => {
+    await whisper.removeModel(id);
+    return { success: true };
+  },
+  "whisper:transcribe": async (_e, req) => {
+    try {
+      const r = await whisper.transcribe(new Int16Array(req.pcm16), {
+        channels: req.channels,
+        model: req.model,
+        lang: req.lang,
+      });
+      return { success: true, ...r };
+    } catch (err: any) {
+      return { success: false, code: err?.code ?? "engine_crashed", message: err?.message };
+    }
+  },
+  "whisper:closeStream": async (_e, { streamId }) => {
+    whisper.closeStream(streamId);
+    return { success: true };
+  },
+};
+```
+
+### R.3 Streaming via `MessageChannelMain` — `ipc.ts`
+
+`openStream` is special: it transfers a `MessagePortMain` to the renderer (can't go through the zod
+`invoke` map). Handle it with `ipcMain.on` + `event.senderFrame.postMessage`:
+
+```ts
+import { MessageChannelMain } from "electron";
+ipcMain.handle("whisper:openStream", async (event, { model, channels }) => {
+  const { port1, port2 } = new MessageChannelMain();
+  const streamId = whisper.openStream(port1, { model, channels }); // Session owns port1 (Appendix N)
+  event.senderFrame.postMessage("whisper:streamPort", { streamId }, [port2]); // transfer port2 to renderer
+  return { streamId };
+});
+```
+
+Renderer receives the port via `ipcRenderer.on('whisper:streamPort', (e, {streamId}) => e.ports[0])`
+(exposed through the preload as a typed helper), then drives it per Appendix G.
+
+---
+
+## Appendix S — Renderer `useVoiceMode` whisper branch
+
+The existing hook (`useVoiceMode.ts`) keeps its Deepgram path; we add a provider branch. On
+`whisper-local`, capture stays identical (16 kHz int16 PCM) but accumulates into a buffer and
+transcribes on `submit()` instead of opening a WS.
+
+```ts
+// useVoiceMode.ts (additions; Deepgram path unchanged)
+type Provider = "deepgram" | "solomon" | "whisper-local";
+
+export function useVoiceMode() {
+  // … existing refs …
+  const providerRef = useRef<Provider>("deepgram");
+  const pcmChunksRef = useRef<Int16Array[]>([]); // local buffer
+  const [state, setState] = useState<VoiceState>("idle"); // + 'transcribing'
+
+  const refreshAuth = useCallback(async () => {
+    providerRef.current = await window.ipc.invoke("transcription:getVoiceProvider", null);
+    if (providerRef.current !== "whisper-local") {
+      // … existing Deepgram auth caching …
+    }
+  }, []);
+
+  const start = useCallback(async () => {
+    if (state !== "idle") return;
+    pcmChunksRef.current = [];
+    setState("listening");
+    analytics.voiceInputStarted();
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
+    if (!stream) {
+      setState("idle");
+      return;
+    }
+    mediaStreamRef.current = stream;
+    if (providerRef.current !== "whisper-local") await connectWs(); // existing
+
+    const audioCtx = new AudioContext({ sampleRate: 16000 });
+    audioCtxRef.current = audioCtx;
+    const source = audioCtx.createMediaStreamSource(stream);
+    const processor = audioCtx.createScriptProcessor(2048, 1, 1);
+    processorRef.current = processor;
+    processor.onaudioprocess = (e) => {
+      const f32 = e.inputBuffer.getChannelData(0);
+      const i16 = new Int16Array(f32.length);
+      for (let i = 0; i < f32.length; i++) {
+        const s = Math.max(-1, Math.min(1, f32[i]));
+        i16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      }
+      if (providerRef.current === "whisper-local") pcmChunksRef.current.push(i16);
+      else if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(i16.buffer);
+      else audioBufferRef.current.push(i16.buffer);
+    };
+    source.connect(processor);
+    processor.connect(audioCtx.destination);
+  }, [state, connectWs]);
+
+  /** Local: stop capture, concat PCM, transcribe via IPC, return text. */
+  const submit = useCallback(async (): Promise<string> => {
+    if (providerRef.current !== "whisper-local") return submitDeepgram(); // existing sync path
+
+    stopAudioCapture();
+    const chunks = pcmChunksRef.current;
+    pcmChunksRef.current = [];
+    const total = chunks.reduce((n, c) => n + c.length, 0);
+    if (total === 0) return "";
+    const merged = new Int16Array(total);
+    let o = 0;
+    for (const c of chunks) {
+      merged.set(c, o);
+      o += c.length;
+    }
+
+    setState("transcribing");
+    const res = await window.ipc.invoke("whisper:transcribe", {
+      pcm16: merged.buffer,
+      sampleRate: 16000,
+      channels: 1,
+    });
+    setState("idle");
+    if (!res.success) {
+      handleWhisperError(res.code); // toast + maybe cloud fallback (§18)
+      return "";
+    }
+    analytics.transcriptionCompleted({ provider: "whisper-local", mode: "voice", rtf: res.rtf });
+    return res.text ?? "";
+  }, [stopAudioCapture]);
+
+  // cancel(), warmup() unchanged
+  return { state, interimText, start, submit, cancel, warmup };
+}
+```
+
+Note the UX change: with `whisper-local` there's no live interim (`interimText` stays empty during
+`listening`); the composer fills when `submit()`'s promise resolves (`transcribing` shows a spinner).
+
+---
+
+## Appendix T — `transcription-settings.tsx` component
+
+`apps/x/apps/renderer/src/components/settings/transcription-settings.tsx` — the Transcription tab
+(§17). Uses the centralized icons + the IPC channels.
+
+```tsx
+import { useEffect, useState } from "react";
+import { Cpu, Download, Check, Trash2 } from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+
+interface ModelRow {
+  id: string;
+  label: string;
+  sizeMb: number;
+  installed: boolean;
+  recommended: boolean;
+}
+type Cap = { supported: boolean; accel: string; cores: number };
+
+export function TranscriptionSettings() {
+  const [models, setModels] = useState<ModelRow[]>([]);
+  const [cap, setCap] = useState<Cap | null>(null);
+  const [voiceProvider, setVoiceProvider] = useState<"whisper-local" | "deepgram">("whisper-local");
+  const [progress, setProgress] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    void window.ipc.invoke("whisper:listModels", null).then((r) => setModels(r.models));
+    void window.ipc.invoke("whisper:capability", null).then(setCap);
+    const off = window.ipc.on("whisper:modelProgress", (_e, p: any) =>
+      setProgress((s) => ({ ...s, [p.id]: p.totalMb ? p.receivedMb / p.totalMb : 0 })),
+    );
+    return off;
+  }, []);
+
+  const download = async (id: string) => {
+    const res = await window.ipc.invoke("whisper:ensureModel", { id });
+    if (res.success)
+      setModels(await window.ipc.invoke("whisper:listModels", null).then((r) => r.models));
+    setProgress((s) => ({ ...s, [id]: 0 }));
+  };
+
+  const accelLabel =
+    cap?.accel === "coreml" || cap?.accel === "metal"
+      ? "Apple Silicon · fast"
+      : cap?.accel === "vulkan" || cap?.accel === "cuda"
+        ? "GPU · fast"
+        : "CPU only · may be slow";
+
+  return (
+    <section className="space-y-6">
+      <div>
+        <h3 className="text-sm font-medium">Voice input</h3>
+        <RadioRow
+          checked={voiceProvider === "whisper-local"}
+          onSelect={() => setVoiceProvider("whisper-local")}
+          title="On-device (Whisper)"
+          hint="private · offline · free"
+        />
+        <RadioRow
+          checked={voiceProvider === "deepgram"}
+          onSelect={() => setVoiceProvider("deepgram")}
+          title="Cloud (Deepgram)"
+          hint="most accurate"
+        />
+        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <Cpu className="size-3.5" /> {cap ? accelLabel : "Detecting…"}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-medium">Models</h3>
+        <ul className="divide-y">
+          {models.map((m) => (
+            <li key={m.id} className="flex items-center justify-between py-2 text-sm">
+              <span>
+                {m.label}
+                {m.recommended ? " · recommended" : ""}
+              </span>
+              <span className="flex items-center gap-2 text-muted-foreground">
+                {m.sizeMb} MB
+                {m.installed ? (
+                  <Check className="size-4 text-foreground" />
+                ) : progress[m.id] != null ? (
+                  <span>{Math.round((progress[m.id] ?? 0) * 100)}%</span>
+                ) : (
+                  <Button size="sm" variant="ghost" onClick={() => download(m.id)}>
+                    <Download className="size-4" /> Get
+                  </Button>
+                )}
+                {m.installed && !m.recommended && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => window.ipc.invoke("whisper:removeModel", { id: m.id })}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+```
+
+(The `RadioRow` is a small local presentational helper; `window.ipc.on` returns an unsubscribe fn per
+the preload bridge.)
+
+---
+
+## Appendix U — Full `capability.ts` reference implementation
+
+`packages/core/src/voice/whisper/capability.ts` — detect accel + eligibility, cached in the ledger.
+
+```ts
+import * as os from "node:os";
+import { spawn } from "node:child_process";
+import { binaryPath } from "./bin";
+
+export type Accel = "coreml" | "metal" | "cuda" | "vulkan" | "cpu";
+export interface Capability {
+  supported: boolean;
+  accel: Accel;
+  cores: number;
+  reason?: string;
+}
+
+let cached: Capability | null = null;
+
+export async function probe(force = false): Promise<Capability> {
+  if (cached && !force) return cached;
+  const cores = os.cpus()?.length ?? 4;
+  const info = await systemInfo().catch(() => "");
+  const accel = parseAccel(info);
+
+  let supported = true;
+  let reason: string | undefined;
+  if (accel === "cpu") {
+    if (cores < 4) {
+      supported = false;
+      reason = "CPU-only with <4 cores — too slow";
+    } else reason = "CPU only — may be slow / use battery";
+  }
+  // arm64 mac without a parsed backend still has Metal/Core ML in practice:
+  if (process.platform === "darwin" && process.arch === "arm64") {
+    supported = true;
+  }
+
+  cached = { supported, accel, cores, reason };
+  return cached;
+}
+
+function parseAccel(systemInfo: string): Accel {
+  const on = (k: string) => new RegExp(`${k}\\s*=\\s*1`).test(systemInfo);
+  if (on("COREML")) return "coreml";
+  if (on("METAL")) return "metal";
+  if (on("CUDA")) return "cuda";
+  if (on("VULKAN")) return "vulkan";
+  return "cpu";
+}
+
+/** Run the binary briefly to capture its `system_info:` line. */
+function systemInfo(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let out = "";
+    const child = spawn(binaryPath(), ["--help"], { stdio: ["ignore", "pipe", "pipe"] });
+    const done = (s: string) => resolve(s);
+    child.stdout.on("data", (d) => (out += d.toString()));
+    child.stderr.on("data", (d) => (out += d.toString())); // system_info often on stderr
+    child.on("error", reject);
+    child.on("close", () => done(out));
+    setTimeout(() => {
+      child.kill();
+      done(out);
+    }, 3000);
+  });
+}
+```
+
+> A more accurate probe runs a 3-second fixture transcribe once and stores the measured RTF (used to
+> auto-pick a model tier and to set `supported=false` when even `tiny.en` is < 1× realtime). The
+> `--help` parse is the cheap default; the bench is opt-in (first-run or settings "Test device").
+
+---
+
+## Appendix V — Eval corpus & WER CI harness
+
+### V.1 Corpus
+
+`apps/x/packages/core/src/voice/whisper/__fixtures__/asr/` — a small, **license-clear** set with
+reference transcripts (`manifest.json`). Buckets: `clean`, `noisy`, `accented`, `numbers`, `multilang`.
+~20–30 short clips (3–15 s) keep CI fast.
+
+```jsonc
+// manifest.json
+[
+  {
+    "id": "clean-01",
+    "wav": "clean-01.wav",
+    "ref": "schedule the meeting for tuesday at three",
+    "bucket": "clean",
+    "lang": "en",
+  },
+  {
+    "id": "numbers-01",
+    "wav": "numbers-01.wav",
+    "ref": "transfer four hundred and twenty dollars",
+    "bucket": "numbers",
+    "lang": "en",
+  },
+]
+```
+
+### V.2 Harness (`whisper.eval.test.ts`)
+
+```ts
+import manifest from "./__fixtures__/asr/manifest.json";
+import { wer } from "./wer"; // Appendix K
+import { run } from "./runner";
+
+const BUDGET: Record<string, number> = { clean: 0.1, noisy: 0.28, accented: 0.22, numbers: 0.2 };
+
+describe.each(["base.en-q5_1", "small.en-q5_1"])("WER — %s", (modelId) => {
+  it("stays within per-bucket budget", async () => {
+    const modelPath = await ensureFixtureModel(modelId);
+    const byBucket: Record<string, number[]> = {};
+    for (const c of manifest) {
+      const { text } = await run(fixtureWav(c.wav), { modelPath, lang: c.lang, audioSeconds: 10 });
+      (byBucket[c.bucket] ??= []).push(wer(c.ref, text));
+    }
+    for (const [bucket, scores] of Object.entries(byBucket)) {
+      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+      expect(avg).toBeLessThanOrEqual(BUDGET[bucket] ?? 0.3); // regression gate
+    }
+  });
+});
+```
+
+### V.3 CI
+
+A dedicated, **non-blocking-at-first** job (the eval is slowish + needs the model): download
+`base.en-q5_1` (cached by id+sha), run the harness on the packaged binary, publish a WER report
+artifact, and compare against a committed `baseline.json` — flag a regression of > +2% absolute on any
+bucket. Promote to blocking once stable. Keeps a model/binary upgrade from silently degrading accuracy.
+
+---
+
+## Appendix W — Packaging files (`bin.ts`, Forge, entitlements, build)
+
+### W.1 `packages/core/src/voice/whisper/bin.ts`
+
+```ts
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { app } from "electron";
+
+let resolved: string | null = null;
+
+export function binaryPath(): string {
+  if (resolved) return resolved;
+  const exe = process.platform === "win32" ? "whisper-cli.exe" : "whisper-cli";
+  const base = app.isPackaged
+    ? path.join(process.resourcesPath, "whisper") // extraResource → Resources/whisper/
+    : path.join(__dirname, "../../../../vendor/whisper", `${process.platform}-${process.arch}`);
+  const p = path.join(base, exe);
+  if (!fs.existsSync(p)) throw new Error(`whisper-cli not found at ${p}`);
+  try {
+    fs.chmodSync(p, 0o755);
+  } catch {
+    /* ignore on win */
+  }
+  resolved = p;
+  return p;
+}
+
+export function vadModelPath(modelsDir: string): string {
+  return path.join(modelsDir, "ggml-silero-v5.1.2.bin");
+}
+```
+
+### W.2 `forge.config.cjs` additions
+
+```js
+// in packagerConfig:
+extraResource: [ path.join(__dirname, ".package", "whisper") ],
+
+// in the generateAssets(forgeConfig, platform, arch) hook, after staging renderer/preload:
+const whisperSrc = path.join(__dirname, "vendor", "whisper", `${platform}-${arch}`);
+const whisperDest = path.join(packageDir, "whisper");
+if (fs.existsSync(whisperSrc)) {
+  copyDirectory(whisperSrc, whisperDest);               // → .package/whisper/whisper-cli[.exe]
+  if (platform !== "win32") fs.chmodSync(path.join(whisperDest, "whisper-cli"), 0o755);
+} else {
+  console.warn(`[whisper] no binary for ${platform}-${arch} at ${whisperSrc}`);
+}
+```
+
+`extraResource` lands the dir at `<App>/Contents/Resources/whisper/` (macOS) /
+`resources/whisper/` (win/linux), **outside the asar**, so it's executable and `osxSign` deep-signs it.
+
+### W.3 `entitlements.plist` (already sufficient)
+
+The current entitlements cover spawning a signed Metal/Core ML helper:
+
+```xml
+<key>com.apple.security.cs.allow-jit</key><true/>
+<key>com.apple.security.device.audio-input</key><true/>
+<key>com.apple.security.device.screen-capture</key><true/>
+```
+
+Only add `com.apple.security.cs.disable-library-validation` if we ever load an **unsigned** dylib —
+avoided by static-linking ggml/whisper into `whisper-cli` (Appendix H).
+
+### W.4 `vendor/whisper/build.sh` (called by the CI matrix, Appendix I)
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+FLAGS="$1"; TAG="$(cat "$(dirname "$0")/PIN")"   # e.g. v1.8.6
+SRC="$(mktemp -d)"; git clone --branch "$TAG" --depth 1 https://github.com/ggml-org/whisper.cpp "$SRC"
+cmake -S "$SRC" -B "$SRC/build" $FLAGS -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build "$SRC/build" -j --config Release
+mkdir -p out
+cp "$SRC/build/bin/whisper-cli"* out/ 2>/dev/null || cp "$SRC/build/bin/Release/whisper-cli.exe" out/
+"out/whisper-cli" --help >/dev/null   # smoke
+echo "$TAG" > out/VERSION
+```
+
+`vendor/whisper/PIN` holds the pinned tag → bumping it (one line) re-triggers the build workflow and is
+the single source of truth for which whisper.cpp we ship.
+
+---
+
+## Appendix X — Full `service.ts` facade
+
+`packages/core/src/voice/whisper/service.ts` — the single object the IPC layer calls. It ties together
+the model manager (Appendix P), runner (Appendix Q), capability probe (Appendix U), catalog
+(Appendix E), and streaming sessions (Appendix N), and owns the default-model resolution + VAD path.
+
+```ts
+import * as path from "node:path";
+import { MessagePortMain } from "electron";
+import { CATALOG, defaultModelId } from "./catalog";
+import { ModelManager, type ModelProgress } from "./model-manager";
+import { probe, type Capability } from "./capability";
+import { transcribePcm, type Segment } from "./runner";
+import { Session } from "./streaming";
+import { vadModelPath } from "./bin";
+
+export interface TranscribeOpts {
+  channels: 1 | 2;
+  model?: string;
+  lang?: string;
+}
+export interface TranscribeResult {
+  text: string;
+  segments: Segment[];
+  rtf: number;
+  durationMs: number;
+}
+
+export class WhisperService {
+  private mm: ModelManager;
+  private modelsDir: string;
+  private sessions = new Map<string, Session>();
+  private seq = 0;
+
+  constructor(workDir: string, onProgress: (p: ModelProgress) => void) {
+    this.modelsDir = path.join(workDir, "models");
+    this.mm = new ModelManager(this.modelsDir, onProgress);
+  }
+
+  capability(): Promise<Capability> {
+    return probe();
+  }
+
+  async listModels() {
+    const list = await this.mm.list();
+    return list.map((m) => ({
+      id: m.id,
+      label: m.label,
+      sizeMb: m.sizeMb,
+      installed: m.installed,
+      recommended: !!m.recommendedDefault,
+    }));
+  }
+
+  ensureModel(id: string): Promise<string> {
+    return this.mm.ensure(id, { withVad: true });
+  }
+  removeModel(id: string): Promise<void> {
+    return this.mm.remove(id);
+  }
+
+  /** Resolve the model id: explicit → configured → locale default. */
+  private resolveModel(explicit?: string): string {
+    return explicit ?? defaultModelId(); // catalog picks base.en vs base by app locale
+  }
+
+  /** Batch transcribe (voice mode). channels=2 → transcribe ch0 ('you') + ch1 ('other') and merge. */
+  async transcribe(pcm: Int16Array, opts: TranscribeOpts): Promise<TranscribeResult> {
+    const id = this.resolveModel(opts.model);
+    const modelPath = await this.mm.ensure(id, { withVad: true }); // downloads on first use
+    const vad = vadModelPath(this.modelsDir);
+    const audioSeconds = pcm.length / 16000 / (opts.channels === 2 ? 2 : 1);
+
+    if (opts.channels === 1) {
+      const r = await transcribePcm(pcm, {
+        modelPath,
+        vadModelPath: vad,
+        lang: opts.lang,
+        audioSeconds,
+      });
+      return r;
+    }
+    // stereo: split + two passes, label, merge by start time
+    const { deinterleaveStereoI16 } = await import("./wav");
+    const { mic, sys } = deinterleaveStereoI16(pcm);
+    const [you, other] = await Promise.all([
+      transcribePcm(mic, { modelPath, vadModelPath: vad, lang: opts.lang, audioSeconds }),
+      transcribePcm(sys, { modelPath, vadModelPath: vad, lang: opts.lang, audioSeconds }),
+    ]);
+    const segments = [
+      ...you.segments.map((s) => ({ ...s, speaker: "you" as const })),
+      ...other.segments.map((s) => ({ ...s, speaker: "other" as const })),
+    ].sort((a, b) => a.start - b.start);
+    return {
+      segments,
+      text: segments
+        .map((s) => s.text)
+        .join(" ")
+        .trim(),
+      rtf: Math.min(you.rtf, other.rtf),
+      durationMs: Math.max(you.durationMs, other.durationMs),
+    };
+  }
+
+  /** Open a streaming meeting session bound to a transferred MessagePort (Appendix N/G). */
+  openStream(port: MessagePortMain, opts: { model?: string; channels: 1 | 2 }): string {
+    const id = `wstream-${++this.seq}`;
+    void (async () => {
+      const modelPath = await this.mm.ensure(this.resolveModel(opts.model), { withVad: true });
+      const session = new Session(port, {
+        modelPath,
+        vadModelPath: vadModelPath(this.modelsDir),
+        channels: opts.channels,
+      });
+      this.sessions.set(id, session);
+    })();
+    return id;
+  }
+
+  closeStream(id: string): void {
+    this.sessions.get(id)?.close();
+    this.sessions.delete(id);
+  }
+}
+```
+
+---
+
+## Appendix Y — End-to-end worked trace
+
+### Y.1 First-ever voice transcription (cold, macOS M-series)
+
+| t (ms)      | actor    | event                                                                                          |
+| ----------- | -------- | ---------------------------------------------------------------------------------------------- |
+| 0           | user     | holds mic, says a 6 s sentence                                                                 |
+| 0–6000      | renderer | `getUserMedia`; `ScriptProcessor` pushes int16 frames into `pcmChunksRef`                      |
+| 6000        | user     | releases → `submit()`                                                                          |
+| 6001        | renderer | concat → 6 s × 16 kHz × 2 B ≈ **192 KB** ArrayBuffer; `ipc.invoke('whisper:transcribe')`       |
+| 6002        | main     | `service.transcribe` → `mm.ensure('base.en-q5_1')` → **not installed** → download              |
+| 6002–9000   | main     | download ~57 MB (resumable, sha256-verified) — _first run only_; emits `whisper:modelProgress` |
+| 9000–11500  | main     | Core ML sidecar first-run ANE compile (one-time); UI shows "preparing model…"                  |
+| 11500       | main     | write temp WAV (0600)                                                                          |
+| 11500–12100 | main     | spawn `whisper-cli` (`--vad`); Metal+Core ML → ~10× RTF → 6 s audio in ~**0.6 s**              |
+| 12100       | main     | parse `out.json`, unlink temp, `rtf≈10`, return `{text}`                                       |
+| 12101       | renderer | composer fills; `transcription_completed { provider:'whisper-local', rtf:~10 }`                |
+
+**Warm subsequent run:** model + Core ML cached → steps 6002–11500 vanish → release-to-text ≈ **0.7 s**
+(p95 budget ≤ 1.5 s, §4). Every run after the first is $0 and offline.
+
+### Y.2 Meeting that exhausts the free cloud quota
+
+```mermaid
+sequenceDiagram
+    participant D as Desktop
+    participant API as Solomon proxy
+    participant DG as Deepgram
+    participant L as Local (whisper)
+    D->>API: GET /v1/transcription/quota → { meetingMinutesRemaining: 4 }
+    D->>API: open /deepgram/v1/listen/meeting (reserve 15m) → minutes left < 15 → still ok (clamps)
+    API->>DG: bridge frames (diarized) ; D writes note
+    Note over API: minutes hit 0 mid-meeting
+    API-->>D: 402 meeting_minutes_exhausted
+    D->>L: whisper:openStream (same PCM pipeline, no recording lost)
+    L-->>D: finals (You/Other) appended to the SAME note
+    Note over D: toast "free cloud minutes used — on-device"
+```
+
+---
+
+## Appendix Z — Rollout & observability playbook
+
+### Z.1 Stage gates (mirrors §25)
+
+| Stage                | Audience                      | Voice default                  | Meeting default         | Exit criteria                                                               |
+| -------------------- | ----------------------------- | ------------------------------ | ----------------------- | --------------------------------------------------------------------------- |
+| **S0 dogfood**       | internal allowlist            | `whisper-local`                | `deepgram`              | RTF p50 ≥ 3×, fallback ≤ 5%, no `engine_crashed` spike over 1 wk            |
+| **S1 opt-in GA**     | all (cloud default)           | `deepgram` (local in settings) | `deepgram`              | ≥ N opt-ins; WER within budget; crash-free ≥ 99.5%                          |
+| **S2 local default** | capable devices (remote flip) | `whisper-local`                | `deepgram` + free quota | A/B: no activation/retention regression vs S1; cloud-minute reduction ≥ 60% |
+| **S3 quota live**    | free tier                     | `whisper-local`                | quota → local fallback  | quota fallback works; support tickets flat                                  |
+
+### Z.2 Dashboards (PostHog + Prometheus)
+
+- **Adoption:** % sessions with `voice_input_provider='whisper-local'`; opt-in count; person prop
+  `transcription_engine_pref` distribution.
+- **Quality:** `transcription_completed.rtf` p50/p95 by `accel`; WER CI trend (Appendix V); fallback
+  rate (`transcription_completed.fallback=true / all`).
+- **Reliability:** `transcription_failed` by `code`; `engine_crashed` per 1k transcribes; model
+  `download_failed` rate.
+- **Cost:** `voice_meeting_minutes_used_seconds_total` (proxy); estimated cloud-minute reduction =
+  voice minutes now local; `voice_meeting_minutes_exhausted_total`.
+
+### Z.3 Alert thresholds
+
+| Alert                | Condition                                                    | Action                                                               |
+| -------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------- |
+| local-fallback-spike | fallback rate > 15% over 1 h                                 | investigate device/accel regression; consider flipping default back  |
+| crash-spike          | `engine_crashed` > 2% of transcribes                         | auto-mitigation: a remote flag can force voice → cloud (kill switch) |
+| wer-regression       | eval bucket > +2% abs vs baseline after a binary/model bump  | block the bump; pin previous                                         |
+| download-failure     | `download_failed` > 10% over 1 h                             | check HF/mirror availability; switch to CDN mirror                   |
+| quota-confusion      | `meeting_minutes_exhausted` without a following local stream | desktop fallback bug; page                                           |
+
+### Z.4 Kill switch
+
+A single remote-config field (`transcriptionDefaults.voiceProvider = 'deepgram'`) reverts the fleet to
+cloud **without an app release**; per-user overrides are preserved. The capability gate and per-request
+fallback mean even a bad local build degrades to cloud rather than breaking transcription.
+
+---
 
 ## References
 
