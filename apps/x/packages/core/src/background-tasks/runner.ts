@@ -67,7 +67,10 @@ ${task.instructions}
 Your task folder is \`${wsFolder}\`. The user-visible artifact is \`${wsFolder}index.md\` — read it with \`file-readText\` and update it with \`file-editText\` per the OUTPUT / ACTION mode rule. Do not touch \`${wsFolder}task.yaml\` (the runtime owns it).`;
 
     return baseMessage + buildTriggerBlock({
-        trigger,
+        // `retry` is an API-worker-only trigger and never reaches local
+        // execution; narrow it to `manual` so the local trigger block (which has
+        // no retry concept) type-checks.
+        trigger: trigger === 'retry' ? 'manual' : trigger,
         triggers: task.triggers,
         // The 'event' branch passes the event payload as `context`; every
         // other trigger uses `context` as a one-off bias for THIS run.

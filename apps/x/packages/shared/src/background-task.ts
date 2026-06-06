@@ -105,7 +105,10 @@ export const BackgroundTaskSummarySchema = z.object({
 // Bus events
 // ---------------------------------------------------------------------------
 
-export const BackgroundTaskTrigger = z.enum(['manual', 'cron', 'window', 'event']);
+// `retry` is emitted by the API for retry runs (distinct from the original
+// trigger); the desktop must accept it so cloud-run parsing + the trigger filter
+// don't reject it.
+export const BackgroundTaskTrigger = z.enum(['manual', 'cron', 'window', 'event', 'retry']);
 export type BackgroundTaskTriggerType = z.infer<typeof BackgroundTaskTrigger>;
 
 const NullableString = z.string().nullable().optional();

@@ -2320,7 +2320,9 @@ function TaskDetail({
 
   const pullArtifact = useCallback(async () => {
     setPullingArtifact(true);
-    setArtifactSync((s) => (s ? { ...s, state: "syncing" } : s));
+    setArtifactSync((s: BackgroundTaskArtifactSyncType | null) =>
+      s ? { ...s, state: "syncing" } : s,
+    );
     try {
       const result = await window.ipc.invoke("bg-task:pullCloudArtifact", {
         slug,
