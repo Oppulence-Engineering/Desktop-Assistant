@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.10](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.9...v0.1.10) (2026-06-06)
+
+
+### Features
+
+* rebrand desktop assistant to Solomon AI ([775c9ac](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/775c9ac9e29387c4fb6ea8dd92328bffbe4c806b))
+
 ## [0.1.9](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.8...v0.1.9) (2026-06-06)
 
 
