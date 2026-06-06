@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/react'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
-import { X, GitBranch } from 'lucide-react'
+import { X, GitBranch } from '@/lib/icons'
 import { MermaidRenderer } from '@/components/mermaid-renderer'
 
 function MermaidBlockView({ node, deleteNode }: { node: { attrs: Record<string, unknown> }; deleteNode: () => void }) {

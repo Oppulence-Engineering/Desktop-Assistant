@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { ExternalLink, MessageSquare, SearchIcon, SquarePen, Trash2 } from 'lucide-react'
+import { ExternalLink, MessageSquare, SearchIcon, SquarePen, Trash2 } from '@/lib/icons'
 
 import { Button } from '@/components/ui/button'
 import {

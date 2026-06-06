@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { ChevronRight, X, Plus } from 'lucide-react'
+import { ChevronRight, X, Plus } from '@/lib/icons'
 import { extractAllFrontmatterValues, buildFrontmatter } from '@/lib/frontmatter'
 
 interface FrontmatterPropertiesProps {

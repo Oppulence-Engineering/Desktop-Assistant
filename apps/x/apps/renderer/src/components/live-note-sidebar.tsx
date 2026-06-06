@@ -9,7 +9,7 @@ import {
   Play, Square, Loader2, Sparkles,
   AlertCircle, Plus, X, Check, Pencil, Radio, Repeat, Clock, Zap,
   ChevronDown, ChevronRight,
-} from 'lucide-react'
+} from '@/lib/icons'
 import { LiveNoteSchema, type LiveNote, type Triggers } from '@x/shared/dist/live-note.js'
 import type { Run } from '@x/shared/dist/runs.js'
 import type z from 'zod'

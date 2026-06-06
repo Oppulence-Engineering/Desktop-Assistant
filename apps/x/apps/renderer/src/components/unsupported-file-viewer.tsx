@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ExternalLinkIcon, FileIcon, FileTextIcon, Loader2Icon } from 'lucide-react'
+import { ExternalLinkIcon, FileIcon, FileTextIcon, Loader2Icon } from '@/lib/icons'
 
 const TEXT_FALLBACK_MAX_BYTES = 1 * 1024 * 1024 // 1 MB
 

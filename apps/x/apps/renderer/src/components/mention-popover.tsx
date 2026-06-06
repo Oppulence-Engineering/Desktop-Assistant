@@ -2,7 +2,7 @@ import { useMemo, useEffect, useState, useCallback } from 'react'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandItem, CommandList } from '@/components/ui/command'
 import { wikiLabel, stripKnowledgePrefix } from '@/lib/wiki-links'
-import { FileTextIcon } from 'lucide-react'
+import { FileTextIcon } from '@/lib/icons'
 import type { CaretCoordinates } from '@/lib/textarea-caret'
 
 interface MentionPopoverProps {

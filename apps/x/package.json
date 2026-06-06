@@ -12,6 +12,10 @@
     "deps": "npm run shared && npm run core && npm run preload",
     "main": "wait-on http://localhost:5173 && cd apps/main && npm run build && npm run start",
     "test": "npm run shared && cd packages/core && npm test",
+    "typecheck": "npm run deps && cd apps/renderer && tsc -b",
+    "check:types": "npm run deps && cd apps/renderer && npm run build && cd ../main && npm run build",
+    "security:electron": "node scripts/electron-security-check.mjs",
+    "quality": "npm run lint && npm test && npm run security:electron && npm run check:types",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

@@ -10,7 +10,7 @@ import {
   CheckCircle2,
   ArrowLeft,
   MessageSquare,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import {
   Dialog,

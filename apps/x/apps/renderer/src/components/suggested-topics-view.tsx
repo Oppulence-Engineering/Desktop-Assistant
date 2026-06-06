@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Lightbulb, Loader2 } from "lucide-react";
+import { ArrowRight, Lightbulb, Loader2 } from "@/lib/icons";
 import {
   SuggestedTopicBlockSchema,
   type SuggestedTopicBlock,

@@ -14,6 +14,7 @@ KIND_CONFIG_FILE="${ROOT_DIR}/deploy/kind/rowboat-api/kind-config.yaml"
 VALUES_FILE="${ROOT_DIR}/charts/rowboat-api/values-kind.yaml"
 CHART_DIR="${ROOT_DIR}/charts/rowboat-api"
 INFISICAL_PROJECT_ID="${INFISICAL_PROJECT_ID:-}"
+INFISICAL_TOKEN="${INFISICAL_TOKEN:-}"
 INFISICAL_ENVIRONMENT="${INFISICAL_ENVIRONMENT:-dev}"
 INFISICAL_SECRET_PATH="${INFISICAL_SECRET_PATH:-/}"
 INFISICAL_RECURSIVE="${INFISICAL_RECURSIVE:-false}"
@@ -47,6 +48,7 @@ Commands:
   validate-full   Run Helm, Kubernetes, API, and desktop smoke checks.
   desktop         Run the Electron desktop against the kind API.
   desktop-smoke   Drive the Electron desktop against the kind API with agent-browser.
+  desktop-perf    Package, drive, profile, and tiered budget-check the Electron desktop.
   status          Show local Kubernetes resources and port-forward state.
   logs            Tail rowboat-api deployment logs.
   down            Uninstall the chart, delete local deps, and stop port-forwards.
@@ -60,6 +62,7 @@ Environment overrides:
   ROWBOAT_API_PORT        default: 18080
   ROWBOAT_DEVSTACK_PORT   default: 18090
   INFISICAL_PROJECT_ID                    required unless .infisical.json exists
+  INFISICAL_TOKEN                         optional service/machine token for CI
   INFISICAL_ENVIRONMENT                   default: dev
   INFISICAL_SECRET_PATH                   default: /
   INFISICAL_RECURSIVE                     default: false
@@ -150,6 +153,9 @@ sync_infisical_cli_secret() {
   )
   if [[ -n "$INFISICAL_PROJECT_ID" ]]; then
     export_args+=(--projectId="$INFISICAL_PROJECT_ID")
+  fi
+  if [[ -n "$INFISICAL_TOKEN" ]]; then
+    export_args+=(--token="$INFISICAL_TOKEN")
   fi
   if [[ "$INFISICAL_RECURSIVE" == "true" ]]; then
     export_args+=(--recursive)
@@ -578,6 +584,10 @@ desktop_smoke() {
   "${ROOT_DIR}/scripts/rowboat-desktop-smoke.sh"
 }
 
+desktop_perf() {
+  "${ROOT_DIR}/scripts/rowboat-desktop-perf.sh"
+}
+
 tail_logs() {
   ensure_cluster
   kubectl logs -n "$NAMESPACE" deployment/rowboat-api -c rowboat-api --tail=80 -f
@@ -642,6 +652,9 @@ EOF
     ;;
   desktop-smoke)
     desktop_smoke
+    ;;
+  desktop-perf)
+    desktop_perf
     ;;
   status)
     show_status

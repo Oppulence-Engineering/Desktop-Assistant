@@ -23,7 +23,7 @@ import { TranscriptBlockExtension } from '@/extensions/transcript-block'
 import { MermaidBlockExtension } from '@/extensions/mermaid-block'
 import { Markdown } from 'tiptap-markdown'
 import { useEffect, useCallback, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react'
-import { Calendar, ChevronDown, ExternalLink } from 'lucide-react'
+import { Calendar, ChevronDown, ExternalLink } from '@/lib/icons'
 
 // Zero-width space used as invisible marker for blank lines
 const BLANK_LINE_MARKER = '\u200B'

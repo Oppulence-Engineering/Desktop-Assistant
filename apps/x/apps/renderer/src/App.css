@@ -13,28 +13,6 @@
   padding: 0;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Radix Collapsible expand/collapse — animate height (via the radix CSS var)
    plus a subtle fade. Used by the web search card. */
 @keyframes collapsible-down {
@@ -59,20 +37,6 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
 /* Onboarding dot grid background */
 .onboarding-dot-grid {
   background-image: radial-gradient(circle, oklch(0.5 0 0 / 0.08) 1px, transparent 1px);
@@ -86,9 +50,9 @@
   --gm-bg: #0f0f12;
   --gm-bg-card: #131317;
   --gm-bg-input: #1c1c20;
-  --gm-bg-row-hover: #16161a;
-  --gm-bg-row-selected: #1a1620;
-  --gm-bg-row-selected-hover: #1d1825;
+  --gm-bg-row-hover: #161618;
+  --gm-bg-row-selected: #1c1c1f;
+  --gm-bg-row-selected-hover: #232327;
   --gm-bg-iframe: #fafafa;
   --gm-bg-pill: #1c1c20;
   --gm-bg-pill-hover: #232328;
@@ -99,9 +63,11 @@
   --gm-text-body: #d4d4d8;
   --gm-border: #1f1f24;
   --gm-border-strong: #2e2e35;
-  --gm-accent: #a78bfa;
-  --gm-accent-hover: #b9a6ff;
-  --gm-accent-glow: rgba(167, 139, 250, 0.45);
+  /* ElevenLabs console is monochrome: the "accent" is near-white in dark mode
+     (used for the unread dot, selected rail, and primary send button). */
+  --gm-accent: #fafafa;
+  --gm-accent-hover: #ffffff;
+  --gm-accent-glow: rgba(250, 250, 250, 0.22);
   --gm-accent-fg: #18181b;
   --gm-icon-hover-bg: #1f1f24;
   --gm-placeholder: #52525b;
@@ -121,9 +87,9 @@
   --gm-bg: #ffffff;
   --gm-bg-card: #ffffff;
   --gm-bg-input: #f4f4f7;
-  --gm-bg-row-hover: #f7f7f9;
-  --gm-bg-row-selected: #f5f0ff;
-  --gm-bg-row-selected-hover: #ece4ff;
+  --gm-bg-row-hover: #f7f7f8;
+  --gm-bg-row-selected: #f4f4f5;
+  --gm-bg-row-selected-hover: #ececee;
   --gm-bg-iframe: #ffffff;
   --gm-bg-pill: #ffffff;
   --gm-bg-pill-hover: #f4f4f7;
@@ -132,11 +98,13 @@
   --gm-text-muted: #71717a;
   --gm-text-faint: #a1a1aa;
   --gm-text-body: #3f3f46;
-  --gm-border: #e4e4e7;
+  --gm-border: #e9e9eb;
   --gm-border-strong: #d4d4d8;
-  --gm-accent: #7c3aed;
-  --gm-accent-hover: #6d28d9;
-  --gm-accent-glow: rgba(124, 58, 237, 0.3);
+  /* Monochrome accent: near-black in light mode (unread dot, selected rail, and
+     the black-on-white primary send button — ElevenLabs developer console). */
+  --gm-accent: #0a0a0a;
+  --gm-accent-hover: #000000;
+  --gm-accent-glow: rgba(10, 10, 10, 0.16);
   --gm-accent-fg: #ffffff;
   --gm-icon-hover-bg: #f4f4f7;
   --gm-placeholder: #a1a1aa;
@@ -1165,98 +1133,108 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  --background: var(--bg-color, oklch(1 0 0));
-  --foreground: var(--text-color, oklch(0.145 0 0));
-  --card: var(--bg-color, oklch(1 0 0));
-  --card-foreground: var(--text-color, oklch(0.145 0 0));
-  --popover: var(--bg-color, oklch(1 0 0));
-  --popover-foreground: var(--text-color, oklch(0.145 0 0));
-  --primary: var(--main-color, oklch(0.205 0 0));
-  --primary-foreground: var(--bg-color, oklch(0.985 0 0));
-  --secondary: var(--sub-alt-color, oklch(0.97 0 0));
-  --secondary-foreground: var(--text-color, oklch(0.205 0 0));
-  --muted: var(--sub-alt-color, oklch(0.97 0 0));
-  --muted-foreground: var(--sub-color, oklch(0.556 0 0));
-  --accent: var(--sub-color, oklch(0.97 0 0));
-  --accent-foreground: var(--text-color, oklch(0.205 0 0));
-  --destructive: var(--error-color, oklch(0.577 0.245 27.325));
-  --border: var(--sub-alt-color, oklch(0.922 0 0));
-  --input: var(--sub-alt-color, oklch(0.922 0 0));
-  --ring: var(--main-color, oklch(0.708 0 0));
+  /* Square UI — no rounded borders anywhere. Circular elements (avatars, status
+     dots, spinners, `rounded-full`) keep their shape via the square-mode block
+     near the end of this file. Kept as `0px` (not `0`) so the `@theme` radius
+     scale's `calc(var(--radius) - 4px)` stays a valid length expression. */
+  --radius: 0px;
+  --background: var(--bg-color, oklch(0.985 0 0));
+  --foreground: var(--text-color, oklch(0.16 0 0));
+  --card: oklch(1 0 0);
+  --card-foreground: var(--text-color, oklch(0.16 0 0));
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--text-color, oklch(0.16 0 0));
+  --primary: var(--main-color, oklch(0.13 0 0));
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.955 0 0);
+  --secondary-foreground: var(--text-color, oklch(0.18 0 0));
+  --muted: oklch(0.955 0 0);
+  --muted-foreground: var(--sub-color, oklch(0.51 0 0));
+  --accent: oklch(0.94 0 0);
+  --accent-foreground: var(--text-color, oklch(0.16 0 0));
+  --destructive: var(--error-color, oklch(0.56 0.19 25));
+  --border: oklch(0.895 0 0);
+  --input: oklch(0.895 0 0);
+  --ring: var(--main-color, oklch(0.42 0 0));
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: var(--bg-color, oklch(0.985 0 0));
-  --sidebar-foreground: var(--text-color, oklch(0.145 0 0));
-  --sidebar-primary: var(--main-color, oklch(0.205 0 0));
-  --sidebar-primary-foreground: var(--bg-color, oklch(0.985 0 0));
-  --sidebar-accent: var(--sub-color, oklch(0.9 0 0));
-  --sidebar-accent-foreground: var(--text-color, oklch(0.205 0 0));
-  --sidebar-border: var(--sub-alt-color, oklch(0.922 0 0));
-  --sidebar-ring: var(--main-color, oklch(0.708 0 0));
-  --scrollbar-track: oklch(0.95 0 0);
-  --scrollbar-thumb: oklch(0.75 0 0);
-  --scrollbar-thumb-hover: oklch(0.65 0 0);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: var(--text-color, oklch(0.19 0 0));
+  --sidebar-primary: var(--main-color, oklch(0.13 0 0));
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-accent-foreground: var(--text-color, oklch(0.16 0 0));
+  --sidebar-border: oklch(0.9 0 0);
+  --sidebar-ring: var(--main-color, oklch(0.42 0 0));
+  --scrollbar-track: oklch(0.965 0 0);
+  --scrollbar-thumb: oklch(0.78 0 0);
+  --scrollbar-thumb-hover: oklch(0.66 0 0);
   /* Subtle raised-card surface: tints toward foreground, so it reads a hair
      darker than the background in light mode and a hair lighter in dark mode.
      Shared by the web search card and tool-call group. */
-  --card-surface: color-mix(in oklab, var(--background) 98.5%, var(--foreground));
-  --rowboat-panel: oklch(0.97 0 0);
+  --card-surface: color-mix(in oklab, var(--background) 96%, var(--foreground) 4%);
+  --rowboat-panel: oklch(0.96 0 0);
   --rowboat-raised: oklch(1 0 0);
-  --rowboat-wash: color-mix(in oklab, var(--background) 88%, var(--primary) 12%);
-  --rowboat-hairline: color-mix(in oklab, var(--border) 78%, var(--foreground) 22%);
-  --rowboat-command: oklch(0.205 0 0);
-  --rowboat-attention: oklch(0.646 0.222 41.116);
-  --rowboat-shadow: 0 1px 2px rgb(31 38 48 / 0.07), 0 18px 40px rgb(31 38 48 / 0.08);
-  --rowboat-shadow-soft: 0 1px 2px rgb(31 38 48 / 0.05), 0 8px 24px rgb(31 38 48 / 0.06);
+  --rowboat-wash: oklch(0.945 0 0);
+  --rowboat-hairline: color-mix(in oklab, var(--border) 86%, var(--foreground) 14%);
+  --rowboat-command: oklch(0.13 0 0);
+  --rowboat-attention: oklch(0.6 0.18 34);
+  /* Subtle, low-spread elevation — ElevenLabs keeps surfaces nearly flat. */
+  --rowboat-shadow: 0 1px 2px rgb(16 24 40 / 0.05), 0 8px 24px rgb(16 24 40 / 0.06);
+  --rowboat-shadow-soft: 0 1px 2px rgb(16 24 40 / 0.04), 0 5px 16px rgb(16 24 40 / 0.05);
+  /* Monochrome sheen sweep on the upgrade button. Light mode = dark button, so
+     the highlight is a soft white. Flipped in .dark. */
+  --upgrade-sheen: rgb(255 255 255 / 0.22);
 }
 
 .dark {
-  --background: var(--bg-color, oklch(0.145 0 0));
-  --foreground: var(--text-color, oklch(0.985 0 0));
-  --card: var(--bg-color, oklch(0.205 0 0));
-  --card-foreground: var(--text-color, oklch(0.985 0 0));
-  --popover: var(--bg-color, oklch(0.205 0 0));
-  --popover-foreground: var(--text-color, oklch(0.985 0 0));
-  --primary: var(--main-color, oklch(0.922 0 0));
-  --primary-foreground: var(--bg-color, oklch(0.205 0 0));
-  --secondary: var(--sub-alt-color, oklch(0.269 0 0));
-  --secondary-foreground: var(--text-color, oklch(0.985 0 0));
-  --muted: var(--sub-alt-color, oklch(0.269 0 0));
-  --muted-foreground: var(--sub-color, oklch(0.708 0 0));
-  --accent: var(--sub-color, oklch(0.269 0 0));
-  --accent-foreground: var(--text-color, oklch(0.985 0 0));
-  --destructive: var(--error-color, oklch(0.704 0.191 22.216));
-  --border: var(--sub-alt-color, oklch(1 0 0 / 10%));
-  --input: var(--sub-alt-color, oklch(1 0 0 / 15%));
-  --ring: var(--main-color, oklch(0.556 0 0));
+  --background: var(--bg-color, oklch(0.15 0 0));
+  --foreground: var(--text-color, oklch(0.96 0 0));
+  --card: oklch(0.18 0 0);
+  --card-foreground: var(--text-color, oklch(0.96 0 0));
+  --popover: oklch(0.18 0 0);
+  --popover-foreground: var(--text-color, oklch(0.96 0 0));
+  --primary: oklch(0.96 0 0);
+  --primary-foreground: oklch(0.15 0 0);
+  --secondary: oklch(0.25 0 0);
+  --secondary-foreground: var(--text-color, oklch(0.96 0 0));
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.29 0 0);
+  --accent-foreground: var(--text-color, oklch(0.96 0 0));
+  --destructive: var(--error-color, oklch(0.68 0.18 24));
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.78 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: var(--bg-color, oklch(0.205 0 0));
-  --sidebar-foreground: var(--text-color, oklch(0.985 0 0));
-  --sidebar-primary: var(--main-color, oklch(0.488 0.243 264.376));
-  --sidebar-primary-foreground: var(--bg-color, oklch(0.985 0 0));
-  --sidebar-accent: var(--sub-color, oklch(0.35 0 0));
-  --sidebar-accent-foreground: var(--text-color, oklch(0.985 0 0));
-  --sidebar-border: var(--sub-alt-color, oklch(1 0 0 / 10%));
-  --sidebar-ring: var(--main-color, oklch(0.556 0 0));
+  --sidebar: oklch(0.18 0 0);
+  --sidebar-foreground: var(--text-color, oklch(0.95 0 0));
+  --sidebar-primary: oklch(0.96 0 0);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+  --sidebar-accent: oklch(0.29 0 0);
+  --sidebar-accent-foreground: var(--text-color, oklch(0.96 0 0));
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.78 0 0);
   --scrollbar-track: oklch(0.2 0 0);
   --scrollbar-thumb: oklch(0.4 0 0);
   --scrollbar-thumb-hover: oklch(0.5 0 0);
-  --rowboat-panel: oklch(0.269 0 0);
-  --rowboat-raised: oklch(0.205 0 0);
-  --rowboat-wash: color-mix(in oklab, var(--background) 80%, var(--primary) 20%);
-  --rowboat-hairline: color-mix(in oklab, var(--border) 70%, var(--foreground) 30%);
-  --rowboat-command: oklch(0.922 0 0);
+  --rowboat-panel: oklch(0.22 0 0);
+  --rowboat-raised: oklch(0.18 0 0);
+  --rowboat-wash: oklch(0.26 0 0);
+  --rowboat-hairline: color-mix(in oklab, var(--border) 72%, var(--foreground) 28%);
+  --rowboat-command: oklch(0.96 0 0);
   --rowboat-attention: oklch(0.769 0.188 70.08);
-  --rowboat-shadow: 0 1px 2px rgb(0 0 0 / 0.24), 0 22px 44px rgb(0 0 0 / 0.28);
-  --rowboat-shadow-soft: 0 1px 2px rgb(0 0 0 / 0.2), 0 12px 28px rgb(0 0 0 / 0.18);
+  --rowboat-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px rgb(0 0 0 / 0.22);
+  --rowboat-shadow-soft: 0 1px 2px rgb(0 0 0 / 0.24), 0 8px 20px rgb(0 0 0 / 0.16);
+  /* Dark mode = light button, so the sheen is a soft dark wash instead. */
+  --upgrade-sheen: rgb(9 9 11 / 0.16);
 }
 
 @layer base {
@@ -1264,6 +1242,8 @@
     @apply border-border outline-ring/50;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     scrollbar-width: thin;
+    /* Native controls (checkbox, radio, range, progress) tint monochrome. */
+    accent-color: var(--primary);
   }
 
   body {
@@ -1271,6 +1251,27 @@
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     text-rendering: optimizeLegibility;
+    /* Crisp, even glyph weight — the clean ElevenLabs type rendering on macOS. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Neutral, monochrome text selection (no hue) to match the console palette. */
+  ::selection {
+    background: color-mix(in oklab, var(--foreground) 16%, transparent);
+  }
+
+  /* Honor the OS "reduce motion" setting — collapse animations/transitions
+     (icon eases, collapsibles, the upgrade sheen) to a near-instant state. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   ::-webkit-scrollbar {
@@ -1296,6 +1297,37 @@
   background: var(--background);
 }
 
+.rowboat-shell .rounded-none {
+  border-radius: var(--radius) !important;
+}
+
+/* The settings dialog renders in a portal outside `.rowboat-shell`, so its
+   `rounded-none` sentinels would collapse to sharp corners. Re-round them here
+   to keep the ElevenLabs developer-console look (rounded cards and fields). */
+.rowboat-settings .rounded-none {
+  border-radius: var(--radius) !important;
+}
+
+.rowboat-shell .rounded-l-none {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.rowboat-shell .rounded-r-none {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.rowboat-shell .rounded-t-none {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+.rowboat-shell .rounded-b-none {
+  border-bottom-right-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
 .rowboat-sidebar [data-sidebar="sidebar"] {
   background: var(--sidebar);
   border-right: 1px solid var(--sidebar-border);
@@ -1303,14 +1335,15 @@
 
 .rowboat-sidebar [data-sidebar="header"] {
   gap: 0.625rem;
-  border-bottom: 1px solid color-mix(in oklab, var(--sidebar-border) 76%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--sidebar-border) 82%, transparent);
   background: var(--sidebar);
 }
 
 .rowboat-section-switcher {
-  border: 1px solid color-mix(in oklab, var(--sidebar-border) 78%, transparent);
-  background: color-mix(in oklab, var(--sidebar-accent) 58%, var(--sidebar) 42%);
-  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--foreground) 9%, transparent);
+  border: 1px solid color-mix(in oklab, var(--sidebar-border) 86%, transparent);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--sidebar-accent) 48%, var(--sidebar) 52%);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--foreground) 7%, transparent);
 }
 
 .rowboat-section-switcher button {
@@ -1318,12 +1351,14 @@
 }
 
 .rowboat-section-switcher button[class*="shadow-sm"] {
+  border-radius: 10px;
   background: var(--rowboat-raised);
   box-shadow: var(--rowboat-shadow-soft);
 }
 
 .rowboat-quick-actions button {
   min-height: 2rem;
+  border-radius: 10px;
 }
 
 .rowboat-quick-actions button svg {
@@ -1331,23 +1366,31 @@
 }
 
 .rowboat-tabbar {
-  background: color-mix(in oklab, var(--background) 78%, var(--muted) 22%);
+  background: var(--background);
 }
 
 .rowboat-titlebar {
   background: var(--background);
-  border-bottom-color: color-mix(in oklab, var(--border) 82%, transparent);
+  border-bottom-color: color-mix(in oklab, var(--border) 88%, transparent);
 }
 
 .rowboat-tab {
   min-height: 2.5rem;
-  border-bottom: 1px solid transparent;
+  /* Square tabs — full-height cells, no rounded corners. */
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
 }
 
+/* Win over the generic `.rowboat-titlebar/.rowboat-tabbar button` rounding
+   (the tab bar is nested inside the titlebar) so every tab stays square. */
+.rowboat-tabbar .rowboat-tab {
+  border-radius: 0;
+}
+
+/* Active tab: one clean underline, not the old doubled black border+shadow. */
 .rowboat-tab[class*="bg-background"] {
-  border-bottom-color: var(--primary);
-  background: var(--rowboat-raised);
-  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent);
+  border-bottom-color: var(--foreground);
+  background: var(--background);
 }
 
 .rowboat-composer-dock {
@@ -1355,7 +1398,7 @@
 }
 
 .rowboat-chat-input {
-  border-color: color-mix(in oklab, var(--border) 74%, var(--primary) 26%);
+  border-color: color-mix(in oklab, var(--border) 82%, var(--primary) 18%);
   background: var(--rowboat-raised);
   box-shadow: var(--rowboat-shadow);
 }
@@ -1363,8 +1406,147 @@
 .rowboat-chat-input:focus-within {
   border-color: color-mix(in oklab, var(--ring) 76%, var(--border) 24%);
   box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ring) 38%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--ring) 30%, transparent),
     var(--rowboat-shadow);
+}
+
+.rowboat-dev-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--foreground) 5%, transparent);
+}
+
+.rowboat-sidebar button,
+.rowboat-titlebar button {
+  border-radius: 10px;
+}
+
+.rowboat-sidebar [data-sidebar="menu-button"][data-active="true"] {
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sidebar-border) 80%, transparent);
+}
+
+/* ── Lucide icon system ──────────────────────────────────────────────────────
+   A systematic, modern treatment for every Lucide glyph. Lucide is the library
+   the ElevenLabs design system ships with; this block gives it a premium feel:
+   thin even weight, round joinery, pixel-crisp curves, edge-safe painting,
+   optical centering, and smooth, tactile state transitions — all driven from
+   the tokens below, so the whole set is tunable from one place. Lucide emits
+   `stroke-width="2"` as a presentation attribute on each <svg.lucide>, which
+   these author rules override app-wide without touching any of the 80+ call
+   sites. (We intentionally don't force `stroke`/`fill` here — Lucide already
+   sets `stroke="currentColor" fill="none"` as attributes, and forcing them in
+   CSS would clobber an intentional `stroke-*`/`fill-*` utility.) */
+:root {
+  --lucide-stroke: 1.5;
+  --lucide-stroke-strong: 1.75; /* hover "firm-up" weight */
+  --lucide-duration: 160ms;
+  --lucide-ease: cubic-bezier(0.4, 0, 0.2, 1); /* standard, for color/opacity */
+  --lucide-ease-spring: cubic-bezier(0.16, 1, 0.3, 1); /* snappy ease-out, for transforms */
+  /* Shared non-transform transition — applied to every icon. Transform is added
+     only for interactive icons (below) so it can't fight JS-driven motion. */
+  --lucide-transition-base:
+    color var(--lucide-duration) var(--lucide-ease),
+    stroke var(--lucide-duration) var(--lucide-ease),
+    stroke-width var(--lucide-duration) var(--lucide-ease),
+    opacity var(--lucide-duration) var(--lucide-ease);
+}
+
+svg.lucide {
+  /* Thin, even weight + soft, continuous corners on every joint and line end. */
+  stroke-width: var(--lucide-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  /* Render curves at full geometric precision so even sub-pixel strokes stay
+     crisp at any DPI, and let round caps/joins paint to the very edge of the
+     viewBox instead of being clipped by the default svg overflow. */
+  shape-rendering: geometricPrecision;
+  overflow: visible;
+
+  /* Optically centered in its box; never distorts or shrinks inside a flex row;
+     scales/rotates about its own center. */
+  flex: none;
+  vertical-align: middle;
+  transform-origin: center;
+
+  /* Smooth color/weight/opacity. (No transform here — added per-context below.) */
+  transition: var(--lucide-transition-base);
+}
+
+/* Interactive icons additionally ease their transform — so toggled chevrons,
+   hover-shifted arrows, and the press-dip glide on a snappy ease-out rather than
+   snapping. Broadened across every interactive surface (buttons, links, menu
+   items, options, tabs, disclosures) so the feel is consistent, yet still scoped
+   to controls so it can't interfere with motion-animated decorative icons. */
+:is(button, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"],
+  [role="menuitemradio"], [role="option"], [role="tab"], summary, label)
+  svg.lucide {
+  transition: var(--lucide-transition-base),
+    transform var(--lucide-duration) var(--lucide-ease-spring);
+}
+
+/* Firm-up: icons gain a hair of weight (1.5 → 1.75) when their control is
+   hovered OR keyboard-focused, and stay firm whenever their item is the
+   selected / current / pressed / checked one — so the active affordance always
+   reads a touch bolder. Selected-state hooks are item-level only (never the
+   Radix `data-state` that also lands on open content panels). */
+:is(button, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"],
+  [role="menuitemradio"], [role="option"], [role="tab"], summary, label):not(:disabled):hover
+  svg.lucide,
+:is(button, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"],
+  [role="menuitemradio"], [role="option"], [role="tab"], summary, label):not(:disabled):focus-visible
+  svg.lucide,
+[aria-current]:not([aria-current="false"]) svg.lucide,
+[aria-selected="true"] svg.lucide,
+[aria-pressed="true"] svg.lucide,
+[data-active="true"] svg.lucide,
+[data-state="on"] svg.lucide,
+[data-state="checked"] svg.lucide {
+  stroke-width: var(--lucide-stroke-strong);
+}
+
+/* Press "dip": the icon you click pulls in slightly — a tactile micro-bounce.
+   Excludes glyphs positioned with a transform utility so we never clobber an
+   existing translate/rotate (inline-style transforms are immune — they outrank
+   this selector — so only class-based ones need excluding). */
+:is(button, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"],
+  [role="menuitemradio"], [role="option"], [role="tab"], summary, label):not(:disabled):active
+  svg.lucide:not([class*="translate"]):not([class*="rotate"]) {
+  transform: scale(0.9);
+}
+
+/* Spinners drive their own transform via @keyframes — opt them out of the
+   transition so the easing can't fight the spin, and keep them dead-centered. */
+svg.lucide.animate-spin {
+  transition: none;
+  transform-origin: center;
+}
+
+/* Honor "reduce motion": drop the press-dip scale for motion-sensitive users.
+   The firm-up weight change (no motion) still applies; spinners are untouched. */
+@media (prefers-reduced-motion: reduce) {
+  :is(button, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"],
+    [role="menuitemradio"], [role="option"], [role="tab"], summary, label):active
+    svg.lucide:not(.animate-spin) {
+    transform: none;
+  }
+}
+
+/* Windows high-contrast / forced-colors: tie glyphs to the system text color so
+   they never wash out against a forced background. */
+@media (forced-colors: active) {
+  svg.lucide {
+    stroke: currentColor;
+  }
+}
+
+/* Non-Lucide inline SVGs that act as standalone control affordances still get
+   the thin ElevenLabs stroke in the primary chrome. */
+.rowboat-sidebar [data-sidebar="menu-button"] svg:not(.lucide),
+.rowboat-titlebar svg:not(.lucide),
+.rowboat-chat-input svg:not(.lucide) {
+  stroke-width: 1.5;
 }
 
 [data-slot="message-content"] {
@@ -1490,18 +1672,19 @@
   content: '';
   position: absolute;
   inset: 0;
+  /* Monochrome shimmer: a grayscale grain texture over a single neutral sheen
+     band (no hue), so the sweep reads as a clean light/dark highlight. */
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.25'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E"),
     linear-gradient(
       90deg,
       transparent 0%,
-      rgba(168, 85, 247, 0.35) 20%,
-      rgba(236, 72, 153, 0.4) 40%,
-      rgba(251, 146, 60, 0.35) 60%,
-      rgba(168, 85, 247, 0.3) 80%,
+      color-mix(in srgb, var(--upgrade-sheen) 40%, transparent) 30%,
+      var(--upgrade-sheen) 50%,
+      color-mix(in srgb, var(--upgrade-sheen) 40%, transparent) 70%,
       transparent 100%
     );
-  background-size: 100px 100px, 100% 100%;
+  background-size: 110px 110px, 100% 100%;
   transform: translateX(-120%);
   opacity: 0;
   z-index: 1;
@@ -1530,4 +1713,30 @@
     opacity: 1;
     transform: translateX(-120%);
   }
+}
+
+/* ── No rounded borders ──────────────────────────────────────────────────────
+   The desktop app uses square corners throughout. This zeroes every rounded
+   utility (named like `rounded-lg` and arbitrary like `rounded-[14px]`) and the
+   hardcoded panel/email radii. Two classes of element keep their shape:
+     • anything `rounded-full` (utility pills, circular badges, avatars), and
+     • the CSS circles `border-radius: 50%` (message avatar, status dot, chip-x).
+   Placed last so it wins source-order ties against earlier !important rules. */
+[class*="rounded-"]:not([class*="rounded-full"]) {
+  border-radius: 0 !important;
+}
+
+/* Hardcoded panel radii that carry no utility class. */
+.rowboat-section-switcher,
+.rowboat-section-switcher button,
+.rowboat-quick-actions button,
+.rowboat-sidebar button,
+.rowboat-titlebar button,
+.rowboat-dev-card {
+  border-radius: 0 !important;
+}
+
+/* Email view: square every surface except its three genuine circles. */
+.gmail-shell *:not(.gmail-message-avatar):not(.gmail-row-dot):not(.gmail-recipient-chip-remove) {
+  border-radius: 0 !important;
 }

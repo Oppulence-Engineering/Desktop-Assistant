@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/react'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
-import { X, ExternalLink, Copy, Check, MessageSquare, ChevronDown } from 'lucide-react'
+import { X, ExternalLink, Copy, Check, MessageSquare, ChevronDown } from '@/lib/icons'
 import { blocks } from '@x/shared'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTheme } from '@/contexts/theme-context'

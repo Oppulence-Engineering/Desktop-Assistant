@@ -6,7 +6,7 @@ import {
   Link2Icon,
   LoaderIcon,
   XCircleIcon,
-} from "lucide-react";
+} from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 
 interface ComposioConnectCardProps {

@@ -1,4 +1,4 @@
-import { Loader2, CheckCircle2, ArrowLeft, X, Lightbulb } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, X, Lightbulb } from "@/lib/icons";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

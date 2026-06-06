@@ -99,6 +99,20 @@ The `ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT` value is optional, but useful for
 local QA. It exposes the Electron renderer to Chrome DevTools Protocol on port
 `9222`, so `agent-browser connect 9222` can inspect the running desktop.
 
+## Profile and budget-check the desktop
+
+```bash
+make perf-desktop
+```
+
+This packages the Electron app, launches it with an isolated workspace, drives
+representative UI/IPC/API workflows, samples the process tree, captures a
+renderer CPU profile, and fails on performance budgets or local baseline
+regressions. Use `make perf-desktop-full` when a change needs the API/Temporal
+background-task workflow, warm launch, and larger workspace checks too. Use
+`make perf-desktop-deep` for the longest local scale and memory-growth pass.
+See [Desktop Performance Gate](./DESKTOP_PERFORMANCE_GATE.md).
+
 ## Useful commands
 
 ```bash
@@ -106,6 +120,7 @@ scripts/rowboat-api-kind.sh status
 scripts/rowboat-api-kind.sh infisical-validate
 scripts/rowboat-api-kind.sh validate
 scripts/rowboat-api-kind.sh validate-full
+scripts/rowboat-api-kind.sh desktop-perf
 scripts/rowboat-api-kind.sh logs
 scripts/rowboat-api-kind.sh port-forward  # fallback for clusters without port mappings
 scripts/rowboat-api-kind.sh down

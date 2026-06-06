@@ -132,6 +132,23 @@ module.exports = {
             const fs = require('fs');
 
             const packageDir = path.join(__dirname, '.package');
+            const sleepSync = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+            const copyDirectory = (src, dest) => {
+                fs.rmSync(dest, { recursive: true, force: true });
+                fs.mkdirSync(path.dirname(dest), { recursive: true });
+                fs.cpSync(src, dest, { recursive: true, force: true });
+            };
+            const waitForRendererBuild = (dir) => {
+                const indexPath = path.join(dir, 'index.html');
+                const assetsPath = path.join(dir, 'assets');
+                for (let attempt = 0; attempt < 50; attempt += 1) {
+                    if (fs.existsSync(indexPath) && fs.existsSync(assetsPath)) {
+                        return;
+                    }
+                    sleepSync(100);
+                }
+                throw new Error(`renderer build output is incomplete at ${dir}`);
+            };
 
             // Clean staging directory (ensures fresh build every time)
             console.log('Cleaning staging directory...');
@@ -189,15 +206,15 @@ module.exports = {
             console.log('Copying preload...');
             const preloadSrc = path.join(__dirname, '../preload/dist');
             const preloadDest = path.join(packageDir, 'preload/dist');
-            fs.mkdirSync(preloadDest, { recursive: true });
-            fs.cpSync(preloadSrc, preloadDest, { recursive: true });
+            copyDirectory(preloadSrc, preloadDest);
 
             // Copy renderer dist into staging directory
             console.log('Copying renderer...');
             const rendererSrc = path.join(__dirname, '../renderer/dist');
             const rendererDest = path.join(packageDir, 'renderer/dist');
-            fs.mkdirSync(rendererDest, { recursive: true });
-            fs.cpSync(rendererSrc, rendererDest, { recursive: true });
+            waitForRendererBuild(rendererSrc);
+            copyDirectory(rendererSrc, rendererDest);
+            waitForRendererBuild(rendererDest);
 
             console.log('✅ All assets staged in .package/');
         },

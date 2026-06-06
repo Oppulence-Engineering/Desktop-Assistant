@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ArrowDownIcon } from "lucide-react";
+import { ArrowDownIcon } from "@/lib/icons";
 import type { ComponentProps, ReactNode, RefObject } from "react";
 import {
   createContext,

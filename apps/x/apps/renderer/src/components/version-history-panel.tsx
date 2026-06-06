@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { X, Clock } from "lucide-react";
+import { X, Clock } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 

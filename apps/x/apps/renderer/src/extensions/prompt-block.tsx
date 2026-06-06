@@ -2,7 +2,7 @@ import { z } from "zod";
 import { useMemo } from "react";
 import { mergeAttributes, Node } from "@tiptap/react";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
-import { Sparkles } from "lucide-react";
+import { Sparkles } from "@/lib/icons";
 import { parse as parseYaml } from "yaml";
 import { PromptBlockSchema } from "@x/shared/dist/prompt-block.js";
 import { Button } from "@/components/ui/button";

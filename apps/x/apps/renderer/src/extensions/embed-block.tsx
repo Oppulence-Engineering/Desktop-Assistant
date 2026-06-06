@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/react'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
-import { X, ExternalLink } from 'lucide-react'
+import { X, ExternalLink } from '@/lib/icons'
 import { Tweet } from 'react-tweet'
 import { blocks } from '@x/shared'
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
-  Bot,
+  Workflow,
   Calendar,
   Clock,
   FileText,
@@ -11,7 +11,7 @@ import {
   Plug,
   Plus,
   Video,
-} from "lucide-react";
+} from "@/lib/icons";
 import { extractConferenceLink } from "@/lib/calendar-event";
 import { SettingsDialog } from "@/components/settings-dialog";
 
@@ -186,7 +186,7 @@ function triggerMeetingCapture(event: CalEvent, openConference: boolean) {
   window.dispatchEvent(new Event("calendar-block:join-meeting"));
 }
 
-const CARD = "rounded-none border border-border bg-card p-4";
+const CARD = "rowboat-dev-card p-4";
 const TOOLKIT_PREVIEW_LIMIT = 8;
 
 let cachedToolkitPreviews: ToolkitPreview[] | null = null;
@@ -224,7 +224,7 @@ function ToolkitPreviewIcon({
     <div
       title={`${toolkit.name}: ${toolkit.description}`}
       aria-label={toolkit.name}
-      className="flex size-6 shrink-0 items-center justify-center rounded-none border border-border bg-muted/60"
+      className="flex size-6 shrink-0 items-center justify-center rounded-md border border-border bg-muted/60"
     >
       <img
         src={toolkit.logo}
@@ -444,12 +444,12 @@ export function HomeView({
   }, [recentNotes, runs, onOpenNote, onOpenRun]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-muted/30">
+    <div className="flex h-full flex-col overflow-hidden bg-background">
       <div className="flex-1 overflow-y-auto px-9 py-7">
-        <div className="mx-auto flex max-w-[760px] flex-col gap-[18px]">
+        <div className="mx-auto flex max-w-[820px] flex-col gap-4">
           {/* Greeting */}
           <div className="flex items-baseline gap-3">
-            <h1 className="text-[28px] font-semibold tracking-tight">
+            <h1 className="text-[26px] font-semibold tracking-tight">
               {greeting()}
             </h1>
             <span className="text-sm text-muted-foreground">
@@ -459,12 +459,12 @@ export function HomeView({
 
           {/* Up-next hero */}
           {nextEvent && (
-            <div className="flex items-center gap-[18px] rounded-none bg-foreground p-[18px] text-background">
-              <div className="flex size-[52px] shrink-0 items-center justify-center rounded-none bg-background/10">
+            <div className="rowboat-dev-card flex items-center gap-[18px] p-[18px]">
+              <div className="flex size-[52px] shrink-0 items-center justify-center rounded-none bg-muted text-foreground">
                 <Mic className="size-[22px]" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="mb-1 text-[11px] uppercase tracking-wide text-background/55">
+                <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
                   Up next ·{" "}
                   {nextEvent.isAllDay
                     ? "today"
@@ -473,7 +473,7 @@ export function HomeView({
                 <div className="mb-0.5 truncate text-[17px] font-medium">
                   {nextEvent.summary}
                 </div>
-                <div className="truncate text-[13px] text-background/70">
+                <div className="truncate text-[13px] text-muted-foreground">
                   {nextEvent.isAllDay
                     ? "All day"
                     : `${timeOfDay(nextEvent.start)}${nextEvent.end ? ` – ${timeOfDay(nextEvent.end)}` : ""}`}
@@ -484,7 +484,7 @@ export function HomeView({
                 <button
                   type="button"
                   onClick={onTakeMeetingNotes}
-                  className="rounded-none bg-background px-3.5 py-2 text-[13px] font-medium text-foreground"
+                  className="rounded-none bg-primary px-3.5 py-2 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   Take notes
                 </button>
@@ -494,7 +494,7 @@ export function HomeView({
                     onClick={() =>
                       window.open(nextEvent.conferenceLink!, "_blank")
                     }
-                    className="rounded-none border border-background/20 px-3 py-2 text-background"
+                    className="rounded-none border border-border px-3 py-2 text-foreground transition-colors hover:bg-accent"
                     aria-label="Join meeting"
                   >
                     <Video className="size-[13px]" />
@@ -511,7 +511,7 @@ export function HomeView({
                 <Mail className="size-[15px]" />
                 <span className="text-sm font-medium">Inbox</span>
                 {emails.length > 0 && (
-                  <span className="rounded-none bg-destructive px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-wide text-white">
+                  <span className="rounded-full bg-destructive px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-wide text-white">
                     {emails.length} new
                   </span>
                 )}
@@ -519,9 +519,10 @@ export function HomeView({
                 <button
                   type="button"
                   onClick={onOpenEmail}
-                  className="text-xs text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                 >
-                  Open →
+                  Open
+                  <ArrowRight className="size-3" />
                 </button>
               </div>
               {emails.length === 0 ? (
@@ -547,7 +548,7 @@ export function HomeView({
 
             <div className={CARD}>
               <div className="mb-3 flex items-center gap-2">
-                <Bot className="size-[15px]" />
+                <Workflow className="size-[15px]" />
                 <span className="text-sm font-medium">Background agents</span>
                 <span className="flex-1" />
                 <span className="text-xs text-muted-foreground">
@@ -556,9 +557,10 @@ export function HomeView({
                 <button
                   type="button"
                   onClick={onOpenAgents}
-                  className="text-xs text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                 >
-                  Open →
+                  Open
+                  <ArrowRight className="size-3" />
                 </button>
               </div>
               {recentAgent ? (
@@ -585,7 +587,7 @@ export function HomeView({
               <button
                 type="button"
                 onClick={onOpenAgents}
-                className="mt-3.5 flex items-center gap-2 border-t border-border pt-3 text-[12.5px] text-primary"
+                className="mt-3.5 flex items-center gap-2 border-t border-border pt-3 text-[12.5px] font-medium text-primary"
               >
                 <Plus className="size-3" />
                 Create an agent
@@ -602,9 +604,10 @@ export function HomeView({
               <button
                 type="button"
                 onClick={onOpenMeetings}
-                className="text-xs text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
               >
-                All meetings →
+                All meetings
+                <ArrowRight className="size-3" />
               </button>
             </div>
             {todaysEvents.length === 0 ? (
@@ -707,7 +710,7 @@ export function HomeView({
                   <button
                     type="button"
                     onClick={() => setConnectionsSettingsOpen(true)}
-                    className="ml-1 flex h-5 shrink-0 items-center gap-1 rounded-none px-1 text-[12px] font-medium text-primary hover:underline"
+                    className="ml-1 flex h-5 shrink-0 items-center gap-1 rounded-md px-1 text-[12px] font-medium text-primary hover:underline"
                   >
                     Connections
                     <ArrowRight className="size-3" />
@@ -727,7 +730,7 @@ export function HomeView({
             <button
               type="button"
               onClick={onOpenChat}
-              className="flex items-center gap-3.5 rounded-none border border-border bg-card p-4 text-left transition-colors hover:bg-accent"
+              className="rowboat-dev-card flex items-center gap-3.5 p-4 text-left transition-colors hover:bg-accent"
             >
               <div className="flex size-9 shrink-0 items-center justify-center rounded-none border border-border bg-card text-muted-foreground">
                 <MessageSquare className="size-[15px]" />
@@ -736,7 +739,7 @@ export function HomeView({
                 <span className="font-medium">Ask anything</span>
                 <span className="text-muted-foreground">
                   {" "}
-                  — create presentations, do research, collaborate on docs.
+                  to create presentations, do research, or collaborate on docs.
                 </span>
               </div>
               <span className="flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-primary">

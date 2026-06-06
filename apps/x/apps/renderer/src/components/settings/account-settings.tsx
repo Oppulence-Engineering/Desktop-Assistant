@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Loader2, User, CreditCard, LogOut, ExternalLink } from "lucide-react"
+import { Loader2, User, CreditCard, LogOut, ExternalLink } from "@/lib/icons"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,

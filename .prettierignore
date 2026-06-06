@@ -1,0 +1,29 @@
+# Dependencies & build output
+**/node_modules/
+**/dist/
+**/out/
+**/.next/
+**/.package/
+**/build/
+apps/x/apps/main/out/
+apps/x/apps/renderer/dist/
+
+# Lockfiles & generated artifacts
+**/pnpm-lock.yaml
+**/package-lock.json
+**/yarn.lock
+**/*.min.*
+**/CHANGELOG.md
+.release-please-manifest.json
+
+# Languages Prettier shouldn't own
+**/*.go
+**/*.py
+
+# Templated YAML Prettier would mangle (Helm, k8s manifests)
+charts/
+deploy/
+
+# Repo artifacts
+.rowboat-kind/
+coverage/

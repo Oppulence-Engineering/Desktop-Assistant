@@ -6,3 +6,6 @@ data/
 .venv/
 .claude/
 .rowboat-kind/
+
+# Root tooling package (git hooks / formatter / commit linting)
+/node_modules/

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Loader2, Plus, RotateCw, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Loader2, Plus, RotateCw, X } from '@/lib/icons'
 
 import { TabBar } from '@/components/tab-bar'
 import { cn } from '@/lib/utils'

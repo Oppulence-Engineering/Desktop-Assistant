@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/react'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
-import { X, BarChart3 } from 'lucide-react'
+import { X, BarChart3 } from '@/lib/icons'
 import { blocks } from '@x/shared'
 import { useState, useEffect } from 'react'
 import {
