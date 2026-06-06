@@ -23,8 +23,11 @@
   `~/.rowboat/models/` on first use. Reuse the renderer's existing 16 kHz mono PCM capture; route it
   to main over IPC instead of to Deepgram.
 - **Phase it:** P1 = voice-mode push-to-talk (biggest, simplest win). P2 = meeting transcription
-  (workable, but loses Deepgram's live multi-speaker **diarization** — see §8). Keep Deepgram as the
-  default/fallback; local is opt-in until proven.
+  (workable, but loses Deepgram's live multi-speaker **diarization** — see §8).
+- **Tier by feature, not by plan** (see §9): default **voice input → local for everyone** (capable
+  devices), **meetings → Deepgram** with a **free monthly cloud quota** that falls back to local. So
+  free stays $0-cost + unlimited, paid gets premium cloud, and we keep local as a privacy/offline
+  feature for all. Make the default **remote-configurable** and A/B it.
 - **Savings:** we use Deepgram nova-3 **streaming ≈ $0.0077/min** (batch is $0.0043; OpenAI Whisper
   API ≈ $0.006/min); local whisper.cpp is **$0/min** after a one-time ~150 MB model download. A user
   doing ~1 hr/day of transcription is **~$95–168/yr** of cloud spend; at 10k active users that's
@@ -225,7 +228,47 @@ speaker labels.
 
 ---
 
-## 9. Risks & mitigations
+## 9. Productization & tiering — who gets which engine
+
+The economically obvious move — **"local for free, Deepgram for paid"** — is sound on cost (local is
+$0/min, so it makes the free tier sustainable at any volume) but blunt: free users are the conversion
+funnel, local quality is hardware-dependent, and local meetings lose diarization (§8). Default by
+**feature, not by tier**, and meter the premium path.
+
+**Defaults**
+
+| Feature                        | Default engine                                                    | Free                                                                                                 | Paid                                       |
+| ------------------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **Voice input (push-to-talk)** | **Local (whisper.cpp)** for everyone, where the device is capable | Local, unlimited                                                                                     | Local by default; cloud available          |
+| **Meeting transcription**      | **Deepgram** (diarization + multi-speaker system audio)           | Cloud up to a monthly quota (e.g. a few hours) → then **local "no-diarization"** fallback, unlimited | Unlimited cloud                            |
+| **Offline / privacy mode**     | Local                                                             | available                                                                                            | available (some users pay _for_ on-device) |
+
+**Principles**
+
+1. **Per-feature, not per-tier.** Voice input is near-parity and the highest-volume cost → default it
+   to local for _all_ users (the cheap path is also the good path here). Meetings need diarization →
+   default to cloud, but cap free usage.
+2. **Give free users a taste of premium, with a cap.** A small monthly cloud quota for meetings makes
+   the first impression great (a conversion driver) while bounding cost; local makes the free tier
+   _unlimited_ once the quota is spent.
+3. **Local is a feature, not a downgrade.** Market it as "on-device · private · offline · unlimited,"
+   and offer it to _paid_ users too as a privacy/offline mode (some users pay specifically for
+   on-device).
+4. **Gate local on device capability.** Detect Apple Silicon / a capable CPU / an available iGPU;
+   don't auto-default a weak CPU-only machine into a slow local experience — prefer cloud-with-quota
+   (or a smaller model) there, and always show which engine is active and why.
+5. **Keep BYOK.** Free/power users can plug in their own Deepgram key for unlimited cloud at their own
+   cost (already supported via `~/.rowboat/config/deepgram.json`).
+6. **Make the default remote-configurable.** Whatever we ship first is a hypothesis — A/B
+   "free → local" vs "free → cloud-quota-then-local" against activation/conversion and flip it without
+   a release.
+
+**Net:** free stays $0-cost and unlimited (local), paid gets the premium cloud experience, and we
+don't sacrifice top-of-funnel quality or the privacy angle to get there.
+
+---
+
+## 10. Risks & mitigations
 
 - **CPU/battery & cold-start.** First call loads the model (~100s of ms–seconds); inference uses
   cores. → Keep a warm `whisper-cli` server process or preload the model; default to a small model;
@@ -241,7 +284,7 @@ speaker labels.
 
 ---
 
-## 10. Phased plan
+## 11. Phased plan
 
 | Phase                          | Scope                                                                                                                                              | Effort     |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
@@ -252,7 +295,7 @@ speaker labels.
 
 ---
 
-## 11. Concrete integration points (files)
+## 12. Concrete integration points (files)
 
 - **New:** `apps/x/packages/core/src/voice/whisper.ts` (model manager + `transcribe`), `whisper`
   binaries under `apps/x/apps/main/resources/whisper/`.
@@ -264,7 +307,7 @@ speaker labels.
 
 ---
 
-## 12. Sources
+## 13. Sources
 
 **whisper.cpp:** [repo](https://github.com/ggml-org/whisper.cpp) ·
 [README](https://github.com/ggml-org/whisper.cpp/blob/master/README.md) ·
