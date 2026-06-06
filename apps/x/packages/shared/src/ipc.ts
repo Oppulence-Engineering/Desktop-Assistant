@@ -26,7 +26,7 @@ import { SolomonApiConfig } from './solomon-account.js';
 import { ZListToolkitsResponse } from './composio.js';
 import { BrowserStateSchema } from './browser-control.js';
 import { BillingInfoSchema } from './billing.js';
-import { EmailBlockSchema, GmailThreadSchema } from './blocks.js';
+import { GmailThreadSchema } from './blocks.js';
 import { PermissionDecision, ApprovalPolicy } from './code-mode.js';
 
 // ============================================================================
