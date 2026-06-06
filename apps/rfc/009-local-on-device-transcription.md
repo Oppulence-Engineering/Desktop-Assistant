@@ -44,11 +44,28 @@
 29. [Alternatives considered](#29-alternatives-considered)
 30. [Decisions](#30-decisions)
 31. [Open questions](#31-open-questions)
-32. [Appendix A — `whisper-cli` flag reference](#appendix-a--whisper-cli-flag-reference)
-33. [Appendix B — model catalog](#appendix-b--model-catalog)
-34. [Appendix C — JSON output schema](#appendix-c--json-output-schema)
-35. [Appendix D — sample code](#appendix-d--sample-code)
-36. [References](#references)
+32. [Deepgram vs whisper.cpp — feature parity matrix](#32-deepgram-vs-whispercpp--feature-parity-matrix)
+33. [Data model & persistence](#33-data-model--persistence)
+34. [Observability, logging & debugging](#34-observability-logging--debugging)
+35. [Failure modes & recovery runbook](#35-failure-modes--recovery-runbook)
+36. [Migration & backwards compatibility](#36-migration--backwards-compatibility)
+37. [Accessibility & internationalization](#37-accessibility--internationalization)
+38. [Open-source licensing & attribution](#38-open-source-licensing--attribution)
+39. [Future work / roadmap](#39-future-work--roadmap)
+40. [Appendix A — `whisper-cli` flag reference](#appendix-a--whisper-cli-flag-reference)
+41. [Appendix B — model catalog](#appendix-b--model-catalog)
+42. [Appendix C — JSON output schema](#appendix-c--json-output-schema)
+43. [Appendix D — sample code](#appendix-d--sample-code)
+44. [Appendix E — full model catalog](#appendix-e--full-model-catalog)
+45. [Appendix F — capability probe parsing](#appendix-f--capability-probe-parsing)
+46. [Appendix G — MessagePort streaming protocol](#appendix-g--messageport-streaming-protocol)
+47. [Appendix H — CMake build per platform](#appendix-h--cmake-build-per-platform)
+48. [Appendix I — CI build workflow](#appendix-i--ci-build-workflow)
+49. [Appendix J — `transcription.json` schema](#appendix-j--transcriptionjson-schema)
+50. [Appendix K — WER computation](#appendix-k--wer-computation)
+51. [Appendix L — GBNF grammar (custom vocabulary)](#appendix-l--gbnf-grammar-custom-vocabulary)
+52. [Appendix M — PCM conversion & resampling](#appendix-m--pcm-conversion--resampling)
+53. [References](#references)
 
 ---
 
@@ -915,6 +932,214 @@ Resolved forks for this RFC:
 
 ---
 
+## 32. Deepgram vs whisper.cpp — feature parity matrix
+
+What we keep, lose, and gain when a transcription moves on-device. Drives the per-feature tiering
+(§16) and sets expectations for support.
+
+| Dimension                        | Deepgram nova-3 (today)     | whisper.cpp local                                        | Verdict                             |
+| -------------------------------- | --------------------------- | -------------------------------------------------------- | ----------------------------------- |
+| **Marginal cost**                | ~$0.0077/min (proxy-billed) | $0                                                       | 🟢 local wins                       |
+| **Privacy**                      | audio → cloud               | audio never leaves device                                | 🟢 local wins                       |
+| **Offline**                      | no                          | yes                                                      | 🟢 local wins                       |
+| **Push-to-talk accuracy**        | excellent                   | very good (`base.en`), excellent (`small`/`large`)       | 🟡 near-parity                      |
+| **Live interim partials**        | instant, per-word           | none in v1 (text on release); near-real-time in meetings | 🔴 cloud wins                       |
+| **End-to-end latency (voice)**   | ~real-time                  | batch on release (~RTF)                                  | 🟡 acceptable                       |
+| **Multi-speaker diarization**    | yes (`diarize`, live)       | no native (per-channel You/Other only)                   | 🔴 cloud wins                       |
+| **Punctuation**                  | yes (`smart_format`)        | yes (native)                                             | 🟢 parity                           |
+| **Numerals / formatting**        | strong (`smart_format`)     | weaker (raw Whisper)                                     | 🟡 cloud edge                       |
+| **Custom vocabulary / keyterm**  | keyterm prompting           | `--prompt` bias + GBNF grammar (Appendix L)              | 🟡 different mechanism              |
+| **Languages**                    | many                        | many (multilingual models); `.en` English-only           | 🟢 parity (with the right model)    |
+| **Profanity filter / redaction** | built-in flags              | none (post-process ourselves)                            | 🔴 cloud wins                       |
+| **Word timestamps**              | yes                         | yes (`-ml 1` / json-full)                                | 🟢 parity                           |
+| **Noise robustness**             | strong                      | model-dependent; VAD helps                               | 🟡 cloud edge on `base`             |
+| **Cold start**                   | none                        | model load (+ Core ML compile once)                      | 🔴 cloud wins                       |
+| **Battery / CPU**                | ~zero local                 | uses device compute                                      | 🔴 cloud wins for the user's device |
+| **Hardware dependence**          | none                        | RTF varies by device (§13)                               | 🔴 cloud wins                       |
+| **Determinism**                  | server-versioned            | pinned binary + model = reproducible                     | 🟢 local wins                       |
+
+**Net:** voice input is near-parity and local wins on cost/privacy → **local default**. Meetings lean
+cloud for diarization + interim + formatting → **cloud default with a free quota → local fallback**.
+
+---
+
+## 33. Data model & persistence
+
+All local-transcription state lives under `~/.rowboat` (the `WorkDir`, `config.ts:30`); nothing
+transcription-related touches the notes/workspace tree.
+
+```
+~/.rowboat/
+├── config/
+│   └── transcription.json          # user prefs (Appendix J) — provider + model overrides
+├── models/
+│   ├── ggml-base.en-q5_1.bin
+│   ├── ggml-base.en-encoder.mlmodelc/   # macOS Core ML sidecar
+│   ├── ggml-silero-v5.1.2.bin           # VAD
+│   └── .catalog-state.json              # install ledger (below)
+└── logs/
+    └── whisper.log                  # rotating engine log (redacted; §34)
+```
+
+**`.catalog-state.json`** — the install ledger the model manager owns (source of truth for "what's
+installed", independent of the static catalog):
+
+```jsonc
+{
+  "schemaVersion": 1,
+  "installed": {
+    "base.en-q5_1": {
+      "path": "ggml-base.en-q5_1.bin",
+      "bytes": 59_700_000,
+      "sha256": "…",
+      "installedAt": "2026-06-06T18:00:00Z",
+      "lastVerifiedAt": "2026-06-06T18:00:00Z",
+      "coreml": true,
+    },
+    "silero-v5.1.2": { "path": "ggml-silero-v5.1.2.bin", "bytes": 1_080_000, "sha256": "…" },
+  },
+  "capability": {
+    "accel": "coreml",
+    "cores": 10,
+    "supported": true,
+    "probedAt": "2026-06-06T18:00:00Z",
+    "binaryVersion": "1.8.x",
+  },
+}
+```
+
+**Persistence rules:** writes are **atomic** (temp + rename); `.catalog-state.json` is rebuilt by
+re-scanning `models/` + re-hashing if it's missing or `schemaVersion` is unknown (self-healing).
+**Verify-on-use:** before a transcribe, if `now − lastVerifiedAt > 30 days`, re-hash the active model
+(cheap insurance against bit-rot/tampering) and update the ledger. **Migration:** `schemaVersion` bumps
+are forward-migrated in `model-manager.ts`; an unknown version triggers a full rescan rather than a
+crash.
+
+---
+
+## 34. Observability, logging & debugging
+
+**Logging (`~/.rowboat/logs/whisper.log`, rotating, redacted):** structured JSON lines —
+`{ ts, level, event, provider, mode, model, accel, audioMs, latencyMs, rtf, code? }`. **Never** log
+audio bytes, WAV paths' contents, or transcript text (privacy stance §21). A line is one transcribe
+attempt; errors include the classified `code` + the first ~500 chars of `whisper-cli` stderr (stderr
+is engine diagnostics, not user content).
+
+**Debug mode** (`ROWBOAT_WHISPER_DEBUG=1` or a settings toggle):
+
+- keep the temp WAV + `out.json` for the last run (instead of unlinking) so a bad transcription can be
+  reproduced by replaying the exact input through the binary;
+- log the full `whisper-cli` argv and systeminfo line;
+- surface a "Copy diagnostics" button that bundles the last N redacted log lines + capability + model
+  - app/binary versions (no audio) into the clipboard for support.
+
+**Metrics** (PostHog §19) plus a local **rolling RTF/latency histogram** shown in the debug panel so a
+user/support can see "your device runs `base.en` at ~4× realtime".
+
+**Crash visibility:** a non-zero `whisper-cli` exit logs the signal/exit code + stderr tail and emits
+`transcription_failed { code: 'engine_crashed' }`; repeated crashes (≥3 in a session) flip the session
+to cloud and raise a one-time "on-device transcription is failing on this device" notice.
+
+---
+
+## 35. Failure modes & recovery runbook
+
+Detection → automatic recovery → user-facing, for every failure. (Codes from §18.)
+
+| #   | Failure                                        | Detection                                        | Auto-recovery                                                    | User-facing                                   |
+| --- | ---------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------- |
+| 1   | Model missing                                  | `pathFor(id)` absent                             | offer download; if it's the onboarding default, background-fetch | "Download the model"                          |
+| 2   | Partial/corrupt model                          | sha256 ≠ manifest                                | delete `.bin`, re-download once                                  | silent retry, then "couldn't download"        |
+| 3   | Disk full mid-download                         | write `ENOSPC`                                   | pause; keep `.part` for resume                                   | "Free up ~150 MB"                             |
+| 4   | Binary missing/!exec                           | `bin.ts` stat / EACCES                           | `chmod 0755`; if still missing → `engine_unavailable`            | fall back to cloud; log                       |
+| 5   | Binary won't run (bad arch / unsigned)         | spawn ENOENT / signal                            | mark `engine_unavailable`; disable local for session             | "On-device transcription unavailable" + cloud |
+| 6   | Engine timeout (slow device)                   | wall > `max(15s, 3×audio)`                       | SIGKILL; fall back to cloud for this utterance                   | toast "took too long — used cloud"            |
+| 7   | Engine crash (segfault/OOM)                    | non-zero exit / signal                           | retry once smaller (fewer threads); then cloud                   | toast; after ≥3 → disable local               |
+| 8   | Empty/garbled audio                            | 0-length PCM / all-silence VAD                   | no-op, return ""                                                 | none                                          |
+| 9   | Hallucinated text on silence                   | VAD should prevent; entropy/no-speech thresholds | drop low-confidence segments                                     | none (best-effort)                            |
+| 10  | Core ML compile stall (first run, mac)         | first-run latency spike                          | show "preparing model…" once; cache compiled `.mlmodelc`         | one-time "preparing" state                    |
+| 11  | Model file deleted out-of-band                 | open ENOENT                                      | rescan ledger; re-download or fall back                          | "model is missing — re-download"              |
+| 12  | Concurrent transcribe                          | semaphore held                                   | queue (FIFO, max depth N) or coalesce                            | none (`busy` never shown)                     |
+| 13  | Quota exhausted (meeting)                      | proxy `meetingMinutesRemaining=0`                | switch meeting → local                                           | "free cloud minutes used — on-device"         |
+| 14  | Capability regressed (e.g. GPU driver removed) | probe mismatch on launch                         | re-probe; downgrade accel; maybe fall back                       | silent unless `supported=false`               |
+
+**Principle:** local transcription **never hard-fails the feature** when a cloud path is available — it
+degrades to cloud and records `fallback=true`. The only hard errors are user-actionable (download,
+disk).
+
+---
+
+## 36. Migration & backwards compatibility
+
+- **Existing users** have `deepgram.json` (or rely on the Solomon proxy) and **no** `transcription.json`.
+  On first launch after this ships, `getTranscriptionConfig()` synthesizes defaults: `voiceProvider =
+remoteDefault ?? (capable ? 'whisper-local' : currentCloud)`, `meetingProvider = currentCloud`. **No
+  behavior change until** the remote default flips or the user opts in — so the rollout is invisible
+  until we choose.
+- **IPC versioning:** the `whisper:*` channels are additive; old renderers simply don't call them. The
+  MessagePort protocol carries a `v` field (Appendix G); main rejects unknown `v` with a typed error so
+  a renderer/main version skew degrades to "engine_unavailable" rather than corrupting a stream.
+- **Catalog/ledger versioning:** `schemaVersion` on both the static catalog and `.catalog-state.json`;
+  forward-migrate or rescan (§33). Model **ids are stable**; renaming a model adds a new id + an alias
+  map, never mutates an installed id.
+- **Downgrade safety:** if a user downgrades the app, an unknown future model id in
+  `transcription.json` falls back to the default model (don't crash on an unrecognized id).
+- **Uninstall/cleanup:** removing models is user-initiated; an app uninstall leaves `~/.rowboat/models`
+  (same as today's config) — documented, with a "remove all models" affordance.
+
+---
+
+## 37. Accessibility & internationalization
+
+- **Multilingual:** `.en` models are English-only. For non-English users offer the multilingual
+  `base`/`small` (larger) and either auto-detect (`-l auto`) or a language picker in settings. The
+  default model is chosen by **app locale** (English locale → `base.en`; else multilingual `base`),
+  with an explicit override.
+- **Language UX:** a per-transcription language hint (voice mode can pass `lang`); meeting mode detects
+  once at start. Document that mixing languages mid-utterance degrades quality (Whisper limitation).
+- **Screen readers:** the recording state and the "transcribing…" state expose `aria-live` status
+  ("Recording", "Transcribing", "Transcription ready") so non-visual users get the same feedback the
+  visual indicator gives; the engine choice is announced when it changes (e.g. quota fallback).
+- **RTL / scripts:** transcripts inherit the editor's existing RTL handling; no special casing needed.
+- **Reduced-motion / low-power:** respect the OS low-power mode — if active and the device is weak,
+  prefer cloud or a smaller model and surface why.
+
+---
+
+## 38. Open-source licensing & attribution
+
+- **whisper.cpp + ggml: MIT.** The original OpenAI Whisper **weights: MIT.** Silero VAD: MIT. All
+  permissive for commercial bundling.
+- **Obligations:** ship the MIT `LICENSE` text for whisper.cpp/ggml in the app's `NOTICE` /
+  third-party-licenses surface (the repo already has a root `NOTICE`); credit "Transcription powered by
+  whisper.cpp (MIT)" in About/settings.
+- **Models** are downloaded at runtime (not redistributed in the installer), but we still attribute the
+  source (Hugging Face `ggerganov/whisper.cpp`) and pin a revision for provenance.
+- **Build provenance:** record the pinned whisper.cpp **tag + commit** we built from in the binary's
+  version string and the catalog metadata, so a shipped binary is traceable to source.
+- **Export/crypto:** whisper.cpp has no crypto; no EAR/ECCN concerns beyond the app's existing posture.
+
+---
+
+## 39. Future work / roadmap
+
+Beyond v1 (voice batch) + v2 (meeting streaming):
+
+| Theme                              | Idea                                                                                                                                                  |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **On-device diarization**          | VAD + speaker-embedding (pyannote-onnx / tinydiarize `-tdrz`) to recover in-room `Speaker N` labels locally — own RFC.                                |
+| **True low-latency streaming**     | adopt the `whisper-stream` sliding window (or `@kutalia` addon) for live partials in voice mode, not just meetings.                                   |
+| **Custom vocabulary**              | per-user term lists → `--prompt` biasing and/or **GBNF grammar** (Appendix L) for names/jargon/tickers.                                               |
+| **Summarization synergy**          | feed local transcripts straight into the existing meeting-note summarizer (`summarize_meeting.ts`) fully offline (local STT + local/again-cloud LLM). |
+| **Word-level highlight / karaoke** | use word timestamps (`-ml 1`) to highlight as audio replays in the note.                                                                              |
+| **Model auto-update**              | background-refresh the default model when a better quant/version ships; checksum-gated.                                                               |
+| **GPU expansion**                  | first-class CUDA on Windows/Linux NVIDIA; OpenVINO on Intel; ROCm on AMD — behind capability detection.                                               |
+| **Speaker enrollment**             | "this is me" voiceprint → reliable "You" labeling beyond the mic-channel heuristic.                                                                   |
+| **Redaction/profanity**            | optional post-process pass to match Deepgram's redaction/filter features.                                                                             |
+| **Shared model cache**             | if multiple Solomon apps coexist, a shared `~/.rowboat/models` already dedupes.                                                                       |
+
+---
+
 ## Appendix A — `whisper-cli` flag reference
 
 (Subset we rely on; full list via `whisper-cli --help`.)
@@ -1052,6 +1277,260 @@ export async function run(wavPath: string, o: RunOpts): Promise<RunResult> {
   };
 }
 ```
+
+## Appendix E — full model catalog
+
+The shippable subset (we don't expose every upstream variant — only quantized + the recommended
+tiers). Disk sizes approximate; **exact bytes + `sha256` are pulled from the whisper.cpp manifest at
+build time** (a CI script), never hand-typed. `dl` = surfaced in the settings picker.
+
+| id                    | family         | quant | lang  | disk    | peak RAM | tier                        | dl               |
+| --------------------- | -------------- | ----- | ----- | ------- | -------- | --------------------------- | ---------------- |
+| `tiny.en-q5_1`        | tiny           | q5_1  | en    | ~31 MB  | ~273 MB  | fallback for weak devices   | yes              |
+| `tiny-q5_1`           | tiny           | q5_1  | multi | ~31 MB  | ~273 MB  | multilingual weak           | no               |
+| **`base.en-q5_1`**    | base           | q5_1  | en    | ~57 MB  | ~388 MB  | **default (en)**            | yes              |
+| `base-q5_1`           | base           | q5_1  | multi | ~57 MB  | ~388 MB  | **default (non-en locale)** | yes              |
+| `small.en-q5_1`       | small          | q5_1  | en    | ~182 MB | ~852 MB  | accuracy step-up (en)       | yes              |
+| `small-q5_1`          | small          | q5_1  | multi | ~182 MB | ~852 MB  | accuracy step-up (multi)    | yes              |
+| `large-v3-turbo-q5_0` | large-v3-turbo | q5_0  | multi | ~547 MB | ~1.5 GB  | high accuracy, fast         | yes              |
+| `large-v3-q5_0`       | large-v3       | q5_0  | multi | ~1.1 GB | ~3.9 GB  | max accuracy                | yes (power user) |
+| `silero-v5.1.2`       | VAD            | —     | —     | ~1 MB   | —        | always (with local)         | auto             |
+
+Notes: `base` unquantized is 142 MiB (official table); `q5_1` ≈ ~57 MB. Core ML sidecars
+(`…-encoder.mlmodelc`) are downloaded only on macOS for the active model. Multilingual variants are
+offered when app locale ≠ English or the user opts in (§37).
+
+## Appendix F — capability probe parsing
+
+`whisper-cli` prints a `system_info` line listing compiled backends; we parse it once and cache (§33).
+
+```
+whisper_init_state: ...
+system_info: n_threads = 7 | AVX = 1 | AVX2 = 1 | NEON = 0 | METAL = 1 | COREML = 1 | ...
+```
+
+```ts
+function parseAccel(systemInfo: string): Accel {
+  const on = (k: string) => new RegExp(`${k}\\s*=\\s*1`).test(systemInfo);
+  if (on("COREML")) return "coreml";
+  if (on("METAL")) return "metal";
+  if (on("CUDA")) return "cuda";
+  if (on("VULKAN")) return "vulkan";
+  return "cpu";
+}
+```
+
+For a **benchmark-based tier auto-pick** (optional), run a 3-second fixture through the candidate model
+once, measure RTF, and store it; if RTF < 1.0 on `base.en`, mark `supported=false` and prefer cloud.
+
+## Appendix G — MessagePort streaming protocol
+
+Opened once per meeting via `whisper:openStream`; main returns a `MessagePortMain`, renderer gets a
+`MessagePort`. All audio frames are **transferable** `ArrayBuffer`s (zero-copy). Protocol is versioned.
+
+```ts
+type Up = // renderer → main
+  | { v: 1; type: "audio"; seq: number; pcm16: ArrayBuffer; channels: 1 | 2 }
+  | { v: 1; type: "flush" } // end of speech, transcribe tail
+  | { v: 1; type: "close" };
+type Down = // main → renderer
+  | { v: 1; type: "ack"; seq: number; credits: number }
+  | { v: 1; type: "partial"; segment: Segment } // may be revised
+  | { v: 1; type: "final"; segment: Segment } // stable
+  | { v: 1; type: "error"; code: WhisperErrorCode };
+interface Segment {
+  start: number;
+  end: number;
+  text: string;
+  speaker: "you" | "other";
+}
+```
+
+**Renderer side:**
+
+```ts
+const { streamId, port } = await window.ipc.invoke("whisper:openStream", { channels: 2 });
+let credits = 3;
+port.onmessage = (e: MessageEvent<Down>) => {
+  const m = e.data;
+  if (m.type === "ack") credits = m.credits;
+  else if (m.type === "final") appendToNote(m.segment);
+};
+function sendChunk(buf: ArrayBuffer) {
+  if (credits <= 0) return drop(buf); // backpressure: drop or coalesce
+  credits--;
+  port.postMessage({ v: 1, type: "audio", seq: nextSeq(), pcm16: buf, channels: 2 }, [buf]);
+}
+```
+
+**Main side** (`streaming.ts`): per `streamId`, a Silero-VAD segmenter accumulates frames per channel,
+cuts on silence, transcribes each closed segment via `runner.run`, posts `final`, and replenishes
+`credits` with each `ack`. `flush`/`close` transcribe the tail and tear down the long-lived process.
+
+## Appendix H — CMake build per platform
+
+Pinned tag `vX.Y.Z`; static-link ggml/whisper into one `whisper-cli`.
+
+```bash
+# common
+git clone --branch vX.Y.Z --depth 1 https://github.com/ggml-org/whisper.cpp && cd whisper.cpp
+
+# macOS arm64 — Metal + Core ML
+cmake -B build -DCMAKE_OSX_ARCHITECTURES=arm64 \
+  -DGGML_METAL=ON -DWHISPER_COREML=ON -DWHISPER_COREML_ALLOW_FALLBACK=ON \
+  -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j --config Release   # → build/bin/whisper-cli
+
+# macOS x64 — Metal
+cmake -B build -DCMAKE_OSX_ARCHITECTURES=x86_64 -DGGML_METAL=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release
+
+# Windows x64 — Vulkan (CPU/OpenBLAS fallback compiled in)
+cmake -B build -G "Visual Studio 17 2022" -A x64 -DGGML_VULKAN=ON -DBUILD_SHARED_LIBS=OFF
+cmake --build build --config Release       # → build\bin\Release\whisper-cli.exe
+
+# Linux x64/arm64 — Vulkan + CPU
+cmake -B build -DGGML_VULKAN=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
+```
+
+Verify after build: `whisper-cli --version` and a fixture transcribe; record the printed backend line
+into the catalog/build metadata.
+
+## Appendix I — CI build workflow
+
+Sketch of a `whisper-build` GitHub Actions job (artifacts consumed by the release/staging pipeline →
+`vendor/whisper/<plat-arch>/`).
+
+```yaml
+name: whisper-build
+on: { workflow_dispatch: {}, push: { paths: ["vendor/whisper/PIN"] } }
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - { os: macos-14, plat: darwin, arch: arm64, flags: "-DGGML_METAL=ON -DWHISPER_COREML=ON" }
+          - { os: macos-13, plat: darwin, arch: x64,   flags: "-DGGML_METAL=ON" }
+          - { os: windows-2022, plat: win32, arch: x64, flags: "-DGGML_VULKAN=ON" }
+          - { os: ubuntu-22.04, plat: linux, arch: x64, flags: "-DGGML_VULKAN=ON" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - run: ./vendor/whisper/build.sh "${{ matrix.flags }}"   # clones pinned tag, cmake, copies bin
+      - if: matrix.plat == 'darwin'
+        run: |
+          codesign --force --options runtime --timestamp \
+            --entitlements apps/x/apps/main/entitlements.plist \
+            --sign "$DEVELOPER_ID" out/whisper-cli
+          codesign --verify --strict out/whisper-cli
+      - uses: actions/upload-artifact@v4
+        with: { name: whisper-${{ matrix.plat }}-${{ matrix.arch }}, path: out/ }
+```
+
+The release packaging job downloads the matching artifact, stages it into `.package/whisper/`, and the
+app's existing `osxNotarize` notarizes the whole bundle (which now includes the signed `whisper-cli`).
+
+## Appendix J — `transcription.json` schema
+
+```jsonc
+{
+  "$schemaVersion": 1,
+  "voiceProvider": "whisper-local", // 'solomon' | 'deepgram' | 'whisper-local'
+  "meetingProvider": "deepgram",
+  "whisper": {
+    "model": "base.en-q5_1",
+    "language": "en", // or 'auto'
+    "threads": null, // null → auto (min(8, cores-1))
+    "vad": true,
+  },
+}
+```
+
+Resolution precedence (main): **user `transcription.json` → remote `transcriptionDefaults` → hardcoded
+fallback**, then a **capability gate** can downgrade `whisper-local → cloud` (§12). Absent file → all
+defaults synthesized from current cloud config + sign-in (§36). Validated by a zod schema in
+`packages/shared`; unknown fields ignored, unknown `model` → default model.
+
+## Appendix K — WER computation
+
+Word error rate for the eval suite (§27). Levenshtein over word tokens after normalization (lowercase,
+strip punctuation, collapse whitespace, spell-out or normalize numerals consistently on both sides).
+
+```
+WER = (S + D + I) / N
+  S substitutions, D deletions, I insertions (min edit distance, word-level)
+  N words in the reference
+```
+
+```ts
+function wer(ref: string, hyp: string): number {
+  const r = norm(ref),
+    h = norm(hyp); // tokenize → string[]
+  const d = Array.from({ length: r.length + 1 }, (_, i) =>
+    Array.from({ length: h.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  );
+  for (let i = 1; i <= r.length; i++)
+    for (let j = 1; j <= h.length; j++)
+      d[i][j] =
+        r[i - 1] === h[j - 1]
+          ? d[i - 1][j - 1]
+          : 1 + Math.min(d[i - 1][j], d[i][j - 1], d[i - 1][j - 1]);
+  return r.length ? d[r.length][h.length] / r.length : 0;
+}
+```
+
+CI asserts per-model WER on the fixed corpus stays within tolerance vs a committed baseline (catches a
+model/binary regression). Report per-clip and aggregate (clean / noisy / accented buckets).
+
+## Appendix L — GBNF grammar (custom vocabulary)
+
+For names/jargon/tickers, whisper.cpp supports **`--grammar` (GBNF)** to constrain or bias decoding —
+the basis of a future "custom vocabulary" feature (§39). Example biasing a finite ticker set:
+
+```gbnf
+root        ::= (word | ticker | " ")+
+ticker      ::= "AAPL" | "MSFT" | "NVDA" | "GOOGL"
+word        ::= [a-zA-Z']+
+```
+
+Used as `whisper-cli --grammar tickers.gbnf --grammar-penalty 100 …`. v1 ships **`--prompt`** biasing
+(simpler: prepend likely terms as an initial prompt); GBNF is a v-next enhancement when users want hard
+constraints. Both keep custom vocabulary **on-device** (no cloud custom-model training).
+
+## Appendix M — PCM conversion & resampling
+
+The renderer's `AudioContext({ sampleRate: 16000 })` already resamples device audio (often 44.1/48 kHz)
+to 16 kHz, so main receives 16 kHz directly — **no resampling in main** for the normal path. If a future
+source delivers non-16 kHz PCM, resample in main before WAV (linear or polyphase).
+
+**float32 → int16** (the renderer already does this; documented for the meeting deinterleave path):
+
+```ts
+function f32ToI16(f32: Float32Array): Int16Array {
+  const i16 = new Int16Array(f32.length);
+  for (let i = 0; i < f32.length; i++) {
+    const s = Math.max(-1, Math.min(1, f32[i])); // clamp
+    i16[i] = s < 0 ? s * 0x8000 : s * 0x7fff; // asymmetric full-scale
+  }
+  return i16;
+}
+```
+
+**Stereo deinterleave** (meeting mic/system → two mono passes):
+
+```ts
+function deinterleaveStereoI16(inter: Int16Array): { mic: Int16Array; sys: Int16Array } {
+  const n = inter.length >> 1,
+    mic = new Int16Array(n),
+    sys = new Int16Array(n);
+  for (let i = 0; i < n; i++) {
+    mic[i] = inter[2 * i];
+    sys[i] = inter[2 * i + 1];
+  }
+  return { mic, sys };
+}
+```
+
+Dithering is unnecessary at 16-bit for speech ASR; we skip it. Clipping is clamped, not wrapped.
 
 ## References
 
