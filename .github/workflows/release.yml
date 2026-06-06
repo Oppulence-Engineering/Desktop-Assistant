@@ -169,8 +169,9 @@ jobs:
               console.log(`Packaged app: ${path.relative(appDir, outputPath)}`);
             }
 
-            const binaryName = platform === 'win32' ? `${executableName}.exe` : executableName;
-            const binaryPath = path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, binaryName);
+            const binaryPath = platform === 'darwin'
+              ? path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, 'Rowboat.app', 'Contents', 'MacOS', executableName)
+              : path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, platform === 'win32' ? `${executableName}.exe` : executableName);
             await access(binaryPath);
             console.log(`Verified packaged binary: ${path.relative(appDir, binaryPath)}`);
           }
@@ -298,8 +299,9 @@ jobs:
               console.log(`Packaged app: ${path.relative(appDir, outputPath)}`);
             }
 
-            const binaryName = platform === 'win32' ? `${executableName}.exe` : executableName;
-            const binaryPath = path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, binaryName);
+            const binaryPath = platform === 'darwin'
+              ? path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, 'Rowboat.app', 'Contents', 'MacOS', executableName)
+              : path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, platform === 'win32' ? `${executableName}.exe` : executableName);
             await access(binaryPath);
             console.log(`Verified packaged binary: ${path.relative(appDir, binaryPath)}`);
           }
@@ -414,8 +416,9 @@ jobs:
               console.log(`Packaged app: ${path.relative(appDir, outputPath)}`);
             }
 
-            const binaryName = platform === 'win32' ? `${executableName}.exe` : executableName;
-            const binaryPath = path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, binaryName);
+            const binaryPath = platform === 'darwin'
+              ? path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, 'Rowboat.app', 'Contents', 'MacOS', executableName)
+              : path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, platform === 'win32' ? `${executableName}.exe` : executableName);
             await access(binaryPath);
             console.log(`Verified packaged binary: ${path.relative(appDir, binaryPath)}`);
           }
