@@ -136,8 +136,47 @@ jobs:
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
         run: |
           rm -rf out
-          npx electron-forge package --arch=arm64,x64 --platform=darwin
-          npx electron-forge make --skip-package --arch=arm64,x64 --platform=darwin --targets "@electron-forge/maker-dmg,@electron-forge/maker-zip"
+          node --input-type=module - darwin arm64,x64 <<'NODE'
+          import { access } from 'node:fs/promises';
+          import { createRequire } from 'node:module';
+          import path from 'node:path';
+
+          const appDir = process.cwd();
+          const requireFromApp = createRequire(path.join(appDir, 'package.json'));
+          const packager = requireFromApp('@electron/packager');
+          const forgeConfig = requireFromApp('./forge.config.cjs');
+          const [platform, archCsv] = process.argv.slice(2);
+          const arches = archCsv.split(',');
+          const packagerConfig = forgeConfig.packagerConfig ?? {};
+          const executableName = packagerConfig.executableName ?? 'rowboat';
+
+          if (forgeConfig.hooks?.generateAssets) {
+            await forgeConfig.hooks.generateAssets(forgeConfig, platform, arches[0]);
+          }
+
+          for (const arch of arches) {
+            const outputPaths = await packager({
+              ...packagerConfig,
+              dir: appDir,
+              name: 'Rowboat',
+              platform,
+              arch,
+              out: path.join(appDir, 'out'),
+              overwrite: true,
+            });
+
+            for (const outputPath of outputPaths) {
+              console.log(`Packaged app: ${path.relative(appDir, outputPath)}`);
+            }
+
+            const binaryName = platform === 'win32' ? `${executableName}.exe` : executableName;
+            const binaryPath = path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, binaryName);
+            await access(binaryPath);
+            console.log(`Verified packaged binary: ${path.relative(appDir, binaryPath)}`);
+          }
+          NODE
+          npx electron-forge make --skip-package --arch=arm64 --platform=darwin --targets "@electron-forge/maker-dmg,@electron-forge/maker-zip"
+          npx electron-forge make --skip-package --arch=x64 --platform=darwin --targets "@electron-forge/maker-dmg,@electron-forge/maker-zip"
         working-directory: apps/x/apps/main
 
       - name: Cleanup keychain
@@ -226,8 +265,47 @@ jobs:
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
         run: |
           rm -rf out
-          npx electron-forge package --arch=x64,arm64 --platform=linux
-          npx electron-forge make --skip-package --arch=x64,arm64 --platform=linux --targets "@electron-forge/maker-deb,@electron-forge/maker-rpm,@electron-forge/maker-zip"
+          node --input-type=module - linux x64,arm64 <<'NODE'
+          import { access } from 'node:fs/promises';
+          import { createRequire } from 'node:module';
+          import path from 'node:path';
+
+          const appDir = process.cwd();
+          const requireFromApp = createRequire(path.join(appDir, 'package.json'));
+          const packager = requireFromApp('@electron/packager');
+          const forgeConfig = requireFromApp('./forge.config.cjs');
+          const [platform, archCsv] = process.argv.slice(2);
+          const arches = archCsv.split(',');
+          const packagerConfig = forgeConfig.packagerConfig ?? {};
+          const executableName = packagerConfig.executableName ?? 'rowboat';
+
+          if (forgeConfig.hooks?.generateAssets) {
+            await forgeConfig.hooks.generateAssets(forgeConfig, platform, arches[0]);
+          }
+
+          for (const arch of arches) {
+            const outputPaths = await packager({
+              ...packagerConfig,
+              dir: appDir,
+              name: 'Rowboat',
+              platform,
+              arch,
+              out: path.join(appDir, 'out'),
+              overwrite: true,
+            });
+
+            for (const outputPath of outputPaths) {
+              console.log(`Packaged app: ${path.relative(appDir, outputPath)}`);
+            }
+
+            const binaryName = platform === 'win32' ? `${executableName}.exe` : executableName;
+            const binaryPath = path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, binaryName);
+            await access(binaryPath);
+            console.log(`Verified packaged binary: ${path.relative(appDir, binaryPath)}`);
+          }
+          NODE
+          npx electron-forge make --skip-package --arch=x64 --platform=linux --targets "@electron-forge/maker-deb,@electron-forge/maker-rpm,@electron-forge/maker-zip"
+          npx electron-forge make --skip-package --arch=arm64 --platform=linux --targets "@electron-forge/maker-deb,@electron-forge/maker-rpm,@electron-forge/maker-zip"
         working-directory: apps/x/apps/main
 
       - name: Attach release assets
@@ -303,7 +381,46 @@ jobs:
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
         run: |
           Remove-Item -Recurse -Force out -ErrorAction SilentlyContinue
-          npx electron-forge package --arch=x64 --platform=win32
+          $packageScript = @'
+          import { access } from 'node:fs/promises';
+          import { createRequire } from 'node:module';
+          import path from 'node:path';
+
+          const appDir = process.cwd();
+          const requireFromApp = createRequire(path.join(appDir, 'package.json'));
+          const packager = requireFromApp('@electron/packager');
+          const forgeConfig = requireFromApp('./forge.config.cjs');
+          const [platform, archCsv] = process.argv.slice(2);
+          const arches = archCsv.split(',');
+          const packagerConfig = forgeConfig.packagerConfig ?? {};
+          const executableName = packagerConfig.executableName ?? 'rowboat';
+
+          if (forgeConfig.hooks?.generateAssets) {
+            await forgeConfig.hooks.generateAssets(forgeConfig, platform, arches[0]);
+          }
+
+          for (const arch of arches) {
+            const outputPaths = await packager({
+              ...packagerConfig,
+              dir: appDir,
+              name: 'Rowboat',
+              platform,
+              arch,
+              out: path.join(appDir, 'out'),
+              overwrite: true,
+            });
+
+            for (const outputPath of outputPaths) {
+              console.log(`Packaged app: ${path.relative(appDir, outputPath)}`);
+            }
+
+            const binaryName = platform === 'win32' ? `${executableName}.exe` : executableName;
+            const binaryPath = path.join(appDir, 'out', `Rowboat-${platform}-${arch}`, binaryName);
+            await access(binaryPath);
+            console.log(`Verified packaged binary: ${path.relative(appDir, binaryPath)}`);
+          }
+          '@
+          $packageScript | node --input-type=module - win32 x64
           npx electron-forge make --skip-package --arch=x64 --platform=win32 --targets "@electron-forge/maker-squirrel,@electron-forge/maker-zip"
         working-directory: apps/x/apps/main
 
