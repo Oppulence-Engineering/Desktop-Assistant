@@ -2,7 +2,8 @@
   "name": "rowboat-monorepo-tooling",
   "version": "0.0.0",
   "private": true,
-  "description": "Root tooling package: pins the repo-wide quality-gate toolchain (lefthook git hooks, Prettier formatting, commit-message linting). Application code lives under apps/* and packages/*. This package is intentionally minimal and is NOT a pnpm workspace root — install it with `pnpm install --ignore-workspace` (or `npm install`) to set up git hooks. NOTE: deliberately no `packageManager` field — it would conflict with `pnpm/action-setup`'s `version:` input in CI (ERR_PNPM_BAD_PM_VERSION).",
+  "description": "Root tooling package: pins the repo-wide quality-gate toolchain (lefthook git hooks, Prettier formatting, commit-message linting). Application code lives under apps/* and packages/*. This package is intentionally minimal and is NOT a pnpm workspace root — install it with `pnpm install --ignore-workspace` (or `npm install`) to set up git hooks.",
+  "packageManager": "pnpm@10.24.0",
   "scripts": {
     "prepare": "lefthook install",
     "hooks:install": "lefthook install",
