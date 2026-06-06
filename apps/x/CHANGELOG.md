@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.11](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.10...v0.1.11) (2026-06-06)
+
+
+### Features
+
+* **x:** ElevenLabs UI rework + engineering quality gates ([#40](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/40)) ([27cf9b5](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/27cf9b5b9db1c8739c0ca1844606d6e3acc95133))
+
+
+### Bug Fixes
+
+* address code mode review feedback ([a5f10f6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a5f10f63ced50bea51d28f2485632e7705ddcddb))
+
 ## [0.1.10](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.9...v0.1.10) (2026-06-06)
 
 
