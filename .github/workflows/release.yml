@@ -134,7 +134,10 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
-        run: npx electron-forge make --arch=arm64,x64 --platform=darwin --targets "@electron-forge/maker-dmg,@electron-forge/maker-zip"
+        run: |
+          rm -rf out
+          npx electron-forge package --arch=arm64,x64 --platform=darwin
+          npx electron-forge make --skip-package --arch=arm64,x64 --platform=darwin --targets "@electron-forge/maker-dmg,@electron-forge/maker-zip"
         working-directory: apps/x/apps/main
 
       - name: Cleanup keychain
@@ -151,6 +154,12 @@ jobs:
           RELEASE_TAG: ${{ needs.release-context.outputs.tag_name }}
         run: |
           artifacts_file="$RUNNER_TEMP/distributables.txt"
+          if [ ! -d out/make ]; then
+            echo "Expected out/make, but it was not created" >&2
+            find out -maxdepth 4 -type f -print 2>/dev/null | sed -n '1,120p' >&2 || true
+            exit 1
+          fi
+
           find out/make -type f -print > "$artifacts_file"
           if [ ! -s "$artifacts_file" ]; then
             echo "No distributables were produced in out/make" >&2
@@ -215,7 +224,10 @@ jobs:
         env:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
-        run: npx electron-forge make --arch=x64,arm64 --platform=linux --targets "@electron-forge/maker-deb,@electron-forge/maker-rpm,@electron-forge/maker-zip"
+        run: |
+          rm -rf out
+          npx electron-forge package --arch=x64,arm64 --platform=linux
+          npx electron-forge make --skip-package --arch=x64,arm64 --platform=linux --targets "@electron-forge/maker-deb,@electron-forge/maker-rpm,@electron-forge/maker-zip"
         working-directory: apps/x/apps/main
 
       - name: Attach release assets
@@ -224,6 +236,12 @@ jobs:
           RELEASE_TAG: ${{ needs.release-context.outputs.tag_name }}
         run: |
           artifacts_file="$RUNNER_TEMP/distributables.txt"
+          if [ ! -d out/make ]; then
+            echo "Expected out/make, but it was not created" >&2
+            find out -maxdepth 4 -type f -print 2>/dev/null | sed -n '1,120p' >&2 || true
+            exit 1
+          fi
+
           find out/make -type f -print > "$artifacts_file"
           if [ ! -s "$artifacts_file" ]; then
             echo "No distributables were produced in out/make" >&2
@@ -283,7 +301,10 @@ jobs:
         env:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
-        run: npx electron-forge make --arch=x64 --platform=win32 --targets "@electron-forge/maker-squirrel,@electron-forge/maker-zip"
+        run: |
+          Remove-Item -Recurse -Force out -ErrorAction SilentlyContinue
+          npx electron-forge package --arch=x64 --platform=win32
+          npx electron-forge make --skip-package --arch=x64 --platform=win32 --targets "@electron-forge/maker-squirrel,@electron-forge/maker-zip"
         working-directory: apps/x/apps/main
 
       - name: Attach release assets
@@ -292,6 +313,13 @@ jobs:
           RELEASE_TAG: ${{ needs.release-context.outputs.tag_name }}
         shell: pwsh
         run: |
+          if (!(Test-Path "out/make")) {
+            if (Test-Path "out") {
+              Get-ChildItem -Path "out" -File -Recurse | Select-Object -First 120 | ForEach-Object { Write-Output $_.FullName }
+            }
+            throw "Expected out/make, but it was not created"
+          }
+
           $artifacts = @(Get-ChildItem -Path "out/make" -File -Recurse)
           if ($artifacts.Count -eq 0) {
             throw "No distributables were produced in out/make"
