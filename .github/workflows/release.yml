@@ -3,6 +3,12 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Existing release tag to build and attach distributables for
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -15,6 +21,7 @@ concurrency:
 
 jobs:
   release-please:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs['apps/x--release_created'] }}
@@ -29,15 +36,53 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  build-macos:
+  release-context:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.context.outputs.release_created }}
+      tag_name: ${{ steps.context.outputs.tag_name }}
+      version: ${{ steps.context.outputs.version }}
+    steps:
+      - name: Resolve release context
+        id: context
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_TAG_NAME: ${{ inputs.tag_name }}
+          RELEASE_CREATED: ${{ needs.release-please.outputs.release_created }}
+          RELEASE_TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
+          RELEASE_VERSION: ${{ needs.release-please.outputs.version }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ -z "$DISPATCH_TAG_NAME" ]; then
+              echo "tag_name is required for manual runs" >&2
+              exit 1
+            fi
+
+            echo "release_created=true" >> "$GITHUB_OUTPUT"
+            echo "tag_name=$DISPATCH_TAG_NAME" >> "$GITHUB_OUTPUT"
+            echo "version=${DISPATCH_TAG_NAME#v}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$RELEASE_CREATED" != "true" ]; then
+            RELEASE_CREATED=false
+          fi
+
+          echo "release_created=$RELEASE_CREATED" >> "$GITHUB_OUTPUT"
+          echo "tag_name=$RELEASE_TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+
+  build-macos:
+    needs: release-context
+    if: needs.release-context.outputs.release_created == 'true'
     runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.release-context.outputs.tag_name }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -82,15 +127,14 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
 
-      - name: Build and publish electron app
+      - name: Build electron distributables
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-forge publish --arch=arm64,x64 --platform=darwin
+        run: npx electron-forge make --arch=arm64,x64 --platform=darwin --targets "@electron-forge/maker-dmg,@electron-forge/maker-zip"
         working-directory: apps/x/apps/main
 
       - name: Cleanup keychain
@@ -101,22 +145,40 @@ jobs:
             security delete-keychain "$KEYCHAIN_PATH" || true
           fi
 
+      - name: Attach release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.release-context.outputs.tag_name }}
+        run: |
+          artifacts_file="$RUNNER_TEMP/distributables.txt"
+          find out/make -type f -print > "$artifacts_file"
+          if [ ! -s "$artifacts_file" ]; then
+            echo "No distributables were produced in out/make" >&2
+            exit 1
+          fi
+
+          while IFS= read -r artifact; do
+            gh release upload "$RELEASE_TAG" "$artifact" --clobber
+          done < "$artifacts_file"
+        working-directory: apps/x/apps/main
+
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v6
         with:
           name: distributables-macos
-          path: apps/x/apps/main/out/make/*
+          path: apps/x/apps/main/out/make/**
+          if-no-files-found: error
           retention-days: 30
 
   build-linux:
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    needs: release-context
+    if: needs.release-context.outputs.release_created == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.release-context.outputs.tag_name }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -140,34 +202,56 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-electron-
 
+      - name: Install maker dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot rpm
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
 
-      - name: Build and publish electron app
+      - name: Build electron distributables
         env:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-forge publish --arch=x64,arm64 --platform=linux
+        run: npx electron-forge make --arch=x64,arm64 --platform=linux --targets "@electron-forge/maker-deb,@electron-forge/maker-rpm,@electron-forge/maker-zip"
+        working-directory: apps/x/apps/main
+
+      - name: Attach release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.release-context.outputs.tag_name }}
+        run: |
+          artifacts_file="$RUNNER_TEMP/distributables.txt"
+          find out/make -type f -print > "$artifacts_file"
+          if [ ! -s "$artifacts_file" ]; then
+            echo "No distributables were produced in out/make" >&2
+            exit 1
+          fi
+
+          while IFS= read -r artifact; do
+            gh release upload "$RELEASE_TAG" "$artifact" --clobber
+          done < "$artifacts_file"
         working-directory: apps/x/apps/main
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v6
         with:
           name: distributables-linux
-          path: apps/x/apps/main/out/make/*
+          path: apps/x/apps/main/out/make/**
+          if-no-files-found: error
           retention-days: 30
 
   build-windows:
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    needs: release-context
+    if: needs.release-context.outputs.release_created == 'true'
     runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.release-context.outputs.tag_name }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -195,24 +279,40 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
 
-      - name: Build and publish electron app
+      - name: Build electron distributables
         env:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-forge publish --arch=x64 --platform=win32
+        run: npx electron-forge make --arch=x64 --platform=win32 --targets "@electron-forge/maker-squirrel,@electron-forge/maker-zip"
+        working-directory: apps/x/apps/main
+
+      - name: Attach release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.release-context.outputs.tag_name }}
+        shell: pwsh
+        run: |
+          $artifacts = @(Get-ChildItem -Path "out/make" -File -Recurse)
+          if ($artifacts.Count -eq 0) {
+            throw "No distributables were produced in out/make"
+          }
+
+          foreach ($artifact in $artifacts) {
+            gh release upload $env:RELEASE_TAG $artifact.FullName --clobber
+          }
         working-directory: apps/x/apps/main
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v6
         with:
           name: distributables-windows
-          path: apps/x/apps/main/out/make/*
+          path: apps/x/apps/main/out/make/**
+          if-no-files-found: error
           retention-days: 30
 
   attach-sbom:
-    needs: [release-please, build-macos, build-linux, build-windows]
-    if: needs.release-please.outputs.release_created == 'true'
+    needs: [release-context, build-macos, build-linux, build-windows]
+    if: needs.release-context.outputs.release_created == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -220,14 +320,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.release-context.outputs.tag_name }}
 
       - name: Generate SPDX SBOM with Syft
         uses: anchore/sbom-action@v0
         with:
           path: ./apps/x
           format: spdx-json
-          output-file: rowboat-x-${{ needs.release-please.outputs.version }}.spdx.json
+          output-file: rowboat-x-${{ needs.release-context.outputs.version }}.spdx.json
           upload-artifact: true
           upload-artifact-retention: 30
 
@@ -236,7 +336,7 @@ jobs:
         with:
           path: ./apps/x
           format: cyclonedx-json
-          output-file: rowboat-x-${{ needs.release-please.outputs.version }}.cdx.json
+          output-file: rowboat-x-${{ needs.release-context.outputs.version }}.cdx.json
           upload-artifact: true
           upload-artifact-retention: 30
 
@@ -244,7 +344,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ needs.release-please.outputs.tag_name }}" \
-            "rowboat-x-${{ needs.release-please.outputs.version }}.spdx.json" \
-            "rowboat-x-${{ needs.release-please.outputs.version }}.cdx.json" \
+          gh release upload "${{ needs.release-context.outputs.tag_name }}" \
+            "rowboat-x-${{ needs.release-context.outputs.version }}.spdx.json" \
+            "rowboat-x-${{ needs.release-context.outputs.version }}.cdx.json" \
             --clobber
