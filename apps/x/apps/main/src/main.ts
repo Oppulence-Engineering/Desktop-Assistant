@@ -38,7 +38,8 @@ import { initConfigs } from "@x/core/dist/config/initConfigs.js";
 import { resolveWorkspacePath } from "@x/core/dist/workspace/workspace.js";
 import started from "electron-squirrel-startup";
 import { init as initChromeSync } from "@x/core/dist/knowledge/chrome-extension/server/server.js";
-import { registerBrowserControlService, registerNotificationService } from "@x/core/dist/di/container.js";
+import container, { registerBrowserControlService, registerNotificationService } from "@x/core/dist/di/container.js";
+import type { CodeModeManager } from "@x/core/dist/code-mode/acp/manager.js";
 import { browserViewManager, BROWSER_PARTITION } from "./browser/view.js";
 import { setupBrowserEventForwarding } from "./browser/ipc.js";
 import { ElectronBrowserControlService } from "./browser/control-service.js";
@@ -226,6 +227,7 @@ function createWindow() {
     backgroundColor: "#252525", // Prevent white flash (matches dark mode)
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 12, y: 12 },
+    icon: process.platform !== "darwin" ? path.join(__dirname, "../../icons/icon.png") : undefined,
     webPreferences: {
       // IMPORTANT: keep Node out of renderer
       nodeIntegration: false,
@@ -431,6 +433,12 @@ app.on("before-quit", () => {
   stopWorkspaceWatcher();
   stopRunsWatcher();
   stopServicesWatcher();
+  // Tear down any live ACP coding-agent adapter processes so they don't outlive the app.
+  try {
+    container.resolve<CodeModeManager>('codeModeManager').disposeAll();
+  } catch {
+    // nothing live to dispose
+  }
   shutdownLocalSites().catch((error) => {
     console.error('[LocalSites] Failed to shut down cleanly:', error);
   });

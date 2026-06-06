@@ -27,6 +27,7 @@ import { ZListToolkitsResponse } from './composio.js';
 import { BrowserStateSchema } from './browser-control.js';
 import { BillingInfoSchema } from './billing.js';
 import { GmailThreadSchema } from './blocks.js';
+import { PermissionDecision, ApprovalPolicy } from './code-mode.js';
 
 // ============================================================================
 // Runtime Validation Schemas (Single Source of Truth)
@@ -444,11 +445,23 @@ const ipcSchemas = {
     req: z.null(),
     res: z.object({
       enabled: z.boolean(),
+      approvalPolicy: ApprovalPolicy.optional(),
     }),
   },
   'codeMode:setConfig': {
     req: z.object({
       enabled: z.boolean(),
+      approvalPolicy: ApprovalPolicy.optional(),
+    }),
+    res: z.object({
+      success: z.literal(true),
+    }),
+  },
+  // Answer a mid-run permission request from a code_agent_run coding turn.
+  'codeRun:resolvePermission': {
+    req: z.object({
+      requestId: z.string(),
+      decision: PermissionDecision,
     }),
     res: z.object({
       success: z.literal(true),
