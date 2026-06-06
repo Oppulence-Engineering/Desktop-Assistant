@@ -26,7 +26,7 @@ export function PdfFileViewer({ path }: PdfFileViewerProps) {
           onClick={() => {
             void window.ipc.invoke('shell:openPath', { path })
           }}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent"
+          className="inline-flex items-center gap-1.5 rounded-none border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent"
         >
           <ExternalLinkIcon className="size-3.5" />
           Open in system

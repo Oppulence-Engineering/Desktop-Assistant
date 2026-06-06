@@ -12,6 +12,10 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -84,6 +88,10 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			backgroundtask.Table:         backgroundtask.ValidColumn,
+			backgroundtaskartifact.Table: backgroundtaskartifact.ValidColumn,
+			backgroundtaskrun.Table:      backgroundtaskrun.ValidColumn,
+			backgroundtaskrunevent.Table: backgroundtaskrunevent.ValidColumn,
 			creditledger.Table:           creditledger.ValidColumn,
 			llmusage.Table:               llmusage.ValidColumn,
 			llmusagehistory.Table:        llmusagehistory.ValidColumn,

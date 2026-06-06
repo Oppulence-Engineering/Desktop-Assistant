@@ -298,20 +298,35 @@ export function listConnected(): { toolkits: string[] } {
  * Return type matches the ZToolkit schema from core/composio/types.ts.
  */
 export async function listToolkits() {
-    // Paginate through all API pages to collect every curated toolkit
-    const allItems: Toolkit[] = [];
-    let cursor: string | null = null;
-    const maxPages = 10; // safety limit
-    for (let page = 0; page < maxPages; page++) {
-        const result = await composioClient.listToolkits(cursor);
-        allItems.push(...result.items);
-        cursor = result.next_cursor;
-        if (!cursor) break;
+    try {
+        // Paginate through all API pages to collect every curated toolkit
+        const allItems: Toolkit[] = [];
+        let cursor: string | null = null;
+        const maxPages = 10; // safety limit
+        for (let page = 0; page < maxPages; page++) {
+            const result = await composioClient.listToolkits(cursor);
+            allItems.push(...result.items);
+            cursor = result.next_cursor;
+            if (!cursor) break;
+        }
+        const filtered = allItems.filter(item => CURATED_TOOLKIT_SLUGS.has(item.slug));
+        return {
+            items: filtered,
+            nextCursor: null as string | null,
+            totalItems: filtered.length,
+            providerConfigured: true,
+        };
+    } catch (error) {
+        if (composioClient.isProviderUnconfiguredError(error)) {
+            return {
+                items: [],
+                nextCursor: null as string | null,
+                totalItems: 0,
+                providerConfigured: false,
+                error: 'provider_unconfigured',
+                message: 'Tool integrations are disabled because this Rowboat API is running without Composio credentials.',
+            };
+        }
+        throw error;
     }
-    const filtered = allItems.filter(item => CURATED_TOOLKIT_SLUGS.has(item.slug));
-    return {
-        items: filtered,
-        nextCursor: null as string | null,
-        totalItems: filtered.length,
-    };
 }

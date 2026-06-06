@@ -28,7 +28,7 @@ export function ProfileContextBox({
     };
 
     return (
-        <div className="text-sm border border-gray-200 dark:border-[#2a2d31] rounded-lg">
+        <div className="text-sm border border-gray-200 dark:border-[#2a2d31] rounded-none">
             <div 
                 className={`flex items-center gap-2 cursor-pointer text-gray-500 dark:text-gray-400 
                     hover:text-gray-700 dark:hover:text-gray-300

@@ -26,10 +26,10 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
     return (
       <div
         key={provider}
-        className="flex items-center justify-between gap-2 rounded-md px-3 py-2 hover:bg-accent/50 transition-colors"
+        className="flex items-center justify-between gap-2 rounded-none px-3 py-2 hover:bg-accent/50 transition-colors"
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex size-8 items-center justify-center rounded-md bg-muted">
+          <div className="flex size-8 items-center justify-center rounded-none bg-muted">
             {icon}
           </div>
           <div className="flex flex-col min-w-0">
@@ -125,9 +125,9 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
               </span>
             </div>
             {c.useComposioForGoogle ? (
-              <div className="flex items-center justify-between gap-2 rounded-md px-3 py-2 hover:bg-accent/50 transition-colors">
+              <div className="flex items-center justify-between gap-2 rounded-none px-3 py-2 hover:bg-accent/50 transition-colors">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex size-8 items-center justify-center rounded-md bg-muted">
+                  <div className="flex size-8 items-center justify-center rounded-none bg-muted">
                     <Mail className="size-4" />
                   </div>
                   <div className="flex flex-col min-w-0">
@@ -174,9 +174,9 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
               c.providers.includes('google') && renderOAuthProvider('google', 'Google', <Mail className="size-4" />, 'Sync emails and calendar')
             )}
             {c.useComposioForGoogleCalendar && (
-              <div className="flex items-center justify-between gap-2 rounded-md px-3 py-2 hover:bg-accent/50 transition-colors">
+              <div className="flex items-center justify-between gap-2 rounded-none px-3 py-2 hover:bg-accent/50 transition-colors">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex size-8 items-center justify-center rounded-md bg-muted">
+                  <div className="flex size-8 items-center justify-center rounded-none bg-muted">
                     <Calendar className="size-4" />
                   </div>
                   <div className="flex flex-col min-w-0">

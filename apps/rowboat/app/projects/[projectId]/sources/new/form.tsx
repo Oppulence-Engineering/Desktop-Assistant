@@ -131,7 +131,7 @@ export function Form({
     const formContent = (
         <div className={hidePanel ? "flex flex-col gap-4" : "h-full overflow-auto px-4 py-4"}>
             <div className={hidePanel ? "flex flex-col gap-4" : "max-w-[768px] mx-auto flex flex-col gap-4"}>
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-none border border-blue-200 dark:border-blue-800">
                         <div className="flex items-start gap-3">
                             <svg 
                                 className="w-5 h-5 text-blue-500 mt-0.5" 
@@ -171,7 +171,7 @@ export function Form({
                                 name="urls"
                                 placeholder="https://example.com"
                                 rows={5}
-                                className="rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                className="rounded-none p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                             />
                         </div>
                         <div className="space-y-2">
@@ -183,7 +183,7 @@ export function Form({
                                 name="name"
                                 placeholder="e.g. Help articles"
                                 rows={1}
-                                className="rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                className="rounded-none p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                             />
                         </div>
                         <div className="space-y-2">
@@ -194,10 +194,10 @@ export function Form({
                                 name="description"
                                 placeholder="e.g. A collection of help articles from our documentation"
                                 rows={2}
-                                className="rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                className="rounded-none p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                             />
                         </div>
-                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-none p-4 border border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-2 mb-2 text-gray-700 dark:text-gray-300">
                                 <svg 
                                     className="w-5 h-5 text-blue-500" 
@@ -249,7 +249,7 @@ export function Form({
                                 name="name"
                                 placeholder="e.g. Documentation files"
                                 rows={1}
-                                className="rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                className="rounded-none p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                             />
                         </div>
                         <div className="space-y-2">
@@ -260,10 +260,10 @@ export function Form({
                                 name="description"
                                 placeholder="e.g. A collection of documentation files"
                                 rows={2}
-                                className="rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                className="rounded-none p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                             />
                         </div>
-                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-none p-4 border border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-2 mb-2 text-gray-700 dark:text-gray-300">
                                 <svg 
                                     className="w-5 h-5 text-blue-500" 
@@ -307,7 +307,7 @@ export function Form({
                                 name="content"
                                 placeholder="Enter your text content here"
                                 rows={10}
-                                className="rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                className="rounded-none p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                             />
                         </div>
                         <div className="space-y-2">
@@ -319,7 +319,7 @@ export function Form({
                                 name="name"
                                 placeholder="e.g. Product documentation"
                                 rows={1}
-                                className="rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                className="rounded-none p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                             />
                         </div>
                         <div className="space-y-2">
@@ -330,7 +330,7 @@ export function Form({
                                 name="description"
                                 placeholder="e.g. A collection of documentation for our product"
                                 rows={2}
-                                className="rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                className="rounded-none p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                             />
                         </div>
                         <FormStatusButton

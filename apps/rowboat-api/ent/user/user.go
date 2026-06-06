@@ -35,6 +35,14 @@ const (
 	EdgeOauthConnections = "oauth_connections"
 	// EdgeMcpConnections holds the string denoting the mcp_connections edge name in mutations.
 	EdgeMcpConnections = "mcp_connections"
+	// EdgeBackgroundTasks holds the string denoting the background_tasks edge name in mutations.
+	EdgeBackgroundTasks = "background_tasks"
+	// EdgeBackgroundTaskArtifacts holds the string denoting the background_task_artifacts edge name in mutations.
+	EdgeBackgroundTaskArtifacts = "background_task_artifacts"
+	// EdgeBackgroundTaskRuns holds the string denoting the background_task_runs edge name in mutations.
+	EdgeBackgroundTaskRuns = "background_task_runs"
+	// EdgeBackgroundTaskRunEvents holds the string denoting the background_task_run_events edge name in mutations.
+	EdgeBackgroundTaskRunEvents = "background_task_run_events"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -72,6 +80,34 @@ const (
 	McpConnectionsInverseTable = "mcp_connections"
 	// McpConnectionsColumn is the table column denoting the mcp_connections relation/edge.
 	McpConnectionsColumn = "user_mcp_connections"
+	// BackgroundTasksTable is the table that holds the background_tasks relation/edge.
+	BackgroundTasksTable = "background_tasks"
+	// BackgroundTasksInverseTable is the table name for the BackgroundTask entity.
+	// It exists in this package in order to avoid circular dependency with the "backgroundtask" package.
+	BackgroundTasksInverseTable = "background_tasks"
+	// BackgroundTasksColumn is the table column denoting the background_tasks relation/edge.
+	BackgroundTasksColumn = "user_background_tasks"
+	// BackgroundTaskArtifactsTable is the table that holds the background_task_artifacts relation/edge.
+	BackgroundTaskArtifactsTable = "background_task_artifacts"
+	// BackgroundTaskArtifactsInverseTable is the table name for the BackgroundTaskArtifact entity.
+	// It exists in this package in order to avoid circular dependency with the "backgroundtaskartifact" package.
+	BackgroundTaskArtifactsInverseTable = "background_task_artifacts"
+	// BackgroundTaskArtifactsColumn is the table column denoting the background_task_artifacts relation/edge.
+	BackgroundTaskArtifactsColumn = "user_background_task_artifacts"
+	// BackgroundTaskRunsTable is the table that holds the background_task_runs relation/edge.
+	BackgroundTaskRunsTable = "background_task_runs"
+	// BackgroundTaskRunsInverseTable is the table name for the BackgroundTaskRun entity.
+	// It exists in this package in order to avoid circular dependency with the "backgroundtaskrun" package.
+	BackgroundTaskRunsInverseTable = "background_task_runs"
+	// BackgroundTaskRunsColumn is the table column denoting the background_task_runs relation/edge.
+	BackgroundTaskRunsColumn = "user_background_task_runs"
+	// BackgroundTaskRunEventsTable is the table that holds the background_task_run_events relation/edge.
+	BackgroundTaskRunEventsTable = "background_task_run_events"
+	// BackgroundTaskRunEventsInverseTable is the table name for the BackgroundTaskRunEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "backgroundtaskrunevent" package.
+	BackgroundTaskRunEventsInverseTable = "background_task_run_events"
+	// BackgroundTaskRunEventsColumn is the table column denoting the background_task_run_events relation/edge.
+	BackgroundTaskRunEventsColumn = "user_background_task_run_events"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -202,6 +238,62 @@ func ByMcpConnections(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newMcpConnectionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByBackgroundTasksCount orders the results by background_tasks count.
+func ByBackgroundTasksCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBackgroundTasksStep(), opts...)
+	}
+}
+
+// ByBackgroundTasks orders the results by background_tasks terms.
+func ByBackgroundTasks(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBackgroundTasksStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByBackgroundTaskArtifactsCount orders the results by background_task_artifacts count.
+func ByBackgroundTaskArtifactsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBackgroundTaskArtifactsStep(), opts...)
+	}
+}
+
+// ByBackgroundTaskArtifacts orders the results by background_task_artifacts terms.
+func ByBackgroundTaskArtifacts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBackgroundTaskArtifactsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByBackgroundTaskRunsCount orders the results by background_task_runs count.
+func ByBackgroundTaskRunsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBackgroundTaskRunsStep(), opts...)
+	}
+}
+
+// ByBackgroundTaskRuns orders the results by background_task_runs terms.
+func ByBackgroundTaskRuns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBackgroundTaskRunsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByBackgroundTaskRunEventsCount orders the results by background_task_run_events count.
+func ByBackgroundTaskRunEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBackgroundTaskRunEventsStep(), opts...)
+	}
+}
+
+// ByBackgroundTaskRunEvents orders the results by background_task_run_events terms.
+func ByBackgroundTaskRunEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBackgroundTaskRunEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -235,5 +327,33 @@ func newMcpConnectionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(McpConnectionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, McpConnectionsTable, McpConnectionsColumn),
+	)
+}
+func newBackgroundTasksStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BackgroundTasksInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTasksTable, BackgroundTasksColumn),
+	)
+}
+func newBackgroundTaskArtifactsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BackgroundTaskArtifactsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTaskArtifactsTable, BackgroundTaskArtifactsColumn),
+	)
+}
+func newBackgroundTaskRunsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BackgroundTaskRunsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTaskRunsTable, BackgroundTaskRunsColumn),
+	)
+}
+func newBackgroundTaskRunEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BackgroundTaskRunEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTaskRunEventsTable, BackgroundTaskRunEventsColumn),
 	)
 }

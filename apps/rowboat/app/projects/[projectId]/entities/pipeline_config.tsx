@@ -103,7 +103,7 @@ export function PipelineConfig({
             <div className="flex flex-col gap-6 p-4 h-[calc(100vh-100px)] min-h-0 flex-1">
                 {/* Saved Banner */}
                 {showSavedBanner && (
-                    <div className="absolute top-4 left-4 z-10 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-top-2 duration-300">
+                    <div className="absolute top-4 left-4 z-10 bg-green-500 text-white px-4 py-2 rounded-none shadow-lg flex items-center gap-2 animate-in slide-in-from-top-2 duration-300">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
@@ -164,7 +164,7 @@ export function PipelineConfig({
                                 <div className="mb-2">
                                     <span className="font-medium">Agents in Pipeline:</span> {pipeline.agents.length}
                                 </div>
-                                <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-none border border-blue-200 dark:border-blue-800">
                                     <div className="font-medium mb-2">How Pipelines Work:</div>
                                     <ul className="text-xs space-y-1 list-disc list-inside">
                                         <li>Agents execute sequentially in the order shown</li>

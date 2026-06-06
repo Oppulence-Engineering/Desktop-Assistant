@@ -181,14 +181,14 @@ export const ToolTabbedContent = ({
       {/* Tab content */}
       <div className="p-3">
         {activeTab === "parameters" && (
-          <div className="rounded-md border bg-muted/50 p-3 max-h-64 overflow-auto">
+          <div className="rounded-none border bg-muted/50 p-3 max-h-64 overflow-auto">
             <ToolCode code={formatToolValue(input ?? {})} />
           </div>
         )}
         {activeTab === "result" && (
           <div
             className={cn(
-              "rounded-md border p-3 max-h-64 overflow-auto",
+              "rounded-none border p-3 max-h-64 overflow-auto",
               errorText ? "bg-destructive/10" : "bg-muted/50"
             )}
           >

@@ -1,15 +1,15 @@
-import { Loader2, CheckCircle2, ArrowLeft, X, Lightbulb } from "lucide-react"
-import { motion } from "motion/react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Loader2, CheckCircle2, ArrowLeft, X, Lightbulb } from "lucide-react";
+import { motion } from "motion/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import {
   OpenAIIcon,
   AnthropicIcon,
@@ -18,41 +18,116 @@ import {
   OpenRouterIcon,
   VercelIcon,
   GenericApiIcon,
-} from "../provider-icons"
-import type { OnboardingState, LlmProviderFlavor } from "../use-onboarding-state"
+} from "../provider-icons";
+import type {
+  OnboardingState,
+  LlmProviderFlavor,
+} from "../use-onboarding-state";
 
 interface LlmSetupStepProps {
-  state: OnboardingState
+  state: OnboardingState;
 }
 
-const primaryProviders: Array<{ id: LlmProviderFlavor; name: string; description: string; color: string; icon: React.ReactNode }> = [
-  { id: "openai", name: "OpenAI", description: "GPT models", color: "bg-green-500/10 text-green-600 dark:text-green-400", icon: <OpenAIIcon /> },
-  { id: "anthropic", name: "Anthropic", description: "Claude models", color: "bg-orange-500/10 text-orange-600 dark:text-orange-400", icon: <AnthropicIcon /> },
-  { id: "google", name: "Gemini", description: "Google AI Studio", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400", icon: <GoogleIcon /> },
-  { id: "ollama", name: "Ollama", description: "Local models", color: "bg-purple-500/10 text-purple-600 dark:text-purple-400", icon: <OllamaIcon /> },
-]
+const primaryProviders: Array<{
+  id: LlmProviderFlavor;
+  name: string;
+  description: string;
+  color: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    id: "openai",
+    name: "OpenAI",
+    description: "GPT models",
+    color: "bg-green-500/10 text-green-600 dark:text-green-400",
+    icon: <OpenAIIcon />,
+  },
+  {
+    id: "anthropic",
+    name: "Anthropic",
+    description: "Claude models",
+    color: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+    icon: <AnthropicIcon />,
+  },
+  {
+    id: "google",
+    name: "Gemini",
+    description: "Google AI Studio",
+    color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    icon: <GoogleIcon />,
+  },
+  {
+    id: "ollama",
+    name: "Ollama",
+    description: "Local models",
+    color: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
+    icon: <OllamaIcon />,
+  },
+];
 
-const moreProviders: Array<{ id: LlmProviderFlavor; name: string; description: string; color: string; icon: React.ReactNode }> = [
-  { id: "openrouter", name: "OpenRouter", description: "Multiple models, one key", color: "bg-pink-500/10 text-pink-600 dark:text-pink-400", icon: <OpenRouterIcon /> },
-  { id: "aigateway", name: "AI Gateway", description: "Vercel AI Gateway", color: "bg-sky-500/10 text-sky-600 dark:text-sky-400", icon: <VercelIcon /> },
-  { id: "openai-compatible", name: "OpenAI-Compatible", description: "Custom endpoint", color: "bg-gray-500/10 text-gray-600 dark:text-gray-400", icon: <GenericApiIcon /> },
-]
+const moreProviders: Array<{
+  id: LlmProviderFlavor;
+  name: string;
+  description: string;
+  color: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    id: "openrouter",
+    name: "OpenRouter",
+    description: "Multiple models, one key",
+    color: "bg-pink-500/10 text-pink-600 dark:text-pink-400",
+    icon: <OpenRouterIcon />,
+  },
+  {
+    id: "aigateway",
+    name: "AI Gateway",
+    description: "Vercel AI Gateway",
+    color: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    icon: <VercelIcon />,
+  },
+  {
+    id: "openai-compatible",
+    name: "OpenAI-Compatible",
+    description: "Custom endpoint",
+    color: "bg-gray-500/10 text-gray-600 dark:text-gray-400",
+    icon: <GenericApiIcon />,
+  },
+];
 
 export function LlmSetupStep({ state }: LlmSetupStepProps) {
   const {
-    llmProvider, setLlmProvider, modelsCatalog, modelsLoading, modelsError,
-    activeConfig, testState, setTestState, showApiKey,
-    showBaseURL, isLocalProvider, canTest, showMoreProviders, setShowMoreProviders,
-    updateProviderConfig, handleTestAndSaveLlmConfig, handleBack,
-    upsellDismissed, setUpsellDismissed, handleSwitchToRowboat,
-  } = state
+    llmProvider,
+    setLlmProvider,
+    modelsCatalog,
+    modelsLoading,
+    modelsError,
+    activeConfig,
+    testState,
+    setTestState,
+    showApiKey,
+    showBaseURL,
+    isLocalProvider,
+    canTest,
+    showMoreProviders,
+    setShowMoreProviders,
+    updateProviderConfig,
+    handleTestAndSaveLlmConfig,
+    handleBack,
+    upsellDismissed,
+    setUpsellDismissed,
+    handleSwitchToRowboat,
+  } = state;
 
-  const isMoreProvider = moreProviders.some(p => p.id === llmProvider)
-  const modelsForProvider = modelsCatalog[llmProvider] || []
-  const showModelInput = isLocalProvider || modelsForProvider.length === 0
+  const isMoreProvider = moreProviders.some((p) => p.id === llmProvider);
+  const modelsForProvider = modelsCatalog[llmProvider] || [];
+  const showModelInput = isLocalProvider || modelsForProvider.length === 0;
 
-  const renderProviderCard = (provider: typeof primaryProviders[0], index: number) => {
-    const isSelected = llmProvider === provider.id
+  const renderProviderCard = (
+    provider: (typeof primaryProviders)[0],
+    index: number,
+  ) => {
+    const isSelected = llmProvider === provider.id;
     return (
       <motion.button
         key={provider.id}
@@ -60,28 +135,35 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05 }}
         onClick={() => {
-          setLlmProvider(provider.id)
-          setTestState({ status: "idle" })
+          setLlmProvider(provider.id);
+          setTestState({ status: "idle" });
         }}
         className={cn(
-          "rounded-xl border-2 p-4 text-left transition-all",
+          "rounded-none border-2 p-4 text-left transition-all",
           isSelected
             ? "border-primary bg-primary/5 shadow-sm"
-            : "border-transparent bg-muted/50 hover:bg-muted"
+            : "border-transparent bg-muted/50 hover:bg-muted",
         )}
       >
         <div className="flex items-center gap-3">
-          <div className={cn("size-10 rounded-lg flex items-center justify-center shrink-0", provider.color)}>
+          <div
+            className={cn(
+              "size-10 rounded-none flex items-center justify-center shrink-0",
+              provider.color,
+            )}
+          >
             {provider.icon}
           </div>
           <div>
             <div className="text-sm font-semibold">{provider.name}</div>
-            <div className="text-xs text-muted-foreground">{provider.description}</div>
+            <div className="text-xs text-muted-foreground">
+              {provider.description}
+            </div>
           </div>
         </div>
       </motion.button>
-    )
-  }
+    );
+  };
 
   return (
     <div className="flex flex-col flex-1">
@@ -99,12 +181,15 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, height: 0 }}
-          className="rounded-xl bg-primary/5 border border-primary/20 p-4 mb-6 flex items-start gap-3"
+          className="rounded-none bg-primary/5 border border-primary/20 p-4 mb-6 flex items-start gap-3"
         >
           <Lightbulb className="size-5 text-primary shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm text-foreground">
-              <span className="font-medium">Tip:</span> Hosted models recommended. Locally run LLMs can struggle with Rowboat's parallel background agents. Bring your own API keys below, or sign in for instant access.
+              <span className="font-medium">Tip:</span> Hosted models
+              recommended. Locally run LLMs can struggle with Rowboat's parallel
+              background agents. Bring your own API keys below, or sign in for
+              instant access.
             </p>
             <button
               onClick={handleSwitchToRowboat}
@@ -124,11 +209,13 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
 
       {/* Provider selection */}
       <div className="space-y-3 mb-4">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Provider</span>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Provider
+        </span>
         <div className="grid gap-2 sm:grid-cols-2">
           {primaryProviders.map((p, i) => renderProviderCard(p, i))}
         </div>
-        {(showMoreProviders || isMoreProvider) ? (
+        {showMoreProviders || isMoreProvider ? (
           <div className="grid gap-2 sm:grid-cols-2 mt-2">
             {moreProviders.map((p, i) => renderProviderCard(p, i + 4))}
           </div>
@@ -162,13 +249,17 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
             ) : showModelInput ? (
               <Input
                 value={activeConfig.model}
-                onChange={(e) => updateProviderConfig(llmProvider, { model: e.target.value })}
+                onChange={(e) =>
+                  updateProviderConfig(llmProvider, { model: e.target.value })
+                }
                 placeholder="Enter model"
               />
             ) : (
               <Select
                 value={activeConfig.model}
-                onValueChange={(value) => updateProviderConfig(llmProvider, { model: value })}
+                onValueChange={(value) =>
+                  updateProviderConfig(llmProvider, { model: value })
+                }
               >
                 <SelectTrigger className="w-full truncate">
                   <SelectValue placeholder="Select a model" />
@@ -199,13 +290,21 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
             ) : showModelInput ? (
               <Input
                 value={activeConfig.knowledgeGraphModel}
-                onChange={(e) => updateProviderConfig(llmProvider, { knowledgeGraphModel: e.target.value })}
+                onChange={(e) =>
+                  updateProviderConfig(llmProvider, {
+                    knowledgeGraphModel: e.target.value,
+                  })
+                }
                 placeholder={activeConfig.model || "Enter model"}
               />
             ) : (
               <Select
                 value={activeConfig.knowledgeGraphModel || "__same__"}
-                onValueChange={(value) => updateProviderConfig(llmProvider, { knowledgeGraphModel: value === "__same__" ? "" : value })}
+                onValueChange={(value) =>
+                  updateProviderConfig(llmProvider, {
+                    knowledgeGraphModel: value === "__same__" ? "" : value,
+                  })
+                }
               >
                 <SelectTrigger className="w-full truncate">
                   <SelectValue placeholder="Select a model" />
@@ -234,13 +333,21 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
             ) : showModelInput ? (
               <Input
                 value={activeConfig.meetingNotesModel}
-                onChange={(e) => updateProviderConfig(llmProvider, { meetingNotesModel: e.target.value })}
+                onChange={(e) =>
+                  updateProviderConfig(llmProvider, {
+                    meetingNotesModel: e.target.value,
+                  })
+                }
                 placeholder={activeConfig.model || "Enter model"}
               />
             ) : (
               <Select
                 value={activeConfig.meetingNotesModel || "__same__"}
-                onValueChange={(value) => updateProviderConfig(llmProvider, { meetingNotesModel: value === "__same__" ? "" : value })}
+                onValueChange={(value) =>
+                  updateProviderConfig(llmProvider, {
+                    meetingNotesModel: value === "__same__" ? "" : value,
+                  })
+                }
               >
                 <SelectTrigger className="w-full truncate">
                   <SelectValue placeholder="Select a model" />
@@ -269,13 +376,21 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
             ) : showModelInput ? (
               <Input
                 value={activeConfig.liveNoteAgentModel}
-                onChange={(e) => updateProviderConfig(llmProvider, { liveNoteAgentModel: e.target.value })}
+                onChange={(e) =>
+                  updateProviderConfig(llmProvider, {
+                    liveNoteAgentModel: e.target.value,
+                  })
+                }
                 placeholder={activeConfig.model || "Enter model"}
               />
             ) : (
               <Select
                 value={activeConfig.liveNoteAgentModel || "__same__"}
-                onValueChange={(value) => updateProviderConfig(llmProvider, { liveNoteAgentModel: value === "__same__" ? "" : value })}
+                onValueChange={(value) =>
+                  updateProviderConfig(llmProvider, {
+                    liveNoteAgentModel: value === "__same__" ? "" : value,
+                  })
+                }
               >
                 <SelectTrigger className="w-full truncate">
                   <SelectValue placeholder="Select a model" />
@@ -301,7 +416,9 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
             <Input
               type="password"
               value={activeConfig.apiKey}
-              onChange={(e) => updateProviderConfig(llmProvider, { apiKey: e.target.value })}
+              onChange={(e) =>
+                updateProviderConfig(llmProvider, { apiKey: e.target.value })
+              }
               placeholder="Paste your API key"
               className="font-mono"
             />
@@ -315,7 +432,9 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
             </label>
             <Input
               value={activeConfig.baseURL}
-              onChange={(e) => updateProviderConfig(llmProvider, { baseURL: e.target.value })}
+              onChange={(e) =>
+                updateProviderConfig(llmProvider, { baseURL: e.target.value })
+              }
               placeholder={
                 llmProvider === "ollama"
                   ? "http://localhost:11434"
@@ -358,7 +477,10 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
             className="min-w-[140px]"
           >
             {testState.status === "testing" ? (
-              <><Loader2 className="size-4 animate-spin mr-2" />Testing...</>
+              <>
+                <Loader2 className="size-4 animate-spin mr-2" />
+                Testing...
+              </>
             ) : (
               "Test & Continue"
             )}
@@ -366,5 +488,5 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -22,8 +22,30 @@ config:
   ENVIRONMENT: production
   LOG_LEVEL: info
   AUTO_MIGRATE: "false"
+  APP_URL: https://app.solomon-ai.co
+  PUBLIC_BASE_URL: https://api.x.solomon-ai.co
+  # Google OAuth broker callback — the API host serving /oauth/google/callback (NOT
+  # APP_URL, which the default would use). Register this exact URI in Google Cloud.
+  GOOGLE_REDIRECT_URI: https://api.x.solomon-ai.co/oauth/google/callback
   INFISICAL_ENABLED: "true"
   INFISICAL_ENVIRONMENT: production
+  # --- Temporal Cloud (API-native background task worker) -------------------
+  # Production executes API-target runs on Temporal Cloud (API-key auth over
+  # TLS). To enable: set TEMPORAL_ENABLED to "true", point ADDRESS/NAMESPACE at
+  # your Temporal Cloud namespace, add TEMPORAL_API_KEY to the
+  # rowboat-api-secrets Secret (never inline it here), and set worker.enabled:
+  # true below.
+  TEMPORAL_ENABLED: "false"
+  TEMPORAL_ADDRESS: <namespace>.<account>.tmprl.cloud:7233
+  TEMPORAL_NAMESPACE: <namespace>.<account>
+  TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
+  TEMPORAL_TLS_ENABLED: "true"
+  TEMPORAL_WORKER_ENABLED: "false"
+
+# Flip to true alongside TEMPORAL_ENABLED to run the durable worker.
+worker:
+  enabled: false
+  replicaCount: 2
 
 # Secrets live in the cluster Secret `rowboat-api-secrets` (sealed-secrets /
 # external-secrets / Infisical operator). Do NOT inline secret values here.

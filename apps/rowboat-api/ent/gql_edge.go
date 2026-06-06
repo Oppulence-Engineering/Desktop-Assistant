@@ -8,6 +8,114 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+func (_m *BackgroundTask) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTask) Artifact(ctx context.Context) (*BackgroundTaskArtifact, error) {
+	result, err := _m.Edges.ArtifactOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryArtifact().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *BackgroundTask) Runs(ctx context.Context) (result []*BackgroundTaskRun, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRuns(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RunsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRuns().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTask) RunEvents(ctx context.Context) (result []*BackgroundTaskRunEvent, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRunEvents(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RunEventsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRunEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskArtifact) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskArtifact) Task(ctx context.Context) (*BackgroundTask, error) {
+	result, err := _m.Edges.TaskOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTask().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskRun) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskRun) Task(ctx context.Context) (*BackgroundTask, error) {
+	result, err := _m.Edges.TaskOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTask().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskRun) Events(ctx context.Context) (result []*BackgroundTaskRunEvent, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedEvents(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.EventsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskRunEvent) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskRunEvent) Task(ctx context.Context) (*BackgroundTask, error) {
+	result, err := _m.Edges.TaskOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTask().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskRunEvent) Run(ctx context.Context) (*BackgroundTaskRun, error) {
+	result, err := _m.Edges.RunOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRun().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *CreditLedger) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -100,6 +208,54 @@ func (_m *User) McpConnections(ctx context.Context) (result []*MCPConnection, er
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryMcpConnections().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) BackgroundTasks(ctx context.Context) (result []*BackgroundTask, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedBackgroundTasks(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.BackgroundTasksOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryBackgroundTasks().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) BackgroundTaskArtifacts(ctx context.Context) (result []*BackgroundTaskArtifact, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedBackgroundTaskArtifacts(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.BackgroundTaskArtifactsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryBackgroundTaskArtifacts().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) BackgroundTaskRuns(ctx context.Context) (result []*BackgroundTaskRun, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedBackgroundTaskRuns(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.BackgroundTaskRunsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryBackgroundTaskRuns().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) BackgroundTaskRunEvents(ctx context.Context) (result []*BackgroundTaskRunEvent, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedBackgroundTaskRunEvents(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.BackgroundTaskRunEventsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryBackgroundTaskRunEvents().All(ctx)
 	}
 	return result, err
 }

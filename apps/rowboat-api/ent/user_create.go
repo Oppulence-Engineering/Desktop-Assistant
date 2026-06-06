@@ -12,6 +12,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -182,6 +186,66 @@ func (_c *UserCreate) AddMcpConnections(v ...*MCPConnection) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddMcpConnectionIDs(ids...)
+}
+
+// AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by IDs.
+func (_c *UserCreate) AddBackgroundTaskIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddBackgroundTaskIDs(ids...)
+	return _c
+}
+
+// AddBackgroundTasks adds the "background_tasks" edges to the BackgroundTask entity.
+func (_c *UserCreate) AddBackgroundTasks(v ...*BackgroundTask) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddBackgroundTaskIDs(ids...)
+}
+
+// AddBackgroundTaskArtifactIDs adds the "background_task_artifacts" edge to the BackgroundTaskArtifact entity by IDs.
+func (_c *UserCreate) AddBackgroundTaskArtifactIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddBackgroundTaskArtifactIDs(ids...)
+	return _c
+}
+
+// AddBackgroundTaskArtifacts adds the "background_task_artifacts" edges to the BackgroundTaskArtifact entity.
+func (_c *UserCreate) AddBackgroundTaskArtifacts(v ...*BackgroundTaskArtifact) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddBackgroundTaskArtifactIDs(ids...)
+}
+
+// AddBackgroundTaskRunIDs adds the "background_task_runs" edge to the BackgroundTaskRun entity by IDs.
+func (_c *UserCreate) AddBackgroundTaskRunIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddBackgroundTaskRunIDs(ids...)
+	return _c
+}
+
+// AddBackgroundTaskRuns adds the "background_task_runs" edges to the BackgroundTaskRun entity.
+func (_c *UserCreate) AddBackgroundTaskRuns(v ...*BackgroundTaskRun) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddBackgroundTaskRunIDs(ids...)
+}
+
+// AddBackgroundTaskRunEventIDs adds the "background_task_run_events" edge to the BackgroundTaskRunEvent entity by IDs.
+func (_c *UserCreate) AddBackgroundTaskRunEventIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddBackgroundTaskRunEventIDs(ids...)
+	return _c
+}
+
+// AddBackgroundTaskRunEvents adds the "background_task_run_events" edges to the BackgroundTaskRunEvent entity.
+func (_c *UserCreate) AddBackgroundTaskRunEvents(v ...*BackgroundTaskRunEvent) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddBackgroundTaskRunEventIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -378,6 +442,70 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpconnection.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.BackgroundTasksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTasksTable,
+			Columns: []string{user.BackgroundTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtask.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.BackgroundTaskArtifactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskArtifactsTable,
+			Columns: []string{user.BackgroundTaskArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskartifact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.BackgroundTaskRunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunsTable,
+			Columns: []string{user.BackgroundTaskRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.BackgroundTaskRunEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunEventsTable,
+			Columns: []string{user.BackgroundTaskRunEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrunevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

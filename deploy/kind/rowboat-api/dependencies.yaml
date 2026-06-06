@@ -1,0 +1,246 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rowboat-api-postgres
+  labels:
+    app.kubernetes.io/name: rowboat-api-postgres
+    app.kubernetes.io/part-of: rowboat-api-local
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rowboat-api-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rowboat-api-postgres
+        app.kubernetes.io/part-of: rowboat-api-local
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: rowboat
+            - name: POSTGRES_PASSWORD
+              value: rowboat
+            - name: POSTGRES_DB
+              value: rowboat
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "rowboat"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 12
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rowboat-api-postgres
+  labels:
+    app.kubernetes.io/name: rowboat-api-postgres
+    app.kubernetes.io/part-of: rowboat-api-local
+spec:
+  selector:
+    app.kubernetes.io/name: rowboat-api-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rowboat-api-redis
+  labels:
+    app.kubernetes.io/name: rowboat-api-redis
+    app.kubernetes.io/part-of: rowboat-api-local
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rowboat-api-redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rowboat-api-redis
+        app.kubernetes.io/part-of: rowboat-api-local
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: redis
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 12
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rowboat-api-redis
+  labels:
+    app.kubernetes.io/name: rowboat-api-redis
+    app.kubernetes.io/part-of: rowboat-api-local
+spec:
+  selector:
+    app.kubernetes.io/name: rowboat-api-redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rowboat-api-temporal
+  labels:
+    app.kubernetes.io/name: rowboat-api-temporal
+    app.kubernetes.io/part-of: rowboat-api-local
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rowboat-api-temporal
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rowboat-api-temporal
+        app.kubernetes.io/part-of: rowboat-api-local
+    spec:
+      containers:
+        - name: temporal
+          image: temporalio/auto-setup:1.27.2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: frontend
+              containerPort: 7233
+          env:
+            - name: DB
+              value: postgres12
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_SEEDS
+              value: rowboat-api-postgres
+            - name: POSTGRES_USER
+              value: rowboat
+            - name: POSTGRES_PWD
+              value: rowboat
+            - name: ENABLE_ES
+              value: "false"
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - tctl --address "$(hostname -i):7233" cluster health | grep -q SERVING
+            initialDelaySeconds: 180
+            periodSeconds: 10
+            timeoutSeconds: 20
+            failureThreshold: 18
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rowboat-api-temporal
+  labels:
+    app.kubernetes.io/name: rowboat-api-temporal
+    app.kubernetes.io/part-of: rowboat-api-local
+spec:
+  selector:
+    app.kubernetes.io/name: rowboat-api-temporal
+  ports:
+    - name: frontend
+      port: 7233
+      targetPort: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rowboat-api-devstack
+  labels:
+    app.kubernetes.io/name: rowboat-api-devstack
+    app.kubernetes.io/part-of: rowboat-api-local
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rowboat-api-devstack
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rowboat-api-devstack
+        app.kubernetes.io/part-of: rowboat-api-local
+    spec:
+      containers:
+        - name: devstack
+          image: rowboat-api:kind
+          imagePullPolicy: IfNotPresent
+          command: ["/devstack"]
+          ports:
+            - name: http
+              containerPort: 8090
+          env:
+            - name: ADDR
+              value: ":8090"
+            - name: ISSUER
+              value: http://localhost:18090
+            - name: AUDIENCE
+              value: rowboat-api
+          readinessProbe:
+            httpGet:
+              path: /.well-known/jwks.json
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 12
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rowboat-api-devstack
+  labels:
+    app.kubernetes.io/name: rowboat-api-devstack
+    app.kubernetes.io/part-of: rowboat-api-local
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: rowboat-api-devstack
+  ports:
+    - name: http
+      port: 8090
+      targetPort: http
+      nodePort: 30090

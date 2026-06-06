@@ -11,6 +11,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -173,6 +177,66 @@ func (_u *UserUpdate) AddMcpConnections(v ...*MCPConnection) *UserUpdate {
 	return _u.AddMcpConnectionIDs(ids...)
 }
 
+// AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by IDs.
+func (_u *UserUpdate) AddBackgroundTaskIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddBackgroundTaskIDs(ids...)
+	return _u
+}
+
+// AddBackgroundTasks adds the "background_tasks" edges to the BackgroundTask entity.
+func (_u *UserUpdate) AddBackgroundTasks(v ...*BackgroundTask) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddBackgroundTaskIDs(ids...)
+}
+
+// AddBackgroundTaskArtifactIDs adds the "background_task_artifacts" edge to the BackgroundTaskArtifact entity by IDs.
+func (_u *UserUpdate) AddBackgroundTaskArtifactIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddBackgroundTaskArtifactIDs(ids...)
+	return _u
+}
+
+// AddBackgroundTaskArtifacts adds the "background_task_artifacts" edges to the BackgroundTaskArtifact entity.
+func (_u *UserUpdate) AddBackgroundTaskArtifacts(v ...*BackgroundTaskArtifact) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddBackgroundTaskArtifactIDs(ids...)
+}
+
+// AddBackgroundTaskRunIDs adds the "background_task_runs" edge to the BackgroundTaskRun entity by IDs.
+func (_u *UserUpdate) AddBackgroundTaskRunIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddBackgroundTaskRunIDs(ids...)
+	return _u
+}
+
+// AddBackgroundTaskRuns adds the "background_task_runs" edges to the BackgroundTaskRun entity.
+func (_u *UserUpdate) AddBackgroundTaskRuns(v ...*BackgroundTaskRun) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddBackgroundTaskRunIDs(ids...)
+}
+
+// AddBackgroundTaskRunEventIDs adds the "background_task_run_events" edge to the BackgroundTaskRunEvent entity by IDs.
+func (_u *UserUpdate) AddBackgroundTaskRunEventIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddBackgroundTaskRunEventIDs(ids...)
+	return _u
+}
+
+// AddBackgroundTaskRunEvents adds the "background_task_run_events" edges to the BackgroundTaskRunEvent entity.
+func (_u *UserUpdate) AddBackgroundTaskRunEvents(v ...*BackgroundTaskRunEvent) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddBackgroundTaskRunEventIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -266,6 +330,90 @@ func (_u *UserUpdate) RemoveMcpConnections(v ...*MCPConnection) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMcpConnectionIDs(ids...)
+}
+
+// ClearBackgroundTasks clears all "background_tasks" edges to the BackgroundTask entity.
+func (_u *UserUpdate) ClearBackgroundTasks() *UserUpdate {
+	_u.mutation.ClearBackgroundTasks()
+	return _u
+}
+
+// RemoveBackgroundTaskIDs removes the "background_tasks" edge to BackgroundTask entities by IDs.
+func (_u *UserUpdate) RemoveBackgroundTaskIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveBackgroundTaskIDs(ids...)
+	return _u
+}
+
+// RemoveBackgroundTasks removes "background_tasks" edges to BackgroundTask entities.
+func (_u *UserUpdate) RemoveBackgroundTasks(v ...*BackgroundTask) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveBackgroundTaskIDs(ids...)
+}
+
+// ClearBackgroundTaskArtifacts clears all "background_task_artifacts" edges to the BackgroundTaskArtifact entity.
+func (_u *UserUpdate) ClearBackgroundTaskArtifacts() *UserUpdate {
+	_u.mutation.ClearBackgroundTaskArtifacts()
+	return _u
+}
+
+// RemoveBackgroundTaskArtifactIDs removes the "background_task_artifacts" edge to BackgroundTaskArtifact entities by IDs.
+func (_u *UserUpdate) RemoveBackgroundTaskArtifactIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveBackgroundTaskArtifactIDs(ids...)
+	return _u
+}
+
+// RemoveBackgroundTaskArtifacts removes "background_task_artifacts" edges to BackgroundTaskArtifact entities.
+func (_u *UserUpdate) RemoveBackgroundTaskArtifacts(v ...*BackgroundTaskArtifact) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveBackgroundTaskArtifactIDs(ids...)
+}
+
+// ClearBackgroundTaskRuns clears all "background_task_runs" edges to the BackgroundTaskRun entity.
+func (_u *UserUpdate) ClearBackgroundTaskRuns() *UserUpdate {
+	_u.mutation.ClearBackgroundTaskRuns()
+	return _u
+}
+
+// RemoveBackgroundTaskRunIDs removes the "background_task_runs" edge to BackgroundTaskRun entities by IDs.
+func (_u *UserUpdate) RemoveBackgroundTaskRunIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveBackgroundTaskRunIDs(ids...)
+	return _u
+}
+
+// RemoveBackgroundTaskRuns removes "background_task_runs" edges to BackgroundTaskRun entities.
+func (_u *UserUpdate) RemoveBackgroundTaskRuns(v ...*BackgroundTaskRun) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveBackgroundTaskRunIDs(ids...)
+}
+
+// ClearBackgroundTaskRunEvents clears all "background_task_run_events" edges to the BackgroundTaskRunEvent entity.
+func (_u *UserUpdate) ClearBackgroundTaskRunEvents() *UserUpdate {
+	_u.mutation.ClearBackgroundTaskRunEvents()
+	return _u
+}
+
+// RemoveBackgroundTaskRunEventIDs removes the "background_task_run_events" edge to BackgroundTaskRunEvent entities by IDs.
+func (_u *UserUpdate) RemoveBackgroundTaskRunEventIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveBackgroundTaskRunEventIDs(ids...)
+	return _u
+}
+
+// RemoveBackgroundTaskRunEvents removes "background_task_run_events" edges to BackgroundTaskRunEvent entities.
+func (_u *UserUpdate) RemoveBackgroundTaskRunEvents(v ...*BackgroundTaskRunEvent) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveBackgroundTaskRunEventIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -553,6 +701,186 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.BackgroundTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTasksTable,
+			Columns: []string{user.BackgroundTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtask.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedBackgroundTasksIDs(); len(nodes) > 0 && !_u.mutation.BackgroundTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTasksTable,
+			Columns: []string{user.BackgroundTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtask.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BackgroundTasksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTasksTable,
+			Columns: []string{user.BackgroundTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtask.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BackgroundTaskArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskArtifactsTable,
+			Columns: []string{user.BackgroundTaskArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskartifact.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedBackgroundTaskArtifactsIDs(); len(nodes) > 0 && !_u.mutation.BackgroundTaskArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskArtifactsTable,
+			Columns: []string{user.BackgroundTaskArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskartifact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BackgroundTaskArtifactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskArtifactsTable,
+			Columns: []string{user.BackgroundTaskArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskartifact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BackgroundTaskRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunsTable,
+			Columns: []string{user.BackgroundTaskRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrun.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedBackgroundTaskRunsIDs(); len(nodes) > 0 && !_u.mutation.BackgroundTaskRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunsTable,
+			Columns: []string{user.BackgroundTaskRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BackgroundTaskRunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunsTable,
+			Columns: []string{user.BackgroundTaskRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BackgroundTaskRunEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunEventsTable,
+			Columns: []string{user.BackgroundTaskRunEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrunevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedBackgroundTaskRunEventsIDs(); len(nodes) > 0 && !_u.mutation.BackgroundTaskRunEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunEventsTable,
+			Columns: []string{user.BackgroundTaskRunEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrunevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BackgroundTaskRunEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunEventsTable,
+			Columns: []string{user.BackgroundTaskRunEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrunevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -712,6 +1040,66 @@ func (_u *UserUpdateOne) AddMcpConnections(v ...*MCPConnection) *UserUpdateOne {
 	return _u.AddMcpConnectionIDs(ids...)
 }
 
+// AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by IDs.
+func (_u *UserUpdateOne) AddBackgroundTaskIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddBackgroundTaskIDs(ids...)
+	return _u
+}
+
+// AddBackgroundTasks adds the "background_tasks" edges to the BackgroundTask entity.
+func (_u *UserUpdateOne) AddBackgroundTasks(v ...*BackgroundTask) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddBackgroundTaskIDs(ids...)
+}
+
+// AddBackgroundTaskArtifactIDs adds the "background_task_artifacts" edge to the BackgroundTaskArtifact entity by IDs.
+func (_u *UserUpdateOne) AddBackgroundTaskArtifactIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddBackgroundTaskArtifactIDs(ids...)
+	return _u
+}
+
+// AddBackgroundTaskArtifacts adds the "background_task_artifacts" edges to the BackgroundTaskArtifact entity.
+func (_u *UserUpdateOne) AddBackgroundTaskArtifacts(v ...*BackgroundTaskArtifact) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddBackgroundTaskArtifactIDs(ids...)
+}
+
+// AddBackgroundTaskRunIDs adds the "background_task_runs" edge to the BackgroundTaskRun entity by IDs.
+func (_u *UserUpdateOne) AddBackgroundTaskRunIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddBackgroundTaskRunIDs(ids...)
+	return _u
+}
+
+// AddBackgroundTaskRuns adds the "background_task_runs" edges to the BackgroundTaskRun entity.
+func (_u *UserUpdateOne) AddBackgroundTaskRuns(v ...*BackgroundTaskRun) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddBackgroundTaskRunIDs(ids...)
+}
+
+// AddBackgroundTaskRunEventIDs adds the "background_task_run_events" edge to the BackgroundTaskRunEvent entity by IDs.
+func (_u *UserUpdateOne) AddBackgroundTaskRunEventIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddBackgroundTaskRunEventIDs(ids...)
+	return _u
+}
+
+// AddBackgroundTaskRunEvents adds the "background_task_run_events" edges to the BackgroundTaskRunEvent entity.
+func (_u *UserUpdateOne) AddBackgroundTaskRunEvents(v ...*BackgroundTaskRunEvent) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddBackgroundTaskRunEventIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -805,6 +1193,90 @@ func (_u *UserUpdateOne) RemoveMcpConnections(v ...*MCPConnection) *UserUpdateOn
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMcpConnectionIDs(ids...)
+}
+
+// ClearBackgroundTasks clears all "background_tasks" edges to the BackgroundTask entity.
+func (_u *UserUpdateOne) ClearBackgroundTasks() *UserUpdateOne {
+	_u.mutation.ClearBackgroundTasks()
+	return _u
+}
+
+// RemoveBackgroundTaskIDs removes the "background_tasks" edge to BackgroundTask entities by IDs.
+func (_u *UserUpdateOne) RemoveBackgroundTaskIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveBackgroundTaskIDs(ids...)
+	return _u
+}
+
+// RemoveBackgroundTasks removes "background_tasks" edges to BackgroundTask entities.
+func (_u *UserUpdateOne) RemoveBackgroundTasks(v ...*BackgroundTask) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveBackgroundTaskIDs(ids...)
+}
+
+// ClearBackgroundTaskArtifacts clears all "background_task_artifacts" edges to the BackgroundTaskArtifact entity.
+func (_u *UserUpdateOne) ClearBackgroundTaskArtifacts() *UserUpdateOne {
+	_u.mutation.ClearBackgroundTaskArtifacts()
+	return _u
+}
+
+// RemoveBackgroundTaskArtifactIDs removes the "background_task_artifacts" edge to BackgroundTaskArtifact entities by IDs.
+func (_u *UserUpdateOne) RemoveBackgroundTaskArtifactIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveBackgroundTaskArtifactIDs(ids...)
+	return _u
+}
+
+// RemoveBackgroundTaskArtifacts removes "background_task_artifacts" edges to BackgroundTaskArtifact entities.
+func (_u *UserUpdateOne) RemoveBackgroundTaskArtifacts(v ...*BackgroundTaskArtifact) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveBackgroundTaskArtifactIDs(ids...)
+}
+
+// ClearBackgroundTaskRuns clears all "background_task_runs" edges to the BackgroundTaskRun entity.
+func (_u *UserUpdateOne) ClearBackgroundTaskRuns() *UserUpdateOne {
+	_u.mutation.ClearBackgroundTaskRuns()
+	return _u
+}
+
+// RemoveBackgroundTaskRunIDs removes the "background_task_runs" edge to BackgroundTaskRun entities by IDs.
+func (_u *UserUpdateOne) RemoveBackgroundTaskRunIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveBackgroundTaskRunIDs(ids...)
+	return _u
+}
+
+// RemoveBackgroundTaskRuns removes "background_task_runs" edges to BackgroundTaskRun entities.
+func (_u *UserUpdateOne) RemoveBackgroundTaskRuns(v ...*BackgroundTaskRun) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveBackgroundTaskRunIDs(ids...)
+}
+
+// ClearBackgroundTaskRunEvents clears all "background_task_run_events" edges to the BackgroundTaskRunEvent entity.
+func (_u *UserUpdateOne) ClearBackgroundTaskRunEvents() *UserUpdateOne {
+	_u.mutation.ClearBackgroundTaskRunEvents()
+	return _u
+}
+
+// RemoveBackgroundTaskRunEventIDs removes the "background_task_run_events" edge to BackgroundTaskRunEvent entities by IDs.
+func (_u *UserUpdateOne) RemoveBackgroundTaskRunEventIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveBackgroundTaskRunEventIDs(ids...)
+	return _u
+}
+
+// RemoveBackgroundTaskRunEvents removes "background_task_run_events" edges to BackgroundTaskRunEvent entities.
+func (_u *UserUpdateOne) RemoveBackgroundTaskRunEvents(v ...*BackgroundTaskRunEvent) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveBackgroundTaskRunEventIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -1115,6 +1587,186 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpconnection.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BackgroundTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTasksTable,
+			Columns: []string{user.BackgroundTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtask.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedBackgroundTasksIDs(); len(nodes) > 0 && !_u.mutation.BackgroundTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTasksTable,
+			Columns: []string{user.BackgroundTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtask.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BackgroundTasksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTasksTable,
+			Columns: []string{user.BackgroundTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtask.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BackgroundTaskArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskArtifactsTable,
+			Columns: []string{user.BackgroundTaskArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskartifact.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedBackgroundTaskArtifactsIDs(); len(nodes) > 0 && !_u.mutation.BackgroundTaskArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskArtifactsTable,
+			Columns: []string{user.BackgroundTaskArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskartifact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BackgroundTaskArtifactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskArtifactsTable,
+			Columns: []string{user.BackgroundTaskArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskartifact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BackgroundTaskRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunsTable,
+			Columns: []string{user.BackgroundTaskRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrun.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedBackgroundTaskRunsIDs(); len(nodes) > 0 && !_u.mutation.BackgroundTaskRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunsTable,
+			Columns: []string{user.BackgroundTaskRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BackgroundTaskRunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunsTable,
+			Columns: []string{user.BackgroundTaskRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BackgroundTaskRunEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunEventsTable,
+			Columns: []string{user.BackgroundTaskRunEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrunevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedBackgroundTaskRunEventsIDs(); len(nodes) > 0 && !_u.mutation.BackgroundTaskRunEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunEventsTable,
+			Columns: []string{user.BackgroundTaskRunEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrunevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BackgroundTaskRunEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskRunEventsTable,
+			Columns: []string{user.BackgroundTaskRunEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrunevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

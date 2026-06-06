@@ -126,7 +126,7 @@ export function CustomMcpServers({ tools: workflowTools, onAddTool }: CustomMcpS
   // UI
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-none p-4">
         <div className="flex gap-3">
           <div className="shrink-0">
             <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />

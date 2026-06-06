@@ -31,7 +31,7 @@ export function Section({
     description?: string;
 }) {
     return (
-        <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="rounded-none border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
             <div className="px-6 pt-4">
                 <h2 className={sectionHeaderStyles}>{title}</h2>
                 {description && (
@@ -312,7 +312,7 @@ function ApiKeysSection({ projectId }: { projectId: string }) {
             {loading ? (
                 <Spinner size="sm" />
             ) : (
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div className="border border-gray-200 dark:border-gray-700 rounded-none overflow-hidden">
                     <div className="grid grid-cols-12 items-center border-b border-gray-200 dark:border-gray-700 p-4">
                         <div className="col-span-7 font-medium text-gray-900 dark:text-gray-100">API Key</div>
                         <div className="col-span-3 font-medium text-gray-900 dark:text-gray-100">Created</div>
@@ -403,7 +403,7 @@ export function ChatWidgetSection({ projectId, chatWidgetHost }: { projectId: st
                                 successLabel="Copied"
                             />
                         </div>
-                        <div className="font-mono text-sm bg-gray-50 dark:bg-gray-800 rounded-lg p-4 pr-12 overflow-x-auto">
+                        <div className="font-mono text-sm bg-gray-50 dark:bg-gray-800 rounded-none p-4 pr-12 overflow-x-auto">
                             <pre className="whitespace-pre-wrap break-all">
                                 {code}
                             </pre>
@@ -573,7 +573,7 @@ function DisconnectToolkitsSection({ projectId, onProjectConfigUpdated }: {
                     {loading ? (
                         <Spinner size="sm" />
                     ) : connectedToolkits.length > 0 ? (
-                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <div className="border border-gray-200 dark:border-gray-700 rounded-none overflow-hidden">
                             {connectedToolkits.map((toolkit) => (
                                 <div 
                                     key={toolkit.slug}
@@ -721,7 +721,7 @@ function DeleteProjectSection({ projectId }: { projectId: string }) {
             description="Permanently delete this project and all its data."
         >
             <div className="space-y-4">
-                <div className="p-4 bg-red-50/10 dark:bg-red-900/10 rounded-lg">
+                <div className="p-4 bg-red-50/10 dark:bg-red-900/10 rounded-none">
                     <p className="text-sm text-red-700 dark:text-red-300">
                         Deleting a project will permanently remove all associated data, including workflows, sources, and API keys.
                         This action cannot be undone.
@@ -759,7 +759,7 @@ function DeleteProjectSection({ projectId }: { projectId: string }) {
                                     onChange={(e) => setConfirmationInput(e.target.value)}
                                 />
                                 {error && (
-                                    <div className="p-4 text-sm text-red-700 bg-red-50 dark:bg-red-900/10 dark:text-red-400 rounded-lg">
+                                    <div className="p-4 text-sm text-red-700 bg-red-50 dark:bg-red-900/10 dark:text-red-400 rounded-none">
                                         {error}
                                     </div>
                                 )}

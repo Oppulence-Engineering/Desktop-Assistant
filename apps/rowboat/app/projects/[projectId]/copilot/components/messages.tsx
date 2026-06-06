@@ -126,7 +126,7 @@ function UserMessage({ content }: { content: string }) {
     return (
         <div className="w-full">
             <div className="bg-blue-50 dark:bg-[#1e2023] px-4 py-2.5 
-                rounded-lg text-sm leading-relaxed
+                rounded-none text-sm leading-relaxed
                 text-gray-700 dark:text-gray-200 
                 border border-blue-100 dark:border-[#2a2d31]
                 shadow-sm animate-[slideUpAndFade_150ms_ease-out]">
@@ -153,7 +153,7 @@ function InternalAssistantMessage({ content }: { content: string }) {
             ) : (
                 <div className="w-full">
                     <div className="border border-gray-200 dark:border-gray-700 border-dashed 
-                        px-4 py-2.5 rounded-lg text-sm
+                        px-4 py-2.5 rounded-none text-sm
                         text-gray-700 dark:text-gray-200 shadow-sm">
                         <div className="flex justify-end mb-2">
                             <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -585,7 +585,7 @@ function AssistantMessageLoading({ currentStatus }: { currentStatus: 'thinking' 
     return (
         <div className="w-full">
             <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2.5 
-                rounded-lg
+                rounded-none
                 border border-gray-200 dark:border-gray-700
                 shadow-sm dark:shadow-gray-950/20 animate-pulse min-h-[2.5rem] flex items-center gap-2">
                 <Spinner size="sm" className="ml-2" />

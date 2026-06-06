@@ -24,6 +24,9 @@ export const ZListToolkitsResponse = z.object({
     items: z.array(ZToolkitItem),
     nextCursor: z.string().nullable(),
     totalItems: z.number(),
+    providerConfigured: z.boolean().optional(),
+    error: z.string().optional(),
+    message: z.string().optional(),
 });
 
 /**

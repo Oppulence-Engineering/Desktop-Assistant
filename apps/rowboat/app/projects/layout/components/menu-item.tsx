@@ -16,7 +16,7 @@ export default function MenuItem({
     return (
         <div
             className={`
-                w-full px-3 py-2 rounded-md flex items-center gap-3
+                w-full px-3 py-2 rounded-none flex items-center gap-3
                 text-sm font-medium transition-all duration-200
                 ${selected 
                     ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10' 

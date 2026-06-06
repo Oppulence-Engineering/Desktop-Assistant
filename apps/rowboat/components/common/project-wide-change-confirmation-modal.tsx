@@ -1,6 +1,13 @@
-'use client';
+"use client";
 
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+} from "@heroui/react";
 import { AlertTriangle } from "lucide-react";
 
 export interface ProjectWideChangeConfirmationModalProps {
@@ -38,15 +45,16 @@ export function ProjectWideChangeConfirmationModal({
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {confirmationQuestion}
             </p>
-            
-            <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+
+            <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-none p-4">
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-xs font-medium text-white mt-0.5">
                   ⚠️
                 </div>
                 <div className="text-sm">
                   <p className="font-medium text-orange-800 dark:text-orange-200 mb-1">
-                    This change will affect the deployed (Live) workflow as well!
+                    This change will affect the deployed (Live) workflow as
+                    well!
                   </p>
                 </div>
               </div>
@@ -54,11 +62,7 @@ export function ProjectWideChangeConfirmationModal({
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button
-            variant="light"
-            onPress={onClose}
-            disabled={isLoading}
-          >
+          <Button variant="light" onPress={onClose} disabled={isLoading}>
             Cancel
           </Button>
           <Button
@@ -73,4 +77,4 @@ export function ProjectWideChangeConfirmationModal({
       </ModalContent>
     </Modal>
   );
-} 
+}

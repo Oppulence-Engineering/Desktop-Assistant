@@ -21,13 +21,14 @@ type Config struct {
 	Environment string // production | staging | development
 
 	// Network listeners.
-	HTTPAddr        string // public REST + SSE surface
-	MetricsAddr     string // Prometheus /metrics (separate port)
-	GRPCAddr        string // entproto-generated services (reserved)
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
-	IdleTimeout     time.Duration
-	ShutdownTimeout time.Duration
+	HTTPAddr         string // public REST + SSE surface
+	MetricsAddr      string // Prometheus /metrics (separate port)
+	GRPCAddr         string // entproto-generated services (reserved)
+	ReadTimeout      time.Duration
+	WriteTimeout     time.Duration
+	IdleTimeout      time.Duration
+	ShutdownTimeout  time.Duration
+	ReadinessTimeout time.Duration
 
 	// Observability.
 	LogLevel     string // debug | info | warn | error
@@ -131,6 +132,18 @@ type Config struct {
 	// openrouter.ai). Override to target a self-hosted gateway or a local mock.
 	OpenAIBaseURL     string
 	OpenRouterBaseURL string
+
+	// Temporal durable orchestration for API-native background task runs.
+	TemporalEnabled       bool
+	TemporalAddress       string
+	TemporalNamespace     string
+	TemporalTaskQueue     string
+	TemporalWorkerEnabled bool
+	// Temporal Cloud connection. In local kind we talk to the bundled
+	// auto-setup server with no auth; staging/production connect to Temporal
+	// Cloud with an API key over TLS. TemporalAPIKey implies TLS.
+	TemporalAPIKey     string
+	TemporalTLSEnabled bool
 }
 
 // Load reads configuration from the environment, applying defaults.
@@ -139,13 +152,14 @@ func Load() Config {
 		ServiceName: getenv("SERVICE_NAME", "rowboat-api"),
 		Environment: getenv("ENVIRONMENT", "development"),
 
-		HTTPAddr:        getenv("HTTP_ADDR", ":8080"),
-		MetricsAddr:     getenv("METRICS_ADDR", ":9090"),
-		GRPCAddr:        getenv("GRPC_ADDR", ":8081"),
-		ReadTimeout:     getdur("READ_TIMEOUT", 30*time.Second),
-		WriteTimeout:    getdur("WRITE_TIMEOUT", 0), // 0 = no timeout (SSE streams)
-		IdleTimeout:     getdur("IDLE_TIMEOUT", 120*time.Second),
-		ShutdownTimeout: getdur("SHUTDOWN_TIMEOUT", 25*time.Second),
+		HTTPAddr:         getenv("HTTP_ADDR", ":8080"),
+		MetricsAddr:      getenv("METRICS_ADDR", ":9090"),
+		GRPCAddr:         getenv("GRPC_ADDR", ":8081"),
+		ReadTimeout:      getdur("READ_TIMEOUT", 30*time.Second),
+		WriteTimeout:     getdur("WRITE_TIMEOUT", 0), // 0 = no timeout (SSE streams)
+		IdleTimeout:      getdur("IDLE_TIMEOUT", 120*time.Second),
+		ShutdownTimeout:  getdur("SHUTDOWN_TIMEOUT", 25*time.Second),
+		ReadinessTimeout: getdur("READINESS_TIMEOUT", 3*time.Second),
 
 		LogLevel:     getenv("LOG_LEVEL", "info"),
 		OTLPEndpoint: getenv("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
@@ -211,6 +225,14 @@ func Load() Config {
 		PricingJSON:           getenv("PRICING_JSON", ""),
 		OpenAIBaseURL:         getenv("OPENAI_BASE_URL", ""),
 		OpenRouterBaseURL:     getenv("OPENROUTER_BASE_URL", ""),
+
+		TemporalEnabled:       getbool("TEMPORAL_ENABLED", false),
+		TemporalAddress:       getenv("TEMPORAL_ADDRESS", "localhost:7233"),
+		TemporalNamespace:     getenv("TEMPORAL_NAMESPACE", "default"),
+		TemporalTaskQueue:     getenv("TEMPORAL_TASK_QUEUE", "rowboat-api-background-tasks"),
+		TemporalWorkerEnabled: getbool("TEMPORAL_WORKER_ENABLED", false),
+		TemporalAPIKey:        getenv("TEMPORAL_API_KEY", ""),
+		TemporalTLSEnabled:    getbool("TEMPORAL_TLS_ENABLED", false),
 	}
 }
 
@@ -219,12 +241,30 @@ func (c Config) IsProduction() bool {
 	return strings.EqualFold(c.Environment, "production")
 }
 
+// TemporalUseTLS reports whether the Temporal client should dial over TLS.
+// An API key always implies TLS (Temporal Cloud requires it); TLS can also be
+// forced independently for self-managed TLS endpoints.
+func (c Config) TemporalUseTLS() bool {
+	return c.TemporalTLSEnabled || c.TemporalAPIKey != ""
+}
+
 // Validate returns an error if a hard-required value is missing. Only AppURL
 // is strictly required for the service to be useful (the desktop bombs out
 // without it); everything else degrades gracefully.
 func (c Config) Validate() error {
 	if c.AppURL == "" {
 		return fmt.Errorf("APP_URL is required")
+	}
+	if c.TemporalEnabled {
+		if c.TemporalAddress == "" {
+			return fmt.Errorf("TEMPORAL_ADDRESS is required when TEMPORAL_ENABLED=true")
+		}
+		if c.TemporalNamespace == "" {
+			return fmt.Errorf("TEMPORAL_NAMESPACE is required when TEMPORAL_ENABLED=true")
+		}
+		if c.TemporalTaskQueue == "" {
+			return fmt.Errorf("TEMPORAL_TASK_QUEUE is required when TEMPORAL_ENABLED=true")
+		}
 	}
 	return nil
 }

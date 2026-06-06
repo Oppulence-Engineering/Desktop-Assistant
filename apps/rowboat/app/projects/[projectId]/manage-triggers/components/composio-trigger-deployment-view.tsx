@@ -94,7 +94,7 @@ export function ComposioTriggerDeploymentView({ projectId, deploymentId }: { pro
                         )}
                         {!loading && deployment && (
                             <div className="flex flex-col gap-6">
-                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-none border border-gray-200 dark:border-gray-700">
                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                         <div>
                                             <span className="font-semibold text-gray-700 dark:text-gray-300">Deployment ID:</span>
@@ -129,7 +129,7 @@ export function ComposioTriggerDeploymentView({ projectId, deploymentId }: { pro
                                     </div>
                                 </div>
 
-                                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                                <div className="bg-white dark:bg-gray-800 rounded-none border border-gray-200 dark:border-gray-700 p-4">
                                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">Jobs Created by This Trigger</h3>
                                     <JobsList projectId={projectId} filters={jobsFilters} showTitle={false} />
                                 </div>
@@ -146,7 +146,7 @@ export function ComposioTriggerDeploymentView({ projectId, deploymentId }: { pro
 
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-none p-6 max-w-md mx-4">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Delete External Trigger</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Are you sure you want to delete this external trigger? This will remove the linked webhook in Composio and delete this deployment.</p>
                         <div className="flex gap-3 justify-end">

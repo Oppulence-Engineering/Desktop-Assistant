@@ -38,7 +38,7 @@ export function SectionCard({ icon, title, children, labelWidth = 'md:w-32', cla
   }, [title]);
 
   return (
-    <div className={`rounded-lg shadow border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-gray-900 ${className}`}
+    <div className={`rounded-none shadow border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-gray-900 ${className}`}
       style={style}
     >
       <button

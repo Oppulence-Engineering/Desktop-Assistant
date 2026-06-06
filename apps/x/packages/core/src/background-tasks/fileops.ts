@@ -11,6 +11,22 @@ import { withFileLock } from '../knowledge/file-lock.js';
 
 const BG_TASKS_DIR = path.join(WorkDir, 'bg-tasks');
 
+function syncTaskBestEffort(slug: string): void {
+    void import('./cloud-sync.js')
+        .then(mod => mod.syncTaskToCloudBestEffort(slug))
+        .catch(err => {
+            console.log(`[BgTask:Cloud] ${slug} — task sync unavailable: ${err instanceof Error ? err.message : String(err)}`);
+        });
+}
+
+function deleteCloudTaskBestEffort(slug: string): void {
+    void import('./cloud-sync.js')
+        .then(mod => mod.deleteTaskFromCloudBestEffort(slug))
+        .catch(err => {
+            console.log(`[BgTask:Cloud] ${slug} — delete sync unavailable: ${err instanceof Error ? err.message : String(err)}`);
+        });
+}
+
 function taskDir(slug: string): string {
     return path.join(BG_TASKS_DIR, slug);
 }
@@ -21,6 +37,55 @@ export function taskYamlPath(slug: string): string {
 
 export function taskIndexPath(slug: string): string {
     return path.join(taskDir(slug), 'index.md');
+}
+
+/**
+ * Sidecar at `bg-tasks/<slug>/.artifact-sync.json` recording the remote artifact
+ * revision the local index.md was last pulled from, so the UI can tell whether
+ * the cloud has moved ahead (`remote newer`) or a pull failed. Hidden file → it
+ * is skipped by `listTasks` (which ignores dot-entries) and never confused with
+ * a task. Best-effort: a missing/corrupt sidecar simply reads as "not pulled".
+ */
+export function artifactSyncPath(slug: string): string {
+    return path.join(taskDir(slug), '.artifact-sync.json');
+}
+
+export interface ArtifactSyncRecord {
+    revision: number;
+    pulledAt: string;
+    lastError?: string;
+}
+
+export async function readArtifactSync(slug: string): Promise<ArtifactSyncRecord | null> {
+    try {
+        const raw = await fs.readFile(artifactSyncPath(slug), 'utf-8');
+        const parsed = JSON.parse(raw) as Partial<ArtifactSyncRecord>;
+        if (typeof parsed.revision !== 'number') return null;
+        return {
+            revision: parsed.revision,
+            pulledAt: typeof parsed.pulledAt === 'string' ? parsed.pulledAt : '',
+            ...(parsed.lastError ? { lastError: parsed.lastError } : {}),
+        };
+    } catch {
+        return null;
+    }
+}
+
+export async function writeArtifactSync(slug: string, record: ArtifactSyncRecord): Promise<void> {
+    try {
+        await fs.writeFile(artifactSyncPath(slug), JSON.stringify(record), 'utf-8');
+    } catch {
+        // Sidecar is advisory; a write failure must not break the pull itself.
+    }
+}
+
+export async function indexExists(slug: string): Promise<boolean> {
+    try {
+        await fs.access(taskIndexPath(slug));
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -82,7 +147,7 @@ export async function fetchTask(slug: string): Promise<BackgroundTask | null> {
  * runner for the `lastRun*` runtime fields.
  */
 export async function patchTask(slug: string, partial: Partial<BackgroundTask>): Promise<BackgroundTask> {
-    return withFileLock(taskYamlPath(slug), async () => {
+    const next = await withFileLock(taskYamlPath(slug), async () => {
         const current = await fetchTask(slug);
         if (!current) {
             throw new Error(`Task '${slug}' not found`);
@@ -91,6 +156,8 @@ export async function patchTask(slug: string, partial: Partial<BackgroundTask>):
         await fs.writeFile(taskYamlPath(slug), stringifyYaml(next), 'utf-8');
         return next;
     });
+    syncTaskBestEffort(slug);
+    return next;
 }
 
 export interface CreateTaskInput {
@@ -99,6 +166,7 @@ export interface CreateTaskInput {
     triggers?: BackgroundTask['triggers'];
     model?: string;
     provider?: string;
+    executionTarget?: BackgroundTask['executionTarget'];
 }
 
 /**
@@ -138,20 +206,23 @@ export async function createTask(input: CreateTaskInput): Promise<{ slug: string
         ...(input.triggers ? { triggers: input.triggers } : {}),
         ...(input.model ? { model: input.model } : {}),
         ...(input.provider ? { provider: input.provider } : {}),
+        executionTarget: input.executionTarget ?? 'desktop',
         createdAt: new Date().toISOString(),
     };
 
     await fs.writeFile(taskYamlPath(slug), stringifyYaml(task), 'utf-8');
     await fs.writeFile(taskIndexPath(slug), `# ${input.name}\n\n`, 'utf-8');
 
+    syncTaskBestEffort(slug);
     return { slug };
 }
 
 /** Delete a bg-task — removes the entire folder. */
 export async function deleteTask(slug: string): Promise<void> {
-    return withFileLock(taskYamlPath(slug), async () => {
+    await withFileLock(taskYamlPath(slug), async () => {
         await fs.rm(taskDir(slug), { recursive: true, force: true });
     });
+    deleteCloudTaskBestEffort(slug);
 }
 
 // ---------------------------------------------------------------------------
@@ -194,6 +265,7 @@ export async function listTasks(opts: ListTasksOptions = {}): Promise<ListTasksR
             instructions: task.instructions,
             active: task.active,
             ...(task.triggers ? { triggers: task.triggers } : {}),
+            executionTarget: task.executionTarget ?? 'desktop',
             createdAt: task.createdAt,
             ...(task.lastAttemptAt ? { lastAttemptAt: task.lastAttemptAt } : {}),
             ...(task.lastRunId ? { lastRunId: task.lastRunId } : {}),

@@ -13,7 +13,7 @@ import { ReasonBadge } from "../../../../lib/components/reason-badge";
 
 function TurnContainer({ turn, index, projectId }: { turn: z.infer<typeof Turn>; index: number; projectId: string }) {
     return (
-        <div id={`turn-${turn.id}`} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div id={`turn-${turn.id}`} className="border border-gray-200 dark:border-gray-700 rounded-none overflow-hidden">
             {/* Turn Header */}
             <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
@@ -112,7 +112,7 @@ export function ConversationView({ projectId, conversationId }: { projectId: str
                     {!loading && conversation && (
                         <div className="flex flex-col gap-6">
                             {/* Conversation Metadata */}
-                            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-none border border-gray-200 dark:border-gray-700">
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
                                         <span className="font-semibold text-gray-700 dark:text-gray-300">Conversation ID:</span>
@@ -148,7 +148,7 @@ export function ConversationView({ projectId, conversationId }: { projectId: str
                             </div>
 
                             {/* Workflow */}
-                            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-none border border-gray-200 dark:border-gray-700">
                                 <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
                                     Workflow
                                 </div>

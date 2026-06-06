@@ -25,6 +25,22 @@ import { API_URL } from "../config/env.js";
 const COMPOSIO_BASE_URL = 'https://backend.composio.dev/api/v3';
 const CONFIG_FILE = path.join(WorkDir, 'config', 'composio.json');
 
+export class ComposioApiError extends Error {
+    constructor(
+        message: string,
+        public readonly status: number,
+        public readonly statusText: string,
+        public readonly code?: string,
+    ) {
+        super(message);
+        this.name = 'ComposioApiError';
+    }
+}
+
+export function isProviderUnconfiguredError(error: unknown): boolean {
+    return error instanceof ComposioApiError && error.code === 'provider_unconfigured';
+}
+
 async function getBaseUrl(): Promise<string> {
     if (await isSignedIn()) {
         return `${API_URL}/v1/composio`;
@@ -150,13 +166,21 @@ export async function composioApiCall<T extends z.ZodTypeAny>(
         if (!response.ok) {
             // Try to extract a human-readable message from the JSON body
             let detail = '';
+            let code: string | undefined;
             try {
                 const body = JSON.parse(rawText);
                 if (typeof body?.error === 'string') detail = body.error;
                 else if (typeof body?.message === 'string') detail = body.message;
+                if (typeof body?.code === 'string') code = body.code;
+                else if (typeof body?.error?.error_code === 'string') code = body.error.error_code;
             } catch { /* body isn't JSON or has no message field */ }
             const suffix = detail ? `: ${detail}` : '';
-            throw new Error(`Composio API error: ${response.status} ${response.statusText}${suffix}`);
+            throw new ComposioApiError(
+                `Composio API error: ${response.status} ${response.statusText}${suffix}`,
+                response.status,
+                response.statusText,
+                code,
+            );
         }
 
         if (!contentType.includes('application/json')) {

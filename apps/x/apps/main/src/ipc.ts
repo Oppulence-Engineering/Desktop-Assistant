@@ -63,6 +63,19 @@ import {
   listLiveNotes,
 } from '@x/core/dist/knowledge/live-note/fileops.js';
 import { runBackgroundTask } from '@x/core/dist/background-tasks/runner.js';
+import {
+  cancelCloudRun,
+  getArtifactSyncState,
+  getCloudRunStatus,
+  listAllCloudRuns,
+  listCloudRunEvents,
+  listCloudRuns,
+  rerunCloudRun,
+  retryCloudRun,
+  signalCloudRun,
+  syncArtifactFromCloud,
+  triggerCloudRun,
+} from '@x/core/dist/background-tasks/cloud-sync.js';
 import { backgroundTaskBus } from '@x/core/dist/background-tasks/bus.js';
 import {
   fetchTask,
@@ -979,13 +992,27 @@ export function setupIpcHandlers() {
     },
     // Bg-task handlers
     'bg-task:run': async (_event, args) => {
-      const result = await runBackgroundTask(args.slug, 'manual', args.context);
-      return {
-        success: !result.error,
-        runId: result.runId,
-        summary: result.summary,
-        error: result.error,
-      };
+      try {
+        const task = await fetchTask(args.slug);
+        if ((task?.executionTarget ?? 'desktop') === 'api') {
+          const run = await triggerCloudRun(args.slug, 'manual', args.context);
+          return {
+            success: true,
+            runId: run.runId,
+            summary: run.summary,
+            run,
+          };
+        }
+        const result = await runBackgroundTask(args.slug, 'manual', args.context);
+        return {
+          success: !result.error,
+          runId: result.runId,
+          summary: result.summary,
+          error: result.error,
+        };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
     },
     'bg-task:get': async (_event, args) => {
       try {
@@ -1011,6 +1038,7 @@ export function setupIpcHandlers() {
           ...(args.triggers ? { triggers: args.triggers } : {}),
           ...(args.model ? { model: args.model } : {}),
           ...(args.provider ? { provider: args.provider } : {}),
+          ...(args.executionTarget ? { executionTarget: args.executionTarget } : {}),
         });
         return { success: true, slug };
       } catch (err) {
@@ -1043,6 +1071,108 @@ export function setupIpcHandlers() {
     'bg-task:listRunIds': async (_event, args) => {
       const runIds = await readTaskRunIds(args.slug, args.limit);
       return { runIds };
+    },
+    'bg-task:triggerCloudRun': async (_event, args) => {
+      try {
+        const run = await triggerCloudRun(args.slug, args.trigger ?? 'manual', args.context);
+        return { success: true, run };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    'bg-task:getCloudRunStatus': async (_event, args) => {
+      try {
+        const status = await getCloudRunStatus(args.slug, args.runId);
+        return { success: true, status };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    'bg-task:listCloudRuns': async (_event, args) => {
+      try {
+        const result = await listCloudRuns(args.slug, {
+          ...(args.status ? { status: args.status } : {}),
+          ...(args.executor ? { executor: args.executor } : {}),
+          ...(args.limit ? { limit: args.limit } : {}),
+          ...(args.cursor ? { cursor: args.cursor } : {}),
+        });
+        return { success: true, runs: result.runs, ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}) };
+      } catch (err) {
+        return { success: false, runs: [], error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    'bg-task:listCloudRunEvents': async (_event, args) => {
+      try {
+        const events = await listCloudRunEvents(args.slug, args.runId, args.afterSeq);
+        return { success: true, events };
+      } catch (err) {
+        return { success: false, events: [], error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    'bg-task:cancelCloudRun': async (_event, args) => {
+      try {
+        const run = await cancelCloudRun(args.slug, args.runId);
+        return { success: true, run };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    'bg-task:retryCloudRun': async (_event, args) => {
+      try {
+        const run = await retryCloudRun(args.slug, args.runId);
+        return { success: true, run };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    'bg-task:signalCloudRun': async (_event, args) => {
+      try {
+        const run = await signalCloudRun(args.slug, args.runId, args.signal, args.payload);
+        return { success: true, run };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    'bg-task:pullCloudArtifact': async (_event, args) => {
+      try {
+        await syncArtifactFromCloud(args.slug);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    'bg-task:listAllCloudRuns': async (_event, args) => {
+      try {
+        const result = await listAllCloudRuns({
+          ...(args.status ? { status: args.status } : {}),
+          ...(args.trigger ? { trigger: args.trigger } : {}),
+          ...(args.executor ? { executor: args.executor } : {}),
+          ...(args.slug ? { slug: args.slug } : {}),
+          ...(args.since ? { since: args.since } : {}),
+          ...(args.until ? { until: args.until } : {}),
+          ...(args.limit ? { limit: args.limit } : {}),
+          ...(args.cursor ? { cursor: args.cursor } : {}),
+        });
+        return { success: true, runs: result.runs, ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}) };
+      } catch (err) {
+        return { success: false, runs: [], error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    'bg-task:rerunCloudRun': async (_event, args) => {
+      try {
+        const run = await rerunCloudRun(args.slug, args.runId);
+        return { success: true, run };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    'bg-task:getArtifactSyncState': async (_event, args) => {
+      try {
+        const sync = await getArtifactSyncState(args.slug);
+        return { success: true, sync };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
     },
     // Billing handler
     'billing:getInfo': async () => {

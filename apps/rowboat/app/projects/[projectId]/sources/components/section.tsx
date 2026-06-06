@@ -9,7 +9,7 @@ interface SectionProps {
 
 export function Section({ title, description, children, className }: SectionProps) {
     return (
-        <div className={`rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden ${className || ''}`}>
+        <div className={`rounded-none border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden ${className || ''}`}>
             <div className="px-6 pt-5 pb-4">
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     {title}

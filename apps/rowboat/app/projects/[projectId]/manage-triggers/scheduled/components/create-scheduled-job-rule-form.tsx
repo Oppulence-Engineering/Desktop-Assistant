@@ -235,12 +235,12 @@ function ScheduledJobRuleFormBase({
                             
                             <div className="space-y-4">
                                 {messages.map((message, index) => (
-                                    <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                    <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-none p-4">
                                         <div className="flex items-center justify-between mb-3">
                                             <select
                                                 value={message.role}
                                                 onChange={(e) => updateMessage(index, "role", e.target.value)}
-                                                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-white"
+                                                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-none text-sm dark:bg-gray-700 dark:text-white"
                                             >
                                                 <option value="system">System</option>
                                                 <option value="user">User</option>
@@ -262,7 +262,7 @@ function ScheduledJobRuleFormBase({
                                             value={message.content}
                                             onChange={(e) => updateMessage(index, "content", e.target.value)}
                                             placeholder={`Enter ${message.role} message...`}
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-none shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                                             rows={3}
                                             required
                                         />

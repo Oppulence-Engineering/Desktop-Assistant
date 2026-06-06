@@ -48,7 +48,10 @@ func main() {
 		log.Fatalf("enthistory schema generation: %v", err)
 	}
 
-	// entoas: OpenAPI 3 spec written to api/openapi.json.
+	// entoas: base entity OpenAPI component/path spec written to api/openapi.json.
+	// go generate runs cmd/openapi-enrich immediately afterward to replace the
+	// path surface with the mounted runtime API and keep ent schemas as
+	// documented component models.
 	if err := os.MkdirAll("../api", 0o755); err != nil {
 		log.Fatalf("mkdir api: %v", err)
 	}
@@ -65,7 +68,7 @@ func main() {
 			OpenAPI: "3.0.3",
 			Info: ogen.Info{
 				Title:       "rowboat-api",
-				Description: "Entity-shaped REST surface generated from ent schemas. Streaming/proxy endpoints are hand-curated and merged.",
+				Description: "Base entity model document generated from ent schemas. cmd/openapi-enrich turns this into the mounted rowboat-api runtime document.",
 				Version:     "0.1.0",
 			},
 		}),

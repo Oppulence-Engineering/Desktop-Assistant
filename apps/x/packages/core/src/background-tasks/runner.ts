@@ -23,6 +23,20 @@ function truncate(s: string | null | undefined, n = SUMMARY_LOG_LIMIT): string {
     return s.length <= n ? s : `${s.slice(0, n - 1)}…`;
 }
 
+function syncRunBestEffort(
+    slug: string,
+    localRunId: string,
+    trigger: BackgroundTaskTriggerType,
+    result?: BackgroundTaskAgentResult,
+    remoteRunId?: string,
+): void {
+    void import('./cloud-sync.js')
+        .then(mod => mod.syncRunToCloudBestEffort(slug, localRunId, trigger, result, remoteRunId))
+        .catch(err => {
+            log.log(`${slug} — cloud run sync unavailable: ${err instanceof Error ? err.message : String(err)}`);
+        });
+}
+
 // ---------------------------------------------------------------------------
 // Agent run message
 // ---------------------------------------------------------------------------
@@ -53,7 +67,10 @@ ${task.instructions}
 Your task folder is \`${wsFolder}\`. The user-visible artifact is \`${wsFolder}index.md\` — read it with \`file-readText\` and update it with \`file-editText\` per the OUTPUT / ACTION mode rule. Do not touch \`${wsFolder}task.yaml\` (the runtime owns it).`;
 
     return baseMessage + buildTriggerBlock({
-        trigger,
+        // `retry` is an API-worker-only trigger and never reaches local
+        // execution; narrow it to `manual` so the local trigger block (which has
+        // no retry concept) type-checks.
+        trigger: trigger === 'retry' ? 'manual' : trigger,
         triggers: task.triggers,
         // The 'event' branch passes the event payload as `context`; every
         // other trigger uses `context` as a one-off bias for THIS run.
@@ -86,6 +103,7 @@ export async function runBackgroundTask(
     slug: string,
     trigger: BackgroundTaskTriggerType = 'manual',
     context?: string,
+    remoteRunId?: string,
 ): Promise<BackgroundTaskAgentResult> {
     if (runningTasks.has(slug)) {
         log.log(`${slug} — skip: already running`);
@@ -133,6 +151,7 @@ export async function runBackgroundTask(
             lastAttemptAt: startedAt,
             lastRunId: runId,
         });
+        syncRunBestEffort(slug, runId, trigger, undefined, remoteRunId);
 
         backgroundTaskBus.publish({
             type: 'background_task_agent_start',
@@ -162,7 +181,9 @@ export async function runBackgroundTask(
                 ...(summary ? { summary } : {}),
             });
 
-            return { slug, runId, summary };
+            const result = { slug, runId, summary };
+            syncRunBestEffort(slug, runId, trigger, result, remoteRunId);
+            return result;
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
 
@@ -185,7 +206,9 @@ export async function runBackgroundTask(
                 error: msg,
             });
 
-            return { slug, runId, summary: null, error: msg };
+            const result = { slug, runId, summary: null, error: msg };
+            syncRunBestEffort(slug, runId, trigger, result, remoteRunId);
+            return result;
         }
     } finally {
         runningTasks.delete(slug);

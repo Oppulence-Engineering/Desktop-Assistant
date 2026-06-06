@@ -28,7 +28,7 @@ export function AppActionCard({ data, status }: AppActionCardProps) {
   const isError = status === "error";
 
   return (
-    <div className="not-prose mb-4 flex items-center gap-2 rounded-md border px-3 py-2">
+    <div className="not-prose mb-4 flex items-center gap-2 rounded-none border px-3 py-2">
       <span className="text-muted-foreground">
         {actionIcons[data.action] || <LayoutGridIcon className="size-4" />}
       </span>

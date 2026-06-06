@@ -1,0 +1,19 @@
+{{- if and .Values.worker.enabled .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}-worker
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "rowboat-api.name" . }}-worker
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: worker
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+      path: /metrics
+{{- end }}

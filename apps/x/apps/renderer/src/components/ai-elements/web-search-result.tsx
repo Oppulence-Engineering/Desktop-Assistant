@@ -6,11 +6,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import {
-  ChevronDownIcon,
-  GlobeIcon,
-  LoaderIcon,
-} from "lucide-react";
+import { ChevronDownIcon, GlobeIcon, LoaderIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -59,7 +55,9 @@ function uniqueDomains(results: WebSearchResultProps["results"]): string[] {
 // weight/color, the domain names are primary text at medium weight.
 function buildSearchedSummary(domains: string[]): React.ReactNode {
   const muted = "font-normal text-muted-foreground";
-  const name = (d: string) => <span className="font-medium text-foreground">{d}</span>;
+  const name = (d: string) => (
+    <span className="font-medium text-foreground">{d}</span>
+  );
   if (domains.length === 1) {
     return (
       <>
@@ -85,14 +83,21 @@ function buildSearchedSummary(domains: string[]): React.ReactNode {
       {name(domains[0])}
       <span className={muted}>, </span>
       {name(domains[1])}
-      <span className={muted}>{` and ${others} other${others !== 1 ? "s" : ""}`}</span>
+      <span
+        className={muted}
+      >{` and ${others} other${others !== 1 ? "s" : ""}`}</span>
     </>
   );
 }
 
 type RollPhase = "searching" | "rolling" | "settled";
 
-export function WebSearchResult({ query, results, status, title = "Searched the web" }: WebSearchResultProps) {
+export function WebSearchResult({
+  query,
+  results,
+  status,
+  title = "Searched the web",
+}: WebSearchResultProps) {
   const isRunning = status === "pending" || status === "running";
   const [open, setOpen] = useState(false);
 
@@ -154,7 +159,11 @@ export function WebSearchResult({ query, results, status, title = "Searched the 
     headerKey = `roll-${rollIndex}`;
     headerContent = (
       <span className="flex min-w-0 flex-1 items-center gap-2">
-        <img src={faviconUrl(domain)} alt="" className="size-4 shrink-0 rounded-sm bg-muted/60" />
+        <img
+          src={faviconUrl(domain)}
+          alt=""
+          className="size-4 shrink-0 rounded-none bg-muted/60"
+        />
         <span className="truncate">
           <span className="text-muted-foreground">{domain}</span>
           <span className="text-muted-foreground/50"> &middot; </span>
@@ -205,7 +214,10 @@ export function WebSearchResult({ query, results, status, title = "Searched the 
     >
       <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-2.5">
         {/* Rolling header: clipped, fixed height so sliding lines stay contained */}
-        <div className="relative min-w-0 flex-1 overflow-hidden" style={{ height: "1.5rem" }}>
+        <div
+          className="relative min-w-0 flex-1 overflow-hidden"
+          style={{ height: "1.5rem" }}
+        >
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
               key={headerKey}
@@ -225,7 +237,12 @@ export function WebSearchResult({ query, results, status, title = "Searched the 
               {domains.length} source{domains.length !== 1 ? "s" : ""}
             </span>
           )}
-          <ChevronDownIcon className={cn("size-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+          <ChevronDownIcon
+            className={cn(
+              "size-4 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+          />
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="overflow-hidden data-[state=open]:animate-[collapsible-down_0.09s_ease-out] data-[state=closed]:animate-[collapsible-up_0.08s_ease-in]">
@@ -238,7 +255,7 @@ export function WebSearchResult({ query, results, status, title = "Searched the 
 
           {/* Results list */}
           {results.length > 0 && (
-            <div className="rounded-md border max-h-64 overflow-y-auto">
+            <div className="rounded-none border max-h-64 overflow-y-auto">
               {results.map((result, index) => {
                 const domain = getDomain(result.url);
                 return (

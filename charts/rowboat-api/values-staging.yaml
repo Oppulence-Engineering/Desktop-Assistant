@@ -22,6 +22,27 @@ config:
   JWKS_URL: https://oauth.staging.solomon-ai.co/.well-known/jwks.json
   ORY_PUBLIC_URL: https://oauth.staging.solomon-ai.co
   PUBLIC_BASE_URL: https://api.x.staging.solomon-ai.co
+  # Google OAuth broker callback. MUST be the API host (where /oauth/google/callback
+  # is served), not APP_URL — the default falls back to APP_URL, which is the app
+  # host in staging/prod. Register this exact URI in the Google Cloud OAuth client.
+  GOOGLE_REDIRECT_URI: https://api.x.staging.solomon-ai.co/oauth/google/callback
   INFISICAL_ENVIRONMENT: staging
+  # --- Temporal Cloud (API-native background task worker) -------------------
+  # Staging/production execute API-target runs on Temporal Cloud (API-key auth
+  # over TLS). To enable: set TEMPORAL_ENABLED to "true", point ADDRESS/NAMESPACE
+  # at your Temporal Cloud namespace, add TEMPORAL_API_KEY to the
+  # rowboat-api-secrets Secret (Infisical — never inline it here), and set
+  # worker.enabled: true below.
+  TEMPORAL_ENABLED: "false"
+  TEMPORAL_ADDRESS: <namespace>.<account>.tmprl.cloud:7233
+  TEMPORAL_NAMESPACE: <namespace>.<account>
+  TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
+  TEMPORAL_TLS_ENABLED: "true"
+  TEMPORAL_WORKER_ENABLED: "false"
+
+# Flip to true alongside TEMPORAL_ENABLED to run the durable worker.
+worker:
+  enabled: false
+  replicaCount: 1
 
 existingSecret: rowboat-api-secrets

@@ -55,10 +55,10 @@ export function ConnectorsPopover({ children, tooltip, open: openProp, onOpenCha
     return (
       <div
         key={provider}
-        className="flex items-center justify-between gap-3 rounded-md px-3 py-2 hover:bg-accent"
+        className="flex items-center justify-between gap-3 rounded-none px-3 py-2 hover:bg-accent"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex size-8 items-center justify-center rounded-md bg-muted">
+          <div className="flex size-8 items-center justify-center rounded-none bg-muted">
             {icon}
           </div>
           <div className="flex flex-col min-w-0">
@@ -235,9 +235,9 @@ export function ConnectorsPopover({ children, tooltip, open: openProp, onOpenCha
                   {c.useComposioForGoogle ? (
                     // In unconnected mode, only show if not connected
                     (!isUnconnectedMode || isGmailUnconnected) ? (
-                      <div className="flex items-center justify-between gap-3 rounded-md px-3 py-2 hover:bg-accent">
+                      <div className="flex items-center justify-between gap-3 rounded-none px-3 py-2 hover:bg-accent">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="flex size-8 items-center justify-center rounded-md bg-muted">
+                          <div className="flex size-8 items-center justify-center rounded-none bg-muted">
                             <Mail className="size-4" />
                           </div>
                           <div className="flex flex-col min-w-0">
@@ -285,9 +285,9 @@ export function ConnectorsPopover({ children, tooltip, open: openProp, onOpenCha
                     renderOAuthProvider('google', 'Google', <Mail className="size-4" />, 'Sync emails and calendar')
                   )}
                   {c.useComposioForGoogleCalendar && (!isUnconnectedMode || isGoogleCalendarUnconnected) && (
-                    <div className="flex items-center justify-between gap-3 rounded-md px-3 py-2 hover:bg-accent">
+                    <div className="flex items-center justify-between gap-3 rounded-none px-3 py-2 hover:bg-accent">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex size-8 items-center justify-center rounded-md bg-muted">
+                        <div className="flex size-8 items-center justify-center rounded-none bg-muted">
                           <Calendar className="size-4" />
                         </div>
                         <div className="flex flex-col min-w-0">

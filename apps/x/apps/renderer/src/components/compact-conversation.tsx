@@ -28,7 +28,7 @@ export function CompactConversation({ items }: { items: ConversationItem[] }) {
             {items.map((item) => {
                 if (isErrorMessage(item)) {
                     return (
-                        <div key={item.id} className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                        <div key={item.id} className="rounded-none border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                             {item.message}
                         </div>
                     )
@@ -39,7 +39,7 @@ export function CompactConversation({ items }: { items: ConversationItem[] }) {
                     return (
                         <div key={item.id} className={isUser ? 'flex justify-end' : ''}>
                             <div className={isUser
-                                ? 'max-w-[85%] rounded-lg bg-secondary px-3 py-2 text-xs text-foreground whitespace-pre-wrap break-words'
+                                ? 'max-w-[85%] rounded-none bg-secondary px-3 py-2 text-xs text-foreground whitespace-pre-wrap break-words'
                                 : 'w-full text-xs text-foreground'}>
                                 {isUser ? (
                                     item.content

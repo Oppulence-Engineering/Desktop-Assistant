@@ -215,7 +215,7 @@ export function TriggerSetupModal({
             )}
 
             {error && (
-              <div className="mt-4 rounded-md border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 p-3 text-sm text-red-600 dark:text-red-300">
+              <div className="mt-4 rounded-none border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 p-3 text-sm text-red-600 dark:text-red-300">
                 {error}
               </div>
             )}

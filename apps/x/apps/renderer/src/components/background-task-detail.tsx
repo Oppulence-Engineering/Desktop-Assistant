@@ -63,7 +63,7 @@ export function BackgroundTaskDetail({
       {/* Header */}
       <div className="border-b border-border px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center size-10 rounded-lg bg-primary/10">
+          <div className="flex items-center justify-center size-10 rounded-none bg-primary/10">
             <Bot className="size-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
@@ -86,7 +86,7 @@ export function BackgroundTaskDetail({
         {/* Schedule */}
         <section>
           <h2 className="text-sm font-medium text-muted-foreground mb-2">Schedule</h2>
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+          <div className="bg-muted/50 rounded-none p-4 space-y-2">
             <div className="flex items-center gap-2">
               <Calendar className="size-4 text-muted-foreground" />
               <span className="text-sm font-medium capitalize">{schedule.type} Schedule</span>
@@ -101,7 +101,7 @@ export function BackgroundTaskDetail({
         {status === "triggered" ? (
           <section>
             <h2 className="text-sm font-medium text-muted-foreground mb-2">Status</h2>
-            <div className="bg-muted/50 rounded-lg p-4">
+            <div className="bg-muted/50 rounded-none p-4">
               <div className="flex items-center gap-2">
                 <CheckCircle className="size-4 text-green-500" />
                 <p className="text-sm font-medium">Completed</p>
@@ -114,7 +114,7 @@ export function BackgroundTaskDetail({
         ) : (
           <section>
             <h2 className="text-sm font-medium text-muted-foreground mb-2">Status</h2>
-            <div className="flex items-center justify-between bg-muted/50 rounded-lg p-4">
+            <div className="flex items-center justify-between bg-muted/50 rounded-none p-4">
               <div>
                 <p className="text-sm font-medium">{enabled ? "Enabled" : "Disabled"}</p>
                 <p className="text-xs text-muted-foreground">
@@ -133,11 +133,11 @@ export function BackgroundTaskDetail({
         <section>
           <h2 className="text-sm font-medium text-muted-foreground mb-2">Run History</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-muted/50 rounded-lg p-4">
+            <div className="bg-muted/50 rounded-none p-4">
               <p className="text-2xl font-semibold">{runCount}</p>
               <p className="text-xs text-muted-foreground">Total Runs</p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-4">
+            <div className="bg-muted/50 rounded-none p-4">
               <p className="text-sm font-medium">{formatDateTime(lastRunAt)}</p>
               <p className="text-xs text-muted-foreground">Last Run</p>
             </div>
@@ -148,7 +148,7 @@ export function BackgroundTaskDetail({
         {nextRunAt && schedule.type !== "once" && (
           <section>
             <h2 className="text-sm font-medium text-muted-foreground mb-2">Next Scheduled Run</h2>
-            <div className="bg-muted/50 rounded-lg p-4">
+            <div className="bg-muted/50 rounded-none p-4">
               <div className="flex items-center gap-2">
                 <Clock className="size-4 text-muted-foreground" />
                 <span className="text-sm">{formatDateTime(nextRunAt)}</span>
@@ -161,7 +161,7 @@ export function BackgroundTaskDetail({
         {lastError && (
           <section>
             <h2 className="text-sm font-medium text-red-500 mb-2">Last Error</h2>
-            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-none p-4">
               <div className="flex items-start gap-2">
                 <AlertCircle className="size-4 text-red-500 mt-0.5 shrink-0" />
                 <p className="text-sm text-red-700 dark:text-red-400">{lastError}</p>

@@ -3,3 +3,4 @@
 package ent
 
 //go:generate go run -mod=mod entc.go
+//go:generate go run -mod=mod ../cmd/openapi-enrich ../api/openapi.json

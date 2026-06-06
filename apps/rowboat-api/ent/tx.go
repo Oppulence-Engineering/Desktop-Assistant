@@ -12,6 +12,14 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// BackgroundTask is the client for interacting with the BackgroundTask builders.
+	BackgroundTask *BackgroundTaskClient
+	// BackgroundTaskArtifact is the client for interacting with the BackgroundTaskArtifact builders.
+	BackgroundTaskArtifact *BackgroundTaskArtifactClient
+	// BackgroundTaskRun is the client for interacting with the BackgroundTaskRun builders.
+	BackgroundTaskRun *BackgroundTaskRunClient
+	// BackgroundTaskRunEvent is the client for interacting with the BackgroundTaskRunEvent builders.
+	BackgroundTaskRunEvent *BackgroundTaskRunEventClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
 	// LLMUsage is the client for interacting with the LLMUsage builders.
@@ -167,6 +175,10 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.BackgroundTask = NewBackgroundTaskClient(tx.config)
+	tx.BackgroundTaskArtifact = NewBackgroundTaskArtifactClient(tx.config)
+	tx.BackgroundTaskRun = NewBackgroundTaskRunClient(tx.config)
+	tx.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
 	tx.LLMUsage = NewLLMUsageClient(tx.config)
 	tx.LLMUsageHistory = NewLLMUsageHistoryClient(tx.config)
@@ -188,7 +200,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: CreditLedger.QueryXXX(), the query will be executed
+// applies a query, for example: BackgroundTask.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

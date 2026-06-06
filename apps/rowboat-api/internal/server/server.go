@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/go-chi/chi/v5"
@@ -83,7 +82,7 @@ func (s *Server) handleReadyz(w http.ResponseWriter, r *http.Request) {
 	checks := append([]ReadyCheck(nil), s.checks...)
 	s.mu.RUnlock()
 
-	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), s.cfg.ReadinessTimeout)
 	defer cancel()
 
 	for _, c := range checks {

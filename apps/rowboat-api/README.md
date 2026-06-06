@@ -34,6 +34,7 @@ microservice skeleton) without carrying podinfo's demo surface.
 cmd/server/        main.go + wire.go (composition root)
 internal/
   appconfig/       env-driven Config (single config surface)
+  openapidoc/      post-entoas OpenAPI enrichment for the mounted runtime API
   telemetry/       zap logging + OTel tracing
   server/          chi router, middleware chain, health probes, graceful shutdown
   version/         build-time version stamping (ldflags)
@@ -51,6 +52,8 @@ make build && ./bin/rowboat-api
 
 curl localhost:8080/healthz    # {"status":"ok"}
 curl localhost:8080/readyz     # {"status":"ready"}
+open http://localhost:8080/docs # Scalar API reference
+curl localhost:8080/openapi.json
 curl localhost:9090/metrics    # prometheus
 ```
 
@@ -90,6 +93,24 @@ returns `502 provider_unconfigured`. In dev, the compose file sets dummy
 set those two secrets to the real values, and leave `GOOGLE_TOKEN_URL` unset
 (defaults to `https://oauth2.googleapis.com/token`).
 
+## Local kind cluster with the Helm chart
+
+Use this when you want to validate the Kubernetes deployment path locally. It
+deploys the real `charts/rowboat-api` chart into kind with local Postgres,
+Redis, and the devstack OIDC/WorkOS/LLM mocks:
+
+```bash
+scripts/rowboat-api-kind.sh up
+scripts/rowboat-api-kind.sh desktop
+```
+
+The desktop runs with `API_URL=http://localhost:18080`. See
+[`docs/LOCAL_KIND_ROWBOAT_API.md`](../../docs/LOCAL_KIND_ROWBOAT_API.md) for the
+full workflow and smoke-test coverage.
+
+The Scalar API reference is available at `http://localhost:18080/docs`, backed
+by the embedded OpenAPI document at `http://localhost:18080/openapi.json`.
+
 ## Ports
 
 | Port | Purpose                                   |
@@ -121,7 +142,7 @@ all of it):
 | privacy / intercept | tenant-scoping + query metrics | enforced in `internal/db` |
 | **entcache** | query cache (LRU L1 + Redis L2), opt-in | `db.DB.Cached` (used by `/v1/me`) |
 | **enthistory** | `*_history` tables on User/Subscription/OAuth/MCP/LLMUsage | `client.*History`, auto-written on writes |
-| **entoas** | OpenAPI 3 spec | `api/openapi.json` |
+| **entoas + openapidoc** | OpenAPI 3 spec for the mounted runtime API with ent schemas as components | `api/openapi.json` |
 | **entgql** | Relay GraphQL schema + resolvers | `POST /graphql` (admin, internal-secret) |
 | **entproto** | protobuf + gRPC `UserService` | gRPC on `:8081` (`ent/proto/entpb`) |
 

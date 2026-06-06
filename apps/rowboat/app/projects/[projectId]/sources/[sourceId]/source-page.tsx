@@ -165,7 +165,7 @@ export function SourcePage({
                                             defaultValue={source.description || ''}
                                             placeholder="Add a description for this data source"
                                             rows={2}
-                                            className="w-full rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                            className="w-full rounded-none p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                                         />
                                         <div className="flex items-center gap-2 mt-2">
                                             <button
@@ -260,7 +260,7 @@ export function SourcePage({
                         description="Permanently delete this data source."
                     >
                         <div className="space-y-4">
-                            <div className="p-4 bg-red-50/10 dark:bg-red-900/10 rounded-lg">
+                            <div className="p-4 bg-red-50/10 dark:bg-red-900/10 rounded-none">
                                 <p className="text-sm text-red-700 dark:text-red-300">
                                     Deleting this data source will permanently remove all its content.
                                     This action cannot be undone.

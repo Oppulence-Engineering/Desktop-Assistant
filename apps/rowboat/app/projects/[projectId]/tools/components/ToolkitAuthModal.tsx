@@ -347,7 +347,7 @@ export function ToolkitAuthModal({
             <PictureImg 
               src={toolkitDetails.meta.logo} 
               alt={`${toolkitSlug} logo`}
-              className="w-8 h-8 rounded-md object-cover"
+              className="w-8 h-8 rounded-none object-cover"
             />
           ) : (
             <Wrench className="w-5 h-5 text-blue-500" />
@@ -365,7 +365,7 @@ export function ToolkitAuthModal({
               <Spinner size="lg" />
             </div>
           ) : error ? (
-            <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
+            <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-none">
               {error}
             </div>
           ) : toolkit ? (
@@ -434,7 +434,7 @@ export function ToolkitAuthModal({
                       isDisabled={processing}
                       size="lg"
                     >
-                      <div className="bg-green-100 dark:bg-green-900/20 p-2 rounded-lg">
+                      <div className="bg-green-100 dark:bg-green-900/20 p-2 rounded-none">
                         <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
                       </div>
                       <div className="text-left flex flex-col gap-1">
@@ -460,7 +460,7 @@ export function ToolkitAuthModal({
                       isDisabled={processing}
                       size="lg"
                     >
-                      <div className="bg-orange-100 dark:bg-orange-900/20 p-2 rounded-lg">
+                      <div className="bg-orange-100 dark:bg-orange-900/20 p-2 rounded-none">
                         <Shield className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                       </div>
                       <div className="text-left">
@@ -482,7 +482,7 @@ export function ToolkitAuthModal({
                       isDisabled={processing}
                       size="lg"
                     >
-                      <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-lg">
+                      <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-none">
                         {getAuthMethodIcon(config.mode)}
                       </div>
                       <div className="text-left">

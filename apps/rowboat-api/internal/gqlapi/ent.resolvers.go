@@ -7,6 +7,7 @@ package gqlapi
 
 import (
 	"context"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -21,6 +22,26 @@ func (r *queryResolver) Node(ctx context.Context, id uuid.UUID) (ent.Noder, erro
 // Nodes is the resolver for the nodes field.
 func (r *queryResolver) Nodes(ctx context.Context, ids []uuid.UUID) ([]ent.Noder, error) {
 	return r.client.Noders(ctx, ids)
+}
+
+// BackgroundTasks is the resolver for the backgroundTasks field.
+func (r *queryResolver) BackgroundTasks(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskWhereInput) (*ent.BackgroundTaskConnection, error) {
+	panic(fmt.Errorf("not implemented: BackgroundTasks - backgroundTasks"))
+}
+
+// BackgroundTaskArtifacts is the resolver for the backgroundTaskArtifacts field.
+func (r *queryResolver) BackgroundTaskArtifacts(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskArtifactWhereInput) (*ent.BackgroundTaskArtifactConnection, error) {
+	panic(fmt.Errorf("not implemented: BackgroundTaskArtifacts - backgroundTaskArtifacts"))
+}
+
+// BackgroundTaskRuns is the resolver for the backgroundTaskRuns field.
+func (r *queryResolver) BackgroundTaskRuns(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskRunWhereInput) (*ent.BackgroundTaskRunConnection, error) {
+	panic(fmt.Errorf("not implemented: BackgroundTaskRuns - backgroundTaskRuns"))
+}
+
+// BackgroundTaskRunEvents is the resolver for the backgroundTaskRunEvents field.
+func (r *queryResolver) BackgroundTaskRunEvents(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskRunEventWhereInput) (*ent.BackgroundTaskRunEventConnection, error) {
+	panic(fmt.Errorf("not implemented: BackgroundTaskRunEvents - backgroundTaskRunEvents"))
 }
 
 // LlmUsages is the resolver for the llmUsages field.

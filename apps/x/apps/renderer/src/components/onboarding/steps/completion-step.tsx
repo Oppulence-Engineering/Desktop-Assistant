@@ -1,15 +1,21 @@
-import { CheckCircle2 } from "lucide-react"
-import { motion } from "motion/react"
-import { Button } from "@/components/ui/button"
-import type { OnboardingState } from "../use-onboarding-state"
+import { CheckCircle2 } from "lucide-react";
+import { motion } from "motion/react";
+import { Button } from "@/components/ui/button";
+import type { OnboardingState } from "../use-onboarding-state";
 
 interface CompletionStepProps {
-  state: OnboardingState
+  state: OnboardingState;
 }
 
 export function CompletionStep({ state }: CompletionStepProps) {
-  const { connectedProviders, gmailConnected, googleCalendarConnected, handleComplete } = state
-  const hasConnections = connectedProviders.length > 0 || gmailConnected || googleCalendarConnected
+  const {
+    connectedProviders,
+    gmailConnected,
+    googleCalendarConnected,
+    handleComplete,
+  } = state;
+  const hasConnections =
+    connectedProviders.length > 0 || gmailConnected || googleCalendarConnected;
 
   return (
     <div className="flex flex-col items-center justify-center text-center flex-1">
@@ -49,9 +55,15 @@ export function CompletionStep({ state }: CompletionStepProps) {
         className="text-base text-muted-foreground leading-relaxed max-w-sm mb-8"
       >
         {hasConnections ? (
-          <>Give me 30 minutes to build your context graph. I can still help with other things on your computer.</>
+          <>
+            Give me 30 minutes to build your context graph. I can still help
+            with other things on your computer.
+          </>
         ) : (
-          <>You can connect your accounts anytime from the sidebar to start syncing data.</>
+          <>
+            You can connect your accounts anytime from the sidebar to start
+            syncing data.
+          </>
         )}
       </motion.p>
 
@@ -61,7 +73,7 @@ export function CompletionStep({ state }: CompletionStepProps) {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
-          className="w-full max-w-sm rounded-xl border bg-muted/30 p-4 mb-8"
+          className="w-full max-w-sm rounded-none border bg-muted/30 p-4 mb-8"
         >
           <p className="text-sm font-semibold mb-3 text-left">Connected</p>
           <div className="space-y-2">
@@ -87,7 +99,7 @@ export function CompletionStep({ state }: CompletionStepProps) {
                 <span>Google Calendar</span>
               </motion.div>
             )}
-            {connectedProviders.includes('google') && (
+            {connectedProviders.includes("google") && (
               <motion.div
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -98,7 +110,7 @@ export function CompletionStep({ state }: CompletionStepProps) {
                 <span>Google (Email & Calendar)</span>
               </motion.div>
             )}
-            {connectedProviders.includes('fireflies-ai') && (
+            {connectedProviders.includes("fireflies-ai") && (
               <motion.div
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -128,5 +140,5 @@ export function CompletionStep({ state }: CompletionStepProps) {
         </Button>
       </motion.div>
     </div>
-  )
+  );
 }

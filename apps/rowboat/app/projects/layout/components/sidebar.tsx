@@ -147,7 +147,7 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
               <Link
                 href="/projects"
                 className={`
-                  w-full flex items-center justify-center rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all
+                  w-full flex items-center justify-center rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all
                   ${collapsed ? 'py-3' : 'gap-3 px-4 py-2.5 justify-start'}
                 `}
               >
@@ -185,7 +185,7 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
                     <Link
                       href={fullPath}
                       className={`
-                        relative w-full rounded-md flex items-center
+                        relative w-full rounded-none flex items-center
                         text-[15px] font-medium transition-all duration-200
                         px-2.5 py-3 gap-2.5
                         ${isActive
@@ -222,7 +222,7 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
                   {!collapsed && <Link
                     href={fullPath}
                     className={`
-                        relative w-full rounded-md flex items-center
+                        relative w-full rounded-none flex items-center
                         text-[15px] font-medium transition-all duration-200
                         px-2.5 py-3 gap-2.5
                         ${isActive
@@ -268,7 +268,7 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
           <div className="p-3 border-t border-zinc-100 dark:border-zinc-800">
             <button
               onClick={onToggleCollapse}
-              className="w-full flex items-center justify-center p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all"
+              className="w-full flex items-center justify-center p-2 rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all"
             >
               {collapsed ? (
                 <ChevronRightIcon size={20} className="text-zinc-500 dark:text-zinc-400" />
@@ -289,7 +289,7 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
                   window.open('https://discord.com/invite/rxB8pzHxaS', '_blank');
                 }}
                 className={`
-                  w-full rounded-md flex items-center
+                  w-full rounded-none flex items-center
                   text-[15px] font-medium transition-all duration-200
                   ${collapsed ? 'justify-center py-4' : 'px-4 py-4 gap-3'}
                   hover:bg-zinc-100 dark:hover:bg-zinc-800/50
@@ -307,7 +307,7 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
                 <button
                   onClick={toggleTheme}
                   className={`
-                    w-full rounded-md flex items-center
+                    w-full rounded-none flex items-center
                     text-[15px] font-medium transition-all duration-200
                     ${collapsed ? 'justify-center py-4' : 'px-4 py-4 gap-3'}
                     hover:bg-zinc-100 dark:hover:bg-zinc-800/50
@@ -352,7 +352,7 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
                   type="text"
                   value={assistantName}
                   onChange={(e) => setAssistantName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="Assistant 1"
                 />
               </div>
@@ -368,7 +368,7 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
                   onSubmit={handleCreateAssistant}
                   isSubmitting={isCreatingAssistant}
                   placeholder="Example: Create a customer support assistant that can handle product inquiries and returns"
-                  className="w-full min-h-[120px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full min-h-[120px] border border-gray-300 dark:border-gray-600 rounded-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   autoFocus
                 />
               </div>

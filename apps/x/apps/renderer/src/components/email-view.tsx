@@ -1625,7 +1625,7 @@ export function EmailView({ initialThreadId, threadIdVersion }: EmailViewProps =
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              className="inline-flex items-center gap-1.5 rounded-none border border-border bg-background px-3.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
               <Mail size={15} />
               {needsEmailReconnect ? 'Reconnect your email' : 'Connect your email'}

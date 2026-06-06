@@ -472,7 +472,7 @@ export function ChatSidebar({
       }
       return (
         <Message key={item.id} from="assistant" data-message-id={item.id}>
-          <MessageContent className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
+          <MessageContent className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
             <pre className="whitespace-pre-wrap font-mono text-xs">{item.message}</pre>
           </MessageContent>
         </Message>

@@ -8,6 +8,10 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -77,6 +81,114 @@ func (f TraverseFunc) Traverse(ctx context.Context, q ent.Query) error {
 		return err
 	}
 	return f(ctx, query)
+}
+
+// The BackgroundTaskFunc type is an adapter to allow the use of ordinary function as a Querier.
+type BackgroundTaskFunc func(context.Context, *ent.BackgroundTaskQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f BackgroundTaskFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.BackgroundTaskQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskQuery", q)
+}
+
+// The TraverseBackgroundTask type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseBackgroundTask func(context.Context, *ent.BackgroundTaskQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseBackgroundTask) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseBackgroundTask) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BackgroundTaskQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskQuery", q)
+}
+
+// The BackgroundTaskArtifactFunc type is an adapter to allow the use of ordinary function as a Querier.
+type BackgroundTaskArtifactFunc func(context.Context, *ent.BackgroundTaskArtifactQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f BackgroundTaskArtifactFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.BackgroundTaskArtifactQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskArtifactQuery", q)
+}
+
+// The TraverseBackgroundTaskArtifact type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseBackgroundTaskArtifact func(context.Context, *ent.BackgroundTaskArtifactQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseBackgroundTaskArtifact) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseBackgroundTaskArtifact) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BackgroundTaskArtifactQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskArtifactQuery", q)
+}
+
+// The BackgroundTaskRunFunc type is an adapter to allow the use of ordinary function as a Querier.
+type BackgroundTaskRunFunc func(context.Context, *ent.BackgroundTaskRunQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f BackgroundTaskRunFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.BackgroundTaskRunQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskRunQuery", q)
+}
+
+// The TraverseBackgroundTaskRun type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseBackgroundTaskRun func(context.Context, *ent.BackgroundTaskRunQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseBackgroundTaskRun) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseBackgroundTaskRun) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BackgroundTaskRunQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskRunQuery", q)
+}
+
+// The BackgroundTaskRunEventFunc type is an adapter to allow the use of ordinary function as a Querier.
+type BackgroundTaskRunEventFunc func(context.Context, *ent.BackgroundTaskRunEventQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f BackgroundTaskRunEventFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.BackgroundTaskRunEventQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskRunEventQuery", q)
+}
+
+// The TraverseBackgroundTaskRunEvent type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseBackgroundTaskRunEvent func(context.Context, *ent.BackgroundTaskRunEventQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseBackgroundTaskRunEvent) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseBackgroundTaskRunEvent) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BackgroundTaskRunEventQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskRunEventQuery", q)
 }
 
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -406,6 +518,14 @@ func (f TraverseUserHistory) Traverse(ctx context.Context, q ent.Query) error {
 // NewQuery returns the generic Query interface for the given typed query.
 func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
+	case *ent.BackgroundTaskQuery:
+		return &query[*ent.BackgroundTaskQuery, predicate.BackgroundTask, backgroundtask.OrderOption]{typ: ent.TypeBackgroundTask, tq: q}, nil
+	case *ent.BackgroundTaskArtifactQuery:
+		return &query[*ent.BackgroundTaskArtifactQuery, predicate.BackgroundTaskArtifact, backgroundtaskartifact.OrderOption]{typ: ent.TypeBackgroundTaskArtifact, tq: q}, nil
+	case *ent.BackgroundTaskRunQuery:
+		return &query[*ent.BackgroundTaskRunQuery, predicate.BackgroundTaskRun, backgroundtaskrun.OrderOption]{typ: ent.TypeBackgroundTaskRun, tq: q}, nil
+	case *ent.BackgroundTaskRunEventQuery:
+		return &query[*ent.BackgroundTaskRunEventQuery, predicate.BackgroundTaskRunEvent, backgroundtaskrunevent.OrderOption]{typ: ent.TypeBackgroundTaskRunEvent, tq: q}, nil
 	case *ent.CreditLedgerQuery:
 		return &query[*ent.CreditLedgerQuery, predicate.CreditLedger, creditledger.OrderOption]{typ: ent.TypeCreditLedger, tq: q}, nil
 	case *ent.LLMUsageQuery:

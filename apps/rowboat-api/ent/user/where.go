@@ -491,6 +491,98 @@ func HasMcpConnectionsWith(preds ...predicate.MCPConnection) predicate.User {
 	})
 }
 
+// HasBackgroundTasks applies the HasEdge predicate on the "background_tasks" edge.
+func HasBackgroundTasks() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTasksTable, BackgroundTasksColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBackgroundTasksWith applies the HasEdge predicate on the "background_tasks" edge with a given conditions (other predicates).
+func HasBackgroundTasksWith(preds ...predicate.BackgroundTask) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newBackgroundTasksStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasBackgroundTaskArtifacts applies the HasEdge predicate on the "background_task_artifacts" edge.
+func HasBackgroundTaskArtifacts() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTaskArtifactsTable, BackgroundTaskArtifactsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBackgroundTaskArtifactsWith applies the HasEdge predicate on the "background_task_artifacts" edge with a given conditions (other predicates).
+func HasBackgroundTaskArtifactsWith(preds ...predicate.BackgroundTaskArtifact) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newBackgroundTaskArtifactsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasBackgroundTaskRuns applies the HasEdge predicate on the "background_task_runs" edge.
+func HasBackgroundTaskRuns() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTaskRunsTable, BackgroundTaskRunsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBackgroundTaskRunsWith applies the HasEdge predicate on the "background_task_runs" edge with a given conditions (other predicates).
+func HasBackgroundTaskRunsWith(preds ...predicate.BackgroundTaskRun) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newBackgroundTaskRunsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasBackgroundTaskRunEvents applies the HasEdge predicate on the "background_task_run_events" edge.
+func HasBackgroundTaskRunEvents() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTaskRunEventsTable, BackgroundTaskRunEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBackgroundTaskRunEventsWith applies the HasEdge predicate on the "background_task_run_events" edge with a given conditions (other predicates).
+func HasBackgroundTaskRunEventsWith(preds ...predicate.BackgroundTaskRunEvent) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newBackgroundTaskRunEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

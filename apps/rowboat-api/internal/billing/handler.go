@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/credits"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
@@ -47,7 +48,19 @@ type meResponse struct {
 		TrialExpiresAt *string `json:"trialExpiresAt"`
 		Usage          struct {
 			SanctionedCredits int `json:"sanctionedCredits"`
+			UsedCredits       int `json:"usedCredits"`
 			AvailableCredits  int `json:"availableCredits"`
+			Monthly           struct {
+				SanctionedCredits int `json:"sanctionedCredits"`
+				UsedCredits       int `json:"usedCredits"`
+				AvailableCredits  int `json:"availableCredits"`
+			} `json:"monthly"`
+			Daily struct {
+				SanctionedCredits int    `json:"sanctionedCredits"`
+				UsedCredits       int    `json:"usedCredits"`
+				AvailableCredits  int    `json:"availableCredits"`
+				UsageDay          string `json:"usageDay"`
+			} `json:"daily"`
 		} `json:"usage"`
 	} `json:"billing"`
 }
@@ -75,6 +88,22 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "could not load billing", "internal_error")
 		return
 	}
+	used := sub.SanctionedCredits - available
+	if used < 0 {
+		used = 0
+	}
+	now := time.Now().UTC()
+	usageDay := now.Format("2006-01-02")
+	dailyUsed, err := h.usedSince(ctx, time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		h.log.Error("compute daily credits", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not load billing", "internal_error")
+		return
+	}
+	dailyAvailable := sub.SanctionedCredits - dailyUsed
+	if dailyAvailable < 0 {
+		dailyAvailable = 0
+	}
 
 	var resp meResponse
 	resp.User.ID = u.ID.String()
@@ -87,7 +116,15 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		resp.Billing.TrialExpiresAt = &s
 	}
 	resp.Billing.Usage.SanctionedCredits = sub.SanctionedCredits
+	resp.Billing.Usage.UsedCredits = used
 	resp.Billing.Usage.AvailableCredits = available
+	resp.Billing.Usage.Monthly.SanctionedCredits = sub.SanctionedCredits
+	resp.Billing.Usage.Monthly.UsedCredits = used
+	resp.Billing.Usage.Monthly.AvailableCredits = available
+	resp.Billing.Usage.Daily.SanctionedCredits = sub.SanctionedCredits
+	resp.Billing.Usage.Daily.UsedCredits = dailyUsed
+	resp.Billing.Usage.Daily.AvailableCredits = dailyAvailable
+	resp.Billing.Usage.Daily.UsageDay = usageDay
 
 	httpx.WriteJSON(w, http.StatusOK, resp)
 }
@@ -106,4 +143,21 @@ func (h *Handler) subscriptionFor(ctx context.Context, u *ent.User) (*ent.Subscr
 		SetUser(u).
 		SetSanctionedCredits(h.freeTierCredits).
 		Save(ctx)
+}
+
+func (h *Handler) usedSince(ctx context.Context, since time.Time) (int, error) {
+	var rows []struct {
+		Total *int `json:"total"`
+	}
+	err := h.client.CreditLedger.Query().
+		Where(creditledger.TsGTE(since)).
+		Aggregate(ent.As(ent.Sum(creditledger.FieldDelta), "total")).
+		Scan(ctx, &rows)
+	if err != nil {
+		return 0, err
+	}
+	if len(rows) == 0 || rows[0].Total == nil || *rows[0].Total >= 0 {
+		return 0, nil
+	}
+	return -*rows[0].Total, nil
 }

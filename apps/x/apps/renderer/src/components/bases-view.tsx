@@ -712,7 +712,7 @@ export function BasesView({ tree, onSelectNote, config, onConfigChange, isDefaul
             <button
               disabled={clampedPage === 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+              className="flex h-7 w-7 items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
             >
               <ChevronLeft className="size-4" />
             </button>
@@ -722,7 +722,7 @@ export function BasesView({ tree, onSelectNote, config, onConfigChange, isDefaul
             <button
               disabled={clampedPage >= totalPages - 1}
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+              className="flex h-7 w-7 items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
             >
               <ChevronRight className="size-4" />
             </button>
@@ -744,20 +744,20 @@ export function BasesView({ tree, onSelectNote, config, onConfigChange, isDefaul
             onChange={(e) => setSaveName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveConfirm() }}
             placeholder="e.g. Contacts, Projects..."
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
+            className="w-full rounded-none border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
             autoFocus
           />
           <DialogFooter>
             <button
               onClick={() => setSaveDialogOpen(false)}
-              className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+              className="rounded-none px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
             >
               Cancel
             </button>
             <button
               onClick={handleSaveConfirm}
               disabled={!saveName.trim()}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="rounded-none bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               Save
             </button>

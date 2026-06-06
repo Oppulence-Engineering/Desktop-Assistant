@@ -110,6 +110,102 @@ func DenyMutationOperationRule(op ent.Op) MutationRule {
 	return OnMutationOperation(rule, op)
 }
 
+// The BackgroundTaskQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type BackgroundTaskQueryRuleFunc func(context.Context, *ent.BackgroundTaskQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f BackgroundTaskQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BackgroundTaskQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.BackgroundTaskQuery", q)
+}
+
+// The BackgroundTaskMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type BackgroundTaskMutationRuleFunc func(context.Context, *ent.BackgroundTaskMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f BackgroundTaskMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.BackgroundTaskMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.BackgroundTaskMutation", m)
+}
+
+// The BackgroundTaskArtifactQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type BackgroundTaskArtifactQueryRuleFunc func(context.Context, *ent.BackgroundTaskArtifactQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f BackgroundTaskArtifactQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BackgroundTaskArtifactQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.BackgroundTaskArtifactQuery", q)
+}
+
+// The BackgroundTaskArtifactMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type BackgroundTaskArtifactMutationRuleFunc func(context.Context, *ent.BackgroundTaskArtifactMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f BackgroundTaskArtifactMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.BackgroundTaskArtifactMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.BackgroundTaskArtifactMutation", m)
+}
+
+// The BackgroundTaskRunQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type BackgroundTaskRunQueryRuleFunc func(context.Context, *ent.BackgroundTaskRunQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f BackgroundTaskRunQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BackgroundTaskRunQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.BackgroundTaskRunQuery", q)
+}
+
+// The BackgroundTaskRunMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type BackgroundTaskRunMutationRuleFunc func(context.Context, *ent.BackgroundTaskRunMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f BackgroundTaskRunMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.BackgroundTaskRunMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.BackgroundTaskRunMutation", m)
+}
+
+// The BackgroundTaskRunEventQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type BackgroundTaskRunEventQueryRuleFunc func(context.Context, *ent.BackgroundTaskRunEventQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f BackgroundTaskRunEventQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BackgroundTaskRunEventQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.BackgroundTaskRunEventQuery", q)
+}
+
+// The BackgroundTaskRunEventMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type BackgroundTaskRunEventMutationRuleFunc func(context.Context, *ent.BackgroundTaskRunEventMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f BackgroundTaskRunEventMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.BackgroundTaskRunEventMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.BackgroundTaskRunEventMutation", m)
+}
+
 // The CreditLedgerQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type CreditLedgerQueryRuleFunc func(context.Context, *ent.CreditLedgerQuery) error

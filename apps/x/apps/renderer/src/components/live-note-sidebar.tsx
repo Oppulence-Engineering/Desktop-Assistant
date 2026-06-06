@@ -272,7 +272,7 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
           <span className="ml-auto" />
           <button
             type="button"
-            className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="inline-flex size-7 items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-foreground"
             onClick={onClose}
             aria-label="Close"
           >
@@ -280,7 +280,7 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
           </button>
         </div>
         {error && (
-          <div className="mx-4 mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <div className="mx-4 mt-3 rounded-none border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {error}
           </div>
         )}
@@ -324,7 +324,7 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
         />
         <button
           type="button"
-          className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="inline-flex size-7 items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-foreground"
           onClick={onClose}
           aria-label="Close"
         >
@@ -333,7 +333,7 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
       </div>
 
       {error && (
-        <div className="mx-4 mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="mx-4 mt-3 rounded-none border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {error}
         </div>
       )}
@@ -617,7 +617,7 @@ function DetailsTab({
             </div>
             <div className="mt-4">
               {confirmingDelete ? (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-none border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm">
                   <span className="text-destructive">Convert to static note?</span>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => setConfirmingDelete(false)} disabled={saving}>
@@ -716,7 +716,7 @@ function LastRunTab({ live }: { live: LiveNote }) {
           </div>
         )}
         {isError && (
-          <div className="mb-3 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2">
+          <div className="mb-3 flex items-start gap-2 rounded-none border border-destructive/30 bg-destructive/5 px-2.5 py-2">
             <AlertCircle className="size-3.5 shrink-0 mt-0.5 text-destructive" />
             <code className="break-all font-mono text-[11px] leading-relaxed text-destructive">
               {live.lastRunError}
@@ -747,7 +747,7 @@ function LastRunTab({ live }: { live: LiveNote }) {
           </div>
         )}
         {fetchError && !loadingRun && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <div className="rounded-none border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             Couldn't load transcript: {fetchError}
           </div>
         )}

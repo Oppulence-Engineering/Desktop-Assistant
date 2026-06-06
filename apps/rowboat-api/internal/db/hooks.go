@@ -23,6 +23,10 @@ func registerHooks(client *ent.Client, log *zap.Logger) {
 	client.OAuthConnection.Use(auditHook(log, "oauth_connection"))
 	client.MCPConnection.Use(auditHook(log, "mcp_connection"))
 	client.Subscription.Use(auditHook(log, "subscription"))
+	client.BackgroundTask.Use(auditHook(log, "background_task"))
+	client.BackgroundTaskArtifact.Use(auditHook(log, "background_task_artifact"))
+	client.BackgroundTaskRun.Use(auditHook(log, "background_task_run"))
+	client.BackgroundTaskRunEvent.Use(auditHook(log, "background_task_run_event"))
 }
 
 // auditHook logs one structured line per successful mutation. For the credit

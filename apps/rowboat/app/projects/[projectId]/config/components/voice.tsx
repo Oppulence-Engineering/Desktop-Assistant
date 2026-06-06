@@ -28,7 +28,7 @@ function PhoneNumberSection({
         >
             <div className="space-y-2">
                 <div className={clsx(
-                    "border rounded-lg focus-within:ring-2",
+                    "border rounded-none focus-within:ring-2",
                     "border-gray-200 dark:border-gray-700 focus-within:ring-indigo-500/20 dark:focus-within:ring-indigo-400/20"
                 )}>
                     <Textarea
@@ -61,7 +61,7 @@ function AccountSidSection({
         >
             <div className="space-y-2">
                 <div className={clsx(
-                    "border rounded-lg focus-within:ring-2",
+                    "border rounded-none focus-within:ring-2",
                     "border-gray-200 dark:border-gray-700 focus-within:ring-indigo-500/20 dark:focus-within:ring-indigo-400/20"
                 )}>
                     <Textarea
@@ -94,7 +94,7 @@ function AuthTokenSection({
         >
             <div className="space-y-2">
                 <div className={clsx(
-                    "border rounded-lg focus-within:ring-2",
+                    "border rounded-none focus-within:ring-2",
                     "border-gray-200 dark:border-gray-700 focus-within:ring-indigo-500/20 dark:focus-within:ring-indigo-400/20"
                 )}>
                     <Textarea
@@ -127,7 +127,7 @@ function LabelSection({
         >
             <div className="space-y-2">
                 <div className={clsx(
-                    "border rounded-lg focus-within:ring-2",
+                    "border rounded-none focus-within:ring-2",
                     "border-gray-200 dark:border-gray-700 focus-within:ring-indigo-500/20 dark:focus-within:ring-indigo-400/20"
                 )}>
                     <Textarea
@@ -245,7 +245,7 @@ export function VoiceSection({ projectId }: { projectId: string }) {
     return (
         <div className="p-6 space-y-6">
                     {success && (
-                        <div className="bg-green-50 text-green-700 p-4 rounded-md flex items-center gap-2">
+                        <div className="bg-green-50 text-green-700 p-4 rounded-none flex items-center gap-2">
                             <CheckCircleIcon className="w-5 h-5" />
                             <span>
                                 {existingConfig 
@@ -256,14 +256,14 @@ export function VoiceSection({ projectId }: { projectId: string }) {
                     )}
 
                     {error && (
-                        <div className="bg-red-50 text-red-700 p-4 rounded-md flex items-center gap-2">
+                        <div className="bg-red-50 text-red-700 p-4 rounded-none flex items-center gap-2">
                             <XCircleIcon className="w-5 h-5" />
                             <span>{error}</span>
                         </div>
                     )}
 
                     {existingConfig && configurationValid && !error && (
-                        <div className="bg-blue-50 text-blue-700 p-4 rounded-md flex items-center gap-2">
+                        <div className="bg-blue-50 text-blue-700 p-4 rounded-none flex items-center gap-2">
                             <InfoIcon className="w-5 h-5" />
                             <span>This is your currently assigned phone number for this project</span>
                         </div>

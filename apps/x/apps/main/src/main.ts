@@ -82,6 +82,11 @@ process.on('unhandledRejection', (reason) => {
 // can catch crashes that happen during initialization (before app.whenReady).
 startCrashReporter();
 
+const remoteDebuggingPort = process.env.ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT?.trim();
+if (remoteDebuggingPort) {
+  app.commandLine.appendSwitch("remote-debugging-port", remoteDebuggingPort);
+}
+
 // run this as early in the main process as possible
 if (started) app.quit();
 
