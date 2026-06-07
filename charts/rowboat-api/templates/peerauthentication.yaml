@@ -1,0 +1,14 @@
+{{- if and .Values.serviceMesh.enabled .Values.serviceMesh.istio.peerAuthentication.enabled }}
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  mtls:
+    mode: {{ .Values.serviceMesh.istio.peerAuthentication.mtlsMode }}
+{{- end }}

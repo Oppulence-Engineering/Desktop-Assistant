@@ -3,7 +3,6 @@ package connectors
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -56,6 +56,11 @@ func New(client *ent.Client, sealer *crypto.Sealer, registry *Registry, cfg Conf
 // SetOryBaseURL overrides the Ory public URL (tests).
 func (h *Handler) SetOryBaseURL(u string) {
 	h.ory = newOryClient(u, h.cfg.OryBrokerClientID, h.cfg.OryBrokerClientSecret)
+}
+
+// SetOutboundPolicy applies the shared outbound vendor policy to Ory calls.
+func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
+	h.ory.setOutboundPolicy(policy)
 }
 
 // connectPending is sealed into OAuthPending during /start.
@@ -357,9 +362,4 @@ func defaultStr(v, def string) string {
 		return def
 	}
 	return v
-}
-
-// limitedJSON decodes a small JSON body.
-func limitedJSON(r *http.Request, v any) error {
-	return json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(v)
 }

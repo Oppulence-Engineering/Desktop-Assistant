@@ -3,10 +3,14 @@
     "responses": {
       "400": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "bad_request",
-              "error": "missing model"
+              "detail": "missing model",
+              "requestId": "req-abc123",
+              "status": 400,
+              "title": "Bad Request",
+              "type": "https://api.rowboat.dev/problems/bad_request"
             },
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
@@ -17,10 +21,14 @@
       },
       "401": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "unauthorized",
-              "error": "missing bearer token"
+              "detail": "missing bearer token",
+              "requestId": "req-abc123",
+              "status": 401,
+              "title": "Unauthorized",
+              "type": "https://api.rowboat.dev/problems/unauthorized"
             },
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
@@ -31,10 +39,14 @@
       },
       "402": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "insufficient_credits",
-              "error": "insufficient_credits"
+              "detail": "insufficient_credits",
+              "requestId": "req-abc123",
+              "status": 402,
+              "title": "Payment Required",
+              "type": "https://api.rowboat.dev/problems/insufficient_credits"
             },
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
@@ -45,10 +57,14 @@
       },
       "403": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "forbidden",
-              "error": "ticket does not belong to this user"
+              "detail": "ticket does not belong to this user",
+              "requestId": "req-abc123",
+              "status": 403,
+              "title": "Forbidden",
+              "type": "https://api.rowboat.dev/problems/forbidden"
             },
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
@@ -59,10 +75,14 @@
       },
       "404": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "not_connected",
-              "error": "connector not connected"
+              "detail": "connector not connected",
+              "requestId": "req-abc123",
+              "status": 404,
+              "title": "Not Found",
+              "type": "https://api.rowboat.dev/problems/not_connected"
             },
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
@@ -73,11 +93,15 @@
       },
       "409": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "reconnect_required",
-              "error": "Google reports invalid_grant; user must reconnect.",
-              "reconnectRequired": true
+              "detail": "Google reports invalid_grant; user must reconnect.",
+              "reconnectRequired": true,
+              "requestId": "req-abc123",
+              "status": 409,
+              "title": "Conflict",
+              "type": "https://api.rowboat.dev/problems/reconnect_required"
             },
             "schema": {
               "$ref": "#/components/schemas/ReconnectErrorEnvelope"
@@ -88,10 +112,14 @@
       },
       "410": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "ticket_expired",
-              "error": "ticket expired"
+              "detail": "ticket expired",
+              "requestId": "req-abc123",
+              "status": 410,
+              "title": "Gone",
+              "type": "https://api.rowboat.dev/problems/ticket_expired"
             },
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
@@ -102,10 +130,14 @@
       },
       "429": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "rate_limited",
-              "error": "rate limit exceeded"
+              "detail": "rate limit exceeded",
+              "requestId": "req-abc123",
+              "status": 429,
+              "title": "Too Many Requests",
+              "type": "https://api.rowboat.dev/problems/rate_limited"
             },
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
@@ -116,10 +148,14 @@
       },
       "500": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "internal_error",
-              "error": "could not load billing"
+              "detail": "could not load billing",
+              "requestId": "req-abc123",
+              "status": 500,
+              "title": "Internal Server Error",
+              "type": "https://api.rowboat.dev/problems/internal_error"
             },
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
@@ -130,10 +166,14 @@
       },
       "502": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "provider_unconfigured",
-              "error": "provider not configured"
+              "detail": "provider not configured",
+              "requestId": "req-abc123",
+              "status": 502,
+              "title": "Bad Gateway",
+              "type": "https://api.rowboat.dev/problems/provider_unconfigured"
             },
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
@@ -144,10 +184,14 @@
       },
       "503": {
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "example": {
               "code": "auth_unavailable",
-              "error": "authentication unavailable"
+              "detail": "authentication unavailable",
+              "requestId": "req-abc123",
+              "status": 503,
+              "title": "Service Unavailable",
+              "type": "https://api.rowboat.dev/problems/auth_unavailable"
             },
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
@@ -174,10 +218,7 @@
           },
           "executionTarget": {
             "description": "Where this task executes. desktop preserves the local-first path; api dispatches to the Temporal-backed API worker.",
-            "enum": [
-              "desktop",
-              "api"
-            ],
+            "enum": ["desktop", "api"],
             "example": "desktop",
             "type": "string"
           },
@@ -304,12 +345,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "slug",
-          "body",
-          "revision",
-          "updatedAt"
-        ],
+        "required": ["slug", "body", "revision", "updatedAt"],
         "type": "object"
       },
       "BackgroundTaskArtifactPutRequest": {
@@ -326,9 +362,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "body"
-        ],
+        "required": ["body"],
         "type": "object"
       },
       "BackgroundTaskCreateRequest": {
@@ -348,10 +382,7 @@
           },
           "executionTarget": {
             "description": "Where this task should execute. Defaults to desktop.",
-            "enum": [
-              "desktop",
-              "api"
-            ],
+            "enum": ["desktop", "api"],
             "example": "desktop",
             "type": "string"
           },
@@ -424,10 +455,7 @@
             "nullable": true
           }
         },
-        "required": [
-          "name",
-          "instructions"
-        ],
+        "required": ["name", "instructions"],
         "type": "object"
       },
       "BackgroundTaskListResponse": {
@@ -441,9 +469,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "tasks"
-        ],
+        "required": ["tasks"],
         "type": "object"
       },
       "BackgroundTaskPatchRequest": {
@@ -463,10 +489,7 @@
           },
           "executionTarget": {
             "description": "Where this task should execute.",
-            "enum": [
-              "desktop",
-              "api"
-            ],
+            "enum": ["desktop", "api"],
             "example": "api",
             "type": "string"
           },
@@ -540,9 +563,7 @@
             "nullable": true
           }
         },
-        "required": [
-          "revision"
-        ],
+        "required": ["revision"],
         "type": "object"
       },
       "BackgroundTaskRun": {
@@ -569,10 +590,7 @@
           },
           "executor": {
             "description": "Execution backend that owns this run.",
-            "enum": [
-              "desktop",
-              "api"
-            ],
+            "enum": ["desktop", "api"],
             "example": "api",
             "type": "string"
           },
@@ -655,13 +673,7 @@
           },
           "status": {
             "description": "Background task run lifecycle state.",
-            "enum": [
-              "queued",
-              "running",
-              "succeeded",
-              "failed",
-              "stopped"
-            ],
+            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
             "example": "succeeded",
             "type": "string"
           },
@@ -711,12 +723,7 @@
           },
           "trigger": {
             "description": "Trigger source for a task run.",
-            "enum": [
-              "manual",
-              "cron",
-              "window",
-              "event"
-            ],
+            "enum": ["manual", "cron", "window", "event"],
             "example": "manual",
             "type": "string"
           },
@@ -764,10 +771,7 @@
           },
           "executor": {
             "description": "Execution backend. Defaults from task.executionTarget.",
-            "enum": [
-              "desktop",
-              "api"
-            ],
+            "enum": ["desktop", "api"],
             "example": "desktop",
             "type": "string"
           },
@@ -834,13 +838,7 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": [
-              "queued",
-              "running",
-              "succeeded",
-              "failed",
-              "stopped"
-            ],
+            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
             "example": "active",
             "type": "string"
           },
@@ -876,12 +874,7 @@
           },
           "trigger": {
             "description": "Trigger source. Defaults to manual.",
-            "enum": [
-              "manual",
-              "cron",
-              "window",
-              "event"
-            ],
+            "enum": ["manual", "cron", "window", "event"],
             "example": "manual",
             "type": "string"
           },
@@ -892,9 +885,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "runId"
-        ],
+        "required": ["runId"],
         "type": "object"
       },
       "BackgroundTaskRunEvent": {
@@ -929,12 +920,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "seq",
-          "event",
-          "receivedAt"
-        ],
+        "required": ["id", "seq", "event", "receivedAt"],
         "type": "object"
       },
       "BackgroundTaskRunEventInput": {
@@ -957,10 +943,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "seq",
-          "event"
-        ],
+        "required": ["seq", "event"],
         "type": "object"
       },
       "BackgroundTaskRunEventsAppendRequest": {
@@ -974,9 +957,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "events"
-        ],
+        "required": ["events"],
         "type": "object"
       },
       "BackgroundTaskRunEventsAppendResponse": {
@@ -993,10 +974,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "stored",
-          "skipped"
-        ],
+        "required": ["stored", "skipped"],
         "type": "object"
       },
       "BackgroundTaskRunEventsResponse": {
@@ -1010,9 +988,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "events"
-        ],
+        "required": ["events"],
         "type": "object"
       },
       "BackgroundTaskRunPatchRequest": {
@@ -1033,10 +1009,7 @@
           },
           "executor": {
             "description": "Execution backend.",
-            "enum": [
-              "desktop",
-              "api"
-            ],
+            "enum": ["desktop", "api"],
             "example": "api",
             "type": "string"
           },
@@ -1103,13 +1076,7 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": [
-              "queued",
-              "running",
-              "succeeded",
-              "failed",
-              "stopped"
-            ],
+            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
             "example": "active",
             "type": "string"
           },
@@ -1159,12 +1126,7 @@
           },
           "trigger": {
             "description": "Trigger source.",
-            "enum": [
-              "manual",
-              "cron",
-              "window",
-              "event"
-            ],
+            "enum": ["manual", "cron", "window", "event"],
             "example": "manual",
             "type": "string"
           },
@@ -1175,9 +1137,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "revision"
-        ],
+        "required": ["revision"],
         "type": "object"
       },
       "BackgroundTaskRunStatusResponse": {
@@ -1198,10 +1158,7 @@
           },
           "executor": {
             "description": "Execution backend.",
-            "enum": [
-              "desktop",
-              "api"
-            ],
+            "enum": ["desktop", "api"],
             "example": "api",
             "type": "string"
           },
@@ -1248,13 +1205,7 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": [
-              "queued",
-              "running",
-              "succeeded",
-              "failed",
-              "stopped"
-            ],
+            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
             "example": "active",
             "type": "string"
           },
@@ -1277,13 +1228,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "runId",
-          "slug",
-          "status",
-          "executor",
-          "revision"
-        ],
+        "required": ["runId", "slug", "status", "executor", "revision"],
         "type": "object"
       },
       "BackgroundTaskRunsResponse": {
@@ -1303,9 +1248,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "runs"
-        ],
+        "required": ["runs"],
         "type": "object"
       },
       "BackgroundTaskSignalRequest": {
@@ -1318,18 +1261,12 @@
           },
           "signal": {
             "description": "Supported control signal.",
-            "enum": [
-              "pause",
-              "resume",
-              "update_context"
-            ],
+            "enum": ["pause", "resume", "update_context"],
             "example": "pause",
             "type": "string"
           }
         },
-        "required": [
-          "signal"
-        ],
+        "required": ["signal"],
         "type": "object"
       },
       "BackgroundTaskTriggerRequest": {
@@ -1343,12 +1280,7 @@
           },
           "trigger": {
             "description": "Trigger source for the queued run. Defaults to manual.",
-            "enum": [
-              "manual",
-              "cron",
-              "window",
-              "event"
-            ],
+            "enum": ["manual", "cron", "window", "event"],
             "example": "manual",
             "type": "string"
           }
@@ -1360,23 +1292,14 @@
         "properties": {
           "plan": {
             "description": "Billing plan slug.",
-            "enum": [
-              "free",
-              "starter",
-              "pro"
-            ],
+            "enum": ["free", "starter", "pro"],
             "example": "free",
             "nullable": true,
             "type": "string"
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": [
-              "active",
-              "trialing",
-              "past_due",
-              "canceled"
-            ],
+            "enum": ["active", "trialing", "past_due", "canceled"],
             "example": "active",
             "nullable": true,
             "type": "string"
@@ -1391,12 +1314,7 @@
             "$ref": "#/components/schemas/BillingUsage"
           }
         },
-        "required": [
-          "plan",
-          "status",
-          "trialExpiresAt",
-          "usage"
-        ],
+        "required": ["plan", "status", "trialExpiresAt", "usage"],
         "type": "object"
       },
       "BillingUsage": {
@@ -1424,13 +1342,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "sanctionedCredits",
-          "usedCredits",
-          "availableCredits",
-          "monthly",
-          "daily"
-        ],
+        "required": ["sanctionedCredits", "usedCredits", "availableCredits", "monthly", "daily"],
         "type": "object"
       },
       "ComposioProxyResponse": {
@@ -1467,13 +1379,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "appUrl",
-          "oidcIssuerUrl",
-          "supabaseUrl",
-          "websocketApiUrl",
-          "oauthClientId"
-        ],
+        "required": ["appUrl", "oidcIssuerUrl", "supabaseUrl", "websocketApiUrl", "oauthClientId"],
         "type": "object"
       },
       "ConnectionStartResponse": {
@@ -1485,9 +1391,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "authorize_url"
-        ],
+        "required": ["authorize_url"],
         "type": "object"
       },
       "Connector": {
@@ -1495,10 +1399,7 @@
         "properties": {
           "authType": {
             "description": "Connector credential flow.",
-            "enum": [
-              "oauth",
-              "api_key"
-            ],
+            "enum": ["oauth", "api_key"],
             "example": "oauth",
             "type": "string"
           },
@@ -1541,10 +1442,7 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": [
-              "invoices:read",
-              "customers:read"
-            ],
+            "example": ["invoices:read", "customers:read"],
             "items": {
               "description": "Scope.",
               "example": "invoices:read",
@@ -1553,14 +1451,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "name",
-          "displayName",
-          "description",
-          "mcpUrl",
-          "authType",
-          "connected"
-        ],
+        "required": ["name", "displayName", "description", "mcpUrl", "authType", "connected"],
         "type": "object"
       },
       "ConnectorsResponse": {
@@ -1574,9 +1465,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "connectors"
-        ],
+        "required": ["connectors"],
         "type": "object"
       },
       "CreditLedger": {
@@ -1624,14 +1513,7 @@
             "description": "User that owns this row."
           }
         },
-        "required": [
-          "id",
-          "delta",
-          "reason",
-          "request_id",
-          "ts",
-          "user"
-        ],
+        "required": ["id", "delta", "reason", "request_id", "ts", "user"],
         "type": "object"
       },
       "CreditUsageBucket": {
@@ -1653,11 +1535,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "sanctionedCredits",
-          "usedCredits",
-          "availableCredits"
-        ],
+        "required": ["sanctionedCredits", "usedCredits", "availableCredits"],
         "type": "object"
       },
       "CurrentUser": {
@@ -1675,10 +1553,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "email"
-        ],
+        "required": ["id", "email"],
         "type": "object"
       },
       "DailyCreditUsageBucket": {
@@ -1705,32 +1580,57 @@
             "type": "integer"
           }
         },
-        "required": [
-          "sanctionedCredits",
-          "usedCredits",
-          "availableCredits",
-          "usageDay"
-        ],
+        "required": ["sanctionedCredits", "usedCredits", "availableCredits", "usageDay"],
         "type": "object"
       },
       "ErrorEnvelope": {
-        "description": "Canonical JSON error returned by Solomon AI API handlers.",
+        "description": "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
         "properties": {
           "code": {
             "description": "Stable machine-readable error code.",
             "example": "unauthorized",
             "type": "string"
           },
-          "error": {
-            "description": "Human-readable error message.",
+          "detail": {
+            "description": "Human-readable error detail.",
             "example": "missing bearer token",
+            "type": "string"
+          },
+          "instance": {
+            "description": "Optional occurrence URI.",
+            "example": "/v1/me",
+            "nullable": true,
+            "type": "string"
+          },
+          "requestId": {
+            "description": "Request id emitted by the API middleware.",
+            "example": "req-abc123",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "description": "HTTP status code.",
+            "example": 401,
+            "type": "integer"
+          },
+          "title": {
+            "description": "Short HTTP-status summary.",
+            "example": "Unauthorized",
+            "type": "string"
+          },
+          "traceId": {
+            "description": "OpenTelemetry trace id when tracing is active.",
+            "example": "4bf92f3577b34da6a3ce929d0e0e4736",
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "description": "Problem type URI.",
+            "example": "https://api.rowboat.dev/problems/unauthorized",
             "type": "string"
           }
         },
-        "required": [
-          "error",
-          "code"
-        ],
+        "required": ["type", "title", "status", "code"],
         "type": "object"
       },
       "ExaSearchRequest": {
@@ -1776,9 +1676,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "query"
-        ],
+        "required": ["query"],
         "type": "object"
       },
       "ExaSearchResponse": {
@@ -1795,9 +1693,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "session"
-        ],
+        "required": ["session"],
         "type": "object"
       },
       "GoogleRefreshRequest": {
@@ -1809,9 +1705,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "refreshToken"
-        ],
+        "required": ["refreshToken"],
         "type": "object"
       },
       "GraphQLRequest": {
@@ -1834,9 +1728,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "query"
-        ],
+        "required": ["query"],
         "type": "object"
       },
       "GraphQLResponse": {
@@ -1864,16 +1756,12 @@
         "properties": {
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": [
-              "ok"
-            ],
+            "enum": ["ok"],
             "example": "active",
             "type": "string"
           }
         },
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "type": "object"
       },
       "InternalInvalidateRequest": {
@@ -1890,10 +1778,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "workos_user_id",
-          "connector"
-        ],
+        "required": ["workos_user_id", "connector"],
         "type": "object"
       },
       "InternalInvalidateResponse": {
@@ -1910,9 +1795,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "invalidated"
-        ],
+        "required": ["invalidated"],
         "type": "object"
       },
       "LLMChatCompletionsRequest": {
@@ -1965,10 +1848,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "model",
-          "messages"
-        ],
+        "required": ["model", "messages"],
         "type": "object"
       },
       "LLMChatMessage": {
@@ -1986,20 +1866,12 @@
           },
           "role": {
             "description": "Message role.",
-            "enum": [
-              "system",
-              "user",
-              "assistant",
-              "tool"
-            ],
+            "enum": ["system", "user", "assistant", "tool"],
             "example": "user",
             "type": "string"
           }
         },
-        "required": [
-          "role",
-          "content"
-        ],
+        "required": ["role", "content"],
         "type": "object"
       },
       "LLMCompletionsRequest": {
@@ -2031,10 +1903,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "model",
-          "prompt"
-        ],
+        "required": ["model", "prompt"],
         "type": "object"
       },
       "LLMEmbeddingsRequest": {
@@ -2054,10 +1923,7 @@
           },
           "input": {
             "description": "Input string or array of strings.",
-            "example": [
-              "customer invoice",
-              "payment risk"
-            ]
+            "example": ["customer invoice", "payment risk"]
           },
           "model": {
             "description": "Desktop-facing LLM model id.",
@@ -2065,10 +1931,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "model",
-          "input"
-        ],
+        "required": ["model", "input"],
         "type": "object"
       },
       "LLMGatewayResponse": {
@@ -2085,9 +1948,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "type": "object"
       },
       "LLMModelsResponse": {
@@ -2101,9 +1962,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "type": "object"
       },
       "LLMUsage": {
@@ -2216,11 +2075,7 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": [
-              "INSERT",
-              "UPDATE",
-              "DELETE"
-            ],
+            "enum": ["INSERT", "UPDATE", "DELETE"],
             "example": "UPDATE",
             "type": "string"
           },
@@ -2328,10 +2183,7 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": [
-              "invoices:read",
-              "customers:read"
-            ],
+            "example": ["invoices:read", "customers:read"],
             "items": {
               "type": "string"
             },
@@ -2348,14 +2200,7 @@
             "description": "User that owns this row."
           }
         },
-        "required": [
-          "id",
-          "created_at",
-          "updated_at",
-          "connector",
-          "audience",
-          "user"
-        ],
+        "required": ["id", "created_at", "updated_at", "connector", "audience", "user"],
         "type": "object"
       },
       "MCPConnectionHistory": {
@@ -2415,11 +2260,7 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": [
-              "INSERT",
-              "UPDATE",
-              "DELETE"
-            ],
+            "enum": ["INSERT", "UPDATE", "DELETE"],
             "example": "UPDATE",
             "type": "string"
           },
@@ -2437,10 +2278,7 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": [
-              "invoices:read",
-              "customers:read"
-            ],
+            "example": ["invoices:read", "customers:read"],
             "items": {
               "type": "string"
             },
@@ -2489,11 +2327,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "access_token",
-          "token_type",
-          "mcpUrl"
-        ],
+        "required": ["access_token", "token_type", "mcpUrl"],
         "type": "object"
       },
       "MeResponse": {
@@ -2507,10 +2341,7 @@
             "description": "User that owns this row."
           }
         },
-        "required": [
-          "user",
-          "billing"
-        ],
+        "required": ["user", "billing"],
         "type": "object"
       },
       "OAuthConnection": {
@@ -2541,10 +2372,7 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": [
-              "invoices:read",
-              "customers:read"
-            ],
+            "example": ["invoices:read", "customers:read"],
             "items": {
               "type": "string"
             },
@@ -2594,11 +2422,7 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": [
-              "INSERT",
-              "UPDATE",
-              "DELETE"
-            ],
+            "enum": ["INSERT", "UPDATE", "DELETE"],
             "example": "UPDATE",
             "type": "string"
           },
@@ -2621,10 +2445,7 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": [
-              "invoices:read",
-              "customers:read"
-            ],
+            "example": ["invoices:read", "customers:read"],
             "items": {
               "type": "string"
             },
@@ -2736,10 +2557,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "access_token",
-          "expires_at"
-        ],
+        "required": ["access_token", "expires_at"],
         "type": "object"
       },
       "PreConsentRequest": {
@@ -2769,9 +2587,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "requested_audience"
-        ],
+        "required": ["requested_audience"],
         "type": "object"
       },
       "PreConsentResponse": {
@@ -2786,9 +2602,7 @@
             "$ref": "#/components/schemas/Upsell"
           }
         },
-        "required": [
-          "allow"
-        ],
+        "required": ["allow"],
         "type": "object"
       },
       "ReadyResponse": {
@@ -2802,32 +2616,25 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": [
-              "ready",
-              "not_ready"
-            ],
+            "enum": ["ready", "not_ready"],
             "example": "active",
             "type": "string"
           }
         },
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "type": "object"
       },
       "ReconnectErrorEnvelope": {
-        "description": "Error envelope used when an upstream refresh token is invalid and the desktop must reconnect.",
+        "description": "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
         "properties": {
           "code": {
             "description": "Stable machine-readable error code.",
-            "enum": [
-              "reconnect_required"
-            ],
+            "enum": ["reconnect_required"],
             "example": "reconnect_required",
             "type": "string"
           },
-          "error": {
-            "description": "Human-readable error message.",
+          "detail": {
+            "description": "Human-readable error detail.",
             "example": "Google reports invalid_grant; user must reconnect.",
             "type": "string"
           },
@@ -2835,13 +2642,36 @@
             "description": "Whether the desktop should force the user through a new OAuth connection flow.",
             "example": true,
             "type": "boolean"
+          },
+          "requestId": {
+            "description": "Request id emitted by the API middleware.",
+            "example": "req-abc123",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "description": "HTTP status code.",
+            "example": 409,
+            "type": "integer"
+          },
+          "title": {
+            "description": "Short HTTP-status summary.",
+            "example": "Conflict",
+            "type": "string"
+          },
+          "traceId": {
+            "description": "OpenTelemetry trace id when tracing is active.",
+            "example": "4bf92f3577b34da6a3ce929d0e0e4736",
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "description": "Problem type URI.",
+            "example": "https://api.rowboat.dev/problems/reconnect_required",
+            "type": "string"
           }
         },
-        "required": [
-          "error",
-          "code",
-          "reconnectRequired"
-        ],
+        "required": ["type", "title", "status", "code", "reconnectRequired"],
         "type": "object"
       },
       "RevisionConflictEnvelope": {
@@ -2849,9 +2679,7 @@
         "properties": {
           "code": {
             "description": "Stable machine-readable conflict code.",
-            "enum": [
-              "conflict"
-            ],
+            "enum": ["conflict"],
             "example": "conflict",
             "type": "string"
           },
@@ -2860,20 +2688,41 @@
             "example": 3,
             "type": "integer"
           },
-          "error": {
-            "description": "Human-readable conflict message.",
-            "enum": [
-              "revision conflict"
-            ],
+          "detail": {
+            "description": "Human-readable conflict detail.",
+            "enum": ["revision conflict"],
             "example": "revision conflict",
+            "type": "string"
+          },
+          "requestId": {
+            "description": "Request id emitted by the API middleware.",
+            "example": "req-abc123",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "description": "HTTP status code.",
+            "example": 409,
+            "type": "integer"
+          },
+          "title": {
+            "description": "Short HTTP-status summary.",
+            "example": "Conflict",
+            "type": "string"
+          },
+          "traceId": {
+            "description": "OpenTelemetry trace id when tracing is active.",
+            "example": "4bf92f3577b34da6a3ce929d0e0e4736",
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "description": "Problem type URI.",
+            "example": "https://api.rowboat.dev/problems/conflict",
             "type": "string"
           }
         },
-        "required": [
-          "error",
-          "code",
-          "currentRevision"
-        ],
+        "required": ["type", "title", "status", "code", "currentRevision"],
         "type": "object"
       },
       "Subscription": {
@@ -2893,11 +2742,7 @@
           },
           "plan": {
             "description": "Billing plan slug.",
-            "enum": [
-              "free",
-              "starter",
-              "pro"
-            ],
+            "enum": ["free", "starter", "pro"],
             "example": "free",
             "type": "string"
           },
@@ -2973,21 +2818,13 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": [
-              "INSERT",
-              "UPDATE",
-              "DELETE"
-            ],
+            "enum": ["INSERT", "UPDATE", "DELETE"],
             "example": "UPDATE",
             "type": "string"
           },
           "plan": {
             "description": "Billing plan slug.",
-            "enum": [
-              "free",
-              "starter",
-              "pro"
-            ],
+            "enum": ["free", "starter", "pro"],
             "example": "free",
             "type": "string"
           },
@@ -3053,18 +2890,12 @@
           },
           "requiredPlan": {
             "description": "Minimum plan required.",
-            "enum": [
-              "starter",
-              "pro"
-            ],
+            "enum": ["starter", "pro"],
             "example": "pro",
             "type": "string"
           }
         },
-        "required": [
-          "requiredPlan",
-          "message"
-        ],
+        "required": ["requiredPlan", "message"],
         "type": "object"
       },
       "User": {
@@ -3164,12 +2995,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "created_at",
-          "updated_at",
-          "workos_user_id"
-        ],
+        "required": ["id", "created_at", "updated_at", "workos_user_id"],
         "type": "object"
       },
       "UserHistory": {
@@ -3200,11 +3026,7 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": [
-              "INSERT",
-              "UPDATE",
-              "DELETE"
-            ],
+            "enum": ["INSERT", "UPDATE", "DELETE"],
             "example": "UPDATE",
             "type": "string"
           },
@@ -3282,9 +3104,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "text"
-        ],
+        "required": ["text"],
         "type": "object"
       },
       "WorkOSExchangeRequest": {
@@ -3302,9 +3122,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code"
-        ],
+        "required": ["code"],
         "type": "object"
       },
       "WorkOSLoginURLResponse": {
@@ -3316,9 +3134,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "url"
-        ],
+        "required": ["url"],
         "type": "object"
       },
       "WorkOSRefreshRequest": {
@@ -3330,9 +3146,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "refreshToken"
-        ],
+        "required": ["refreshToken"],
         "type": "object"
       },
       "WorkOSTokenBundle": {
@@ -3363,9 +3177,7 @@
           },
           "token_type": {
             "description": "Token type.",
-            "enum": [
-              "Bearer"
-            ],
+            "enum": ["Bearer"],
             "example": "Bearer",
             "type": "string"
           },
@@ -3376,11 +3188,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "access_token",
-          "expires_at",
-          "token_type"
-        ],
+        "required": ["access_token", "expires_at", "token_type"],
         "type": "object"
       }
     },
@@ -3465,9 +3273,7 @@
           }
         ],
         "summary": "Admin GraphQL",
-        "tags": [
-          "GraphQL"
-        ]
+        "tags": ["GraphQL"]
       }
     },
     "/healthz": {
@@ -3490,9 +3296,7 @@
           }
         },
         "summary": "Liveness probe",
-        "tags": [
-          "System"
-        ]
+        "tags": ["System"]
       }
     },
     "/oauth-hooks/pre-consent": {
@@ -3549,9 +3353,7 @@
           }
         ],
         "summary": "Evaluate connector pre-consent entitlement",
-        "tags": [
-          "Webhooks"
-        ]
+        "tags": ["Webhooks"]
       }
     },
     "/oauth/google/callback": {
@@ -3616,9 +3418,7 @@
           }
         },
         "summary": "Handle Google OAuth callback",
-        "tags": [
-          "Google OAuth"
-        ]
+        "tags": ["Google OAuth"]
       }
     },
     "/oauth/google/start": {
@@ -3660,9 +3460,7 @@
           }
         },
         "summary": "Start Google OAuth consent",
-        "tags": [
-          "Google OAuth"
-        ]
+        "tags": ["Google OAuth"]
       }
     },
     "/openapi.json": {
@@ -3684,9 +3482,7 @@
           }
         },
         "summary": "Download OpenAPI document",
-        "tags": [
-          "System"
-        ]
+        "tags": ["System"]
       }
     },
     "/readyz": {
@@ -3712,9 +3508,7 @@
           }
         },
         "summary": "Readiness probe",
-        "tags": [
-          "System"
-        ]
+        "tags": ["System"]
       }
     },
     "/v1/auth/workos/exchange": {
@@ -3766,9 +3560,7 @@
           }
         },
         "summary": "Exchange WorkOS authorization code",
-        "tags": [
-          "Auth"
-        ]
+        "tags": ["Auth"]
       }
     },
     "/v1/auth/workos/login-url": {
@@ -3832,9 +3624,7 @@
           }
         },
         "summary": "Create WorkOS AuthKit login URL",
-        "tags": [
-          "Auth"
-        ]
+        "tags": ["Auth"]
       }
     },
     "/v1/auth/workos/refresh": {
@@ -3885,9 +3675,7 @@
           }
         },
         "summary": "Refresh WorkOS token bundle",
-        "tags": [
-          "Auth"
-        ]
+        "tags": ["Auth"]
       }
     },
     "/v1/background-task-runs": {
@@ -3902,13 +3690,7 @@
             "required": false,
             "schema": {
               "description": "Run status.",
-              "enum": [
-                "queued",
-                "running",
-                "succeeded",
-                "failed",
-                "stopped"
-              ],
+              "enum": ["queued", "running", "succeeded", "failed", "stopped"],
               "example": "queued",
               "type": "string"
             }
@@ -3920,10 +3702,7 @@
             "required": false,
             "schema": {
               "description": "Run executor.",
-              "enum": [
-                "desktop",
-                "api"
-              ],
+              "enum": ["desktop", "api"],
               "example": "api",
               "type": "string"
             }
@@ -4017,9 +3796,7 @@
           }
         ],
         "summary": "List account background task runs",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks": {
@@ -4076,9 +3853,7 @@
           }
         ],
         "summary": "List background tasks",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       },
       "post": {
         "description": "Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, Solomon AI API derives one from name. Slugs are unique per authenticated user.",
@@ -4148,10 +3923,14 @@
           },
           "409": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "example": {
                   "code": "conflict",
-                  "error": "background task already exists"
+                  "detail": "background task already exists",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/conflict"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
@@ -4170,9 +3949,7 @@
           }
         ],
         "summary": "Create background task mirror",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks/{slug}": {
@@ -4218,11 +3995,15 @@
           },
           "409": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "example": {
                   "code": "conflict",
                   "currentRevision": 3,
-                  "error": "revision conflict"
+                  "detail": "revision conflict",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/conflict"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/RevisionConflictEnvelope"
@@ -4241,9 +4022,7 @@
           }
         ],
         "summary": "Delete background task mirror",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       },
       "get": {
         "description": "Fetches one task mirror by slug for the authenticated user. Tenant scoping ensures the same slug can exist for different users without leaking data.",
@@ -4310,9 +4089,7 @@
           }
         ],
         "summary": "Get background task mirror",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       },
       "patch": {
         "description": "Applies a partial task update using optimistic locking. The desktop should send the current revision from its last read; stale writes return currentRevision for merge/retry.",
@@ -4392,11 +4169,15 @@
           },
           "409": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "example": {
                   "code": "conflict",
                   "currentRevision": 3,
-                  "error": "revision conflict"
+                  "detail": "revision conflict",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/conflict"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/RevisionConflictEnvelope"
@@ -4415,9 +4196,7 @@
           }
         ],
         "summary": "Patch background task mirror",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks/{slug}/artifact": {
@@ -4470,9 +4249,7 @@
           }
         ],
         "summary": "Get task artifact",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       },
       "put": {
         "description": "Creates or updates the markdown artifact mirror. Updates require the current artifact revision; creation can omit revision or send revision 0.",
@@ -4533,11 +4310,15 @@
           },
           "409": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "example": {
                   "code": "conflict",
                   "currentRevision": 3,
-                  "error": "revision conflict"
+                  "detail": "revision conflict",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/conflict"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/RevisionConflictEnvelope"
@@ -4556,9 +4337,7 @@
           }
         ],
         "summary": "Put task artifact",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks/{slug}/runs": {
@@ -4584,13 +4363,7 @@
             "required": false,
             "schema": {
               "description": "Run status.",
-              "enum": [
-                "queued",
-                "running",
-                "succeeded",
-                "failed",
-                "stopped"
-              ],
+              "enum": ["queued", "running", "succeeded", "failed", "stopped"],
               "example": "queued",
               "type": "string"
             }
@@ -4602,10 +4375,7 @@
             "required": false,
             "schema": {
               "description": "Run executor.",
-              "enum": [
-                "desktop",
-                "api"
-              ],
+              "enum": ["desktop", "api"],
               "example": "api",
               "type": "string"
             }
@@ -4691,9 +4461,7 @@
           }
         ],
         "summary": "List task runs",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       },
       "post": {
         "description": "Creates a run mirror for a desktop execution. Use this for local scheduler/manual runs; use /trigger when a remote user action should queue a new local execution.",
@@ -4777,10 +4545,14 @@
           },
           "409": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "example": {
                   "code": "conflict",
-                  "error": "run already exists"
+                  "detail": "run already exists",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/conflict"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
@@ -4799,9 +4571,7 @@
           }
         ],
         "summary": "Create task run mirror",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}": {
@@ -4882,9 +4652,7 @@
           }
         ],
         "summary": "Get task run",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       },
       "patch": {
         "description": "Updates run state with optimistic locking. Desktop should patch queued remote-trigger runs to running/succeeded/failed as it claims and completes them locally.",
@@ -4976,11 +4744,15 @@
           },
           "409": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "example": {
                   "code": "conflict",
                   "currentRevision": 3,
-                  "error": "revision conflict"
+                  "detail": "revision conflict",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/conflict"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/RevisionConflictEnvelope"
@@ -4999,9 +4771,7 @@
           }
         ],
         "summary": "Patch task run mirror",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/cancel": {
@@ -5089,9 +4859,7 @@
           }
         ],
         "summary": "Cancel API-worker run",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/events": {
@@ -5174,9 +4942,7 @@
           }
         ],
         "summary": "List task run events",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       },
       "post": {
         "description": "Appends a batch of JSONL run events. The unique (run, seq) key makes retries idempotent: duplicate seq values are counted as skipped.",
@@ -5268,9 +5034,7 @@
           }
         ],
         "summary": "Append task run events",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/retry": {
@@ -5360,9 +5124,7 @@
           }
         ],
         "summary": "Retry API-worker run",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/signal": {
@@ -5469,9 +5231,7 @@
           }
         ],
         "summary": "Signal API-worker run",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/status": {
@@ -5545,9 +5305,7 @@
           }
         ],
         "summary": "Poll task run status",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/background-tasks/{slug}/trigger": {
@@ -5642,9 +5400,7 @@
           }
         ],
         "summary": "Queue or start task trigger",
-        "tags": [
-          "Background Tasks"
-        ]
+        "tags": ["Background Tasks"]
       }
     },
     "/v1/composio/{path}": {
@@ -5694,9 +5450,7 @@
           }
         ],
         "summary": "Proxy Composio v3 Delete",
-        "tags": [
-          "Composio"
-        ]
+        "tags": ["Composio"]
       },
       "get": {
         "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
@@ -5744,9 +5498,7 @@
           }
         ],
         "summary": "Proxy Composio v3 Get",
-        "tags": [
-          "Composio"
-        ]
+        "tags": ["Composio"]
       },
       "patch": {
         "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
@@ -5794,9 +5546,7 @@
           }
         ],
         "summary": "Proxy Composio v3 Patch",
-        "tags": [
-          "Composio"
-        ]
+        "tags": ["Composio"]
       },
       "post": {
         "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
@@ -5844,9 +5594,7 @@
           }
         ],
         "summary": "Proxy Composio v3 Post",
-        "tags": [
-          "Composio"
-        ]
+        "tags": ["Composio"]
       },
       "put": {
         "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
@@ -5894,9 +5642,7 @@
           }
         ],
         "summary": "Proxy Composio v3 Put",
-        "tags": [
-          "Composio"
-        ]
+        "tags": ["Composio"]
       }
     },
     "/v1/config": {
@@ -5923,9 +5669,7 @@
           }
         },
         "summary": "Fetch desktop bootstrap config",
-        "tags": [
-          "System"
-        ]
+        "tags": ["System"]
       }
     },
     "/v1/connections/{name}": {
@@ -5965,9 +5709,7 @@
           }
         ],
         "summary": "Disconnect connector",
-        "tags": [
-          "Connectors"
-        ]
+        "tags": ["Connectors"]
       }
     },
     "/v1/connections/{name}/callback": {
@@ -6041,9 +5783,7 @@
           }
         },
         "summary": "Handle connector OAuth callback",
-        "tags": [
-          "Connectors"
-        ]
+        "tags": ["Connectors"]
       }
     },
     "/v1/connections/{name}/mcp-token": {
@@ -6102,9 +5842,7 @@
           }
         ],
         "summary": "Mint connector MCP token",
-        "tags": [
-          "Connectors"
-        ]
+        "tags": ["Connectors"]
       }
     },
     "/v1/connections/{name}/start": {
@@ -6160,9 +5898,7 @@
           }
         ],
         "summary": "Start connector OAuth flow",
-        "tags": [
-          "Connectors"
-        ]
+        "tags": ["Connectors"]
       }
     },
     "/v1/connectors": {
@@ -6183,9 +5919,7 @@
                       "displayName": "Canvas",
                       "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
                       "name": "canvas",
-                      "scopes": [
-                        "invoices:read"
-                      ]
+                      "scopes": ["invoices:read"]
                     }
                   ]
                 },
@@ -6212,9 +5946,7 @@
           }
         ],
         "summary": "List connectors",
-        "tags": [
-          "Connectors"
-        ]
+        "tags": ["Connectors"]
       }
     },
     "/v1/google-oauth/claim": {
@@ -6281,9 +6013,7 @@
           }
         ],
         "summary": "Claim Google OAuth token bundle",
-        "tags": [
-          "Google OAuth"
-        ]
+        "tags": ["Google OAuth"]
       }
     },
     "/v1/google-oauth/refresh": {
@@ -6343,9 +6073,7 @@
           }
         ],
         "summary": "Refresh Google access token",
-        "tags": [
-          "Google OAuth"
-        ]
+        "tags": ["Google OAuth"]
       }
     },
     "/v1/internal/connections/invalidate": {
@@ -6398,9 +6126,7 @@
           }
         ],
         "summary": "Force-disconnect a connector",
-        "tags": [
-          "Internal"
-        ]
+        "tags": ["Internal"]
       }
     },
     "/v1/llm/chat/completions": {
@@ -6408,6 +6134,15 @@
         "description": "Credit-gated chat completion endpoint. The gateway estimates and reserves credits, routes the desktop model id to OpenAI or OpenRouter, forwards the request, streams or buffers the upstream response, then settles actual token usage.",
         "operationId": "createChatCompletion",
         "parameters": [
+          {
+            "description": "Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "description": "Optional feature/use-case label recorded in LLMUsage for cost allocation.",
             "in": "header",
@@ -6500,9 +6235,7 @@
           }
         ],
         "summary": "Proxy OpenAI-compatible chat completion",
-        "tags": [
-          "LLM"
-        ]
+        "tags": ["LLM"]
       }
     },
     "/v1/llm/completions": {
@@ -6510,6 +6243,15 @@
         "description": "Credit-gated legacy completions endpoint. Request and response shape follows OpenAI-compatible /completions semantics.",
         "operationId": "createCompletion",
         "parameters": [
+          {
+            "description": "Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "description": "Optional feature/use-case label recorded in LLMUsage for cost allocation.",
             "in": "header",
@@ -6597,9 +6339,7 @@
           }
         ],
         "summary": "Proxy OpenAI-compatible legacy completion",
-        "tags": [
-          "LLM"
-        ]
+        "tags": ["LLM"]
       }
     },
     "/v1/llm/embeddings": {
@@ -6607,6 +6347,15 @@
         "description": "Credit-gated embeddings endpoint. The gateway requires a model, reserves credits, forwards the request, and records usage.",
         "operationId": "createEmbedding",
         "parameters": [
+          {
+            "description": "Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "description": "Optional feature/use-case label recorded in LLMUsage for cost allocation.",
             "in": "header",
@@ -6639,10 +6388,7 @@
           "content": {
             "application/json": {
               "example": {
-                "input": [
-                  "invoice",
-                  "payment"
-                ],
+                "input": ["invoice", "payment"],
                 "model": "openai/text-embedding-3-small"
               },
               "schema": {
@@ -6690,9 +6436,7 @@
           }
         ],
         "summary": "Proxy OpenAI-compatible embeddings",
-        "tags": [
-          "LLM"
-        ]
+        "tags": ["LLM"]
       }
     },
     "/v1/llm/models": {
@@ -6733,9 +6477,7 @@
           }
         ],
         "summary": "List routable LLM models",
-        "tags": [
-          "LLM"
-        ]
+        "tags": ["LLM"]
       }
     },
     "/v1/me": {
@@ -6796,15 +6538,24 @@
           }
         ],
         "summary": "Get current user and billing state",
-        "tags": [
-          "Billing"
-        ]
+        "tags": ["Billing"]
       }
     },
     "/v1/search/exa": {
       "post": {
         "description": "Credit-gated Exa /search proxy. The request body is forwarded unchanged and the upstream JSON response is returned unchanged.",
         "operationId": "searchExa",
+        "parameters": [
+          {
+            "description": "Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -6862,9 +6613,7 @@
           }
         ],
         "summary": "Run Exa search",
-        "tags": [
-          "Search"
-        ]
+        "tags": ["Search"]
       }
     },
     "/v1/voice/text-to-speech/{voiceId}": {
@@ -6880,6 +6629,15 @@
             "schema": {
               "description": "Voice id.",
               "example": "21m00Tcm4TlvDq8ikWAM",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
               "type": "string"
             }
           }
@@ -6933,9 +6691,7 @@
           }
         ],
         "summary": "Generate speech audio",
-        "tags": [
-          "Voice"
-        ]
+        "tags": ["Voice"]
       }
     }
   },

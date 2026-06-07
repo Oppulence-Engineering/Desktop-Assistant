@@ -11,11 +11,13 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
@@ -31,24 +33,47 @@ type Handler struct {
 	gate    *quota.Gate
 	secrets *secrets.Store
 	client  *ent.Client
-	http    *http.Client
+	http    *outbound.Client
 	log     *zap.Logger
 
 	openAIBaseURL     string
 	openRouterBaseURL string
+	allowedModels     map[string]struct{}
+	maxPromptBytes    int
+	maxToolBytes      int
+	maxMessages       int
+	spendLimits       quota.SpendLimits
+}
+
+// Policy configures expensive-flow protections for LLM requests.
+type Policy struct {
+	AllowedModels       []string
+	MaxPromptBytes      int
+	MaxToolPayloadBytes int
+	MaxMessages         int
+	SpendLimits         quota.SpendLimits
 }
 
 // New builds the LLM gateway handler.
 func New(prices *pricing.Table, gate *quota.Gate, sec *secrets.Store, client *ent.Client, log *zap.Logger) *Handler {
 	return &Handler{
-		prices:            prices,
-		gate:              gate,
-		secrets:           sec,
-		client:            client,
-		http:              &http.Client{Timeout: 0}, // no overall timeout: streams; cancelled via request context
+		prices:  prices,
+		gate:    gate,
+		secrets: sec,
+		client:  client,
+		http: outbound.NewClient(outbound.Policy{
+			Name:                  "llm",
+			Timeout:               0, // streams are cancelled by request context
+			ResponseHeaderTimeout: 15 * time.Second,
+			MaxConcurrent:         32,
+			MaxResponseBytes:      64 << 20,
+		}),
 		log:               log,
 		openAIBaseURL:     openAIBase,
 		openRouterBaseURL: openRouterBase,
+		maxPromptBytes:    2 << 20,
+		maxToolBytes:      1 << 20,
+		maxMessages:       128,
 	}
 }
 
@@ -61,6 +86,37 @@ func (h *Handler) SetUpstreams(openAI, openRouter string) {
 	if openRouter != "" {
 		h.openRouterBaseURL = openRouter
 	}
+}
+
+// SetOutboundPolicy applies the shared outbound vendor policy.
+func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
+	policy.Name = "llm"
+	policy.Timeout = 0
+	h.http = outbound.NewClient(policy)
+}
+
+// SetPolicy applies business-flow protections.
+func (h *Handler) SetPolicy(policy Policy) {
+	h.allowedModels = make(map[string]struct{}, len(policy.AllowedModels))
+	for _, model := range policy.AllowedModels {
+		model = strings.TrimSpace(model)
+		if model != "" {
+			h.allowedModels[model] = struct{}{}
+		}
+	}
+	if len(h.allowedModels) == 0 {
+		h.allowedModels = nil
+	}
+	if policy.MaxPromptBytes > 0 {
+		h.maxPromptBytes = policy.MaxPromptBytes
+	}
+	if policy.MaxToolPayloadBytes > 0 {
+		h.maxToolBytes = policy.MaxToolPayloadBytes
+	}
+	if policy.MaxMessages > 0 {
+		h.maxMessages = policy.MaxMessages
+	}
+	h.spendLimits = policy.SpendLimits
 }
 
 type usage struct {
@@ -112,20 +168,32 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
 		return
 	}
+	if !httpx.RequireIdempotencyKey(w, r) {
+		return
+	}
 
-	raw, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBody))
-	if err != nil {
-		httpx.Error(w, http.StatusBadRequest, "could not read request body", "bad_request")
+	raw, ok := httpx.ReadBody(w, r, maxRequestBody)
+	if !ok {
 		return
 	}
 	var body map[string]any
-	if err := json.Unmarshal(raw, &body); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	if err := dec.Decode(&body); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid JSON body", "bad_request")
+		return
+	}
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		httpx.Error(w, http.StatusBadRequest, "request body must contain exactly one JSON document", "bad_request")
 		return
 	}
 	model, _ := body["model"].(string)
 	if model == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing model", "bad_request")
+		return
+	}
+	if err := h.validatePolicy(model, body); err != nil {
+		writePolicyError(w, err)
 		return
 	}
 
@@ -139,7 +207,11 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	// Reserve credits before contacting the upstream.
 	inputEst := estimateInputTokens(body)
 	estimate := h.prices.LLMEstimate(model, inputEst, requestedMaxOutput(body))
-	requestID := uuid.New()
+	if err := h.gate.CheckSpendLimits(r.Context(), estimate, h.spendLimits); err != nil {
+		writeQuotaError(w, err)
+		return
+	}
+	requestID := httpx.IdempotencyKeyUUID(r, u.ID.String())
 	charge, err := h.gate.Reserve(r.Context(), "llm_call", estimate, requestID)
 	if err != nil {
 		if errors.Is(err, quota.ErrInsufficientCredits) {
@@ -167,6 +239,7 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	}
 	upReq.Header.Set("Content-Type", "application/json")
 	upReq.Header.Set("Authorization", "Bearer "+up.apiKey)
+	upReq.Header.Set("Idempotency-Key", r.Header.Get("Idempotency-Key"))
 	if up.provider == "openrouter" {
 		upReq.Header.Set("HTTP-Referer", "https://app.solomon-ai.co")
 		upReq.Header.Set("X-Title", "Solomon AI")
@@ -191,10 +264,15 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	}
 
 	var inTok, outTok int
+	var relayErr error
 	if streaming && isEventStream(resp) {
-		inTok, outTok = h.streamThrough(w, resp)
+		inTok, outTok, relayErr = h.streamThrough(w, resp)
 	} else {
-		inTok, outTok = h.bufferThrough(w, resp)
+		inTok, outTok, relayErr = h.bufferThrough(w, resp)
+	}
+	if relayErr != nil {
+		h.refund(charge)
+		return
 	}
 	if inTok == 0 {
 		inTok = inputEst
@@ -241,6 +319,74 @@ func (h *Handler) refund(charge *quota.Charge) {
 	defer cancel()
 	if err := charge.Refund(ctx); err != nil {
 		h.log.Error("quota refund", zap.Error(err))
+	}
+}
+
+func (h *Handler) validatePolicy(model string, body map[string]any) error {
+	if len(h.allowedModels) > 0 {
+		if _, ok := h.allowedModels[model]; !ok {
+			return errModelNotAllowed
+		}
+	}
+	if h.maxMessages > 0 {
+		if messages, ok := body["messages"].([]any); ok && len(messages) > h.maxMessages {
+			return errTooManyMessages
+		}
+	}
+	if h.maxPromptBytes > 0 && payloadBytes(body, "messages", "prompt", "input") > h.maxPromptBytes {
+		return errPromptTooLarge
+	}
+	if h.maxToolBytes > 0 && payloadBytes(body, "tools", "functions") > h.maxToolBytes {
+		return errToolsTooLarge
+	}
+	return nil
+}
+
+var (
+	errModelNotAllowed = errors.New("model_not_allowed")
+	errTooManyMessages = errors.New("too_many_messages")
+	errPromptTooLarge  = errors.New("prompt_too_large")
+	errToolsTooLarge   = errors.New("tools_payload_too_large")
+)
+
+func payloadBytes(body map[string]any, keys ...string) int {
+	total := 0
+	for _, key := range keys {
+		if v, ok := body[key]; ok {
+			b, err := json.Marshal(v)
+			if err == nil {
+				total += len(b)
+			}
+		}
+	}
+	return total
+}
+
+func writePolicyError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, errModelNotAllowed):
+		httpx.Error(w, http.StatusBadRequest, "model is not allowed", "model_not_allowed")
+	case errors.Is(err, errTooManyMessages):
+		httpx.Error(w, http.StatusBadRequest, "too many messages", "too_many_messages")
+	case errors.Is(err, errPromptTooLarge):
+		httpx.Error(w, http.StatusRequestEntityTooLarge, "prompt payload is too large", "prompt_too_large")
+	case errors.Is(err, errToolsTooLarge):
+		httpx.Error(w, http.StatusRequestEntityTooLarge, "tool payload is too large", "tools_payload_too_large")
+	default:
+		httpx.Error(w, http.StatusBadRequest, "request violates LLM policy", "bad_request")
+	}
+}
+
+func writeQuotaError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, quota.ErrDailyLimitExceeded):
+		httpx.Error(w, http.StatusTooManyRequests, "daily credit limit exceeded", "daily_credit_limit_exceeded")
+	case errors.Is(err, quota.ErrMonthlyLimitExceeded):
+		httpx.Error(w, http.StatusTooManyRequests, "monthly credit limit exceeded", "monthly_credit_limit_exceeded")
+	case errors.Is(err, quota.ErrNoUser):
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+	default:
+		httpx.Error(w, http.StatusInternalServerError, "could not check credit limits", "internal_error")
 	}
 }
 

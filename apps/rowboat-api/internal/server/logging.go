@@ -5,6 +5,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -34,7 +35,7 @@ func RequestLogger(log *zap.Logger) func(http.Handler) http.Handler {
 				log.Info("http_request", fields...)
 			}()
 
-			next.ServeHTTP(ww, r)
+			next.ServeHTTP(httpx.WithRequestContext(ww, r), r)
 		})
 	}
 }
@@ -51,9 +52,7 @@ func Recoverer(log *zap.Logger) func(http.Handler) http.Handler {
 						zap.String("path", r.URL.Path),
 						zap.ByteString("stack", debug.Stack()),
 					)
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(http.StatusInternalServerError)
-					_, _ = w.Write([]byte(`{"error":"internal server error","code":"internal_error"}`))
+					httpx.Error(w, http.StatusInternalServerError, "internal server error", "internal_error")
 				}
 			}()
 			next.ServeHTTP(w, r)

@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -48,8 +49,22 @@ func New(cfg appconfig.Config, log *zap.Logger) *Server {
 	// X-Forwarded-For / X-Real-IP unconditionally and is spoofable. Rate limits
 	// are keyed by authenticated user_id, not client IP, so we don't need it.
 	s.router.Use(middleware.RequestID)
+	s.router.Use(RequestContext)
 	s.router.Use(Recoverer(log))
 	s.router.Use(RequestLogger(log))
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.Use(CORS(cfg))
+	s.router.Use(NoCache)
+	s.router.Use(RequestTimeout(cfg.RequestTimeout))
+	s.router.Use(MaxRequestBody(cfg.MaxRequestBody))
+	s.router.Use(RequireJSONContentType)
+
+	s.router.NotFound(func(w http.ResponseWriter, _ *http.Request) {
+		httpx.Error(w, http.StatusNotFound, "not found", "not_found")
+	})
+	s.router.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
+		httpx.Error(w, http.StatusMethodNotAllowed, "method not allowed", "method_not_allowed")
+	})
 
 	s.router.Get("/healthz", s.handleHealthz)
 	s.router.Get("/readyz", s.handleReadyz)
@@ -113,7 +128,14 @@ func (s *Server) Run(ctx context.Context) error {
 
 	metricsMux := http.NewServeMux()
 	metricsMux.Handle("/metrics", promhttp.Handler())
-	metricsSrv := &http.Server{Addr: s.cfg.MetricsAddr, Handler: metricsMux}
+	metricsSrv := &http.Server{
+		Addr:         s.cfg.MetricsAddr,
+		Handler:      metricsMux,
+		ReadTimeout:  s.cfg.ReadTimeout,
+		WriteTimeout: s.cfg.WriteTimeout,
+		IdleTimeout:  s.cfg.IdleTimeout,
+		BaseContext:  func(net.Listener) context.Context { return ctx },
+	}
 
 	errCh := make(chan error, 3)
 	go func() {

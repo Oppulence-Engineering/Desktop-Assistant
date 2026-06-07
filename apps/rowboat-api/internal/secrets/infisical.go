@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"go.uber.org/zap"
 )
 
@@ -70,7 +71,13 @@ func fetchInfisical(ctx context.Context, cfg appconfig.Config) (map[string]strin
 	}
 	req.Header.Set("Authorization", "Bearer "+cfg.InfisicalToken)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := outbound.NewClient(outbound.Policy{
+		Name:                  "infisical",
+		Timeout:               10 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+		MaxConcurrent:         8,
+		MaxResponseBytes:      2 << 20,
+	})
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("secrets: infisical request: %w", err)

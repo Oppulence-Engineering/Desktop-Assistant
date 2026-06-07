@@ -95,6 +95,8 @@ podSecurityContext:
   runAsNonRoot: true
   runAsUser: 65532
   fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
 securityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
@@ -104,6 +106,44 @@ securityContext:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector: {}
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector: {}
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  ingress:
+    # Restricts app traffic to http/grpc ports. Empty selectors allow the
+    # cluster's ingress path; production overlays should narrow these.
+    from:
+      - namespaceSelector: {}
+  egress:
+    enabled: false
+    rules: []
+
+metricsNetworkPolicy:
+  enabled: true
+  from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+
+serviceMesh:
+  enabled: false
+  istio:
+    peerAuthentication:
+      enabled: false
+      mtlsMode: STRICT
 
 # Non-secret configuration, surfaced as env via a ConfigMap.
 config:
@@ -112,6 +152,12 @@ config:
   HTTP_ADDR: ":8080"
   METRICS_ADDR: ":9090"
   GRPC_ADDR: ":8081"
+  READ_TIMEOUT: 30s
+  WRITE_TIMEOUT: 5m
+  IDLE_TIMEOUT: 120s
+  REQUEST_TIMEOUT: 2m
+  MAX_REQUEST_BODY_BYTES: "33554432"
+  CORS_ALLOWED_ORIGINS: https://app.solomon-ai.co
   AUTO_MIGRATE: "false" # production uses versioned migrations
   APP_URL: https://app.solomon-ai.co
   OIDC_ISSUER_URL: https://oauth.solomon-ai.co
@@ -119,10 +165,27 @@ config:
   TOKEN_ISSUER: https://oauth.solomon-ai.co
   TOKEN_AUDIENCE: rowboat-api
   JWKS_URL: https://oauth.solomon-ai.co/.well-known/jwks.json
+  WORKOS_CLIENT_ID: ""
   ORY_PUBLIC_URL: https://oauth.solomon-ai.co
   PUBLIC_BASE_URL: https://api.x.solomon-ai.co
+  GOOGLE_REDIRECT_URI: https://api.x.solomon-ai.co/oauth/google/callback
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability:4318
   INFISICAL_ENABLED: "true"
+  VENDOR_TIMEOUT: 30s
+  VENDOR_RESPONSE_HEADER_TIMEOUT: 15s
+  VENDOR_MAX_CONCURRENT: "64"
+  LLM_MAX_CONCURRENT: "32"
+  UPSTREAM_RESPONSE_MAX_BYTES: "67108864"
+  COMPOSIO_RESPONSE_MAX_BYTES: "67108864"
+  DAILY_CREDIT_LIMIT: "100000"
+  MONTHLY_CREDIT_LIMIT: "2000000"
+  LLM_ALLOWED_MODELS: ""
+  LLM_MAX_PROMPT_BYTES: "2097152"
+  LLM_MAX_TOOL_PAYLOAD_BYTES: "1048576"
+  LLM_MAX_MESSAGES: "128"
+  GRAPHQL_INTROSPECTION_ENABLED: "false"
+  GRAPHQL_MAX_COMPLEXITY: "250"
+  GRAPHQL_MAX_DEPTH: "12"
   TEMPORAL_ENABLED: "false"
   TEMPORAL_ADDRESS: temporal-frontend.temporal:7233
   TEMPORAL_NAMESPACE: default

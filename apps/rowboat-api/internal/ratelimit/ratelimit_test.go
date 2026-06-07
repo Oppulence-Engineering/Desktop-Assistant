@@ -13,7 +13,10 @@ import (
 func TestPerUserLimitsAndRetryAfter(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	m := ratelimit.NewManager(ctx, "", zap.NewNop()) // in-memory
+	m, err := ratelimit.NewManager(ctx, "", false, zap.NewNop()) // in-memory
+	if err != nil {
+		t.Fatalf("manager: %v", err)
+	}
 
 	calls := 0
 	h := m.PerUser(ratelimit.GroupLLM, 3)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -53,7 +56,10 @@ func TestPerUserLimitsAndRetryAfter(t *testing.T) {
 func TestSeparatePrincipalsHaveSeparateBuckets(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	m := ratelimit.NewManager(ctx, "", zap.NewNop())
+	m, err := ratelimit.NewManager(ctx, "", false, zap.NewNop())
+	if err != nil {
+		t.Fatalf("manager: %v", err)
+	}
 	h := m.PerUser(ratelimit.GroupSearch, 1)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))

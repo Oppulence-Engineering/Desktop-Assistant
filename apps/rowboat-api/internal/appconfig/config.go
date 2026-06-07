@@ -29,6 +29,9 @@ type Config struct {
 	IdleTimeout      time.Duration
 	ShutdownTimeout  time.Duration
 	ReadinessTimeout time.Duration
+	RequestTimeout   time.Duration
+	MaxRequestBody   int64
+	CORSOrigins      []string
 
 	// Observability.
 	LogLevel     string // debug | info | warn | error
@@ -108,6 +111,14 @@ type Config struct {
 	GoogleOAuthClientID     string
 	GoogleOAuthClientSecret string
 
+	// Outbound vendor-call policy.
+	VendorTimeout               time.Duration
+	VendorResponseHeaderTimeout time.Duration
+	VendorMaxConcurrent         int
+	LLMMaxConcurrent            int
+	UpstreamResponseMaxBytes    int64
+	ComposioResponseMaxBytes    int64
+
 	// GoogleTokenURL overrides Google's OAuth token endpoint. Empty → the
 	// real endpoint (oauth2.googleapis.com/token). Set in dev to a local mock.
 	GoogleTokenURL string
@@ -128,10 +139,25 @@ type Config struct {
 	// PricingJSON optionally overrides the default pricing table (raw JSON).
 	PricingJSON string
 
+	// Metered business-flow guardrails.
+	DailyCreditLimit   int
+	MonthlyCreditLimit int
+
+	// LLM request policy.
+	LLMAllowedModels       []string
+	LLMMaxPromptBytes      int
+	LLMMaxToolPayloadBytes int
+	LLMMaxMessages         int
+
 	// LLM upstream base URLs. Empty → provider defaults (api.openai.com /
 	// openrouter.ai). Override to target a self-hosted gateway or a local mock.
 	OpenAIBaseURL     string
 	OpenRouterBaseURL string
+
+	// Admin GraphQL guardrails.
+	GraphQLIntrospection bool
+	GraphQLMaxComplexity int
+	GraphQLMaxDepth      int
 
 	// Temporal durable orchestration for API-native background task runs.
 	TemporalEnabled       bool
@@ -148,18 +174,27 @@ type Config struct {
 
 // Load reads configuration from the environment, applying defaults.
 func Load() Config {
+	environment := getenv("ENVIRONMENT", "development")
+	production := strings.EqualFold(environment, "production")
+	corsDefault := "http://localhost:3000,http://localhost:5173,https://app.solomon-ai.co"
+	if production {
+		corsDefault = "https://app.solomon-ai.co"
+	}
 	return Config{
 		ServiceName: getenv("SERVICE_NAME", "rowboat-api"),
-		Environment: getenv("ENVIRONMENT", "development"),
+		Environment: environment,
 
 		HTTPAddr:         getenv("HTTP_ADDR", ":8080"),
 		MetricsAddr:      getenv("METRICS_ADDR", ":9090"),
 		GRPCAddr:         getenv("GRPC_ADDR", ":8081"),
 		ReadTimeout:      getdur("READ_TIMEOUT", 30*time.Second),
-		WriteTimeout:     getdur("WRITE_TIMEOUT", 0), // 0 = no timeout (SSE streams)
+		WriteTimeout:     getdur("WRITE_TIMEOUT", 5*time.Minute),
 		IdleTimeout:      getdur("IDLE_TIMEOUT", 120*time.Second),
 		ShutdownTimeout:  getdur("SHUTDOWN_TIMEOUT", 25*time.Second),
 		ReadinessTimeout: getdur("READINESS_TIMEOUT", 3*time.Second),
+		RequestTimeout:   getdur("REQUEST_TIMEOUT", 2*time.Minute),
+		MaxRequestBody:   getint64("MAX_REQUEST_BODY_BYTES", 32<<20),
+		CORSOrigins:      getcsv("CORS_ALLOWED_ORIGINS", corsDefault),
 
 		LogLevel:     getenv("LOG_LEVEL", "info"),
 		OTLPEndpoint: getenv("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
@@ -207,24 +242,39 @@ func Load() Config {
 		InfisicalProjectID:   getenv("INFISICAL_PROJECT_ID", ""),
 		InfisicalEnvironment: getenv("INFISICAL_ENVIRONMENT", "dev"),
 
-		AnthropicAPIKey:         getenv("ANTHROPIC_API_KEY", ""),
-		OpenAIAPIKey:            getenv("OPENAI_API_KEY", ""),
-		OpenRouterAPIKey:        getenv("OPENROUTER_API_KEY", ""),
-		GoogleAPIKey:            getenv("GOOGLE_API_KEY", ""),
-		ElevenLabsAPIKey:        getenv("ELEVENLABS_API_KEY", ""),
-		ExaAPIKey:               getenv("EXA_API_KEY", ""),
-		ComposioAPIKey:          getenv("COMPOSIO_API_KEY", ""),
-		GoogleOAuthClientID:     getenv("GOOGLE_OAUTH_CLIENT_ID", ""),
-		GoogleOAuthClientSecret: getenv("GOOGLE_OAUTH_CLIENT_SECRET", ""),
-		GoogleTokenURL:          getenv("GOOGLE_TOKEN_URL", ""),
-		GoogleAuthorizeURL:      getenv("GOOGLE_AUTHORIZE_URL", ""),
-		GoogleRedirectURI:       getenv("GOOGLE_REDIRECT_URI", ""),
+		AnthropicAPIKey:             getenv("ANTHROPIC_API_KEY", ""),
+		OpenAIAPIKey:                getenv("OPENAI_API_KEY", ""),
+		OpenRouterAPIKey:            getenv("OPENROUTER_API_KEY", ""),
+		GoogleAPIKey:                getenv("GOOGLE_API_KEY", ""),
+		ElevenLabsAPIKey:            getenv("ELEVENLABS_API_KEY", ""),
+		ExaAPIKey:                   getenv("EXA_API_KEY", ""),
+		ComposioAPIKey:              getenv("COMPOSIO_API_KEY", ""),
+		GoogleOAuthClientID:         getenv("GOOGLE_OAUTH_CLIENT_ID", ""),
+		GoogleOAuthClientSecret:     getenv("GOOGLE_OAUTH_CLIENT_SECRET", ""),
+		VendorTimeout:               getdur("VENDOR_TIMEOUT", 30*time.Second),
+		VendorResponseHeaderTimeout: getdur("VENDOR_RESPONSE_HEADER_TIMEOUT", 15*time.Second),
+		VendorMaxConcurrent:         getint("VENDOR_MAX_CONCURRENT", 64),
+		LLMMaxConcurrent:            getint("LLM_MAX_CONCURRENT", 32),
+		UpstreamResponseMaxBytes:    getint64("UPSTREAM_RESPONSE_MAX_BYTES", 64<<20),
+		ComposioResponseMaxBytes:    getint64("COMPOSIO_RESPONSE_MAX_BYTES", 64<<20),
+		GoogleTokenURL:              getenv("GOOGLE_TOKEN_URL", ""),
+		GoogleAuthorizeURL:          getenv("GOOGLE_AUTHORIZE_URL", ""),
+		GoogleRedirectURI:           getenv("GOOGLE_REDIRECT_URI", ""),
 
-		DesktopDeepLinkScheme: getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
-		FreeTierCredits:       getint("FREE_TIER_CREDITS", 10000),
-		PricingJSON:           getenv("PRICING_JSON", ""),
-		OpenAIBaseURL:         getenv("OPENAI_BASE_URL", ""),
-		OpenRouterBaseURL:     getenv("OPENROUTER_BASE_URL", ""),
+		DesktopDeepLinkScheme:  getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
+		FreeTierCredits:        getint("FREE_TIER_CREDITS", 10000),
+		PricingJSON:            getenv("PRICING_JSON", ""),
+		DailyCreditLimit:       getint("DAILY_CREDIT_LIMIT", 100000),
+		MonthlyCreditLimit:     getint("MONTHLY_CREDIT_LIMIT", 2000000),
+		LLMAllowedModels:       getcsv("LLM_ALLOWED_MODELS", ""),
+		LLMMaxPromptBytes:      getint("LLM_MAX_PROMPT_BYTES", 2<<20),
+		LLMMaxToolPayloadBytes: getint("LLM_MAX_TOOL_PAYLOAD_BYTES", 1<<20),
+		LLMMaxMessages:         getint("LLM_MAX_MESSAGES", 128),
+		OpenAIBaseURL:          getenv("OPENAI_BASE_URL", ""),
+		OpenRouterBaseURL:      getenv("OPENROUTER_BASE_URL", ""),
+		GraphQLIntrospection:   getbool("GRAPHQL_INTROSPECTION_ENABLED", !production),
+		GraphQLMaxComplexity:   getint("GRAPHQL_MAX_COMPLEXITY", 250),
+		GraphQLMaxDepth:        getint("GRAPHQL_MAX_DEPTH", 12),
 
 		TemporalEnabled:       getbool("TEMPORAL_ENABLED", false),
 		TemporalAddress:       getenv("TEMPORAL_ADDRESS", "localhost:7233"),
@@ -255,6 +305,30 @@ func (c Config) Validate() error {
 	if c.AppURL == "" {
 		return fmt.Errorf("APP_URL is required")
 	}
+	if c.ReadTimeout <= 0 {
+		return fmt.Errorf("READ_TIMEOUT must be > 0")
+	}
+	if c.WriteTimeout <= 0 {
+		return fmt.Errorf("WRITE_TIMEOUT must be > 0")
+	}
+	if c.IdleTimeout <= 0 {
+		return fmt.Errorf("IDLE_TIMEOUT must be > 0")
+	}
+	if c.RequestTimeout <= 0 {
+		return fmt.Errorf("REQUEST_TIMEOUT must be > 0")
+	}
+	if c.MaxRequestBody <= 0 {
+		return fmt.Errorf("MAX_REQUEST_BODY_BYTES must be > 0")
+	}
+	if c.VendorMaxConcurrent <= 0 || c.LLMMaxConcurrent <= 0 {
+		return fmt.Errorf("vendor concurrency limits must be > 0")
+	}
+	if c.UpstreamResponseMaxBytes <= 0 || c.ComposioResponseMaxBytes <= 0 {
+		return fmt.Errorf("upstream response byte limits must be > 0")
+	}
+	if c.GraphQLMaxComplexity <= 0 || c.GraphQLMaxDepth <= 0 {
+		return fmt.Errorf("GraphQL complexity and depth limits must be > 0")
+	}
 	if c.TemporalEnabled {
 		if c.TemporalAddress == "" {
 			return fmt.Errorf("TEMPORAL_ADDRESS is required when TEMPORAL_ENABLED=true")
@@ -264,6 +338,76 @@ func (c Config) Validate() error {
 		}
 		if c.TemporalTaskQueue == "" {
 			return fmt.Errorf("TEMPORAL_TASK_QUEUE is required when TEMPORAL_ENABLED=true")
+		}
+	}
+	if c.IsProduction() {
+		return c.validateProduction()
+	}
+	return nil
+}
+
+func (c Config) validateProduction() error {
+	required := map[string]string{
+		"DATABASE_URL":        c.DatabaseURL,
+		"REDIS_URL":           c.RedisURL,
+		"DB_ENCRYPTION_KEY":   c.DBEncryptionKey,
+		"TOKEN_ISSUER":        c.TokenIssuer,
+		"WORKOS_API_KEY":      c.WorkOSAPIKey,
+		"WORKOS_CLIENT_ID":    c.WorkOSClientID,
+		"HOOK_HMAC_SECRET":    c.HookHMACSecret,
+		"INTERNAL_API_SECRET": c.InternalAPISecret,
+		"PUBLIC_BASE_URL":     c.PublicBaseURL,
+		"GOOGLE_REDIRECT_URI": c.GoogleRedirectURI,
+	}
+	for key, value := range required {
+		if strings.TrimSpace(value) == "" {
+			return fmt.Errorf("%s is required in production", key)
+		}
+	}
+	if strings.Contains(c.DBEncryptionKey, "dev-insecure") || len(c.DBEncryptionKey) < 32 {
+		return fmt.Errorf("DB_ENCRYPTION_KEY must be a non-dev secret of at least 32 bytes in production")
+	}
+	if c.AutoMigrate {
+		return fmt.Errorf("AUTO_MIGRATE must be false in production")
+	}
+	if len(c.CORSOrigins) == 0 {
+		return fmt.Errorf("CORS_ALLOWED_ORIGINS is required in production")
+	}
+	for _, origin := range c.CORSOrigins {
+		if origin == "*" || strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
+			return fmt.Errorf("CORS_ALLOWED_ORIGINS contains non-production origin %q", origin)
+		}
+	}
+	if c.GraphQLIntrospection {
+		return fmt.Errorf("GRAPHQL_INTROSPECTION_ENABLED must be false in production")
+	}
+	if c.DailyCreditLimit <= 0 || c.MonthlyCreditLimit <= 0 {
+		return fmt.Errorf("DAILY_CREDIT_LIMIT and MONTHLY_CREDIT_LIMIT must be > 0 in production")
+	}
+	if c.InfisicalEnabled {
+		for key, value := range map[string]string{
+			"INFISICAL_TOKEN":       c.InfisicalToken,
+			"INFISICAL_PROJECT_ID":  c.InfisicalProjectID,
+			"INFISICAL_ENVIRONMENT": c.InfisicalEnvironment,
+		} {
+			if strings.TrimSpace(value) == "" {
+				return fmt.Errorf("%s is required when INFISICAL_ENABLED=true", key)
+			}
+		}
+		return nil
+	}
+	if c.OpenAIAPIKey == "" && c.OpenRouterAPIKey == "" {
+		return fmt.Errorf("OPENAI_API_KEY or OPENROUTER_API_KEY is required when INFISICAL_ENABLED=false")
+	}
+	for key, value := range map[string]string{
+		"ELEVENLABS_API_KEY":         c.ElevenLabsAPIKey,
+		"EXA_API_KEY":                c.ExaAPIKey,
+		"COMPOSIO_API_KEY":           c.ComposioAPIKey,
+		"GOOGLE_OAUTH_CLIENT_ID":     c.GoogleOAuthClientID,
+		"GOOGLE_OAUTH_CLIENT_SECRET": c.GoogleOAuthClientSecret,
+	} {
+		if strings.TrimSpace(value) == "" {
+			return fmt.Errorf("%s is required when INFISICAL_ENABLED=false", key)
 		}
 	}
 	return nil
@@ -296,6 +440,15 @@ func getint(key string, def int) int {
 	return def
 }
 
+func getint64(key string, def int64) int64 {
+	if v, ok := os.LookupEnv(key); ok && v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return n
+		}
+	}
+	return def
+}
+
 func getbool(key string, def bool) bool {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
 		if b, err := strconv.ParseBool(v); err == nil {
@@ -303,6 +456,22 @@ func getbool(key string, def bool) bool {
 		}
 	}
 	return def
+}
+
+func getcsv(key string, def string) []string {
+	raw := getenv(key, def)
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
 }
 
 func getdur(key string, def time.Duration) time.Duration {
