@@ -9,7 +9,11 @@ const PRODUCT_NAME = 'Solomon AI';
 const PRODUCT_SLUG = 'solomon-ai';
 const PRODUCT_ARTIFACT_NAME = 'Solomon-AI';
 const LEGACY_DEEP_LINK_SCHEME = 'rowboat';
-const appleSigningConfigured = Boolean(process.env.APPLE_ID && process.env.APPLE_PASSWORD && process.env.APPLE_TEAM_ID);
+const appleSigningConfigured = Boolean(  process.env.APPLE_ID?.trim() &&
+                                         process.env.APPLE_PASSWORD?.trim() &&
+                                         process.env.APPLE_TEAM_ID?.trim() &&
+                                         process.env.APPLE_CERTIFICATE?.trim()
+                                       );
 
 const packagerConfig = {
     name: PRODUCT_NAME,
