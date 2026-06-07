@@ -119,7 +119,8 @@ production surfaces.
 | Connector OAuth and consent API          | `apps/rowboat-api`            | `apps/x`, product connectors, future CLI                 |
 | Local capture and transcription contract | `apps/x`                      | Desktop UI only, optional local helpers                  |
 | Oppulence product connector manifest     | `apps/x` + `apps/rowboat-api` | Canvas, Cadence, Corinthian, Conduit, Eigen integrations |
-| Public SDK contract                      | `apps/rowboat`                | `apps/python-sdk`, external developers                   |
+| Hosted public SDK contract               | `apps/rowboat`                | `apps/python-sdk`, external developers                   |
+| Desktop cloud SDK contract               | `apps/rowboat-api`            | `packages/rowboat-api-client-ts`, desktop integrations   |
 
 Contract owners publish schemas, examples, and compatibility tests. Consumers do
 not add endpoints by assumption.
@@ -359,14 +360,14 @@ architecture commitments.
 
 Create a small registry in `docs` or `apps/README.md`:
 
-| Contract           | Owner                         | Contract artifact               | Stability |
-| ------------------ | ----------------------------- | ------------------------------- | --------- |
-| desktop-cloud-api  | `apps/rowboat-api`            | OpenAPI                         | beta      |
-| hosted-project-api | `apps/rowboat`                | OpenAPI or typed route manifest | stable    |
-| widget-api         | `apps/rowboat`                | OpenAPI or route tests          | beta      |
-| desktop-ipc        | `apps/x`                      | TypeScript types                | internal  |
-| connector-manifest | `apps/rowboat-api` + `apps/x` | JSON schema                     | beta      |
-| product-mcp        | product apps                  | MCP schemas                     | beta      |
+| Contract           | Owner                         | Contract artifact                                                      | Stability |
+| ------------------ | ----------------------------- | ---------------------------------------------------------------------- | --------- |
+| desktop-cloud-api  | `apps/rowboat-api`            | `apps/rowboat-api/api/openapi.json` + `packages/rowboat-api-client-ts` | beta      |
+| hosted-project-api | `apps/rowboat`                | OpenAPI or typed route manifest                                        | stable    |
+| widget-api         | `apps/rowboat`                | OpenAPI or route tests                                                 | beta      |
+| desktop-ipc        | `apps/x`                      | TypeScript types                                                       | internal  |
+| connector-manifest | `apps/rowboat-api` + `apps/x` | JSON schema                                                            | beta      |
+| product-mcp        | product apps                  | MCP schemas                                                            | beta      |
 
 Every cross-app dependency should reference one registry row.
 
