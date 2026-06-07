@@ -5,7 +5,8 @@
 //
 // rowboat-api and each product MCP server (Canvas, Corinthian, Billflow) embed
 // this library to verify Ory/WorkOS-issued tokens against the same JWKS, so
-// authorization behaves identically across the suite. See CONNECTOR_SUITE.md §9.
+// authorization behaves identically across the suite. See
+// apps/rfc/012-connector-suite-and-consent-broker.md.
 //
 // It is published to npm as @oppulence/oauth-resource-server (the TS sibling).
 // In this monorepo it is the Go source of truth, imported by other Go modules

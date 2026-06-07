@@ -10,7 +10,7 @@
 | **Last updated** | 2026-06-06                                                                                                                                                                                                                 |
 | **Depends on**   | existing Temporal worker (`internal/backgroundtaskworkflow`), LLM gateway (`internal/llm`), connectors (`internal/connectors`), secrets (`internal/secrets`)                                                               |
 | **Consumed by**  | [RFC 001](./001-api-owned-scheduler.md) & [RFC 003](./003-cloud-event-ingestion.md) (their runs execute through this runtime), [RFC 007](./007-production-cloud-enablement.md) (must land before unbounded cloud tools GA) |
-| **Parent docs**  | [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md) §4.3, [`..._API_PLAN.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md)                                 |
+| **Supersedes**   | Former cloud workflow planning and API execution-plan runtime sections.                                                                                                                                                    |
 
 ## Summary
 

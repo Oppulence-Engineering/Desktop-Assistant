@@ -1,7 +1,7 @@
 // Package connectors implements the connector registry and the OAuth brokering
 // endpoints (/v1/connectors, /v1/connections/*) plus the Ory pre-consent
-// webhook and the internal force-disconnect endpoint. See CONNECTOR_SUITE.md
-// for the full protocol.
+// webhook and the internal force-disconnect endpoint. See
+// apps/rfc/012-connector-suite-and-consent-broker.md for the full protocol.
 package connectors
 
 import "encoding/json"

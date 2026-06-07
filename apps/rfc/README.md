@@ -9,10 +9,9 @@ The first set takes Rowboat's background tasks from **cloud-executed but
 desktop-driven** to **fully cloud-native** — scheduled, event-driven, and useful
 while the desktop app is closed.
 
-They decompose the parent design docs into shippable, dependency-ordered work:
-
-- [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md) — the canonical reference for what exists today (data model, API surface, Temporal worker, desktop integration) and the gap analysis these RFCs close.
-- [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md) — the API-side execution plan and conventions.
+This RFC set is the canonical architecture and implementation-design record.
+Older planning docs that were folded into these RFCs were removed from `docs/`
+to avoid parallel sources of truth.
 
 > **The thesis in one sentence:** today an `executionTarget: api` task is _executed_ in the
 > cloud (Temporal worker) but _initiated_ by the desktop's 15-second poll — so closing the
@@ -42,24 +41,24 @@ section (resolved forks), and a test plan.
 
 Not part of the cloud-workflows set above, but living here under the same RFC conventions:
 
-| #                                                           | Title                                         | Layer               | What it adds                                                                                                                                                                                                                                                                             |
-| ----------------------------------------------------------- | --------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [009](./009-local-on-device-transcription.md)               | Local On-Device Transcription (whisper.cpp)   | apps/x              | An on-device STT provider (whisper.cpp) as a cheaper, private alternative to Deepgram streaming; tiers local vs cloud **by feature** (voice -> local, meetings -> cloud-with-quota). Parent: [`docs/WHISPER_CPP_LOCAL_TRANSCRIPTION.md`](../../docs/WHISPER_CPP_LOCAL_TRANSCRIPTION.md). |
-| [010](./010-rowboat-api-service-plane.md)                   | Rowboat API Service Plane                     | rowboat-api         | Canonical Go backend boundary for desktop cloud features: config/me, LLM gateway, billing/credits, Google OAuth broker, provider proxies, ent schemas, kind/deploy, and observability.                                                                                                   |
-| [011](./011-identity-and-authorization-plane.md)            | Identity and Authorization Plane              | auth / platform     | Resolves the WorkOS-direct-now vs Hydra/Ory-later split; defines token modes, user/org identity, service-to-service auth, step-up, and migration rules.                                                                                                                                  |
-| [012](./012-connector-suite-and-consent-broker.md)          | Connector Suite and Consent Broker            | rowboat-api / OAuth | Account linking, scope catalog, consent UI, token broker, resource-server libraries, entitlement gates, money-touching approval tokens, revocation, and connector observability.                                                                                                         |
-| [013](./013-oppulence-product-connector-fabric.md)          | Oppulence Product Connector Fabric            | apps/x + products   | Canvas, Cadence, Corinthian, Conduit, and Eigen product connectors using read/mirror/watch/act semantics over the shared connector and cloud-runtime fabric.                                                                                                                             |
-| [014](./014-live-note-observability-cost-and-provenance.md) | Live-Note Observability, Cost, and Provenance | apps/x + api        | Per-live-note run history, trigger health, cost, budget controls, provenance sidecars, generated-vs-source-backed labeling, silent-trigger detection, and trust-facing error taxonomy.                                                                                                   |
-| [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Rowboat Platform WorkOS FGA and Widget Auth   | apps/rowboat        | Hosted platform WorkOS migration: AuthKit, organizations, FGA project resources, org/project API key semantics, widget session JWTs, billing hooks, and Auth0 migration.                                                                                                                 |
-| [016](./016-app-family-consolidation.md)                    | App Family Consolidation                      | repo / apps         | Canonical app tiers and contract ownership across desktop, hosted platform, Go service plane, SDK, CLI, static frontends, widgets, experiments, simulation runner, and docs.                                                                                                             |
-| [017](./017-on-device-meeting-diarization.md)               | On-Device Meeting Diarization                 | apps/x              | A local speaker diarization follow-up to RFC 009: VAD, speaker embeddings, clustering, alignment, provenance, quality gates, and a beta meetings mode that does not replace cloud diarization until it passes product gates.                                                             |
-| [018](./018-a2a-delegation-and-agent-identity.md)           | A2A Delegation and Agent Identity             | future protocol     | User-bound agent identity, scoped delegation tokens, A2A/MCP adapter boundaries, approval policy, connector-scope enforcement, and delegation-chain provenance for future cross-agent workflows.                                                                                         |
+| #                                                           | Title                                         | Layer               | What it adds                                                                                                                                                                                                                 |
+| ----------------------------------------------------------- | --------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [009](./009-local-on-device-transcription.md)               | Local On-Device Transcription (whisper.cpp)   | apps/x              | An on-device STT provider (whisper.cpp) as a cheaper, private alternative to Deepgram streaming; tiers local vs cloud **by feature** (voice -> local, meetings -> cloud-with-quota).                                         |
+| [010](./010-rowboat-api-service-plane.md)                   | Rowboat API Service Plane                     | rowboat-api         | Canonical Go backend boundary for desktop cloud features: config/me, LLM gateway, billing/credits, Google OAuth broker, provider proxies, ent schemas, kind/deploy, and observability.                                       |
+| [011](./011-identity-and-authorization-plane.md)            | Identity and Authorization Plane              | auth / platform     | Resolves the WorkOS-direct-now vs Hydra/Ory-later split; defines token modes, user/org identity, service-to-service auth, step-up, and migration rules.                                                                      |
+| [012](./012-connector-suite-and-consent-broker.md)          | Connector Suite and Consent Broker            | rowboat-api / OAuth | Account linking, scope catalog, consent UI, token broker, resource-server libraries, entitlement gates, money-touching approval tokens, revocation, and connector observability.                                             |
+| [013](./013-oppulence-product-connector-fabric.md)          | Oppulence Product Connector Fabric            | apps/x + products   | Canvas, Cadence, Corinthian, Conduit, and Eigen product connectors using read/mirror/watch/act semantics over the shared connector and cloud-runtime fabric.                                                                 |
+| [014](./014-live-note-observability-cost-and-provenance.md) | Live-Note Observability, Cost, and Provenance | apps/x + api        | Per-live-note run history, trigger health, cost, budget controls, provenance sidecars, generated-vs-source-backed labeling, silent-trigger detection, and trust-facing error taxonomy.                                       |
+| [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Rowboat Platform WorkOS FGA and Widget Auth   | apps/rowboat        | Hosted platform WorkOS migration: AuthKit, organizations, FGA project resources, org/project API key semantics, widget session JWTs, billing hooks, and Auth0 migration.                                                     |
+| [016](./016-app-family-consolidation.md)                    | App Family Consolidation                      | repo / apps         | Canonical app tiers and contract ownership across desktop, hosted platform, Go service plane, SDK, CLI, static frontends, widgets, experiments, simulation runner, and docs.                                                 |
+| [017](./017-on-device-meeting-diarization.md)               | On-Device Meeting Diarization                 | apps/x              | A local speaker diarization follow-up to RFC 009: VAD, speaker embeddings, clustering, alignment, provenance, quality gates, and a beta meetings mode that does not replace cloud diarization until it passes product gates. |
+| [018](./018-a2a-delegation-and-agent-identity.md)           | A2A Delegation and Agent Identity             | future protocol     | User-bound agent identity, scoped delegation tokens, A2A/MCP adapter boundaries, approval policy, connector-scope enforcement, and delegation-chain provenance for future cross-agent workflows.                             |
 
 ## Dependency graph
 
 ```mermaid
 flowchart TD
-    P[Parent RFC + API Plan<br/>docs/CLOUD_NATIVE_*] --> R001 & R002 & R003 & R004 & R005 & R006 & R007
+    P[Cloud workflow RFC set] --> R001 & R002 & R003 & R004 & R005 & R006 & R007
 
     subgraph found[Foundations]
       S0[WP0 · Extract shared Starter<br/>refactor of handler.triggerAPIRun]
@@ -92,9 +91,9 @@ one replica to many is a `replicaCount` change, not a code change.
 
 ```mermaid
 flowchart TD
-    IMPL[Implementation and deployment docs] --> R010[RFC 010 · API service plane]
-    AUTHDOC[WorkOS auth rework docs] --> R011[RFC 011 · Identity plane]
-    AUTHDOC --> R015[RFC 015 · Hosted platform auth]
+    OPS[Deployment and local workflow docs] --> R010[RFC 010 · API service plane]
+    AUTH[RFC auth tracks] --> R011[RFC 011 · Identity plane]
+    AUTH --> R015[RFC 015 · Hosted platform auth]
 
     R011 --> R010
     R011 --> R012[RFC 012 · Connector consent broker]

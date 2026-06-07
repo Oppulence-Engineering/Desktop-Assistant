@@ -28,7 +28,7 @@ type upsell struct {
 // PreConsent handles POST /oauth-hooks/pre-consent. Mounted behind the HMAC
 // middleware (which marks the request internal). It decides whether the user is
 // entitled to connect the requested product, returning allow/upsell. The exact
-// payload is mapped from Ory's consent hook in ops (CONNECTOR_SUITE.md §12).
+// payload is mapped from Ory's consent hook in ops (RFC 012).
 func (h *Handler) PreConsent(w http.ResponseWriter, r *http.Request) {
 	var req preConsentRequest
 	if err := limitedJSON(r, &req); err != nil {

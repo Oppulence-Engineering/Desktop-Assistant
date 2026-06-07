@@ -1,16 +1,16 @@
 # RFC 012: Connector Suite and Consent Broker
 
-|                  |                                                                                                                                                   |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 012                                                                                                                                               |
-| **Status**       | Draft                                                                                                                                             |
-| **Track**        | Cross-product connector authorization                                                                                                             |
-| **Owners**       | `apps/rowboat-api`, `apps/oauth-consent`, product MCP owners                                                                                      |
-| **Created**      | 2026-06-06                                                                                                                                        |
-| **Last updated** | 2026-06-06                                                                                                                                        |
-| **Depends on**   | [RFC 011](./011-identity-and-authorization-plane.md), WorkOS, deferred Hydra/Ory broker mode                                                      |
-| **Enables**      | [RFC 013](./013-oppulence-product-connector-fabric.md), [RFC 008](./008-conduit-eigen-faculties.md)                                               |
-| **Parent docs**  | [`docs/CONNECTOR_SUITE.md`](../../docs/CONNECTOR_SUITE.md), [`docs/IMPLEMENTATION_PLAN.md`](../../docs/IMPLEMENTATION_PLAN.md) connector sections |
+|                  |                                                                                                     |
+| ---------------- | --------------------------------------------------------------------------------------------------- |
+| **RFC**          | 012                                                                                                 |
+| **Status**       | Draft                                                                                               |
+| **Track**        | Cross-product connector authorization                                                               |
+| **Owners**       | `apps/rowboat-api`, `apps/oauth-consent`, product MCP owners                                        |
+| **Created**      | 2026-06-06                                                                                          |
+| **Last updated** | 2026-06-06                                                                                          |
+| **Depends on**   | [RFC 011](./011-identity-and-authorization-plane.md), WorkOS, deferred Hydra/Ory broker mode        |
+| **Enables**      | [RFC 013](./013-oppulence-product-connector-fabric.md), [RFC 008](./008-conduit-eigen-faculties.md) |
+| **Supersedes**   | Former connector suite plan and connector sections of the former backend implementation plan.       |
 
 ## Summary
 

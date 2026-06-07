@@ -5,9 +5,10 @@ The Rowboat desktop backend. Replaces the closed hosted backend
 It owns billing/credits, the LLM gateway, vendor proxies (voice, search,
 Composio), the Google OAuth broker, and the connector OAuth handshake.
 
-See [`docs/IMPLEMENTATION_PLAN.md`](../../docs/IMPLEMENTATION_PLAN.md) for the
-full design and [`docs/CONNECTOR_SUITE.md`](../../docs/CONNECTOR_SUITE.md) for
-the OAuth 2.0 connector protocol.
+See [RFC 010](../../apps/rfc/010-rowboat-api-service-plane.md) for the service-plane
+design, [RFC 011](../../apps/rfc/011-identity-and-authorization-plane.md) for auth
+boundaries, and [RFC 012](../../apps/rfc/012-connector-suite-and-consent-broker.md)
+for the connector broker protocol.
 
 ## A note on the podinfo bootstrap
 
@@ -113,38 +114,38 @@ by the embedded OpenAPI document at `http://localhost:18080/openapi.json`.
 
 ## Ports
 
-| Port | Purpose                                   |
-|------|-------------------------------------------|
-| 8080 | Public HTTP + SSE (the desktop talks here)|
-| 8081 | gRPC (reserved for entproto services)     |
-| 9090 | Prometheus `/metrics`                     |
+| Port | Purpose                                    |
+| ---- | ------------------------------------------ |
+| 8080 | Public HTTP + SSE (the desktop talks here) |
+| 8081 | gRPC (reserved for entproto services)      |
+| 9090 | Prometheus `/metrics`                      |
 
 ## Make targets
 
-| Target              | Does                                              |
-|---------------------|---------------------------------------------------|
-| `make build`        | static binary → `bin/rowboat-api`                 |
-| `make run`          | run from source                                   |
-| `make test`         | `go test ./... -race`                             |
-| `make vet` / `lint` | `go vet` / `golangci-lint`                        |
-| `make generate`     | full codegen pipeline (ent → proto → gqlgen)      |
-| `make install-tools`| protoc-gen-go / -go-grpc / -entgrpc plugins       |
-| `make migrate-dump name=…` | write schema DDL to migrations/             |
-| `make docker-build` | multi-stage image                                 |
+| Target                     | Does                                         |
+| -------------------------- | -------------------------------------------- |
+| `make build`               | static binary → `bin/rowboat-api`            |
+| `make run`                 | run from source                              |
+| `make test`                | `go test ./... -race`                        |
+| `make vet` / `lint`        | `go vet` / `golangci-lint`                   |
+| `make generate`            | full codegen pipeline (ent → proto → gqlgen) |
+| `make install-tools`       | protoc-gen-go / -go-grpc / -entgrpc plugins  |
+| `make migrate-dump name=…` | write schema DDL to migrations/              |
+| `make docker-build`        | multi-stage image                            |
 
 ## ent codegen extensions
 
 The ent layer enables the full extension toolchain (`make generate` reproduces
 all of it):
 
-| Extension | What it produces | Surfaced as |
-|-----------|------------------|-------------|
-| privacy / intercept | tenant-scoping + query metrics | enforced in `internal/db` |
-| **entcache** | query cache (LRU L1 + Redis L2), opt-in | `db.DB.Cached` (used by `/v1/me`) |
-| **enthistory** | `*_history` tables on User/Subscription/OAuth/MCP/LLMUsage | `client.*History`, auto-written on writes |
-| **entoas + openapidoc** | OpenAPI 3 spec for the mounted runtime API with ent schemas as components | `api/openapi.json` |
-| **entgql** | Relay GraphQL schema + resolvers | `POST /graphql` (admin, internal-secret) |
-| **entproto** | protobuf + gRPC `UserService` | gRPC on `:8081` (`ent/proto/entpb`) |
+| Extension               | What it produces                                                          | Surfaced as                               |
+| ----------------------- | ------------------------------------------------------------------------- | ----------------------------------------- |
+| privacy / intercept     | tenant-scoping + query metrics                                            | enforced in `internal/db`                 |
+| **entcache**            | query cache (LRU L1 + Redis L2), opt-in                                   | `db.DB.Cached` (used by `/v1/me`)         |
+| **enthistory**          | `*_history` tables on User/Subscription/OAuth/MCP/LLMUsage                | `client.*History`, auto-written on writes |
+| **entoas + openapidoc** | OpenAPI 3 spec for the mounted runtime API with ent schemas as components | `api/openapi.json`                        |
+| **entgql**              | Relay GraphQL schema + resolvers                                          | `POST /graphql` (admin, internal-secret)  |
+| **entproto**            | protobuf + gRPC `UserService`                                             | gRPC on `:8081` (`ent/proto/entpb`)       |
 
 CreditLedger (append-only) and OAuthPending (TTL'd) are intentionally excluded
 from history. History tables and sensitive token columns are excluded from the

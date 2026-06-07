@@ -1,15 +1,15 @@
 # RFC 009: Local On-Device Transcription (whisper.cpp)
 
-|                  |                                                                                                                                                                               |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 009                                                                                                                                                                           |
-| **Status**       | Draft                                                                                                                                                                         |
-| **Track**        | Desktop · on-device AI (cost & privacy) — _independent of the cloud-workflows set (001–008)_                                                                                  |
-| **Owners**       | `apps/x` (Electron: main + renderer + core)                                                                                                                                   |
-| **Created**      | 2026-06-06                                                                                                                                                                    |
-| **Last updated** | 2026-06-06                                                                                                                                                                    |
-| **Depends on**   | none (new track)                                                                                                                                                              |
-| **Parent docs**  | [`docs/WHISPER_CPP_LOCAL_TRANSCRIPTION.md`](../../docs/WHISPER_CPP_LOCAL_TRANSCRIPTION.md) (research + integration plan) · [`apps/x/ANALYTICS.md`](../../apps/x/ANALYTICS.md) |
+|                  |                                                                                                                             |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 009                                                                                                                         |
+| **Status**       | Draft                                                                                                                       |
+| **Track**        | Desktop · on-device AI (cost & privacy) — _independent of the cloud-workflows set (001–008)_                                |
+| **Owners**       | `apps/x` (Electron: main + renderer + core)                                                                                 |
+| **Created**      | 2026-06-06                                                                                                                  |
+| **Last updated** | 2026-06-06                                                                                                                  |
+| **Depends on**   | none (new track)                                                                                                            |
+| **Refs**         | Supersedes former whisper.cpp research plan; related runtime reference: [`apps/x/ANALYTICS.md`](../../apps/x/ANALYTICS.md). |
 
 ## Table of contents
 
@@ -3511,5 +3511,5 @@ fallback mean even a bad local build degrades to cloud rather than breaking tran
 - Electron: [native modules](https://www.electronjs.org/docs/latest/tutorial/using-native-node-modules) ·
   [MessagePorts](https://www.electronjs.org/docs/latest/tutorial/message-ports) ·
   [Forge auto-unpack-natives](https://www.electronforge.io/config/plugins/auto-unpack-natives)
-- Parent research/plan: [`docs/WHISPER_CPP_LOCAL_TRANSCRIPTION.md`](../../docs/WHISPER_CPP_LOCAL_TRANSCRIPTION.md)
+- Supersedes the former whisper.cpp parent research/plan.
   (model sizes, perf, pricing, Node-binding comparison, with sources).

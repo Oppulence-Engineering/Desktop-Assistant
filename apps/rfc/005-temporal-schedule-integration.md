@@ -10,7 +10,7 @@
 | **Last updated** | 2026-06-06                                                                                                                                                       |
 | **Depends on**   | [RFC 001](./001-api-owned-scheduler.md) (ships first, is the fallback), shared `Starter`, [RFC 007](./007-production-cloud-enablement.md) (Temporal Cloud creds) |
 | **Relationship** | Supersedes [RFC 002](./002-durable-schedule-state.md) leasing **for exact cron only**; windows + events stay on RFC 001/003                                      |
-| **Parent docs**  | [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md) §4.3, §6.4                                                |
+| **Supersedes**   | Former cloud workflow planning Temporal schedule sections.                                                                                                       |
 
 ## Summary
 

@@ -1,16 +1,16 @@
 # RFC 010: Rowboat API Service Plane
 
-|                  |                                                                                                                                                                                                                |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 010                                                                                                                                                                                                            |
-| **Status**       | Draft                                                                                                                                                                                                          |
-| **Track**        | Backend service plane                                                                                                                                                                                          |
-| **Owners**       | `apps/rowboat-api`                                                                                                                                                                                             |
-| **Created**      | 2026-06-06                                                                                                                                                                                                     |
-| **Last updated** | 2026-06-06                                                                                                                                                                                                     |
-| **Depends on**   | WorkOS AuthKit direct auth, ent/Postgres, Infisical, local kind stack                                                                                                                                          |
-| **Related**      | [RFC 011](./011-identity-and-authorization-plane.md), [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 007](./007-production-cloud-enablement.md)                                                  |
-| **Parent docs**  | [`docs/IMPLEMENTATION_PLAN.md`](../../docs/IMPLEMENTATION_PLAN.md), [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md), [`docs/LOCAL_KIND_ROWBOAT_API.md`](../../docs/LOCAL_KIND_ROWBOAT_API.md) |
+|                  |                                                                                                                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **RFC**          | 010                                                                                                                                                                                                                |
+| **Status**       | Draft                                                                                                                                                                                                              |
+| **Track**        | Backend service plane                                                                                                                                                                                              |
+| **Owners**       | `apps/rowboat-api`                                                                                                                                                                                                 |
+| **Created**      | 2026-06-06                                                                                                                                                                                                         |
+| **Last updated** | 2026-06-06                                                                                                                                                                                                         |
+| **Depends on**   | WorkOS AuthKit direct auth, ent/Postgres, Infisical, local kind stack                                                                                                                                              |
+| **Related**      | [RFC 011](./011-identity-and-authorization-plane.md), [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 007](./007-production-cloud-enablement.md)                                                      |
+| **Refs**         | Supersedes former backend implementation plan; operational references: [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md), [`docs/LOCAL_KIND_ROWBOAT_API.md`](../../docs/LOCAL_KIND_ROWBOAT_API.md). |
 
 ## Summary
 
@@ -33,7 +33,7 @@ staging, and production:
 | Go API service and chart         | `apps/rowboat-api`, `charts/rowboat-api`                        |
 | Local kind workflow              | `scripts/rowboat-api-kind.sh`, `docs/LOCAL_KIND_ROWBOAT_API.md` |
 | WorkOS-direct production posture | `docs/BACKEND_DEPLOYMENT.md`                                    |
-| Desktop API surfaces             | `docs/IMPLEMENTATION_PLAN.md` endpoint specification            |
+| Desktop API surfaces             | this RFC's route contract and service boundary                  |
 | Cloud background task routes     | RFCs 001-007                                                    |
 
 The older implementation plan still describes Hydra as the primary issuer for the

@@ -10,7 +10,7 @@
 | **Last updated**      | 2026-06-06                                                                                                                                                                                                   |
 | **Depends on**        | [RFC 002 — Durable Schedule State](./002-durable-schedule-state.md) (required before >1 replica)                                                                                                             |
 | **Enables / related** | [RFC 005 — Temporal Schedules](./005-temporal-schedule-integration.md), [RFC 003 — Event Ingestion](./003-cloud-event-ingestion.md), [RFC 006 — Desktop Control Plane](./006-desktop-cloud-control-plane.md) |
-| **Parent docs**       | [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md) §6.3, [`..._API_PLAN.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md)                   |
+| **Supersedes**        | Former cloud workflow planning and API execution-plan docs.                                                                                                                                                  |
 
 ## RFC map
 

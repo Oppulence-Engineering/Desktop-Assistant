@@ -1,16 +1,16 @@
 # RFC 002: Durable Schedule State and Cloud Scheduler Leases
 
-|                  |                                                                                                                                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 002                                                                                                                                                                                                  |
-| **Status**       | Draft                                                                                                                                                                                                |
-| **Track**        | Cloud-native background workflows                                                                                                                                                                    |
-| **Owners**       | `apps/rowboat-api` (Go backend / ent schema)                                                                                                                                                         |
-| **Created**      | 2026-06-05                                                                                                                                                                                           |
-| **Last updated** | 2026-06-06                                                                                                                                                                                           |
-| **Blocks**       | [RFC 001 — API-Owned Scheduler](./001-api-owned-scheduler.md) running with >1 replica                                                                                                                |
-| **Related**      | [RFC 005 — Temporal Schedules](./005-temporal-schedule-integration.md) (supersedes leasing for exact cron)                                                                                           |
-| **Parent docs**  | [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md), [`..._API_PLAN.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md) §"Conventions" |
+|                  |                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 002                                                                                                        |
+| **Status**       | Draft                                                                                                      |
+| **Track**        | Cloud-native background workflows                                                                          |
+| **Owners**       | `apps/rowboat-api` (Go backend / ent schema)                                                               |
+| **Created**      | 2026-06-05                                                                                                 |
+| **Last updated** | 2026-06-06                                                                                                 |
+| **Blocks**       | [RFC 001 — API-Owned Scheduler](./001-api-owned-scheduler.md) running with >1 replica                      |
+| **Related**      | [RFC 005 — Temporal Schedules](./005-temporal-schedule-integration.md) (supersedes leasing for exact cron) |
+| **Supersedes**   | Former cloud workflow planning and API execution-plan schedule-state sections.                             |
 
 ## Summary
 

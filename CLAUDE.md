@@ -31,14 +31,14 @@ rowboat/
 │   ├── oauth-resource-server-go/   # JWT/JWKS verification lib (Go)
 │   └── oauth-resource-server-ts/   # JWT/JWKS verification lib (TS, @oppulence/oauth-resource-server)
 ├── charts/                # Helm: rowboat-api, oauth-consent, hydra values
-├── docs/                  # IMPLEMENTATION_PLAN, CONNECTOR_SUITE, BACKEND_DEPLOYMENT
+├── docs/                  # Operational/product docs; architecture RFCs live in apps/rfc
 ├── CLAUDE.md              # This file
 └── README.md              # User-facing readme
 ```
 
 The Go backend (`apps/rowboat-api`) replaces the closed hosted backend the
-desktop used. See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md),
-[docs/CONNECTOR_SUITE.md](docs/CONNECTOR_SUITE.md), and
+desktop used. Architecture lives in [apps/rfc/README.md](apps/rfc/README.md),
+especially RFCs 010-012; deployment operations live in
 [docs/BACKEND_DEPLOYMENT.md](docs/BACKEND_DEPLOYMENT.md).
 
 ## Electron App Architecture (`apps/x`)
@@ -82,11 +82,11 @@ main (depends on shared, core)
 
 ### Key Entry Points
 
-| Component | Entry | Output |
-|-----------|-------|--------|
-| main | `apps/main/src/main.ts` | `.package/dist/main.cjs` |
-| renderer | `apps/renderer/src/main.tsx` | `apps/renderer/dist/` |
-| preload | `apps/preload/src/preload.ts` | `apps/preload/dist/preload.js` |
+| Component | Entry                         | Output                         |
+| --------- | ----------------------------- | ------------------------------ |
+| main      | `apps/main/src/main.ts`       | `.package/dist/main.cjs`       |
+| renderer  | `apps/renderer/src/main.tsx`  | `apps/renderer/dist/`          |
+| preload   | `apps/preload/src/preload.ts` | `apps/preload/dist/preload.js` |
 
 ## Build System
 
@@ -102,70 +102,77 @@ pnpm uses symlinks for workspace packages. Electron Forge's dependency walker ca
 
 ## Key Files Reference
 
-| Purpose | File |
-|---------|------|
-| Electron main entry | `apps/x/apps/main/src/main.ts` |
-| React app entry | `apps/x/apps/renderer/src/main.tsx` |
-| Forge config (packaging) | `apps/x/apps/main/forge.config.cjs` |
-| Main process bundler | `apps/x/apps/main/bundle.mjs` |
-| Vite config | `apps/x/apps/renderer/vite.config.ts` |
-| Shared types | `apps/x/packages/shared/src/` |
-| Core business logic | `apps/x/packages/core/src/` |
-| Workspace config | `apps/x/pnpm-workspace.yaml` |
-| Root scripts | `apps/x/package.json` |
+| Purpose                  | File                                  |
+| ------------------------ | ------------------------------------- |
+| Electron main entry      | `apps/x/apps/main/src/main.ts`        |
+| React app entry          | `apps/x/apps/renderer/src/main.tsx`   |
+| Forge config (packaging) | `apps/x/apps/main/forge.config.cjs`   |
+| Main process bundler     | `apps/x/apps/main/bundle.mjs`         |
+| Vite config              | `apps/x/apps/renderer/vite.config.ts` |
+| Shared types             | `apps/x/packages/shared/src/`         |
+| Core business logic      | `apps/x/packages/core/src/`           |
+| Workspace config         | `apps/x/pnpm-workspace.yaml`          |
+| Root scripts             | `apps/x/package.json`                 |
 
 ## Feature Deep-Dives
 
 Long-form docs for specific features. Read the relevant file before making changes in that area — it has the full product flow, technical flows, and (where applicable) a catalog of the LLM prompts involved with exact file:line pointers.
 
-| Feature | Doc |
-|---------|-----|
+| Feature                                                                                                                                                                                                | Doc                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- |
 | Live Notes — single `live:` frontmatter block (one objective + optional cron / windows / eventMatchCriteria) that turns a note into a self-updating artifact, panel UI, Copilot skill, prompts catalog | `apps/x/LIVE_NOTE.md` |
-| Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event | `apps/x/ANALYTICS.md` |
+| Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event                                                                                                        | `apps/x/ANALYTICS.md` |
 
 ## Common Tasks
 
 ### LLM configuration (single provider)
+
 - Config file: `~/.rowboat/config/models.json`
 - Schema: `{ provider: { flavor, apiKey?, baseURL?, headers? }, model: string }`
 - Models catalog cache: `~/.rowboat/config/models.dev.json` (OpenAI/Anthropic/Google only)
 
 ### Add a new shared type
+
 1. Edit `apps/x/packages/shared/src/`
 2. Run `cd apps/x && npm run deps` to rebuild
 
 ### Modify main process
+
 1. Edit `apps/x/apps/main/src/`
 2. Restart dev server (main doesn't hot-reload)
 
 ### Modify renderer (React UI)
+
 1. Edit `apps/x/apps/renderer/src/`
 2. Changes hot-reload automatically in dev mode
 
 ### Add a new dependency to main
+
 1. `cd apps/x/apps/main && pnpm add <package>`
 2. Import in source - esbuild will bundle it
 
 ### Verify compilation
+
 ```bash
 cd apps/x && npm run deps && npm run lint
 ```
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Desktop | Electron 39.x |
-| UI | React 19, Vite 7 |
-| Styling | TailwindCSS, Radix UI |
-| State | React hooks |
-| AI | Vercel AI SDK, OpenAI/Anthropic/Google/OpenRouter providers, Vercel AI Gateway, Ollama, models.dev catalog |
-| IPC | Electron contextBridge |
-| Build | TypeScript 5.9, esbuild, Electron Forge |
+| Layer   | Technology                                                                                                 |
+| ------- | ---------------------------------------------------------------------------------------------------------- |
+| Desktop | Electron 39.x                                                                                              |
+| UI      | React 19, Vite 7                                                                                           |
+| Styling | TailwindCSS, Radix UI                                                                                      |
+| State   | React hooks                                                                                                |
+| AI      | Vercel AI SDK, OpenAI/Anthropic/Google/OpenRouter providers, Vercel AI Gateway, Ollama, models.dev catalog |
+| IPC     | Electron contextBridge                                                                                     |
+| Build   | TypeScript 5.9, esbuild, Electron Forge                                                                    |
 
 ## Environment Variables (for packaging)
 
 For production builds with code signing:
+
 - `APPLE_ID` - Apple Developer ID
 - `APPLE_PASSWORD` - App-specific password
 - `APPLE_TEAM_ID` - Team ID

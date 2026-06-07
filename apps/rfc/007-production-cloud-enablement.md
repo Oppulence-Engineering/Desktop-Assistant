@@ -9,7 +9,7 @@
 | **Created**      | 2026-06-05                                                                                                                                                                                   |
 | **Last updated** | 2026-06-06                                                                                                                                                                                   |
 | **Gates**        | the production rollout of [RFC 001](./001-api-owned-scheduler.md), [003](./003-cloud-event-ingestion.md), [004](./004-cloud-agent-runtime.md), [005](./005-temporal-schedule-integration.md) |
-| **Parent docs**  | [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md) §6.4, [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md)                |
+| **Refs**         | Supersedes former cloud workflow production-enablement plan; operational deployment reference: [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md).                             |
 
 ## Summary
 
