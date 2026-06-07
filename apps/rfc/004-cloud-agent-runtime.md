@@ -1,16 +1,16 @@
 # RFC 004: Cloud-Safe Agent Runtime for API Background Tasks
 
-| | |
-| --- | --- |
-| **RFC** | 004 |
-| **Status** | Draft |
-| **Track** | Cloud-native background workflows |
-| **Owners** | `apps/rowboat-api` (Go backend / Temporal worker) |
-| **Created** | 2026-06-05 |
-| **Last updated** | 2026-06-05 |
-| **Depends on** | existing Temporal worker (`internal/backgroundtaskworkflow`), LLM gateway (`internal/llm`), connectors (`internal/connectors`), secrets (`internal/secrets`) |
-| **Consumed by** | [RFC 001](./001-api-owned-scheduler.md) & [RFC 003](./003-cloud-event-ingestion.md) (their runs execute through this runtime), [RFC 007](./007-production-cloud-enablement.md) (must land before unbounded cloud tools GA) |
-| **Parent docs** | [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md) §4.3, [`..._API_PLAN.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md) |
+|                  |                                                                                                                                                                                                                            |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 004                                                                                                                                                                                                                        |
+| **Status**       | Draft                                                                                                                                                                                                                      |
+| **Track**        | Cloud-native background workflows                                                                                                                                                                                          |
+| **Owners**       | `apps/rowboat-api` (Go backend / Temporal worker)                                                                                                                                                                          |
+| **Created**      | 2026-06-05                                                                                                                                                                                                                 |
+| **Last updated** | 2026-06-06                                                                                                                                                                                                                 |
+| **Depends on**   | existing Temporal worker (`internal/backgroundtaskworkflow`), LLM gateway (`internal/llm`), connectors (`internal/connectors`), secrets (`internal/secrets`)                                                               |
+| **Consumed by**  | [RFC 001](./001-api-owned-scheduler.md) & [RFC 003](./003-cloud-event-ingestion.md) (their runs execute through this runtime), [RFC 007](./007-production-cloud-enablement.md) (must land before unbounded cloud tools GA) |
+| **Parent docs**  | [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md) §4.3, [`..._API_PLAN.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md)                                 |
 
 ## Summary
 
@@ -45,7 +45,7 @@ Surrounding it (unchanged by this RFC): `MarkRunRunning` (claims the run, sets `
 `workflow.go:189`), `MarkRunDone`/`MarkRunFailed` (terminal states + metrics,
 `workflow.go:299/349`), the 5-minute activity start-to-close + 3× retry policy
 (`workflow.go:153-161`), and `ClassifyRunError` → `error_code` taxonomy
-(`internal/backgroundtaskworkflow/errcodes.go`). **This RFC swaps the *body* of
+(`internal/backgroundtaskworkflow/errcodes.go`). **This RFC swaps the _body_ of
 `ExecuteAPITask`, nothing around it.**
 
 ## Goals
@@ -186,14 +186,14 @@ flowchart TD
 
 Initial **allowlist** (deny-by-default registry):
 
-| Tool | Backed by | Scope |
-| --- | --- | --- |
-| `llm.complete` | `internal/llm` gateway | implicit (the `LLMClient`, billed) |
-| `artifact.read` / `artifact.write` | `ArtifactStore` (this task's `index.md`) | task-scoped |
-| `run_history.read` | recent `BackgroundTaskRun` rows for this task | task-scoped, read-only |
-| `event.read` | linked `CloudEvent` payload ([RFC 003](./003-cloud-event-ingestion.md)) | run-scoped, read-only |
-| `connector.read.*` | `internal/connectors` server-held tokens | user+connector scoped |
-| `notify.enqueue` | notification path, if available | user-scoped |
+| Tool                               | Backed by                                                               | Scope                              |
+| ---------------------------------- | ----------------------------------------------------------------------- | ---------------------------------- |
+| `llm.complete`                     | `internal/llm` gateway                                                  | implicit (the `LLMClient`, billed) |
+| `artifact.read` / `artifact.write` | `ArtifactStore` (this task's `index.md`)                                | task-scoped                        |
+| `run_history.read`                 | recent `BackgroundTaskRun` rows for this task                           | task-scoped, read-only             |
+| `event.read`                       | linked `CloudEvent` payload ([RFC 003](./003-cloud-event-ingestion.md)) | run-scoped, read-only              |
+| `connector.read.*`                 | `internal/connectors` server-held tokens                                | user+connector scoped              |
+| `notify.enqueue`                   | notification path, if available                                         | user-scoped                        |
 
 Explicitly **disallowed in v1** (the registry has no entry; `Lookup` returns
 `ErrToolNotAllowed`):
@@ -233,7 +233,7 @@ type ToolScope struct {
 }
 ```
 
-A tool that needs a connector token resolves it *inside* `Invoke` from the scope's
+A tool that needs a connector token resolves it _inside_ `Invoke` from the scope's
 `UserID` + capability — it is never handed a bearer by the model. If the user hasn't
 connected the provider, the tool fails with a classified error (`connector_unavailable`,
 see taxonomy below), not a silent empty result.
@@ -264,16 +264,16 @@ Additions:
 Configurable, enforced inside `Execute`; breaching one fails the run with a specific
 `error_code` (so it shows in `cloud_runs_failed_total{error_code}`):
 
-| Limit | Default | Env | On breach `error_code` |
-| --- | --- | --- | --- |
-| Max wall-clock per run | `4m` (< the 5m activity start-to-close, `workflow.go:154`) | `CLOUD_RUNTIME_MAX_DURATION` | `runtime_deadline_exceeded` |
-| Max LLM calls per run | `12` | `CLOUD_RUNTIME_MAX_LLM_CALLS` | `runtime_llm_budget_exceeded` |
-| Max tool calls per run | `24` | `CLOUD_RUNTIME_MAX_TOOL_CALLS` | `runtime_tool_budget_exceeded` |
-| Max artifact bytes | `1 MiB` | `CLOUD_RUNTIME_MAX_ARTIFACT_BYTES` | `runtime_artifact_too_large` |
-| Max event payload bytes | `64 KiB` | `CLOUD_RUNTIME_MAX_EVENT_BYTES` | `runtime_event_too_large` |
-| Max retry attempts | `3` (Temporal policy, `workflow.go:159`) | `TEMPORAL_*` (existing) | inherited |
+| Limit                   | Default                                                    | Env                                | On breach `error_code`         |
+| ----------------------- | ---------------------------------------------------------- | ---------------------------------- | ------------------------------ |
+| Max wall-clock per run  | `4m` (< the 5m activity start-to-close, `workflow.go:154`) | `CLOUD_RUNTIME_MAX_DURATION`       | `runtime_deadline_exceeded`    |
+| Max LLM calls per run   | `12`                                                       | `CLOUD_RUNTIME_MAX_LLM_CALLS`      | `runtime_llm_budget_exceeded`  |
+| Max tool calls per run  | `24`                                                       | `CLOUD_RUNTIME_MAX_TOOL_CALLS`     | `runtime_tool_budget_exceeded` |
+| Max artifact bytes      | `1 MiB`                                                    | `CLOUD_RUNTIME_MAX_ARTIFACT_BYTES` | `runtime_artifact_too_large`   |
+| Max event payload bytes | `64 KiB`                                                   | `CLOUD_RUNTIME_MAX_EVENT_BYTES`    | `runtime_event_too_large`      |
+| Max retry attempts      | `3` (Temporal policy, `workflow.go:159`)                   | `TEMPORAL_*` (existing)            | inherited                      |
 
-> **Duration coupling:** the runtime deadline must be *strictly less* than the activity
+> **Duration coupling:** the runtime deadline must be _strictly less_ than the activity
 > `StartToCloseTimeout` (5 min), or Temporal will fire `activity_timeout`
 > (`ErrCodeActivityTimeout`) before the runtime's own `runtime_deadline_exceeded`, hiding
 > the real cause. **Decided:** `EventSink.Progress` drives `activity.RecordHeartbeat` in v1
@@ -300,14 +300,14 @@ their code through the Temporal `ApplicationError.Type()` already.
 
 `internal/backgroundtaskmetrics/metrics.go` gains (same leaf-package + cardinality rule):
 
-| Series | Type | Labels |
-| --- | --- | --- |
-| `cloud_runtime_llm_calls_total` | counter | `provider` |
-| `cloud_runtime_tool_calls_total` | counter | `tool` (bounded allowlist names only) |
-| `cloud_runtime_tool_failures_total` | counter | `tool` |
-| `cloud_runtime_limit_exceeded_total` | counter | `limit` |
-| `cloud_runtime_artifact_bytes` | histogram | — |
-| `cloud_runtime_llm_latency_seconds` | histogram | `provider` |
+| Series                               | Type      | Labels                                |
+| ------------------------------------ | --------- | ------------------------------------- |
+| `cloud_runtime_llm_calls_total`      | counter   | `provider`                            |
+| `cloud_runtime_tool_calls_total`     | counter   | `tool` (bounded allowlist names only) |
+| `cloud_runtime_tool_failures_total`  | counter   | `tool`                                |
+| `cloud_runtime_limit_exceeded_total` | counter   | `limit`                               |
+| `cloud_runtime_artifact_bytes`       | histogram | —                                     |
+| `cloud_runtime_llm_latency_seconds`  | histogram | `provider`                            |
 
 > `tool` is a label only because the allowlist is small and fixed — it satisfies the
 > bounded-cardinality rule. Never label by `taskSlug`/`runId`/`userId` (logs/traces carry
@@ -334,6 +334,385 @@ Feature flag: `CLOUD_RUNTIME_ENABLED` selects `DefaultRuntime` vs `NoopRuntime`,
 worker can ship the runtime dark and flip per environment (kind → staging → prod), keeping
 the deterministic artifact as an instant rollback.
 
+## Code-level implementation playbook
+
+The current worker is intentionally minimal: it loads DB config, starts metrics, registers
+the four activities, and passes only `{Client, Log}` into `backgroundtaskworkflow.Activities`
+(`cmd/worker/main.go:120-124`). Implementing this RFC means turning the worker into a
+small service container while keeping Temporal activities thin and testable.
+
+### 1. Runtime package files
+
+Create `apps/rowboat-api/internal/backgroundtaskruntime`:
+
+| File                  | Contents                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `runtime.go`          | Interfaces in this RFC (`Runtime`, `ArtifactStore`, `EventSink`, `LLMClient`, `ToolRegistry`, `Tool`). |
+| `default_runtime.go`  | Bounded agent loop implementation.                                                                     |
+| `noop_runtime.go`     | Reproduces today's deterministic `buildSummary`/`buildArtifact` behavior for rollback/tests.           |
+| `limits.go`           | Env parsing, default limits, `ErrLimitExceeded`.                                                       |
+| `llm_client.go`       | Internal gateway-backed LLM client with quota/accounting.                                              |
+| `tool_registry.go`    | Deny-by-default registry and per-run scope construction.                                               |
+| `tools_artifact.go`   | `artifact.read`, `artifact.write`.                                                                     |
+| `tools_history.go`    | `run_history.read`.                                                                                    |
+| `tools_event.go`      | `event.read` for linked RFC 003 events.                                                                |
+| `tools_connectors.go` | Gmail/Calendar read tools.                                                                             |
+| `errors.go`           | Runtime error types that map to `errcodes.go`.                                                         |
+| `metrics.go`          | Runtime counters/histograms.                                                                           |
+
+Keep tool implementations small and boring. Complex provider-specific logic belongs in
+provider packages (`internal/google`, `internal/connectors`) and is invoked from the tool.
+
+### 2. Worker dependency construction
+
+Extend `cmd/worker/main.go` after DB open and before `runTemporalWorker`:
+
+1. Build `crypto.Sealer` from `DB_ENCRYPTION_KEY` if connector/event payload tools are
+   enabled.
+2. Build `secrets.Store` the same way `cmd/server/wire.go` does, so provider keys and
+   Infisical-backed secrets are available in the worker.
+3. Load pricing and quota gate if the runtime LLM client settles credits directly.
+4. Load connector registry from `CONNECTORS_JSON` (`connectors.LoadRegistry`, current
+   `wire.go:131-135`).
+5. Build `backgroundtaskruntime.Limits` from env.
+6. Choose runtime:
+
+```go
+var rt backgroundtaskruntime.Runtime
+if cfg.CloudRuntimeEnabled {
+	rt = backgroundtaskruntime.NewDefault(deps)
+} else {
+	rt = backgroundtaskruntime.NewNoop()
+}
+```
+
+Then pass it into activities:
+
+```go
+backgroundtaskworkflow.Register(w, &backgroundtaskworkflow.Activities{
+	Client: client,
+	Log:    log,
+	Runtime: rt,
+	RuntimeLimits: limits,
+})
+```
+
+This requires new config fields in `internal/appconfig.Config`:
+
+| Env                                | Default   |
+| ---------------------------------- | --------- |
+| `CLOUD_RUNTIME_ENABLED`            | `false`   |
+| `CLOUD_RUNTIME_MAX_DURATION`       | `4m`      |
+| `CLOUD_RUNTIME_MAX_LLM_CALLS`      | `12`      |
+| `CLOUD_RUNTIME_MAX_TOOL_CALLS`     | `24`      |
+| `CLOUD_RUNTIME_MAX_ARTIFACT_BYTES` | `1048576` |
+| `CLOUD_RUNTIME_MAX_EVENT_BYTES`    | `65536`   |
+
+### 3. Refactor `ExecuteAPITask` safely
+
+Split the existing static body into reusable adapters before changing behavior:
+
+```go
+func (a *Activities) ExecuteAPITask(ctx context.Context, in StartInput) (RunOutput, error) {
+	ctx = auth.WithInternal(ctx)
+	task, run, err := a.loadTaskAndRun(ctx, in)
+	if err != nil { return RunOutput{}, err }
+
+	bound := a.bindRuntime(ctx, task, run, in)
+	out, err := a.Runtime.Execute(ctx, bound)
+	if err != nil { return RunOutput{}, mapRuntimeError(err) }
+	return RunOutput{Summary: out.Summary}, nil
+}
+```
+
+Move current helper behavior into adapters:
+
+| Existing function/lines                            | Adapter                                                                            |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Task load (`workflow.go:243-252`)                  | `loadTaskAndRun` with user edge and current run.                                   |
+| `upsertArtifact` (`workflow.go:404-434`)           | `artifactStore.Write`.                                                             |
+| `appendEvent` (`workflow.go:436-477`)              | `eventSink.Emit`.                                                                  |
+| Progress update (`workflow.go:254-269`, `278-292`) | `eventSink.Progress`, which updates run row, appends event, and records heartbeat. |
+| Static `buildSummary`/`buildArtifact`              | `NoopRuntime.Execute`.                                                             |
+
+The first PR can wire `NoopRuntime` only and assert no behavior change. The second PR turns
+on `DefaultRuntime` behind `CLOUD_RUNTIME_ENABLED`.
+
+### 4. Heartbeats and progress
+
+`EventSink.Progress` should do three things atomically enough for observability:
+
+1. `activity.RecordHeartbeat(ctx, ProgressHeartbeat{Percent, Message})`
+2. Update `background_task_runs`: `last_heartbeat_at=now`, `progress_percent`,
+   `progress_message`, `revision+1`
+3. Append `temporal.progress` with the same percent/message
+
+If the DB update fails, return `ErrCodeDBError`; if event append fails after the update,
+return `ErrCodeDBError` as well. The run may show progress without an event for that tick,
+but terminal failure will preserve the error.
+
+### 5. LLM client implementation
+
+Do not call the HTTP handler directly from the worker. `internal/llm/handler.go` currently
+combines request parsing, upstream routing, quota reserve/settle, streaming, and usage
+recording. Factor the reusable pieces into an internal service:
+
+```go
+type Gateway struct {
+	Prices *pricing.Table
+	Gate   *quota.Gate
+	Secrets *secrets.Store
+	Client *ent.Client
+	HTTP   *http.Client
+}
+
+func (g *Gateway) Complete(ctx context.Context, user *ent.User, req CompletionRequest, tel Telemetry) (CompletionResponse, error)
+```
+
+The HTTP handler calls `Gateway.ProxyHTTP`; the runtime calls `Gateway.Complete`. Both
+paths reserve credits, route model ids, call the upstream, settle actual usage, and write
+`LLMUsage`. The runtime sets telemetry headers/fields equivalent to:
+
+- `useCase=background_task_agent`
+- `subUseCase=runtime`
+- `agentName=<task slug>`
+
+### 6. Prompt and loop shape
+
+For v1, keep the agent loop deterministic in structure:
+
+```go
+for step := 0; step < limits.MaxLLMCalls; step++ {
+	resp, err := llm.Complete(ctx, requestWithTools(transcript, registry.List()))
+	if err != nil { return out, RuntimeError{Code: "llm_call_failed"} }
+	if len(resp.ToolCalls) == 0 {
+		return writeFinalArtifact(ctx, resp.Final)
+	}
+	for _, call := range resp.ToolCalls {
+		if toolCalls >= limits.MaxToolCalls { return limit("runtime_tool_budget_exceeded") }
+		tool, err := registry.Lookup(call.Name)
+		if errors.Is(err, ErrToolNotAllowed) {
+			events.Emit(ctx, "runtime.tool_denied", ...)
+			continue
+		}
+		result, err := tool.Invoke(ctx, scope, call.Arguments)
+		appendToolResult(&transcript, call, result, err)
+	}
+}
+return limit("runtime_llm_budget_exceeded")
+```
+
+The model should be instructed to produce one final artifact and summary when done. Tool
+results are summarized/truncated before being appended back to the loop to avoid blowing
+the next prompt. Raw connector payloads are never pasted wholesale.
+
+### 7. Tool registry mechanics
+
+Construct a registry per run:
+
+```go
+registry := backgroundtaskruntime.NewRegistry([]Tool{
+	NewArtifactRead(store),
+	NewArtifactWrite(store),
+	NewRunHistory(client),
+	NewEventRead(client, sealer),
+	NewGoogleGmailRead(...),
+	NewGoogleCalendarRead(...),
+})
+```
+
+Then filter by task/user capabilities:
+
+- `artifact.*` always available.
+- `run_history.read` always available, task-scoped.
+- `event.read` only when `run.cloud_event_id` is non-null.
+- `connector.read.gmail` only if the user has a connected Google/Gmail credential with the
+  required scope.
+- `connector.read.calendar` only if the user has calendar scope.
+
+`Lookup` returns `ErrToolNotAllowed` for unknown names and for known names that the scope
+does not permit. This lets the model see only allowed tools from `List()` but still handles
+hallucinated tool names safely.
+
+### 8. Artifact write policy
+
+The runtime should build the next artifact in memory and call `ArtifactStore.Write` once at
+the end. Enforce `MaxArtifactBytes` before writing:
+
+```go
+if len([]byte(body)) > limits.MaxArtifactBytes {
+	return RuntimeError{Code: "runtime_artifact_too_large"}
+}
+revision, err := artifacts.Write(ctx, body, "text/markdown")
+```
+
+This preserves the current failure behavior: if a run fails, the prior artifact remains the
+latest good output. Partial streaming writes are out of scope.
+
+### 9. Error mapping
+
+Add constants to `errcodes.go` and `knownErrorCodes`. `mapRuntimeError` should return
+non-retryable `ApplicationError`s via the existing `taggedError` helper:
+
+| Runtime error               | Code                           | Retry?                |
+| --------------------------- | ------------------------------ | --------------------- |
+| Context deadline            | `runtime_deadline_exceeded`    | no                    |
+| LLM call budget             | `runtime_llm_budget_exceeded`  | no                    |
+| Tool call budget            | `runtime_tool_budget_exceeded` | no                    |
+| Artifact too large          | `runtime_artifact_too_large`   | no                    |
+| Event payload too large     | `runtime_event_too_large`      | no                    |
+| Upstream LLM failure        | `llm_call_failed`              | maybe later, no in v1 |
+| Denied tool                 | `tool_not_allowed`             | no                    |
+| Tool implementation failure | `tool_invoke_failed`           | maybe later, no in v1 |
+| Missing connector token     | `connector_unavailable`        | no                    |
+
+Because `ClassifyRunError` already preserves known `ApplicationError.Type()`, the workflow
+classification path does not need structural changes.
+
+### 10. Test fixtures
+
+The unit test harness should not involve Temporal for most runtime behavior:
+
+- `fakeLLM` returning scripted tool calls/final responses.
+- `fakeArtifactStore` recording write attempts and byte counts.
+- `fakeEventSink` recording progress/events and allowing injected failures.
+- `fakeTool` with configurable result/error/delay.
+- `fakeClock` or deadline context for duration tests.
+
+Temporal test env is only needed to verify the activity/wiring boundary:
+
+1. Workflow starts with queued run row.
+2. `MarkRunRunning` claims it.
+3. Runtime emits progress.
+4. Artifact is written.
+5. `MarkRunDone` persists summary.
+
+## Runtime prompt/tool contracts and reviewer checklist
+
+### Default system prompt skeleton
+
+The runtime prompt should be stable and versioned. It is part of product behavior and cost
+control.
+
+```text
+You are executing a Rowboat background task in the cloud.
+
+Task:
+- slug: {{slug}}
+- name: {{name}}
+- trigger: {{trigger}}
+- requested context: {{requestedContext}}
+
+Instructions:
+{{instructions}}
+
+Rules:
+- Use only the tools provided in this request.
+- Do not ask the user questions.
+- Produce one final artifact and a short summary.
+- Keep the artifact grounded in tool results and requested context.
+- Never claim to have accessed local desktop files.
+- If required data is unavailable, say what is missing and write the best safe artifact.
+```
+
+Store `prompt_version: "cloud-runtime-v1"` in runtime events so a later prompt revision can
+be correlated with quality/cost changes.
+
+### Tool call event vocabulary
+
+Append runtime events into the existing run event stream:
+
+| Event type                     | Payload                                                              |
+| ------------------------------ | -------------------------------------------------------------------- |
+| `runtime.llm_call_started`     | `{provider, model, callIndex}`                                       |
+| `runtime.llm_call_completed`   | `{provider, model, callIndex, latencyMs, inputTokens, outputTokens}` |
+| `runtime.tool_call_started`    | `{tool, callIndex}`                                                  |
+| `runtime.tool_call_completed`  | `{tool, callIndex, latencyMs, resultBytes}`                          |
+| `runtime.tool_denied`          | `{tool, reason}`                                                     |
+| `runtime.limit_exceeded`       | `{limit, value, max}`                                                |
+| `runtime.final_artifact_ready` | `{artifactBytes, contentType}`                                       |
+
+These events are for debugging and transcript display. Metrics keep bounded labels; events
+may include run-specific details because reads are auth-scoped.
+
+### Connector read tool contract
+
+The first Gmail/Calendar tools should be narrow:
+
+```json
+{
+  "name": "connector.read.gmail",
+  "input": {
+    "query": "from:acme.com newer_than:30d",
+    "limit": 10
+  },
+  "output": {
+    "messages": [
+      {
+        "id": "msg_123",
+        "threadId": "thr_123",
+        "from": "ap@acme.com",
+        "subject": "Invoice #4821",
+        "receivedAt": "2026-06-06T14:00:00Z",
+        "snippet": "We dispute line 3..."
+      }
+    ]
+  }
+}
+```
+
+```json
+{
+  "name": "connector.read.calendar",
+  "input": {
+    "timeMin": "2026-06-06T00:00:00Z",
+    "timeMax": "2026-06-13T00:00:00Z",
+    "query": "Acme",
+    "limit": 10
+  },
+  "output": {
+    "events": [
+      {
+        "id": "evt_123",
+        "summary": "Acme QBR",
+        "startsAt": "2026-06-08T17:00:00Z",
+        "attendees": ["champion@acme.com"]
+      }
+    ]
+  }
+}
+```
+
+Do not return raw bodies in v1 unless the user explicitly granted a scope and the runtime
+limit can absorb it. Snippets and structured fields are enough for the first useful tasks.
+
+### Reviewer checklist for runtime PRs
+
+Reject runtime changes that:
+
+- Add a tool without a scope check.
+- Add a metric label that can contain user/task/run/provider object ids.
+- Let the model see OAuth tokens or API keys.
+- Stream partial artifact writes into the DB.
+- Increase `CLOUD_RUNTIME_MAX_DURATION` without increasing the Temporal activity timeout.
+- Add a retryable error for budget/validation failures.
+- Bypass the LLM gateway accounting path.
+- Put raw linked event payloads into `requested_context`.
+- Make `DefaultRuntime` the default before staging soak.
+
+### Rollback behavior
+
+`CLOUD_RUNTIME_ENABLED=false` should:
+
+- Keep API triggers, scheduler triggers, event triggers, and Temporal workflows running.
+- Swap only the activity body back to `NoopRuntime`.
+- Preserve the same event names for `temporal.running`, `temporal.artifact_updated`, and
+  `temporal.completed`.
+- Stop advertising connector/faculty tools.
+- Leave runtime-specific events absent, not failed.
+
+This makes runtime rollback a product-quality rollback, not a control-plane outage.
+
 ## Test plan
 
 - Unit: runtime executes a simple LLM-backed artifact task against a fake `LLMClient`
@@ -342,7 +721,7 @@ the deterministic artifact as an instant rollback.
   (assert `cloud_runs_failed_total{error_code="llm_call_failed"}`).
 - Unit: `Lookup("shell")` and `Lookup("fs.write")` → `ErrToolNotAllowed`; denied tool emits
   `tool_denied`, doesn't abort the loop.
-- Unit: each limit breach fails predictably with its code; duration limit fires *before* the
+- Unit: each limit breach fails predictably with its code; duration limit fires _before_ the
   Temporal activity timeout.
 - Unit: artifact write increments revision and sets `updated_by_run_id`; failure before
   write leaves the prior artifact intact.

@@ -1,37 +1,59 @@
-# Cloud-Native Background Workflows — RFC Set
+# Rowboat RFC Set
 
-This directory holds the forward-looking RFCs that take Rowboat's background tasks from
-**cloud-executed but desktop-driven** to **fully cloud-native** — scheduled, event-driven,
-and useful while the desktop app is closed.
+This directory holds Rowboat architecture RFCs. It started with the cloud-native
+background workflow set and now also carries the related service plane, auth,
+connector, product-fabric, observability, app-boundary, local-model, and future
+agent-delegation tracks.
+
+The first set takes Rowboat's background tasks from **cloud-executed but
+desktop-driven** to **fully cloud-native** — scheduled, event-driven, and useful
+while the desktop app is closed.
 
 They decompose the parent design docs into shippable, dependency-ordered work:
 
 - [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md) — the canonical reference for what exists today (data model, API surface, Temporal worker, desktop integration) and the gap analysis these RFCs close.
 - [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md) — the API-side execution plan and conventions.
 
-> **The thesis in one sentence:** today an `executionTarget: api` task is *executed* in the
-> cloud (Temporal worker) but *initiated* by the desktop's 15-second poll — so closing the
+> **The thesis in one sentence:** today an `executionTarget: api` task is _executed_ in the
+> cloud (Temporal worker) but _initiated_ by the desktop's 15-second poll — so closing the
 > laptop silently pauses every scheduled and event-driven cloud job. These RFCs move
 > initiation (cron, windows, events) and a real execution runtime into the Rowboat API,
 > and turn the desktop into the **control plane** that observes it.
 
-## The RFCs
+## Cloud workflow RFCs
 
-| # | Title | Layer | What it adds |
-| --- | --- | --- | --- |
-| [001](./001-api-owned-scheduler.md) | API-Owned Scheduler | rowboat-api | A scheduler process that evaluates cron/window triggers server-side and fires runs while the desktop is offline. |
-| [002](./002-durable-schedule-state.md) | Durable Schedule State & Leases | ent / Postgres | A `BackgroundTaskScheduleState` entity + atomic lease so N scheduler replicas fire each cycle exactly once. |
-| [003](./003-cloud-event-ingestion.md) | Cloud Event Ingestion | rowboat-api | An event envelope + ingestion/routing layer that starts `trigger=event` cloud runs from Gmail/Calendar/Slack/webhooks. |
-| [004](./004-cloud-agent-runtime.md) | Cloud-Safe Agent Runtime | Temporal worker | The first production runtime: LLM access, a scoped/audited tool surface, connector reads, and enforced limits. |
-| [005](./005-temporal-schedule-integration.md) | Temporal Schedule Integration | Temporal | Exact-cron triggers via durable Temporal Schedules (windows/events stay in Rowboat code). |
-| [006](./006-desktop-cloud-control-plane.md) | Desktop as Control Plane | apps/x | Makes cloud-managed schedules legible: next run, schedule health, runs-while-closed, event→run links. |
-| [007](./007-production-cloud-enablement.md) | Production Enablement | Helm / infra | Flips Temporal Cloud on in staging→production with SLOs, PromQL alerts, and runbooks. |
-| [008](./008-conduit-eigen-faculties.md) | Conduit & Eigen Faculties | cross-portfolio | Plugs the **evidence** (Conduit) and **foresight** (Eigen) planes into the event bus + runtime — the federated financial brain. |
+| #                                             | Title                           | Layer           | What it adds                                                                                                                    |
+| --------------------------------------------- | ------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| [001](./001-api-owned-scheduler.md)           | API-Owned Scheduler             | rowboat-api     | A scheduler process that evaluates cron/window triggers server-side and fires runs while the desktop is offline.                |
+| [002](./002-durable-schedule-state.md)        | Durable Schedule State & Leases | ent / Postgres  | A `BackgroundTaskScheduleState` entity + atomic lease so N scheduler replicas fire each cycle exactly once.                     |
+| [003](./003-cloud-event-ingestion.md)         | Cloud Event Ingestion           | rowboat-api     | An event envelope + ingestion/routing layer that starts `trigger=event` cloud runs from Gmail/Calendar/Slack/webhooks.          |
+| [004](./004-cloud-agent-runtime.md)           | Cloud-Safe Agent Runtime        | Temporal worker | The first production runtime: LLM access, a scoped/audited tool surface, connector reads, and enforced limits.                  |
+| [005](./005-temporal-schedule-integration.md) | Temporal Schedule Integration   | Temporal        | Exact-cron triggers via durable Temporal Schedules (windows/events stay in Rowboat code).                                       |
+| [006](./006-desktop-cloud-control-plane.md)   | Desktop as Control Plane        | apps/x          | Makes cloud-managed schedules legible: next run, schedule health, runs-while-closed, event→run links.                           |
+| [007](./007-production-cloud-enablement.md)   | Production Enablement           | Helm / infra    | Flips Temporal Cloud on in staging→production with SLOs, PromQL alerts, and runbooks.                                           |
+| [008](./008-conduit-eigen-faculties.md)       | Conduit & Eigen Faculties       | cross-portfolio | Plugs the **evidence** (Conduit) and **foresight** (Eigen) planes into the event bus + runtime — the federated financial brain. |
 
-RFCs 001–007 build the execution plane; **008** is the first *faculty* RFC that proves the
+RFCs 001–007 build the execution plane; **008** is the first _faculty_ RFC that proves the
 fabric extends to new portfolio planes. All are **Draft**. Each carries a metadata block,
 grounded `file:line` references into the current codebase, mermaid diagrams, a **Decisions**
 section (resolved forks), and a test plan.
+
+## Other RFCs
+
+Not part of the cloud-workflows set above, but living here under the same RFC conventions:
+
+| #                                                           | Title                                         | Layer               | What it adds                                                                                                                                                                                                                                                                             |
+| ----------------------------------------------------------- | --------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [009](./009-local-on-device-transcription.md)               | Local On-Device Transcription (whisper.cpp)   | apps/x              | An on-device STT provider (whisper.cpp) as a cheaper, private alternative to Deepgram streaming; tiers local vs cloud **by feature** (voice -> local, meetings -> cloud-with-quota). Parent: [`docs/WHISPER_CPP_LOCAL_TRANSCRIPTION.md`](../../docs/WHISPER_CPP_LOCAL_TRANSCRIPTION.md). |
+| [010](./010-rowboat-api-service-plane.md)                   | Rowboat API Service Plane                     | rowboat-api         | Canonical Go backend boundary for desktop cloud features: config/me, LLM gateway, billing/credits, Google OAuth broker, provider proxies, ent schemas, kind/deploy, and observability.                                                                                                   |
+| [011](./011-identity-and-authorization-plane.md)            | Identity and Authorization Plane              | auth / platform     | Resolves the WorkOS-direct-now vs Hydra/Ory-later split; defines token modes, user/org identity, service-to-service auth, step-up, and migration rules.                                                                                                                                  |
+| [012](./012-connector-suite-and-consent-broker.md)          | Connector Suite and Consent Broker            | rowboat-api / OAuth | Account linking, scope catalog, consent UI, token broker, resource-server libraries, entitlement gates, money-touching approval tokens, revocation, and connector observability.                                                                                                         |
+| [013](./013-oppulence-product-connector-fabric.md)          | Oppulence Product Connector Fabric            | apps/x + products   | Canvas, Cadence, Corinthian, Conduit, and Eigen product connectors using read/mirror/watch/act semantics over the shared connector and cloud-runtime fabric.                                                                                                                             |
+| [014](./014-live-note-observability-cost-and-provenance.md) | Live-Note Observability, Cost, and Provenance | apps/x + api        | Per-live-note run history, trigger health, cost, budget controls, provenance sidecars, generated-vs-source-backed labeling, silent-trigger detection, and trust-facing error taxonomy.                                                                                                   |
+| [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Rowboat Platform WorkOS FGA and Widget Auth   | apps/rowboat        | Hosted platform WorkOS migration: AuthKit, organizations, FGA project resources, org/project API key semantics, widget session JWTs, billing hooks, and Auth0 migration.                                                                                                                 |
+| [016](./016-app-family-consolidation.md)                    | App Family Consolidation                      | repo / apps         | Canonical app tiers and contract ownership across desktop, hosted platform, Go service plane, SDK, CLI, static frontends, widgets, experiments, simulation runner, and docs.                                                                                                             |
+| [017](./017-on-device-meeting-diarization.md)               | On-Device Meeting Diarization                 | apps/x              | A local speaker diarization follow-up to RFC 009: VAD, speaker embeddings, clustering, alignment, provenance, quality gates, and a beta meetings mode that does not replace cloud diarization until it passes product gates.                                                             |
+| [018](./018-a2a-delegation-and-agent-identity.md)           | A2A Delegation and Agent Identity             | future protocol     | User-bound agent identity, scoped delegation tokens, A2A/MCP adapter boundaries, approval policy, connector-scope enforcement, and delegation-chain provenance for future cross-agent workflows.                                                                                         |
 
 ## Dependency graph
 
@@ -66,6 +88,35 @@ lands just before RFC 001's loop so the scheduler is lease-aware on day one and 
 one replica to many is a `replicaCount` change, not a code change.
 `──────────────────────────────────────────────────`
 
+### Cross-track dependency graph
+
+```mermaid
+flowchart TD
+    IMPL[Implementation and deployment docs] --> R010[RFC 010 · API service plane]
+    AUTHDOC[WorkOS auth rework docs] --> R011[RFC 011 · Identity plane]
+    AUTHDOC --> R015[RFC 015 · Hosted platform auth]
+
+    R011 --> R010
+    R011 --> R012[RFC 012 · Connector consent broker]
+    R010 --> R012
+    R012 --> R013[RFC 013 · Product connector fabric]
+    R013 --> R008X[RFC 008 · Conduit + Eigen]
+
+    R010 --> R014[RFC 014 · Live-note trust surface]
+    R003 --> R014
+    R004 --> R014
+    R006 --> R014
+
+    R010 --> R016[RFC 016 · App family consolidation]
+    R015 --> R016
+    R009[RFC 009 · Local transcription] --> R017[RFC 017 · Local diarization]
+
+    R011 --> R018[RFC 018 · A2A delegation]
+    R012 --> R018
+    R014 --> R018
+    R013 --> R018
+```
+
 ## Implementation order
 
 Two tracks run in parallel: **Track A** builds capabilities; **Track B** lights up the
@@ -74,7 +125,7 @@ environment they soak in. Each phase ends in a hard gate.
 ```mermaid
 flowchart LR
     subgraph Ph0[Phase 0 · Foundations]
-      A0[A0 Starter refactor] 
+      A0[A0 Starter refactor]
       B0[B0 Staging Temporal Cloud on<br/>+ manual-run validation]
     end
     subgraph Ph1[Phase 1 · API scheduling]
@@ -123,79 +174,93 @@ flowchart LR
 
 ### Phase 0 — Foundations & environment
 
-| WP | RFC | Work | Done when |
-| --- | --- | --- | --- |
-| **0·A** | 001 | Extract `handler.triggerAPIRun`'s "create queued run → emit `temporal.queued` → `StartBackgroundTaskRun` → persist Temporal ids → `metrics.Triggered`" into an internal `Starter.Start`. Pure refactor; HTTP path behavior unchanged. | `handler_cloud_test.go` green; HTTP trigger output byte-identical (`viewRun`). |
-| **0·B** | 007 | Provision the staging Temporal Cloud namespace + key (into `rowboat-api-secrets` via Infisical); flip staging `TEMPORAL_ENABLED=true`, `worker.enabled: true` (1 replica). | API `/readyz` shows passing `temporal` check; a manual api-target run from desktop→staging reaches `succeeded`. |
+| WP      | RFC | Work                                                                                                                                                                                                                                  | Done when                                                                                                       |
+| ------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **0·A** | 001 | Extract `handler.triggerAPIRun`'s "create queued run → emit `temporal.queued` → `StartBackgroundTaskRun` → persist Temporal ids → `metrics.Triggered`" into an internal `Starter.Start`. Pure refactor; HTTP path behavior unchanged. | `handler_cloud_test.go` green; HTTP trigger output byte-identical (`viewRun`).                                  |
+| **0·B** | 007 | Provision the staging Temporal Cloud namespace + key (into `rowboat-api-secrets` via Infisical); flip staging `TEMPORAL_ENABLED=true`, `worker.enabled: true` (1 replica).                                                            | API `/readyz` shows passing `temporal` check; a manual api-target run from desktop→staging reaches `succeeded`. |
 
 > 0·A and 0·B are independent and run together. 0·B reuses the **already-shipped** manual
 > cloud-run path, so it validates Temporal Cloud connectivity before any new code lands.
 
 ### Phase 1 — API-owned timed scheduling (the core offline win)
 
-| WP | RFC | Work | Done when |
-| --- | --- | --- | --- |
-| **1.1** | 002 | `BackgroundTaskScheduleState` ent schema + additive migration (`make migrate-dump`), lease primitives (`Acquire`/`Complete`/`Release`), **Postgres testcontainer** concurrency tests. | Concurrent `Acquire` on one key → exactly one winner (Postgres test). |
-| **1.2** | 001 | `internal/backgroundscheduler` due-math (`gronx`, ported from `schedule/utils.ts`) + lease-wired loop + `cmd/scheduler` binary + `scheduler-deployment.yaml`, behind `CLOUD_SCHEDULER_ENABLED=false`. | kind: desktop killed, cron task fires within two grace windows. |
-| **1.3** | 006 | Desktop `Cloud scheduled` vs `Runs when desktop is open` labels; `GET /v1/background-tasks/{slug}/schedule-state` + `bg-task:getCloudScheduleState`; offline-return badge. | Renderer tests for both labels + the error states. |
+| WP      | RFC | Work                                                                                                                                                                                                  | Done when                                                             |
+| ------- | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **1.1** | 002 | `BackgroundTaskScheduleState` ent schema + additive migration (`make migrate-dump`), lease primitives (`Acquire`/`Complete`/`Release`), **Postgres testcontainer** concurrency tests.                 | Concurrent `Acquire` on one key → exactly one winner (Postgres test). |
+| **1.2** | 001 | `internal/backgroundscheduler` due-math (`gronx`, ported from `schedule/utils.ts`) + lease-wired loop + `cmd/scheduler` binary + `scheduler-deployment.yaml`, behind `CLOUD_SCHEDULER_ENABLED=false`. | kind: desktop killed, cron task fires within two grace windows.       |
+| **1.3** | 006 | Desktop `Cloud scheduled` vs `Runs when desktop is open` labels; `GET /v1/background-tasks/{slug}/schedule-state` + `bg-task:getCloudScheduleState`; offline-return badge.                            | Renderer tests for both labels + the error states.                    |
 
 **Gate 1:** kind E2E desktop-closed cron fires; staging **multi-replica** scheduler produces
 exactly one run per cycle (`cloud_scheduler_duplicate_suppressed_total` > 0).
 
-### Phase 2 — Useful cloud runtime *(parallel with Phase 1)*
+### Phase 2 — Useful cloud runtime _(parallel with Phase 1)_
 
-| WP | RFC | Work | Done when |
-| --- | --- | --- | --- |
+| WP      | RFC | Work                                                                                                                                                                                                                                                                            | Done when                                                                                                                       |
+| ------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | **2.1** | 004 | `internal/backgroundtaskruntime` (`Runtime`/`ToolRegistry`/`ArtifactStore`/`EventSink`/`LLMClient`), `DefaultRuntime` (gateway LLM, Gmail+Calendar read tools, enforced limits, heartbeats) + `NoopRuntime`; extend `errcodes.go` + `metrics.go`; flag `CLOUD_RUNTIME_ENABLED`. | Staging api-target task produces an LLM-generated artifact; `Lookup("shell")` → denied; each limit fails with its `error_code`. |
 
 **Gate 2:** runtime soaks in staging with the deterministic `NoopRuntime` as instant
-rollback. **This gate blocks *useful* GA** (Phase 5) — you don't GA scheduled runs that only
+rollback. **This gate blocks _useful_ GA** (Phase 5) — you don't GA scheduled runs that only
 emit static artifacts.
 
 ### Phase 3 — Exact cron via Temporal Schedules
 
-| WP | RFC | Work | Done when |
-| --- | --- | --- | --- |
+| WP      | RFC | Work                                                                                                                                                                                                                                                  | Done when                                                                              |
+| ------- | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | **3.1** | 005 | `SchedulerWorkflow` (`rowboat.background_tasks.schedule.v1`) + `CreateScheduledRun` activity + schedule upsert/delete/pause hooks in `Create`/`Patch`/`Delete` + reconciler + `schedule_sync_state` field; behind `TEMPORAL_SCHEDULES_ENABLED=false`. | A Temporal Schedule fires → run row exists → `BackgroundTaskWorkflow` runs (test env). |
-| **3.2** | 006 | Desktop cron sync-health chip (`current/syncing/failed/paused`) + next-fire from `ScheduleClient.Describe`. | Renderer shows health + next-fire. |
+| **3.2** | 006 | Desktop cron sync-health chip (`current/syncing/failed/paused`) + next-fire from `ScheduleClient.Describe`.                                                                                                                                           | Renderer shows health + next-fire.                                                     |
 
 **Gate 3:** cron fires via a Temporal Schedule with the desktop closed; the reconciler repairs
 induced drift (deleted/orphaned/wrong-pause). RFC 001 loop remains the fallback.
 
 ### Phase 4 — Event-triggered cloud runs
 
-| WP | RFC | Work | Done when |
-| --- | --- | --- | --- |
-| **4.1** | 003 | `CloudEvent` schema (encrypted `payload_json`) + `POST /v1/events` + dedupe (store only). | Duplicate `dedupeKey` → one row, `deduped=true`. |
+| WP      | RFC | Work                                                                                                                                                                                                 | Done when                                                       |
+| ------- | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| **4.1** | 003 | `CloudEvent` schema (encrypted `payload_json`) + `POST /v1/events` + dedupe (store only).                                                                                                            | Duplicate `dedupeKey` → one row, `deduped=true`.                |
 | **4.2** | 003 | Temporal route-workflow (`rowboat.cloud_events.route.v1`) + two-pass router (threshold `0.7`) → `Starter.Start(trigger=event)`; link runs via `cloud_event_id`; flag `CLOUD_EVENTS_ROUTING_ENABLED`. | devstack event → linked `trigger=event` run; no duplicate runs. |
-| **4.3** | 003 | Gmail/Calendar webhook ingestion (signature verify); Slack/webhook later. | Signed provider event ingests; bad/stale signature rejected. |
-| **4.4** | 006 | Event→run link in the transcript ("Triggered by …"). | Transcript shows the source event. |
+| **4.3** | 003 | Gmail/Calendar webhook ingestion (signature verify); Slack/webhook later.                                                                                                                            | Signed provider event ingests; bad/stale signature rejected.    |
+| **4.4** | 006 | Event→run link in the transcript ("Triggered by …").                                                                                                                                                 | Transcript shows the source event.                              |
 
 **Gate 4:** devstack event with the desktop closed fires a linked run; signature + dedupe
 hold.
 
 ### Phase 5 — Production GA
 
-| WP | RFC | Work | Done when |
-| --- | --- | --- | --- |
-| **5.1** | 007 | Enable the production worker; gate api-target **task creation** behind the user-id allowlist; dogfood internally. | Internal dogfood tasks run in prod; no regressions. |
-| **5.2** | 007 | Remove the allowlist after SLOs hold; enable user-facing api-execution controls. | SLOs (success ≥ 99%, queue p95 ≤ 30s) hold over the soak; alerts + runbooks live. |
+| WP      | RFC | Work                                                                                                              | Done when                                                                         |
+| ------- | --- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **5.1** | 007 | Enable the production worker; gate api-target **task creation** behind the user-id allowlist; dogfood internally. | Internal dogfood tasks run in prod; no regressions.                               |
+| **5.2** | 007 | Remove the allowlist after SLOs hold; enable user-facing api-execution controls.                                  | SLOs (success ≥ 99%, queue p95 ≤ 30s) hold over the soak; alerts + runbooks live. |
 
 ### Phase 6 — Faculties (Conduit + Eigen) — [RFC 008](./008-conduit-eigen-faculties.md)
 
 The portfolio-brain layer. Conduit Read/Mirror is independent (parallel with Phase 1); the
 autonomous loop builds on the event bus (RFC 003) + runtime (RFC 004) + scheduler (RFC 001/005).
 
-| WP | RFC | Work | Done when |
-| --- | --- | --- | --- |
-| **8.1** | 008 | Conduit **Read/Mirror**: connector entry + `sync_conduit.ts` → invoice notes carry their correspondence. *(parallel w/ Phase 1)* | An invoice note shows its dispute/reply thread. |
-| **8.2** | 008 | Conduit **Watch**: extend RFC 003 `source` enum + `POST /v1/webhooks/conduit` + routing. *(after Phase 4)* | A dispute event wakes the owning agent, desktop closed. |
-| **8.3** | 008 | Eigen **tool**: `eigen.simulate` in the RFC 004 registry. *(after Phase 2)* | An agent quantifies an action's runway impact mid-run. |
-| **8.4** | 008 | Eigen **jobs**: `rowboat.eigen.stress.v1` scheduled + event-triggered re-runs + `eigen.breach`. *(after Phase 3)* | Nightly stress note in the corpus; a breach wakes an agent. |
-| **8.5** | 008 | **Combined loop + Act-audit**: dual-review send → Conduit bind-back; RFC 006 surfacing. *(after Phase 5)* | Dispute → forecast → reviewed action → bound-back evidence, end to end. |
+| WP      | RFC | Work                                                                                                                             | Done when                                                               |
+| ------- | --- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **8.1** | 008 | Conduit **Read/Mirror**: connector entry + `sync_conduit.ts` → invoice notes carry their correspondence. _(parallel w/ Phase 1)_ | An invoice note shows its dispute/reply thread.                         |
+| **8.2** | 008 | Conduit **Watch**: extend RFC 003 `source` enum + `POST /v1/webhooks/conduit` + routing. _(after Phase 4)_                       | A dispute event wakes the owning agent, desktop closed.                 |
+| **8.3** | 008 | Eigen **tool**: `eigen.simulate` in the RFC 004 registry. _(after Phase 2)_                                                      | An agent quantifies an action's runway impact mid-run.                  |
+| **8.4** | 008 | Eigen **jobs**: `rowboat.eigen.stress.v1` scheduled + event-triggered re-runs + `eigen.breach`. _(after Phase 3)_                | Nightly stress note in the corpus; a breach wakes an agent.             |
+| **8.5** | 008 | **Combined loop + Act-audit**: dual-review send → Conduit bind-back; RFC 006 surfacing. _(after Phase 5)_                        | Dispute → forecast → reviewed action → bound-back evidence, end to end. |
 
 **Gate 6:** the Conduit→Eigen→Agent→Conduit loop runs desktop-closed with end-to-end
 provenance; reads are scoped, money-touching actions double-gated, Eigen never moves money.
+
+### Cross-track implementation order
+
+These tracks can run alongside the cloud-workflow phases, but they have their own gates.
+
+| Phase  | RFCs     | Work                                                                     | Gate                                                                              |
+| ------ | -------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| **S0** | 010, 011 | Stabilize the Go service plane and settle WorkOS-direct auth boundaries. | Desktop can call service-plane APIs with documented auth and tenant checks.       |
+| **S1** | 012, 013 | Add connector consent broker and product connector fabric.               | A product connector can read/mirror/watch with consent, audit, and revocation.    |
+| **T0** | 014      | Add live-note run health, cost, provenance, and trigger observability.   | A user can explain why a note changed, what it cost, and which sources backed it. |
+| **H0** | 015      | Migrate hosted platform auth/widget session design to WorkOS/FGA.        | Hosted projects, API keys, and widget sessions have one auth model.               |
+| **R0** | 016      | Mark canonical apps, clients, and experiments.                           | No prototype app is documented as a supported production surface by accident.     |
+| **L0** | 017      | Prototype local meeting diarization behind a beta flag.                  | Local meetings can produce speaker labels with measured DER/performance gates.    |
+| **F0** | 018      | Model agent identity and delegation before external A2A adapters.        | Delegated work is user-bound, scope-bound, and visible in provenance.             |
 
 ## Consolidated decisions
 
@@ -203,12 +268,12 @@ The forks each RFC raised, resolved. (Each RFC's own **Decisions** section links
 
 ### Cross-cutting
 
-| Decision | Choice | Affects |
-| --- | --- | --- |
-| **Run creation** | One extracted `Starter.Start` is the *only* way an `executor=api` run is created — HTTP, scheduler, event router, and the Temporal schedule-workflow all call it. | 001, 003, 005 |
-| **Timezone (v1)** | Evaluate cron prev-occurrence and window bands in **UTC** (`CLOUD_SCHEDULER_TIMEZONE=UTC`); "once per day" = UTC day. | 001, 002, 005, 006 |
-| **Per-task timezone** | Committed **fast-follow** (post-v1): a task-level `timezone` field adds a TZ segment to the RFC 002 schedule key, sets Temporal `TimeZoneName` (RFC 005), and gets a desktop label (RFC 006). | 001, 002, 005, 006 |
-| **Everything ships dark** | Each capability lands behind a default-off flag (`CLOUD_SCHEDULER_ENABLED`, `CLOUD_RUNTIME_ENABLED`, `TEMPORAL_SCHEDULES_ENABLED`, `CLOUD_EVENTS_ROUTING_ENABLED`) and rolls kind → staging → prod. | all |
+| Decision                  | Choice                                                                                                                                                                                              | Affects            |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| **Run creation**          | One extracted `Starter.Start` is the _only_ way an `executor=api` run is created — HTTP, scheduler, event router, and the Temporal schedule-workflow all call it.                                   | 001, 003, 005      |
+| **Timezone (v1)**         | Evaluate cron prev-occurrence and window bands in **UTC** (`CLOUD_SCHEDULER_TIMEZONE=UTC`); "once per day" = UTC day.                                                                               | 001, 002, 005, 006 |
+| **Per-task timezone**     | Committed **fast-follow** (post-v1): a task-level `timezone` field adds a TZ segment to the RFC 002 schedule key, sets Temporal `TimeZoneName` (RFC 005), and gets a desktop label (RFC 006).       | 001, 002, 005, 006 |
+| **Everything ships dark** | Each capability lands behind a default-off flag (`CLOUD_SCHEDULER_ENABLED`, `CLOUD_RUNTIME_ENABLED`, `TEMPORAL_SCHEDULES_ENABLED`, `CLOUD_EVENTS_ROUTING_ENABLED`) and rolls kind → staging → prod. | all                |
 
 ### Per-RFC
 
@@ -220,7 +285,7 @@ The forks each RFC raised, resolved. (Each RFC's own **Decisions** section links
 - **003** — Linkage **option (A)** (`cloud_event_id` FK + `routing_json` summary);
   **encrypt `payload_json`** at rest (`crypto.Sealer`); **async routing via a Temporal
   route-workflow**; match threshold **`0.7`, fixed in v1**; `GET /v1/events` admin-scoped
-  (desktop shows only the event→run *link*).
+  (desktop shows only the event→run _link_).
 - **004** — **Hand-rolled** bounded agent loop; **Temporal heartbeats wired in v1**; v1
   connector tools = **Gmail + Google Calendar read**; **per-tenant** limits (no per-task
   override); `CLOUD_RUNTIME_ENABLED` selects `Default`/`Noop` runtime.
@@ -234,24 +299,46 @@ The forks each RFC raised, resolved. (Each RFC's own **Decisions** section links
 - **008** — Conduit ingests **via RFC 003** (offline-capable), payload encrypted; faculties
   are **read-only at the tool layer** (`conduit.read` / `eigen.simulate`) — all
   money-touching action stays behind the **dual-review** gate and Eigen never moves money;
-  Eigen plugs in as **both** a runtime tool *and* a scheduled/triggered job; **mirror durable
+  Eigen plugs in as **both** a runtime tool _and_ a scheduled/triggered job; **mirror durable
   identity, query volatile numbers**; breach threshold is config (`EIGEN_LIQUIDITY_FLOOR_WEEKS`),
   not per-task.
+- **009** — Local voice STT uses **whisper.cpp**; feature-tiering stays explicit:
+  voice can default local, meetings stay cloud-with-quota until diarization quality is solved.
+- **010** — `apps/rowboat-api` is the canonical Go service plane for desktop cloud features:
+  config/me, LLM gateway, billing/credits, OAuth broker, provider proxies, ent schemas, and
+  deploy/observability conventions live there.
+- **011** — WorkOS-direct is the current production auth path; Hydra/Ory-style brokered
+  auth is a future self-hosted/enterprise mode, not a prerequisite for near-term delivery.
+- **012** — Connector access goes through one consent broker with explicit scopes,
+  revocation, entitlement checks, and approval tokens for money-touching actions.
+- **013** — Product connectors share read/mirror/watch/act semantics; Cadence remains the
+  product-facing connector name while Billflow can stay as a legacy/API alias.
+- **014** — Live notes need a trust surface: trigger health, run history, cost, provenance,
+  source-backed/generated labeling, and budget kill switches are product requirements.
+- **015** — Hosted platform auth moves to WorkOS AuthKit/Organizations/FGA; widget sessions
+  use short-lived widget JWTs distinct from WorkOS user sessions and project API keys.
+- **016** — Keep three Tier 1 surfaces: desktop (`apps/x`), hosted platform (`apps/rowboat`),
+  and Go service plane (`apps/rowboat-api`); SDK/CLI/widget consume those contracts instead
+  of inventing independent backends.
+- **017** — Local meeting diarization is a beta follow-up to RFC 009; speaker labels are
+  anonymous and meeting-scoped, and cloud meetings remain the default until quality gates pass.
+- **018** — Agent delegation is user-bound, scope-bound, audience-bound, short-lived, and
+  auditable; protocol adapters translate A2A/MCP messages but never own policy.
 
 ## Conventions
 
-Implementers across all eight RFCs share these so the system stays coherent.
+Implementers across these RFCs share these so the system stays coherent.
 
 ### New Go packages
 
-| Package | Owns |
-| --- | --- |
-| `internal/backgroundtaskruns` | the shared `Starter` (extracted from the handler) |
-| `internal/backgroundscheduler` | RFC 001 loop, `gronx` due-math, RFC 002 lease helpers, scheduler metrics |
-| `internal/cloudevents` | RFC 003 ingestion, router, normalization, metrics |
-| `internal/backgroundtaskruntime` | RFC 004 runtime, tool registry, limits |
-| `internal/backgroundtaskworkflow` *(extend)* | RFC 005 `SchedulerWorkflow` + schedule helpers; RFC 004 activity delegates to the runtime |
-| `internal/faculties` *(thin)* | RFC 008 Conduit/Eigen glue: `conduit.read`/`eigen.simulate` tools, `rowboat.eigen.stress.v1`, faculty metrics — mostly reuses RFC 003/004 |
+| Package                                      | Owns                                                                                                                                      |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `internal/backgroundtaskruns`                | the shared `Starter` (extracted from the handler)                                                                                         |
+| `internal/backgroundscheduler`               | RFC 001 loop, `gronx` due-math, RFC 002 lease helpers, scheduler metrics                                                                  |
+| `internal/cloudevents`                       | RFC 003 ingestion, router, normalization, metrics                                                                                         |
+| `internal/backgroundtaskruntime`             | RFC 004 runtime, tool registry, limits                                                                                                    |
+| `internal/backgroundtaskworkflow` _(extend)_ | RFC 005 `SchedulerWorkflow` + schedule helpers; RFC 004 activity delegates to the runtime                                                 |
+| `internal/faculties` _(thin)_                | RFC 008 Conduit/Eigen glue: `conduit.read`/`eigen.simulate` tools, `rowboat.eigen.stress.v1`, faculty metrics — mostly reuses RFC 003/004 |
 
 New binaries mirror `cmd/worker/main.go` (config load → telemetry → db → `/metrics` +
 `/healthz` → signal-aware loop): `cmd/scheduler`.
@@ -261,13 +348,19 @@ New binaries mirror `cmd/worker/main.go` (config load → telemetry → db → `
 All new keys land in `internal/appconfig/config.go` (`Config` struct + `Load` defaults), in
 the `TEMPORAL_*` style, surfaced via the Helm ConfigMap.
 
-| Prefix | RFC | Examples |
-| --- | --- | --- |
-| `CLOUD_SCHEDULER_*` | 001/002 | `ENABLED`, `POLL_INTERVAL=15s`, `LEASE_TTL=60s`, `REPLICA_ID`, `TIMEZONE=UTC` |
-| `CLOUD_RUNTIME_*` | 004 | `ENABLED`, `MAX_DURATION=4m`, `MAX_LLM_CALLS=12`, `MAX_TOOL_CALLS=24`, `MAX_ARTIFACT_BYTES`, `MAX_EVENT_BYTES` |
-| `CLOUD_EVENTS_*` | 003 | `ROUTING_ENABLED`, `MATCH_THRESHOLD=0.7` |
-| `TEMPORAL_SCHEDULE*` | 005 | `TEMPORAL_SCHEDULES_ENABLED`, `TEMPORAL_SCHEDULE_CATCHUP=1m`, `TEMPORAL_SCHEDULE_RECONCILE_INTERVAL=5m` |
-| `FACULTY_* / EIGEN_* / CONDUIT_*` | 008 | `FACULTY_CONDUIT_ENABLED`, `FACULTY_EIGEN_ENABLED`, `EIGEN_BASE_URL`, `CONDUIT_BASE_URL`, `EIGEN_STRESS_SCHEDULE=0 6 * * *`, `EIGEN_LIQUIDITY_FLOOR_WEEKS=8` |
+| Prefix                            | RFC     | Examples                                                                                                                                                     |
+| --------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CLOUD_SCHEDULER_*`               | 001/002 | `ENABLED`, `POLL_INTERVAL=15s`, `LEASE_TTL=60s`, `REPLICA_ID`, `TIMEZONE=UTC`                                                                                |
+| `CLOUD_RUNTIME_*`                 | 004     | `ENABLED`, `MAX_DURATION=4m`, `MAX_LLM_CALLS=12`, `MAX_TOOL_CALLS=24`, `MAX_ARTIFACT_BYTES`, `MAX_EVENT_BYTES`                                               |
+| `CLOUD_EVENTS_*`                  | 003     | `ROUTING_ENABLED`, `MATCH_THRESHOLD=0.7`                                                                                                                     |
+| `TEMPORAL_SCHEDULE*`              | 005     | `TEMPORAL_SCHEDULES_ENABLED`, `TEMPORAL_SCHEDULE_CATCHUP=1m`, `TEMPORAL_SCHEDULE_RECONCILE_INTERVAL=5m`                                                      |
+| `FACULTY_* / EIGEN_* / CONDUIT_*` | 008     | `FACULTY_CONDUIT_ENABLED`, `FACULTY_EIGEN_ENABLED`, `EIGEN_BASE_URL`, `CONDUIT_BASE_URL`, `EIGEN_STRESS_SCHEDULE=0 6 * * *`, `EIGEN_LIQUIDITY_FLOOR_WEEKS=8` |
+| `ROWBOAT_API_* / WORKOS_*`        | 010/011 | service-plane public URLs, WorkOS issuer/client/audience, token modes, service auth, and local kind overrides                                                |
+| `CONNECTOR_* / OAUTH_*`           | 012/013 | provider client ids/secrets, redirect URLs, consent scopes, revocation settings, product connector enablement                                                |
+| `LIVE_NOTE_* / COST_*`            | 014     | provenance sidecars, budget thresholds, silent-trigger alerts, run-history retention                                                                         |
+| `WIDGET_* / WORKOS_FGA_*`         | 015     | hosted widget session issuer/audience/TTL, WorkOS FGA resource settings, hosted API-key behavior                                                             |
+| `LOCAL_DIARIZATION_*`             | 017     | beta enablement, model path/version, VAD aggressiveness, local quality/performance gates                                                                     |
+| `DELEGATION_* / A2A_*`            | 018     | delegation token TTL, adapter enablement, external trust policy, tenant-level disable switches                                                               |
 
 ### Metric families
 
@@ -277,14 +370,20 @@ emit and expose them on their own `/metrics`. **Cardinality rule (hard):** label
 bounded dimensions — `trigger`, `error_code`, `source`, `tool` (fixed allowlist). **Never**
 by `taskSlug` / `userId` / `runId` — those go to logs and traces.
 
-| Family | RFC |
-| --- | --- |
-| `cloud_runs_*`, `cloud_run_*` (exists) | base |
-| `cloud_scheduler_*` | 001, 002 |
-| `cloud_events_*`, `cloud_event_*` | 003 |
-| `cloud_runtime_*` | 004 |
-| `temporal_schedule*` | 005 |
-| `faculty_eigen_*`, `faculty_conduit_*` | 008 |
+| Family                                  | RFC      |
+| --------------------------------------- | -------- |
+| `cloud_runs_*`, `cloud_run_*` (exists)  | base     |
+| `cloud_scheduler_*`                     | 001, 002 |
+| `cloud_events_*`, `cloud_event_*`       | 003      |
+| `cloud_runtime_*`                       | 004      |
+| `temporal_schedule*`                    | 005      |
+| `faculty_eigen_*`, `faculty_conduit_*`  | 008      |
+| `rowboat_api_*`, `auth_*`               | 010, 011 |
+| `connector_*`, `consent_*`              | 012, 013 |
+| `live_note_*`, `provenance_*`, `cost_*` | 014      |
+| `widget_auth_*`, `workos_fga_*`         | 015      |
+| `local_diarization_*`                   | 017      |
+| `delegation_*`, `agent_identity_*`      | 018      |
 
 ### Vocabularies & ids
 
