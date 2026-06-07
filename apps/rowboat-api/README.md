@@ -112,6 +112,21 @@ full workflow and smoke-test coverage.
 The Scalar API reference is available at `http://localhost:18080/docs`, backed
 by the embedded OpenAPI document at `http://localhost:18080/openapi.json`.
 
+## Public SDK contract
+
+`api/openapi.json` is the public contract for generated REST SDKs. Ent schemas
+feed the OpenAPI components, `cmd/openapi-enrich` replaces the path surface with
+the mounted runtime API, and the TypeScript SDK in
+[`packages/rowboat-api-client-ts`](../../packages/rowboat-api-client-ts) is
+generated from the resulting document.
+
+Regenerate the SDK after changing public routes, request/response schemas, or
+OpenAPI enrichment:
+
+```bash
+make sdk-generate
+```
+
 ## Ports
 
 | Port | Purpose                                    |
@@ -122,16 +137,17 @@ by the embedded OpenAPI document at `http://localhost:18080/openapi.json`.
 
 ## Make targets
 
-| Target                     | Does                                         |
-| -------------------------- | -------------------------------------------- |
-| `make build`               | static binary → `bin/rowboat-api`            |
-| `make run`                 | run from source                              |
-| `make test`                | `go test ./... -race`                        |
-| `make vet` / `lint`        | `go vet` / `golangci-lint`                   |
-| `make generate`            | full codegen pipeline (ent → proto → gqlgen) |
-| `make install-tools`       | protoc-gen-go / -go-grpc / -entgrpc plugins  |
-| `make migrate-dump name=…` | write schema DDL to migrations/              |
-| `make docker-build`        | multi-stage image                            |
+| Target                     | Does                                               |
+| -------------------------- | -------------------------------------------------- |
+| `make build`               | static binary → `bin/rowboat-api`                  |
+| `make run`                 | run from source                                    |
+| `make test`                | `go test ./... -race`                              |
+| `make vet` / `lint`        | `go vet` / `golangci-lint`                         |
+| `make generate`            | full codegen pipeline (ent → proto → gqlgen → SDK) |
+| `make sdk-generate`        | TypeScript SDK from `api/openapi.json`             |
+| `make install-tools`       | protoc-gen-go / -go-grpc / -entgrpc plugins        |
+| `make migrate-dump name=…` | write schema DDL to migrations/                    |
+| `make docker-build`        | multi-stage image                                  |
 
 ## ent codegen extensions
 
