@@ -9,7 +9,7 @@
 | **Created**      | 2026-06-05                                                                                                                                                                                                                                                                        |
 | **Last updated** | 2026-06-06                                                                                                                                                                                                                                                                        |
 | **Depends on**   | [RFC 001](./001-api-owned-scheduler.md) (schedule state to display), [RFC 002](./002-durable-schedule-state.md) (`next due`/`last evaluated`), [RFC 005](./005-temporal-schedule-integration.md) (schedule health), [RFC 003](./003-cloud-event-ingestion.md) (event→run linkage) |
-| **Parent docs**  | [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md) §4.4, §6.3                                                                                                                                                                 |
+| **Supersedes**   | Former cloud workflow planning desktop-control-plane sections.                                                                                                                                                                                                                    |
 
 ## Summary
 

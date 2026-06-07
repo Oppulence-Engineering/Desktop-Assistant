@@ -10,7 +10,7 @@
 | **Last updated** | 2026-06-06                                                                                                                                          |
 | **Depends on**   | [RFC 001](./001-api-owned-scheduler.md) (shared run-start `Starter`), [RFC 004](./004-cloud-agent-runtime.md) (runtime that consumes event context) |
 | **Related**      | [RFC 006](./006-desktop-cloud-control-plane.md) (event→run linkage in UI)                                                                           |
-| **Parent docs**  | [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md)                                              |
+| **Supersedes**   | Former cloud workflow planning event-trigger sections.                                                                                              |
 
 ## Summary
 

@@ -1,8 +1,10 @@
 # Rowboat Backend — Deployment & Operations
 
-Companion to [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md). This documents
-how the implemented artifacts are deployed and the **external prerequisites that
-must be provisioned by an operator** (they cannot be created from the codebase).
+Companion to the architecture RFCs in [`apps/rfc/`](../apps/rfc/README.md),
+especially [RFC 010](../apps/rfc/010-rowboat-api-service-plane.md) and
+[RFC 011](../apps/rfc/011-identity-and-authorization-plane.md). This documents how the
+implemented artifacts are deployed and the **external prerequisites that must be
+provisioned by an operator** (they cannot be created from the codebase).
 
 > **Auth posture: WorkOS-direct.** The desktop signs into **WorkOS AuthKit**
 > directly; **Ory Hydra + the consent app are deferred** (kept for the
@@ -12,15 +14,15 @@ must be provisioned by an operator** (they cannot be created from the codebase).
 
 ## What's in the repo
 
-| Artifact | Path |
-|----------|------|
-| Go backend | `apps/rowboat-api/` |
-| OAuth resource-server (Go) | `packages/oauth-resource-server-go/` |
-| OAuth resource-server (TS) | `packages/oauth-resource-server-ts/` |
-| rowboat-api Helm chart | `charts/rowboat-api/` |
-| Consent UI _(deferred — Hydra mode)_ | `apps/oauth-consent/` |
-| oauth-consent Helm chart _(deferred)_ | `charts/oauth-consent/` |
-| Hydra values + client Job _(deferred)_ | `charts/hydra/` |
+| Artifact                               | Path                                 |
+| -------------------------------------- | ------------------------------------ |
+| Go backend                             | `apps/rowboat-api/`                  |
+| OAuth resource-server (Go)             | `packages/oauth-resource-server-go/` |
+| OAuth resource-server (TS)             | `packages/oauth-resource-server-ts/` |
+| rowboat-api Helm chart                 | `charts/rowboat-api/`                |
+| Consent UI _(deferred — Hydra mode)_   | `apps/oauth-consent/`                |
+| oauth-consent Helm chart _(deferred)_  | `charts/oauth-consent/`              |
+| Hydra values + client Job _(deferred)_ | `charts/hydra/`                      |
 
 ## External prerequisites (operator-provisioned)
 
@@ -103,4 +105,5 @@ Each product embeds `@oppulence/oauth-resource-server` (TS) and verifies tokens
 against Hydra's JWKS with its own audience (`canvas-api`, `corinthian-api`,
 `billflow-api`). They expose `/v1/internal/entitlements` and call rowboat-api's
 `/v1/internal/connections/invalidate` for force-disconnect. See
-[CONNECTOR_SUITE.md](./CONNECTOR_SUITE.md) §9–§12.
+[RFC 012](../apps/rfc/012-connector-suite-and-consent-broker.md) for the
+connector broker and resource-server contract.

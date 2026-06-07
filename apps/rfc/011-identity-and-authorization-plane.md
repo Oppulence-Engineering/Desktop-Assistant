@@ -1,16 +1,16 @@
 # RFC 011: Identity and Authorization Plane
 
-|                  |                                                                                                                                                                                                  |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **RFC**          | 011                                                                                                                                                                                              |
-| **Status**       | Draft                                                                                                                                                                                            |
-| **Track**        | Identity, authorization, and token boundaries                                                                                                                                                    |
-| **Owners**       | `apps/rowboat-api`, `apps/x`, Platform                                                                                                                                                           |
-| **Created**      | 2026-06-06                                                                                                                                                                                       |
-| **Last updated** | 2026-06-06                                                                                                                                                                                       |
-| **Depends on**   | WorkOS AuthKit, rowboat-api service plane                                                                                                                                                        |
-| **Enables**      | [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 013](./013-oppulence-product-connector-fabric.md), future self-hosted tier                                                          |
-| **Parent docs**  | [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md), [`docs/IMPLEMENTATION_PLAN.md`](../../docs/IMPLEMENTATION_PLAN.md), [`docs/CONNECTOR_SUITE.md`](../../docs/CONNECTOR_SUITE.md) |
+|                  |                                                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **RFC**          | 011                                                                                                                                                          |
+| **Status**       | Draft                                                                                                                                                        |
+| **Track**        | Identity, authorization, and token boundaries                                                                                                                |
+| **Owners**       | `apps/rowboat-api`, `apps/x`, Platform                                                                                                                       |
+| **Created**      | 2026-06-06                                                                                                                                                   |
+| **Last updated** | 2026-06-06                                                                                                                                                   |
+| **Depends on**   | WorkOS AuthKit, rowboat-api service plane                                                                                                                    |
+| **Enables**      | [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 013](./013-oppulence-product-connector-fabric.md), future self-hosted tier                      |
+| **Refs**         | Operational reference: [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md); supersedes former backend implementation and connector suite plans. |
 
 ## Summary
 
@@ -28,12 +28,12 @@ fine-grained audiences, or a self-hosted sovereignty tier.
 
 ## Current state
 
-| Fact                                                | Source                                                       |
-| --------------------------------------------------- | ------------------------------------------------------------ |
-| WorkOS-direct is the deployment posture             | `docs/BACKEND_DEPLOYMENT.md`                                 |
-| Hydra artifacts remain in the tree but are deferred | `apps/oauth-consent`, `charts/hydra`, `charts/oauth-consent` |
-| Connector suite still specifies Hydra as issuer     | `docs/CONNECTOR_SUITE.md`                                    |
-| Implementation plan includes Ory/Hydra assumptions  | `docs/IMPLEMENTATION_PLAN.md`                                |
+| Fact                                                         | Source                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| WorkOS-direct is the deployment posture                      | `docs/BACKEND_DEPLOYMENT.md`                                 |
+| Hydra artifacts remain in the tree but are deferred          | `apps/oauth-consent`, `charts/hydra`, `charts/oauth-consent` |
+| Connector broker design needs explicit issuer policy         | [RFC 012](./012-connector-suite-and-consent-broker.md)       |
+| Service-plane implementation inherited Ory/Hydra assumptions | [RFC 010](./010-rowboat-api-service-plane.md)                |
 
 The conflict is mostly temporal: implementation docs captured a future connector
 broker state; deployment docs captured the simpler live state. This RFC defines

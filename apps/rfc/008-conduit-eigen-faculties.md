@@ -10,7 +10,7 @@
 | **Last updated** | 2026-06-06                                                                                                                                                                                                                                                              |
 | **Depends on**   | [RFC 003](./003-cloud-event-ingestion.md) (event bus), [RFC 004](./004-cloud-agent-runtime.md) (runtime + tool registry), [RFC 001](./001-api-owned-scheduler.md)/[005](./005-temporal-schedule-integration.md) (scheduling), the cockpit's Read/Mirror/Watch/Act seams |
 | **Extends**      | RFC 003 `CloudEvent.source` enum · RFC 004 tool allowlist + error codes                                                                                                                                                                                                 |
-| **Parent docs**  | [`docs/architecture-cross-portfolio-cockpit.md`](../../docs/architecture-cross-portfolio-cockpit.md), [`docs/one-pager-product.md`](../../docs/one-pager-product.md) "The platform it becomes"                                                                          |
+| **Refs**         | Supersedes former cross-portfolio cockpit proposal; strategy reference: [`docs/one-pager-product.md`](../../docs/one-pager-product.md) "The platform it becomes".                                                                                                       |
 
 ## RFC map
 
@@ -28,7 +28,7 @@ flowchart TD
 ## Summary
 
 [The execution-plane RFCs (001–007)](./README.md) make the platform an autonomous, durable
-agent runtime. The cross-portfolio cockpit (`docs/architecture-cross-portfolio-cockpit.md`)
+agent runtime. The cross-portfolio cockpit model ([RFC 013](./013-oppulence-product-connector-fabric.md))
 federates the financial systems-of-record into one corpus. This RFC adds the **two
 faculties that turn that federated graph from a report into a brain**:
 
@@ -45,16 +45,16 @@ forecast, the forecast informs the action, the action becomes new evidence.
 
 ## Background & current state (grounded)
 
-| Fact                                                                       | Evidence                                                                                                                                  |
-| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| The cockpit's four integration seams (Read/Mirror/Watch/Act)               | `docs/architecture-cross-portfolio-cockpit.md:60-75`                                                                                      |
-| Desktop is an MCP client; servers mounted via `~/.rowboat/config/mcp.json` | `apps/x/packages/core/src/mcp/repo.ts:10`; tools called as `mcp:server:tool` (`application/lib/exec-tool.ts:19`)                          |
-| Vault mirror pattern (factory + loop + `createEvent`)                      | `apps/x/packages/core/src/knowledge/sync_gmail.ts`; cockpit `sync_canvas.ts` skeleton (`architecture-cross-portfolio-cockpit.md:162-189`) |
-| Event envelope shape `{source, type, payload, target}`                     | `apps/x/packages/shared/src/events.ts:25-65` (`RowboatEventSchema`)                                                                       |
-| Event consumers do Pass-1 candidacy → Pass-2 agent                         | `apps/x/packages/core/src/knowledge/live-note/event-consumer.ts`; cloud equivalent in RFC 003                                             |
-| Cloud event ingestion + routing + `trigger=event` runs                     | [RFC 003](./003-cloud-event-ingestion.md) (`CloudEvent`, `/v1/events`, `rowboat.cloud_events.route.v1`)                                   |
-| Cloud runtime + scoped `ToolRegistry`/`ToolScope`                          | [RFC 004](./004-cloud-agent-runtime.md)                                                                                                   |
-| Dual-review Act seam (approval tokens + policy)                            | cockpit `:73-74` → Corinthian `corinthian-mcp/src/lib/approvals.ts`, `policy.ts`, `tool-packs.ts`                                         |
+| Fact                                                                       | Evidence                                                                                                         |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| The cockpit's four integration seams (Read/Mirror/Watch/Act)               | [RFC 013](./013-oppulence-product-connector-fabric.md)                                                           |
+| Desktop is an MCP client; servers mounted via `~/.rowboat/config/mcp.json` | `apps/x/packages/core/src/mcp/repo.ts:10`; tools called as `mcp:server:tool` (`application/lib/exec-tool.ts:19`) |
+| Vault mirror pattern (factory + loop + `createEvent`)                      | `apps/x/packages/core/src/knowledge/sync_gmail.ts`; RFC 013 mirror seam                                          |
+| Event envelope shape `{source, type, payload, target}`                     | `apps/x/packages/shared/src/events.ts:25-65` (`RowboatEventSchema`)                                              |
+| Event consumers do Pass-1 candidacy → Pass-2 agent                         | `apps/x/packages/core/src/knowledge/live-note/event-consumer.ts`; cloud equivalent in RFC 003                    |
+| Cloud event ingestion + routing + `trigger=event` runs                     | [RFC 003](./003-cloud-event-ingestion.md) (`CloudEvent`, `/v1/events`, `rowboat.cloud_events.route.v1`)          |
+| Cloud runtime + scoped `ToolRegistry`/`ToolScope`                          | [RFC 004](./004-cloud-agent-runtime.md)                                                                          |
+| Dual-review Act seam (approval tokens + policy)                            | cockpit `:73-74` → Corinthian `corinthian-mcp/src/lib/approvals.ts`, `policy.ts`, `tool-packs.ts`                |
 
 The cockpit thesis (`:11`): _"no single product can produce this, because each is blind to
 the others."_ Conduit and Eigen extend it from _see the whole picture_ to **explain it,
@@ -89,8 +89,8 @@ follow-ups) to the financial record it explains. It lights up all four seams.
 
 ### A.1 Read — mount Conduit as an MCP server
 
-Conduit exposes an HTTP MCP server; the desktop adds it to `mcp.json` exactly like Canvas
-(`architecture-cross-portfolio-cockpit.md:141-160`):
+Conduit exposes an HTTP MCP server; the desktop adds it to `mcp.json` exactly like the
+connector fabric in [RFC 013](./013-oppulence-product-connector-fabric.md):
 
 ```jsonc
 "conduit": {
@@ -103,7 +103,7 @@ Conduit exposes an HTTP MCP server; the desktop adds it to `mcp.json` exactly li
 The agent immediately gains tools like `mcp:conduit:thread_for_invoice`,
 `mcp:conduit:disputes_open`, `mcp:conduit:followups_due`. Cloud runs reach the same data via
 the runtime tool below. The token is brokered by the connector OAuth path
-([RFC 003/CONNECTOR_SUITE](../../docs/CONNECTOR_SUITE.md)), not hand-edited, once Conduit
+([RFC 003](./003-cloud-event-ingestion.md) / [RFC 012](./012-connector-suite-and-consent-broker.md)), not hand-edited, once Conduit
 joins the connector registry (`GET /v1/connectors`).
 
 ### A.2 Mirror — sync correspondence into the vault
