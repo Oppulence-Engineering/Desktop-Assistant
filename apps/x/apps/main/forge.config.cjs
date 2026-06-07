@@ -59,6 +59,7 @@ module.exports = {
             config: (arch) => ({
                 format: 'ULFO',
                 name: `${PRODUCT_ARTIFACT_NAME}-darwin-${arch}-${pkg.version}`,  // Architecture-specific name to avoid conflicts
+                      volumeName: 'Solomon AI',
             })
         },
         {
