@@ -24,12 +24,19 @@ local pttl = redis.call('PTTL', KEYS[1])
 return {c, pttl}
 `)
 
-func newRedisLimiter(redisURL string) (*redisLimiter, error) {
+func newRedisLimiter(ctx context.Context, redisURL string) (*redisLimiter, error) {
 	opt, err := redis.ParseURL(redisURL)
 	if err != nil {
 		return nil, fmt.Errorf("ratelimit: parse redis url: %w", err)
 	}
-	return &redisLimiter{rdb: redis.NewClient(opt)}, nil
+	rdb := redis.NewClient(opt)
+	pingCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	if err := rdb.Ping(pingCtx).Err(); err != nil {
+		_ = rdb.Close()
+		return nil, fmt.Errorf("ratelimit: ping redis: %w", err)
+	}
+	return &redisLimiter{rdb: rdb}, nil
 }
 
 func (r *redisLimiter) Allow(ctx context.Context, key string, limit int, window time.Duration) (bool, time.Duration, error) {

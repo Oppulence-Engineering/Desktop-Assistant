@@ -51,6 +51,7 @@ func TestSearchProxiesAndCharges(t *testing.T) {
 
 	body := `{"query":"golang","numResults":5,"type":"auto"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/search/exa", strings.NewReader(body)).WithContext(ctx)
+	req.Header.Set("Idempotency-Key", "search-1")
 	rec := httptest.NewRecorder()
 	h.Search(rec, req)
 

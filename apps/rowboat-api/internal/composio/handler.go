@@ -12,6 +12,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"go.uber.org/zap"
 )
@@ -34,7 +35,13 @@ func New(sec *secrets.Store, log *zap.Logger) *Handler {
 		Rewrite:       h.rewrite,
 		ErrorHandler:  h.onError,
 		FlushInterval: -1, // stream responses immediately
-		Transport:     &http.Transport{ResponseHeaderTimeout: 60 * time.Second},
+		Transport: outbound.NewTransport(http.DefaultTransport, outbound.Policy{
+			Name:                  "composio",
+			Timeout:               60 * time.Second,
+			ResponseHeaderTimeout: 60 * time.Second,
+			MaxConcurrent:         64,
+			MaxResponseBytes:      64 << 20,
+		}),
 	}
 	return h
 }
@@ -47,6 +54,12 @@ func (h *Handler) SetUpstream(base string) {
 	if u, err := url.Parse(base); err == nil {
 		h.target = u
 	}
+}
+
+// SetOutboundPolicy applies the shared outbound vendor policy.
+func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
+	policy.Name = "composio"
+	h.proxy.Transport = outbound.NewTransport(http.DefaultTransport, policy)
 }
 
 // Proxy handles all /v1/composio/* methods.

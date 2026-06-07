@@ -8,7 +8,6 @@ package google
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -20,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"go.uber.org/zap"
 )
@@ -29,7 +29,7 @@ type Handler struct {
 	client   *ent.Client
 	sealer   *crypto.Sealer
 	secrets  *secrets.Store
-	http     *http.Client
+	http     *outbound.Client
 	log      *zap.Logger
 	tokenURL string
 
@@ -43,10 +43,16 @@ type Handler struct {
 // New builds the Google handler.
 func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, log *zap.Logger) *Handler {
 	return &Handler{
-		client:   client,
-		sealer:   sealer,
-		secrets:  sec,
-		http:     &http.Client{Timeout: 15 * time.Second},
+		client:  client,
+		sealer:  sealer,
+		secrets: sec,
+		http: outbound.NewClient(outbound.Policy{
+			Name:                  "google-oauth",
+			Timeout:               15 * time.Second,
+			ResponseHeaderTimeout: 10 * time.Second,
+			MaxConcurrent:         64,
+			MaxResponseBytes:      1 << 20,
+		}),
 		log:      log,
 		tokenURL: "https://oauth2.googleapis.com/token",
 
@@ -59,6 +65,12 @@ func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, log *zap
 			"https://www.googleapis.com/auth/drive.readonly",
 		},
 	}
+}
+
+// SetOutboundPolicy applies the shared outbound vendor policy.
+func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
+	policy.Name = "google-oauth"
+	h.http = outbound.NewClient(policy)
 }
 
 // SetOAuthFlow configures the browser-facing Google OAuth (start + callback).
@@ -113,7 +125,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Session string `json:"session"`
 	}
-	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&req); err != nil || req.Session == "" {
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) || req.Session == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing session", "bad_request")
 		return
 	}
@@ -179,7 +191,7 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RefreshToken string `json:"refreshToken"`
 	}
-	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&req); err != nil || req.RefreshToken == "" {
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) || req.RefreshToken == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing refreshToken", "bad_request")
 		return
 	}
@@ -211,8 +223,12 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
-
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	body, err := outbound.ReadAll(resp.Body, h.http.MaxResponseBytes())
+	if err != nil {
+		h.log.Warn("google refresh response read failed", zap.Error(err))
+		httpx.Error(w, http.StatusBadGateway, "google token endpoint failed", "upstream_error")
+		return
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		var gerr struct {

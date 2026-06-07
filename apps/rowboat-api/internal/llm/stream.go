@@ -4,8 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 )
 
 // chunk is the minimal slice of an OpenAI streaming/JSON response we read to
@@ -23,7 +27,7 @@ type chunk struct {
 // sniffing token usage (OpenAI emits it in the final chunk when
 // stream_options.include_usage is set). Falls back to a length-based estimate
 // of output tokens if the upstream omits usage.
-func (h *Handler) streamThrough(w http.ResponseWriter, resp *http.Response) (inTok, outTok int) {
+func (h *Handler) streamThrough(w http.ResponseWriter, resp *http.Response) (inTok, outTok int, relayErr error) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -52,13 +56,17 @@ func (h *Handler) streamThrough(w http.ResponseWriter, resp *http.Response) (inT
 			}
 		}
 		if err != nil {
+			if errors.Is(err, outbound.ErrResponseTooLarge) {
+				h.log.Warn("llm upstream stream exceeded response cap")
+				relayErr = err
+			}
 			break
 		}
 	}
 	if outTok == 0 {
 		outTok = contentChars / 4
 	}
-	return inTok, outTok
+	return inTok, outTok, relayErr
 }
 
 // parseSSELine extracts usage and content length from a `data: {...}` line.
@@ -83,8 +91,16 @@ func parseSSELine(line []byte) (*usage, int, bool) {
 }
 
 // bufferThrough relays a non-streamed JSON response and reads usage from it.
-func (h *Handler) bufferThrough(w http.ResponseWriter, resp *http.Response) (inTok, outTok int) {
-	body, _ := io.ReadAll(resp.Body)
+func (h *Handler) bufferThrough(w http.ResponseWriter, resp *http.Response) (inTok, outTok int, relayErr error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		if errors.Is(err, outbound.ErrResponseTooLarge) {
+			httpx.Error(w, http.StatusBadGateway, "upstream response too large", "upstream_response_too_large")
+			return 0, 0, err
+		}
+		httpx.Error(w, http.StatusBadGateway, "could not read upstream response", "upstream_error")
+		return 0, 0, err
+	}
 
 	var parsed struct {
 		Usage *usage `json:"usage"`
@@ -96,5 +112,5 @@ func (h *Handler) bufferThrough(w http.ResponseWriter, resp *http.Response) (inT
 	w.Header().Set("Content-Type", contentTypeOr(resp, "application/json"))
 	w.WriteHeader(resp.StatusCode)
 	_, _ = w.Write(body)
-	return inTok, outTok
+	return inTok, outTok, nil
 }

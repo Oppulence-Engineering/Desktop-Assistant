@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/gqlapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/ratelimit"
@@ -69,7 +70,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 
 	// --- Quota + rate limiting ---------------------------------------------
 	gate := quota.New(client, log)
-	rl := ratelimit.NewManager(ctx, cfg.RedisURL, log)
+	rl, err := ratelimit.NewManager(ctx, cfg.RedisURL, cfg.IsProduction(), log)
+	if err != nil {
+		return err
+	}
 
 	// --- Auth ---------------------------------------------------------------
 	// Build the JWT verifier tolerantly: if the JWKS can't be fetched at boot
@@ -116,9 +120,31 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 	llmH := llm.New(prices, gate, sec, client, log)
 	llmH.SetUpstreams(cfg.OpenAIBaseURL, cfg.OpenRouterBaseURL) // empty → provider defaults
+	spendLimits := quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit}
+	vendorPolicy := outbound.Policy{
+		Timeout:               cfg.VendorTimeout,
+		ResponseHeaderTimeout: cfg.VendorResponseHeaderTimeout,
+		MaxConcurrent:         cfg.VendorMaxConcurrent,
+		MaxResponseBytes:      cfg.UpstreamResponseMaxBytes,
+	}
+	llmPolicy := vendorPolicy
+	llmPolicy.MaxConcurrent = cfg.LLMMaxConcurrent
+	llmH.SetOutboundPolicy(llmPolicy)
+	llmH.SetPolicy(llm.Policy{
+		AllowedModels:       cfg.LLMAllowedModels,
+		MaxPromptBytes:      cfg.LLMMaxPromptBytes,
+		MaxToolPayloadBytes: cfg.LLMMaxToolPayloadBytes,
+		MaxMessages:         cfg.LLMMaxMessages,
+		SpendLimits:         spendLimits,
+	})
 	voiceH := voice.New(prices, gate, sec, log)
+	voiceH.SetOutboundPolicy(vendorPolicy)
+	voiceH.SetSpendLimits(spendLimits)
 	searchH := search.New(prices, gate, sec, log)
+	searchH.SetOutboundPolicy(vendorPolicy)
+	searchH.SetSpendLimits(spendLimits)
 	googleH := google.New(client, sealer, sec, log)
+	googleH.SetOutboundPolicy(vendorPolicy)
 	googleH.SetTokenURL(cfg.GoogleTokenURL) // empty → real Google endpoint
 	googleRedirect := cfg.GoogleRedirectURI
 	if googleRedirect == "" {
@@ -126,7 +152,11 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 	googleH.SetOAuthFlow(cfg.GoogleAuthorizeURL, googleRedirect, cfg.DesktopDeepLinkScheme, nil)
 	workosH := workosauth.New(cfg.WorkOSClientID, cfg.WorkOSAPIKey, cfg.WorkOSBaseURL, cfg.WorkOSAuthorizeBaseURL, log)
+	workosH.SetOutboundPolicy(vendorPolicy)
 	composioH := composio.New(sec, log)
+	composioPolicy := vendorPolicy
+	composioPolicy.MaxResponseBytes = cfg.ComposioResponseMaxBytes
+	composioH.SetOutboundPolicy(composioPolicy)
 
 	registry, err := connectors.LoadRegistry([]byte(cfg.ConnectorsJSON))
 	if err != nil {
@@ -139,6 +169,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		PublicBaseURL:         cfg.PublicBaseURL,
 		DeepLinkScheme:        cfg.DesktopDeepLinkScheme,
 	}, log)
+	connectorsH.SetOutboundPolicy(vendorPolicy)
 
 	r := srv.Router()
 
@@ -152,6 +183,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// WorkOS sign-in broker (public: the caller has no bearer yet; the
 	// credential is the WorkOS code/refresh token + the server-held API key).
 	r.Route("/v1/auth/workos", func(r chi.Router) {
+		r.Use(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute))
+		r.Use(rl.PerUserWindow(ratelimit.GroupAuth+":burst", 5, 10*time.Second))
 		r.Get("/login-url", workosH.LoginURL)
 		r.Post("/exchange", workosH.Exchange)
 		r.Post("/refresh", workosH.Refresh)
@@ -162,22 +195,28 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 
 	// Google OAuth front door (browser-facing, no bearer): the desktop opens
 	// /oauth/google/start; the callback parks tokens for /v1/google-oauth/claim.
-	r.Get("/oauth/google/start", googleH.Start)
-	r.Get("/oauth/google/callback", googleH.Callback)
+	r.With(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute)).
+		Get("/oauth/google/start", googleH.Start)
+	r.With(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute)).
+		Get("/oauth/google/callback", googleH.Callback)
 
 	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer).
-	r.With(auth.RequireHookHMAC(cfg.HookHMACSecret)).
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
 		Post("/oauth-hooks/pre-consent", connectorsH.PreConsent)
 
 	// Server-to-server internal API (static shared secret).
-	r.With(auth.RequireInternalSecret(cfg.InternalAPISecret)).
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
 		Post("/v1/internal/connections/invalidate", connectorsH.Invalidate)
 
 	// Admin GraphQL (entgql + gqlgen) over the full entity graph. Guarded by
 	// the internal secret, which also marks the context internal so the
 	// resolvers' ent queries bypass per-user tenant scoping.
-	r.With(auth.RequireInternalSecret(cfg.InternalAPISecret)).
-		Handle("/graphql", gqlapi.NewHandler(client))
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 60, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
+		Handle("/graphql", gqlapi.NewHandler(client, gqlapi.HandlerOptions{
+			Introspection: cfg.GraphQLIntrospection,
+			MaxComplexity: cfg.GraphQLMaxComplexity,
+			MaxDepth:      cfg.GraphQLMaxDepth,
+		}))
 
 	// Authenticated surface (Ory/WorkOS bearer required).
 	r.Group(func(r chi.Router) {
@@ -190,6 +229,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		r.Get("/v1/background-tasks", backgroundTasksH.List)
 		r.Post("/v1/background-tasks", backgroundTasksH.Create)
 		r.Route("/v1/background-tasks", func(r chi.Router) {
+			r.Use(rl.PerUserWindow(ratelimit.GroupTaskBurst, 30, 10*time.Second))
 			r.Get("/", backgroundTasksH.List)
 			r.Post("/", backgroundTasksH.Create)
 			r.Get("/{slug}", backgroundTasksH.Get)
@@ -212,6 +252,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 
 		r.Route("/v1/llm", func(r chi.Router) {
 			r.Use(rl.PerUser(ratelimit.GroupLLM, 60))
+			r.Use(rl.PerUserWindow(ratelimit.GroupLLMBurst, 12, 10*time.Second))
 			r.Post("/chat/completions", llmH.ChatCompletions)
 			r.Post("/completions", llmH.Completions)
 			r.Post("/embeddings", llmH.Embeddings)
@@ -220,13 +261,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 
 		r.Route("/v1/voice", func(r chi.Router) {
 			r.Use(rl.PerUser(ratelimit.GroupVoice, 30))
+			r.Use(rl.PerUserWindow(ratelimit.GroupVoiceBurst, 6, 10*time.Second))
 			r.Post("/text-to-speech/{voiceId}", voiceH.TextToSpeech)
 		})
 
-		r.With(rl.PerUser(ratelimit.GroupSearch, 60)).
+		r.With(rl.PerUser(ratelimit.GroupSearch, 60), rl.PerUserWindow(ratelimit.GroupSearchBurst, 10, 10*time.Second)).
 			Post("/v1/search/exa", searchH.Search)
 
 		r.Route("/v1/google-oauth", func(r chi.Router) {
+			r.Use(rl.PerUserWindow(ratelimit.GroupConnections, 30, time.Minute))
 			r.Post("/claim", googleH.Claim)
 			r.Post("/refresh", googleH.Refresh)
 		})
@@ -237,6 +280,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		r.Get("/v1/connectors", connectorsH.List)
 		r.Route("/v1/connections", func(r chi.Router) {
 			r.Use(rl.PerUser(ratelimit.GroupConnections, 30))
+			r.Use(rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second))
 			r.Post("/{name}/start", connectorsH.Start)
 			r.Post("/{name}/mcp-token", connectorsH.MCPToken)
 			r.Delete("/{name}", connectorsH.Delete)

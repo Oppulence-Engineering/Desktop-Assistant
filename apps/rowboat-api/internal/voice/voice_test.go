@@ -59,6 +59,7 @@ func TestTextToSpeechProxiesAndCharges(t *testing.T) {
 
 	body := `{"text":"Hello there","model_id":"eleven_flash_v2_5"}` // 11 chars → 11 credits
 	req := httptest.NewRequest(http.MethodPost, "/v1/voice/text-to-speech/voiceXYZ", strings.NewReader(body))
+	req.Header.Set("Idempotency-Key", "voice-1")
 	req = req.WithContext(withVoiceID(ctx, "voiceXYZ"))
 	rec := httptest.NewRecorder()
 	h.TextToSpeech(rec, req)
@@ -95,6 +96,7 @@ func TestTextToSpeechInsufficient(t *testing.T) {
 
 	body := `{"text":"Hello there"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/voice/text-to-speech/v", strings.NewReader(body))
+	req.Header.Set("Idempotency-Key", "voice-insufficient-1")
 	req = req.WithContext(withVoiceID(ctx, "v"))
 	rec := httptest.NewRecorder()
 	h.TextToSpeech(rec, req)

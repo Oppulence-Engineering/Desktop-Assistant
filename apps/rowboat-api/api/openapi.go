@@ -1,3 +1,4 @@
+// Package api embeds the generated OpenAPI document served by rowboat-api.
 package api
 
 import _ "embed"

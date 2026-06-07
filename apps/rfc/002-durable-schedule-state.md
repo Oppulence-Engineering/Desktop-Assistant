@@ -1,16 +1,16 @@
 # RFC 002: Durable Schedule State and Cloud Scheduler Leases
 
-| | |
-| --- | --- |
-| **RFC** | 002 |
-| **Status** | Draft |
-| **Track** | Cloud-native background workflows |
-| **Owners** | `apps/rowboat-api` (Go backend / ent schema) |
-| **Created** | 2026-06-05 |
-| **Last updated** | 2026-06-05 |
-| **Blocks** | [RFC 001 — API-Owned Scheduler](./001-api-owned-scheduler.md) running with >1 replica |
-| **Related** | [RFC 005 — Temporal Schedules](./005-temporal-schedule-integration.md) (supersedes leasing for exact cron) |
-| **Parent docs** | [`docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_RFC.md), [`..._API_PLAN.md`](../../docs/CLOUD_NATIVE_BACKGROUND_WORKFLOWS_API_PLAN.md) §"Conventions" |
+|                  |                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 002                                                                                                        |
+| **Status**       | Draft                                                                                                      |
+| **Track**        | Cloud-native background workflows                                                                          |
+| **Owners**       | `apps/rowboat-api` (Go backend / ent schema)                                                               |
+| **Created**      | 2026-06-05                                                                                                 |
+| **Last updated** | 2026-06-06                                                                                                 |
+| **Blocks**       | [RFC 001 — API-Owned Scheduler](./001-api-owned-scheduler.md) running with >1 replica                      |
+| **Related**      | [RFC 005 — Temporal Schedules](./005-temporal-schedule-integration.md) (supersedes leasing for exact cron) |
+| **Supersedes**   | Former cloud workflow planning and API execution-plan schedule-state sections.                             |
 
 ## Summary
 
@@ -36,18 +36,18 @@ These are sufficient for a **single** evaluator (the desktop, or one cloud repli
 cycle is "done" because `last_run_at` advanced past the occurrence (the anchor used by
 `schedule/utils.ts` and ported in RFC 001). They are **not** sufficient for N replicas:
 
-- They encode "did *the* evaluator run this task", not "*which* replica owns *this cycle*".
+- They encode "did _the_ evaluator run this task", not "_which_ replica owns _this cycle_".
 - Two replicas reading the same `last_run_at` in the same tick both see the cycle as
   unfired and both create a run — a classic check-then-act race. The unique run index
   `(run_id, user)` (`background_task_run.go:90`) does **not** save us, because each replica
-  mints a *different* random `run_id` (`sched-cron-<uuid>`), so both inserts succeed.
+  mints a _different_ random `run_id` (`sched-cron-<uuid>`), so both inserts succeed.
 - A window's "once per day" needs a per-cycle key, not a single timestamp, to stay correct
   across replicas and restarts.
 
 So we need a row whose **uniqueness is the cycle itself**, and an atomic claim on it.
 
 `★ The core idea ─────────────────────────────────`
-Make the *cycle* a uniquely-indexed row and let the database arbitrate. Two replicas
+Make the _cycle_ a uniquely-indexed row and let the database arbitrate. Two replicas
 racing to fire the same cron occurrence both try to INSERT the same
 `(task_id, trigger_type, schedule_key)` — exactly one wins the unique constraint; the
 loser gets a conflict and skips. The DB is the lock; no external coordinator needed.
@@ -185,10 +185,10 @@ so it is safe to apply ahead of code that reads it.
 
 Deterministic, collision-free per cycle (the unique-index payload):
 
-| Trigger | Key format | Example |
-| --- | --- | --- |
-| Cron | `cron:{expr}:{occurrence-RFC3339}` | `cron:0 * * * *:2026-06-05T14:00:00Z` |
-| Window | `window:{start}-{end}:{cycle-date}` | `window:09:00-12:00:2026-06-05` |
+| Trigger | Key format                          | Example                               |
+| ------- | ----------------------------------- | ------------------------------------- |
+| Cron    | `cron:{expr}:{occurrence-RFC3339}`  | `cron:0 * * * *:2026-06-05T14:00:00Z` |
+| Window  | `window:{start}-{end}:{cycle-date}` | `window:09:00-12:00:2026-06-05`       |
 
 `occurrence` is the prev-tick computed by `isCronDue` (RFC 001). `cycle-date` is the
 local date of the window's `startTime` anchor. The key embeds the cycle, so re-evaluating
@@ -341,14 +341,14 @@ A lightweight sweep at the end of each tick (or a separate slow loop):
 
 `internal/backgroundscheduler/metrics.go` (cardinality rule: no slug/user/run labels):
 
-| Series | Type | Labels |
-| --- | --- | --- |
-| `cloud_scheduler_leases_acquired_total` | counter | — |
-| `cloud_scheduler_leases_skipped_total` | counter | `reason` (`fired`/`held`/`steal_lost`) |
-| `cloud_scheduler_leases_stolen_total` | counter | — |
-| `cloud_scheduler_lease_errors_total` | counter | `op` (`acquire`/`complete`/`release`) |
-| `cloud_scheduler_schedule_states_pruned_total` | counter | — |
-| `cloud_scheduler_schedule_states_rows` | gauge | — (live row count; watch growth) |
+| Series                                         | Type    | Labels                                 |
+| ---------------------------------------------- | ------- | -------------------------------------- |
+| `cloud_scheduler_leases_acquired_total`        | counter | —                                      |
+| `cloud_scheduler_leases_skipped_total`         | counter | `reason` (`fired`/`held`/`steal_lost`) |
+| `cloud_scheduler_leases_stolen_total`          | counter | —                                      |
+| `cloud_scheduler_lease_errors_total`           | counter | `op` (`acquire`/`complete`/`release`)  |
+| `cloud_scheduler_schedule_states_pruned_total` | counter | —                                      |
+| `cloud_scheduler_schedule_states_rows`         | gauge   | — (live row count; watch growth)       |
 
 Log per lease decision (`zap`): `taskSlug`, `scheduleKey`, `leaseOwner`,
 `leaseExpiresAt`, `decision` (`acquired|skipped_fired|skipped_held|stolen|steal_lost`).
@@ -362,6 +362,312 @@ Log per lease decision (`zap`): `taskSlug`, `scheduleKey`, `leaseOwner`,
   cycles existed).
 - Roll the migration **before** enabling the multi-replica scheduler; single-replica RFC
   001 works without it.
+
+## Code-level implementation playbook
+
+The schedule-state table is correctness-critical. Treat it like a lock service whose state
+happens to live in ent/Postgres. The implementation should be small, heavily tested against
+Postgres, and not entangled with HTTP handlers.
+
+### 1. Schema edits and generated files
+
+Add `apps/rowboat-api/ent/schema/background_task_schedule_state.go` as shown above, then
+edit the existing edges:
+
+```go
+// ent/schema/user.go
+edge.To("background_task_schedule_states", BackgroundTaskScheduleState.Type)
+
+// ent/schema/background_task.go
+edge.To("schedule_states", BackgroundTaskScheduleState.Type).
+	StorageKey(edge.Column("background_task_id"))
+```
+
+Because the tenant interceptors are explicitly registered per entity, update
+`internal/db/interceptors.go` after codegen:
+
+```go
+client.BackgroundTaskScheduleState.Intercept(intercept.TraverseBackgroundTaskScheduleState(
+	func(ctx context.Context, q *ent.BackgroundTaskScheduleStateQuery) error {
+		return scopeToUser(ctx, func(uid uuid.UUID) {
+			q.Where(backgroundtaskschedulestate.HasUserWith(user.IDEQ(uid)))
+		})
+	}))
+```
+
+Without this interceptor, authenticated reads of schedule state would either be unscoped
+or blocked depending on how the generated client is used. System components still bypass
+it with `auth.WithInternal(ctx)`, same as the worker and scheduler.
+
+Run from `apps/rowboat-api`:
+
+```sh
+make generate
+make migrate-dump name=add_background_task_schedule_state
+make test
+```
+
+Review generated changes in:
+
+- `ent/client.go`, `ent/backgroundtaskschedulestate*.go`, predicates, mutations, queries
+- `ent/migrate/schema.go`
+- `internal/gqlapi/ent.graphql` and generated gql files
+- `api/openapi.json` if entoas exposes the entity
+- `migrations/*add_background_task_schedule_state*.sql`
+
+### 2. Field semantics the code must preserve
+
+| Field               | Writer                         | Meaning                                                   | Never do                                                       |
+| ------------------- | ------------------------------ | --------------------------------------------------------- | -------------------------------------------------------------- |
+| `trigger_type`      | lease acquisition              | `cron` or `window` only                                   | Do not store `manual`/`event`; those are not scheduled cycles. |
+| `schedule_key`      | due math                       | Deterministic cycle identity                              | Do not include run id, random id, or replica id.               |
+| `last_evaluated_at` | acquire/steal/release/complete | Last state transition for this cycle                      | Do not update on every non-due scan.                           |
+| `last_due_at`       | acquire                        | The occurrence/window start the scheduler decided was due | Do not use wall-clock tick time for cron; use the occurrence.  |
+| `last_triggered_at` | complete                       | When `Starter.Start` succeeded                            | Do not set on Temporal start failure.                          |
+| `last_run_id`       | complete only                  | Terminal "this cycle fired" sentinel                      | Do not set before the run row exists.                          |
+| `lease_owner`       | acquire/steal/release          | Replica identity                                          | Do not put user/task ids here; they are edges.                 |
+| `lease_expires_at`  | acquire/steal/release          | Live lease cutoff                                         | Do not rely on process memory for ownership.                   |
+| `revision`          | every mutation                 | Optimistic concurrency guard                              | Do not update expired leases without checking revision.        |
+
+### 3. Package layout
+
+Put all logic under `internal/backgroundscheduler`:
+
+| File                      | Contents                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `schedule_key.go`         | `CronKey(expr, occurrence, loc)`, `WindowKey(start,end,cycleDate,loc)` + tests. |
+| `leases.go`               | `Leases.Acquire`, `Complete`, `Release`, `SweepExpired`, `PruneFired`.          |
+| `leases_postgres_test.go` | Testcontainer-backed concurrency tests; build-tag optional if CI needs gating.  |
+| `metrics.go`              | Lease counters/gauge listed above.                                              |
+
+Keep the public surface tiny:
+
+```go
+type Lease struct {
+	ID       uuid.UUID
+	Revision int
+	Key      string
+}
+
+type Decision string
+const (
+	DecisionAcquired Decision = "acquired"
+	DecisionFired    Decision = "fired"
+	DecisionHeld     Decision = "held"
+	DecisionStolen   Decision = "stolen"
+	DecisionLost     Decision = "steal_lost"
+)
+```
+
+The scheduler loop only needs `(Lease, Decision, error)` and should not know SQL conflict
+details.
+
+### 4. Acquisition SQL contract
+
+Ent's fluent API is fine for the normal path, but the guarantee is Postgres:
+
+```sql
+INSERT INTO background_task_schedule_states
+  (id, user_id, background_task_id, trigger_type, schedule_key,
+   last_evaluated_at, last_due_at, lease_owner, lease_expires_at, revision,
+   created_at, updated_at)
+VALUES
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, 1, now(), now())
+ON CONFLICT (background_task_id, trigger_type, schedule_key) DO NOTHING
+RETURNING id, revision;
+```
+
+If `RETURNING` yields one row, this replica owns the cycle. If it yields zero rows, load the
+existing row by `(task,type,key)` and classify:
+
+```go
+switch {
+case row.LastRunID != "":
+	return Lease{}, DecisionFired, nil
+case row.LeaseExpiresAt != nil && now.Before(*row.LeaseExpiresAt):
+	return Lease{}, DecisionHeld, nil
+default:
+	// expired/unheld; try revision-guarded steal
+}
+```
+
+The steal update must be one statement:
+
+```go
+n, err := client.BackgroundTaskScheduleState.Update().
+	Where(
+		backgroundtaskschedulestate.IDEQ(row.ID),
+		backgroundtaskschedulestate.RevisionEQ(row.Revision),
+		backgroundtaskschedulestate.LastRunIDEQ(""),
+		backgroundtaskschedulestate.Or(
+			backgroundtaskschedulestate.LeaseExpiresAtIsNil(),
+			backgroundtaskschedulestate.LeaseExpiresAtLTE(now),
+		),
+	).
+	SetLeaseOwner(owner).
+	SetLeaseExpiresAt(now.Add(ttl)).
+	SetLastEvaluatedAt(now).
+	AddRevision(1).
+	Save(ctx)
+```
+
+Exactly one concurrent thief can observe `n == 1`; the rest return `steal_lost`.
+
+### 5. Complete and release
+
+`Complete` must be revision-guarded and must only complete the current owner:
+
+```go
+n, err := client.BackgroundTaskScheduleState.Update().
+	Where(
+		backgroundtaskschedulestate.IDEQ(lease.ID),
+		backgroundtaskschedulestate.RevisionEQ(lease.Revision),
+		backgroundtaskschedulestate.LeaseOwnerEQ(owner),
+		backgroundtaskschedulestate.LastRunIDEQ(""),
+	).
+	SetLastRunID(runID).
+	SetLastTriggeredAt(now).
+	ClearLeaseExpiresAt().
+	SetLeaseOwner("").
+	AddRevision(1).
+	Save(ctx)
+```
+
+If `n == 0`, log an error with `leaseId`, `scheduleKey`, `owner`, and `runId`: the run may
+exist even though the lease did not complete, and the reconciler should later heal it.
+
+`Release` is only for failures before a run exists. It clears ownership but intentionally
+does not set `last_run_id`; the cycle remains eligible until grace/backoff logic suppresses
+or retries it.
+
+### 6. Reconciler details
+
+The reconciler should run under `auth.WithInternal(ctx)` on a slower cadence than the
+scheduler tick (for example every 5 minutes):
+
+1. Find unfired rows with `lease_expires_at < now - 2*ttl`.
+2. Join/load the task and inspect its `last_run_id`/`last_run_at`.
+3. If the task's latest run belongs to the same cycle key, set the row fired with that run
+   id. This heals "Start succeeded, Complete crashed".
+4. Otherwise clear the lease so the cycle can be stolen if still within its semantic window.
+5. Delete fired rows older than retention (`created_at < now - 30d` or
+   `last_triggered_at < now - 30d`).
+
+Do not reconcile by scanning all runs for all tasks on every tick. Keep the sweep bounded
+by the `lease_expires_at` and `last_run_id` indexes.
+
+### 7. Testcontainer harness
+
+The lease tests should not use sqlite for the core concurrency assertion. Use a helper like:
+
+```go
+func newPostgresEntClient(t *testing.T) *ent.Client {
+	// start postgres:16, apply ent schema, return client
+}
+```
+
+Test cases that must pass repeatedly:
+
+- `TestAcquireConcurrentInsert`: 64 goroutines call `Acquire` on the same key; exactly one
+  returns `DecisionAcquired`.
+- `TestAcquireConcurrentSteal`: seed an expired lease; 64 goroutines attempt steal; exactly
+  one returns `DecisionStolen`.
+- `TestCompleteBlocksReacquire`: `Acquire` then `Complete`; subsequent `Acquire` returns
+  `DecisionFired`.
+- `TestReleaseAllowsReacquire`: `Acquire` then `Release`; subsequent `Acquire` succeeds.
+- `TestDifferentKeysDoNotBlock`: same task + different cron occurrence/window date can both
+  acquire.
+- `TestDifferentTasksSameKeyDoNotCollide`: unique index includes task edge.
+
+## Operational SQL, migrations, and reviewer checklist
+
+The lease table must be easy to inspect during an incident. Add these queries to the
+runbook once the table exists.
+
+### Inspect currently held leases
+
+```sql
+SELECT
+  bt.slug,
+  s.trigger_type,
+  s.schedule_key,
+  s.lease_owner,
+  s.lease_expires_at,
+  s.last_run_id,
+  s.revision,
+  s.updated_at
+FROM background_task_schedule_states s
+JOIN background_tasks bt ON bt.id = s.background_task_id
+WHERE s.last_run_id = ''
+  AND s.lease_expires_at IS NOT NULL
+ORDER BY s.lease_expires_at ASC
+LIMIT 100;
+```
+
+Expected during healthy operation: a small number of rows with near-future
+`lease_expires_at`. Rows far in the past are either crashed attempts awaiting sweep or a
+stalled reconciler.
+
+### Find duplicate guard evidence for one task
+
+```sql
+SELECT trigger_type, schedule_key, last_triggered_at, last_run_id, lease_owner
+FROM background_task_schedule_states s
+JOIN background_tasks bt ON bt.id = s.background_task_id
+WHERE bt.slug = $1
+ORDER BY s.created_at DESC
+LIMIT 50;
+```
+
+This explains "why did the scheduler skip this minute?" without reading logs. If a row has
+`last_run_id`, the cycle already fired. If it has a live lease, a peer owns it. If it has no
+`last_run_id` and an expired lease, the reconciler or a later tick should steal/release it.
+
+### Migration safety checklist
+
+Before applying the migration:
+
+- Confirm all new columns are nullable or defaulted.
+- Confirm unique index uses `(background_task_id, trigger_type, schedule_key)`, not
+  `(user_id, trigger_type, schedule_key)`. Two tasks for the same user may share a cron.
+- Confirm `last_run_id` defaults to empty string if code uses `LastRunIDEQ("")`; if it is
+  nullable, code must check both nil and empty.
+- Confirm foreign keys use normal deletes. If task delete cascades are not generated, update
+  `Handler.Delete` to delete schedule states inside its transaction before deleting task.
+- Confirm the generated migration is additive only: one table, indexes, FKs.
+
+### Reviewer checklist for `leases.go`
+
+Reviewers should reject implementations that:
+
+- Read then insert without `ON CONFLICT DO NOTHING`.
+- Steal expired rows without checking `revision`.
+- Set `last_run_id` before `Starter.Start` returns a run id.
+- Use Redis/process memory as the source of truth.
+- Label metrics with `taskSlug`, `userId`, or `scheduleKey`.
+- Use sqlite-only tests for the unique conflict race.
+- Forget tenant interceptors for the new entity.
+
+### Retention sizing
+
+Estimate row growth before GA:
+
+```
+rows_per_day = active_scheduled_api_tasks * fires_per_task_per_day
+30d_rows = rows_per_day * 30
+```
+
+Examples:
+
+| Tasks  | Cadence         | Rows/day  | 30-day rows |
+| ------ | --------------- | --------- | ----------- |
+| 1,000  | hourly cron     | 24,000    | 720,000     |
+| 5,000  | daily window    | 5,000     | 150,000     |
+| 10,000 | every 5 minutes | 2,880,000 | 86,400,000  |
+
+The every-5-min case is the one that forces retention and indexing discipline. If staging
+shows high-frequency schedules becoming common, add a product-level minimum cadence or move
+cron to RFC 005 Schedules sooner.
 
 ## Test plan
 

@@ -31,6 +31,7 @@ jobs:
     timeout-minutes: 240
     env:
       INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
+      INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
       INFISICAL_DISABLE_UPDATE_CHECK: 'true'
       ROWBOAT_DESKTOP_PERF_ARTIFACT_DIR: ${{ github.workspace }}/.rowboat-kind/desktop-perf/nightly
       ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT: '9333'
@@ -83,6 +84,10 @@ jobs:
           set -euo pipefail
           if [[ -z "${INFISICAL_TOKEN:-}" ]]; then
             echo "Missing repository secret INFISICAL_TOKEN for kind secret sync." >&2
+            exit 1
+          fi
+          if [[ -z "${INFISICAL_PROJECT_ID:-}" ]]; then
+            echo "Missing repository secret INFISICAL_PROJECT_ID for kind secret sync." >&2
             exit 1
           fi
 
@@ -158,6 +163,10 @@ jobs:
           key: desktop-perf-baseline-${{ runner.os }}-${{ steps.tier.outputs.tier }}-${{ github.run_id }}
           restore-keys: |
             desktop-perf-baseline-${{ runner.os }}-${{ steps.tier.outputs.tier }}-
+
+      - name: Start kind API stack
+        shell: bash
+        run: make api-up
 
       - name: Run desktop performance gate
         shell: bash

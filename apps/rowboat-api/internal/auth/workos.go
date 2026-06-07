@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 )
 
 // WorkOSEnricher fetches user metadata from the WorkOS User Management API.
@@ -13,7 +15,7 @@ import (
 // dependency surface small; the single endpoint we need is stable.
 type WorkOSEnricher struct {
 	apiKey string
-	client *http.Client
+	client *outbound.Client
 }
 
 // NewWorkOSEnricher returns an Enricher backed by WorkOS, or NoopEnricher when
@@ -24,7 +26,13 @@ func NewWorkOSEnricher(apiKey string) Enricher {
 	}
 	return &WorkOSEnricher{
 		apiKey: apiKey,
-		client: &http.Client{Timeout: 5 * time.Second},
+		client: outbound.NewClient(outbound.Policy{
+			Name:                  "workos-enricher",
+			Timeout:               5 * time.Second,
+			ResponseHeaderTimeout: 5 * time.Second,
+			MaxConcurrent:         64,
+			MaxResponseBytes:      1 << 20,
+		}),
 	}
 }
 

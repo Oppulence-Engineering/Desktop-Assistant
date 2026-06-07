@@ -11,13 +11,13 @@ package workosauth
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 )
@@ -30,7 +30,7 @@ type Handler struct {
 	apiKey   string // WorkOS API key — presented to WorkOS as the client secret
 	baseURL  string // WorkOS API base for server-side calls (https://api.workos.com)
 	authBase string // base for the browser authorize URL; usually == baseURL
-	http     *http.Client
+	http     *outbound.Client
 	log      *zap.Logger
 }
 
@@ -49,9 +49,21 @@ func New(clientID, apiKey, baseURL, authorizeBaseURL string, log *zap.Logger) *H
 		apiKey:   apiKey,
 		baseURL:  strings.TrimRight(baseURL, "/"),
 		authBase: strings.TrimRight(authorizeBaseURL, "/"),
-		http:     &http.Client{Timeout: 15 * time.Second},
-		log:      log,
+		http: outbound.NewClient(outbound.Policy{
+			Name:                  "workos",
+			Timeout:               15 * time.Second,
+			ResponseHeaderTimeout: 10 * time.Second,
+			MaxConcurrent:         64,
+			MaxResponseBytes:      1 << 20,
+		}),
+		log: log,
 	}
+}
+
+// SetOutboundPolicy applies the shared outbound vendor policy.
+func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
+	policy.Name = "workos"
+	h.http = outbound.NewClient(policy)
 }
 
 // configured reports whether WorkOS credentials are present.
@@ -110,7 +122,7 @@ func (h *Handler) Exchange(w http.ResponseWriter, r *http.Request) {
 		Code         string `json:"code"`
 		CodeVerifier string `json:"codeVerifier"`
 	}
-	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&req); err != nil || req.Code == "" {
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) || req.Code == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing code", "bad_request")
 		return
 	}
@@ -135,7 +147,7 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RefreshToken string `json:"refreshToken"`
 	}
-	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&req); err != nil || req.RefreshToken == "" {
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) || req.RefreshToken == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing refreshToken", "bad_request")
 		return
 	}
@@ -166,7 +178,12 @@ func (h *Handler) authenticate(w http.ResponseWriter, r *http.Request, payload m
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
-	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	raw, err := outbound.ReadAll(resp.Body, h.http.MaxResponseBytes())
+	if err != nil {
+		h.log.Warn("workos authenticate response read failed", zap.Error(err))
+		httpx.Error(w, http.StatusBadGateway, "workos authenticate failed", "upstream_error")
+		return
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		var werr struct {

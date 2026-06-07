@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"go.uber.org/zap"
 )
 
@@ -118,7 +119,12 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	body, err := outbound.ReadAll(resp.Body, h.http.MaxResponseBytes())
+	if err != nil {
+		h.log.Warn("google callback: token response read", zap.Error(err))
+		h.deepLink(w, state, "error")
+		return
+	}
 	if resp.StatusCode != http.StatusOK {
 		h.log.Warn("google callback: token exchange non-200", zap.Int("status", resp.StatusCode))
 		h.deepLink(w, state, "error")

@@ -1,3 +1,5 @@
+// Package openapidoc enriches the ent-generated OpenAPI base document with
+// runtime routes, examples, response contracts, and security metadata.
 package openapidoc
 
 import (
@@ -100,15 +102,26 @@ func addSecuritySchemes(schemes obj) {
 }
 
 func addRuntimeSchemas(schemas obj) {
-	schemas["ErrorEnvelope"] = objectSchema("Canonical JSON error returned by Solomon AI API handlers.", obj{
-		"error": stringSchema("Human-readable error message.", "missing bearer token"),
-		"code":  stringSchema("Stable machine-readable error code.", "unauthorized"),
-	}, "error", "code")
-	schemas["ReconnectErrorEnvelope"] = objectSchema("Error envelope used when an upstream refresh token is invalid and the desktop must reconnect.", obj{
-		"error":             stringSchema("Human-readable error message.", "Google reports invalid_grant; user must reconnect."),
+	schemas["ErrorEnvelope"] = objectSchema("RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.", obj{
+		"type":      stringSchema("Problem type URI.", "https://api.rowboat.dev/problems/unauthorized"),
+		"title":     stringSchema("Short HTTP-status summary.", "Unauthorized"),
+		"status":    intSchema("HTTP status code.", 401),
+		"detail":    stringSchema("Human-readable error detail.", "missing bearer token"),
+		"instance":  stringSchema("Optional occurrence URI.", "/v1/me", nullable()),
+		"code":      stringSchema("Stable machine-readable error code.", "unauthorized"),
+		"requestId": stringSchema("Request id emitted by the API middleware.", "req-abc123", nullable()),
+		"traceId":   stringSchema("OpenTelemetry trace id when tracing is active.", "4bf92f3577b34da6a3ce929d0e0e4736", nullable()),
+	}, "type", "title", "status", "code")
+	schemas["ReconnectErrorEnvelope"] = objectSchema("Problem details used when an upstream refresh token is invalid and the desktop must reconnect.", obj{
+		"type":              stringSchema("Problem type URI.", "https://api.rowboat.dev/problems/reconnect_required"),
+		"title":             stringSchema("Short HTTP-status summary.", "Conflict"),
+		"status":            intSchema("HTTP status code.", 409),
+		"detail":            stringSchema("Human-readable error detail.", "Google reports invalid_grant; user must reconnect."),
 		"code":              stringEnum("Stable machine-readable error code.", "reconnect_required", "reconnect_required"),
+		"requestId":         stringSchema("Request id emitted by the API middleware.", "req-abc123", nullable()),
+		"traceId":           stringSchema("OpenTelemetry trace id when tracing is active.", "4bf92f3577b34da6a3ce929d0e0e4736", nullable()),
 		"reconnectRequired": boolSchema("Whether the desktop should force the user through a new OAuth connection flow.", true),
-	}, "error", "code", "reconnectRequired")
+	}, "type", "title", "status", "code", "reconnectRequired")
 	schemas["HealthResponse"] = objectSchema("Liveness probe response.", obj{
 		"status": stringEnum("Liveness status.", "ok", "ok"),
 	}, "status")
@@ -193,10 +206,15 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"example":     obj{"cronExpr": "0 9 * * *", "timezone": "America/New_York"},
 	}
 	schemas["RevisionConflictEnvelope"] = objectSchema("Revision conflict returned when the caller edits a stale task, artifact, or run revision. Clients should refetch, merge, and retry with currentRevision.", obj{
-		"error":           stringEnum("Human-readable conflict message.", "revision conflict", "revision conflict"),
+		"type":            stringSchema("Problem type URI.", "https://api.rowboat.dev/problems/conflict"),
+		"title":           stringSchema("Short HTTP-status summary.", "Conflict"),
+		"status":          intSchema("HTTP status code.", 409),
+		"detail":          stringEnum("Human-readable conflict detail.", "revision conflict", "revision conflict"),
 		"code":            stringEnum("Stable machine-readable conflict code.", "conflict", "conflict"),
+		"requestId":       stringSchema("Request id emitted by the API middleware.", "req-abc123", nullable()),
+		"traceId":         stringSchema("OpenTelemetry trace id when tracing is active.", "4bf92f3577b34da6a3ce929d0e0e4736", nullable()),
 		"currentRevision": intSchema("Current server revision for the resource that rejected the write.", 3),
-	}, "error", "code", "currentRevision")
+	}, "type", "title", "status", "code", "currentRevision")
 	schemas["BackgroundTask"] = objectSchema("Server-readable mirror of one background task. The API is the control plane; executionTarget=desktop runs locally in the desktop and executionTarget=api runs through the API Temporal worker.", obj{
 		"id":              uuidSchema("Stable server id for this mirrored task.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
 		"slug":            stringSchema("Stable task slug matching the desktop bg-tasks/<slug> directory.", "daily-summary"),
@@ -542,17 +560,17 @@ func addInternalSchemas(schemas obj) {
 }
 
 func addCommonResponses(responses obj) {
-	responses["400"] = jsonResponse("Bad request. The request is malformed, missing a required parameter, or has invalid JSON.", ref("ErrorEnvelope"), obj{"error": "missing model", "code": "bad_request"})
-	responses["401"] = jsonResponse("Unauthorized. Missing, invalid, or expired bearer token or shared secret.", ref("ErrorEnvelope"), obj{"error": "missing bearer token", "code": "unauthorized"})
-	responses["402"] = jsonResponse("Payment required. The user does not have enough credits for the requested metered call.", ref("ErrorEnvelope"), obj{"error": "insufficient_credits", "code": "insufficient_credits"})
-	responses["403"] = jsonResponse("Forbidden. The caller is authenticated but cannot access this resource.", ref("ErrorEnvelope"), obj{"error": "ticket does not belong to this user", "code": "forbidden"})
-	responses["404"] = jsonResponse("Not found. The requested resource, connector, or OAuth handoff ticket does not exist.", ref("ErrorEnvelope"), obj{"error": "connector not connected", "code": "not_connected"})
-	responses["409"] = jsonResponse("Conflict. Usually means an upstream refresh token is invalid and the user must reconnect.", ref("ReconnectErrorEnvelope"), obj{"error": "Google reports invalid_grant; user must reconnect.", "code": "reconnect_required", "reconnectRequired": true})
-	responses["410"] = jsonResponse("Gone. A one-time handoff ticket existed but expired before redemption.", ref("ErrorEnvelope"), obj{"error": "ticket expired", "code": "ticket_expired"})
-	responses["429"] = jsonResponse("Too many requests. A per-user rate limit bucket rejected the request.", ref("ErrorEnvelope"), obj{"error": "rate limit exceeded", "code": "rate_limited"})
-	responses["500"] = jsonResponse("Internal server error.", ref("ErrorEnvelope"), obj{"error": "could not load billing", "code": "internal_error"})
-	responses["502"] = jsonResponse("Bad gateway. A configured upstream provider failed or the provider is not configured.", ref("ErrorEnvelope"), obj{"error": "provider not configured", "code": "provider_unconfigured"})
-	responses["503"] = jsonResponse("Service unavailable. Authentication or readiness dependencies are temporarily unavailable.", ref("ErrorEnvelope"), obj{"error": "authentication unavailable", "code": "auth_unavailable"})
+	responses["400"] = problemResponse("Bad request. The request is malformed, missing a required parameter, or has invalid JSON.", ref("ErrorEnvelope"), problemExample(400, "Bad Request", "missing model", "bad_request"))
+	responses["401"] = problemResponse("Unauthorized. Missing, invalid, or expired bearer token or shared secret.", ref("ErrorEnvelope"), problemExample(401, "Unauthorized", "missing bearer token", "unauthorized"))
+	responses["402"] = problemResponse("Payment required. The user does not have enough credits for the requested metered call.", ref("ErrorEnvelope"), problemExample(402, "Payment Required", "insufficient_credits", "insufficient_credits"))
+	responses["403"] = problemResponse("Forbidden. The caller is authenticated but cannot access this resource.", ref("ErrorEnvelope"), problemExample(403, "Forbidden", "ticket does not belong to this user", "forbidden"))
+	responses["404"] = problemResponse("Not found. The requested resource, connector, or OAuth handoff ticket does not exist.", ref("ErrorEnvelope"), problemExample(404, "Not Found", "connector not connected", "not_connected"))
+	responses["409"] = problemResponse("Conflict. Usually means an upstream refresh token is invalid and the user must reconnect.", ref("ReconnectErrorEnvelope"), reconnectProblemExample())
+	responses["410"] = problemResponse("Gone. A one-time handoff ticket existed but expired before redemption.", ref("ErrorEnvelope"), problemExample(410, "Gone", "ticket expired", "ticket_expired"))
+	responses["429"] = problemResponse("Too many requests. A per-user rate limit bucket rejected the request.", ref("ErrorEnvelope"), problemExample(429, "Too Many Requests", "rate limit exceeded", "rate_limited"))
+	responses["500"] = problemResponse("Internal server error.", ref("ErrorEnvelope"), problemExample(500, "Internal Server Error", "could not load billing", "internal_error"))
+	responses["502"] = problemResponse("Bad gateway. A configured upstream provider failed or the provider is not configured.", ref("ErrorEnvelope"), problemExample(502, "Bad Gateway", "provider not configured", "provider_unconfigured"))
+	responses["503"] = problemResponse("Service unavailable. Authentication or readiness dependencies are temporarily unavailable.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "authentication unavailable", "auth_unavailable"))
 }
 
 func addRuntimePaths(paths obj) {
@@ -634,7 +652,7 @@ func addBackgroundTaskPaths(paths obj) {
 			"201": jsonResponse("Created task mirror.", ref("BackgroundTask"), backgroundTaskExample()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
-			"409": jsonResponse("A task with this slug already exists for the user.", ref("ErrorEnvelope"), obj{"error": "background task already exists", "code": "conflict"}),
+			"409": problemResponse("A task with this slug already exists for the user.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "background task already exists", "conflict")),
 			"500": responseRef("500"),
 		}),
 	}
@@ -709,7 +727,7 @@ func addBackgroundTaskPaths(paths obj) {
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
-			"409": jsonResponse("A run with this runId already exists for the user.", ref("ErrorEnvelope"), obj{"error": "run already exists", "code": "conflict"}),
+			"409": problemResponse("A run with this runId already exists for the user.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "run already exists", "conflict")),
 			"500": responseRef("500"),
 		}),
 	}
@@ -823,6 +841,7 @@ func addLLMPaths(paths obj) {
 func addVendorProxyPaths(paths obj) {
 	paths["/v1/voice/text-to-speech/{voiceId}"] = obj{"post": operation("Voice", "Generate speech audio", "Credit-gated ElevenLabs proxy. The text field is used for per-character credit charging and the full body is forwarded to ElevenLabs. Successful responses stream audio bytes back to the desktop.", "textToSpeech", bearer(), []any{
 		pathParam("voiceId", "ElevenLabs voice id.", stringSchema("Voice id.", "21m00Tcm4TlvDq8ikWAM")),
+		idempotencyHeaderParam(),
 	}, jsonRequest("ElevenLabs text-to-speech request body.", ref("VoiceTextToSpeechRequest"), obj{"text": "Hello from Solomon AI.", "model_id": "eleven_multilingual_v2"}), obj{
 		"200": binaryResponse("Audio stream returned by ElevenLabs.", "audio/mpeg"),
 		"400": responseRef("400"),
@@ -831,7 +850,7 @@ func addVendorProxyPaths(paths obj) {
 		"502": responseRef("502"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/search/exa"] = obj{"post": operation("Search", "Run Exa search", "Credit-gated Exa /search proxy. The request body is forwarded unchanged and the upstream JSON response is returned unchanged.", "searchExa", bearer(), nil, jsonRequest("Exa /search request body.", ref("ExaSearchRequest"), obj{"query": "recent fintech accounts receivable trends", "numResults": 5, "type": "neural"}), obj{
+	paths["/v1/search/exa"] = obj{"post": operation("Search", "Run Exa search", "Credit-gated Exa /search proxy. The request body is forwarded unchanged and the upstream JSON response is returned unchanged.", "searchExa", bearer(), []any{idempotencyHeaderParam()}, jsonRequest("Exa /search request body.", ref("ExaSearchRequest"), obj{"query": "recent fintech accounts receivable trends", "numResults": 5, "type": "neural"}), obj{
 		"200": jsonResponse("Exa search response.", ref("ExaSearchResponse"), obj{"results": []any{obj{"title": "Example result", "url": "https://example.com"}}}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
@@ -1017,7 +1036,10 @@ func enrichEntitySchemas(schemas obj) {
 		"oauth_connections":       {"description": "Third-party OAuth connections for the user."},
 		"mcp_connections":         {"description": "MCP connector connections for the user."},
 	}
-	for _, schemaAny := range schemas {
+	for schemaName, schemaAny := range schemas {
+		if schemaName == "ErrorEnvelope" || schemaName == "ReconnectErrorEnvelope" || schemaName == "RevisionConflictEnvelope" {
+			continue
+		}
 		s := asObj(schemaAny)
 		if s == nil {
 			continue
@@ -1133,10 +1155,15 @@ func llmResponses(stream bool) obj {
 
 func llmHeaderParams() []any {
 	return []any{
+		idempotencyHeaderParam(),
 		headerParam("x-solomon-use-case", "Optional feature/use-case label recorded in LLMUsage for cost allocation.", false),
 		headerParam("x-solomon-sub-use-case", "Optional sub-use-case label recorded in LLMUsage.", false),
 		headerParam("x-solomon-agent-name", "Optional agent name recorded in LLMUsage.", false),
 	}
+}
+
+func idempotencyHeaderParam() obj {
+	return headerParam("Idempotency-Key", "Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor.", true)
 }
 
 func connectorNameParam() []any {
@@ -1214,6 +1241,31 @@ func jsonResponse(description string, schema any, example any) obj {
 	return obj{"description": description, "content": obj{"application/json": media}}
 }
 
+func problemResponse(description string, schema any, example any) obj {
+	media := obj{"schema": schema}
+	if example != nil {
+		media["example"] = example
+	}
+	return obj{"description": description, "content": obj{"application/problem+json": media}}
+}
+
+func problemExample(status int, title, detail, code string) obj {
+	return obj{
+		"type":      "https://api.rowboat.dev/problems/" + code,
+		"title":     title,
+		"status":    status,
+		"detail":    detail,
+		"code":      code,
+		"requestId": "req-abc123",
+	}
+}
+
+func reconnectProblemExample() obj {
+	ex := problemExample(409, "Conflict", "Google reports invalid_grant; user must reconnect.", "reconnect_required")
+	ex["reconnectRequired"] = true
+	return ex
+}
+
 func binaryResponse(description, contentType string) obj {
 	return obj{"description": description, "content": obj{contentType: obj{"schema": obj{"type": "string", "format": "binary"}}}}
 }
@@ -1236,7 +1288,9 @@ func responseRef(code string) obj {
 }
 
 func revisionConflictResponse() obj {
-	return jsonResponse("Revision conflict. The caller wrote with a stale revision and should retry with currentRevision.", ref("RevisionConflictEnvelope"), obj{"error": "revision conflict", "code": "conflict", "currentRevision": 3})
+	ex := problemExample(409, "Conflict", "revision conflict", "conflict")
+	ex["currentRevision"] = 3
+	return problemResponse("Revision conflict. The caller wrote with a stale revision and should retry with currentRevision.", ref("RevisionConflictEnvelope"), ex)
 }
 
 func backgroundTaskExample() obj {

@@ -23,6 +23,12 @@ app.kubernetes.io/name: {{ include "rowboat-api.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
+{{- define "rowboat-api.workerSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "rowboat-api.name" . }}-worker
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: worker
+{{- end -}}
+
 {{- define "rowboat-api.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
 {{- default (include "rowboat-api.fullname" .) .Values.serviceAccount.name -}}
