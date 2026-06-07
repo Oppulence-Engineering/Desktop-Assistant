@@ -47,7 +47,8 @@ The default workflow covers:
 
 Required repository secret:
 
-- `INFISICAL_TOKEN`: Infisical service or machine token that can export the dev/kind secrets referenced by `.infisical.json`.
+- `INFISICAL_TOKEN`: Infisical service or machine token that can export the dev/kind secrets.
+- `INFISICAL_PROJECT_ID`: Infisical project id used by CI, because `.infisical.json` is intentionally not committed.
 
 ## Budgets And Baselines
 
