@@ -62,6 +62,7 @@ module.exports = {
             name: '@electron-forge/maker-dmg',
             config: (arch) => ({
                 format: 'ULFO',
+                title: PRODUCT_NAME,
                 name: `${PRODUCT_ARTIFACT_NAME}-darwin-${arch}-${pkg.version}`,  // Architecture-specific name to avoid conflicts
                       volumeName: 'Solomon AI',
             })
