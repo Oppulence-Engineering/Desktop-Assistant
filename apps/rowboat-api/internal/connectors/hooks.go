@@ -31,8 +31,7 @@ type upsell struct {
 // payload is mapped from Ory's consent hook in ops (RFC 012).
 func (h *Handler) PreConsent(w http.ResponseWriter, r *http.Request) {
 	var req preConsentRequest
-	if err := limitedJSON(r, &req); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
 		return
 	}
 	workosID := req.WorkOSUserID
@@ -87,7 +86,10 @@ type invalidateRequest struct {
 // the internal-secret middleware; products call it to force-disconnect a user.
 func (h *Handler) Invalidate(w http.ResponseWriter, r *http.Request) {
 	var req invalidateRequest
-	if err := limitedJSON(r, &req); err != nil || req.WorkOSUserID == "" || req.Connector == "" {
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
+		return
+	}
+	if req.WorkOSUserID == "" || req.Connector == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing workos_user_id or connector", "bad_request")
 		return
 	}

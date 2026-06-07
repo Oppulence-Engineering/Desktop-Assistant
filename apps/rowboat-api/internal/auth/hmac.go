@@ -26,10 +26,9 @@ func RequireHookHMAC(secret string) func(http.Handler) http.Handler {
 				httpx.Error(w, http.StatusInternalServerError, "hook secret not configured", "internal_error")
 				return
 			}
-			body, err := io.ReadAll(io.LimitReader(r.Body, maxHookBody))
+			body, ok := httpx.ReadBody(w, r, maxHookBody)
 			_ = r.Body.Close()
-			if err != nil {
-				httpx.Error(w, http.StatusBadRequest, "unable to read body", "bad_request")
+			if !ok {
 				return
 			}
 

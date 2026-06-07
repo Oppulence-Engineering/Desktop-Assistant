@@ -10,8 +10,10 @@ package quota
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/credits"
 	"github.com/google/uuid"
@@ -24,6 +26,20 @@ var ErrInsufficientCredits = errors.New("insufficient_credits")
 
 // ErrNoUser is returned when Reserve runs without an authenticated user.
 var ErrNoUser = errors.New("quota: no user in context")
+
+// ErrDailyLimitExceeded is returned when the caller would exceed the daily
+// metered spend cap.
+var ErrDailyLimitExceeded = errors.New("daily_credit_limit_exceeded")
+
+// ErrMonthlyLimitExceeded is returned when the caller would exceed the monthly
+// metered spend cap.
+var ErrMonthlyLimitExceeded = errors.New("monthly_credit_limit_exceeded")
+
+// SpendLimits caps net consumed credits for the current UTC day/month.
+type SpendLimits struct {
+	Daily   int
+	Monthly int
+}
 
 // Gate issues credit reservations against the ledger.
 type Gate struct {
@@ -103,6 +119,42 @@ func (g *Gate) Reserve(ctx context.Context, op string, estimated int, requestID 
 	return &Charge{gate: g, user: u, op: op, requestID: requestID, reserved: estimated}, nil
 }
 
+// CheckSpendLimits verifies that estimated additional spend would not exceed
+// the configured daily/monthly caps for the current viewer.
+func (g *Gate) CheckSpendLimits(ctx context.Context, estimated int, limits SpendLimits) error {
+	if limits.Daily <= 0 && limits.Monthly <= 0 {
+		return nil
+	}
+	if _, ok := auth.UserFromCtx(ctx); !ok {
+		return ErrNoUser
+	}
+	if estimated < 0 {
+		estimated = 0
+	}
+	now := time.Now().UTC()
+	if limits.Daily > 0 {
+		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+		spent, err := g.consumedSince(ctx, start)
+		if err != nil {
+			return err
+		}
+		if spent+estimated > limits.Daily {
+			return ErrDailyLimitExceeded
+		}
+	}
+	if limits.Monthly > 0 {
+		start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		spent, err := g.consumedSince(ctx, start)
+		if err != nil {
+			return err
+		}
+		if spent+estimated > limits.Monthly {
+			return ErrMonthlyLimitExceeded
+		}
+	}
+	return nil
+}
+
 // Settle records the difference between the reservation and the actual cost.
 // diff = reserved - actual: positive refunds the excess, negative debits more.
 func (c *Charge) Settle(ctx context.Context, actual int) error {
@@ -137,6 +189,26 @@ func (g *Gate) write(ctx context.Context, u *ent.User, delta int, reason string,
 		return nil
 	}
 	return err
+}
+
+func (g *Gate) consumedSince(ctx context.Context, start time.Time) (int, error) {
+	var rows []struct {
+		Total *int `json:"total"`
+	}
+	err := g.client.CreditLedger.Query().
+		Where(
+			creditledger.TsGTE(start),
+			creditledger.DeltaLT(0),
+		).
+		Aggregate(ent.As(ent.Sum(creditledger.FieldDelta), "total")).
+		Scan(ctx, &rows)
+	if err != nil {
+		return 0, err
+	}
+	if len(rows) == 0 || rows[0].Total == nil {
+		return 0, nil
+	}
+	return -*rows[0].Total, nil
 }
 
 // sanctionedCredits returns the viewer's sanctioned credit grant (0 if none).

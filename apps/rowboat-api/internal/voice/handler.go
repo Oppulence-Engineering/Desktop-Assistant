@@ -14,12 +14,12 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/proxyutil"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -30,9 +30,10 @@ type Handler struct {
 	prices  *pricing.Table
 	gate    *quota.Gate
 	secrets *secrets.Store
-	http    *http.Client
+	http    *outbound.Client
 	log     *zap.Logger
 	baseURL string
+	limits  quota.SpendLimits
 }
 
 // New builds the voice handler.
@@ -41,7 +42,13 @@ func New(prices *pricing.Table, gate *quota.Gate, sec *secrets.Store, log *zap.L
 		prices:  prices,
 		gate:    gate,
 		secrets: sec,
-		http:    &http.Client{Timeout: 60 * time.Second},
+		http: outbound.NewClient(outbound.Policy{
+			Name:                  "elevenlabs",
+			Timeout:               60 * time.Second,
+			ResponseHeaderTimeout: 15 * time.Second,
+			MaxConcurrent:         64,
+			MaxResponseBytes:      64 << 20,
+		}),
 		log:     log,
 		baseURL: "https://api.elevenlabs.io",
 	}
@@ -54,10 +61,25 @@ func (h *Handler) SetUpstream(base string) {
 	}
 }
 
+// SetOutboundPolicy applies the shared outbound vendor policy.
+func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
+	policy.Name = "elevenlabs"
+	h.http = outbound.NewClient(policy)
+}
+
+// SetSpendLimits applies per-user daily/monthly credit caps.
+func (h *Handler) SetSpendLimits(limits quota.SpendLimits) {
+	h.limits = limits
+}
+
 // TextToSpeech handles POST /v1/voice/text-to-speech/{voiceId}.
 func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
-	if _, ok := auth.UserFromCtx(r.Context()); !ok {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
 		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+		return
+	}
+	if !httpx.RequireIdempotencyKey(w, r) {
 		return
 	}
 	voiceID := chi.URLParam(r, "voiceId")
@@ -66,18 +88,34 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	raw, err := io.ReadAll(io.LimitReader(r.Body, maxBody))
-	if err != nil {
-		httpx.Error(w, http.StatusBadRequest, "could not read body", "bad_request")
+	raw, ok := httpx.ReadBody(w, r, maxBody)
+	if !ok {
 		return
 	}
 	var parsed struct {
 		Text string `json:"text"`
 	}
-	_ = json.Unmarshal(raw, &parsed)
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	if err := dec.Decode(&parsed); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "invalid JSON body", "bad_request")
+		return
+	}
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		httpx.Error(w, http.StatusBadRequest, "request body must contain exactly one JSON document", "bad_request")
+		return
+	}
+	if parsed.Text == "" {
+		httpx.Error(w, http.StatusBadRequest, "missing text", "bad_request")
+		return
+	}
 
 	cost := h.prices.VoiceCost(utf8.RuneCountInString(parsed.Text))
-	requestID := uuid.New()
+	if err := h.gate.CheckSpendLimits(r.Context(), cost, h.limits); err != nil {
+		writeQuotaError(w, err)
+		return
+	}
+	requestID := httpx.IdempotencyKeyUUID(r, u.ID.String())
 	charge, err := h.gate.Reserve(r.Context(), "voice_tts", cost, requestID)
 	if err != nil {
 		if err == quota.ErrInsufficientCredits {
@@ -104,6 +142,7 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 	upReq.Header.Set("xi-api-key", key)
 	upReq.Header.Set("Content-Type", "application/json")
 	upReq.Header.Set("Accept", "audio/mpeg")
+	upReq.Header.Set("Idempotency-Key", r.Header.Get("Idempotency-Key"))
 
 	resp, err := h.http.Do(upReq)
 	if err != nil {
@@ -124,7 +163,11 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", proxyutil.ContentTypeOr(resp, "audio/mpeg"))
 	w.WriteHeader(resp.StatusCode)
-	_, _ = io.Copy(w, resp.Body)
+	if _, err := io.Copy(w, resp.Body); err != nil {
+		refund(charge, h.log)
+		h.log.Warn("voice upstream response copy failed", zap.Error(err))
+		return
+	}
 
 	// Flat per-character charge: actual == reserved, so settle is a no-op, but
 	// call it for symmetry. Detached so it survives a client disconnect.
@@ -132,6 +175,19 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	if err := charge.Settle(sctx, cost); err != nil {
 		h.log.Error("voice settle", zap.Error(err))
+	}
+}
+
+func writeQuotaError(w http.ResponseWriter, err error) {
+	switch err {
+	case quota.ErrDailyLimitExceeded:
+		httpx.Error(w, http.StatusTooManyRequests, "daily credit limit exceeded", "daily_credit_limit_exceeded")
+	case quota.ErrMonthlyLimitExceeded:
+		httpx.Error(w, http.StatusTooManyRequests, "monthly credit limit exceeded", "monthly_credit_limit_exceeded")
+	case quota.ErrNoUser:
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+	default:
+		httpx.Error(w, http.StatusInternalServerError, "could not check credit limits", "internal_error")
 	}
 }
 

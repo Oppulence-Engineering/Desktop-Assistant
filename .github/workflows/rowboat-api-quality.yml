@@ -1,0 +1,118 @@
+name: Rowboat API Quality
+
+on:
+  pull_request:
+    paths:
+      - "apps/rowboat-api/**"
+      - "charts/rowboat-api/**"
+      - "packages/rowboat-api-client-ts/**"
+      - ".github/workflows/rowboat-api-quality.yml"
+  push:
+    branches: [develop]
+    paths:
+      - "apps/rowboat-api/**"
+      - "charts/rowboat-api/**"
+      - "packages/rowboat-api-client-ts/**"
+      - ".github/workflows/rowboat-api-quality.yml"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  go-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - name: Test with race detector
+        run: go test ./... -race -count=1
+        working-directory: apps/rowboat-api
+      - name: Vet
+        run: go vet ./...
+        working-directory: apps/rowboat-api
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: apps/rowboat-api
+
+  generate-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: packages/rowboat-api-client-ts/package-lock.json
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Install generation tools
+        run: make install-tools
+        working-directory: apps/rowboat-api
+      - name: Generate API and SDK artifacts
+        run: make generate
+        working-directory: apps/rowboat-api
+      - name: Check generated drift
+        run: git diff --exit-code -- apps/rowboat-api packages/rowboat-api-client-ts
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: azure/setup-helm@v5
+      - name: Helm lint
+        run: helm lint charts/rowboat-api
+      - name: Helm template default values
+        run: helm template rowboat-api charts/rowboat-api
+      - name: Helm template kind values
+        run: helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-kind.yaml
+
+  vulnerability-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+        working-directory: apps/rowboat-api
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build container
+        run: docker build -f apps/rowboat-api/Dockerfile -t rowboat-api:${{ github.sha }} .
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: rowboat-api:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results.sarif

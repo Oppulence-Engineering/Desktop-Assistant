@@ -31,13 +31,19 @@ import (
 )
 
 const (
+	// WorkflowName is the Temporal workflow type for API-native background task runs.
 	WorkflowName = "rowboat.background_tasks.api.v1"
 
+	// ActivityMarkRunRunning is the Temporal activity type that marks a run as running.
 	ActivityMarkRunRunning = "rowboat.background_tasks.mark_run_running.v1"
+	// ActivityExecuteAPITask is the Temporal activity type that executes the API task.
 	ActivityExecuteAPITask = "rowboat.background_tasks.execute_api_task.v1"
-	ActivityMarkRunDone    = "rowboat.background_tasks.mark_run_done.v1"
-	ActivityMarkRunFailed  = "rowboat.background_tasks.mark_run_failed.v1"
+	// ActivityMarkRunDone is the Temporal activity type that marks a run as completed.
+	ActivityMarkRunDone = "rowboat.background_tasks.mark_run_done.v1"
+	// ActivityMarkRunFailed is the Temporal activity type that marks a run as failed.
+	ActivityMarkRunFailed = "rowboat.background_tasks.mark_run_failed.v1"
 
+	// SignalControl is the Temporal signal used to control an in-flight API task run.
 	SignalControl = "rowboat.background_tasks.control.v1"
 )
 
@@ -508,10 +514,10 @@ func buildArtifact(task *ent.BackgroundTask, in StartInput, summary string, ts t
 	return b.String()
 }
 
-func truncate(s string, max int) string {
+func truncate(s string, maxLen int) string {
 	s = strings.TrimSpace(s)
-	if len(s) <= max {
+	if len(s) <= maxLen {
 		return s
 	}
-	return s[:max] + "..."
+	return s[:maxLen] + "..."
 }

@@ -1,3 +1,4 @@
+// Package docs serves the rowboat-api OpenAPI document and API reference UI.
 package docs
 
 import (
@@ -9,10 +10,12 @@ import (
 // Handler serves the OpenAPI document and Scalar API reference UI.
 type Handler struct{}
 
+// New builds a docs handler.
 func New() *Handler {
 	return &Handler{}
 }
 
+// OpenAPI serves the embedded OpenAPI document.
 func (h *Handler) OpenAPI(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=300")
@@ -20,6 +23,7 @@ func (h *Handler) OpenAPI(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write(rowboatapi.OpenAPIJSON)
 }
 
+// Scalar serves the Scalar API reference UI.
 func (h *Handler) Scalar(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")

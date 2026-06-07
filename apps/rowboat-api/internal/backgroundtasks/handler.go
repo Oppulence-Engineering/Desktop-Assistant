@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -300,7 +299,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req createTaskRequest
-	if err := readJSON(r, &req); err != nil {
+	if err := readJSON(w, r, &req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
 		return
 	}
@@ -328,10 +327,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		SetName(req.Name).
 		SetInstructions(req.Instructions).
 		SetActive(active)
-	if raw, present, clear, err := normalizeRawJSON(req.Triggers); err != nil {
+	if raw, present, clearValue, err := normalizeRawJSON(req.Triggers); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "triggers must be valid JSON", "bad_request")
 		return
-	} else if present && !clear {
+	} else if present && !clearValue {
 		create = create.SetTriggersJSON(raw)
 	}
 	if req.Model != "" {
@@ -389,7 +388,7 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req patchTaskRequest
-	if err := readJSON(r, &req); err != nil {
+	if err := readJSON(w, r, &req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
 		return
 	}
@@ -417,10 +416,10 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 	if req.Active != nil {
 		update = update.SetActive(*req.Active)
 	}
-	if raw, present, clear, err := normalizeRawJSON(req.Triggers); err != nil {
+	if raw, present, clearValue, err := normalizeRawJSON(req.Triggers); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "triggers must be valid JSON", "bad_request")
 		return
-	} else if present && clear {
+	} else if present && clearValue {
 		update = update.ClearTriggersJSON()
 	} else if present {
 		update = update.SetTriggersJSON(raw)
@@ -574,7 +573,7 @@ func (h *Handler) PutArtifact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req putArtifactRequest
-	if err := readJSON(r, &req); err != nil {
+	if err := readJSON(w, r, &req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
 		return
 	}
@@ -708,7 +707,7 @@ func (h *Handler) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req createRunRequest
-	if err := readJSON(r, &req); err != nil {
+	if err := readJSON(w, r, &req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
 		return
 	}
@@ -741,7 +740,7 @@ func (h *Handler) PatchRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req patchRunRequest
-	if err := readJSON(r, &req); err != nil {
+	if err := readJSON(w, r, &req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
 		return
 	}
@@ -953,7 +952,7 @@ func (h *Handler) SignalRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req signalRunRequest
-	if err := readJSON(r, &req); err != nil {
+	if err := readJSON(w, r, &req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
 		return
 	}
@@ -989,7 +988,7 @@ func (h *Handler) AppendRunEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req appendEventsRequest
-	if err := readJSON(r, &req); err != nil {
+	if err := readJSON(w, r, &req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
 		return
 	}
@@ -999,7 +998,7 @@ func (h *Handler) AppendRunEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	stored, skipped := 0, 0
 	for _, ev := range req.Events {
-		if ev.Event == nil || len(ev.Event) == 0 || !json.Valid(ev.Event) {
+		if len(ev.Event) == 0 || !json.Valid(ev.Event) {
 			httpx.Error(w, http.StatusBadRequest, "event must be valid JSON", "bad_request")
 			return
 		}
@@ -1079,7 +1078,7 @@ func (h *Handler) Trigger(w http.ResponseWriter, r *http.Request) {
 	}
 	var req triggerRequest
 	if r.Body != nil && r.ContentLength != 0 {
-		if err := readJSON(r, &req); err != nil {
+		if err := readJSON(w, r, &req); err != nil {
 			httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
 			return
 		}
@@ -1415,8 +1414,11 @@ func (h *Handler) conflict(w http.ResponseWriter, currentRevision int) {
 	})
 }
 
-func readJSON(r *http.Request, v any) error {
-	return json.NewDecoder(io.LimitReader(r.Body, maxBody)).Decode(v)
+func readJSON(w http.ResponseWriter, r *http.Request, v any) error {
+	if !httpx.DecodeJSON(w, r, maxBody, v) {
+		return badRequest("invalid JSON body")
+	}
+	return nil
 }
 
 func normalizeRawJSON(raw json.RawMessage) (string, bool, bool, error) {

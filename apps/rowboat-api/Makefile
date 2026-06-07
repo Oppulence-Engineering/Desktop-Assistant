@@ -77,6 +77,7 @@ gql-generate:
 .PHONY: sdk-generate
 sdk-generate:
 	npm --prefix "$(SDK_TS_DIR)" ci --ignore-scripts
+	npm --prefix "$(SDK_TS_DIR)" exec -- prettier --write ../../apps/rowboat-api/api/openapi.json
 	npm --prefix "$(SDK_TS_DIR)" run generate
 	npm --prefix "$(SDK_TS_DIR)" run build
 

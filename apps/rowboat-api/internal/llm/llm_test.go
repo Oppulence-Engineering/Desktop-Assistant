@@ -66,6 +66,7 @@ func TestChatCompletionsStreamingSettlesCredits(t *testing.T) {
 
 	reqBody := `{"model":"anthropic/claude-sonnet-4-5","stream":true,"messages":[{"role":"user","content":"hi"}]}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/llm/chat/completions", strings.NewReader(reqBody)).WithContext(ctx)
+	req.Header.Set("Idempotency-Key", "llm-stream-1")
 	rec := httptest.NewRecorder()
 	h.ChatCompletions(rec, req)
 
@@ -113,6 +114,7 @@ func TestChatCompletionsInsufficientCredits(t *testing.T) {
 
 	reqBody := `{"model":"anthropic/claude-sonnet-4-5","stream":true,"messages":[{"role":"user","content":"hi"}]}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/llm/chat/completions", strings.NewReader(reqBody)).WithContext(ctx)
+	req.Header.Set("Idempotency-Key", "llm-insufficient-1")
 	rec := httptest.NewRecorder()
 	h.ChatCompletions(rec, req)
 

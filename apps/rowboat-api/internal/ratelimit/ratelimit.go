@@ -6,6 +6,7 @@ package ratelimit
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
@@ -24,6 +25,12 @@ const (
 	GroupComposio    = "composio"
 	GroupConnections = "connections"
 	GroupDefault     = "default"
+	GroupAuth        = "auth"
+	GroupInternal    = "internal"
+	GroupLLMBurst    = "llm_burst"
+	GroupVoiceBurst  = "voice_burst"
+	GroupSearchBurst = "search_burst"
+	GroupTaskBurst   = "background_task_burst"
 )
 
 // Limiter is a fixed-window rate limiter.
@@ -35,35 +42,51 @@ type Limiter interface {
 
 // Manager applies a Limiter as per-user HTTP middleware.
 type Manager struct {
-	limiter Limiter
-	log     *zap.Logger
+	limiter    Limiter
+	log        *zap.Logger
+	failClosed bool
 }
 
-// NewManager builds a Manager. A non-empty redisURL selects the Redis limiter;
-// otherwise (or if Redis is unreachable) it falls back to in-memory.
-func NewManager(ctx context.Context, redisURL string, log *zap.Logger) *Manager {
+// NewManager builds a Manager. Production callers pass failClosed=true, making
+// Redis mandatory and turning limiter backend errors into 503s.
+func NewManager(ctx context.Context, redisURL string, failClosed bool, log *zap.Logger) (*Manager, error) {
 	if redisURL != "" {
-		rl, err := newRedisLimiter(redisURL)
+		rl, err := newRedisLimiter(ctx, redisURL)
 		if err != nil {
+			if failClosed {
+				return nil, err
+			}
 			log.Warn("redis rate limiter unavailable, using in-memory", zap.Error(err))
 		} else {
 			log.Info("rate limiter: redis")
-			return &Manager{limiter: rl, log: log}
+			return &Manager{limiter: rl, log: log, failClosed: failClosed}, nil
 		}
+	} else if failClosed {
+		return nil, fmt.Errorf("ratelimit: REDIS_URL is required when failClosed=true")
 	}
-	return &Manager{limiter: newMemoryLimiter(ctx), log: log}
+	return &Manager{limiter: newMemoryLimiter(ctx), log: log, failClosed: failClosed}, nil
 }
 
 // PerUser returns middleware enforcing `limit` requests per minute for the
 // route group, keyed by authenticated user (falling back to remote address).
 func (m *Manager) PerUser(group string, limit int) func(http.Handler) http.Handler {
+	return m.PerUserWindow(group, limit, time.Minute)
+}
+
+// PerUserWindow returns middleware enforcing limit requests per window.
+func (m *Manager) PerUserWindow(group string, limit int, window time.Duration) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			key := group + ":" + subject(r)
-			allowed, retryAfter, err := m.limiter.Allow(r.Context(), key, limit, time.Minute)
+			allowed, retryAfter, err := m.limiter.Allow(r.Context(), key, limit, window)
 			if err != nil {
-				// Fail open: never block users because the limiter backend is down.
-				m.log.Warn("rate limiter error, allowing", zap.Error(err))
+				if m.failClosed {
+					m.log.Error("rate limiter error, denying", zap.Error(err))
+					w.Header().Set("Retry-After", "5")
+					httpx.Error(w, http.StatusServiceUnavailable, "rate limiter unavailable", "rate_limiter_unavailable")
+					return
+				}
+				m.log.Warn("rate limiter error, allowing in non-production", zap.Error(err))
 				next.ServeHTTP(w, r)
 				return
 			}

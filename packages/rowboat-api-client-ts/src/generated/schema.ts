@@ -1947,7 +1947,7 @@ export interface components {
        */
       usedCredits: number;
     };
-    /** @description Canonical JSON error returned by Solomon AI API handlers. */
+    /** @description RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members. */
     ErrorEnvelope: {
       /**
        * @description Stable machine-readable error code.
@@ -1955,10 +1955,40 @@ export interface components {
        */
       code: string;
       /**
-       * @description Human-readable error message.
+       * @description Human-readable error detail.
        * @example missing bearer token
        */
-      error: string;
+      detail?: string;
+      /**
+       * @description Optional occurrence URI.
+       * @example /v1/me
+       */
+      instance?: string | null;
+      /**
+       * @description Request id emitted by the API middleware.
+       * @example req-abc123
+       */
+      requestId?: string | null;
+      /**
+       * @description HTTP status code.
+       * @example 401
+       */
+      status: number;
+      /**
+       * @description Short HTTP-status summary.
+       * @example Unauthorized
+       */
+      title: string;
+      /**
+       * @description OpenTelemetry trace id when tracing is active.
+       * @example 4bf92f3577b34da6a3ce929d0e0e4736
+       */
+      traceId?: string | null;
+      /**
+       * @description Problem type URI.
+       * @example https://api.rowboat.dev/problems/unauthorized
+       */
+      type: string;
     };
     /** @description Exa search request body. Solomon AI API applies a flat credit charge and forwards the JSON body unchanged to Exa /search. */
     ExaSearchRequest: {
@@ -2735,7 +2765,7 @@ export interface components {
        */
       status: "ready" | "not_ready";
     };
-    /** @description Error envelope used when an upstream refresh token is invalid and the desktop must reconnect. */
+    /** @description Problem details used when an upstream refresh token is invalid and the desktop must reconnect. */
     ReconnectErrorEnvelope: {
       /**
        * @description Stable machine-readable error code.
@@ -2744,15 +2774,40 @@ export interface components {
        */
       code: "reconnect_required";
       /**
-       * @description Human-readable error message.
+       * @description Human-readable error detail.
        * @example Google reports invalid_grant; user must reconnect.
        */
-      error: string;
+      detail?: string;
       /**
        * @description Whether the desktop should force the user through a new OAuth connection flow.
        * @example true
        */
       reconnectRequired: boolean;
+      /**
+       * @description Request id emitted by the API middleware.
+       * @example req-abc123
+       */
+      requestId?: string | null;
+      /**
+       * @description HTTP status code.
+       * @example 409
+       */
+      status: number;
+      /**
+       * @description Short HTTP-status summary.
+       * @example Conflict
+       */
+      title: string;
+      /**
+       * @description OpenTelemetry trace id when tracing is active.
+       * @example 4bf92f3577b34da6a3ce929d0e0e4736
+       */
+      traceId?: string | null;
+      /**
+       * @description Problem type URI.
+       * @example https://api.rowboat.dev/problems/reconnect_required
+       */
+      type: string;
     };
     /** @description Revision conflict returned when the caller edits a stale task, artifact, or run revision. Clients should refetch, merge, and retry with currentRevision. */
     RevisionConflictEnvelope: {
@@ -2768,11 +2823,36 @@ export interface components {
        */
       currentRevision: number;
       /**
-       * @description Human-readable conflict message.
+       * @description Human-readable conflict detail.
        * @example revision conflict
        * @enum {string}
        */
-      error: "revision conflict";
+      detail?: "revision conflict";
+      /**
+       * @description Request id emitted by the API middleware.
+       * @example req-abc123
+       */
+      requestId?: string | null;
+      /**
+       * @description HTTP status code.
+       * @example 409
+       */
+      status: number;
+      /**
+       * @description Short HTTP-status summary.
+       * @example Conflict
+       */
+      title: string;
+      /**
+       * @description OpenTelemetry trace id when tracing is active.
+       * @example 4bf92f3577b34da6a3ce929d0e0e4736
+       */
+      traceId?: string | null;
+      /**
+       * @description Problem type URI.
+       * @example https://api.rowboat.dev/problems/conflict
+       */
+      type: string;
     };
     /** @description User billing plan, status, trial expiry, Stripe identifiers, and credit grant. */
     Subscription: {
@@ -3133,10 +3213,14 @@ export interface components {
         /**
          * @example {
          *       "code": "bad_request",
-         *       "error": "missing model"
+         *       "detail": "missing model",
+         *       "requestId": "req-abc123",
+         *       "status": 400,
+         *       "title": "Bad Request",
+         *       "type": "https://api.rowboat.dev/problems/bad_request"
          *     }
          */
-        "application/json": components["schemas"]["ErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
     /** @description Unauthorized. Missing, invalid, or expired bearer token or shared secret. */
@@ -3148,10 +3232,14 @@ export interface components {
         /**
          * @example {
          *       "code": "unauthorized",
-         *       "error": "missing bearer token"
+         *       "detail": "missing bearer token",
+         *       "requestId": "req-abc123",
+         *       "status": 401,
+         *       "title": "Unauthorized",
+         *       "type": "https://api.rowboat.dev/problems/unauthorized"
          *     }
          */
-        "application/json": components["schemas"]["ErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
     /** @description Payment required. The user does not have enough credits for the requested metered call. */
@@ -3163,10 +3251,14 @@ export interface components {
         /**
          * @example {
          *       "code": "insufficient_credits",
-         *       "error": "insufficient_credits"
+         *       "detail": "insufficient_credits",
+         *       "requestId": "req-abc123",
+         *       "status": 402,
+         *       "title": "Payment Required",
+         *       "type": "https://api.rowboat.dev/problems/insufficient_credits"
          *     }
          */
-        "application/json": components["schemas"]["ErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
     /** @description Forbidden. The caller is authenticated but cannot access this resource. */
@@ -3178,10 +3270,14 @@ export interface components {
         /**
          * @example {
          *       "code": "forbidden",
-         *       "error": "ticket does not belong to this user"
+         *       "detail": "ticket does not belong to this user",
+         *       "requestId": "req-abc123",
+         *       "status": 403,
+         *       "title": "Forbidden",
+         *       "type": "https://api.rowboat.dev/problems/forbidden"
          *     }
          */
-        "application/json": components["schemas"]["ErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
     /** @description Not found. The requested resource, connector, or OAuth handoff ticket does not exist. */
@@ -3193,10 +3289,14 @@ export interface components {
         /**
          * @example {
          *       "code": "not_connected",
-         *       "error": "connector not connected"
+         *       "detail": "connector not connected",
+         *       "requestId": "req-abc123",
+         *       "status": 404,
+         *       "title": "Not Found",
+         *       "type": "https://api.rowboat.dev/problems/not_connected"
          *     }
          */
-        "application/json": components["schemas"]["ErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
     /** @description Conflict. Usually means an upstream refresh token is invalid and the user must reconnect. */
@@ -3208,11 +3308,15 @@ export interface components {
         /**
          * @example {
          *       "code": "reconnect_required",
-         *       "error": "Google reports invalid_grant; user must reconnect.",
-         *       "reconnectRequired": true
+         *       "detail": "Google reports invalid_grant; user must reconnect.",
+         *       "reconnectRequired": true,
+         *       "requestId": "req-abc123",
+         *       "status": 409,
+         *       "title": "Conflict",
+         *       "type": "https://api.rowboat.dev/problems/reconnect_required"
          *     }
          */
-        "application/json": components["schemas"]["ReconnectErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ReconnectErrorEnvelope"];
       };
     };
     /** @description Gone. A one-time handoff ticket existed but expired before redemption. */
@@ -3224,10 +3328,14 @@ export interface components {
         /**
          * @example {
          *       "code": "ticket_expired",
-         *       "error": "ticket expired"
+         *       "detail": "ticket expired",
+         *       "requestId": "req-abc123",
+         *       "status": 410,
+         *       "title": "Gone",
+         *       "type": "https://api.rowboat.dev/problems/ticket_expired"
          *     }
          */
-        "application/json": components["schemas"]["ErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
     /** @description Too many requests. A per-user rate limit bucket rejected the request. */
@@ -3239,10 +3347,14 @@ export interface components {
         /**
          * @example {
          *       "code": "rate_limited",
-         *       "error": "rate limit exceeded"
+         *       "detail": "rate limit exceeded",
+         *       "requestId": "req-abc123",
+         *       "status": 429,
+         *       "title": "Too Many Requests",
+         *       "type": "https://api.rowboat.dev/problems/rate_limited"
          *     }
          */
-        "application/json": components["schemas"]["ErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
     /** @description Internal server error. */
@@ -3254,10 +3366,14 @@ export interface components {
         /**
          * @example {
          *       "code": "internal_error",
-         *       "error": "could not load billing"
+         *       "detail": "could not load billing",
+         *       "requestId": "req-abc123",
+         *       "status": 500,
+         *       "title": "Internal Server Error",
+         *       "type": "https://api.rowboat.dev/problems/internal_error"
          *     }
          */
-        "application/json": components["schemas"]["ErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
     /** @description Bad gateway. A configured upstream provider failed or the provider is not configured. */
@@ -3269,10 +3385,14 @@ export interface components {
         /**
          * @example {
          *       "code": "provider_unconfigured",
-         *       "error": "provider not configured"
+         *       "detail": "provider not configured",
+         *       "requestId": "req-abc123",
+         *       "status": 502,
+         *       "title": "Bad Gateway",
+         *       "type": "https://api.rowboat.dev/problems/provider_unconfigured"
          *     }
          */
-        "application/json": components["schemas"]["ErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
     /** @description Service unavailable. Authentication or readiness dependencies are temporarily unavailable. */
@@ -3284,10 +3404,14 @@ export interface components {
         /**
          * @example {
          *       "code": "auth_unavailable",
-         *       "error": "authentication unavailable"
+         *       "detail": "authentication unavailable",
+         *       "requestId": "req-abc123",
+         *       "status": 503,
+         *       "title": "Service Unavailable",
+         *       "type": "https://api.rowboat.dev/problems/auth_unavailable"
          *     }
          */
-        "application/json": components["schemas"]["ErrorEnvelope"];
+        "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
   };
@@ -3837,10 +3961,14 @@ export interface operations {
           /**
            * @example {
            *       "code": "conflict",
-           *       "error": "background task already exists"
+           *       "detail": "background task already exists",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/conflict"
            *     }
            */
-          "application/json": components["schemas"]["ErrorEnvelope"];
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
         };
       };
       500: components["responses"]["500"];
@@ -3931,10 +4059,14 @@ export interface operations {
            * @example {
            *       "code": "conflict",
            *       "currentRevision": 3,
-           *       "error": "revision conflict"
+           *       "detail": "revision conflict",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/conflict"
            *     }
            */
-          "application/json": components["schemas"]["RevisionConflictEnvelope"];
+          "application/problem+json": components["schemas"]["RevisionConflictEnvelope"];
         };
       };
       500: components["responses"]["500"];
@@ -4012,10 +4144,14 @@ export interface operations {
            * @example {
            *       "code": "conflict",
            *       "currentRevision": 3,
-           *       "error": "revision conflict"
+           *       "detail": "revision conflict",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/conflict"
            *     }
            */
-          "application/json": components["schemas"]["RevisionConflictEnvelope"];
+          "application/problem+json": components["schemas"]["RevisionConflictEnvelope"];
         };
       };
       500: components["responses"]["500"];
@@ -4108,10 +4244,14 @@ export interface operations {
            * @example {
            *       "code": "conflict",
            *       "currentRevision": 3,
-           *       "error": "revision conflict"
+           *       "detail": "revision conflict",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/conflict"
            *     }
            */
-          "application/json": components["schemas"]["RevisionConflictEnvelope"];
+          "application/problem+json": components["schemas"]["RevisionConflictEnvelope"];
         };
       };
       500: components["responses"]["500"];
@@ -4257,10 +4397,14 @@ export interface operations {
           /**
            * @example {
            *       "code": "conflict",
-           *       "error": "run already exists"
+           *       "detail": "run already exists",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/conflict"
            *     }
            */
-          "application/json": components["schemas"]["ErrorEnvelope"];
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
         };
       };
       500: components["responses"]["500"];
@@ -4394,10 +4538,14 @@ export interface operations {
            * @example {
            *       "code": "conflict",
            *       "currentRevision": 3,
-           *       "error": "revision conflict"
+           *       "detail": "revision conflict",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/conflict"
            *     }
            */
-          "application/json": components["schemas"]["RevisionConflictEnvelope"];
+          "application/problem+json": components["schemas"]["RevisionConflictEnvelope"];
         };
       };
       500: components["responses"]["500"];
@@ -5289,7 +5437,9 @@ export interface operations {
   createChatCompletion: {
     parameters: {
       query?: never;
-      header?: {
+      header: {
+        /** @description Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor. */
+        "Idempotency-Key": string;
         /** @description Optional feature/use-case label recorded in LLMUsage for cost allocation. */
         "x-solomon-use-case"?: string;
         /** @description Optional sub-use-case label recorded in LLMUsage. */
@@ -5350,7 +5500,9 @@ export interface operations {
   createCompletion: {
     parameters: {
       query?: never;
-      header?: {
+      header: {
+        /** @description Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor. */
+        "Idempotency-Key": string;
         /** @description Optional feature/use-case label recorded in LLMUsage for cost allocation. */
         "x-solomon-use-case"?: string;
         /** @description Optional sub-use-case label recorded in LLMUsage. */
@@ -5406,7 +5558,9 @@ export interface operations {
   createEmbedding: {
     parameters: {
       query?: never;
-      header?: {
+      header: {
+        /** @description Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor. */
+        "Idempotency-Key": string;
         /** @description Optional feature/use-case label recorded in LLMUsage for cost allocation. */
         "x-solomon-use-case"?: string;
         /** @description Optional sub-use-case label recorded in LLMUsage. */
@@ -5544,7 +5698,10 @@ export interface operations {
   searchExa: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        /** @description Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor. */
+        "Idempotency-Key": string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -5591,7 +5748,10 @@ export interface operations {
   textToSpeech: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        /** @description Required stable key for metered POST retries. Reusing the same key for the same user, route, and method reuses the same credit reservation anchor. */
+        "Idempotency-Key": string;
+      };
       path: {
         /** @description ElevenLabs voice id. */
         voiceId: string;

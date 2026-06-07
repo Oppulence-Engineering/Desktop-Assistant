@@ -1,3 +1,5 @@
+// Command openapi-enrich rewrites an OpenAPI JSON file with rowboat-api
+// runtime documentation metadata.
 package main
 
 import (

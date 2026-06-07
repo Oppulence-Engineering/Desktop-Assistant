@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 )
 
 // oryClient is a thin OAuth 2.0 client for brokering connector tokens against
@@ -17,7 +18,7 @@ type oryClient struct {
 	publicURL    string
 	clientID     string
 	clientSecret string
-	http         *http.Client
+	http         *outbound.Client
 }
 
 func newOryClient(publicURL, clientID, clientSecret string) *oryClient {
@@ -25,8 +26,19 @@ func newOryClient(publicURL, clientID, clientSecret string) *oryClient {
 		publicURL:    strings.TrimRight(publicURL, "/"),
 		clientID:     clientID,
 		clientSecret: clientSecret,
-		http:         &http.Client{Timeout: 15 * time.Second},
+		http: outbound.NewClient(outbound.Policy{
+			Name:                  "ory",
+			Timeout:               15 * time.Second,
+			ResponseHeaderTimeout: 10 * time.Second,
+			MaxConcurrent:         64,
+			MaxResponseBytes:      1 << 20,
+		}),
 	}
+}
+
+func (c *oryClient) setOutboundPolicy(policy outbound.Policy) {
+	policy.Name = "ory"
+	c.http = outbound.NewClient(policy)
 }
 
 type oryToken struct {
@@ -82,7 +94,10 @@ func (c *oryClient) tokenRequest(ctx context.Context, form url.Values) (*oryToke
 		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	body, err := outbound.ReadAll(resp.Body, c.http.MaxResponseBytes())
+	if err != nil {
+		return nil, err
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("ory token endpoint returned %d: %s", resp.StatusCode, string(body))
 	}

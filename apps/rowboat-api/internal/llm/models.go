@@ -21,6 +21,11 @@ type modelsResponse struct {
 func (h *Handler) Models(w http.ResponseWriter, _ *http.Request) {
 	ids := make([]string, 0, len(h.prices.Models))
 	for id := range h.prices.Models {
+		if len(h.allowedModels) > 0 {
+			if _, ok := h.allowedModels[id]; !ok {
+				continue
+			}
+		}
 		ids = append(ids, id)
 	}
 	sort.Strings(ids)
