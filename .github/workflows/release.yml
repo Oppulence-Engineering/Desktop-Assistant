@@ -84,6 +84,19 @@ jobs:
         with:
           ref: ${{ needs.release-context.outputs.tag_name }}
 
+      - name: Patch forge config (fix volumeName exceeds 27 chars)
+        run: |
+          CONFIG="apps/x/apps/main/forge.config.cjs"
+          if grep -q "volumeName" "$CONFIG"; then
+            echo "volumeName already present in forge.config.cjs"
+          else
+            sed -i '' "s/format: 'ULFO',/format: 'ULFO', volumeName: 'Solomon AI',/" "$CONFIG" \
+              && echo "Patched volumeName via sed" \
+              || (echo "sed failed, trying perl" && \
+                  perl -i -pe "s/(format: .ULFO.,)/\$1 volumeName: .Solomon AI.,/" "$CONFIG")
+          fi
+          grep -n "volumeName" "$CONFIG" || echo "WARNING: volumeName not found in forge config"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
