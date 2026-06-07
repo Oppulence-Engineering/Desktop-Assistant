@@ -67,6 +67,7 @@ ent-generate:
 proto-generate:
 	go run entgo.io/contrib/entproto/cmd/entproto -path ./ent/schema
 	PATH="$(GOBIN):$$PATH" go generate ./ent/proto/entpb/...
+	perl -0pi -e 's|(//\s*(?:-\s*)?protoc\s+)v[0-9][^\n]*|$${1}(version normalized)|g' ent/proto/entpb/*.pb.go
 
 # gqlgen server (executor + resolvers) from the entgql-generated ent.graphql.
 .PHONY: gql-generate
