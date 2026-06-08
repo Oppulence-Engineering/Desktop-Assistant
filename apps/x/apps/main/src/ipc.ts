@@ -561,12 +561,45 @@ async function localTranscriptionSupported(): Promise<boolean> {
  * Wired to the authenticated quota endpoint in WP 2.2; null until then (the
  * resolver falls back to the user override → hardcoded default).
  */
+function asProvider(value: unknown): TranscriptionProvider | undefined {
+  return value === "whisper-local" || value === "deepgram" || value === "solomon"
+    ? value
+    : undefined;
+}
+
 async function remoteTranscriptionState(): Promise<{
   voiceProvider?: TranscriptionProvider;
   meetingProvider?: TranscriptionProvider;
   meetingMinutesRemaining?: number | null;
 } | null> {
-  return null;
+  // Per-user quota + fleet defaults from the authenticated endpoint (RFC 009
+  // Appendix O.6). Signed-out / failure → null, so the resolver falls back to the
+  // user override → hardcoded default.
+  if (!(await isSignedIn())) return null;
+  try {
+    const token = await getAccessToken();
+    const res = await fetch(`${API_URL}/v1/transcription/quota`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      meetingMinutesRemaining?: number;
+      unlimited?: boolean;
+      transcriptionDefaults?: { voiceProvider?: string; meetingProvider?: string };
+    };
+    return {
+      voiceProvider: asProvider(data.transcriptionDefaults?.voiceProvider),
+      meetingProvider: asProvider(data.transcriptionDefaults?.meetingProvider),
+      // Unlimited (paid) → null so the quota gate never trips.
+      meetingMinutesRemaining: data.unlimited
+        ? null
+        : typeof data.meetingMinutesRemaining === "number"
+          ? data.meetingMinutesRemaining
+          : null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function resolveVoiceProviderMain(): Promise<TranscriptionProvider> {

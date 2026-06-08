@@ -14,6 +14,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
@@ -5076,6 +5077,342 @@ func (i *MCPConnectionWhereInput) P() (predicate.MCPConnection, error) {
 	}
 }
 
+// MeetingMinuteUsageWhereInput represents a where input for filtering MeetingMinuteUsage queries.
+type MeetingMinuteUsageWhereInput struct {
+	Predicates []predicate.MeetingMinuteUsage  `json:"-"`
+	Not        *MeetingMinuteUsageWhereInput   `json:"not,omitempty"`
+	Or         []*MeetingMinuteUsageWhereInput `json:"or,omitempty"`
+	And        []*MeetingMinuteUsageWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "period" field predicates.
+	Period             *string  `json:"period,omitempty"`
+	PeriodNEQ          *string  `json:"periodNEQ,omitempty"`
+	PeriodIn           []string `json:"periodIn,omitempty"`
+	PeriodNotIn        []string `json:"periodNotIn,omitempty"`
+	PeriodGT           *string  `json:"periodGT,omitempty"`
+	PeriodGTE          *string  `json:"periodGTE,omitempty"`
+	PeriodLT           *string  `json:"periodLT,omitempty"`
+	PeriodLTE          *string  `json:"periodLTE,omitempty"`
+	PeriodContains     *string  `json:"periodContains,omitempty"`
+	PeriodHasPrefix    *string  `json:"periodHasPrefix,omitempty"`
+	PeriodHasSuffix    *string  `json:"periodHasSuffix,omitempty"`
+	PeriodEqualFold    *string  `json:"periodEqualFold,omitempty"`
+	PeriodContainsFold *string  `json:"periodContainsFold,omitempty"`
+
+	// "used_seconds" field predicates.
+	UsedSeconds      *int  `json:"usedSeconds,omitempty"`
+	UsedSecondsNEQ   *int  `json:"usedSecondsNEQ,omitempty"`
+	UsedSecondsIn    []int `json:"usedSecondsIn,omitempty"`
+	UsedSecondsNotIn []int `json:"usedSecondsNotIn,omitempty"`
+	UsedSecondsGT    *int  `json:"usedSecondsGT,omitempty"`
+	UsedSecondsGTE   *int  `json:"usedSecondsGTE,omitempty"`
+	UsedSecondsLT    *int  `json:"usedSecondsLT,omitempty"`
+	UsedSecondsLTE   *int  `json:"usedSecondsLTE,omitempty"`
+
+	// "reserved_seconds" field predicates.
+	ReservedSeconds      *int  `json:"reservedSeconds,omitempty"`
+	ReservedSecondsNEQ   *int  `json:"reservedSecondsNEQ,omitempty"`
+	ReservedSecondsIn    []int `json:"reservedSecondsIn,omitempty"`
+	ReservedSecondsNotIn []int `json:"reservedSecondsNotIn,omitempty"`
+	ReservedSecondsGT    *int  `json:"reservedSecondsGT,omitempty"`
+	ReservedSecondsGTE   *int  `json:"reservedSecondsGTE,omitempty"`
+	ReservedSecondsLT    *int  `json:"reservedSecondsLT,omitempty"`
+	ReservedSecondsLTE   *int  `json:"reservedSecondsLTE,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *MeetingMinuteUsageWhereInput) AddPredicates(predicates ...predicate.MeetingMinuteUsage) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the MeetingMinuteUsageWhereInput filter on the MeetingMinuteUsageQuery builder.
+func (i *MeetingMinuteUsageWhereInput) Filter(q *MeetingMinuteUsageQuery) (*MeetingMinuteUsageQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyMeetingMinuteUsageWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyMeetingMinuteUsageWhereInput is returned in case the MeetingMinuteUsageWhereInput is empty.
+var ErrEmptyMeetingMinuteUsageWhereInput = errors.New("ent: empty predicate MeetingMinuteUsageWhereInput")
+
+// P returns a predicate for filtering meetingminuteusages.
+// An error is returned if the input is empty or invalid.
+func (i *MeetingMinuteUsageWhereInput) P() (predicate.MeetingMinuteUsage, error) {
+	var predicates []predicate.MeetingMinuteUsage
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, meetingminuteusage.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.MeetingMinuteUsage, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, meetingminuteusage.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.MeetingMinuteUsage, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, meetingminuteusage.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, meetingminuteusage.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, meetingminuteusage.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, meetingminuteusage.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, meetingminuteusage.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, meetingminuteusage.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, meetingminuteusage.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, meetingminuteusage.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, meetingminuteusage.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, meetingminuteusage.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, meetingminuteusage.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, meetingminuteusage.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, meetingminuteusage.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, meetingminuteusage.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, meetingminuteusage.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, meetingminuteusage.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, meetingminuteusage.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, meetingminuteusage.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, meetingminuteusage.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.Period != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodEQ(*i.Period))
+	}
+	if i.PeriodNEQ != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodNEQ(*i.PeriodNEQ))
+	}
+	if len(i.PeriodIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.PeriodIn(i.PeriodIn...))
+	}
+	if len(i.PeriodNotIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.PeriodNotIn(i.PeriodNotIn...))
+	}
+	if i.PeriodGT != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodGT(*i.PeriodGT))
+	}
+	if i.PeriodGTE != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodGTE(*i.PeriodGTE))
+	}
+	if i.PeriodLT != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodLT(*i.PeriodLT))
+	}
+	if i.PeriodLTE != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodLTE(*i.PeriodLTE))
+	}
+	if i.PeriodContains != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodContains(*i.PeriodContains))
+	}
+	if i.PeriodHasPrefix != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodHasPrefix(*i.PeriodHasPrefix))
+	}
+	if i.PeriodHasSuffix != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodHasSuffix(*i.PeriodHasSuffix))
+	}
+	if i.PeriodEqualFold != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodEqualFold(*i.PeriodEqualFold))
+	}
+	if i.PeriodContainsFold != nil {
+		predicates = append(predicates, meetingminuteusage.PeriodContainsFold(*i.PeriodContainsFold))
+	}
+	if i.UsedSeconds != nil {
+		predicates = append(predicates, meetingminuteusage.UsedSecondsEQ(*i.UsedSeconds))
+	}
+	if i.UsedSecondsNEQ != nil {
+		predicates = append(predicates, meetingminuteusage.UsedSecondsNEQ(*i.UsedSecondsNEQ))
+	}
+	if len(i.UsedSecondsIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.UsedSecondsIn(i.UsedSecondsIn...))
+	}
+	if len(i.UsedSecondsNotIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.UsedSecondsNotIn(i.UsedSecondsNotIn...))
+	}
+	if i.UsedSecondsGT != nil {
+		predicates = append(predicates, meetingminuteusage.UsedSecondsGT(*i.UsedSecondsGT))
+	}
+	if i.UsedSecondsGTE != nil {
+		predicates = append(predicates, meetingminuteusage.UsedSecondsGTE(*i.UsedSecondsGTE))
+	}
+	if i.UsedSecondsLT != nil {
+		predicates = append(predicates, meetingminuteusage.UsedSecondsLT(*i.UsedSecondsLT))
+	}
+	if i.UsedSecondsLTE != nil {
+		predicates = append(predicates, meetingminuteusage.UsedSecondsLTE(*i.UsedSecondsLTE))
+	}
+	if i.ReservedSeconds != nil {
+		predicates = append(predicates, meetingminuteusage.ReservedSecondsEQ(*i.ReservedSeconds))
+	}
+	if i.ReservedSecondsNEQ != nil {
+		predicates = append(predicates, meetingminuteusage.ReservedSecondsNEQ(*i.ReservedSecondsNEQ))
+	}
+	if len(i.ReservedSecondsIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.ReservedSecondsIn(i.ReservedSecondsIn...))
+	}
+	if len(i.ReservedSecondsNotIn) > 0 {
+		predicates = append(predicates, meetingminuteusage.ReservedSecondsNotIn(i.ReservedSecondsNotIn...))
+	}
+	if i.ReservedSecondsGT != nil {
+		predicates = append(predicates, meetingminuteusage.ReservedSecondsGT(*i.ReservedSecondsGT))
+	}
+	if i.ReservedSecondsGTE != nil {
+		predicates = append(predicates, meetingminuteusage.ReservedSecondsGTE(*i.ReservedSecondsGTE))
+	}
+	if i.ReservedSecondsLT != nil {
+		predicates = append(predicates, meetingminuteusage.ReservedSecondsLT(*i.ReservedSecondsLT))
+	}
+	if i.ReservedSecondsLTE != nil {
+		predicates = append(predicates, meetingminuteusage.ReservedSecondsLTE(*i.ReservedSecondsLTE))
+	}
+
+	if i.HasUser != nil {
+		p := meetingminuteusage.HasUser()
+		if !*i.HasUser {
+			p = meetingminuteusage.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, meetingminuteusage.HasUserWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyMeetingMinuteUsageWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return meetingminuteusage.And(predicates...), nil
+	}
+}
+
 // OAuthConnectionWhereInput represents a where input for filtering OAuthConnection queries.
 type OAuthConnectionWhereInput struct {
 	Predicates []predicate.OAuthConnection  `json:"-"`
@@ -6294,6 +6631,10 @@ type UserWhereInput struct {
 	HasLedgerEntries     *bool                     `json:"hasLedgerEntries,omitempty"`
 	HasLedgerEntriesWith []*CreditLedgerWhereInput `json:"hasLedgerEntriesWith,omitempty"`
 
+	// "meeting_minute_usages" edge predicates.
+	HasMeetingMinuteUsages     *bool                           `json:"hasMeetingMinuteUsages,omitempty"`
+	HasMeetingMinuteUsagesWith []*MeetingMinuteUsageWhereInput `json:"hasMeetingMinuteUsagesWith,omitempty"`
+
 	// "llm_usages" edge predicates.
 	HasLlmUsages     *bool                 `json:"hasLlmUsages,omitempty"`
 	HasLlmUsagesWith []*LLMUsageWhereInput `json:"hasLlmUsagesWith,omitempty"`
@@ -6631,6 +6972,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasLedgerEntriesWith(with...))
+	}
+	if i.HasMeetingMinuteUsages != nil {
+		p := user.HasMeetingMinuteUsages()
+		if !*i.HasMeetingMinuteUsages {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasMeetingMinuteUsagesWith) > 0 {
+		with := make([]predicate.MeetingMinuteUsage, 0, len(i.HasMeetingMinuteUsagesWith))
+		for _, w := range i.HasMeetingMinuteUsagesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasMeetingMinuteUsagesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasMeetingMinuteUsagesWith(with...))
 	}
 	if i.HasLlmUsages != nil {
 		p := user.HasLlmUsages()

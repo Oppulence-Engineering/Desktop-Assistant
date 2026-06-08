@@ -326,6 +326,30 @@ func (f MCPConnectionHistoryMutationRuleFunc) EvalMutation(ctx context.Context, 
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.MCPConnectionHistoryMutation", m)
 }
 
+// The MeetingMinuteUsageQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type MeetingMinuteUsageQueryRuleFunc func(context.Context, *ent.MeetingMinuteUsageQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f MeetingMinuteUsageQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.MeetingMinuteUsageQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.MeetingMinuteUsageQuery", q)
+}
+
+// The MeetingMinuteUsageMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type MeetingMinuteUsageMutationRuleFunc func(context.Context, *ent.MeetingMinuteUsageMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f MeetingMinuteUsageMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.MeetingMinuteUsageMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.MeetingMinuteUsageMutation", m)
+}
+
 // The OAuthConnectionQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type OAuthConnectionQueryRuleFunc func(context.Context, *ent.OAuthConnectionQuery) error

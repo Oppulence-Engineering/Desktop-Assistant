@@ -385,6 +385,37 @@ var (
 			},
 		},
 	}
+	// MeetingMinuteUsagesColumns holds the columns for the "meeting_minute_usages" table.
+	MeetingMinuteUsagesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "period", Type: field.TypeString},
+		{Name: "used_seconds", Type: field.TypeInt, Default: 0},
+		{Name: "reserved_seconds", Type: field.TypeInt, Default: 0},
+		{Name: "user_meeting_minute_usages", Type: field.TypeUUID},
+	}
+	// MeetingMinuteUsagesTable holds the schema information for the "meeting_minute_usages" table.
+	MeetingMinuteUsagesTable = &schema.Table{
+		Name:       "meeting_minute_usages",
+		Columns:    MeetingMinuteUsagesColumns,
+		PrimaryKey: []*schema.Column{MeetingMinuteUsagesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "meeting_minute_usages_users_meeting_minute_usages",
+				Columns:    []*schema.Column{MeetingMinuteUsagesColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "meetingminuteusage_period_user_meeting_minute_usages",
+				Unique:  true,
+				Columns: []*schema.Column{MeetingMinuteUsagesColumns[3], MeetingMinuteUsagesColumns[6]},
+			},
+		},
+	}
 	// OauthConnectionsColumns holds the columns for the "oauth_connections" table.
 	OauthConnectionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -570,6 +601,7 @@ var (
 		LlmUsageHistoriesTable,
 		McpConnectionsTable,
 		McpConnectionHistoriesTable,
+		MeetingMinuteUsagesTable,
 		OauthConnectionsTable,
 		OauthConnectionHistoriesTable,
 		OauthPendingsTable,
@@ -592,6 +624,7 @@ func init() {
 	CreditLedgersTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	McpConnectionsTable.ForeignKeys[0].RefTable = UsersTable
+	MeetingMinuteUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	OauthConnectionsTable.ForeignKeys[0].RefTable = UsersTable
 	SubscriptionsTable.ForeignKeys[0].RefTable = UsersTable
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
@@ -97,6 +98,7 @@ func checkColumn(t, c string) error {
 			llmusagehistory.Table:        llmusagehistory.ValidColumn,
 			mcpconnection.Table:          mcpconnection.ValidColumn,
 			mcpconnectionhistory.Table:   mcpconnectionhistory.ValidColumn,
+			meetingminuteusage.Table:     meetingminuteusage.ValidColumn,
 			oauthconnection.Table:        oauthconnection.ValidColumn,
 			oauthconnectionhistory.Table: oauthconnectionhistory.ValidColumn,
 			oauthpending.Table:           oauthpending.ValidColumn,

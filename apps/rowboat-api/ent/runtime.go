@@ -14,6 +14,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
@@ -333,6 +334,37 @@ func init() {
 	mcpconnectionhistoryDescID := mcpconnectionhistoryFields[0].Descriptor()
 	// mcpconnectionhistory.DefaultID holds the default value on creation for the id field.
 	mcpconnectionhistory.DefaultID = mcpconnectionhistoryDescID.Default.(func() uuid.UUID)
+	meetingminuteusageMixin := schema.MeetingMinuteUsage{}.Mixin()
+	meetingminuteusageMixinFields0 := meetingminuteusageMixin[0].Fields()
+	_ = meetingminuteusageMixinFields0
+	meetingminuteusageFields := schema.MeetingMinuteUsage{}.Fields()
+	_ = meetingminuteusageFields
+	// meetingminuteusageDescCreatedAt is the schema descriptor for created_at field.
+	meetingminuteusageDescCreatedAt := meetingminuteusageMixinFields0[1].Descriptor()
+	// meetingminuteusage.DefaultCreatedAt holds the default value on creation for the created_at field.
+	meetingminuteusage.DefaultCreatedAt = meetingminuteusageDescCreatedAt.Default.(func() time.Time)
+	// meetingminuteusageDescUpdatedAt is the schema descriptor for updated_at field.
+	meetingminuteusageDescUpdatedAt := meetingminuteusageMixinFields0[2].Descriptor()
+	// meetingminuteusage.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	meetingminuteusage.DefaultUpdatedAt = meetingminuteusageDescUpdatedAt.Default.(func() time.Time)
+	// meetingminuteusage.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	meetingminuteusage.UpdateDefaultUpdatedAt = meetingminuteusageDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// meetingminuteusageDescUsedSeconds is the schema descriptor for used_seconds field.
+	meetingminuteusageDescUsedSeconds := meetingminuteusageFields[1].Descriptor()
+	// meetingminuteusage.DefaultUsedSeconds holds the default value on creation for the used_seconds field.
+	meetingminuteusage.DefaultUsedSeconds = meetingminuteusageDescUsedSeconds.Default.(int)
+	// meetingminuteusage.UsedSecondsValidator is a validator for the "used_seconds" field. It is called by the builders before save.
+	meetingminuteusage.UsedSecondsValidator = meetingminuteusageDescUsedSeconds.Validators[0].(func(int) error)
+	// meetingminuteusageDescReservedSeconds is the schema descriptor for reserved_seconds field.
+	meetingminuteusageDescReservedSeconds := meetingminuteusageFields[2].Descriptor()
+	// meetingminuteusage.DefaultReservedSeconds holds the default value on creation for the reserved_seconds field.
+	meetingminuteusage.DefaultReservedSeconds = meetingminuteusageDescReservedSeconds.Default.(int)
+	// meetingminuteusage.ReservedSecondsValidator is a validator for the "reserved_seconds" field. It is called by the builders before save.
+	meetingminuteusage.ReservedSecondsValidator = meetingminuteusageDescReservedSeconds.Validators[0].(func(int) error)
+	// meetingminuteusageDescID is the schema descriptor for id field.
+	meetingminuteusageDescID := meetingminuteusageMixinFields0[0].Descriptor()
+	// meetingminuteusage.DefaultID holds the default value on creation for the id field.
+	meetingminuteusage.DefaultID = meetingminuteusageDescID.Default.(func() uuid.UUID)
 	oauthconnectionMixin := schema.OAuthConnection{}.Mixin()
 	oauthconnectionMixinFields0 := oauthconnectionMixin[0].Fields()
 	_ = oauthconnectionMixinFields0

@@ -19,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -141,6 +142,21 @@ func (_c *UserCreate) AddLedgerEntries(v ...*CreditLedger) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddLedgerEntryIDs(ids...)
+}
+
+// AddMeetingMinuteUsageIDs adds the "meeting_minute_usages" edge to the MeetingMinuteUsage entity by IDs.
+func (_c *UserCreate) AddMeetingMinuteUsageIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddMeetingMinuteUsageIDs(ids...)
+	return _c
+}
+
+// AddMeetingMinuteUsages adds the "meeting_minute_usages" edges to the MeetingMinuteUsage entity.
+func (_c *UserCreate) AddMeetingMinuteUsages(v ...*MeetingMinuteUsage) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMeetingMinuteUsageIDs(ids...)
 }
 
 // AddLlmUsageIDs adds the "llm_usages" edge to the LLMUsage entity by IDs.
@@ -394,6 +410,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(creditledger.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.MeetingMinuteUsagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MeetingMinuteUsagesTable,
+			Columns: []string{user.MeetingMinuteUsagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(meetingminuteusage.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -136,6 +136,15 @@ type Config struct {
 	// Free-tier credit grant minted on first sign-in.
 	FreeTierCredits int
 
+	// Free cloud meeting-transcription seconds per UTC month for non-paid plans
+	// (RFC 009 §16). Exhausted → the desktop falls back to on-device transcription.
+	FreeMeetingSecondsPerMonth int
+
+	// Remote, A/B-able transcription defaults the desktop reads (RFC 009 §25). The
+	// voice default doubles as the local kill switch (flip back to a cloud value).
+	TranscriptionVoiceDefault   string
+	TranscriptionMeetingDefault string
+
 	// PricingJSON optionally overrides the default pricing table (raw JSON).
 	PricingJSON string
 
@@ -261,8 +270,13 @@ func Load() Config {
 		GoogleAuthorizeURL:          getenv("GOOGLE_AUTHORIZE_URL", ""),
 		GoogleRedirectURI:           getenv("GOOGLE_REDIRECT_URI", ""),
 
-		DesktopDeepLinkScheme:  getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
-		FreeTierCredits:        getint("FREE_TIER_CREDITS", 10000),
+		DesktopDeepLinkScheme: getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
+		FreeTierCredits:       getint("FREE_TIER_CREDITS", 10000),
+
+		FreeMeetingSecondsPerMonth:  getint("FREE_MEETING_SECONDS_PER_MONTH", 10800), // 180 min
+		TranscriptionVoiceDefault:   getenv("TRANSCRIPTION_VOICE_DEFAULT", "whisper-local"),
+		TranscriptionMeetingDefault: getenv("TRANSCRIPTION_MEETING_DEFAULT", "deepgram"),
+
 		PricingJSON:            getenv("PRICING_JSON", ""),
 		DailyCreditLimit:       getint("DAILY_CREDIT_LIMIT", 100000),
 		MonthlyCreditLimit:     getint("MONTHLY_CREDIT_LIMIT", 2000000),

@@ -33,6 +33,9 @@ type MCPConnection func(*sql.Selector)
 // MCPConnectionHistory is the predicate function for mcpconnectionhistory builders.
 type MCPConnectionHistory func(*sql.Selector)
 
+// MeetingMinuteUsage is the predicate function for meetingminuteusage builders.
+type MeetingMinuteUsage func(*sql.Selector)
+
 // OAuthConnection is the predicate function for oauthconnection builders.
 type OAuthConnection func(*sql.Selector)
 

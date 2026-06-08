@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/gqlapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/minutes"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
@@ -28,6 +29,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/search"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/server"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/transcription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/voice"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
 	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
@@ -143,6 +145,18 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	searchH := search.New(prices, gate, sec, log)
 	searchH.SetOutboundPolicy(vendorPolicy)
 	searchH.SetSpendLimits(spendLimits)
+
+	// Free cloud meeting-minutes quota (RFC 009 §16). Paid plans are unlimited;
+	// free is metered against FreeMeetingSecondsPerMonth, surfaced to the desktop.
+	meetingAllowance := func(plan string) int {
+		switch plan {
+		case "starter", "pro":
+			return -1 // unlimited cloud meeting minutes
+		default:
+			return cfg.FreeMeetingSecondsPerMonth
+		}
+	}
+	transcriptionH := transcription.New(minutes.New(client, log, meetingAllowance), client, cfg, log)
 	googleH := google.New(client, sealer, sec, log)
 	googleH.SetOutboundPolicy(vendorPolicy)
 	googleH.SetTokenURL(cfg.GoogleTokenURL) // empty → real Google endpoint
@@ -264,6 +278,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Use(rl.PerUserWindow(ratelimit.GroupVoiceBurst, 6, 10*time.Second))
 			r.Post("/text-to-speech/{voiceId}", voiceH.TextToSpeech)
 		})
+
+		// Per-user transcription quota + fleet defaults the desktop reads (RFC 009).
+		r.Get("/v1/transcription/quota", transcriptionH.Quota)
 
 		r.With(rl.PerUser(ratelimit.GroupSearch, 60), rl.PerUserWindow(ratelimit.GroupSearchBurst, 10, 10*time.Second)).
 			Post("/v1/search/exa", searchH.Search)

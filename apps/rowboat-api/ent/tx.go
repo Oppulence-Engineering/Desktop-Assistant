@@ -30,6 +30,8 @@ type Tx struct {
 	MCPConnection *MCPConnectionClient
 	// MCPConnectionHistory is the client for interacting with the MCPConnectionHistory builders.
 	MCPConnectionHistory *MCPConnectionHistoryClient
+	// MeetingMinuteUsage is the client for interacting with the MeetingMinuteUsage builders.
+	MeetingMinuteUsage *MeetingMinuteUsageClient
 	// OAuthConnection is the client for interacting with the OAuthConnection builders.
 	OAuthConnection *OAuthConnectionClient
 	// OAuthConnectionHistory is the client for interacting with the OAuthConnectionHistory builders.
@@ -184,6 +186,7 @@ func (tx *Tx) init() {
 	tx.LLMUsageHistory = NewLLMUsageHistoryClient(tx.config)
 	tx.MCPConnection = NewMCPConnectionClient(tx.config)
 	tx.MCPConnectionHistory = NewMCPConnectionHistoryClient(tx.config)
+	tx.MeetingMinuteUsage = NewMeetingMinuteUsageClient(tx.config)
 	tx.OAuthConnection = NewOAuthConnectionClient(tx.config)
 	tx.OAuthConnectionHistory = NewOAuthConnectionHistoryClient(tx.config)
 	tx.OAuthPending = NewOAuthPendingClient(tx.config)

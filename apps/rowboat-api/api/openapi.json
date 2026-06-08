@@ -2344,6 +2344,51 @@
         "required": ["user", "billing"],
         "type": "object"
       },
+      "MeetingMinuteUsage": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "reserved_seconds": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "used_seconds": {
+            "type": "integer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "period",
+          "used_seconds",
+          "reserved_seconds",
+          "user"
+        ],
+        "type": "object"
+      },
       "OAuthConnection": {
         "description": "Long-lived third-party OAuth connection such as Google. Refresh tokens are sealed before storage.",
         "properties": {
@@ -2964,6 +3009,12 @@
             "description": "MCP connector connections for the user.",
             "items": {
               "$ref": "#/components/schemas/MCPConnection"
+            },
+            "type": "array"
+          },
+          "meeting_minute_usages": {
+            "items": {
+              "$ref": "#/components/schemas/MeetingMinuteUsage"
             },
             "type": "array"
           },

@@ -26,6 +26,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
@@ -58,6 +59,8 @@ type Client struct {
 	MCPConnection *MCPConnectionClient
 	// MCPConnectionHistory is the client for interacting with the MCPConnectionHistory builders.
 	MCPConnectionHistory *MCPConnectionHistoryClient
+	// MeetingMinuteUsage is the client for interacting with the MeetingMinuteUsage builders.
+	MeetingMinuteUsage *MeetingMinuteUsageClient
 	// OAuthConnection is the client for interacting with the OAuthConnection builders.
 	OAuthConnection *OAuthConnectionClient
 	// OAuthConnectionHistory is the client for interacting with the OAuthConnectionHistory builders.
@@ -97,6 +100,7 @@ func (c *Client) init() {
 	c.LLMUsageHistory = NewLLMUsageHistoryClient(c.config)
 	c.MCPConnection = NewMCPConnectionClient(c.config)
 	c.MCPConnectionHistory = NewMCPConnectionHistoryClient(c.config)
+	c.MeetingMinuteUsage = NewMeetingMinuteUsageClient(c.config)
 	c.OAuthConnection = NewOAuthConnectionClient(c.config)
 	c.OAuthConnectionHistory = NewOAuthConnectionHistoryClient(c.config)
 	c.OAuthPending = NewOAuthPendingClient(c.config)
@@ -238,6 +242,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		LLMUsageHistory:        NewLLMUsageHistoryClient(cfg),
 		MCPConnection:          NewMCPConnectionClient(cfg),
 		MCPConnectionHistory:   NewMCPConnectionHistoryClient(cfg),
+		MeetingMinuteUsage:     NewMeetingMinuteUsageClient(cfg),
 		OAuthConnection:        NewOAuthConnectionClient(cfg),
 		OAuthConnectionHistory: NewOAuthConnectionHistoryClient(cfg),
 		OAuthPending:           NewOAuthPendingClient(cfg),
@@ -273,6 +278,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		LLMUsageHistory:        NewLLMUsageHistoryClient(cfg),
 		MCPConnection:          NewMCPConnectionClient(cfg),
 		MCPConnectionHistory:   NewMCPConnectionHistoryClient(cfg),
+		MeetingMinuteUsage:     NewMeetingMinuteUsageClient(cfg),
 		OAuthConnection:        NewOAuthConnectionClient(cfg),
 		OAuthConnectionHistory: NewOAuthConnectionHistoryClient(cfg),
 		OAuthPending:           NewOAuthPendingClient(cfg),
@@ -311,8 +317,8 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.CreditLedger, c.LLMUsage, c.LLMUsageHistory,
-		c.MCPConnection, c.MCPConnectionHistory, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
+		c.MCPConnection, c.MCPConnectionHistory, c.MeetingMinuteUsage,
+		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
 		c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Use(hooks...)
@@ -325,8 +331,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.CreditLedger, c.LLMUsage, c.LLMUsageHistory,
-		c.MCPConnection, c.MCPConnectionHistory, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
+		c.MCPConnection, c.MCPConnectionHistory, c.MeetingMinuteUsage,
+		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
 		c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Intercept(interceptors...)
@@ -354,6 +360,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.MCPConnection.mutate(ctx, m)
 	case *MCPConnectionHistoryMutation:
 		return c.MCPConnectionHistory.mutate(ctx, m)
+	case *MeetingMinuteUsageMutation:
+		return c.MeetingMinuteUsage.mutate(ctx, m)
 	case *OAuthConnectionMutation:
 		return c.OAuthConnection.mutate(ctx, m)
 	case *OAuthConnectionHistoryMutation:
@@ -1810,6 +1818,155 @@ func (c *MCPConnectionHistoryClient) mutate(ctx context.Context, m *MCPConnectio
 	}
 }
 
+// MeetingMinuteUsageClient is a client for the MeetingMinuteUsage schema.
+type MeetingMinuteUsageClient struct {
+	config
+}
+
+// NewMeetingMinuteUsageClient returns a client for the MeetingMinuteUsage from the given config.
+func NewMeetingMinuteUsageClient(c config) *MeetingMinuteUsageClient {
+	return &MeetingMinuteUsageClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `meetingminuteusage.Hooks(f(g(h())))`.
+func (c *MeetingMinuteUsageClient) Use(hooks ...Hook) {
+	c.hooks.MeetingMinuteUsage = append(c.hooks.MeetingMinuteUsage, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `meetingminuteusage.Intercept(f(g(h())))`.
+func (c *MeetingMinuteUsageClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MeetingMinuteUsage = append(c.inters.MeetingMinuteUsage, interceptors...)
+}
+
+// Create returns a builder for creating a MeetingMinuteUsage entity.
+func (c *MeetingMinuteUsageClient) Create() *MeetingMinuteUsageCreate {
+	mutation := newMeetingMinuteUsageMutation(c.config, OpCreate)
+	return &MeetingMinuteUsageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MeetingMinuteUsage entities.
+func (c *MeetingMinuteUsageClient) CreateBulk(builders ...*MeetingMinuteUsageCreate) *MeetingMinuteUsageCreateBulk {
+	return &MeetingMinuteUsageCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MeetingMinuteUsageClient) MapCreateBulk(slice any, setFunc func(*MeetingMinuteUsageCreate, int)) *MeetingMinuteUsageCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MeetingMinuteUsageCreateBulk{err: fmt.Errorf("calling to MeetingMinuteUsageClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MeetingMinuteUsageCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MeetingMinuteUsageCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MeetingMinuteUsage.
+func (c *MeetingMinuteUsageClient) Update() *MeetingMinuteUsageUpdate {
+	mutation := newMeetingMinuteUsageMutation(c.config, OpUpdate)
+	return &MeetingMinuteUsageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MeetingMinuteUsageClient) UpdateOne(_m *MeetingMinuteUsage) *MeetingMinuteUsageUpdateOne {
+	mutation := newMeetingMinuteUsageMutation(c.config, OpUpdateOne, withMeetingMinuteUsage(_m))
+	return &MeetingMinuteUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MeetingMinuteUsageClient) UpdateOneID(id uuid.UUID) *MeetingMinuteUsageUpdateOne {
+	mutation := newMeetingMinuteUsageMutation(c.config, OpUpdateOne, withMeetingMinuteUsageID(id))
+	return &MeetingMinuteUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MeetingMinuteUsage.
+func (c *MeetingMinuteUsageClient) Delete() *MeetingMinuteUsageDelete {
+	mutation := newMeetingMinuteUsageMutation(c.config, OpDelete)
+	return &MeetingMinuteUsageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MeetingMinuteUsageClient) DeleteOne(_m *MeetingMinuteUsage) *MeetingMinuteUsageDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MeetingMinuteUsageClient) DeleteOneID(id uuid.UUID) *MeetingMinuteUsageDeleteOne {
+	builder := c.Delete().Where(meetingminuteusage.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MeetingMinuteUsageDeleteOne{builder}
+}
+
+// Query returns a query builder for MeetingMinuteUsage.
+func (c *MeetingMinuteUsageClient) Query() *MeetingMinuteUsageQuery {
+	return &MeetingMinuteUsageQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMeetingMinuteUsage},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MeetingMinuteUsage entity by its id.
+func (c *MeetingMinuteUsageClient) Get(ctx context.Context, id uuid.UUID) (*MeetingMinuteUsage, error) {
+	return c.Query().Where(meetingminuteusage.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MeetingMinuteUsageClient) GetX(ctx context.Context, id uuid.UUID) *MeetingMinuteUsage {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a MeetingMinuteUsage.
+func (c *MeetingMinuteUsageClient) QueryUser(_m *MeetingMinuteUsage) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(meetingminuteusage.Table, meetingminuteusage.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, meetingminuteusage.UserTable, meetingminuteusage.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MeetingMinuteUsageClient) Hooks() []Hook {
+	return c.hooks.MeetingMinuteUsage
+}
+
+// Interceptors returns the client interceptors.
+func (c *MeetingMinuteUsageClient) Interceptors() []Interceptor {
+	return c.inters.MeetingMinuteUsage
+}
+
+func (c *MeetingMinuteUsageClient) mutate(ctx context.Context, m *MeetingMinuteUsageMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MeetingMinuteUsageCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MeetingMinuteUsageUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MeetingMinuteUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MeetingMinuteUsageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MeetingMinuteUsage mutation op: %q", m.Op())
+	}
+}
+
 // OAuthConnectionClient is a client for the OAuthConnection schema.
 type OAuthConnectionClient struct {
 	config
@@ -2647,6 +2804,22 @@ func (c *UserClient) QueryLedgerEntries(_m *User) *CreditLedgerQuery {
 	return query
 }
 
+// QueryMeetingMinuteUsages queries the meeting_minute_usages edge of a User.
+func (c *UserClient) QueryMeetingMinuteUsages(_m *User) *MeetingMinuteUsageQuery {
+	query := (&MeetingMinuteUsageClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(meetingminuteusage.Table, meetingminuteusage.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MeetingMinuteUsagesTable, user.MeetingMinuteUsagesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryLlmUsages queries the llm_usages edge of a User.
 func (c *UserClient) QueryLlmUsages(_m *User) *LLMUsageQuery {
 	query := (&LLMUsageClient{config: c.config}).Query()
@@ -2922,13 +3095,15 @@ type (
 	hooks struct {
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
 		BackgroundTaskRunEvent, CreditLedger, LLMUsage, LLMUsageHistory, MCPConnection,
-		MCPConnectionHistory, OAuthConnection, OAuthConnectionHistory, OAuthPending,
-		Subscription, SubscriptionHistory, User, UserHistory []ent.Hook
+		MCPConnectionHistory, MeetingMinuteUsage, OAuthConnection,
+		OAuthConnectionHistory, OAuthPending, Subscription, SubscriptionHistory, User,
+		UserHistory []ent.Hook
 	}
 	inters struct {
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
 		BackgroundTaskRunEvent, CreditLedger, LLMUsage, LLMUsageHistory, MCPConnection,
-		MCPConnectionHistory, OAuthConnection, OAuthConnectionHistory, OAuthPending,
-		Subscription, SubscriptionHistory, User, UserHistory []ent.Interceptor
+		MCPConnectionHistory, MeetingMinuteUsage, OAuthConnection,
+		OAuthConnectionHistory, OAuthPending, Subscription, SubscriptionHistory, User,
+		UserHistory []ent.Interceptor
 	}
 )

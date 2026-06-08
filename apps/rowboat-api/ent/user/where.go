@@ -422,6 +422,29 @@ func HasLedgerEntriesWith(preds ...predicate.CreditLedger) predicate.User {
 	})
 }
 
+// HasMeetingMinuteUsages applies the HasEdge predicate on the "meeting_minute_usages" edge.
+func HasMeetingMinuteUsages() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MeetingMinuteUsagesTable, MeetingMinuteUsagesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMeetingMinuteUsagesWith applies the HasEdge predicate on the "meeting_minute_usages" edge with a given conditions (other predicates).
+func HasMeetingMinuteUsagesWith(preds ...predicate.MeetingMinuteUsage) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newMeetingMinuteUsagesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasLlmUsages applies the HasEdge predicate on the "llm_usages" edge.
 func HasLlmUsages() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
