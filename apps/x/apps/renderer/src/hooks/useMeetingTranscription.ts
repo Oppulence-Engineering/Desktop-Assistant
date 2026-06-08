@@ -494,7 +494,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       setState("recording");
       return notePath;
     },
-    [state, cleanup, scheduleDebouncedWrite, refreshSolomonAccount],
+    [state, cleanup, scheduleDebouncedWrite, refreshSolomonAccount, appendLocalFinal],
   );
 
   const stop = useCallback(async () => {

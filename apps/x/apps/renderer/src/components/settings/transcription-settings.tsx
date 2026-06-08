@@ -30,7 +30,10 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
 
   useEffect(() => {
     if (!dialogOpen) return;
-    void refreshModels();
+    void window.ipc
+      .invoke("whisper:listModels", null)
+      .then((r) => setModels(r.models))
+      .catch(() => {});
     void window.ipc
       .invoke("whisper:capability", null)
       .then(setCapability)
@@ -48,7 +51,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       setProgress((prev) => ({ ...prev, [p.id]: p.totalMb ? p.receivedMb / p.totalMb : 0 }));
     });
     return off;
-  }, [dialogOpen, refreshModels]);
+  }, [dialogOpen]);
 
   const changeVoiceProvider = useCallback(
     async (next: TranscriptionProvider) => {
