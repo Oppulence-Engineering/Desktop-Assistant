@@ -163,9 +163,11 @@ func runScheduler(ctx context.Context, cfg appconfig.Config, log *zap.Logger, da
 
 	starter := backgroundtaskruns.New(database.Client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log)
 
-	// RFC 002 supplies the durable Postgres lease; until then the no-op lease
-	// keeps the loop single-replica-safe via task last_run_at cycle anchoring.
-	scheduler := backgroundscheduler.New(database.Client, starter, backgroundscheduler.NoopLeases{}, backgroundscheduler.Config{
+	// EntLeases (RFC 002) is the durable Postgres lease: the unique cycle index
+	// gives cross-replica at-most-once firing, so the scheduler is safe with
+	// multiple replicas.
+	leases := backgroundscheduler.NewEntLeases(database.Client, log)
+	scheduler := backgroundscheduler.New(database.Client, starter, leases, backgroundscheduler.Config{
 		Interval: cfg.CloudSchedulerInterval,
 		LeaseTTL: cfg.CloudSchedulerLeaseTTL,
 		Owner:    cfg.CloudSchedulerOwner,
