@@ -2,6 +2,7 @@ package backgroundscheduler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -195,15 +196,21 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 	}
 	// Surface invalid sub-triggers but keep evaluating: a bad cron or a bad
 	// window must not suppress the task's valid sub-triggers (desktop parity).
+	// Count at most one parse error per task evaluation so the metric maps 1:1
+	// to bad tasks rather than to bad sub-triggers.
+	parseIssue := false
 	if tr.HasCron() && !tr.HasValidCron() {
-		metrics.Errors.WithLabelValues("parse").Inc()
+		parseIssue = true
 		s.log.Warn("scheduler: invalid cron expression, evaluating windows only",
 			zap.String("taskSlug", task.Slug), zap.String("cronExpr", tr.CronExpr))
 	}
 	if bad := tr.InvalidWindows(); len(bad) > 0 {
-		metrics.Errors.WithLabelValues("parse").Inc()
+		parseIssue = true
 		s.log.Warn("scheduler: malformed window time(s), ignoring those windows",
 			zap.String("taskSlug", task.Slug), zap.Int("count", len(bad)))
+	}
+	if parseIssue {
+		metrics.Errors.WithLabelValues("parse").Inc()
 	}
 
 	// In-flight backstop: a last attempt newer than the last success that is
@@ -250,6 +257,20 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 		Source:           backgroundtaskruns.SourceScheduler,
 	})
 	if err != nil {
+		// A PersistIDsError means the Temporal workflow IS already running and
+		// only persisting its ids failed — so this is a fire, not a retryable
+		// failure. Advancing the cycle (rather than backing off and re-firing)
+		// avoids starting a second workflow for the same occurrence; the worker
+		// reconciles the run row by run id.
+		var persistErr *backgroundtaskruns.PersistIDsError
+		if errors.As(err, &persistErr) {
+			_ = s.leases.Complete(ctx, lease.ID, run.RunID)
+			s.stampFired(ctx, task, now, run.RunID)
+			metrics.RunsTriggered.WithLabelValues(due.source).Inc()
+			s.log.Warn("scheduler run started but temporal ids not persisted",
+				zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
+			return
+		}
 		metrics.Errors.WithLabelValues("start").Inc()
 		// Release the lease. Stamp last_attempt_at so a persistent start failure
 		// backs off (retryBackoff) instead of re-firing every tick within the
@@ -268,6 +289,14 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 	// the same occurrence before the worker reports terminal state. This is what
 	// makes single-replica at-most-once hold without depending on the worker's
 	// async MarkRunRunning.
+	//
+	// Tradeoffs accepted for v1 (both resolved by the RFC 002 durable lease):
+	//   - A run that starts then FAILS leaves last_run_at advanced, so that
+	//     cycle is not auto-retried (the next cron occurrence / next day's
+	//     window fires normally; a failed run can be retried explicitly). This
+	//     matches the desktop, which also advances lastRunAt at fire.
+	//   - A crash between Start returning and this stamp committing can re-fire
+	//     the occurrence once on restart.
 	s.stampFired(ctx, task, now, run.RunID)
 	metrics.RunsTriggered.WithLabelValues(due.source).Inc()
 	s.logDecision(task, user, due.source, "fired", key, due.occurrence, 0, zap.String("runId", run.RunID))

@@ -3,6 +3,7 @@ package backgroundscheduler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -50,6 +51,14 @@ func (c *countingStarter) count() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.n
+}
+
+// persistErrStarter returns a run plus a PersistIDsError — the workflow started
+// but its ids failed to persist.
+type persistErrStarter struct{ run *ent.BackgroundTaskRun }
+
+func (p *persistErrStarter) Start(context.Context, backgroundtaskruns.Params) (*ent.BackgroundTaskRun, error) {
+	return p.run, &backgroundtaskruns.PersistIDsError{Err: errors.New("db blip")}
 }
 
 // denyLeases refuses every lease, simulating another replica owning the cycle.
@@ -524,7 +533,6 @@ func TestSchedulerStartsRealRunAndCompletesLease(t *testing.T) {
 	if task.LastRunID != run.RunID {
 		t.Fatalf("last_run_id = %q, want %q", task.LastRunID, run.RunID)
 	}
-	_ = noon
 }
 
 // TestTickStampsCycleAndDoesNotRefire is the direct regression for the
@@ -592,6 +600,32 @@ func TestSchedulerReleasesLeaseOnStartFailure(t *testing.T) {
 	}
 	if task.LastRunAt == nil || !task.LastRunAt.Equal(noon) {
 		t.Fatalf("start failure must not advance last_run_at, got %v want noon", task.LastRunAt)
+	}
+}
+
+// TestSchedulerTreatsPersistIDsErrorAsFired: when the workflow started but its
+// ids failed to persist, the scheduler advances the cycle (stampFired) instead
+// of backing off and re-firing — so it won't start a second workflow.
+func TestSchedulerTreatsPersistIDsErrorAsFired(t *testing.T) {
+	client := openDB(t)
+	u := newUser(t, client, "a@x.co", "u1")
+	now := time.Date(2026, 6, 8, 13, 1, 30, 0, time.UTC)
+	noon := time.Date(2026, 6, 8, 12, 0, 0, 0, time.UTC)
+	seed(t, client, u, []taskSpec{
+		{slug: "cron", target: "api", triggers: `{"cronExpr":"0 * * * *"}`, active: true, lastRun: tptr(noon)},
+	})
+
+	starter := &persistErrStarter{run: &ent.BackgroundTaskRun{RunID: "sched-cron-persist"}}
+	s := New(client, starter, NoopLeases{}, Config{Clock: func() time.Time { return now }}, zap.NewNop())
+	if err := s.tick(context.Background()); err != nil {
+		t.Fatalf("tick: %v", err)
+	}
+
+	// stampFired advances last_run_at to now; stampAttempt (the failure path)
+	// would have left it at noon.
+	task := client.BackgroundTask.Query().FirstX(auth.WithInternal(context.Background()))
+	if task.LastRunAt == nil || !task.LastRunAt.Equal(now) {
+		t.Fatalf("PersistIDsError should advance the cycle, last_run_at=%v want now", task.LastRunAt)
 	}
 }
 

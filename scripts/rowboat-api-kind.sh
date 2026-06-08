@@ -555,11 +555,18 @@ validate_scheduler_background_task() {
     fi
   fi
 
+  # Clear the RETURN trap before any normal return so it does not leak to the
+  # caller (a stale RETURN trap would re-fire on the caller's return with $slug
+  # out of scope), then clean up explicitly. The trap only covers a set -e abort
+  # mid-body, where the script exits anyway.
+  trap - RETURN
+  delete_scheduler_task "$token" "$slug"
+
   if [[ -n "$fail" ]]; then
     echo "${runs_json}" >&2
     echo "${status_json}" >&2
     echo "$fail" >&2
-    return 1 # RETURN trap deletes the task; set -e propagates the failure
+    return 1
   fi
   echo "api-owned scheduler desktop-closed run: ok"
 }

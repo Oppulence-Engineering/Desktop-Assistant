@@ -116,7 +116,9 @@ func startMetricsServer(cfg appconfig.Config, log *zap.Logger, ready *atomic.Boo
 
 // newHealthMux builds the /metrics, liveness /healthz, and readiness /readyz
 // routes. /healthz is 200 once the process is up; /readyz is 200 only after
-// `ready` is set (Temporal connected), so the two report different things.
+// `ready` is set on the initial Temporal connect. `ready` is a one-way boot
+// gate (it does not flip back on a mid-life Temporal outage — the loop keeps
+// running and surfaces failures via cloud_scheduler_errors_total{stage=start}).
 func newHealthMux(ready *atomic.Bool) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())

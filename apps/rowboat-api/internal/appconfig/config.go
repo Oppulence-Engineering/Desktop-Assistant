@@ -312,13 +312,16 @@ func defaultHostname() string {
 	return "rowboat-api-scheduler"
 }
 
-// SchedulerLocation resolves the cloud scheduler timezone (v1: UTC). An empty
-// value means UTC; otherwise it must be a loadable IANA name.
+// SchedulerLocation resolves the cloud scheduler timezone (v1: UTC). It accepts
+// the same trimmed, case-insensitive "UTC" (and empty) that Validate accepts, so
+// a value that passes validation never fails to load here; any other value is
+// loaded as an IANA name (but Validate rejects non-UTC in v1).
 func (c Config) SchedulerLocation() (*time.Location, error) {
-	if strings.TrimSpace(c.CloudSchedulerTimezone) == "" {
+	tz := strings.TrimSpace(c.CloudSchedulerTimezone)
+	if tz == "" || strings.EqualFold(tz, "UTC") {
 		return time.UTC, nil
 	}
-	return time.LoadLocation(c.CloudSchedulerTimezone)
+	return time.LoadLocation(tz)
 }
 
 // IsProduction reports whether the service runs in a production-like env.

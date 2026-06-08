@@ -108,6 +108,27 @@ func TestSchedulerLocationDefaultsToUTC(t *testing.T) {
 	}
 }
 
+// TestSchedulerLocationConsistentWithValidate: every timezone string Validate
+// accepts must also load in SchedulerLocation, so a validated config never
+// crash-loops the scheduler at boot (case/whitespace variants of UTC).
+func TestSchedulerLocationConsistentWithValidate(t *testing.T) {
+	for _, tz := range []string{"UTC", "utc", "Utc", "UTC ", " utc ", "", "  "} {
+		c := baseConfig()
+		c.CloudSchedulerEnabled = true
+		c.TemporalEnabled = true
+		c.CloudSchedulerInterval = 15 * time.Second
+		c.CloudSchedulerLeaseTTL = 90 * time.Second
+		c.CloudSchedulerTimezone = tz
+		if err := c.Validate(); err != nil {
+			t.Fatalf("tz %q should pass Validate: %v", tz, err)
+		}
+		loc, err := c.SchedulerLocation()
+		if err != nil || loc != time.UTC {
+			t.Fatalf("tz %q SchedulerLocation = %v / %v, want UTC/nil", tz, loc, err)
+		}
+	}
+}
+
 // TestLoadCloudSchedulerDefaults checks the documented defaults when nothing is
 // set in the environment.
 func TestLoadCloudSchedulerDefaults(t *testing.T) {

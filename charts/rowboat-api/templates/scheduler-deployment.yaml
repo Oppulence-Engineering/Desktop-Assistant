@@ -1,11 +1,15 @@
 {{- if .Values.scheduler.enabled }}
+{{- if gt (int .Values.scheduler.replicaCount) 1 }}
+{{- fail "scheduler.replicaCount must be 1 until the RFC 002 durable lease lands: the no-op lease only makes a SINGLE evaluator safe; multiple replicas would each fire every due task (duplicate cloud runs)." }}
+{{- end }}
 # API-owned background-task scheduler (RFC 001). Evaluates cron/window triggers
 # for executionTarget=api tasks so scheduled cloud runs fire while the desktop
 # is offline. Structurally mirrors the worker Deployment: own pod, own crash
 # domain, own /metrics + /healthz.
 #
 # Run AT MOST ONE replica until the RFC 002 durable lease is in place — the
-# no-op lease only protects a single evaluator.
+# no-op lease only protects a single evaluator (enforced by the fail guard above
+# and the Recreate strategy below).
 apiVersion: apps/v1
 kind: Deployment
 metadata:

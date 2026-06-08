@@ -200,7 +200,16 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		return err
 	}
 	n, err := a.Client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+		// Never claim a run that already reached a terminal state. This makes
+		// the activity safe against the scheduler's orphan reaper: a run failed
+		// by the reaper (or cancelled) stays terminal instead of being
+		// resurrected to "running" here. Re-claiming a still-"running" run
+		// (activity retry) stays idempotent.
+		Where(
+			backgroundtaskrun.RunIDEQ(in.RunID),
+			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
+			backgroundtaskrun.StatusNotIn("succeeded", "failed", "stopped"),
+		).
 		SetExecutor("api").
 		SetStatus("running").
 		SetTemporalStatus("Running").
@@ -215,7 +224,7 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("background task run %s not found", in.RunID)
+		return fmt.Errorf("background task run %s not claimable (missing or already terminal)", in.RunID)
 	}
 	if err := a.Client.BackgroundTask.UpdateOneID(taskID).
 		SetLastAttemptAt(now).
