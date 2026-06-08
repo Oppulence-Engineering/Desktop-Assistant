@@ -1251,6 +1251,79 @@
         "required": ["runs"],
         "type": "object"
       },
+      "BackgroundTaskScheduleState": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "last_due_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "last_evaluated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "last_run_id": {
+            "type": "string"
+          },
+          "last_triggered_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lease_expires_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lease_owner": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "schedule_key": {
+            "type": "string"
+          },
+          "task": {
+            "$ref": "#/components/schemas/BackgroundTask"
+          },
+          "trigger_type": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "trigger_type",
+          "schedule_key",
+          "last_run_id",
+          "lease_owner",
+          "revision",
+          "user",
+          "task"
+        ],
+        "type": "object"
+      },
       "BackgroundTaskSignalRequest": {
         "description": "Control signal sent to a Temporal-backed API-worker run.",
         "properties": {
@@ -2919,6 +2992,12 @@
             "description": "Background task run mirrors owned by the user.",
             "items": {
               "$ref": "#/components/schemas/BackgroundTaskRun"
+            },
+            "type": "array"
+          },
+          "background_task_schedule_states": {
+            "items": {
+              "$ref": "#/components/schemas/BackgroundTaskScheduleState"
             },
             "type": "array"
           },

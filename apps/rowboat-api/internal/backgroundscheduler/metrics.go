@@ -67,3 +67,34 @@ var metrics = struct {
 		Buckets: prometheus.ExponentialBuckets(0.005, 2, 12), // 5ms .. ~10s
 	}),
 }
+
+// leaseMetrics holds the durable-lease (RFC 002) series. Same leaf-package
+// registry + low-cardinality-label discipline as above.
+var leaseMetrics = struct {
+	Acquired prometheus.Counter
+	Skipped  *prometheus.CounterVec
+	Stolen   prometheus.Counter
+	Errors   *prometheus.CounterVec
+	Pruned   prometheus.Counter
+}{
+	Acquired: promauto.NewCounter(prometheus.CounterOpts{
+		Name: "cloud_scheduler_leases_acquired_total",
+		Help: "Schedule-state cycle leases freshly acquired (won the INSERT).",
+	}),
+	Skipped: promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "cloud_scheduler_leases_skipped_total",
+		Help: "Cycles skipped because a peer owns/fired the lease, by reason (fired|held|steal_lost).",
+	}, []string{"reason"}),
+	Stolen: promauto.NewCounter(prometheus.CounterOpts{
+		Name: "cloud_scheduler_leases_stolen_total",
+		Help: "Expired leases reclaimed (the prior owner crashed before firing).",
+	}),
+	Errors: promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "cloud_scheduler_lease_errors_total",
+		Help: "Lease store errors by op (acquire|complete|release|prune).",
+	}, []string{"op"}),
+	Pruned: promauto.NewCounter(prometheus.CounterOpts{
+		Name: "cloud_scheduler_schedule_states_pruned_total",
+		Help: "Fired schedule-state rows deleted by retention pruning.",
+	}),
+}

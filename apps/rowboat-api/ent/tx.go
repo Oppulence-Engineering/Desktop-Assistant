@@ -20,6 +20,8 @@ type Tx struct {
 	BackgroundTaskRun *BackgroundTaskRunClient
 	// BackgroundTaskRunEvent is the client for interacting with the BackgroundTaskRunEvent builders.
 	BackgroundTaskRunEvent *BackgroundTaskRunEventClient
+	// BackgroundTaskScheduleState is the client for interacting with the BackgroundTaskScheduleState builders.
+	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
 	// LLMUsage is the client for interacting with the LLMUsage builders.
@@ -179,6 +181,7 @@ func (tx *Tx) init() {
 	tx.BackgroundTaskArtifact = NewBackgroundTaskArtifactClient(tx.config)
 	tx.BackgroundTaskRun = NewBackgroundTaskRunClient(tx.config)
 	tx.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(tx.config)
+	tx.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
 	tx.LLMUsage = NewLLMUsageClient(tx.config)
 	tx.LLMUsageHistory = NewLLMUsageHistoryClient(tx.config)

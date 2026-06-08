@@ -1686,6 +1686,42 @@ export interface components {
       /** @description Runs ordered by server creation time. */
       runs: components["schemas"]["BackgroundTaskRun"][];
     };
+    BackgroundTaskScheduleState: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** Format: date-time */
+      last_due_at?: string;
+      /** Format: date-time */
+      last_evaluated_at?: string;
+      last_run_id: string;
+      /** Format: date-time */
+      last_triggered_at?: string;
+      /** Format: date-time */
+      lease_expires_at?: string;
+      lease_owner: string;
+      revision: number;
+      schedule_key: string;
+      task: components["schemas"]["BackgroundTask"];
+      trigger_type: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
     /** @description Control signal sent to a Temporal-backed API-worker run. */
     BackgroundTaskSignalRequest: {
       /** @description Optional signal payload. update_context can carry replacement context. */
@@ -3002,6 +3038,7 @@ export interface components {
       background_task_run_events?: components["schemas"]["BackgroundTaskRunEvent"][];
       /** @description Background task run mirrors owned by the user. */
       background_task_runs?: components["schemas"]["BackgroundTaskRun"][];
+      background_task_schedule_states?: components["schemas"]["BackgroundTaskScheduleState"][];
       /** @description Background task mirrors owned by the user. */
       background_tasks?: components["schemas"]["BackgroundTask"][];
       /**

@@ -12,6 +12,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -47,6 +48,11 @@ var backgroundtaskruneventImplementors = []string{"BackgroundTaskRunEvent", "Nod
 
 // IsNode implements the Node interface check for GQLGen.
 func (*BackgroundTaskRunEvent) IsNode() {}
+
+var backgroundtaskschedulestateImplementors = []string{"BackgroundTaskScheduleState", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*BackgroundTaskScheduleState) IsNode() {}
 
 var creditledgerImplementors = []string{"CreditLedger", "Node"}
 
@@ -173,6 +179,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(backgroundtaskrunevent.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, backgroundtaskruneventImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case backgroundtaskschedulestate.Table:
+		query := c.BackgroundTaskScheduleState.Query().
+			Where(backgroundtaskschedulestate.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, backgroundtaskschedulestateImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -365,6 +380,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.BackgroundTaskRunEvent.Query().
 			Where(backgroundtaskrunevent.IDIn(ids...))
 		query, err := query.CollectFields(ctx, backgroundtaskruneventImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case backgroundtaskschedulestate.Table:
+		query := c.BackgroundTaskScheduleState.Query().
+			Where(backgroundtaskschedulestate.IDIn(ids...))
+		query, err := query.CollectFields(ctx, backgroundtaskschedulestateImplementors...)
 		if err != nil {
 			return nil, err
 		}

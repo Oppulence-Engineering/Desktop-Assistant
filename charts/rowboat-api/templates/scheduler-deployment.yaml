@@ -1,15 +1,12 @@
 {{- if .Values.scheduler.enabled }}
-{{- if gt (int .Values.scheduler.replicaCount) 1 }}
-{{- fail "scheduler.replicaCount must be 1 until the RFC 002 durable lease lands: the no-op lease only makes a SINGLE evaluator safe; multiple replicas would each fire every due task (duplicate cloud runs)." }}
-{{- end }}
 # API-owned background-task scheduler (RFC 001). Evaluates cron/window triggers
 # for executionTarget=api tasks so scheduled cloud runs fire while the desktop
 # is offline. Structurally mirrors the worker Deployment: own pod, own crash
 # domain, own /metrics + /healthz.
 #
-# Run AT MOST ONE replica until the RFC 002 durable lease is in place — the
-# no-op lease only protects a single evaluator (enforced by the fail guard above
-# and the Recreate strategy below).
+# Multiple replicas are safe: the RFC 002 durable schedule-state lease gives
+# cross-replica at-most-once firing, so rolling-update overlap and replicaCount
+# > 1 both dedup to one run per cycle.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,12 +16,6 @@ metadata:
     app.kubernetes.io/component: scheduler
 spec:
   replicas: {{ .Values.scheduler.replicaCount }}
-  # Recreate (not RollingUpdate): the scheduler must be a SINGLE evaluator until
-  # the RFC 002 durable lease lands. A rolling update would briefly run the old
-  # and new pods together, and with the no-op lease both would fire every due
-  # task → duplicate cloud runs on each deploy.
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       {{- include "rowboat-api.schedulerSelectorLabels" . | nindent 6 }}
@@ -84,8 +75,8 @@ spec:
             periodSeconds: 20
           readinessProbe:
             # /readyz is 200 only once Temporal is connected, so a scheduler
-            # stuck dialing Temporal stays NotReady (and a Recreate deploy waits)
-            # rather than reporting healthy while not scheduling.
+            # stuck dialing Temporal stays NotReady (and a rolling deploy holds
+            # the old pod) rather than reporting healthy while not scheduling.
             httpGet:
               path: /readyz
               port: metrics

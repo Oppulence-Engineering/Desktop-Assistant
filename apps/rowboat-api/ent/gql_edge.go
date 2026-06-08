@@ -48,6 +48,18 @@ func (_m *BackgroundTask) RunEvents(ctx context.Context) (result []*BackgroundTa
 	return result, err
 }
 
+func (_m *BackgroundTask) ScheduleStates(ctx context.Context) (result []*BackgroundTaskScheduleState, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedScheduleStates(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ScheduleStatesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryScheduleStates().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *BackgroundTaskArtifact) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -112,6 +124,22 @@ func (_m *BackgroundTaskRunEvent) Run(ctx context.Context) (*BackgroundTaskRun, 
 	result, err := _m.Edges.RunOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryRun().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskScheduleState) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskScheduleState) Task(ctx context.Context) (*BackgroundTask, error) {
+	result, err := _m.Edges.TaskOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTask().Only(ctx)
 	}
 	return result, err
 }
@@ -256,6 +284,18 @@ func (_m *User) BackgroundTaskRunEvents(ctx context.Context) (result []*Backgrou
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryBackgroundTaskRunEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) BackgroundTaskScheduleStates(ctx context.Context) (result []*BackgroundTaskScheduleState, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedBackgroundTaskScheduleStates(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.BackgroundTaskScheduleStatesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryBackgroundTaskScheduleStates().All(ctx)
 	}
 	return result, err
 }

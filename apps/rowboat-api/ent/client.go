@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -48,6 +49,8 @@ type Client struct {
 	BackgroundTaskRun *BackgroundTaskRunClient
 	// BackgroundTaskRunEvent is the client for interacting with the BackgroundTaskRunEvent builders.
 	BackgroundTaskRunEvent *BackgroundTaskRunEventClient
+	// BackgroundTaskScheduleState is the client for interacting with the BackgroundTaskScheduleState builders.
+	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
 	// LLMUsage is the client for interacting with the LLMUsage builders.
@@ -92,6 +95,7 @@ func (c *Client) init() {
 	c.BackgroundTaskArtifact = NewBackgroundTaskArtifactClient(c.config)
 	c.BackgroundTaskRun = NewBackgroundTaskRunClient(c.config)
 	c.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(c.config)
+	c.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(c.config)
 	c.CreditLedger = NewCreditLedgerClient(c.config)
 	c.LLMUsage = NewLLMUsageClient(c.config)
 	c.LLMUsageHistory = NewLLMUsageHistoryClient(c.config)
@@ -227,24 +231,25 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:                    ctx,
-		config:                 cfg,
-		BackgroundTask:         NewBackgroundTaskClient(cfg),
-		BackgroundTaskArtifact: NewBackgroundTaskArtifactClient(cfg),
-		BackgroundTaskRun:      NewBackgroundTaskRunClient(cfg),
-		BackgroundTaskRunEvent: NewBackgroundTaskRunEventClient(cfg),
-		CreditLedger:           NewCreditLedgerClient(cfg),
-		LLMUsage:               NewLLMUsageClient(cfg),
-		LLMUsageHistory:        NewLLMUsageHistoryClient(cfg),
-		MCPConnection:          NewMCPConnectionClient(cfg),
-		MCPConnectionHistory:   NewMCPConnectionHistoryClient(cfg),
-		OAuthConnection:        NewOAuthConnectionClient(cfg),
-		OAuthConnectionHistory: NewOAuthConnectionHistoryClient(cfg),
-		OAuthPending:           NewOAuthPendingClient(cfg),
-		Subscription:           NewSubscriptionClient(cfg),
-		SubscriptionHistory:    NewSubscriptionHistoryClient(cfg),
-		User:                   NewUserClient(cfg),
-		UserHistory:            NewUserHistoryClient(cfg),
+		ctx:                         ctx,
+		config:                      cfg,
+		BackgroundTask:              NewBackgroundTaskClient(cfg),
+		BackgroundTaskArtifact:      NewBackgroundTaskArtifactClient(cfg),
+		BackgroundTaskRun:           NewBackgroundTaskRunClient(cfg),
+		BackgroundTaskRunEvent:      NewBackgroundTaskRunEventClient(cfg),
+		BackgroundTaskScheduleState: NewBackgroundTaskScheduleStateClient(cfg),
+		CreditLedger:                NewCreditLedgerClient(cfg),
+		LLMUsage:                    NewLLMUsageClient(cfg),
+		LLMUsageHistory:             NewLLMUsageHistoryClient(cfg),
+		MCPConnection:               NewMCPConnectionClient(cfg),
+		MCPConnectionHistory:        NewMCPConnectionHistoryClient(cfg),
+		OAuthConnection:             NewOAuthConnectionClient(cfg),
+		OAuthConnectionHistory:      NewOAuthConnectionHistoryClient(cfg),
+		OAuthPending:                NewOAuthPendingClient(cfg),
+		Subscription:                NewSubscriptionClient(cfg),
+		SubscriptionHistory:         NewSubscriptionHistoryClient(cfg),
+		User:                        NewUserClient(cfg),
+		UserHistory:                 NewUserHistoryClient(cfg),
 	}, nil
 }
 
@@ -262,24 +267,25 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:                    ctx,
-		config:                 cfg,
-		BackgroundTask:         NewBackgroundTaskClient(cfg),
-		BackgroundTaskArtifact: NewBackgroundTaskArtifactClient(cfg),
-		BackgroundTaskRun:      NewBackgroundTaskRunClient(cfg),
-		BackgroundTaskRunEvent: NewBackgroundTaskRunEventClient(cfg),
-		CreditLedger:           NewCreditLedgerClient(cfg),
-		LLMUsage:               NewLLMUsageClient(cfg),
-		LLMUsageHistory:        NewLLMUsageHistoryClient(cfg),
-		MCPConnection:          NewMCPConnectionClient(cfg),
-		MCPConnectionHistory:   NewMCPConnectionHistoryClient(cfg),
-		OAuthConnection:        NewOAuthConnectionClient(cfg),
-		OAuthConnectionHistory: NewOAuthConnectionHistoryClient(cfg),
-		OAuthPending:           NewOAuthPendingClient(cfg),
-		Subscription:           NewSubscriptionClient(cfg),
-		SubscriptionHistory:    NewSubscriptionHistoryClient(cfg),
-		User:                   NewUserClient(cfg),
-		UserHistory:            NewUserHistoryClient(cfg),
+		ctx:                         ctx,
+		config:                      cfg,
+		BackgroundTask:              NewBackgroundTaskClient(cfg),
+		BackgroundTaskArtifact:      NewBackgroundTaskArtifactClient(cfg),
+		BackgroundTaskRun:           NewBackgroundTaskRunClient(cfg),
+		BackgroundTaskRunEvent:      NewBackgroundTaskRunEventClient(cfg),
+		BackgroundTaskScheduleState: NewBackgroundTaskScheduleStateClient(cfg),
+		CreditLedger:                NewCreditLedgerClient(cfg),
+		LLMUsage:                    NewLLMUsageClient(cfg),
+		LLMUsageHistory:             NewLLMUsageHistoryClient(cfg),
+		MCPConnection:               NewMCPConnectionClient(cfg),
+		MCPConnectionHistory:        NewMCPConnectionHistoryClient(cfg),
+		OAuthConnection:             NewOAuthConnectionClient(cfg),
+		OAuthConnectionHistory:      NewOAuthConnectionHistoryClient(cfg),
+		OAuthPending:                NewOAuthPendingClient(cfg),
+		Subscription:                NewSubscriptionClient(cfg),
+		SubscriptionHistory:         NewSubscriptionHistoryClient(cfg),
+		User:                        NewUserClient(cfg),
+		UserHistory:                 NewUserHistoryClient(cfg),
 	}, nil
 }
 
@@ -310,9 +316,9 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
-		c.BackgroundTaskRunEvent, c.CreditLedger, c.LLMUsage, c.LLMUsageHistory,
-		c.MCPConnection, c.MCPConnectionHistory, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
+		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CreditLedger,
+		c.LLMUsage, c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory,
+		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
 		c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Use(hooks...)
@@ -324,9 +330,9 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
-		c.BackgroundTaskRunEvent, c.CreditLedger, c.LLMUsage, c.LLMUsageHistory,
-		c.MCPConnection, c.MCPConnectionHistory, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
+		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CreditLedger,
+		c.LLMUsage, c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory,
+		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
 		c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Intercept(interceptors...)
@@ -344,6 +350,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BackgroundTaskRun.mutate(ctx, m)
 	case *BackgroundTaskRunEventMutation:
 		return c.BackgroundTaskRunEvent.mutate(ctx, m)
+	case *BackgroundTaskScheduleStateMutation:
+		return c.BackgroundTaskScheduleState.mutate(ctx, m)
 	case *CreditLedgerMutation:
 		return c.CreditLedger.mutate(ctx, m)
 	case *LLMUsageMutation:
@@ -538,6 +546,22 @@ func (c *BackgroundTaskClient) QueryRunEvents(_m *BackgroundTask) *BackgroundTas
 			sqlgraph.From(backgroundtask.Table, backgroundtask.FieldID, id),
 			sqlgraph.To(backgroundtaskrunevent.Table, backgroundtaskrunevent.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, backgroundtask.RunEventsTable, backgroundtask.RunEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryScheduleStates queries the schedule_states edge of a BackgroundTask.
+func (c *BackgroundTaskClient) QueryScheduleStates(_m *BackgroundTask) *BackgroundTaskScheduleStateQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtask.Table, backgroundtask.FieldID, id),
+			sqlgraph.To(backgroundtaskschedulestate.Table, backgroundtaskschedulestate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, backgroundtask.ScheduleStatesTable, backgroundtask.ScheduleStatesColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1094,6 +1118,171 @@ func (c *BackgroundTaskRunEventClient) mutate(ctx context.Context, m *Background
 		return (&BackgroundTaskRunEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown BackgroundTaskRunEvent mutation op: %q", m.Op())
+	}
+}
+
+// BackgroundTaskScheduleStateClient is a client for the BackgroundTaskScheduleState schema.
+type BackgroundTaskScheduleStateClient struct {
+	config
+}
+
+// NewBackgroundTaskScheduleStateClient returns a client for the BackgroundTaskScheduleState from the given config.
+func NewBackgroundTaskScheduleStateClient(c config) *BackgroundTaskScheduleStateClient {
+	return &BackgroundTaskScheduleStateClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `backgroundtaskschedulestate.Hooks(f(g(h())))`.
+func (c *BackgroundTaskScheduleStateClient) Use(hooks ...Hook) {
+	c.hooks.BackgroundTaskScheduleState = append(c.hooks.BackgroundTaskScheduleState, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `backgroundtaskschedulestate.Intercept(f(g(h())))`.
+func (c *BackgroundTaskScheduleStateClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BackgroundTaskScheduleState = append(c.inters.BackgroundTaskScheduleState, interceptors...)
+}
+
+// Create returns a builder for creating a BackgroundTaskScheduleState entity.
+func (c *BackgroundTaskScheduleStateClient) Create() *BackgroundTaskScheduleStateCreate {
+	mutation := newBackgroundTaskScheduleStateMutation(c.config, OpCreate)
+	return &BackgroundTaskScheduleStateCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BackgroundTaskScheduleState entities.
+func (c *BackgroundTaskScheduleStateClient) CreateBulk(builders ...*BackgroundTaskScheduleStateCreate) *BackgroundTaskScheduleStateCreateBulk {
+	return &BackgroundTaskScheduleStateCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BackgroundTaskScheduleStateClient) MapCreateBulk(slice any, setFunc func(*BackgroundTaskScheduleStateCreate, int)) *BackgroundTaskScheduleStateCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BackgroundTaskScheduleStateCreateBulk{err: fmt.Errorf("calling to BackgroundTaskScheduleStateClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BackgroundTaskScheduleStateCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BackgroundTaskScheduleStateCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BackgroundTaskScheduleState.
+func (c *BackgroundTaskScheduleStateClient) Update() *BackgroundTaskScheduleStateUpdate {
+	mutation := newBackgroundTaskScheduleStateMutation(c.config, OpUpdate)
+	return &BackgroundTaskScheduleStateUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BackgroundTaskScheduleStateClient) UpdateOne(_m *BackgroundTaskScheduleState) *BackgroundTaskScheduleStateUpdateOne {
+	mutation := newBackgroundTaskScheduleStateMutation(c.config, OpUpdateOne, withBackgroundTaskScheduleState(_m))
+	return &BackgroundTaskScheduleStateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BackgroundTaskScheduleStateClient) UpdateOneID(id uuid.UUID) *BackgroundTaskScheduleStateUpdateOne {
+	mutation := newBackgroundTaskScheduleStateMutation(c.config, OpUpdateOne, withBackgroundTaskScheduleStateID(id))
+	return &BackgroundTaskScheduleStateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BackgroundTaskScheduleState.
+func (c *BackgroundTaskScheduleStateClient) Delete() *BackgroundTaskScheduleStateDelete {
+	mutation := newBackgroundTaskScheduleStateMutation(c.config, OpDelete)
+	return &BackgroundTaskScheduleStateDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BackgroundTaskScheduleStateClient) DeleteOne(_m *BackgroundTaskScheduleState) *BackgroundTaskScheduleStateDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BackgroundTaskScheduleStateClient) DeleteOneID(id uuid.UUID) *BackgroundTaskScheduleStateDeleteOne {
+	builder := c.Delete().Where(backgroundtaskschedulestate.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BackgroundTaskScheduleStateDeleteOne{builder}
+}
+
+// Query returns a query builder for BackgroundTaskScheduleState.
+func (c *BackgroundTaskScheduleStateClient) Query() *BackgroundTaskScheduleStateQuery {
+	return &BackgroundTaskScheduleStateQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBackgroundTaskScheduleState},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BackgroundTaskScheduleState entity by its id.
+func (c *BackgroundTaskScheduleStateClient) Get(ctx context.Context, id uuid.UUID) (*BackgroundTaskScheduleState, error) {
+	return c.Query().Where(backgroundtaskschedulestate.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BackgroundTaskScheduleStateClient) GetX(ctx context.Context, id uuid.UUID) *BackgroundTaskScheduleState {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a BackgroundTaskScheduleState.
+func (c *BackgroundTaskScheduleStateClient) QueryUser(_m *BackgroundTaskScheduleState) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskschedulestate.Table, backgroundtaskschedulestate.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtaskschedulestate.UserTable, backgroundtaskschedulestate.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTask queries the task edge of a BackgroundTaskScheduleState.
+func (c *BackgroundTaskScheduleStateClient) QueryTask(_m *BackgroundTaskScheduleState) *BackgroundTaskQuery {
+	query := (&BackgroundTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskschedulestate.Table, backgroundtaskschedulestate.FieldID, id),
+			sqlgraph.To(backgroundtask.Table, backgroundtask.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtaskschedulestate.TaskTable, backgroundtaskschedulestate.TaskColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BackgroundTaskScheduleStateClient) Hooks() []Hook {
+	return c.hooks.BackgroundTaskScheduleState
+}
+
+// Interceptors returns the client interceptors.
+func (c *BackgroundTaskScheduleStateClient) Interceptors() []Interceptor {
+	return c.inters.BackgroundTaskScheduleState
+}
+
+func (c *BackgroundTaskScheduleStateClient) mutate(ctx context.Context, m *BackgroundTaskScheduleStateMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BackgroundTaskScheduleStateCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BackgroundTaskScheduleStateUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BackgroundTaskScheduleStateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BackgroundTaskScheduleStateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BackgroundTaskScheduleState mutation op: %q", m.Op())
 	}
 }
 
@@ -2759,6 +2948,22 @@ func (c *UserClient) QueryBackgroundTaskRunEvents(_m *User) *BackgroundTaskRunEv
 	return query
 }
 
+// QueryBackgroundTaskScheduleStates queries the background_task_schedule_states edge of a User.
+func (c *UserClient) QueryBackgroundTaskScheduleStates(_m *User) *BackgroundTaskScheduleStateQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(backgroundtaskschedulestate.Table, backgroundtaskschedulestate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTaskScheduleStatesTable, user.BackgroundTaskScheduleStatesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -2921,14 +3126,16 @@ func (c *UserHistoryClient) mutate(ctx context.Context, m *UserHistoryMutation) 
 type (
 	hooks struct {
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
-		BackgroundTaskRunEvent, CreditLedger, LLMUsage, LLMUsageHistory, MCPConnection,
-		MCPConnectionHistory, OAuthConnection, OAuthConnectionHistory, OAuthPending,
-		Subscription, SubscriptionHistory, User, UserHistory []ent.Hook
+		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CreditLedger, LLMUsage,
+		LLMUsageHistory, MCPConnection, MCPConnectionHistory, OAuthConnection,
+		OAuthConnectionHistory, OAuthPending, Subscription, SubscriptionHistory, User,
+		UserHistory []ent.Hook
 	}
 	inters struct {
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
-		BackgroundTaskRunEvent, CreditLedger, LLMUsage, LLMUsageHistory, MCPConnection,
-		MCPConnectionHistory, OAuthConnection, OAuthConnectionHistory, OAuthPending,
-		Subscription, SubscriptionHistory, User, UserHistory []ent.Interceptor
+		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CreditLedger, LLMUsage,
+		LLMUsageHistory, MCPConnection, MCPConnectionHistory, OAuthConnection,
+		OAuthConnectionHistory, OAuthPending, Subscription, SubscriptionHistory, User,
+		UserHistory []ent.Interceptor
 	}
 )

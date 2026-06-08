@@ -43,6 +43,8 @@ const (
 	EdgeBackgroundTaskRuns = "background_task_runs"
 	// EdgeBackgroundTaskRunEvents holds the string denoting the background_task_run_events edge name in mutations.
 	EdgeBackgroundTaskRunEvents = "background_task_run_events"
+	// EdgeBackgroundTaskScheduleStates holds the string denoting the background_task_schedule_states edge name in mutations.
+	EdgeBackgroundTaskScheduleStates = "background_task_schedule_states"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -108,6 +110,13 @@ const (
 	BackgroundTaskRunEventsInverseTable = "background_task_run_events"
 	// BackgroundTaskRunEventsColumn is the table column denoting the background_task_run_events relation/edge.
 	BackgroundTaskRunEventsColumn = "user_background_task_run_events"
+	// BackgroundTaskScheduleStatesTable is the table that holds the background_task_schedule_states relation/edge.
+	BackgroundTaskScheduleStatesTable = "background_task_schedule_states"
+	// BackgroundTaskScheduleStatesInverseTable is the table name for the BackgroundTaskScheduleState entity.
+	// It exists in this package in order to avoid circular dependency with the "backgroundtaskschedulestate" package.
+	BackgroundTaskScheduleStatesInverseTable = "background_task_schedule_states"
+	// BackgroundTaskScheduleStatesColumn is the table column denoting the background_task_schedule_states relation/edge.
+	BackgroundTaskScheduleStatesColumn = "user_background_task_schedule_states"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -294,6 +303,20 @@ func ByBackgroundTaskRunEvents(term sql.OrderTerm, terms ...sql.OrderTerm) Order
 		sqlgraph.OrderByNeighborTerms(s, newBackgroundTaskRunEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByBackgroundTaskScheduleStatesCount orders the results by background_task_schedule_states count.
+func ByBackgroundTaskScheduleStatesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBackgroundTaskScheduleStatesStep(), opts...)
+	}
+}
+
+// ByBackgroundTaskScheduleStates orders the results by background_task_schedule_states terms.
+func ByBackgroundTaskScheduleStates(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBackgroundTaskScheduleStatesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -355,5 +378,12 @@ func newBackgroundTaskRunEventsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BackgroundTaskRunEventsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTaskRunEventsTable, BackgroundTaskRunEventsColumn),
+	)
+}
+func newBackgroundTaskScheduleStatesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BackgroundTaskScheduleStatesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTaskScheduleStatesTable, BackgroundTaskScheduleStatesColumn),
 	)
 }

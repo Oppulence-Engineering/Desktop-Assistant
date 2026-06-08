@@ -35,6 +35,38 @@ jobs:
         run: go vet ./...
         working-directory: apps/rowboat-api
 
+  # The cloud-scheduler durable lease (RFC 002) relies on Postgres
+  # `INSERT ... ON CONFLICT DO NOTHING` semantics, which differ from sqlite, so
+  # its cross-replica concurrency guarantee is tested against real Postgres
+  # under the `pgconcurrency` build tag (the default suite stays on sqlite).
+  lease-concurrency:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rowboat
+          POSTGRES_PASSWORD: rowboat
+          POSTGRES_DB: rowboat_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rowboat"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - name: Schedule-lease concurrency (Postgres)
+        run: go test -tags=pgconcurrency -race -count=1 ./internal/backgroundscheduler/...
+        working-directory: apps/rowboat-api
+        env:
+          ROWBOAT_TEST_PG_DSN: postgres://rowboat:rowboat@localhost:5432/rowboat_test?sslmode=disable
+
   lint:
     runs-on: ubuntu-latest
     steps:

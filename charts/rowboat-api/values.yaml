@@ -15,8 +15,8 @@ worker:
       memory: 512Mi
 
 # API-owned scheduler (RFC 001). Disabled by default; enable per-environment.
-# Keep replicaCount at 1 until the RFC 002 durable lease lands — the no-op lease
-# only makes a single evaluator safe.
+# replicaCount > 1 is safe: the RFC 002 durable schedule-state lease gives
+# cross-replica at-most-once firing. Default 1 is sufficient for current scale.
 scheduler:
   enabled: false
   replicaCount: 1

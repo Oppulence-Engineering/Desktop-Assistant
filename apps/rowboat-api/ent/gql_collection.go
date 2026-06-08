@@ -10,6 +10,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -86,6 +87,19 @@ func (_q *BackgroundTaskQuery) collectField(ctx context.Context, oneNode bool, o
 				return err
 			}
 			_q.WithNamedRunEvents(alias, func(wq *BackgroundTaskRunEventQuery) {
+				*wq = *query
+			})
+
+		case "scheduleStates":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskschedulestateImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedScheduleStates(alias, func(wq *BackgroundTaskScheduleStateQuery) {
 				*wq = *query
 			})
 		case "createdAt":
@@ -701,6 +715,145 @@ func newBackgroundTaskRunEventPaginateArgs(rv map[string]any) *backgroundtaskrun
 	}
 	if v, ok := rv[whereField].(*BackgroundTaskRunEventWhereInput); ok {
 		args.opts = append(args.opts, WithBackgroundTaskRunEventFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *BackgroundTaskScheduleStateQuery) CollectFields(ctx context.Context, satisfies ...string) (*BackgroundTaskScheduleStateQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *BackgroundTaskScheduleStateQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(backgroundtaskschedulestate.Columns))
+		selectedFields = []string{backgroundtaskschedulestate.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "task":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskImplementors)...); err != nil {
+				return err
+			}
+			_q.withTask = query
+		case "createdAt":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldCreatedAt)
+				fieldSeen[backgroundtaskschedulestate.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldUpdatedAt)
+				fieldSeen[backgroundtaskschedulestate.FieldUpdatedAt] = struct{}{}
+			}
+		case "triggerType":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldTriggerType]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldTriggerType)
+				fieldSeen[backgroundtaskschedulestate.FieldTriggerType] = struct{}{}
+			}
+		case "scheduleKey":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldScheduleKey]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldScheduleKey)
+				fieldSeen[backgroundtaskschedulestate.FieldScheduleKey] = struct{}{}
+			}
+		case "lastEvaluatedAt":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldLastEvaluatedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldLastEvaluatedAt)
+				fieldSeen[backgroundtaskschedulestate.FieldLastEvaluatedAt] = struct{}{}
+			}
+		case "lastDueAt":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldLastDueAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldLastDueAt)
+				fieldSeen[backgroundtaskschedulestate.FieldLastDueAt] = struct{}{}
+			}
+		case "lastTriggeredAt":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldLastTriggeredAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldLastTriggeredAt)
+				fieldSeen[backgroundtaskschedulestate.FieldLastTriggeredAt] = struct{}{}
+			}
+		case "lastRunID":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldLastRunID]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldLastRunID)
+				fieldSeen[backgroundtaskschedulestate.FieldLastRunID] = struct{}{}
+			}
+		case "leaseOwner":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldLeaseOwner]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldLeaseOwner)
+				fieldSeen[backgroundtaskschedulestate.FieldLeaseOwner] = struct{}{}
+			}
+		case "leaseExpiresAt":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldLeaseExpiresAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldLeaseExpiresAt)
+				fieldSeen[backgroundtaskschedulestate.FieldLeaseExpiresAt] = struct{}{}
+			}
+		case "revision":
+			if _, ok := fieldSeen[backgroundtaskschedulestate.FieldRevision]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskschedulestate.FieldRevision)
+				fieldSeen[backgroundtaskschedulestate.FieldRevision] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type backgroundtaskschedulestatePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []BackgroundTaskScheduleStatePaginateOption
+}
+
+func newBackgroundTaskScheduleStatePaginateArgs(rv map[string]any) *backgroundtaskschedulestatePaginateArgs {
+	args := &backgroundtaskschedulestatePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*BackgroundTaskScheduleStateWhereInput); ok {
+		args.opts = append(args.opts, WithBackgroundTaskScheduleStateFilter(v.Filter))
 	}
 	return args
 }
@@ -1456,6 +1609,19 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedBackgroundTaskRunEvents(alias, func(wq *BackgroundTaskRunEventQuery) {
+				*wq = *query
+			})
+
+		case "backgroundTaskScheduleStates":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskschedulestateImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedBackgroundTaskScheduleStates(alias, func(wq *BackgroundTaskScheduleStateQuery) {
 				*wq = *query
 			})
 		case "createdAt":
