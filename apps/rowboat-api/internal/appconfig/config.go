@@ -390,8 +390,12 @@ func (c Config) Validate() error {
 		if c.CloudSchedulerLeaseTTL <= c.CloudSchedulerInterval {
 			return fmt.Errorf("CLOUD_SCHEDULER_LEASE_TTL must exceed CLOUD_SCHEDULER_INTERVAL")
 		}
-		if _, err := c.SchedulerLocation(); err != nil {
-			return fmt.Errorf("CLOUD_SCHEDULER_TIMEZONE %q is not a valid IANA timezone: %w", c.CloudSchedulerTimezone, err)
+		// v1 evaluates in UTC only. The window/cron math runs in the configured
+		// location, and a DST zone would mishandle the spring-forward gap and the
+		// fall-back ambiguous hour; per-task timezone is the committed
+		// fast-follow. Reject anything but UTC rather than silently mis-evaluate.
+		if tz := strings.TrimSpace(c.CloudSchedulerTimezone); tz != "" && !strings.EqualFold(tz, "UTC") {
+			return fmt.Errorf("CLOUD_SCHEDULER_TIMEZONE must be UTC in v1 (per-task timezone is a committed fast-follow); got %q", c.CloudSchedulerTimezone)
 		}
 	}
 	if c.IsProduction() {

@@ -49,13 +49,24 @@ func TestValidateCloudScheduler(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "invalid timezone rejected",
+			name: "garbage timezone rejected",
 			mutate: func(c *Config) {
 				c.CloudSchedulerEnabled = true
 				c.TemporalEnabled = true
 				c.CloudSchedulerInterval = 15 * time.Second
 				c.CloudSchedulerLeaseTTL = 90 * time.Second
 				c.CloudSchedulerTimezone = "Not/AZone"
+			},
+			wantErr: true,
+		},
+		{
+			name: "non-UTC timezone rejected in v1",
+			mutate: func(c *Config) {
+				c.CloudSchedulerEnabled = true
+				c.TemporalEnabled = true
+				c.CloudSchedulerInterval = 15 * time.Second
+				c.CloudSchedulerLeaseTTL = 90 * time.Second
+				c.CloudSchedulerTimezone = "America/New_York"
 			},
 			wantErr: true,
 		},

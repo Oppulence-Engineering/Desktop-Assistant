@@ -58,9 +58,25 @@ func TestParseTriggers(t *testing.T) {
 			},
 		},
 		{
-			name:    "bad window time rejected",
-			raw:     `{"windows":[{"startTime":"9am","endTime":"noon"}]}`,
-			wantErr: true,
+			name: "bad window time parses but is flagged invalid",
+			raw:  `{"windows":[{"startTime":"9am","endTime":"noon"}]}`,
+			check: func(t *testing.T, tr Triggers) {
+				if len(tr.InvalidWindows()) != 1 {
+					t.Fatalf("expected 1 invalid window, got %d", len(tr.InvalidWindows()))
+				}
+			},
+		},
+		{
+			name: "bad window does not suppress a valid cron",
+			raw:  `{"cronExpr":"0 9 * * *","windows":[{"startTime":"9am","endTime":"17:00"}]}`,
+			check: func(t *testing.T, tr Triggers) {
+				if !tr.HasValidCron() {
+					t.Fatalf("valid cron must survive a malformed sibling window")
+				}
+				if len(tr.InvalidWindows()) != 1 {
+					t.Fatalf("expected 1 invalid window, got %d", len(tr.InvalidWindows()))
+				}
+			},
 		},
 		{
 			name:    "malformed json rejected",
@@ -107,9 +123,16 @@ func TestParseTriggers(t *testing.T) {
 			},
 		},
 		{
-			name:    "one bad window rejects the whole parse",
-			raw:     `{"windows":[{"startTime":"08:00","endTime":"12:00"},{"startTime":"bad","endTime":"17:00"}]}`,
-			wantErr: true,
+			name: "one bad window is flagged, the valid one is kept",
+			raw:  `{"windows":[{"startTime":"08:00","endTime":"12:00"},{"startTime":"bad","endTime":"17:00"}]}`,
+			check: func(t *testing.T, tr Triggers) {
+				if len(tr.Windows) != 2 {
+					t.Fatalf("both windows should be parsed, got %d", len(tr.Windows))
+				}
+				if len(tr.InvalidWindows()) != 1 {
+					t.Fatalf("expected exactly 1 invalid window, got %d", len(tr.InvalidWindows()))
+				}
+			},
 		},
 	}
 	for _, tc := range cases {

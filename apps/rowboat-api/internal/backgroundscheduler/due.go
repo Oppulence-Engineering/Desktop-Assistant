@@ -15,26 +15,85 @@ const (
 	retryBackoff = 5 * time.Minute // schedule/utils.ts RETRY_BACKOFF_MS
 )
 
-// dueTimedTrigger reports which timed sub-trigger (if any) has a cycle ready to
-// fire at `now`: "cron", "window", or "" for none. It is a pure cycle check and
-// does NOT consider backoff — the caller gates on backoff separately.
-//
-// Cron wins over window when both are due (schedule/utils.ts:32-36). Cycle
-// accounting is anchored on lastRunAt, which advances only on a *successful*
-// run, so a failed run leaves the cycle unfired and this returns the matched
-// trigger again next tick (gated by backoff). Mirrors schedule/utils.ts:26-41.
-func dueTimedTrigger(tr Triggers, lastRunAt *time.Time, now time.Time) string {
-	if isCronDue(tr.CronExpr, lastRunAt, now) {
-		return "cron"
-	}
-	if _, ok := firstDueWindow(tr, lastRunAt, now); ok {
-		return "window"
-	}
-	return ""
+// dueResult is the single evaluation of a task's timed triggers: which
+// sub-trigger (if any) is ready to fire, plus the concrete occurrence/window it
+// matched. Computing this once (rather than deciding due-ness and then
+// re-deriving the occurrence for provenance) keeps the firing decision and the
+// schedule/lease key describing the SAME cycle.
+type dueResult struct {
+	source     string    // "" | "cron" | "window"
+	occurrence time.Time // matched cron occurrence (source == "cron")
+	window     Window    // matched window (source == "window")
 }
 
-// firstDueWindow returns the first window whose daily cycle is ready to fire,
-// matching the iteration order dueTimedTrigger uses to report "window".
+// evaluateDue reports which timed sub-trigger has a cycle ready to fire at `now`
+// and the occurrence/window it matched. It is a pure cycle check and does NOT
+// consider backoff — the caller gates on backoff separately.
+//
+// Cron wins over window when both are due (schedule/utils.ts:32-36). Cycle
+// accounting is anchored on lastRunAt, which advances only on a successful run
+// (or, for the cloud scheduler, optimistically at fire), so a failed run leaves
+// the cycle unfired and this returns the matched trigger again. Mirrors
+// schedule/utils.ts:26-41.
+func evaluateDue(tr Triggers, lastRunAt *time.Time, now time.Time) dueResult {
+	if occ, ok := cronDueOccurrence(tr.CronExpr, lastRunAt, now); ok {
+		return dueResult{source: "cron", occurrence: occ}
+	}
+	if w, ok := firstDueWindow(tr, lastRunAt, now); ok {
+		return dueResult{source: "window", window: w}
+	}
+	return dueResult{}
+}
+
+// dueTimedTrigger reports which timed sub-trigger is ready to fire: "cron",
+// "window", or "" for none. Thin wrapper over evaluateDue.
+func dueTimedTrigger(tr Triggers, lastRunAt *time.Time, now time.Time) string {
+	return evaluateDue(tr, lastRunAt, now).source
+}
+
+// cronDueOccurrence reports whether the cron cycle is ready to fire at `now` and
+// returns the matched occurrence (the most-recent tick at-or-before now).
+//
+// The occurrence is computed against `now` truncated to the minute, so it is
+// always minute-aligned (matching cron-parser's .prev()) and stable across
+// ticks within the same minute — gronx.PrevTickBefore with inclRefTime returns
+// the reference time to the second when it is itself due, which would otherwise
+// make the occurrence (and the schedule/lease key built from it) drift every
+// tick. Mirrors schedule/utils.ts:55-75.
+//
+// An invalid expression returns (_, false) rather than erroring, matching the
+// desktop's try/catch; the scheduler surfaces invalid cron via
+// Triggers.HasValidCron.
+func cronDueOccurrence(expr string, lastRunAt *time.Time, now time.Time) (time.Time, bool) {
+	if expr == "" || !gronx.IsValid(expr) {
+		return time.Time{}, false
+	}
+	occurrence, err := gronx.PrevTickBefore(expr, now.Truncate(time.Minute), true)
+	if err != nil {
+		return time.Time{}, false
+	}
+	if lastRunAt == nil {
+		return occurrence, true // never ran — immediately due
+	}
+	// Already ran at-or-after this occurrence → skip.
+	if !lastRunAt.Before(occurrence) {
+		return time.Time{}, false
+	}
+	// Within grace → fire; outside grace → missed, skip.
+	if now.After(occurrence.Add(cronGrace)) {
+		return time.Time{}, false
+	}
+	return occurrence, true
+}
+
+// isCronDue reports whether the cron cycle is ready to fire at `now`.
+func isCronDue(expr string, lastRunAt *time.Time, now time.Time) bool {
+	_, ok := cronDueOccurrence(expr, lastRunAt, now)
+	return ok
+}
+
+// firstDueWindow returns the first window whose daily cycle is ready to fire at
+// `now`, matching the iteration order evaluateDue uses to report "window".
 func firstDueWindow(tr Triggers, lastRunAt *time.Time, now time.Time) (Window, bool) {
 	for _, w := range tr.Windows {
 		if isWindowDue(w.StartTime, w.EndTime, lastRunAt, now) {
@@ -42,53 +101,6 @@ func firstDueWindow(tr Triggers, lastRunAt *time.Time, now time.Time) (Window, b
 		}
 	}
 	return Window{}, false
-}
-
-// cronOccurrence returns the most-recent occurrence at-or-before now for a valid
-// expression, used to build run provenance and the lease key. The bool is false
-// for an empty/invalid expression.
-func cronOccurrence(expr string, now time.Time) (time.Time, bool) {
-	if expr == "" || !gronx.IsValid(expr) {
-		return time.Time{}, false
-	}
-	occ, err := gronx.PrevTickBefore(expr, now, true)
-	if err != nil {
-		return time.Time{}, false
-	}
-	return occ, true
-}
-
-// isCronDue reports whether the cron cycle is ready to fire at `now`.
-//
-// It finds the most-recent occurrence at-or-before `now` (the previous tick,
-// not the one after lastRunAt — an old lastRunAt would otherwise pin evaluation
-// to an ancient occurrence that always falls outside the grace window and would
-// block every future fire). It fires iff lastRunAt is before that occurrence
-// AND `now` is within the grace window after it. Mirrors schedule/utils.ts:55-75.
-//
-// An invalid expression returns false (not due) rather than erroring, matching
-// the desktop's try/catch; the scheduler surfaces invalid cron as a parse
-// metric via Triggers.HasValidCron.
-func isCronDue(expr string, lastRunAt *time.Time, now time.Time) bool {
-	if expr == "" || !gronx.IsValid(expr) {
-		// Invalid cron is skipped (not due) so it never fires and never
-		// suppresses a sibling window. Validity is checked before the never-ran
-		// shortcut so garbage expressions don't fire once on a fresh task.
-		return false
-	}
-	if lastRunAt == nil {
-		return true // never ran — immediately due
-	}
-	occurrence, err := gronx.PrevTickBefore(expr, now, true)
-	if err != nil {
-		return false
-	}
-	// Already ran at-or-after this occurrence → skip.
-	if !lastRunAt.Before(occurrence) {
-		return false
-	}
-	// Within grace → fire; outside grace → missed, skip.
-	return !now.After(occurrence.Add(cronGrace))
 }
 
 // isWindowDue reports whether a daily window [start,end] is ready to fire at

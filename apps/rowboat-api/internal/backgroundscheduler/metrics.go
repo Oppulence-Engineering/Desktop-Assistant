@@ -21,6 +21,7 @@ var metrics = struct {
 	DuplicateSuppressed prometheus.Counter
 	BackoffSuppressed   prometheus.Counter
 	InFlightSuppressed  prometheus.Counter
+	OrphansReaped       prometheus.Counter
 	Errors              *prometheus.CounterVec
 	TickDuration        prometheus.Histogram
 }{
@@ -52,9 +53,13 @@ var metrics = struct {
 		Name: "cloud_scheduler_inflight_suppressed_total",
 		Help: "Tasks skipped because a prior attempt is still in flight (last_attempt_at newer than last_run_at within backoff).",
 	}),
+	OrphansReaped: promauto.NewCounter(prometheus.CounterOpts{
+		Name: "cloud_scheduler_orphans_reaped_total",
+		Help: "Runs failed by the reaper after being abandoned in temporal_status=Starting.",
+	}),
 	Errors: promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "cloud_scheduler_errors_total",
-		Help: "Scheduler errors by stage (query|parse|user_edge|lease|start).",
+		Help: "Scheduler errors by stage (query|parse|user_edge|lease|start|stamp|reap).",
 	}, []string{"stage"}),
 	TickDuration: promauto.NewHistogram(prometheus.HistogramOpts{
 		Name:    "cloud_scheduler_tick_duration_seconds",

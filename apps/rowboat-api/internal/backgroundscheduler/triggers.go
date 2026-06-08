@@ -39,16 +39,16 @@ type Window struct {
 	EndTime   string `json:"endTime"`
 }
 
-// ParseTriggers decodes and structurally validates a task's triggers_json.
+// ParseTriggers decodes a task's triggers_json into typed structs.
 //
-// The ent validJSON validator already rejects malformed JSON at write time, so
-// the failure this guards against is a well-formed JSON document with the wrong
-// shape (e.g. a window time of "9am"). Such tasks are skipped with an
-// errors{stage=parse} metric rather than crashing the loop.
-//
-// Cron expression validity is intentionally NOT enforced here: an invalid cron
-// must not suppress a task's otherwise-valid windows (desktop parity). Use
-// HasValidCron to check the cron separately.
+// Only a JSON decode failure is fatal (the ent validJSON validator already
+// blocks malformed JSON at write time, so this guards a corrupt column). A
+// well-formed document with a wrong-shaped sub-trigger — an invalid cron or a
+// malformed window time — is NOT rejected here: those are surfaced lazily via
+// HasValidCron / InvalidWindows so that one bad sub-trigger never suppresses the
+// task's other, valid sub-triggers (e.g. a fat-fingered window must not stop a
+// valid cron from firing). isCronDue / isWindowDue treat the bad sub-trigger as
+// simply not-due.
 func ParseTriggers(raw string) (Triggers, error) {
 	var tr Triggers
 	trimmed := strings.TrimSpace(raw)
@@ -59,11 +59,6 @@ func ParseTriggers(raw string) (Triggers, error) {
 		return tr, fmt.Errorf("decode triggers_json: %w", err)
 	}
 	tr.CronExpr = strings.TrimSpace(tr.CronExpr)
-	for i, w := range tr.Windows {
-		if !hhmm.MatchString(w.StartTime) || !hhmm.MatchString(w.EndTime) {
-			return tr, fmt.Errorf("window %d: times must be HH:MM, got %q-%q", i, w.StartTime, w.EndTime)
-		}
-	}
 	return tr, nil
 }
 
@@ -75,6 +70,19 @@ func (t Triggers) HasCron() bool { return t.CronExpr != "" }
 // while any windows still evaluate.
 func (t Triggers) HasValidCron() bool {
 	return t.CronExpr != "" && gronx.IsValid(t.CronExpr)
+}
+
+// InvalidWindows returns the windows whose start/end is not a valid "HH:MM".
+// These are skipped by isWindowDue; the scheduler counts a parse error for them
+// without dropping the task's valid cron or valid windows.
+func (t Triggers) InvalidWindows() []Window {
+	var bad []Window
+	for _, w := range t.Windows {
+		if !hhmm.MatchString(w.StartTime) || !hhmm.MatchString(w.EndTime) {
+			bad = append(bad, w)
+		}
+	}
+	return bad
 }
 
 // parseHHMM splits a validated "HH:MM" into minutes-of-day components.

@@ -134,6 +134,24 @@ func TestStartFailureMarksRunFailed(t *testing.T) {
 	}
 }
 
+// TestStartRetryFailureUsesRetryMessage: a retry whose Temporal start fails
+// records the retry-specific progress message, distinct from a first-attempt
+// failure, so the two are distinguishable in viewRun.
+func TestStartRetryFailureUsesRetryMessage(t *testing.T) {
+	client, u, task := setup(t)
+	ctrl := &fakeController{startErr: errors.New("temporal unreachable")}
+	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+	attempt := 2
+
+	run, _ := starter.Start(auth.WithInternal(context.Background()), backgroundtaskruns.Params{
+		User: u, Task: task, Trigger: "retry", RunIDPrefix: "retry-",
+		QueuedMessage: "Queued retry for API worker.", RetryOfRunID: "prev", PreviousRunID: "prev", Attempt: &attempt,
+	})
+	if run == nil || run.ProgressMessage != "Temporal retry start failed." {
+		t.Fatalf("retry start failure message = %q, want 'Temporal retry start failed.'", run.ProgressMessage)
+	}
+}
+
 // TestStartWithoutTemporalReturnsSentinel covers the 503 mapping precondition.
 func TestStartWithoutTemporalReturnsSentinel(t *testing.T) {
 	client, u, task := setup(t)

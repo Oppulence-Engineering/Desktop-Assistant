@@ -1142,29 +1142,27 @@ func (h *Handler) triggerAPIRun(w http.ResponseWriter, r *http.Request, u *ent.U
 // configured, 400 on invalid params, 502 (with the failed run code recorded) on
 // a Temporal start failure, and 202 with the run view on success.
 func (h *Handler) writeStartedRun(w http.ResponseWriter, task *ent.BackgroundTask, run *ent.BackgroundTaskRun, err error, logMsg string) {
+	var invalidParams *backgroundtaskruns.InvalidParamsError
+	var startFailed *backgroundtaskruns.StartFailedError
+	var persistIDs *backgroundtaskruns.PersistIDsError
 	switch {
 	case err == nil:
 		httpx.WriteJSON(w, http.StatusAccepted, viewRun(task, run))
 	case errors.Is(err, backgroundtaskruns.ErrTemporalNotConfigured):
 		httpx.Error(w, http.StatusServiceUnavailable, "temporal is not configured", "temporal_unavailable")
-	case isInvalidParams(err):
+	case errors.As(err, &invalidParams):
 		httpx.Error(w, http.StatusBadRequest, err.Error(), "bad_request")
-	case isStartFailed(err):
+	case errors.As(err, &startFailed):
 		httpx.Error(w, http.StatusBadGateway, "could not start temporal workflow", "temporal_start_failed")
+	case errors.As(err, &persistIDs):
+		// The workflow IS running but its ids were not persisted; keep the
+		// distinct message so this partial-success state is triageable.
+		h.log.Error(logMsg, zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not store temporal workflow ids", "internal_error")
 	default:
 		h.log.Error(logMsg, zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not trigger task", "internal_error")
 	}
-}
-
-func isInvalidParams(err error) bool {
-	var invalid *backgroundtaskruns.InvalidParamsError
-	return errors.As(err, &invalid)
-}
-
-func isStartFailed(err error) bool {
-	var startFailed *backgroundtaskruns.StartFailedError
-	return errors.As(err, &startFailed)
 }
 
 func (h *Handler) startRetryRun(w http.ResponseWriter, r *http.Request, u *ent.User, task *ent.BackgroundTask, previous *ent.BackgroundTaskRun) {

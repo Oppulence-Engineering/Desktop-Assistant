@@ -23,10 +23,7 @@ import (
 	"fmt"
 	"time"
 
-	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
@@ -67,6 +64,15 @@ type StartFailedError struct{ Err error }
 
 func (e *StartFailedError) Error() string { return e.Err.Error() }
 func (e *StartFailedError) Unwrap() error { return e.Err }
+
+// PersistIDsError wraps a failure to persist the Temporal ids AFTER the workflow
+// was already started — a partial-success state (the workflow is live but the
+// run row still reads queued/Starting). The HTTP handler maps it to 500 with a
+// message distinct from a generic trigger failure so the state is triageable.
+type PersistIDsError struct{ Err error }
+
+func (e *PersistIDsError) Error() string { return e.Err.Error() }
+func (e *PersistIDsError) Unwrap() error { return e.Err }
 
 // Starter creates executor=api runs and launches their Temporal workflows.
 type Starter struct {
@@ -153,7 +159,7 @@ func (s *Starter) Start(ctx context.Context, p Params) (*ent.BackgroundTaskRun, 
 		RequestedContext: p.RequestedContext,
 	})
 	if err != nil {
-		return s.markStartFailed(ctx, run, err), &StartFailedError{Err: err}
+		return s.markStartFailed(ctx, run, err, isRetry), &StartFailedError{Err: err}
 	}
 
 	updated, err := s.Client.BackgroundTaskRun.UpdateOneID(run.ID).
@@ -163,14 +169,16 @@ func (s *Starter) Start(ctx context.Context, p Params) (*ent.BackgroundTaskRun, 
 		AddRevision(1).
 		Save(auth.WithInternal(ctx))
 	if err != nil {
-		return run, fmt.Errorf("store temporal workflow ids: %w", err)
+		return run, &PersistIDsError{Err: fmt.Errorf("store temporal workflow ids: %w", err)}
 	}
 
 	backgroundtaskmetrics.Triggered.WithLabelValues(trigger).Inc()
+	logMessage := "cloud run triggered"
 	if isRetry {
 		backgroundtaskmetrics.Retried.Inc()
+		logMessage = "cloud run retry triggered"
 	}
-	s.Log.Info("cloud run triggered", runLogFields(ctx, p, updated)...)
+	s.Log.Info(logMessage, runLogFields(ctx, p, updated)...)
 	return updated, nil
 }
 
@@ -211,7 +219,14 @@ func (s *Starter) createQueuedRun(ctx context.Context, p Params, runID, workflow
 // Unlike the HTTP handler's appendSystemEvent, it takes the user from Params
 // rather than the context, so it also works for the scheduler's internal
 // context, which carries no user.
+//
+// This event is always the FIRST event on a freshly created run, so its seq is
+// 0 — there is no prior event to query for. Inserting at seq 0 directly avoids
+// the read-then-write max-seq query (an N+1 and a race) on the run-start path.
 func (s *Starter) appendQueuedEvent(ctx context.Context, p Params, run *ent.BackgroundTaskRun, trigger string, isRetry bool) error {
+	if p.User == nil {
+		return errors.New("backgroundtaskruns: append event requires a user")
+	}
 	eventType := backgroundtaskworkflow.EventQueued
 	event := map[string]any{
 		"type":        backgroundtaskworkflow.EventQueued,
@@ -230,15 +245,32 @@ func (s *Starter) appendQueuedEvent(ctx context.Context, p Params, run *ent.Back
 			"requestedBy":  string(p.sourceOrDefault()),
 		}
 	}
-	return appendSystemEvent(ctx, s.Client, p.User, p.Task, run, eventType, event)
+	raw, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	return s.Client.BackgroundTaskRunEvent.Create().
+		SetUser(p.User).
+		SetTask(p.Task).
+		SetRun(run).
+		SetSeq(0).
+		SetEventType(eventType).
+		SetEventJSON(string(raw)).
+		Exec(ctx)
 }
 
 // markStartFailed records a Temporal start failure on the run row exactly as the
 // HTTP handler did: failed / StartFailed / temporal_start_failed, with the
 // error captured and a terminal completed_at. The task's last_run_at is left
-// untouched so the scheduler cycle stays unfired and retries next tick.
-func (s *Starter) markStartFailed(ctx context.Context, run *ent.BackgroundTaskRun, startErr error) *ent.BackgroundTaskRun {
+// untouched so the scheduler cycle stays unfired and retries next tick. The
+// progress message preserves the retry-vs-initial distinction the inline
+// handler used.
+func (s *Starter) markStartFailed(ctx context.Context, run *ent.BackgroundTaskRun, startErr error, isRetry bool) *ent.BackgroundTaskRun {
 	now := time.Now().UTC()
+	progressMessage := "Temporal start failed."
+	if isRetry {
+		progressMessage = "Temporal retry start failed."
+	}
 	updated, err := s.Client.BackgroundTaskRun.UpdateOneID(run.ID).
 		SetStatus("failed").
 		SetTemporalStatus("StartFailed").
@@ -247,7 +279,7 @@ func (s *Starter) markStartFailed(ctx context.Context, run *ent.BackgroundTaskRu
 		SetError(startErr.Error()).
 		SetErrorCode(backgroundtaskworkflow.ErrCodeTemporalStartFailed).
 		SetErrorDetails(startErr.Error()).
-		SetProgressMessage("Temporal start failed.").
+		SetProgressMessage(progressMessage).
 		AddRevision(1).
 		Save(auth.WithInternal(ctx))
 	s.Log.Error("start temporal background task workflow", zap.String("runId", run.RunID), zap.Error(startErr))
@@ -265,38 +297,6 @@ func (p Params) sourceOrDefault() Source {
 		return SourceHTTP
 	}
 	return p.Source
-}
-
-// appendSystemEvent appends a lifecycle event with a monotonically increasing
-// per-run sequence. It is the package-local twin of handler.appendSystemEvent,
-// differing only in that the user is passed explicitly (the scheduler's
-// internal context has no user to read).
-func appendSystemEvent(ctx context.Context, client *ent.Client, u *ent.User, task *ent.BackgroundTask, run *ent.BackgroundTaskRun, eventType string, event map[string]any) error {
-	if u == nil {
-		return errors.New("backgroundtaskruns: append event requires a user")
-	}
-	raw, err := json.Marshal(event)
-	if err != nil {
-		return err
-	}
-	last, err := client.BackgroundTaskRunEvent.Query().
-		Where(backgroundtaskrunevent.HasRunWith(backgroundtaskrun.IDEQ(run.ID))).
-		Order(backgroundtaskrunevent.BySeq(entsql.OrderDesc())).
-		First(auth.WithInternal(ctx))
-	seq := 0
-	if err == nil {
-		seq = last.Seq + 1
-	} else if !ent.IsNotFound(err) {
-		return err
-	}
-	return client.BackgroundTaskRunEvent.Create().
-		SetUser(u).
-		SetTask(task).
-		SetRun(run).
-		SetSeq(seq).
-		SetEventType(eventType).
-		SetEventJSON(string(raw)).
-		Exec(ctx)
 }
 
 // runLogFields returns the structured-logging field set for a cloud run start,

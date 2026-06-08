@@ -287,16 +287,24 @@ func TestCronEvaluatedInProvidedLocation(t *testing.T) {
 	}
 }
 
-func TestCronOccurrence(t *testing.T) {
-	now := ts(t, "2026-06-08T13:01:30Z")
-	occ, ok := cronOccurrence("0 * * * *", now)
+// TestCronDueOccurrenceMinuteAligned: the matched occurrence is always the
+// minute-aligned cron tick, even when `now` falls inside the matching minute at
+// some sub-minute second (gronx would otherwise return now-to-the-second).
+func TestCronDueOccurrenceMinuteAligned(t *testing.T) {
+	now := ts(t, "2026-06-08T13:00:37Z") // inside the matching minute
+	occ, ok := cronDueOccurrence("0 * * * *", nil, now)
 	if !ok || !occ.Equal(ts(t, "2026-06-08T13:00:00Z")) {
-		t.Fatalf("cronOccurrence = %v/%v, want 13:00/true", occ, ok)
+		t.Fatalf("occurrence = %v/%v, want 13:00:00/true (minute-aligned)", occ, ok)
 	}
-	if _, ok := cronOccurrence("not a cron", now); ok {
+	last := ts(t, "2026-06-08T12:00:00Z")
+	occ2, ok2 := cronDueOccurrence("0 * * * *", &last, ts(t, "2026-06-08T13:01:30Z"))
+	if !ok2 || !occ2.Equal(ts(t, "2026-06-08T13:00:00Z")) {
+		t.Fatalf("occurrence2 = %v/%v, want 13:00:00/true", occ2, ok2)
+	}
+	if _, ok := cronDueOccurrence("not a cron", nil, now); ok {
 		t.Fatalf("invalid expr should return ok=false")
 	}
-	if _, ok := cronOccurrence("", now); ok {
+	if _, ok := cronDueOccurrence("", nil, now); ok {
 		t.Fatalf("empty expr should return ok=false")
 	}
 }

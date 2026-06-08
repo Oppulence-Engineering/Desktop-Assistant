@@ -511,11 +511,49 @@ func TestSchedulerStartsRealRunAndCompletesLease(t *testing.T) {
 		t.Fatalf("queued event = %+v, want requestedBy=scheduler trigger=cron", payload)
 	}
 
-	// The task cycle anchor is not advanced by the scheduler itself — that
-	// happens in the worker's MarkRunDone on success. last_run_at stays at noon.
+	// The scheduler stamps the cycle anchor at fire time (desktop parity) so the
+	// same occurrence is not re-evaluated before the worker reports terminal
+	// state: last_run_at + last_attempt_at advance to now, last_run_id is set.
 	task := client.BackgroundTask.Query().FirstX(ctx)
-	if task.LastRunAt == nil || !task.LastRunAt.Equal(noon) {
-		t.Fatalf("last_run_at = %v, want unchanged (noon)", task.LastRunAt)
+	if task.LastRunAt == nil || !task.LastRunAt.Equal(now) {
+		t.Fatalf("last_run_at = %v, want now (%v)", task.LastRunAt, now)
+	}
+	if task.LastAttemptAt == nil || !task.LastAttemptAt.Equal(now) {
+		t.Fatalf("last_attempt_at = %v, want now (%v)", task.LastAttemptAt, now)
+	}
+	if task.LastRunID != run.RunID {
+		t.Fatalf("last_run_id = %q, want %q", task.LastRunID, run.RunID)
+	}
+	_ = noon
+}
+
+// TestTickStampsCycleAndDoesNotRefire is the direct regression for the
+// duplicate-fire finding: two ticks at the same instant produce exactly one run
+// because the first fire advances last_run_at, so the second sees the cycle
+// already satisfied.
+func TestTickStampsCycleAndDoesNotRefire(t *testing.T) {
+	client := openDB(t)
+	u := newUser(t, client, "a@x.co", "u1")
+	now := time.Date(2026, 6, 8, 13, 1, 30, 0, time.UTC)
+	noon := time.Date(2026, 6, 8, 12, 0, 0, 0, time.UTC)
+	seed(t, client, u, []taskSpec{
+		{slug: "cron", target: "api", triggers: `{"cronExpr":"0 * * * *"}`, active: true, lastRun: tptr(noon)},
+	})
+
+	ctrl := &fakeTemporal{}
+	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+	s := New(client, starter, NoopLeases{}, Config{Clock: func() time.Time { return now }}, zap.NewNop())
+
+	if err := s.tick(context.Background()); err != nil {
+		t.Fatalf("tick1: %v", err)
+	}
+	if err := s.tick(context.Background()); err != nil {
+		t.Fatalf("tick2: %v", err)
+	}
+
+	runs := client.BackgroundTaskRun.Query().AllX(auth.WithInternal(context.Background()))
+	if len(runs) != 1 {
+		t.Fatalf("expected exactly one run across two ticks, got %d", len(runs))
 	}
 }
 
@@ -545,6 +583,47 @@ func TestSchedulerReleasesLeaseOnStartFailure(t *testing.T) {
 	run := client.BackgroundTaskRun.Query().FirstX(ctx)
 	if run.Status != "failed" || run.ErrorCode != backgroundtaskworkflow.ErrCodeTemporalStartFailed {
 		t.Fatalf("run = %s/%s, want failed/%s", run.Status, run.ErrorCode, backgroundtaskworkflow.ErrCodeTemporalStartFailed)
+	}
+	// A start failure stamps last_attempt_at (so a persistent failure backs off
+	// instead of storming) but must NOT advance the cycle anchor last_run_at.
+	task := client.BackgroundTask.Query().FirstX(ctx)
+	if task.LastAttemptAt == nil || !task.LastAttemptAt.Equal(now) {
+		t.Fatalf("start failure should stamp last_attempt_at, got %v", task.LastAttemptAt)
+	}
+	if task.LastRunAt == nil || !task.LastRunAt.Equal(noon) {
+		t.Fatalf("start failure must not advance last_run_at, got %v want noon", task.LastRunAt)
+	}
+}
+
+// TestReapStuckStartingRuns: a run abandoned in queued/temporal_status=Starting
+// is left alone while recent, then failed once it ages past orphanGrace.
+func TestReapStuckStartingRuns(t *testing.T) {
+	client := openDB(t)
+	ctx := auth.WithInternal(context.Background())
+	u := newUser(t, client, "a@x.co", "u1")
+	task := client.BackgroundTask.Create().
+		SetUser(u).SetSlug("t").SetName("t").SetInstructions("x").SetExecutionTarget("api").
+		SaveX(context.Background())
+	stuck := client.BackgroundTaskRun.Create().
+		SetUser(u).SetTask(task).SetRunID("api-trigger-stuck").
+		SetTrigger("manual").SetStatus("queued").SetExecutor("api").
+		SetTemporalStatus("Starting").
+		SaveX(context.Background())
+
+	realNow := time.Now()
+	s := New(client, &fakeStarter{}, NoopLeases{}, Config{Clock: func() time.Time { return realNow }}, zap.NewNop())
+
+	// Recent: created_at is within orphanGrace of now → not reaped.
+	s.reapStuckStartingRuns(ctx, realNow)
+	if got := client.BackgroundTaskRun.GetX(ctx, stuck.ID); got.Status != "queued" {
+		t.Fatalf("recent stuck run should not be reaped, got %q", got.Status)
+	}
+
+	// Aged: evaluate as if well past orphanGrace → reaped to failed.
+	s.reapStuckStartingRuns(ctx, realNow.Add(time.Hour))
+	got := client.BackgroundTaskRun.GetX(ctx, stuck.ID)
+	if got.Status != "failed" || got.ErrorCode != backgroundtaskworkflow.ErrCodeTemporalStartFailed {
+		t.Fatalf("aged stuck run not reaped: status=%q code=%q", got.Status, got.ErrorCode)
 	}
 }
 

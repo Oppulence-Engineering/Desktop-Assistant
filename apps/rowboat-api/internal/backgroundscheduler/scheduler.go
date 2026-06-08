@@ -7,14 +7,28 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
-// defaultPageSize bounds how many tasks are loaded per query so the tick does
-// not load an unbounded result set as the task count grows.
-const defaultPageSize = 500
+const (
+	// defaultPageSize bounds how many tasks are loaded per query so the tick
+	// does not load an unbounded result set as the task count grows.
+	defaultPageSize = 500
+	// defaultInterval / defaultLeaseTTL back the Config zero-value contract.
+	defaultInterval = 15 * time.Second
+	defaultLeaseTTL = 90 * time.Second
+	// orphanGrace is how long a run may sit in status=queued/temporal_status=
+	// Starting before it is treated as abandoned (the process died between the
+	// run insert and confirming the Temporal start). A live workflow flips
+	// temporal_status to Started within milliseconds (or Running once the worker
+	// claims it), so a Starting run this old never started.
+	orphanGrace = 5 * time.Minute
+)
 
 // RunStarter creates an executor=api run and starts its Temporal workflow. It
 // is the subset of *backgroundtaskruns.Starter the scheduler depends on, named
@@ -23,7 +37,8 @@ type RunStarter interface {
 	Start(ctx context.Context, p backgroundtaskruns.Params) (*ent.BackgroundTaskRun, error)
 }
 
-// Config tunes the scheduler loop. Zero values fall back to safe defaults.
+// Config tunes the scheduler loop. Zero values fall back to safe defaults
+// (Interval=15s, LeaseTTL=90s, Location=UTC, PageSize=500, Clock=time.Now).
 type Config struct {
 	Interval time.Duration    // tick cadence (CLOUD_SCHEDULER_INTERVAL)
 	LeaseTTL time.Duration    // lease lifetime handed to Leases.Acquire
@@ -51,6 +66,12 @@ func New(client *ent.Client, starter RunStarter, leases Leases, cfg Config, log 
 	if leases == nil {
 		leases = NoopLeases{}
 	}
+	if cfg.Interval <= 0 {
+		cfg.Interval = defaultInterval
+	}
+	if cfg.LeaseTTL <= 0 {
+		cfg.LeaseTTL = defaultLeaseTTL
+	}
 	if cfg.Location == nil {
 		cfg.Location = time.UTC
 	}
@@ -70,7 +91,8 @@ func New(client *ent.Client, starter RunStarter, leases Leases, cfg Config, log 
 // Run drives the loop until the context is cancelled. It ticks once immediately
 // (matching the desktop scheduler's eager first pass) and then every interval.
 // A failed tick is logged and the loop continues — at-least-once tick semantics,
-// with at-most-once-per-cycle run creation provided by last_run_at + the lease.
+// with at-most-once-per-cycle run creation provided by the fire-time runtime
+// stamp (and the lease once RFC 002 lands).
 func (s *Scheduler) Run(ctx context.Context) error {
 	s.log.Info("cloud scheduler starting",
 		zap.Duration("interval", s.cfg.Interval),
@@ -111,26 +133,37 @@ func (s *Scheduler) tick(ctx context.Context) error {
 	ctx = auth.WithInternal(ctx)
 	now := s.now().In(s.cfg.Location)
 
-	for offset := 0; ; offset += s.cfg.PageSize {
-		tasks, err := s.client.BackgroundTask.Query().
+	s.reapStuckStartingRuns(ctx, now)
+
+	// Keyset pagination by id (ascending): each page fetches ids strictly
+	// greater than the last seen, so concurrent inserts/deletes can't shift a
+	// row across the page boundary the way Offset/Limit would (double-evaluate
+	// or skip). BackgroundTask ids are uuids and define a stable total order.
+	var afterID *uuid.UUID
+	for {
+		q := s.client.BackgroundTask.Query().
 			Where(
 				backgroundtask.ActiveEQ(true),
 				backgroundtask.ExecutionTargetEQ("api"),
 				backgroundtask.TriggersJSONNotNil(),
-			).
-			WithUser().
-			Order(backgroundtask.ByID()).
-			Offset(offset).
-			Limit(s.cfg.PageSize).
-			All(ctx)
+			)
+		if afterID != nil {
+			q = q.Where(backgroundtask.IDGT(*afterID))
+		}
+		tasks, err := q.WithUser().Order(backgroundtask.ByID()).Limit(s.cfg.PageSize).All(ctx)
 		if err != nil {
 			metrics.Errors.WithLabelValues("query").Inc()
-			return fmt.Errorf("scan api tasks (offset %d): %w", offset, err)
+			return fmt.Errorf("scan api tasks: %w", err)
+		}
+		if len(tasks) == 0 {
+			break
 		}
 		metrics.TasksScanned.Add(float64(len(tasks)))
 		for _, task := range tasks {
 			s.evaluateTask(ctx, task, now)
 		}
+		last := tasks[len(tasks)-1].ID
+		afterID = &last
 		if len(tasks) < s.cfg.PageSize {
 			break
 		}
@@ -139,9 +172,10 @@ func (s *Scheduler) tick(ctx context.Context) error {
 }
 
 // evaluateTask decides whether a single task's cycle should fire now and, if so,
-// acquires the lease and starts the run. The decision order mirrors the desktop
-// scheduler exactly (scheduler.ts): user edge → parse → in-flight backstop →
-// due → backoff → lease → start.
+// acquires the lease, starts the run, and stamps the task runtime so the cycle
+// is not re-evaluated before the worker reports terminal state. The decision
+// order mirrors the desktop scheduler exactly (scheduler.ts): user edge → parse
+// → in-flight backstop → due → backoff → lease → start → stamp.
 func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, now time.Time) {
 	user := task.Edges.User
 	if user == nil {
@@ -159,12 +193,17 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 			zap.String("taskSlug", task.Slug), zap.String("userId", user.ID.String()), zap.Error(err))
 		return
 	}
+	// Surface invalid sub-triggers but keep evaluating: a bad cron or a bad
+	// window must not suppress the task's valid sub-triggers (desktop parity).
 	if tr.HasCron() && !tr.HasValidCron() {
-		// Surface the invalid cron but keep evaluating: a sibling window may
-		// still be due (desktop parity).
 		metrics.Errors.WithLabelValues("parse").Inc()
 		s.log.Warn("scheduler: invalid cron expression, evaluating windows only",
 			zap.String("taskSlug", task.Slug), zap.String("cronExpr", tr.CronExpr))
+	}
+	if bad := tr.InvalidWindows(); len(bad) > 0 {
+		metrics.Errors.WithLabelValues("parse").Inc()
+		s.log.Warn("scheduler: malformed window time(s), ignoring those windows",
+			zap.String("taskSlug", task.Slug), zap.Int("count", len(bad)))
 	}
 
 	// In-flight backstop: a last attempt newer than the last success that is
@@ -175,21 +214,21 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 		return
 	}
 
-	source := dueTimedTrigger(tr, task.LastRunAt, now)
-	if source == "" {
+	due := evaluateDue(tr, task.LastRunAt, now)
+	if due.source == "" {
 		return // not due — common case, not logged per-task to avoid noise
 	}
-	metrics.DueTasks.WithLabelValues(source).Inc()
+	metrics.DueTasks.WithLabelValues(due.source).Inc()
 
 	if d := backoffRemaining(task.LastAttemptAt, now); d > 0 {
 		metrics.BackoffSuppressed.Inc()
-		s.logDecision(task, user, source, "skip_backoff", "", time.Time{}, d)
+		s.logDecision(task, user, due.source, "skip_backoff", "", time.Time{}, d)
 		return
 	}
 
-	occurrence, key, requestedContext := s.describe(source, tr, task.LastRunAt, now)
+	key, requestedContext := provenance(due, tr, now)
 
-	lease, ok, err := s.leases.Acquire(ctx, task, source, key, s.cfg.Owner, s.cfg.LeaseTTL)
+	lease, ok, err := s.leases.Acquire(ctx, task, due.source, key, s.cfg.Owner, s.cfg.LeaseTTL)
 	if err != nil {
 		metrics.Errors.WithLabelValues("lease").Inc()
 		s.log.Error("scheduler lease acquire failed",
@@ -198,57 +237,122 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 	}
 	if !ok {
 		metrics.DuplicateSuppressed.Inc()
-		s.logDecision(task, user, source, "skip_duplicate", key, occurrence, 0)
+		s.logDecision(task, user, due.source, "skip_duplicate", key, due.occurrence, 0)
 		return
 	}
 
 	run, err := s.starter.Start(ctx, backgroundtaskruns.Params{
 		User:             user,
 		Task:             task,
-		Trigger:          source,
+		Trigger:          due.source,
 		RequestedContext: requestedContext,
-		RunIDPrefix:      runIDPrefix(source),
+		RunIDPrefix:      runIDPrefix(due.source),
 		Source:           backgroundtaskruns.SourceScheduler,
 	})
 	if err != nil {
 		metrics.Errors.WithLabelValues("start").Inc()
-		// Release the lease and leave last_run_at unadvanced so the cycle
-		// retries next tick (within grace). A start failure already marked the
-		// run row failed inside the starter.
+		// Release the lease. Stamp last_attempt_at so a persistent start failure
+		// backs off (retryBackoff) instead of re-firing every tick within the
+		// grace window; last_run_at stays unadvanced so the cycle retries.
 		_ = s.leases.Release(ctx, lease.ID, err)
+		s.stampAttempt(ctx, task, now)
 		s.log.Error("scheduler start run failed",
-			zap.String("taskSlug", task.Slug), zap.String("trigger", source),
+			zap.String("taskSlug", task.Slug), zap.String("trigger", due.source),
 			zap.String("scheduleKey", key), zap.Error(err))
 		return
 	}
 	_ = s.leases.Complete(ctx, lease.ID, run.RunID)
-	metrics.RunsTriggered.WithLabelValues(source).Inc()
-	s.logDecision(task, user, source, "fired", key, occurrence, 0, zap.String("runId", run.RunID))
+	// Advance the task runtime at fire time exactly like the desktop does
+	// (cloud-sync.ts triggerCloudRun): last_run_at (the cron/window cycle
+	// anchor) + last_attempt_at + last_run_id, so the next tick does not re-fire
+	// the same occurrence before the worker reports terminal state. This is what
+	// makes single-replica at-most-once hold without depending on the worker's
+	// async MarkRunRunning.
+	s.stampFired(ctx, task, now, run.RunID)
+	metrics.RunsTriggered.WithLabelValues(due.source).Inc()
+	s.logDecision(task, user, due.source, "fired", key, due.occurrence, 0, zap.String("runId", run.RunID))
 }
 
-// describe builds the run provenance for a due cycle: the occurrence instant,
-// the lease/schedule key, and the short requested_context inserted verbatim
-// into the run (kept brief — it becomes part of the LLM context in RFC 004).
-func (s *Scheduler) describe(source string, tr Triggers, lastRunAt *time.Time, now time.Time) (occurrence time.Time, key, requestedContext string) {
-	switch source {
+// stampFired advances the task's cycle anchor and attempt/run markers at fire
+// time so the cycle is not re-evaluated until the worker writes terminal state.
+func (s *Scheduler) stampFired(ctx context.Context, task *ent.BackgroundTask, now time.Time, runID string) {
+	if err := s.client.BackgroundTask.UpdateOneID(task.ID).
+		SetLastAttemptAt(now).
+		SetLastRunID(runID).
+		SetLastRunAt(now).
+		AddRevision(1).
+		Exec(ctx); err != nil {
+		metrics.Errors.WithLabelValues("stamp").Inc()
+		s.log.Error("scheduler stamp fired task failed", zap.String("taskSlug", task.Slug), zap.Error(err))
+	}
+}
+
+// stampAttempt records only last_attempt_at, used on a start failure to engage
+// the retry backoff without advancing the cycle anchor.
+func (s *Scheduler) stampAttempt(ctx context.Context, task *ent.BackgroundTask, now time.Time) {
+	if err := s.client.BackgroundTask.UpdateOneID(task.ID).
+		SetLastAttemptAt(now).
+		AddRevision(1).
+		Exec(ctx); err != nil {
+		metrics.Errors.WithLabelValues("stamp").Inc()
+		s.log.Error("scheduler stamp attempt task failed", zap.String("taskSlug", task.Slug), zap.Error(err))
+	}
+}
+
+// reapStuckStartingRuns fails any executor=api run abandoned in
+// queued/temporal_status=Starting beyond orphanGrace — the residue of a process
+// that died between inserting the run and confirming the Temporal start. Cleans
+// up rows that would otherwise sit "queued" forever with no workflow behind them.
+func (s *Scheduler) reapStuckStartingRuns(ctx context.Context, now time.Time) {
+	cutoff := now.Add(-orphanGrace)
+	n, err := s.client.BackgroundTaskRun.Update().
+		Where(
+			backgroundtaskrun.ExecutorEQ("api"),
+			backgroundtaskrun.StatusEQ("queued"),
+			backgroundtaskrun.TemporalStatusEQ("Starting"),
+			backgroundtaskrun.CreatedAtLT(cutoff),
+		).
+		SetStatus("failed").
+		SetTemporalStatus("StartFailed").
+		SetErrorCode(backgroundtaskworkflow.ErrCodeTemporalStartFailed).
+		SetError("run abandoned before Temporal workflow start was confirmed").
+		SetErrorDetails("scheduler reaped a run stuck in temporal_status=Starting").
+		SetProgressMessage("Abandoned before Temporal start confirmation.").
+		SetCompletedAt(now).
+		AddRevision(1).
+		Save(ctx)
+	if err != nil {
+		metrics.Errors.WithLabelValues("reap").Inc()
+		s.log.Error("scheduler reap stuck runs failed", zap.Error(err))
+		return
+	}
+	if n > 0 {
+		metrics.OrphansReaped.Add(float64(n))
+		s.log.Warn("scheduler reaped abandoned runs", zap.Int("count", n))
+	}
+}
+
+// provenance builds the run provenance for a due cycle: the lease/schedule key
+// and the short requested_context inserted verbatim into the run (kept brief —
+// it becomes part of the LLM context in RFC 004). It consumes the already-
+// matched occurrence/window from evaluateDue rather than re-deriving them.
+func provenance(due dueResult, tr Triggers, now time.Time) (key, requestedContext string) {
+	switch due.source {
 	case "cron":
-		occ, _ := cronOccurrence(tr.CronExpr, now)
-		occurrence = occ
-		key = fmt.Sprintf("cron:%s", occ.UTC().Format(time.RFC3339))
+		key = "cron:" + due.occurrence.UTC().Format(time.RFC3339)
 		requestedContext = fmt.Sprintf(
 			"Scheduled cron trigger fired at %s for expression %q. Occurrence: %s.",
-			now.Format(time.RFC3339), tr.CronExpr, occ.Format(time.RFC3339),
+			now.Format(time.RFC3339), tr.CronExpr, due.occurrence.Format(time.RFC3339),
 		)
 	case "window":
-		w, _ := firstDueWindow(tr, lastRunAt, now) // the band dueTimedTrigger matched
 		cycleDate := now.Format("2006-01-02")
-		key = fmt.Sprintf("window:%s:%s-%s", cycleDate, w.StartTime, w.EndTime)
+		key = fmt.Sprintf("window:%s:%s-%s", cycleDate, due.window.StartTime, due.window.EndTime)
 		requestedContext = fmt.Sprintf(
 			"Scheduled window trigger fired at %s inside %s-%s window. Cycle date: %s.",
-			now.Format(time.RFC3339), w.StartTime, w.EndTime, cycleDate,
+			now.Format(time.RFC3339), due.window.StartTime, due.window.EndTime, cycleDate,
 		)
 	}
-	return occurrence, key, requestedContext
+	return key, requestedContext
 }
 
 // logDecision emits one structured line per scheduler decision, mirroring the

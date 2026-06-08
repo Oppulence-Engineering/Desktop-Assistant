@@ -19,7 +19,8 @@ func TestMetricsAreWired(t *testing.T) {
 	metrics.DuplicateSuppressed.Inc()
 	metrics.BackoffSuppressed.Inc()
 	metrics.InFlightSuppressed.Inc()
-	for _, stage := range []string{"query", "parse", "user_edge", "lease", "start"} {
+	metrics.OrphansReaped.Inc()
+	for _, stage := range []string{"query", "parse", "user_edge", "lease", "start", "stamp", "reap"} {
 		metrics.Errors.WithLabelValues(stage).Inc()
 	}
 	metrics.TickDuration.Observe(0.01)
