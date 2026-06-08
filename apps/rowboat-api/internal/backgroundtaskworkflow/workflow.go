@@ -220,6 +220,15 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		SetLastHeartbeatAt(now).
 		SetProgressPercent(5).
 		SetProgressMessage("API worker claimed the run.").
+		// Clear any terminal residue: if the orphan reaper prematurely failed
+		// this run (then it self-heals here), the stale completed_at/closed_at
+		// and error fields would otherwise contradict status=running and leak
+		// onto the eventual succeeded row. No-op for a normal queued run.
+		ClearError().
+		ClearErrorCode().
+		ClearErrorDetails().
+		ClearCompletedAt().
+		ClearTemporalClosedAt().
 		AddRevision(1).
 		Save(ctx)
 	if err != nil {
@@ -335,6 +344,8 @@ func (a *Activities) MarkRunDone(ctx context.Context, in CompleteInput) error {
 		SetProgressMessage("Completed.").
 		SetSummary(in.Summary).
 		ClearError().
+		ClearErrorCode().
+		ClearErrorDetails().
 		AddRevision(1).
 		Save(ctx)
 	if err != nil {

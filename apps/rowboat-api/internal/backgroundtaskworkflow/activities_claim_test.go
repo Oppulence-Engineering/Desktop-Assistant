@@ -3,6 +3,7 @@ package backgroundtaskworkflow
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -58,10 +59,12 @@ func TestMarkRunRunningSelfHealsReaperFailedRun(t *testing.T) {
 	u := client.User.Create().SetEmail("c@x.co").SetWorkosUserID("u3").SaveX(ctx)
 	task := client.BackgroundTask.Create().
 		SetUser(u).SetSlug("t3").SetName("t3").SetInstructions("x").SetExecutionTarget("api").SaveX(ctx)
+	reapedAt := time.Now().UTC()
 	reaped := client.BackgroundTaskRun.Create().
 		SetUser(u).SetTask(task).SetRunID("sched-cron-z").SetTrigger("cron").
 		SetStatus("failed").SetExecutor("api").SetTemporalStatus("StartFailed").
-		SetErrorCode(ErrCodeTemporalStartFailed).SaveX(ctx)
+		SetErrorCode(ErrCodeTemporalStartFailed).SetError("reaped").SetErrorDetails("reaped").
+		SetCompletedAt(reapedAt).SetTemporalClosedAt(reapedAt).SaveX(ctx)
 
 	a := &Activities{Client: client, Log: zap.NewNop()}
 	if err := a.MarkRunRunning(context.Background(), StartInput{
@@ -69,8 +72,16 @@ func TestMarkRunRunningSelfHealsReaperFailedRun(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("MarkRunRunning should reclaim a reaper-failed live run: %v", err)
 	}
-	if got := client.BackgroundTaskRun.GetX(ctx, reaped.ID); got.Status != "running" {
+	got := client.BackgroundTaskRun.GetX(ctx, reaped.ID)
+	if got.Status != "running" {
 		t.Fatalf("reaper-failed live run did not self-heal, status=%q", got.Status)
+	}
+	// The reaper's terminal residue must be cleared so the row isn't a
+	// contradictory running+completed_at+error_code, and doesn't leak onto the
+	// eventual succeeded row.
+	if got.ErrorCode != "" || got.Error != "" || got.ErrorDetails != "" || got.CompletedAt != nil || got.TemporalClosedAt != nil {
+		t.Fatalf("terminal residue not cleared on claim: code=%q err=%q details=%q completed=%v closed=%v",
+			got.ErrorCode, got.Error, got.ErrorDetails, got.CompletedAt, got.TemporalClosedAt)
 	}
 }
 
