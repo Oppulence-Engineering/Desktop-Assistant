@@ -170,6 +170,17 @@ type Config struct {
 	// Cloud with an API key over TLS. TemporalAPIKey implies TLS.
 	TemporalAPIKey     string
 	TemporalTLSEnabled bool
+
+	// Cloud scheduler (RFC 001). Evaluates cron/window triggers for
+	// executionTarget=api tasks inside the deployment so scheduled cloud runs
+	// fire while the desktop is offline. Disabled by default; the scheduler
+	// binary exits cleanly when disabled. Enabling it requires Temporal, since
+	// it only creates executor=api runs.
+	CloudSchedulerEnabled  bool
+	CloudSchedulerInterval time.Duration
+	CloudSchedulerLeaseTTL time.Duration
+	CloudSchedulerTimezone string // IANA name; v1 is "UTC"
+	CloudSchedulerOwner    string // lease owner identity; defaults to hostname
 }
 
 // Load reads configuration from the environment, applying defaults.
@@ -283,7 +294,34 @@ func Load() Config {
 		TemporalWorkerEnabled: getbool("TEMPORAL_WORKER_ENABLED", false),
 		TemporalAPIKey:        getenv("TEMPORAL_API_KEY", ""),
 		TemporalTLSEnabled:    getbool("TEMPORAL_TLS_ENABLED", false),
+
+		CloudSchedulerEnabled:  getbool("CLOUD_SCHEDULER_ENABLED", false),
+		CloudSchedulerInterval: getdur("CLOUD_SCHEDULER_INTERVAL", 15*time.Second),
+		CloudSchedulerLeaseTTL: getdur("CLOUD_SCHEDULER_LEASE_TTL", 90*time.Second),
+		CloudSchedulerTimezone: getenv("CLOUD_SCHEDULER_TIMEZONE", "UTC"),
+		CloudSchedulerOwner:    getenv("CLOUD_SCHEDULER_OWNER", defaultHostname()),
 	}
+}
+
+// defaultHostname returns the process hostname for the scheduler's lease owner
+// identity, falling back to a stable name when the OS cannot report one.
+func defaultHostname() string {
+	if h, err := os.Hostname(); err == nil && h != "" {
+		return h
+	}
+	return "rowboat-api-scheduler"
+}
+
+// SchedulerLocation resolves the cloud scheduler timezone (v1: UTC). It accepts
+// the same trimmed, case-insensitive "UTC" (and empty) that Validate accepts, so
+// a value that passes validation never fails to load here; any other value is
+// loaded as an IANA name (but Validate rejects non-UTC in v1).
+func (c Config) SchedulerLocation() (*time.Location, error) {
+	tz := strings.TrimSpace(c.CloudSchedulerTimezone)
+	if tz == "" || strings.EqualFold(tz, "UTC") {
+		return time.UTC, nil
+	}
+	return time.LoadLocation(tz)
 }
 
 // IsProduction reports whether the service runs in a production-like env.
@@ -338,6 +376,29 @@ func (c Config) Validate() error {
 		}
 		if c.TemporalTaskQueue == "" {
 			return fmt.Errorf("TEMPORAL_TASK_QUEUE is required when TEMPORAL_ENABLED=true")
+		}
+	}
+	if c.CloudSchedulerEnabled {
+		// The scheduler only creates executor=api runs, which need Temporal to
+		// launch the workflow. Fail fast at boot rather than silently scanning
+		// tasks it cannot start.
+		if !c.TemporalEnabled {
+			return fmt.Errorf("TEMPORAL_ENABLED must be true when CLOUD_SCHEDULER_ENABLED=true")
+		}
+		if c.CloudSchedulerInterval <= 0 {
+			return fmt.Errorf("CLOUD_SCHEDULER_INTERVAL must be > 0")
+		}
+		// The lease must outlive a tick (plus start latency + clock skew) or a
+		// slow tick could let the lease expire mid-cycle and double-fire.
+		if c.CloudSchedulerLeaseTTL <= c.CloudSchedulerInterval {
+			return fmt.Errorf("CLOUD_SCHEDULER_LEASE_TTL must exceed CLOUD_SCHEDULER_INTERVAL")
+		}
+		// v1 evaluates in UTC only. The window/cron math runs in the configured
+		// location, and a DST zone would mishandle the spring-forward gap and the
+		// fall-back ambiguous hour; per-task timezone is the committed
+		// fast-follow. Reject anything but UTC rather than silently mis-evaluate.
+		if tz := strings.TrimSpace(c.CloudSchedulerTimezone); tz != "" && !strings.EqualFold(tz, "UTC") {
+			return fmt.Errorf("CLOUD_SCHEDULER_TIMEZONE must be UTC in v1 (per-task timezone is a committed fast-follow); got %q", c.CloudSchedulerTimezone)
 		}
 	}
 	if c.IsProduction() {

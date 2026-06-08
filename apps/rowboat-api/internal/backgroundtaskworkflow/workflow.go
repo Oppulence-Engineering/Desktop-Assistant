@@ -200,7 +200,18 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		return err
 	}
 	n, err := a.Client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+		// Refuse to claim a run the user cancelled (stopped) or one already
+		// succeeded. A "failed" row is deliberately still claimable: this
+		// activity only ever runs for a LIVE workflow, so a failed row here
+		// means the scheduler's orphan reaper prematurely failed a run whose
+		// workflow is in fact running — claiming it lets the run self-heal and
+		// complete rather than being stuck failed. Re-claiming a still-"running"
+		// run (activity retry) stays idempotent.
+		Where(
+			backgroundtaskrun.RunIDEQ(in.RunID),
+			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
+			backgroundtaskrun.StatusNotIn("succeeded", "stopped"),
+		).
 		SetExecutor("api").
 		SetStatus("running").
 		SetTemporalStatus("Running").
@@ -209,13 +220,26 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		SetLastHeartbeatAt(now).
 		SetProgressPercent(5).
 		SetProgressMessage("API worker claimed the run.").
+		// Clear any terminal residue: if the orphan reaper prematurely failed
+		// this run (then it self-heals here), the stale completed_at/closed_at
+		// and error fields would otherwise contradict status=running and leak
+		// onto the eventual succeeded row. No-op for a normal queued run.
+		ClearError().
+		ClearErrorCode().
+		ClearErrorDetails().
+		ClearCompletedAt().
+		ClearTemporalClosedAt().
 		AddRevision(1).
 		Save(ctx)
 	if err != nil {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("background task run %s not found", in.RunID)
+		// Cancelled/succeeded/missing run: it will never become claimable, so
+		// fail the workflow fast instead of burning the activity retry budget.
+		return temporal.NewNonRetryableApplicationError(
+			fmt.Sprintf("background task run %s not claimable (cancelled, completed, or missing)", in.RunID),
+			"RunNotClaimable", nil)
 	}
 	if err := a.Client.BackgroundTask.UpdateOneID(taskID).
 		SetLastAttemptAt(now).
@@ -320,6 +344,8 @@ func (a *Activities) MarkRunDone(ctx context.Context, in CompleteInput) error {
 		SetProgressMessage("Completed.").
 		SetSummary(in.Summary).
 		ClearError().
+		ClearErrorCode().
+		ClearErrorDetails().
 		AddRevision(1).
 		Save(ctx)
 	if err != nil {

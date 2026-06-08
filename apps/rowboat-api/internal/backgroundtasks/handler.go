@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/go-chi/chi/v5"
@@ -39,19 +40,26 @@ func badRequest(message string) error { return badRequestError{message: message}
 
 // Handler serves /v1/background-tasks.
 type Handler struct {
-	client   *ent.Client
-	log      *zap.Logger
-	temporal backgroundtaskworkflow.Controller
+	client     *ent.Client
+	log        *zap.Logger
+	temporal   backgroundtaskworkflow.Controller
+	runStarter *backgroundtaskruns.Starter
 }
 
-// New builds a background task mirror handler.
+// New builds a background task mirror handler. The run starter is created with
+// no Temporal controller, so triggering an api-target task before SetTemporal
+// returns 503 (temporal_unavailable) rather than panicking; SetTemporal swaps
+// in a Temporal-backed starter.
 func New(client *ent.Client, log *zap.Logger) *Handler {
-	return &Handler{client: client, log: log}
+	return &Handler{client: client, log: log, runStarter: backgroundtaskruns.New(client, nil, log)}
 }
 
-// SetTemporal enables API-native Temporal execution for api-target tasks.
+// SetTemporal enables API-native Temporal execution for api-target tasks. It
+// also wires the shared run starter so HTTP- and scheduler-initiated runs go
+// through one creation path (see internal/backgroundtaskruns).
 func (h *Handler) SetTemporal(temporal backgroundtaskworkflow.Controller) {
 	h.temporal = temporal
+	h.runStarter = backgroundtaskruns.New(h.client, temporal, h.log)
 }
 
 type taskView struct {
@@ -1117,155 +1125,60 @@ func (h *Handler) Trigger(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) triggerAPIRun(w http.ResponseWriter, r *http.Request, u *ent.User, task *ent.BackgroundTask, trigger, requestedContext string) {
-	if h.temporal == nil {
-		httpx.Error(w, http.StatusServiceUnavailable, "temporal is not configured", "temporal_unavailable")
-		return
-	}
-	runID := "api-trigger-" + uuid.NewString()
-	workflowID := backgroundtaskworkflow.WorkflowID(u.ID.String(), task.Slug, runID)
-	run, err := h.createRun(r, u, task, createRunRequest{
-		RunID:              runID,
-		Trigger:            trigger,
-		Status:             "queued",
-		Executor:           "api",
-		RequestedContext:   requestedContext,
-		TemporalWorkflowID: workflowID,
-		TemporalStatus:     "Starting",
-		ProgressPercent:    intPtr(0),
-		ProgressMessage:    "Queued for API worker.",
-	})
-	if err != nil {
-		var bad badRequestError
-		if errors.As(err, &bad) {
-			httpx.Error(w, http.StatusBadRequest, bad.Error(), "bad_request")
-			return
-		}
-		h.log.Error("create api background task run", zap.Error(err))
-		httpx.Error(w, http.StatusInternalServerError, "could not trigger task", "internal_error")
-		return
-	}
-	_ = h.appendSystemEvent(r.Context(), task, run, backgroundtaskworkflow.EventQueued, map[string]any{
-		"type":    backgroundtaskworkflow.EventQueued,
-		"message": "Queued for API worker.",
-		"trigger": trigger,
-	})
-
-	start, err := h.temporal.StartBackgroundTaskRun(r.Context(), backgroundtaskworkflow.StartInput{
-		UserID:           u.ID.String(),
-		TaskID:           task.ID.String(),
-		Slug:             task.Slug,
-		RunID:            runID,
+	run, err := h.runStarter.Start(r.Context(), backgroundtaskruns.Params{
+		User:             u,
+		Task:             task,
 		Trigger:          trigger,
 		RequestedContext: requestedContext,
+		RunIDPrefix:      "api-trigger-",
+		QueuedMessage:    "Queued for API worker.",
+		Source:           backgroundtaskruns.SourceHTTP,
 	})
-	if err != nil {
-		now := time.Now().UTC()
-		_, _ = h.client.BackgroundTaskRun.UpdateOneID(run.ID).
-			SetStatus("failed").
-			SetTemporalStatus("StartFailed").
-			SetTemporalClosedAt(now).
-			SetCompletedAt(now).
-			SetError(err.Error()).
-			SetErrorCode(backgroundtaskworkflow.ErrCodeTemporalStartFailed).
-			SetErrorDetails(err.Error()).
-			SetProgressMessage("Temporal start failed.").
-			AddRevision(1).
-			Save(auth.WithInternal(r.Context()))
-		h.log.Error("start temporal background task workflow", zap.Error(err))
-		httpx.Error(w, http.StatusBadGateway, "could not start temporal workflow", "temporal_start_failed")
-		return
-	}
+	h.writeStartedRun(w, task, run, err, "create api background task run")
+}
 
-	_, err = h.client.BackgroundTaskRun.UpdateOneID(run.ID).
-		SetTemporalWorkflowID(start.WorkflowID).
-		SetTemporalRunID(start.RunID).
-		SetTemporalStatus("Started").
-		AddRevision(1).
-		Save(auth.WithInternal(r.Context()))
-	if err != nil {
-		h.log.Error("store temporal workflow ids", zap.Error(err))
+// writeStartedRun maps a backgroundtaskruns.Starter result to the HTTP response
+// the cloud run endpoints have always returned: 503 when Temporal is not
+// configured, 400 on invalid params, 502 (with the failed run code recorded) on
+// a Temporal start failure, and 202 with the run view on success.
+func (h *Handler) writeStartedRun(w http.ResponseWriter, task *ent.BackgroundTask, run *ent.BackgroundTaskRun, err error, logMsg string) {
+	var invalidParams *backgroundtaskruns.InvalidParamsError
+	var startFailed *backgroundtaskruns.StartFailedError
+	var persistIDs *backgroundtaskruns.PersistIDsError
+	switch {
+	case err == nil:
+		httpx.WriteJSON(w, http.StatusAccepted, viewRun(task, run))
+	case errors.Is(err, backgroundtaskruns.ErrTemporalNotConfigured):
+		httpx.Error(w, http.StatusServiceUnavailable, "temporal is not configured", "temporal_unavailable")
+	case errors.As(err, &invalidParams):
+		httpx.Error(w, http.StatusBadRequest, err.Error(), "bad_request")
+	case errors.As(err, &startFailed):
+		httpx.Error(w, http.StatusBadGateway, "could not start temporal workflow", "temporal_start_failed")
+	case errors.As(err, &persistIDs):
+		// The workflow IS running but its ids were not persisted; keep the
+		// distinct message so this partial-success state is triageable.
+		h.log.Error(logMsg, zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not store temporal workflow ids", "internal_error")
-		return
+	default:
+		h.log.Error(logMsg, zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not trigger task", "internal_error")
 	}
-	backgroundtaskmetrics.Triggered.WithLabelValues(trigger).Inc()
-	h.log.Info("cloud run triggered", runLogFields(r.Context(), task, run)...)
-	run, _ = h.client.BackgroundTaskRun.Query().Where(backgroundtaskrun.IDEQ(run.ID)).Only(r.Context())
-	httpx.WriteJSON(w, http.StatusAccepted, viewRun(task, run))
 }
 
 func (h *Handler) startRetryRun(w http.ResponseWriter, r *http.Request, u *ent.User, task *ent.BackgroundTask, previous *ent.BackgroundTaskRun) {
-	if h.temporal == nil {
-		httpx.Error(w, http.StatusServiceUnavailable, "temporal is not configured", "temporal_unavailable")
-		return
-	}
-	runID := "retry-" + uuid.NewString()
-	workflowID := backgroundtaskworkflow.WorkflowID(u.ID.String(), task.Slug, runID)
-	run, err := h.createRun(r, u, task, createRunRequest{
-		RunID:              runID,
-		PreviousRunID:      previous.RunID,
-		RetryOfRunID:       previous.RunID,
-		Trigger:            "retry",
-		Status:             "queued",
-		Executor:           "api",
-		Attempt:            intPtr(previous.Attempt + 1),
-		RequestedContext:   previous.RequestedContext,
-		TemporalWorkflowID: workflowID,
-		TemporalStatus:     "Starting",
-		ProgressPercent:    intPtr(0),
-		ProgressMessage:    "Queued retry for API worker.",
-	})
-	if err != nil {
-		h.log.Error("create retry background task run", zap.Error(err))
-		httpx.Error(w, http.StatusInternalServerError, "could not retry run", "internal_error")
-		return
-	}
-	_ = h.appendSystemEvent(r.Context(), task, run, backgroundtaskworkflow.EventRetryRequested, map[string]any{
-		"type":         backgroundtaskworkflow.EventRetryRequested,
-		"message":      "Retry requested.",
-		"retryOfRunId": previous.RunID,
-		"attempt":      previous.Attempt + 1,
-	})
-	start, err := h.temporal.StartBackgroundTaskRun(r.Context(), backgroundtaskworkflow.StartInput{
-		UserID:           u.ID.String(),
-		TaskID:           task.ID.String(),
-		Slug:             task.Slug,
-		RunID:            runID,
+	run, err := h.runStarter.Start(r.Context(), backgroundtaskruns.Params{
+		User:             u,
+		Task:             task,
 		Trigger:          "retry",
 		RequestedContext: previous.RequestedContext,
+		RunIDPrefix:      "retry-",
+		QueuedMessage:    "Queued retry for API worker.",
+		Source:           backgroundtaskruns.SourceHTTP,
+		PreviousRunID:    previous.RunID,
+		RetryOfRunID:     previous.RunID,
+		Attempt:          intPtr(previous.Attempt + 1),
 	})
-	if err != nil {
-		now := time.Now().UTC()
-		_, _ = h.client.BackgroundTaskRun.UpdateOneID(run.ID).
-			SetStatus("failed").
-			SetTemporalStatus("StartFailed").
-			SetTemporalClosedAt(now).
-			SetCompletedAt(now).
-			SetError(err.Error()).
-			SetErrorCode(backgroundtaskworkflow.ErrCodeTemporalStartFailed).
-			SetErrorDetails(err.Error()).
-			SetProgressMessage("Temporal retry start failed.").
-			AddRevision(1).
-			Save(auth.WithInternal(r.Context()))
-		h.log.Error("start retry temporal background task workflow", zap.Error(err))
-		httpx.Error(w, http.StatusBadGateway, "could not start temporal workflow", "temporal_start_failed")
-		return
-	}
-	_, err = h.client.BackgroundTaskRun.UpdateOneID(run.ID).
-		SetTemporalWorkflowID(start.WorkflowID).
-		SetTemporalRunID(start.RunID).
-		SetTemporalStatus("Started").
-		AddRevision(1).
-		Save(auth.WithInternal(r.Context()))
-	if err != nil {
-		h.log.Error("store retry temporal workflow ids", zap.Error(err))
-		httpx.Error(w, http.StatusInternalServerError, "could not store temporal workflow ids", "internal_error")
-		return
-	}
-	backgroundtaskmetrics.Retried.Inc()
-	backgroundtaskmetrics.Triggered.WithLabelValues("retry").Inc()
-	h.log.Info("cloud run retry triggered", runLogFields(r.Context(), task, run)...)
-	run, _ = h.client.BackgroundTaskRun.Query().Where(backgroundtaskrun.IDEQ(run.ID)).Only(r.Context())
-	httpx.WriteJSON(w, http.StatusAccepted, viewRun(task, run))
+	h.writeStartedRun(w, task, run, err, "create retry background task run")
 }
 
 func (h *Handler) createRun(r *http.Request, u *ent.User, task *ent.BackgroundTask, req createRunRequest) (*ent.BackgroundTaskRun, error) {
