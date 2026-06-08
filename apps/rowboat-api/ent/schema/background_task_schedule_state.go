@@ -45,10 +45,12 @@ func (BackgroundTaskScheduleState) Fields() []ent.Field {
 		// last_triggered_at is when Starter.Start succeeded (set by Complete).
 		field.Time("last_triggered_at").Optional().Nillable(),
 		// last_run_id is the do-not-re-fire sentinel: non-empty ⇒ this cycle fired.
-		field.String("last_run_id").Optional(),
+		// Default "" (NOT NULL) so the LastRunIDEQ("")/NEQ("") guards match a
+		// never-fired row instead of NULL (RFC 002 migration checklist).
+		field.String("last_run_id").Optional().Default(""),
 		// lease_owner is the replica id (pod name); the lease is "held" while
-		// now < lease_expires_at and last_run_id == "".
-		field.String("lease_owner").Optional(),
+		// now < lease_expires_at and last_run_id == "". Default "" (NOT NULL).
+		field.String("lease_owner").Optional().Default(""),
 		field.Time("lease_expires_at").Optional().Nillable(),
 		// revision guards steal/complete via optimistic concurrency.
 		field.Int("revision").Default(1).Positive(),

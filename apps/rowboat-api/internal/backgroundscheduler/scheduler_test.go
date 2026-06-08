@@ -93,9 +93,9 @@ type recordingLease struct {
 
 func (r *recordingLease) Acquire(context.Context, *ent.BackgroundTask, string, string, string, time.Duration) (Lease, bool, error) {
 	r.acquired++
-	return Lease{ID: "lease-1"}, true, nil
+	return Lease{}, true, nil
 }
-func (r *recordingLease) Complete(_ context.Context, _ string, runID string) error {
+func (r *recordingLease) Complete(_ context.Context, _ Lease, runID string) error {
 	r.completed++
 	r.completedRunID = runID
 	return nil
@@ -120,13 +120,13 @@ type releaseTrackingLease struct {
 }
 
 func (r *releaseTrackingLease) Acquire(context.Context, *ent.BackgroundTask, string, string, string, time.Duration) (Lease, bool, error) {
-	return Lease{ID: "lease-1"}, true, nil
+	return Lease{}, true, nil
 }
-func (r *releaseTrackingLease) Complete(context.Context, string, string) error {
+func (r *releaseTrackingLease) Complete(context.Context, Lease, string) error {
 	r.completed++
 	return nil
 }
-func (r *releaseTrackingLease) Release(context.Context, string, error) error {
+func (r *releaseTrackingLease) Release(context.Context, Lease, error) error {
 	r.released++
 	return nil
 }

@@ -243,6 +243,14 @@ func (_c *BackgroundTaskScheduleStateCreate) defaults() {
 		v := backgroundtaskschedulestate.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.LastRunID(); !ok {
+		v := backgroundtaskschedulestate.DefaultLastRunID
+		_c.mutation.SetLastRunID(v)
+	}
+	if _, ok := _c.mutation.LeaseOwner(); !ok {
+		v := backgroundtaskschedulestate.DefaultLeaseOwner
+		_c.mutation.SetLeaseOwner(v)
+	}
 	if _, ok := _c.mutation.Revision(); !ok {
 		v := backgroundtaskschedulestate.DefaultRevision
 		_c.mutation.SetRevision(v)

@@ -253,6 +253,14 @@ func init() {
 	backgroundtaskschedulestateDescScheduleKey := backgroundtaskschedulestateFields[1].Descriptor()
 	// backgroundtaskschedulestate.ScheduleKeyValidator is a validator for the "schedule_key" field. It is called by the builders before save.
 	backgroundtaskschedulestate.ScheduleKeyValidator = backgroundtaskschedulestateDescScheduleKey.Validators[0].(func(string) error)
+	// backgroundtaskschedulestateDescLastRunID is the schema descriptor for last_run_id field.
+	backgroundtaskschedulestateDescLastRunID := backgroundtaskschedulestateFields[5].Descriptor()
+	// backgroundtaskschedulestate.DefaultLastRunID holds the default value on creation for the last_run_id field.
+	backgroundtaskschedulestate.DefaultLastRunID = backgroundtaskschedulestateDescLastRunID.Default.(string)
+	// backgroundtaskschedulestateDescLeaseOwner is the schema descriptor for lease_owner field.
+	backgroundtaskschedulestateDescLeaseOwner := backgroundtaskschedulestateFields[6].Descriptor()
+	// backgroundtaskschedulestate.DefaultLeaseOwner holds the default value on creation for the lease_owner field.
+	backgroundtaskschedulestate.DefaultLeaseOwner = backgroundtaskschedulestateDescLeaseOwner.Default.(string)
 	// backgroundtaskschedulestateDescRevision is the schema descriptor for revision field.
 	backgroundtaskschedulestateDescRevision := backgroundtaskschedulestateFields[8].Descriptor()
 	// backgroundtaskschedulestate.DefaultRevision holds the default value on creation for the revision field.

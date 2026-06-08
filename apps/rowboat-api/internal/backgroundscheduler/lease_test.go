@@ -18,10 +18,10 @@ func TestNoopLeasesAlwaysGrants(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("Acquire = %+v, ok=%v, err=%v; want granted", lease, ok, err)
 	}
-	if err := l.Complete(ctx, lease.ID, "sched-cron-1"); err != nil {
+	if err := l.Complete(ctx, lease, "sched-cron-1"); err != nil {
 		t.Fatalf("Complete: %v", err)
 	}
-	if err := l.Release(ctx, lease.ID, errors.New("boom")); err != nil {
+	if err := l.Release(ctx, lease, errors.New("boom")); err != nil {
 		t.Fatalf("Release: %v", err)
 	}
 	if err := l.CleanupExpired(ctx); err != nil {

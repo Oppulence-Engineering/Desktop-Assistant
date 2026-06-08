@@ -108,6 +108,10 @@ var (
 	TriggerTypeValidator func(string) error
 	// ScheduleKeyValidator is a validator for the "schedule_key" field. It is called by the builders before save.
 	ScheduleKeyValidator func(string) error
+	// DefaultLastRunID holds the default value on creation for the "last_run_id" field.
+	DefaultLastRunID string
+	// DefaultLeaseOwner holds the default value on creation for the "lease_owner" field.
+	DefaultLeaseOwner string
 	// DefaultRevision holds the default value on creation for the "revision" field.
 	DefaultRevision int
 	// RevisionValidator is a validator for the "revision" field. It is called by the builders before save.

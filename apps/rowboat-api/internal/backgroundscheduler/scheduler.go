@@ -265,7 +265,7 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 		// the partial-success state is alertable.
 		var persistErr *backgroundtaskruns.PersistIDsError
 		if errors.As(err, &persistErr) {
-			s.recordFire(ctx, lease.ID, task, due.source, now, run.RunID)
+			s.recordFire(ctx, lease, task, due.source, now, run.RunID)
 			metrics.Errors.WithLabelValues("persist").Inc()
 			s.log.Warn("scheduler run started but temporal ids not persisted",
 				zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
@@ -275,22 +275,22 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 		// Release the lease. Stamp last_attempt_at so a persistent start failure
 		// backs off (retryBackoff) instead of re-firing every tick within the
 		// grace window; last_run_at stays unadvanced so the cycle retries.
-		_ = s.leases.Release(ctx, lease.ID, err)
+		_ = s.leases.Release(ctx, lease, err)
 		s.stampAttempt(ctx, task, now)
 		s.log.Error("scheduler start run failed",
 			zap.String("taskSlug", task.Slug), zap.String("trigger", due.source),
 			zap.String("scheduleKey", key), zap.Error(err))
 		return
 	}
-	s.recordFire(ctx, lease.ID, task, due.source, now, run.RunID)
+	s.recordFire(ctx, lease, task, due.source, now, run.RunID)
 	s.logDecision(task, user, due.source, "fired", key, due.occurrence, 0, zap.String("runId", run.RunID))
 }
 
 // recordFire performs the bookkeeping shared by the success and PersistIDsError
 // fire paths: complete the lease, advance the task cycle, and count the run.
 // Keeping it in one place stops the two paths from drifting.
-func (s *Scheduler) recordFire(ctx context.Context, leaseID string, task *ent.BackgroundTask, trigger string, now time.Time, runID string) {
-	_ = s.leases.Complete(ctx, leaseID, runID)
+func (s *Scheduler) recordFire(ctx context.Context, lease Lease, task *ent.BackgroundTask, trigger string, now time.Time, runID string) {
+	_ = s.leases.Complete(ctx, lease, runID)
 	s.stampFired(ctx, task, now, runID)
 	metrics.RunsTriggered.WithLabelValues(trigger).Inc()
 }
