@@ -1,11 +1,5 @@
 import * as React from "react";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useState,
-  useRef,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useState, useRef } from "react";
 import { workspace } from "@x/shared";
 import {
   DEEP_LINK_SCHEME,
@@ -31,10 +25,7 @@ import {
   HistoryIcon,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import {
-  MarkdownEditor,
-  type MarkdownEditorHandle,
-} from "./components/markdown-editor";
+import { MarkdownEditor, type MarkdownEditorHandle } from "./components/markdown-editor";
 import { ChatSidebar } from "./components/chat-sidebar";
 import { ChatHeader } from "./components/chat-header";
 import { ChatEmptyState } from "./components/chat-empty-state";
@@ -44,16 +35,8 @@ import {
   type StagedAttachment,
 } from "./components/chat-input-with-mentions";
 import { ChatMessageAttachments } from "@/components/chat-message-attachments";
-import {
-  GraphView,
-  type GraphEdge,
-  type GraphNode,
-} from "@/components/graph-view";
-import {
-  BasesView,
-  type BaseConfig,
-  DEFAULT_BASE_CONFIG,
-} from "@/components/bases-view";
+import { GraphView, type GraphEdge, type GraphNode } from "@/components/graph-view";
+import { BasesView, type BaseConfig, DEFAULT_BASE_CONFIG } from "@/components/bases-view";
 import { ImageFileViewer } from "@/components/image-file-viewer";
 import { VideoFileViewer } from "@/components/video-file-viewer";
 import { AudioFileViewer } from "@/components/audio-file-viewer";
@@ -79,15 +62,8 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from "@/components/ai-elements/message";
-import {
-  type PromptInputMessage,
-  type FileMention,
-} from "@/components/ai-elements/prompt-input";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { type PromptInputMessage, type FileMention } from "@/components/ai-elements/prompt-input";
 
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { useSmoothedText } from "./hooks/useSmoothedText";
@@ -110,17 +86,8 @@ import {
   ToolPermissionRequestEvent,
   AskHumanRequestEvent,
 } from "@x/shared/src/runs.js";
-import {
-  SidebarInset,
-  SidebarProvider,
-  useSidebar,
-} from "@/components/ui/sidebar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -187,10 +154,7 @@ import { AgentScheduleState } from "@x/shared/dist/agent-schedule-state.js";
 import { toast } from "sonner";
 import { useVoiceMode } from "@/hooks/useVoiceMode";
 import { useVoiceTTS } from "@/hooks/useVoiceTTS";
-import {
-  useMeetingTranscription,
-  type CalendarEventMeta,
-} from "@/hooks/useMeetingTranscription";
+import { useMeetingTranscription, type CalendarEventMeta } from "@/hooks/useMeetingTranscription";
 import { useAnalyticsIdentity } from "@/hooks/useAnalyticsIdentity";
 import * as analytics from "@/lib/analytics";
 import { useTheme } from "@/contexts/theme-context";
@@ -209,10 +173,7 @@ const streamdownComponents = { pre: MarkdownPreOverride };
 // Render user messages with markdown so bullets, bold, links, etc. survive the
 // round-trip from the input textarea. `remarkBreaks` turns single newlines
 // into <br> so typed line breaks are preserved without requiring blank lines.
-const userMessageRemarkPlugins = [
-  ...Object.values(defaultRemarkPlugins),
-  remarkBreaks,
-];
+const userMessageRemarkPlugins = [...Object.values(defaultRemarkPlugins), remarkBreaks];
 
 function SmoothStreamingMessage({
   text,
@@ -222,18 +183,10 @@ function SmoothStreamingMessage({
   components: typeof streamdownComponents;
 }) {
   const smoothText = useSmoothedText(text);
-  return (
-    <MessageResponse components={components}>{smoothText}</MessageResponse>
-  );
+  return <MessageResponse components={components}>{smoothText}</MessageResponse>;
 }
 
-function AutoScrollPre({
-  className,
-  children,
-}: {
-  className?: string;
-  children: React.ReactNode;
-}) {
+function AutoScrollPre({ className, children }: { className?: string; children: React.ReactNode }) {
   const ref = useRef<HTMLPreElement>(null);
   const stickToBottom = useRef(true);
 
@@ -364,70 +317,56 @@ const rewriteWikiLinksForRenamedFileInMarkdown = (
   const normalizedTo = normalizeRelPathForWiki(toRelPath);
   const lowerFrom = normalizedFrom.toLowerCase();
   const lowerTo = normalizedTo.toLowerCase();
-  if (!lowerFrom.startsWith(KNOWLEDGE_PREFIX) || !lowerFrom.endsWith(".md"))
-    return markdown;
-  if (!lowerTo.startsWith(KNOWLEDGE_PREFIX) || !lowerTo.endsWith(".md"))
-    return markdown;
+  if (!lowerFrom.startsWith(KNOWLEDGE_PREFIX) || !lowerFrom.endsWith(".md")) return markdown;
+  if (!lowerTo.startsWith(KNOWLEDGE_PREFIX) || !lowerTo.endsWith(".md")) return markdown;
 
   const fromWikiPath = stripKnowledgePrefixForWiki(normalizedFrom);
   const toWikiPath = stripKnowledgePrefixForWiki(normalizedTo);
   const fromCompareKey = wikiPathCompareKey(fromWikiPath);
   const fromBaseName =
-    stripMarkdownExtensionForWiki(fromWikiPath)
-      .split("/")
-      .pop()
-      ?.toLowerCase() ?? null;
+    stripMarkdownExtensionForWiki(fromWikiPath).split("/").pop()?.toLowerCase() ?? null;
   const toWikiPathWithoutExtension = stripMarkdownExtensionForWiki(toWikiPath);
-  const toBaseName =
-    toWikiPathWithoutExtension.split("/").pop() ?? toWikiPathWithoutExtension;
+  const toBaseName = toWikiPathWithoutExtension.split("/").pop() ?? toWikiPathWithoutExtension;
 
-  return markdown.replace(
-    WIKI_LINK_TOKEN_REGEX,
-    (fullMatch, innerRaw: string) => {
-      const pipeIndex = innerRaw.indexOf("|");
-      const pathAndAnchor =
-        pipeIndex >= 0 ? innerRaw.slice(0, pipeIndex) : innerRaw;
-      const aliasSuffix = pipeIndex >= 0 ? innerRaw.slice(pipeIndex) : "";
+  return markdown.replace(WIKI_LINK_TOKEN_REGEX, (fullMatch, innerRaw: string) => {
+    const pipeIndex = innerRaw.indexOf("|");
+    const pathAndAnchor = pipeIndex >= 0 ? innerRaw.slice(0, pipeIndex) : innerRaw;
+    const aliasSuffix = pipeIndex >= 0 ? innerRaw.slice(pipeIndex) : "";
 
-      const hashIndex = pathAndAnchor.indexOf("#");
-      const pathPart =
-        hashIndex >= 0 ? pathAndAnchor.slice(0, hashIndex) : pathAndAnchor;
-      const anchorSuffix = hashIndex >= 0 ? pathAndAnchor.slice(hashIndex) : "";
+    const hashIndex = pathAndAnchor.indexOf("#");
+    const pathPart = hashIndex >= 0 ? pathAndAnchor.slice(0, hashIndex) : pathAndAnchor;
+    const anchorSuffix = hashIndex >= 0 ? pathAndAnchor.slice(hashIndex) : "";
 
-      const leadingWhitespace = pathPart.match(/^\s*/)?.[0] ?? "";
-      const trailingWhitespace = pathPart.match(/\s*$/)?.[0] ?? "";
-      const rawPath = pathPart.trim();
-      if (!rawPath) return fullMatch;
+    const leadingWhitespace = pathPart.match(/^\s*/)?.[0] ?? "";
+    const trailingWhitespace = pathPart.match(/\s*$/)?.[0] ?? "";
+    const rawPath = pathPart.trim();
+    if (!rawPath) return fullMatch;
 
-      const { pathWithoutPrefix, hadKnowledgePrefix } =
-        splitWikiPathPrefix(rawPath);
-      if (!pathWithoutPrefix) return fullMatch;
+    const { pathWithoutPrefix, hadKnowledgePrefix } = splitWikiPathPrefix(rawPath);
+    if (!pathWithoutPrefix) return fullMatch;
 
-      const matchesFullPath =
-        wikiPathCompareKey(pathWithoutPrefix) === fromCompareKey;
-      const isBareTarget = !pathWithoutPrefix.includes("/");
-      const targetBaseName =
-        stripMarkdownExtensionForWiki(pathWithoutPrefix).toLowerCase();
-      const matchesBareSelfName = Boolean(
-        fromBaseName && isBareTarget && targetBaseName === fromBaseName,
-      );
-      if (!matchesFullPath && !matchesBareSelfName) return fullMatch;
+    const matchesFullPath = wikiPathCompareKey(pathWithoutPrefix) === fromCompareKey;
+    const isBareTarget = !pathWithoutPrefix.includes("/");
+    const targetBaseName = stripMarkdownExtensionForWiki(pathWithoutPrefix).toLowerCase();
+    const matchesBareSelfName = Boolean(
+      fromBaseName && isBareTarget && targetBaseName === fromBaseName,
+    );
+    if (!matchesFullPath && !matchesBareSelfName) return fullMatch;
 
-      const preserveMarkdownExtension = rawPath.toLowerCase().endsWith(".md");
-      const rewrittenTarget = matchesBareSelfName
-        ? preserveMarkdownExtension
-          ? `${toBaseName}.md`
-          : toBaseName
-        : preserveMarkdownExtension
-          ? toWikiPath
-          : toWikiPathWithoutExtension;
-      const finalPath = hadKnowledgePrefix
-        ? `${KNOWLEDGE_PREFIX}${rewrittenTarget}`
-        : rewrittenTarget;
+    const preserveMarkdownExtension = rawPath.toLowerCase().endsWith(".md");
+    const rewrittenTarget = matchesBareSelfName
+      ? preserveMarkdownExtension
+        ? `${toBaseName}.md`
+        : toBaseName
+      : preserveMarkdownExtension
+        ? toWikiPath
+        : toWikiPathWithoutExtension;
+    const finalPath = hadKnowledgePrefix
+      ? `${KNOWLEDGE_PREFIX}${rewrittenTarget}`
+      : rewrittenTarget;
 
-      return `[[${leadingWhitespace}${finalPath}${trailingWhitespace}${anchorSuffix}${aliasSuffix}]]`;
-    },
-  );
+    return `[[${leadingWhitespace}${finalPath}${trailingWhitespace}${anchorSuffix}${aliasSuffix}]]`;
+  });
 };
 
 const getAncestorDirectoryPaths = (path: string): string[] => {
@@ -441,19 +380,16 @@ const getAncestorDirectoryPaths = (path: string): string[] => {
 };
 
 const isGraphTabPath = (path: string) => path === GRAPH_TAB_PATH;
-const isSuggestedTopicsTabPath = (path: string) =>
-  path === SUGGESTED_TOPICS_TAB_PATH;
+const isSuggestedTopicsTabPath = (path: string) => path === SUGGESTED_TOPICS_TAB_PATH;
 const isMeetingsTabPath = (path: string) => path === MEETINGS_TAB_PATH;
 const isLiveNotesTabPath = (path: string) => path === LIVE_NOTES_TAB_PATH;
 const isBgTasksTabPath = (path: string) => path === BG_TASKS_TAB_PATH;
 const isEmailTabPath = (path: string) => path === EMAIL_TAB_PATH;
 const isWorkspaceTabPath = (path: string) => path === WORKSPACE_TAB_PATH;
-const isKnowledgeViewTabPath = (path: string) =>
-  path === KNOWLEDGE_VIEW_TAB_PATH;
+const isKnowledgeViewTabPath = (path: string) => path === KNOWLEDGE_VIEW_TAB_PATH;
 const isChatHistoryTabPath = (path: string) => path === CHAT_HISTORY_TAB_PATH;
 const isHomeTabPath = (path: string) => path === HOME_TAB_PATH;
-const isBaseFilePath = (path: string) =>
-  path.endsWith(".base") || path === BASES_DEFAULT_TAB_PATH;
+const isBaseFilePath = (path: string) => path.endsWith(".base") || path === BASES_DEFAULT_TAB_PATH;
 
 const getSuggestedTopicTargetFolder = (category?: string) => {
   const normalized = category?.trim().toLowerCase();
@@ -517,19 +453,14 @@ const buildBgTaskSetupPrompt = (description: string) =>
 const buildBgTaskEditPrompt = (slug: string) =>
   `Let's tweak the background task \`${slug}\`. Please load the \`background-task\` skill first, read the task's current \`bg-tasks/${slug}/task.yaml\`, then ask me what I want to change.`;
 
-const normalizeUsage = (
-  usage?: Partial<LanguageModelUsage> | null,
-): LanguageModelUsage | null => {
+const normalizeUsage = (usage?: Partial<LanguageModelUsage> | null): LanguageModelUsage | null => {
   if (!usage) return null;
-  const hasNumbers = Object.values(usage).some(
-    (value) => typeof value === "number",
-  );
+  const hasNumbers = Object.values(usage).some((value) => typeof value === "number");
   if (!hasNumbers) return null;
   const inputTokens = usage.inputTokens ?? 0;
   const outputTokens = usage.outputTokens ?? 0;
   const reasoningTokens = usage.reasoningTokens ?? 0;
-  const totalTokens =
-    usage.totalTokens ?? inputTokens + outputTokens + reasoningTokens;
+  const totalTokens = usage.totalTokens ?? inputTokens + outputTokens + reasoningTokens;
   return {
     inputTokens,
     outputTokens,
@@ -616,51 +547,48 @@ function flattenMeetingsTree(nodes: TreeNode[]): TreeNode[] {
   return nodes.flatMap((node) => {
     if (node.kind !== "dir" || node.name !== "Meetings") return [node];
 
-    const flattenedSourceChildren = (node.children ?? []).flatMap(
-      (sourceNode) => {
-        if (sourceNode.kind !== "dir") return [sourceNode];
+    const flattenedSourceChildren = (node.children ?? []).flatMap((sourceNode) => {
+      if (sourceNode.kind !== "dir") return [sourceNode];
 
-        // Collect all files with their date group label
-        const dateGroups = new Map<string, TreeNode[]>();
+      // Collect all files with their date group label
+      const dateGroups = new Map<string, TreeNode[]>();
 
-        function collectFiles(n: TreeNode, dateParts: string[]) {
-          for (const child of n.children ?? []) {
-            if (child.kind === "file") {
-              const dateStr = dateParts.join("-");
-              // If file is at root of source folder, try to extract date from filename
-              const groupKey =
-                dateStr || extractDateFromFilename(child.name) || "other";
-              const group = dateGroups.get(groupKey) ?? [];
-              group.push(child);
-              dateGroups.set(groupKey, group);
-            } else if (child.kind === "dir") {
-              collectFiles(child, [...dateParts, child.name]);
-            }
+      function collectFiles(n: TreeNode, dateParts: string[]) {
+        for (const child of n.children ?? []) {
+          if (child.kind === "file") {
+            const dateStr = dateParts.join("-");
+            // If file is at root of source folder, try to extract date from filename
+            const groupKey = dateStr || extractDateFromFilename(child.name) || "other";
+            const group = dateGroups.get(groupKey) ?? [];
+            group.push(child);
+            dateGroups.set(groupKey, group);
+          } else if (child.kind === "dir") {
+            collectFiles(child, [...dateParts, child.name]);
           }
         }
-        collectFiles(sourceNode, []);
+      }
+      collectFiles(sourceNode, []);
 
-        // Pass through user-created folders that have no meeting-style date files
-        if (dateGroups.size === 0) return [sourceNode];
+      // Pass through user-created folders that have no meeting-style date files
+      if (dateGroups.size === 0) return [sourceNode];
 
-        // Build date folder nodes, sorted reverse chronologically
-        const dateFolderNodes: TreeNode[] = [...dateGroups.entries()]
-          .sort(([a], [b]) => b.localeCompare(a))
-          .map(([dateKey, files]) => {
-            // Sort files within each date group reverse chronologically
-            files.sort((a, b) => b.name.localeCompare(a.name));
-            return {
-              name: dateKey,
-              path: `${sourceNode.path}/${dateKey}`,
-              kind: "dir" as const,
-              children: files,
-              loaded: true,
-            };
-          });
+      // Build date folder nodes, sorted reverse chronologically
+      const dateFolderNodes: TreeNode[] = [...dateGroups.entries()]
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(([dateKey, files]) => {
+          // Sort files within each date group reverse chronologically
+          files.sort((a, b) => b.name.localeCompare(a.name));
+          return {
+            name: dateKey,
+            path: `${sourceNode.path}/${dateKey}`,
+            kind: "dir" as const,
+            children: files,
+            loaded: true,
+          };
+        });
 
-        return [{ ...sourceNode, children: dateFolderNodes }];
-      },
-    );
+      return [{ ...sourceNode, children: dateFolderNodes }];
+    });
 
     // Hide Meetings folder entirely if no source folders have files
     if (flattenedSourceChildren.length === 0) return [];
@@ -709,18 +637,12 @@ function buildTree(entries: DirEntry[]): TreeNode[] {
 
 const collectDirPaths = (nodes: TreeNode[]): string[] =>
   nodes.flatMap((n) =>
-    n.kind === "dir"
-      ? [n.path, ...(n.children ? collectDirPaths(n.children) : [])]
-      : [],
+    n.kind === "dir" ? [n.path, ...(n.children ? collectDirPaths(n.children) : [])] : [],
   );
 
 const collectFilePaths = (nodes: TreeNode[]): string[] =>
   nodes.flatMap((n) =>
-    n.kind === "file"
-      ? [n.path]
-      : n.children
-        ? collectFilePaths(n.children)
-        : [],
+    n.kind === "file" ? [n.path] : n.children ? collectFilePaths(n.children) : [],
   );
 
 /** A snapshot of which view the user is on */
@@ -743,8 +665,7 @@ function viewStatesEqual(a: ViewState, b: ViewState): boolean {
   if (a.type === "chat" && b.type === "chat") return a.runId === b.runId;
   if (a.type === "file" && b.type === "file") return a.path === b.path;
   if (a.type === "task" && b.type === "task") return a.name === b.name;
-  if (a.type === "workspace" && b.type === "workspace")
-    return (a.path ?? "") === (b.path ?? "");
+  if (a.type === "workspace" && b.type === "workspace") return (a.path ?? "") === (b.path ?? "");
   if (a.type === "knowledge-view" && b.type === "knowledge-view")
     return (a.folderPath ?? "") === (b.folderPath ?? "");
   return true; // both graph
@@ -764,21 +685,15 @@ function viewStatesEqual(a: ViewState, b: ViewState): boolean {
  *   live-notes:       ?type=live-notes
  */
 function parseDeepLink(input: string): ViewState | null {
-  const prefix = [
-    `${DEEP_LINK_SCHEME}://`,
-    `${LEGACY_DEEP_LINK_SCHEME}://`,
-  ].find((value) => input.startsWith(value));
+  const prefix = [`${DEEP_LINK_SCHEME}://`, `${LEGACY_DEEP_LINK_SCHEME}://`].find((value) =>
+    input.startsWith(value),
+  );
   if (!prefix) return null;
   const rest = input.slice(prefix.length);
   const queryIdx = rest.indexOf("?");
-  const host = (queryIdx >= 0 ? rest.slice(0, queryIdx) : rest).replace(
-    /\/$/,
-    "",
-  );
+  const host = (queryIdx >= 0 ? rest.slice(0, queryIdx) : rest).replace(/\/$/, "");
   if (host !== "open") return null;
-  const params = new URLSearchParams(
-    queryIdx >= 0 ? rest.slice(queryIdx + 1) : "",
-  );
+  const params = new URLSearchParams(queryIdx >= 0 ? rest.slice(queryIdx + 1) : "");
   switch (params.get("type")) {
     case "file": {
       const path = params.get("path");
@@ -823,11 +738,7 @@ function FixedSidebarToggle({ leftInsetPx }: { leftInsetPx: number }) {
       className="fixed left-0 top-0 z-50 flex h-10 items-center gap-1"
       style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
     >
-      <div
-        aria-hidden="true"
-        className="h-10 shrink-0"
-        style={{ width: leftInsetPx }}
-      />
+      <div aria-hidden="true" className="h-10 shrink-0" style={{ width: leftInsetPx }} />
       {/* Sidebar toggle */}
       <button
         type="button"
@@ -892,10 +803,7 @@ function ContentHeader({
         </div>
       ) : null}
       {onNavigateBack && onNavigateForward ? (
-        <div
-          className="titlebar-no-drag self-stretch w-px bg-border/70"
-          aria-hidden="true"
-        />
+        <div className="titlebar-no-drag self-stretch w-px bg-border/70" aria-hidden="true" />
       ) : null}
       {children}
     </header>
@@ -916,9 +824,7 @@ function App() {
   const [, setFileContent] = useState<string>("");
   const [editorContent, setEditorContent] = useState<string>("");
   const editorContentRef = useRef<string>("");
-  const [editorContentByPath, setEditorContentByPath] = useState<
-    Record<string, string>
-  >({});
+  const [editorContentByPath, setEditorContentByPath] = useState<Record<string, string>>({});
   const editorContentByPathRef = useRef<Map<string, string>>(new Map());
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
@@ -931,21 +837,15 @@ function App() {
   const [isBgTasksOpen, setIsBgTasksOpen] = useState(false);
   const [isEmailOpen, setIsEmailOpen] = useState(false);
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
-  const [workspaceInitialPath, setWorkspaceInitialPath] = useState<
-    string | null
-  >(null);
+  const [workspaceInitialPath, setWorkspaceInitialPath] = useState<string | null>(null);
   const [isKnowledgeViewOpen, setIsKnowledgeViewOpen] = useState(false);
   // Folder being browsed inside the knowledge view (null = root overview).
   // Lives in ViewState so folder drill-down participates in back/forward history.
-  const [knowledgeViewFolderPath, setKnowledgeViewFolderPath] = useState<
-    string | null
-  >(null);
+  const [knowledgeViewFolderPath, setKnowledgeViewFolderPath] = useState<string | null>(null);
   const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false);
   // Default landing view: Home with the chat docked according to appearance settings.
   const [isHomeOpen, setIsHomeOpen] = useState(true);
-  const [emailInitialThreadId, setEmailInitialThreadId] = useState<
-    string | null
-  >(null);
+  const [emailInitialThreadId, setEmailInitialThreadId] = useState<string | null>(null);
   const [emailThreadIdVersion, setEmailThreadIdVersion] = useState(0);
   const [expandedFrom, setExpandedFrom] = useState<{
     path: string | null;
@@ -956,9 +856,7 @@ function App() {
     bgTasks: boolean;
     email: boolean;
   } | null>(null);
-  const [baseConfigByPath, setBaseConfigByPath] = useState<
-    Record<string, BaseConfig>
-  >({});
+  const [baseConfigByPath, setBaseConfigByPath] = useState<Record<string, BaseConfig>>({});
   const [graphData, setGraphData] = useState<{
     nodes: GraphNode[];
     edges: GraphEdge[];
@@ -966,9 +864,7 @@ function App() {
     nodes: [],
     edges: [],
   });
-  const [graphStatus, setGraphStatus] = useState<
-    "idle" | "loading" | "ready" | "error"
-  >("idle");
+  const [graphStatus, setGraphStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [graphError, setGraphError] = useState<string | null>(null);
   const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(true);
   const [isRightPaneMaximized, setIsRightPaneMaximized] = useState(false);
@@ -977,22 +873,16 @@ function App() {
   // transition spends its first frames non-binding (nothing moves) then snaps shut.
   // Instead we snapshot the pane's real px width before it collapses and drive the
   // transition from that value.
-  const [insetCollapseFromPx, setInsetCollapseFromPx] = useState<number | null>(
-    null,
-  );
+  const [insetCollapseFromPx, setInsetCollapseFromPx] = useState<number | null>(null);
   const [insetMaxWidth, setInsetMaxWidth] = useState<string>("100%");
   const [insetAnimateMaxWidth, setInsetAnimateMaxWidth] = useState(true);
   // Live-note panel: bound to a single note path. Mounted as a sibling of the
   // markdown editor so it shares the layout (no overlap with chat) and
   // auto-closes when the active note changes.
-  const [liveNotePanelPath, setLiveNotePanelPath] = useState<string | null>(
-    null,
-  );
-  const [activeShortcutPane, setActiveShortcutPane] =
-    useState<ShortcutPane>("left");
+  const [liveNotePanelPath, setLiveNotePanelPath] = useState<string | null>(null);
+  const [activeShortcutPane, setActiveShortcutPane] = useState<ShortcutPane>("left");
   const isMac =
-    typeof navigator !== "undefined" &&
-    navigator.platform.toLowerCase().includes("mac");
+    typeof navigator !== "undefined" && navigator.platform.toLowerCase().includes("mac");
   const collapsedLeftPaddingPx =
     (isMac ? MACOS_TRAFFIC_LIGHTS_RESERVED_PX : 0) +
     TITLEBAR_TOGGLE_MARGIN_LEFT_PX +
@@ -1017,13 +907,10 @@ function App() {
     forward: [],
   });
   const [viewHistory, setViewHistory] = useState(historyRef.current);
-  const setHistory = useCallback(
-    (next: { back: ViewState[]; forward: ViewState[] }) => {
-      historyRef.current = next;
-      setViewHistory(next);
-    },
-    [],
-  );
+  const setHistory = useCallback((next: { back: ViewState[]; forward: ViewState[] }) => {
+    historyRef.current = next;
+    setViewHistory(next);
+  }, []);
 
   // Auto-save state
   const [isSaving, setIsSaving] = useState(false);
@@ -1036,9 +923,7 @@ function App() {
   const frontmatterByPathRef = useRef<Map<string, string | null>>(new Map());
 
   // Version history state
-  const [versionHistoryPath, setVersionHistoryPath] = useState<string | null>(
-    null,
-  );
+  const [versionHistoryPath, setVersionHistoryPath] = useState<string | null>(null);
   const [viewingHistoricalVersion, setViewingHistoricalVersion] = useState<{
     oid: string;
     content: string;
@@ -1047,12 +932,10 @@ function App() {
   // Chat state
   const [, setMessage] = useState<string>("");
   const [conversation, setConversation] = useState<ConversationItem[]>([]);
-  const [billingErrorMatch, setBillingErrorMatch] =
-    useState<BillingErrorMatch | null>(null);
+  const [billingErrorMatch, setBillingErrorMatch] = useState<BillingErrorMatch | null>(null);
   const [billingErrorOpen, setBillingErrorOpen] = useState(false);
   const lastHandledBillingErrorIdRef = useRef<string | null>(null);
-  const [currentAssistantMessage, setCurrentAssistantMessage] =
-    useState<string>("");
+  const [currentAssistantMessage, setCurrentAssistantMessage] = useState<string>("");
 
   useEffect(() => {
     for (let i = conversation.length - 1; i >= 0; i--) {
@@ -1073,19 +956,13 @@ function App() {
   const runIdRef = useRef<string | null>(null);
   const loadRunRequestIdRef = useRef(0);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingRunIds, setProcessingRunIds] = useState<Set<string>>(
-    new Set(),
-  );
+  const [processingRunIds, setProcessingRunIds] = useState<Set<string>>(new Set());
   const processingRunIdsRef = useRef<Set<string>>(new Set());
-  const streamingBuffersRef = useRef<Map<string, { assistant: string }>>(
-    new Map(),
-  );
+  const streamingBuffersRef = useRef<Map<string, { assistant: string }>>(new Map());
   const [isStopping, setIsStopping] = useState(false);
   const [stopClickedAt, setStopClickedAt] = useState<number | null>(null);
   const [agentId] = useState<string>("copilot");
-  const [presetMessage, setPresetMessage] = useState<string | undefined>(
-    undefined,
-  );
+  const [presetMessage, setPresetMessage] = useState<string | undefined>(undefined);
 
   // Voice mode state
   const [voiceAvailable, setVoiceAvailable] = useState(false);
@@ -1119,8 +996,7 @@ function App() {
       window.ipc.invoke("oauth:getState", null),
     ])
       .then(([config, oauthState]) => {
-        const solomonConnected =
-          getProductProviderState(oauthState.config)?.connected ?? false;
+        const solomonConnected = getProductProviderState(oauthState.config)?.connected ?? false;
         const hasVoice = !!config.deepgram || solomonConnected;
         setVoiceAvailable(hasVoice);
         setTtsAvailable(!!config.elevenlabs || solomonConnected);
@@ -1150,10 +1026,7 @@ function App() {
   useEffect(() => {
     const run = async () => {
       try {
-        const result = await window.ipc.invoke(
-          "migration:check-composio-google",
-          null,
-        );
+        const result = await window.ipc.invoke("migration:check-composio-google", null);
         if (result.shouldShow) {
           setShowComposioGoogleMigration(true);
         }
@@ -1191,18 +1064,18 @@ function App() {
 
   // Palette: per-tab editor handles for capturing cursor context on Cmd+K, and pending payload
   // queued across the new-chat-tab state flush before submit fires.
-  const editorRefsByTabId = useRef<Map<string, MarkdownEditorHandle>>(
-    new Map(),
-  );
+  const editorRefsByTabId = useRef<Map<string, MarkdownEditorHandle>>(new Map());
   const [pendingPaletteSubmit, setPendingPaletteSubmit] = useState<{
     text: string;
     mention: CommandPaletteMention | null;
   } | null>(null);
 
-  const handleSubmitRecording = useCallback(() => {
-    const text = voice.submit();
+  const handleSubmitRecording = useCallback(async () => {
+    // Release the mic immediately; on-device transcription (whisper-local) then runs
+    // asynchronously and the composer fills when the promise resolves (§14).
     setIsRecording(false);
     isRecordingRef.current = false;
+    const text = await voice.submit();
     if (text) {
       pendingVoiceInputRef.current = true;
       handlePromptSubmitRef.current?.({ text, files: [] });
@@ -1266,32 +1139,22 @@ function App() {
   const [runs, setRuns] = useState<RunListItem[]>([]);
 
   // Chat tab state
-  const [chatTabs, setChatTabs] = useState<ChatTab[]>([
-    { id: "default-chat-tab", runId: null },
-  ]);
+  const [chatTabs, setChatTabs] = useState<ChatTab[]>([{ id: "default-chat-tab", runId: null }]);
   const chatTabsRef = useRef(chatTabs);
   chatTabsRef.current = chatTabs;
   const [activeChatTabId, setActiveChatTabId] = useState("default-chat-tab");
-  const [chatViewStateByTab, setChatViewStateByTab] = useState<
-    Record<string, ChatTabViewState>
-  >({
+  const [chatViewStateByTab, setChatViewStateByTab] = useState<Record<string, ChatTabViewState>>({
     "default-chat-tab": createEmptyChatTabViewState(),
   });
   const chatViewStateByTabRef = useRef(chatViewStateByTab);
   const chatDraftsRef = useRef(new Map<string, string>());
-  const selectedModelByTabRef = useRef(
-    new Map<string, { provider: string; model: string }>(),
-  );
+  const selectedModelByTabRef = useRef(new Map<string, { provider: string; model: string }>());
   // Work directory is per-chat. Keyed by tab id; null/absent means none set.
-  const [workDirByTab, setWorkDirByTab] = useState<
-    Record<string, string | null>
-  >({});
+  const [workDirByTab, setWorkDirByTab] = useState<Record<string, string | null>>({});
   const workDirByTabRef = useRef(workDirByTab);
   workDirByTabRef.current = workDirByTab;
   const chatScrollTopByTabRef = useRef(new Map<string, number>());
-  const [toolOpenByTab, setToolOpenByTab] = useState<
-    Record<string, Record<string, boolean>>
-  >({});
+  const [toolOpenByTab, setToolOpenByTab] = useState<Record<string, Record<string, boolean>>>({});
   const [chatViewportAnchorByTab, setChatViewportAnchorByTab] = useState<
     Record<string, ChatViewportAnchorState>
   >({});
@@ -1306,36 +1169,29 @@ function App() {
   }, []);
   // Persist a run's work directory to its per-run sidecar config file. The agent
   // runtime reads this same file (config/workdir-<runId>.json) on each turn.
-  const persistRunWorkDir = useCallback(
-    async (runId: string, value: string | null) => {
-      try {
-        await window.ipc.invoke("workspace:writeFile", {
-          path: `config/workdir-${runId}.json`,
-          data: JSON.stringify(value ? { path: value } : {}, null, 2),
-        });
-      } catch (err) {
-        console.error("Failed to persist work directory for run", runId, err);
-      }
-    },
-    [],
-  );
+  const persistRunWorkDir = useCallback(async (runId: string, value: string | null) => {
+    try {
+      await window.ipc.invoke("workspace:writeFile", {
+        path: `config/workdir-${runId}.json`,
+        data: JSON.stringify(value ? { path: value } : {}, null, 2),
+      });
+    } catch (err) {
+      console.error("Failed to persist work directory for run", runId, err);
+    }
+  }, []);
   // Read a run's persisted work directory (used when (re)opening a run into a tab).
-  const loadRunWorkDir = useCallback(
-    async (runId: string): Promise<string | null> => {
-      try {
-        const result = await window.ipc.invoke("workspace:readFile", {
-          path: `config/workdir-${runId}.json`,
-        });
-        const parsed = JSON.parse(result.data);
-        const value =
-          typeof parsed?.path === "string" ? parsed.path.trim() : "";
-        return value || null;
-      } catch {
-        return null;
-      }
-    },
-    [],
-  );
+  const loadRunWorkDir = useCallback(async (runId: string): Promise<string | null> => {
+    try {
+      const result = await window.ipc.invoke("workspace:readFile", {
+        path: `config/workdir-${runId}.json`,
+      });
+      const parsed = JSON.parse(result.data);
+      const value = typeof parsed?.path === "string" ? parsed.path.trim() : "";
+      return value || null;
+    } catch {
+      return null;
+    }
+  }, []);
   const setTabWorkDir = useCallback(
     (tabId: string, value: string | null) => {
       setWorkDirByTab((prev) => ({ ...prev, [tabId]: value }));
@@ -1352,57 +1208,48 @@ function App() {
     },
     [toolOpenByTab],
   );
-  const setToolOpenForTab = useCallback(
-    (tabId: string, toolId: string, open: boolean) => {
-      setToolOpenByTab((prev) => {
-        const prevForTab = prev[tabId] ?? {};
-        if (prevForTab[toolId] === open) return prev;
-        return {
-          ...prev,
-          [tabId]: {
-            ...prevForTab,
-            [toolId]: open,
-          },
-        };
-      });
-    },
-    [],
-  );
-  const setChatViewportAnchor = useCallback(
-    (tabId: string, messageId: string | null) => {
-      setChatViewportAnchorByTab((prev) => {
-        const prevForTab = prev[tabId];
-        return {
-          ...prev,
-          [tabId]: {
-            messageId,
-            requestKey: (prevForTab?.requestKey ?? 0) + 1,
-          },
-        };
-      });
-    },
-    [],
-  );
-  const getChatScrollContainer = useCallback(
-    (tabId: string): HTMLElement | null => {
-      if (typeof document === "undefined") return null;
-      const panel = document.querySelector<HTMLElement>(
-        `[data-chat-tab-panel="${tabId}"][aria-hidden="false"]`,
-      );
-      if (!panel) return null;
-      const logRoot = panel.querySelector<HTMLElement>('[role="log"]');
-      if (!logRoot) return null;
-      const children = Array.from(logRoot.children) as HTMLElement[];
-      for (const child of children) {
-        const style = window.getComputedStyle(child);
-        if (style.overflowY === "auto" || style.overflowY === "scroll") {
-          return child;
-        }
+  const setToolOpenForTab = useCallback((tabId: string, toolId: string, open: boolean) => {
+    setToolOpenByTab((prev) => {
+      const prevForTab = prev[tabId] ?? {};
+      if (prevForTab[toolId] === open) return prev;
+      return {
+        ...prev,
+        [tabId]: {
+          ...prevForTab,
+          [toolId]: open,
+        },
+      };
+    });
+  }, []);
+  const setChatViewportAnchor = useCallback((tabId: string, messageId: string | null) => {
+    setChatViewportAnchorByTab((prev) => {
+      const prevForTab = prev[tabId];
+      return {
+        ...prev,
+        [tabId]: {
+          messageId,
+          requestKey: (prevForTab?.requestKey ?? 0) + 1,
+        },
+      };
+    });
+  }, []);
+  const getChatScrollContainer = useCallback((tabId: string): HTMLElement | null => {
+    if (typeof document === "undefined") return null;
+    const panel = document.querySelector<HTMLElement>(
+      `[data-chat-tab-panel="${tabId}"][aria-hidden="false"]`,
+    );
+    if (!panel) return null;
+    const logRoot = panel.querySelector<HTMLElement>('[role="log"]');
+    if (!logRoot) return null;
+    const children = Array.from(logRoot.children) as HTMLElement[];
+    for (const child of children) {
+      const style = window.getComputedStyle(child);
+      if (style.overflowY === "auto" || style.overflowY === "scroll") {
+        return child;
       }
-      return null;
-    },
-    [],
-  );
+    }
+    return null;
+  }, []);
   const saveChatScrollForTab = useCallback(
     (tabId: string) => {
       const container = getChatScrollContainer(tabId);
@@ -1428,20 +1275,12 @@ function App() {
   );
 
   // File tab state
-  const [fileTabs, setFileTabs] = useState<FileTab[]>([
-    { id: "home-tab", path: HOME_TAB_PATH },
-  ]);
-  const [activeFileTabId, setActiveFileTabId] = useState<string | null>(
-    "home-tab",
-  );
+  const [fileTabs, setFileTabs] = useState<FileTab[]>([{ id: "home-tab", path: HOME_TAB_PATH }]);
+  const [activeFileTabId, setActiveFileTabId] = useState<string | null>("home-tab");
   const activeFileTabIdRef = useRef(activeFileTabId);
   activeFileTabIdRef.current = activeFileTabId;
-  const [editorSessionByTabId, setEditorSessionByTabId] = useState<
-    Record<string, number>
-  >({});
-  const fileHistoryHandlersRef = useRef<Map<string, MarkdownHistoryHandlers>>(
-    new Map(),
-  );
+  const [editorSessionByTabId, setEditorSessionByTabId] = useState<Record<string, number>>({});
+  const fileHistoryHandlersRef = useRef<Map<string, MarkdownHistoryHandlers>>(new Map());
   const fileTabIdCounterRef = useRef(0);
   const newFileTabId = () => `file-tab-${++fileTabIdCounterRef.current}`;
 
@@ -1479,9 +1318,9 @@ function App() {
     Map<string, z.infer<typeof ToolPermissionRequestEvent>>
   >(new Map());
   // Track permission responses (toolCallId -> response)
-  const [permissionResponses, setPermissionResponses] = useState<
-    Map<string, "approve" | "deny">
-  >(new Map());
+  const [permissionResponses, setPermissionResponses] = useState<Map<string, "approve" | "deny">>(
+    new Map(),
+  );
   const [autoPermissionDecisions, setAutoPermissionDecisions] = useState<
     Map<string, z.infer<typeof ToolPermissionAutoDecisionEvent>>
   >(new Map());
@@ -1557,15 +1396,12 @@ function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   // One-time Composio→native Google migration modal
-  const [showComposioGoogleMigration, setShowComposioGoogleMigration] =
-    useState(false);
+  const [showComposioGoogleMigration, setShowComposioGoogleMigration] = useState(false);
 
   // Search state
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // Optional scope override for the next time search opens (cleared on close).
-  const [searchDefaultScope, setSearchDefaultScope] = useState<
-    SearchType | undefined
-  >(undefined);
+  const [searchDefaultScope, setSearchDefaultScope] = useState<SearchType | undefined>(undefined);
 
   // Background tasks state
   type BackgroundTaskItem = {
@@ -1580,12 +1416,8 @@ function App() {
     lastError?: string | null;
     runCount?: number;
   };
-  const [backgroundTasks, setBackgroundTasks] = useState<BackgroundTaskItem[]>(
-    [],
-  );
-  const [selectedBackgroundTask, setSelectedBackgroundTask] = useState<
-    string | null
-  >(null);
+  const [backgroundTasks, setBackgroundTasks] = useState<BackgroundTaskItem[]>([]);
+  const [selectedBackgroundTask, setSelectedBackgroundTask] = useState<string | null>(null);
 
   // Keep selectedPathRef in sync for async guards
   useEffect(() => {
@@ -1643,10 +1475,7 @@ function App() {
     const now = Date.now();
     recentLocalMarkdownWritesRef.current.set(path, now);
     if (recentLocalMarkdownWritesRef.current.size > 200) {
-      for (const [
-        knownPath,
-        timestamp,
-      ] of recentLocalMarkdownWritesRef.current.entries()) {
+      for (const [knownPath, timestamp] of recentLocalMarkdownWritesRef.current.entries()) {
         if (now - timestamp > 10_000) {
           recentLocalMarkdownWritesRef.current.delete(knownPath);
         }
@@ -1654,18 +1483,15 @@ function App() {
     }
   }, []);
 
-  const consumeRecentLocalMarkdownWrite = useCallback(
-    (path: string, windowMs: number = 2_500) => {
-      const timestamp = recentLocalMarkdownWritesRef.current.get(path);
-      if (timestamp === undefined) return false;
-      const isRecent = Date.now() - timestamp <= windowMs;
-      if (!isRecent) {
-        recentLocalMarkdownWritesRef.current.delete(path);
-      }
-      return isRecent;
-    },
-    [],
-  );
+  const consumeRecentLocalMarkdownWrite = useCallback((path: string, windowMs: number = 2_500) => {
+    const timestamp = recentLocalMarkdownWritesRef.current.get(path);
+    if (timestamp === undefined) return false;
+    const isRecent = Date.now() - timestamp <= windowMs;
+    if (!isRecent) {
+      recentLocalMarkdownWritesRef.current.delete(path);
+    }
+    return isRecent;
+  }, []);
 
   const handleEditorChange = useCallback(
     (path: string, markdown: string) => {
@@ -1757,14 +1583,10 @@ function App() {
   useEffect(() => {
     window.ipc
       .invoke("workspace:mkdir", { path: "bases", recursive: true })
-      .catch((err: unknown) =>
-        console.error("Failed to ensure bases directory:", err),
-      );
+      .catch((err: unknown) => console.error("Failed to ensure bases directory:", err));
     window.ipc
       .invoke("workspace:mkdir", { path: "knowledge/Notes", recursive: true })
-      .catch((err: unknown) =>
-        console.error("Failed to ensure Notes directory:", err),
-      );
+      .catch((err: unknown) => console.error("Failed to ensure Notes directory:", err));
   }, []);
 
   // Load initial tree
@@ -1778,14 +1600,12 @@ function App() {
       loadDirectory().then(setTree);
 
       const changedPath = event.type === "changed" ? event.path : null;
-      const changedPaths =
-        (event.type === "bulkChanged" ? event.paths : []) ?? [];
+      const changedPaths = (event.type === "bulkChanged" ? event.paths : []) ?? [];
       const eventPaths = (() => {
         if (event.type === "changed") return [event.path];
         if (event.type === "bulkChanged") return event.paths ?? [];
         if (event.type === "moved") return [event.from, event.to];
-        if (event.type === "created" || event.type === "deleted")
-          return [event.path];
+        if (event.type === "created" || event.type === "deleted") return [event.path];
         return [];
       })();
       const selectedPathAtEvent = selectedPathRef.current;
@@ -1799,9 +1619,7 @@ function App() {
       }
 
       // Reload bg-task summaries if anything under bg-tasks/ changed
-      if (
-        eventPaths.some((p) => p === "bg-tasks" || p.startsWith("bg-tasks/"))
-      ) {
+      if (eventPaths.some((p) => p === "bg-tasks" || p.startsWith("bg-tasks/"))) {
         loadBgTaskSummaries();
       }
 
@@ -1815,11 +1633,7 @@ function App() {
       }
 
       // Keep selection stable if a file is moved externally.
-      if (
-        event.type === "moved" &&
-        selectedPathAtEvent &&
-        event.from === selectedPathAtEvent
-      ) {
+      if (event.type === "moved" && selectedPathAtEvent && event.from === selectedPathAtEvent) {
         setSelectedPath(event.to);
       }
 
@@ -1837,8 +1651,7 @@ function App() {
         }
         // Only reload if no unsaved edits
         const baseline =
-          initialContentByPathRef.current.get(pathToReload) ??
-          initialContentRef.current;
+          initialContentByPathRef.current.get(pathToReload) ?? initialContentRef.current;
         if (editorContentRef.current === baseline) {
           const result = await window.ipc.invoke("workspace:readFile", {
             path: pathToReload,
@@ -1982,8 +1795,7 @@ function App() {
         const hasKnownBaseline = knownBaseline !== undefined;
         const hasUnsavedEdits =
           hasKnownBaseline &&
-          normalizeForCompare(editorContentRef.current) !==
-            normalizeForCompare(knownBaseline);
+          normalizeForCompare(editorContentRef.current) !== normalizeForCompare(knownBaseline);
         const shouldPreserveActiveDraft = isSameEditorFile && hasUnsavedEdits;
         if (!shouldPreserveActiveDraft) {
           setEditorContent(body);
@@ -2033,9 +1845,7 @@ function App() {
     const pathAtStart = editorPathRef.current;
     if (!pathAtStart || !pathAtStart.endsWith(".md")) return;
 
-    const baseline =
-      initialContentByPathRef.current.get(pathAtStart) ??
-      initialContentRef.current;
+    const baseline = initialContentByPathRef.current.get(pathAtStart) ?? initialContentRef.current;
     if (debouncedContent === baseline) return;
     if (!debouncedContent) return;
 
@@ -2060,16 +1870,9 @@ function App() {
           const currentBase = getBaseName(pathAtStart);
           if (isUntitledPlaceholderName(currentBase)) {
             const headingTitle = getHeadingTitle(debouncedContent);
-            const desiredName = headingTitle
-              ? sanitizeHeadingForFilename(headingTitle)
-              : null;
-            const shouldAutoRename =
-              untitledRenameReadyPathsRef.current.has(pathAtStart);
-            if (
-              shouldAutoRename &&
-              desiredName &&
-              desiredName !== currentBase
-            ) {
+            const desiredName = headingTitle ? sanitizeHeadingForFilename(headingTitle) : null;
+            const shouldAutoRename = untitledRenameReadyPathsRef.current.has(pathAtStart);
+            if (shouldAutoRename && desiredName && desiredName !== currentBase) {
               const parentDir = pathAtStart.split("/").slice(0, -1).join("/");
               let targetPath = `${parentDir}/${desiredName}.md`;
               if (targetPath !== pathAtStart) {
@@ -2103,9 +1906,7 @@ function App() {
                 untitledRenameReadyPathsRef.current.delete(pathAtStart);
                 setFileTabs((prev) =>
                   prev.map((tab) =>
-                    tab.path === pathAtStart
-                      ? { ...tab, path: targetPath }
-                      : tab,
+                    tab.path === pathAtStart ? { ...tab, path: targetPath } : tab,
                   ),
                 );
                 // Migrate frontmatter entry
@@ -2113,20 +1914,15 @@ function App() {
                 frontmatterByPathRef.current.delete(pathAtStart);
                 frontmatterByPathRef.current.set(targetPath, fmEntry ?? null);
                 initialContentByPathRef.current.delete(pathAtStart);
-                const cachedContent =
-                  editorContentByPathRef.current.get(pathAtStart);
+                const cachedContent = editorContentByPathRef.current.get(pathAtStart);
                 if (cachedContent !== undefined) {
-                  const rewrittenCachedContent =
-                    rewriteWikiLinksForRenamedFileInMarkdown(
-                      cachedContent,
-                      pathAtStart,
-                      targetPath,
-                    );
-                  editorContentByPathRef.current.delete(pathAtStart);
-                  editorContentByPathRef.current.set(
+                  const rewrittenCachedContent = rewriteWikiLinksForRenamedFileInMarkdown(
+                    cachedContent,
+                    pathAtStart,
                     targetPath,
-                    rewrittenCachedContent,
                   );
+                  editorContentByPathRef.current.delete(pathAtStart);
+                  editorContentByPathRef.current.set(targetPath, rewrittenCachedContent);
                   setEditorContentByPath((prev) => {
                     const oldContent = prev[pathAtStart];
                     if (oldContent === undefined) return prev;
@@ -2156,10 +1952,7 @@ function App() {
         });
         markRecentLocalMarkdownWrite(pathToSave);
         // Store body-only baseline (matches what debouncedContent compares against)
-        initialContentByPathRef.current.set(
-          pathToSave,
-          splitFrontmatter(contentToSave).body,
-        );
+        initialContentByPathRef.current.set(pathToSave, splitFrontmatter(contentToSave).body);
 
         // If we renamed the active file, update state/history AFTER the write completes so the editor
         // doesn't reload stale on-disk content mid-typing (which can drop the latest character).
@@ -2183,10 +1976,7 @@ function App() {
         }
 
         // Only update "current file" UI state if we're still on this file
-        if (
-          selectedPathRef.current === pathAtStart ||
-          selectedPathRef.current === pathToSave
-        ) {
+        if (selectedPathRef.current === pathAtStart || selectedPathRef.current === pathToSave) {
           initialContentRef.current = splitFrontmatter(contentToSave).body;
           setLastSaved(new Date());
         }
@@ -2196,8 +1986,7 @@ function App() {
         renameInProgressRef.current = false;
         if (
           wasActiveAtStart &&
-          (selectedPathRef.current === pathAtStart ||
-            selectedPathRef.current === pathToSave)
+          (selectedPathRef.current === pathAtStart || selectedPathRef.current === pathToSave)
         ) {
           setIsSaving(false);
         }
@@ -2222,18 +2011,13 @@ function App() {
 
       // Fetch all pages
       do {
-        const result: ListRunsResponseType = await window.ipc.invoke(
-          "runs:list",
-          { cursor },
-        );
+        const result: ListRunsResponseType = await window.ipc.invoke("runs:list", { cursor });
         allRuns.push(...result.runs);
         cursor = result.nextCursor;
       } while (cursor);
 
       // Filter for copilot runs only
-      const copilotRuns = allRuns.filter(
-        (run: RunListItem) => run.agentId === "copilot",
-      );
+      const copilotRuns = allRuns.filter((run: RunListItem) => run.agentId === "copilot");
       setRuns(copilotRuns);
     } catch (err) {
       console.error("Failed to load runs:", err);
@@ -2256,9 +2040,7 @@ function App() {
       lastRunError?: string;
     }>
   >([]);
-  const [bgTaskInitialSlug, setBgTaskInitialSlug] = useState<string | null>(
-    null,
-  );
+  const [bgTaskInitialSlug, setBgTaskInitialSlug] = useState<string | null>(null);
   const [bgTaskSlugVersion, setBgTaskSlugVersion] = useState(0);
 
   const loadBgTaskSummaries = useCallback(async () => {
@@ -2292,23 +2074,23 @@ function App() {
         window.ipc.invoke("agent-schedule:getState", null),
       ]);
 
-      const tasks: BackgroundTaskItem[] = Object.entries(
-        configResult.agents,
-      ).map(([name, entry]) => {
-        const state = stateResult.agents[name];
-        return {
-          name,
-          description: entry.description,
-          schedule: entry.schedule,
-          enabled: entry.enabled ?? true,
-          startingMessage: entry.startingMessage,
-          status: state?.status,
-          nextRunAt: state?.nextRunAt,
-          lastRunAt: state?.lastRunAt,
-          lastError: state?.lastError,
-          runCount: state?.runCount ?? 0,
-        };
-      });
+      const tasks: BackgroundTaskItem[] = Object.entries(configResult.agents).map(
+        ([name, entry]) => {
+          const state = stateResult.agents[name];
+          return {
+            name,
+            description: entry.description,
+            schedule: entry.schedule,
+            enabled: entry.enabled ?? true,
+            startingMessage: entry.startingMessage,
+            status: state?.status,
+            nextRunAt: state?.nextRunAt,
+            lastRunAt: state?.lastRunAt,
+            lastError: state?.lastError,
+            runCount: state?.runCount ?? 0,
+          };
+        },
+      );
 
       setBackgroundTasks(tasks);
     } catch (err) {
@@ -2392,10 +2174,7 @@ function App() {
                   if (attachmentParts.length > 0) {
                     msgAttachments = attachmentParts.map((part) => ({
                       path: part.path!,
-                      filename:
-                        part.filename ||
-                        part.path!.split("/").pop() ||
-                        part.path!,
+                      filename: part.filename || part.path!.split("/").pop() || part.path!,
                       mimeType: part.mimeType || "application/octet-stream",
                       size: part.size,
                     }));
@@ -2404,19 +2183,13 @@ function App() {
                   // Also extract tool-call parts from assistant messages
                   if (msg.role === "assistant") {
                     for (const part of contentParts) {
-                      if (
-                        part.type === "tool-call" &&
-                        part.toolCallId &&
-                        part.toolName
-                      ) {
+                      if (part.type === "tool-call" && part.toolCallId && part.toolName) {
                         const toolCall: ToolCall = {
                           id: part.toolCallId,
                           name: part.toolName,
                           input: normalizeToolInput(part.arguments),
                           status: "pending",
-                          timestamp: event.ts
-                            ? new Date(event.ts).getTime()
-                            : Date.now(),
+                          timestamp: event.ts ? new Date(event.ts).getTime() : Date.now(),
                         };
                         toolCallMap.set(toolCall.id, toolCall);
                         items.push(toolCall);
@@ -2430,9 +2203,7 @@ function App() {
                     role: msg.role,
                     content: textContent,
                     attachments: msgAttachments,
-                    timestamp: event.ts
-                      ? new Date(event.ts).getTime()
-                      : Date.now(),
+                    timestamp: event.ts ? new Date(event.ts).getTime() : Date.now(),
                   });
                 }
               }
@@ -2440,9 +2211,7 @@ function App() {
             }
             case "tool-invocation": {
               // Update existing tool call status or create new one
-              const existingTool = event.toolCallId
-                ? toolCallMap.get(event.toolCallId)
-                : null;
+              const existingTool = event.toolCallId ? toolCallMap.get(event.toolCallId) : null;
               if (existingTool) {
                 existingTool.input = normalizeToolInput(event.input);
                 existingTool.status = "running";
@@ -2452,9 +2221,7 @@ function App() {
                   name: event.toolName,
                   input: normalizeToolInput(event.input),
                   status: "running",
-                  timestamp: event.ts
-                    ? new Date(event.ts).getTime()
-                    : Date.now(),
+                  timestamp: event.ts ? new Date(event.ts).getTime() : Date.now(),
                 };
                 toolCallMap.set(toolCall.id, toolCall);
                 items.push(toolCall);
@@ -2462,9 +2229,7 @@ function App() {
               break;
             }
             case "tool-result": {
-              const existingTool = event.toolCallId
-                ? toolCallMap.get(event.toolCallId)
-                : null;
+              const existingTool = event.toolCallId ? toolCallMap.get(event.toolCallId) : null;
               if (existingTool) {
                 existingTool.result = event.result;
                 existingTool.status = "completed";
@@ -2475,10 +2240,7 @@ function App() {
             case "code-run-event": {
               const existingTool = toolCallMap.get(event.toolCallId);
               if (existingTool) {
-                existingTool.codeRunEvents = [
-                  ...(existingTool.codeRunEvents ?? []),
-                  event.event,
-                ];
+                existingTool.codeRunEvents = [...(existingTool.codeRunEvents ?? []), event.event];
                 if (event.event.type === "permission") {
                   existingTool.pendingCodePermission = null;
                 }
@@ -2488,9 +2250,7 @@ function App() {
                   name: "code_agent_run",
                   input: {},
                   status: "running",
-                  timestamp: event.ts
-                    ? new Date(event.ts).getTime()
-                    : Date.now(),
+                  timestamp: event.ts ? new Date(event.ts).getTime() : Date.now(),
                   codeRunEvents: [event.event],
                 };
                 toolCallMap.set(toolCall.id, toolCall);
@@ -2512,9 +2272,7 @@ function App() {
                   name: "code_agent_run",
                   input: {},
                   status: "running",
-                  timestamp: event.ts
-                    ? new Date(event.ts).getTime()
-                    : Date.now(),
+                  timestamp: event.ts ? new Date(event.ts).getTime() : Date.now(),
                   pendingCodePermission,
                 };
                 toolCallMap.set(toolCall.id, toolCall);
@@ -2541,19 +2299,13 @@ function App() {
         if (loadRunRequestIdRef.current !== requestId) return;
 
         // Track permission requests and responses from history
-        const allPermissionRequests = new Map<
-          string,
-          z.infer<typeof ToolPermissionRequestEvent>
-        >();
+        const allPermissionRequests = new Map<string, z.infer<typeof ToolPermissionRequestEvent>>();
         const permResponseMap = new Map<string, "approve" | "deny">();
         const autoPermissionDecisions = new Map<
           string,
           z.infer<typeof ToolPermissionAutoDecisionEvent>
         >();
-        const askHumanRequests = new Map<
-          string,
-          z.infer<typeof AskHumanRequestEvent>
-        >();
+        const askHumanRequests = new Map<string, z.infer<typeof AskHumanRequestEvent>>();
         const respondedAskHumanIds = new Set<string>();
 
         for (const event of run.log) {
@@ -2572,20 +2324,14 @@ function App() {
         if (loadRunRequestIdRef.current !== requestId) return;
 
         // Separate pending vs responded permission requests
-        const pendingPerms = new Map<
-          string,
-          z.infer<typeof ToolPermissionRequestEvent>
-        >();
+        const pendingPerms = new Map<string, z.infer<typeof ToolPermissionRequestEvent>>();
         for (const [id, req] of allPermissionRequests.entries()) {
           if (!permResponseMap.has(id)) {
             pendingPerms.set(id, req);
           }
         }
 
-        const pendingAsks = new Map<
-          string,
-          z.infer<typeof AskHumanRequestEvent>
-        >();
+        const pendingAsks = new Map<string, z.infer<typeof AskHumanRequestEvent>>();
         for (const [id, req] of askHumanRequests.entries()) {
           if (!respondedAskHumanIds.has(id)) {
             pendingAsks.set(id, req);
@@ -2708,9 +2454,7 @@ function App() {
 
               // Extract <voice> tags and send to TTS when enabled
               voiceTextBufferRef.current += llmEvent.delta;
-              const remaining = voiceTextBufferRef.current.substring(
-                spokenIndexRef.current,
-              );
+              const remaining = voiceTextBufferRef.current.substring(spokenIndexRef.current);
               const voiceRegex = /<voice>([\s\S]*?)<\/voice>/g;
               let voiceMatch: RegExpExecArray | null;
               while ((voiceMatch = voiceRegex.exec(remaining)) !== null) {
@@ -2719,8 +2463,7 @@ function App() {
                 if (voiceContent && ttsEnabledRef.current) {
                   ttsRef.current.speak(voiceContent);
                 }
-                spokenIndexRef.current +=
-                  voiceMatch.index + voiceMatch[0].length;
+                spokenIndexRef.current += voiceMatch.index + voiceMatch[0].length;
               }
             } else if (llmEvent.type === "tool-call") {
               setConversation((prev) => [
@@ -2728,9 +2471,7 @@ function App() {
                 {
                   id: llmEvent.toolCallId || `tool-${Date.now()}`,
                   name: llmEvent.toolName || "tool",
-                  input: normalizeToolInput(
-                    llmEvent.input as ToolUIPart["input"],
-                  ),
+                  input: normalizeToolInput(llmEvent.input as ToolUIPart["input"]),
                   status: "running",
                   timestamp: Date.now(),
                 },
@@ -2752,9 +2493,7 @@ function App() {
               if (inferredTitle) {
                 setRuns((prev) =>
                   prev.map((run) =>
-                    run.id === event.runId && !run.title
-                      ? { ...run, title: inferredTitle }
-                      : run,
+                    run.id === event.runId && !run.title ? { ...run, title: inferredTitle } : run,
                   ),
                 );
               }
@@ -2771,10 +2510,7 @@ function App() {
                   const cleanedContent = currentMsg.replace(/<\/?voice>/g, "");
                   setConversation((prev) => {
                     const exists = prev.some(
-                      (m) =>
-                        m.id === event.messageId &&
-                        "role" in m &&
-                        m.role === "assistant",
+                      (m) => m.id === event.messageId && "role" in m && m.role === "assistant",
                     );
                     if (exists) return prev;
                     return [
@@ -2803,9 +2539,7 @@ function App() {
             const next = prev.map((item) => {
               if (
                 isToolCall(item) &&
-                (event.toolCallId
-                  ? item.id === event.toolCallId
-                  : item.name === event.toolName)
+                (event.toolCallId ? item.id === event.toolCallId : item.name === event.toolName)
               ) {
                 matched = true;
                 return {
@@ -2837,9 +2571,7 @@ function App() {
             const next = prev.map((item) => {
               if (
                 isToolCall(item) &&
-                (event.toolCallId
-                  ? item.id === event.toolCallId
-                  : item.name === event.toolName)
+                (event.toolCallId ? item.id === event.toolCallId : item.name === event.toolName)
               ) {
                 matched = true;
                 return {
@@ -2866,11 +2598,7 @@ function App() {
           });
 
           if (event.toolCallId) {
-            setToolOpenForTab(
-              activeChatTabIdRef.current,
-              event.toolCallId,
-              false,
-            );
+            setToolOpenForTab(activeChatTabIdRef.current, event.toolCallId, false);
           }
 
           // Handle app-navigation tool results — trigger UI side effects
@@ -3076,9 +2804,7 @@ function App() {
   type MiddlePaneContextPayload =
     | { kind: "note"; path: string; content: string }
     | { kind: "browser"; url: string; title: string };
-  const buildMiddlePaneContext = async (): Promise<
-    MiddlePaneContextPayload | undefined
-  > => {
+  const buildMiddlePaneContext = async (): Promise<MiddlePaneContextPayload | undefined> => {
     // Nothing visible in the middle pane when the right pane is maximized.
     if (isRightPaneMaximized) return undefined;
 
@@ -3155,9 +2881,7 @@ function App() {
         const selected = selectedModelByTabRef.current.get(submitTabId);
         const run = await window.ipc.invoke("runs:create", {
           agentId,
-          ...(selected
-            ? { model: selected.model, provider: selected.provider }
-            : {}),
+          ...(selected ? { model: selected.model, provider: selected.provider } : {}),
           permissionMode: permissionMode ?? "manual",
         });
         currentRunId = run.id;
@@ -3166,15 +2890,12 @@ function App() {
         analytics.chatSessionCreated(currentRunId);
         // Update active chat tab's runId to the new run
         setChatTabs((prev) =>
-          prev.map((tab) =>
-            tab.id === submitTabId ? { ...tab, runId: currentRunId } : tab,
-          ),
+          prev.map((tab) => (tab.id === submitTabId ? { ...tab, runId: currentRunId } : tab)),
         );
         // Flush this tab's pending work directory onto the freshly created run so
         // the agent picks it up on the first turn. Done before createMessage below.
         const pendingWorkDir = workDirByTabRef.current[submitTabId] ?? null;
-        if (pendingWorkDir)
-          await persistRunWorkDir(currentRunId, pendingWorkDir);
+        if (pendingWorkDir) await persistRunWorkDir(currentRunId, pendingWorkDir);
         isNewRun = true;
       }
 
@@ -3200,14 +2921,9 @@ function App() {
             contentParts.push({
               type: "attachment",
               path: mention.path,
-              filename:
-                mention.displayName ||
-                mention.path.split("/").pop() ||
-                mention.path,
+              filename: mention.displayName || mention.path.split("/").pop() || mention.path,
               mimeType: "text/markdown",
-              ...(mention.lineNumber !== undefined
-                ? { lineNumber: mention.lineNumber }
-                : {}),
+              ...(mention.lineNumber !== undefined ? { lineNumber: mention.lineNumber } : {}),
             });
           }
         }
@@ -3302,8 +3018,7 @@ function App() {
   const handleStop = useCallback(async () => {
     if (!runId) return;
     const now = Date.now();
-    const isForce =
-      isStopping && stopClickedAt !== null && now - stopClickedAt < 2000;
+    const isForce = isStopping && stopClickedAt !== null && now - stopClickedAt < 2000;
 
     setStopClickedAt(now);
     setIsStopping(true);
@@ -3464,14 +3179,8 @@ function App() {
       setConversation(cached.conversation);
       setCurrentAssistantMessage(cached.currentAssistantMessage);
 
-      const pendingPermissions = new Map<
-        string,
-        z.infer<typeof ToolPermissionRequestEvent>
-      >();
-      for (const [
-        toolCallId,
-        request,
-      ] of cached.allPermissionRequests.entries()) {
+      const pendingPermissions = new Map<string, z.infer<typeof ToolPermissionRequestEvent>>();
+      for (const [toolCallId, request] of cached.allPermissionRequests.entries()) {
         if (!cached.permissionResponses.has(toolCallId)) {
           pendingPermissions.set(toolCallId, request);
         }
@@ -3481,11 +3190,7 @@ function App() {
       setAllPermissionRequests(new Map(cached.allPermissionRequests));
       setPermissionResponses(new Map(cached.permissionResponses));
       setAutoPermissionDecisions(new Map(cached.autoPermissionDecisions));
-      setIsProcessing(
-        Boolean(
-          resolvedRunId && processingRunIdsRef.current.has(resolvedRunId),
-        ),
-      );
+      setIsProcessing(Boolean(resolvedRunId && processingRunIdsRef.current.has(resolvedRunId)));
       return true;
     },
     [],
@@ -3515,14 +3220,7 @@ function App() {
         applyChatTab(tab);
       }
     },
-    [
-      chatTabs,
-      activeChatTabId,
-      applyChatTab,
-      loadRun,
-      restoreChatTabState,
-      saveChatScrollForTab,
-    ],
+    [chatTabs, activeChatTabId, applyChatTab, loadRun, restoreChatTabState, saveChatScrollForTab],
   );
 
   const closeChatTab = useCallback(
@@ -3561,28 +3259,15 @@ function App() {
         // Cancel stale in-flight loads from the closing tab.
         loadRunRequestIdRef.current += 1;
         setActiveChatTabId(newActiveTab.id);
-        const restored = restoreChatTabState(
-          newActiveTab.id,
-          newActiveTab.runId,
-        );
-        if (
-          newActiveTab.runId &&
-          processingRunIdsRef.current.has(newActiveTab.runId)
-        ) {
+        const restored = restoreChatTabState(newActiveTab.id, newActiveTab.runId);
+        if (newActiveTab.runId && processingRunIdsRef.current.has(newActiveTab.runId)) {
           loadRun(newActiveTab.runId);
         } else if (!restored) {
           applyChatTab(newActiveTab);
         }
       }
     },
-    [
-      chatTabs,
-      activeChatTabId,
-      applyChatTab,
-      loadRun,
-      restoreChatTabState,
-      saveChatScrollForTab,
-    ],
+    [chatTabs, activeChatTabId, applyChatTab, loadRun, restoreChatTabState, saveChatScrollForTab],
   );
 
   useEffect(() => {
@@ -3594,10 +3279,7 @@ function App() {
     let cancelled = false;
 
     const restoreScrollTop = (container: HTMLElement, top: number) => {
-      const maxScroll = Math.max(
-        0,
-        container.scrollHeight - container.clientHeight,
-      );
+      const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight);
       const clampedTop = clampNumber(top, 0, maxScroll);
       container.scrollTop = clampedTop;
     };
@@ -4178,15 +3860,9 @@ function App() {
         { path: filePath, displayName },
       );
     };
-    window.addEventListener(
-      "rowboat:open-copilot-edit-live-note",
-      handler as EventListener,
-    );
+    window.addEventListener("rowboat:open-copilot-edit-live-note", handler as EventListener);
     return () =>
-      window.removeEventListener(
-        "rowboat:open-copilot-edit-live-note",
-        handler as EventListener,
-      );
+      window.removeEventListener("rowboat:open-copilot-edit-live-note", handler as EventListener);
   }, [submitFromPalette]);
 
   // Listener for the toolbar "Live note" button — opens the panel for a path.
@@ -4197,15 +3873,9 @@ function App() {
       if (!filePath) return;
       setLiveNotePanelPath(filePath);
     };
-    window.addEventListener(
-      "rowboat:open-live-note-panel",
-      handler as EventListener,
-    );
+    window.addEventListener("rowboat:open-live-note-panel", handler as EventListener);
     return () =>
-      window.removeEventListener(
-        "rowboat:open-live-note-panel",
-        handler as EventListener,
-      );
+      window.removeEventListener("rowboat:open-live-note-panel", handler as EventListener);
   }, []);
 
   // Auto-close the live-note panel when the active note changes — the panel is
@@ -4233,15 +3903,9 @@ function App() {
         : null;
       submitFromPalette(instruction, mention);
     };
-    window.addEventListener(
-      "rowboat:open-copilot-prompt",
-      handler as EventListener,
-    );
+    window.addEventListener("rowboat:open-copilot-prompt", handler as EventListener);
     return () =>
-      window.removeEventListener(
-        "rowboat:open-copilot-prompt",
-        handler as EventListener,
-      );
+      window.removeEventListener("rowboat:open-copilot-prompt", handler as EventListener);
   }, [submitFromPalette]);
 
   // Reveal the chat in the right side pane (from the middle-panel chat icon).
@@ -4414,14 +4078,12 @@ function App() {
   }, [expandedFrom]);
 
   const currentViewState = React.useMemo<ViewState>(() => {
-    if (selectedBackgroundTask)
-      return { type: "task", name: selectedBackgroundTask };
+    if (selectedBackgroundTask) return { type: "task", name: selectedBackgroundTask };
     if (isEmailOpen) return { type: "email" };
     if (isMeetingsOpen) return { type: "meetings" };
     if (isLiveNotesOpen) return { type: "live-notes" };
     if (isSuggestedTopicsOpen) return { type: "suggested-topics" };
-    if (isWorkspaceOpen)
-      return { type: "workspace", path: workspaceInitialPath ?? undefined };
+    if (isWorkspaceOpen) return { type: "workspace", path: workspaceInitialPath ?? undefined };
     if (isKnowledgeViewOpen)
       return {
         type: "knowledge-view",
@@ -4466,15 +4128,9 @@ function App() {
 
       if (activeFileTabId) {
         const activeTab = fileTabs.find((tab) => tab.id === activeFileTabId);
-        if (
-          activeTab &&
-          !isGraphTabPath(activeTab.path) &&
-          !isBaseFilePath(activeTab.path)
-        ) {
+        if (activeTab && !isGraphTabPath(activeTab.path) && !isBaseFilePath(activeTab.path)) {
           setFileTabs((prev) =>
-            prev.map((tab) =>
-              tab.id === activeFileTabId ? { ...tab, path } : tab,
-            ),
+            prev.map((tab) => (tab.id === activeFileTabId ? { ...tab, path } : tab)),
           );
           // Rebinds this tab to a different note path: reset editor session to clear undo history.
           setEditorSessionByTabId((prev) => ({
@@ -4898,17 +4554,13 @@ function App() {
             // Bind the loaded run to a chat tab so its title (derived from
             // tab.runId) updates. Reuse an existing tab for this run if one is
             // open, otherwise rebind the active tab.
-            const existingTab = chatTabsRef.current.find(
-              (tab) => tab.runId === targetRunId,
-            );
+            const existingTab = chatTabsRef.current.find((tab) => tab.runId === targetRunId);
             if (existingTab) {
               setActiveChatTabId(existingTab.id);
             } else {
               setChatTabs((prev) =>
                 prev.map((tab) =>
-                  tab.id === activeChatTabIdRef.current
-                    ? { ...tab, runId: targetRunId }
-                    : tab,
+                  tab.id === activeChatTabIdRef.current ? { ...tab, runId: targetRunId } : tab,
                 ),
               );
             }
@@ -5027,8 +4679,7 @@ function App() {
 
   const canNavigateForward = React.useMemo(() => {
     for (let i = viewHistory.forward.length - 1; i >= 0; i--) {
-      if (!viewStatesEqual(viewHistory.forward[i], currentViewState))
-        return true;
+      if (!viewStatesEqual(viewHistory.forward[i], currentViewState)) return true;
     }
     return false;
   }, [viewHistory.forward, currentViewState]);
@@ -5054,11 +4705,9 @@ function App() {
       const view = parseDeepLink(url);
       if (view) void navigateToViewRef.current(view);
     };
-    void window.ipc
-      .invoke("app:consumePendingDeepLink", null)
-      .then(({ url }) => {
-        if (url) handle(url);
-      });
+    void window.ipc.invoke("app:consumePendingDeepLink", null).then(({ url }) => {
+      if (url) handle(url);
+    });
     return window.ipc.on("app:openUrl", ({ url }) => handle(url));
   }, []);
 
@@ -5079,9 +4728,7 @@ function App() {
         };
       };
       if (!e || typeof e !== "object") return;
-      const conferenceLink = extractConferenceLink(
-        e as Record<string, unknown>,
-      );
+      const conferenceLink = extractConferenceLink(e as Record<string, unknown>);
       if (openMeeting && conferenceLink) {
         window.open(conferenceLink, "_blank");
       } else if (openMeeting) {
@@ -5103,12 +4750,9 @@ function App() {
     });
   }, []);
 
-  const handleBaseConfigChange = useCallback(
-    (path: string, config: BaseConfig) => {
-      setBaseConfigByPath((prev) => ({ ...prev, [path]: config }));
-    },
-    [],
-  );
+  const handleBaseConfigChange = useCallback((path: string, config: BaseConfig) => {
+    setBaseConfigByPath((prev) => ({ ...prev, [path]: config }));
+  }, []);
 
   const handleBaseSave = useCallback(
     async (name: string | null) => {
@@ -5150,9 +4794,7 @@ function App() {
   );
 
   // External search set by app-navigation tool (passed to BasesView)
-  const [externalBaseSearch, setExternalBaseSearch] = useState<
-    string | undefined
-  >(undefined);
+  const [externalBaseSearch, setExternalBaseSearch] = useState<string | undefined>(undefined);
 
   // Process pending app-navigation results
   useEffect(() => {
@@ -5173,9 +4815,7 @@ function App() {
       case "update-base-view": {
         // Navigate to bases if not already there
         const targetPath =
-          selectedPath && isBaseFilePath(selectedPath)
-            ? selectedPath
-            : BASES_DEFAULT_TAB_PATH;
+          selectedPath && isBaseFilePath(selectedPath) ? selectedPath : BASES_DEFAULT_TAB_PATH;
         if (!selectedPath || !isBaseFilePath(selectedPath)) {
           void navigateToView({ type: "file", path: BASES_DEFAULT_TAB_PATH });
         }
@@ -5188,9 +4828,7 @@ function App() {
             const next = { ...current };
 
             // Apply filter updates
-            const filterUpdates = updates.filters as
-              | Record<string, unknown>
-              | undefined;
+            const filterUpdates = updates.filters as Record<string, unknown> | undefined;
             if (filterUpdates) {
               if (filterUpdates.clear) {
                 next.filters = [];
@@ -5208,11 +4846,7 @@ function App() {
                 }>;
                 const existing = next.filters;
                 for (const f of toAdd) {
-                  if (
-                    !existing.some(
-                      (e) => e.category === f.category && e.value === f.value,
-                    )
-                  ) {
+                  if (!existing.some((e) => e.category === f.category && e.value === f.value)) {
                     existing.push(f);
                   }
                 }
@@ -5223,18 +4857,13 @@ function App() {
                   value: string;
                 }>;
                 next.filters = next.filters.filter(
-                  (e) =>
-                    !toRemove.some(
-                      (r) => r.category === e.category && r.value === e.value,
-                    ),
+                  (e) => !toRemove.some((r) => r.category === e.category && r.value === e.value),
                 );
               }
             }
 
             // Apply column updates
-            const colUpdates = updates.columns as
-              | Record<string, unknown>
-              | undefined;
+            const colUpdates = updates.columns as Record<string, unknown> | undefined;
             if (colUpdates) {
               if (colUpdates.set) {
                 next.visibleColumns = colUpdates.set as string[];
@@ -5242,15 +4871,12 @@ function App() {
               if (colUpdates.add) {
                 const toAdd = colUpdates.add as string[];
                 for (const col of toAdd) {
-                  if (!next.visibleColumns.includes(col))
-                    next.visibleColumns.push(col);
+                  if (!next.visibleColumns.includes(col)) next.visibleColumns.push(col);
                 }
               }
               if (colUpdates.remove) {
                 const toRemove = new Set(colUpdates.remove as string[]);
-                next.visibleColumns = next.visibleColumns.filter(
-                  (c) => !toRemove.has(c),
-                );
+                next.visibleColumns = next.visibleColumns.filter((c) => !toRemove.has(c));
               }
             }
 
@@ -5293,46 +4919,43 @@ function App() {
   }, [appendUnique, currentViewState, handleOpenFullScreenChat, setHistory]);
 
   // Handle image upload for the markdown editor
-  const handleImageUpload = useCallback(
-    async (file: File): Promise<string | null> => {
+  const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
+    try {
+      // Read file as data URL (includes mime type)
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Also save to .assets folder for persistence
+      const timestamp = Date.now();
+      const extension = file.name.split(".").pop() || "png";
+      const filename = `image-${timestamp}.${extension}`;
+      const assetsPath = "knowledge/.assets";
+      const imagePath = `${assetsPath}/${filename}`;
+
       try {
-        // Read file as data URL (includes mime type)
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
+        // Extract base64 data (remove data URL prefix)
+        const base64Data = dataUrl.split(",")[1];
+        await window.ipc.invoke("workspace:writeFile", {
+          path: imagePath,
+          data: base64Data,
+          opts: { encoding: "base64", mkdirp: true },
         });
-
-        // Also save to .assets folder for persistence
-        const timestamp = Date.now();
-        const extension = file.name.split(".").pop() || "png";
-        const filename = `image-${timestamp}.${extension}`;
-        const assetsPath = "knowledge/.assets";
-        const imagePath = `${assetsPath}/${filename}`;
-
-        try {
-          // Extract base64 data (remove data URL prefix)
-          const base64Data = dataUrl.split(",")[1];
-          await window.ipc.invoke("workspace:writeFile", {
-            path: imagePath,
-            data: base64Data,
-            opts: { encoding: "base64", mkdirp: true },
-          });
-        } catch (err) {
-          console.error("Failed to save image to disk:", err);
-          // Continue anyway - image will still display via data URL
-        }
-
-        // Return data URL for immediate display in editor
-        return dataUrl;
-      } catch (error) {
-        console.error("Failed to upload image:", error);
-        return null;
+      } catch (err) {
+        console.error("Failed to save image to disk:", err);
+        // Continue anyway - image will still display via data URL
       }
-    },
-    [],
-  );
+
+      // Return data URL for immediate display in editor
+      return dataUrl;
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      return null;
+    }
+  }, []);
 
   // Keyboard shortcut: Ctrl+L to toggle main chat view
   const isFullScreenChat =
@@ -5362,12 +4985,7 @@ function App() {
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [
-    handleCloseFullScreenChat,
-    isFullScreenChat,
-    expandedFrom,
-    navigateToFullScreenChat,
-  ]);
+  }, [handleCloseFullScreenChat, isFullScreenChat, expandedFrom, navigateToFullScreenChat]);
 
   // Keyboard shortcut: Cmd+K / Ctrl+K opens the search palette (search-only).
   useEffect(() => {
@@ -5384,12 +5002,7 @@ function App() {
   // Keyboard shortcut: Cmd+N / Ctrl+N opens a new chat tab.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        !e.shiftKey &&
-        !e.altKey &&
-        e.key.toLowerCase() === "n"
-      ) {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "n") {
         e.preventDefault();
         handleNewChatTab();
       }
@@ -5409,8 +5022,7 @@ function App() {
       const wantsRedo = (key === "z" && e.shiftKey) || (!isMac && key === "y");
       if (!wantsUndo && !wantsRedo) return;
 
-      if (!selectedPath || !selectedPath.endsWith(".md") || !activeFileTabId)
-        return;
+      if (!selectedPath || !selectedPath.endsWith(".md") || !activeFileTabId) return;
 
       const target = e.target as EventTarget | null;
       if (target instanceof HTMLElement) {
@@ -5436,8 +5048,7 @@ function App() {
     };
 
     document.addEventListener("keydown", handleHistoryKeyDown, true);
-    return () =>
-      document.removeEventListener("keydown", handleHistoryKeyDown, true);
+    return () => document.removeEventListener("keydown", handleHistoryKeyDown, true);
   }, [activeFileTabId, isMac, selectedPath]);
 
   // Keyboard shortcuts for tab management
@@ -5503,8 +5114,7 @@ function App() {
       const targetFileTabId =
         activeFileTabId ??
         (selectedKnowledgePath
-          ? (fileTabs.find((tab) => tab.path === selectedKnowledgePath)?.id ??
-            null)
+          ? (fileTabs.find((tab) => tab.path === selectedKnowledgePath)?.id ?? null)
           : null);
 
       // Cmd+W — close active tab
@@ -5539,20 +5149,14 @@ function App() {
         e.preventDefault();
         const direction = e.key === "]" ? 1 : -1;
         if (inFileView) {
-          const currentIdx = fileTabs.findIndex(
-            (t) => t.id === targetFileTabId,
-          );
+          const currentIdx = fileTabs.findIndex((t) => t.id === targetFileTabId);
           if (currentIdx === -1) return;
-          const nextIdx =
-            (currentIdx + direction + fileTabs.length) % fileTabs.length;
+          const nextIdx = (currentIdx + direction + fileTabs.length) % fileTabs.length;
           switchFileTab(fileTabs[nextIdx].id);
         } else {
-          const currentIdx = chatTabs.findIndex(
-            (t) => t.id === activeChatTabId,
-          );
+          const currentIdx = chatTabs.findIndex((t) => t.id === activeChatTabId);
           if (currentIdx === -1) return;
-          const nextIdx =
-            (currentIdx + direction + chatTabs.length) % chatTabs.length;
+          const nextIdx = (currentIdx + direction + chatTabs.length) % chatTabs.length;
           switchChatTab(chatTabs[nextIdx].id);
         }
         return;
@@ -5734,9 +5338,7 @@ function App() {
           throw err;
         }
       },
-      createFolder: async (
-        parentPath: string = "knowledge",
-      ): Promise<string> => {
+      createFolder: async (parentPath: string = "knowledge"): Promise<string> => {
         try {
           let index = 1;
           let name = "New folder";
@@ -5856,11 +5458,7 @@ function App() {
         try {
           const parts = oldPath.split("/");
           // For files, ensure .md extension
-          const finalName = isDir
-            ? newName
-            : newName.endsWith(".md")
-              ? newName
-              : `${newName}.md`;
+          const finalName = isDir ? newName : newName.endsWith(".md") ? newName : `${newName}.md`;
           parts[parts.length - 1] = finalName;
           const newPath = parts.join("/");
           await window.ipc.invoke("workspace:rename", {
@@ -5869,17 +5467,9 @@ function App() {
           });
           untitledRenameReadyPathsRef.current.delete(oldPath);
           const rewriteForRename = (content: string) =>
-            isDir
-              ? content
-              : rewriteWikiLinksForRenamedFileInMarkdown(
-                  content,
-                  oldPath,
-                  newPath,
-                );
+            isDir ? content : rewriteWikiLinksForRenamedFileInMarkdown(content, oldPath, newPath);
           setFileTabs((prev) =>
-            prev.map((tab) =>
-              tab.path === oldPath ? { ...tab, path: newPath } : tab,
-            ),
+            prev.map((tab) => (tab.path === oldPath ? { ...tab, path: newPath } : tab)),
           );
           if (editorPathRef.current === oldPath) {
             editorPathRef.current = newPath;
@@ -5893,10 +5483,7 @@ function App() {
           const baseline = initialContentByPathRef.current.get(oldPath);
           if (baseline !== undefined) {
             initialContentByPathRef.current.delete(oldPath);
-            initialContentByPathRef.current.set(
-              newPath,
-              rewriteForRename(baseline),
-            );
+            initialContentByPathRef.current.set(newPath, rewriteForRename(baseline));
           }
           const cachedContent = editorContentByPathRef.current.get(oldPath);
           if (cachedContent !== undefined) {
@@ -5912,14 +5499,10 @@ function App() {
             });
           }
           if (selectedPath === oldPath) {
-            const rewrittenEditorContent = rewriteForRename(
-              editorContentRef.current,
-            );
+            const rewrittenEditorContent = rewriteForRename(editorContentRef.current);
             editorContentRef.current = rewrittenEditorContent;
             setEditorContent(rewrittenEditorContent);
-            initialContentRef.current = rewriteForRename(
-              initialContentRef.current,
-            );
+            initialContentRef.current = rewriteForRename(initialContentRef.current);
           }
           if (selectedPath === oldPath) setSelectedPath(newPath);
         } catch (err) {
@@ -6045,14 +5628,10 @@ function App() {
   );
 
   const meetingNotePathRef = useRef<string | null>(null);
-  const pendingCalendarEventRef = useRef<CalendarEventMeta | undefined>(
-    undefined,
-  );
+  const pendingCalendarEventRef = useRef<CalendarEventMeta | undefined>(undefined);
   const [meetingSummarizing, setMeetingSummarizing] = useState(false);
   const [showMeetingPermissions, setShowMeetingPermissions] = useState(false);
-  const [recordingMeetingSource, setRecordingMeetingSource] = useState<
-    string | null
-  >(null);
+  const [recordingMeetingSource, setRecordingMeetingSource] = useState<string | null>(null);
 
   const [checkingPermission, setCheckingPermission] = useState(false);
 
@@ -6070,10 +5649,7 @@ function App() {
   const handleCheckPermissionAndRetry = useCallback(async () => {
     setCheckingPermission(true);
     try {
-      const { granted } = await window.ipc.invoke(
-        "meeting:checkScreenPermission",
-        null,
-      );
+      const { granted } = await window.ipc.invoke("meeting:checkScreenPermission", null);
       if (granted) {
         setShowMeetingPermissions(false);
         await startMeetingNow();
@@ -6108,9 +5684,7 @@ function App() {
             const meetingStartTime = dateMatch?.[1];
             // If a calendar event was linked, pass it directly so the summarizer
             // skips scanning and uses this event for attendee/title info.
-            const calEventMatch = fileContent.match(
-              /^calendar_event:\s*'(.+)'$/m,
-            );
+            const calEventMatch = fileContent.match(/^calendar_event:\s*'(.+)'$/m);
             const calendarEventJson = calEventMatch?.[1]?.replace(/''/g, "'");
             const { notes } = await window.ipc.invoke("meeting:summarize", {
               transcript: fileContent,
@@ -6124,9 +5698,7 @@ function App() {
               const noteTitle = fmTitleMatch?.[1]?.trim() || "Meeting Notes";
               const cleanedNotes = notes.replace(/^#{1,2}\s+.+\n+/, "");
               // Extract the existing transcript block and preserve it as-is
-              const transcriptBlockMatch = body.match(
-                /(```transcript\n[\s\S]*?\n```)/,
-              );
+              const transcriptBlockMatch = body.match(/(```transcript\n[\s\S]*?\n```)/);
               const transcriptBlock = transcriptBlockMatch?.[1] || "";
               const newBody =
                 `# ${noteTitle}\n\n` +
@@ -6151,10 +5723,7 @@ function App() {
     } else if (meetingTranscription.state === "idle") {
       // On macOS, check screen recording permission before starting
       if (isMac) {
-        const result = await window.ipc.invoke(
-          "meeting:checkScreenPermission",
-          null,
-        );
+        const result = await window.ipc.invoke("meeting:checkScreenPermission", null);
         console.log("[meeting] Permission check result:", result);
         if (!result.granted) {
           setShowMeetingPermissions(true);
@@ -6187,8 +5756,7 @@ function App() {
       handleToggleMeetingRef.current?.();
     };
     window.addEventListener("calendar-block:join-meeting", handler);
-    return () =>
-      window.removeEventListener("calendar-block:join-meeting", handler);
+    return () => window.removeEventListener("calendar-block:join-meeting", handler);
   }, []);
 
   // Email block: draft with assistant
@@ -6202,8 +5770,7 @@ function App() {
       }
     };
     window.addEventListener("email-block:draft-with-assistant", handler);
-    return () =>
-      window.removeEventListener("email-block:draft-with-assistant", handler);
+    return () => window.removeEventListener("email-block:draft-with-assistant", handler);
   }, []);
 
   const resolveWikiFilePath = useCallback(
@@ -6223,12 +5790,9 @@ function App() {
         const targetBaseName = targetPath.split("/").pop()?.toLowerCase();
         const basenameMatches = knowledgeFiles.filter((filePath) => {
           const normalizedFile = normalizeWikiPath(filePath);
-          return (
-            normalizedFile.split("/").pop()?.toLowerCase() === targetBaseName
-          );
+          return normalizedFile.split("/").pop()?.toLowerCase() === targetBaseName;
         });
-        if (basenameMatches.length === 1)
-          return toKnowledgePath(basenameMatches[0]);
+        if (basenameMatches.length === 1) return toKnowledgePath(basenameMatches[0]);
       }
 
       return toKnowledgePath(basePath);
@@ -6330,10 +5894,7 @@ function App() {
           const targetPath = toKnowledgePath(rawTarget);
           if (!targetPath || targetPath === path) continue;
           if (!nodeSet.has(targetPath)) continue;
-          const edgeKey =
-            path < targetPath
-              ? `${path}|${targetPath}`
-              : `${targetPath}|${path}`;
+          const edgeKey = path < targetPath ? `${path}|${targetPath}` : `${targetPath}|${path}`;
           if (edgeKeys.has(edgeKey)) continue;
           edgeKeys.add(edgeKey);
           edges.push({ source: path, target: targetPath });
@@ -6402,9 +5963,7 @@ function App() {
       if (cancelled) return;
       console.error("Failed to build graph:", err);
       setGraphStatus("error");
-      setGraphError(
-        err instanceof Error ? err.message : "Failed to build graph",
-      );
+      setGraphError(err instanceof Error ? err.message : "Failed to build graph");
     });
 
     return () => {
@@ -6467,9 +6026,7 @@ function App() {
       return (
         <Message key={item.id} from={item.role} data-message-id={item.id}>
           <MessageContent>
-            <MessageResponse components={streamdownComponents}>
-              {item.content}
-            </MessageResponse>
+            <MessageResponse components={streamdownComponents}>{item.content}</MessageResponse>
           </MessageContent>
         </Message>
       );
@@ -6497,13 +6054,7 @@ function App() {
       }
       const appActionData = getAppActionCardData(item);
       if (appActionData) {
-        return (
-          <AppActionCard
-            key={item.id}
-            data={appActionData}
-            status={item.status}
-          />
-        );
+        return <AppActionCard key={item.id} data={appActionData} status={item.status} />;
       }
       const webSearchData = getWebSearchCardData(item);
       if (webSearchData) {
@@ -6554,11 +6105,7 @@ function App() {
                 <TerminalOutput raw={item.streamingOutput} />
               </AutoScrollPre>
             ) : (
-              <ToolTabbedContent
-                input={input}
-                output={output}
-                errorText={errorText}
-              />
+              <ToolTabbedContent input={input} output={output} errorText={errorText} />
             )}
           </ToolContent>
         </Tool>
@@ -6572,9 +6119,7 @@ function App() {
       return (
         <Message key={item.id} from="assistant" data-message-id={item.id}>
           <MessageContent className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
-            <pre className="whitespace-pre-wrap font-mono text-xs">
-              {item.message}
-            </pre>
+            <pre className="whitespace-pre-wrap font-mono text-xs">{item.message}</pre>
           </MessageContent>
         </Message>
       );
@@ -6612,12 +6157,7 @@ function App() {
       if (tabId === activeChatTabId) return activeChatTabState;
       return chatViewStateByTab[tabId] ?? emptyChatTabState;
     },
-    [
-      activeChatTabId,
-      activeChatTabState,
-      chatViewStateByTab,
-      emptyChatTabState,
-    ],
+    [activeChatTabId, activeChatTabState, chatViewStateByTab, emptyChatTabState],
   );
   const selectedTask = selectedBackgroundTask
     ? backgroundTasks.find((t) => t.name === selectedBackgroundTask)
@@ -6636,13 +6176,11 @@ function App() {
     isHomeOpen ||
     isBrowserOpen,
   );
-  const isRightPaneOnlyMode =
-    isRightPaneContext && isChatSidebarOpen && isRightPaneMaximized;
+  const isRightPaneOnlyMode = isRightPaneContext && isChatSidebarOpen && isRightPaneMaximized;
   const shouldCollapseLeftPane = isRightPaneOnlyMode;
   const nonChatPaneStyle = React.useMemo<React.CSSProperties>(() => {
     const style: React.CSSProperties = { maxWidth: insetMaxWidth };
-    if (!isRightPaneContext || !isChatSidebarOpen || isRightPaneMaximized)
-      return style;
+    if (!isRightPaneContext || !isChatSidebarOpen || isRightPaneMaximized) return style;
     if (chatPaneSize === "chat-equal") {
       return { ...style, width: 0, flex: "1 1 0" };
     }
@@ -6650,13 +6188,7 @@ function App() {
       return { ...style, width: DEFAULT_CHAT_PANE_WIDTH, flex: "0 0 auto" };
     }
     return style;
-  }, [
-    chatPaneSize,
-    insetMaxWidth,
-    isChatSidebarOpen,
-    isRightPaneContext,
-    isRightPaneMaximized,
-  ]);
+  }, [chatPaneSize, insetMaxWidth, isChatSidebarOpen, isRightPaneContext, isRightPaneMaximized]);
   // Collapsing: pin max-width to the snapshot px (no transition) for one frame so it's
   // binding immediately (no flex jump), then animate to 0. Expanding goes back to 100%
   // — its non-binding range lands at the end of the range, where it isn't visible.
@@ -6681,14 +6213,9 @@ function App() {
   const openMarkdownTabs = React.useMemo(() => {
     const markdownTabs = fileTabs.filter((tab) => tab.path.endsWith(".md"));
     if (selectedPath?.endsWith(".md")) {
-      const hasSelectedTab = markdownTabs.some(
-        (tab) => tab.path === selectedPath,
-      );
+      const hasSelectedTab = markdownTabs.some((tab) => tab.path === selectedPath);
       if (!hasSelectedTab) {
-        return [
-          ...markdownTabs,
-          { id: "__active-markdown-tab__", path: selectedPath },
-        ];
+        return [...markdownTabs, { id: "__active-markdown-tab__", path: selectedPath }];
       }
     }
     return markdownTabs;
@@ -6740,8 +6267,7 @@ function App() {
                       ? "meetings"
                       : isKnowledgeViewOpen ||
                           isGraphOpen ||
-                          (selectedPath != null &&
-                            selectedPath.startsWith("knowledge/"))
+                          (selectedPath != null && selectedPath.startsWith("knowledge/"))
                         ? "knowledge"
                         : isBgTasksOpen
                           ? "agents"
@@ -6761,9 +6287,7 @@ function App() {
                 openBgTasksView();
               }}
               recentRuns={runs}
-              onOpenRun={(rid) =>
-                void navigateToView({ type: "chat", runId: rid })
-              }
+              onOpenRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
               onOpenEmail={(threadId) => openEmailView(threadId)}
               onOpenHome={() => void navigateToView({ type: "home" })}
               onNewChat={handleNewChatTab}
@@ -6779,8 +6303,7 @@ function App() {
               className={cn(
                 "overflow-hidden! min-h-0 min-w-0",
                 isRightPaneContext && isChatPaneInMiddle && "order-3",
-                insetAnimateMaxWidth &&
-                  "transition-[max-width] duration-200 ease-linear",
+                insetAnimateMaxWidth && "transition-[max-width] duration-200 ease-linear",
                 shouldCollapseLeftPane && "pointer-events-none select-none",
               )}
               style={nonChatPaneStyle}
@@ -6837,22 +6360,14 @@ function App() {
                 ) : isFullScreenChat ? (
                   <ChatHeader
                     activeTitle={(() => {
-                      const activeTab = chatTabs.find(
-                        (t) => t.id === activeChatTabId,
-                      );
-                      return activeTab
-                        ? getChatTabTitle(activeTab)
-                        : "New chat";
+                      const activeTab = chatTabs.find((t) => t.id === activeChatTabId);
+                      return activeTab ? getChatTabTitle(activeTab) : "New chat";
                     })()}
                     onNewChatTab={handleNewChatTab}
                     recentRuns={runs}
                     activeRunId={runId}
-                    onSelectRun={(rid) =>
-                      void navigateToView({ type: "chat", runId: rid })
-                    }
-                    onOpenChatHistory={() =>
-                      void navigateToView({ type: "chat-history" })
-                    }
+                    onSelectRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
+                    onOpenChatHistory={() => void navigateToView({ type: "chat-history" })}
                   />
                 ) : (
                   <TabBar
@@ -6904,9 +6419,7 @@ function App() {
                           <HistoryIcon className="size-4" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        Version history
-                      </TooltipContent>
+                      <TooltipContent side="bottom">Version history</TooltipContent>
                     </Tooltip>
                   )}
                 {!isFullScreenChat &&
@@ -6995,11 +6508,7 @@ function App() {
                           {action?.icon}
                         </button>
                       </TooltipTrigger>
-                      {action && (
-                        <TooltipContent side="bottom">
-                          {action.label}
-                        </TooltipContent>
-                      )}
+                      {action && <TooltipContent side="bottom">{action.label}</TooltipContent>}
                     </Tooltip>
                   );
                 })()}
@@ -7029,9 +6538,7 @@ function App() {
                       openBgTasksView();
                     }}
                     onOpenNote={(path) => navigateToFile(path)}
-                    onOpenRun={(rid) =>
-                      void navigateToView({ type: "chat", runId: rid })
-                    }
+                    onOpenRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
                     onTakeMeetingNotes={() => {
                       void handleToggleMeeting();
                     }}
@@ -7073,10 +6580,7 @@ function App() {
                     initialSlug={bgTaskInitialSlug}
                     slugVersion={bgTaskSlugVersion}
                     onCreateWithCopilot={(description) => {
-                      submitFromPalette(
-                        buildBgTaskSetupPrompt(description),
-                        null,
-                      );
+                      submitFromPalette(buildBgTaskSetupPrompt(description), null);
                     }}
                     onEditWithCopilot={(slug) => {
                       submitFromPalette(buildBgTaskEditPrompt(slug), null);
@@ -7151,9 +6655,7 @@ function App() {
                     runs={runs}
                     currentRunId={runId}
                     processingRunIds={processingRunIds}
-                    onSelectRun={(rid) =>
-                      void navigateToView({ type: "chat", runId: rid })
-                    }
+                    onSelectRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
                     onDeleteRun={async (rid) => {
                       try {
                         await window.ipc.invoke("runs:delete", { runId: rid });
@@ -7171,18 +6673,12 @@ function App() {
                   <BasesView
                     tree={tree}
                     onSelectNote={(path) => navigateToFile(path)}
-                    config={
-                      baseConfigByPath[selectedPath] ?? DEFAULT_BASE_CONFIG
-                    }
-                    onConfigChange={(cfg) =>
-                      handleBaseConfigChange(selectedPath, cfg)
-                    }
+                    config={baseConfigByPath[selectedPath] ?? DEFAULT_BASE_CONFIG}
+                    onConfigChange={(cfg) => handleBaseConfigChange(selectedPath, cfg)}
                     isDefaultBase={selectedPath === BASES_DEFAULT_TAB_PATH}
                     onSave={(name) => void handleBaseSave(name)}
                     externalSearch={externalBaseSearch}
-                    onExternalSearchConsumed={() =>
-                      setExternalBaseSearch(undefined)
-                    }
+                    onExternalSearchConsumed={() => setExternalBaseSearch(undefined)}
                     actions={{
                       rename: knowledgeActions.rename,
                       remove: knowledgeActions.remove,
@@ -7197,11 +6693,7 @@ function App() {
                     nodes={graphData.nodes}
                     edges={graphData.edges}
                     isLoading={false}
-                    error={
-                      graphStatus === "error"
-                        ? (graphError ?? "Failed to build graph")
-                        : null
-                    }
+                    error={graphStatus === "error" ? (graphError ?? "Failed to build graph") : null}
                     onSelectNode={(path) => {
                       navigateToFile(path);
                     }}
@@ -7213,9 +6705,7 @@ function App() {
                   <div
                     className="flex-1 min-h-0 overflow-hidden"
                     style={{
-                      display: isCacheableViewerPath(selectedPath)
-                        ? "block"
-                        : "none",
+                      display: isCacheableViewerPath(selectedPath) ? "block" : "none",
                     }}
                   >
                     <PersistentViewerCache activePath={selectedPath} />
@@ -7226,8 +6716,7 @@ function App() {
                         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                           {openMarkdownTabs.map((tab) => {
                             const isActive = activeFileTabId
-                              ? tab.id === activeFileTabId ||
-                                tab.path === selectedPath
+                              ? tab.id === activeFileTabId || tab.path === selectedPath
                               : tab.path === selectedPath;
                             const isViewingHistory =
                               viewingHistoricalVersion &&
@@ -7251,21 +6740,16 @@ function App() {
                               >
                                 <MarkdownEditor
                                   ref={(el) => {
-                                    if (el)
-                                      editorRefsByTabId.current.set(tab.id, el);
-                                    else
-                                      editorRefsByTabId.current.delete(tab.id);
+                                    if (el) editorRefsByTabId.current.set(tab.id, el);
+                                    else editorRefsByTabId.current.delete(tab.id);
                                   }}
                                   content={tabContent}
                                   notePath={tab.path}
                                   onChange={(markdown) => {
-                                    if (!isViewingHistory)
-                                      handleEditorChange(tab.path, markdown);
+                                    if (!isViewingHistory) handleEditorChange(tab.path, markdown);
                                   }}
                                   onPrimaryHeadingCommit={() => {
-                                    untitledRenameReadyPathsRef.current.add(
-                                      tab.path,
-                                    );
+                                    untitledRenameReadyPathsRef.current.add(tab.path);
                                   }}
                                   preserveUntitledTitleHeading={isUntitledPlaceholderName(
                                     getBaseName(tab.path),
@@ -7273,51 +6757,29 @@ function App() {
                                   placeholder="Start writing..."
                                   wikiLinks={wikiLinkConfig}
                                   onImageUpload={handleImageUpload}
-                                  editorSessionKey={
-                                    editorSessionByTabId[tab.id] ?? 0
-                                  }
-                                  frontmatter={
-                                    frontmatterByPathRef.current.get(
-                                      tab.path,
-                                    ) ?? null
-                                  }
+                                  editorSessionKey={editorSessionByTabId[tab.id] ?? 0}
+                                  frontmatter={frontmatterByPathRef.current.get(tab.path) ?? null}
                                   onFrontmatterChange={(newRaw) => {
-                                    frontmatterByPathRef.current.set(
-                                      tab.path,
-                                      newRaw,
-                                    );
+                                    frontmatterByPathRef.current.set(tab.path, newRaw);
                                     // Write updated frontmatter to disk immediately
-                                    const currentBody =
-                                      editorContentRef.current;
-                                    const fullContent = joinFrontmatter(
-                                      newRaw,
-                                      currentBody,
-                                    );
+                                    const currentBody = editorContentRef.current;
+                                    const fullContent = joinFrontmatter(newRaw, currentBody);
                                     initialContentByPathRef.current.set(
                                       tab.path,
                                       splitFrontmatter(fullContent).body,
                                     );
-                                    initialContentRef.current =
-                                      splitFrontmatter(fullContent).body;
-                                    void window.ipc.invoke(
-                                      "workspace:writeFile",
-                                      {
-                                        path: tab.path,
-                                        data: fullContent,
-                                        opts: { encoding: "utf8" },
-                                      },
-                                    );
+                                    initialContentRef.current = splitFrontmatter(fullContent).body;
+                                    void window.ipc.invoke("workspace:writeFile", {
+                                      path: tab.path,
+                                      data: fullContent,
+                                      opts: { encoding: "utf8" },
+                                    });
                                   }}
                                   onHistoryHandlersChange={(handlers) => {
                                     if (handlers) {
-                                      fileHistoryHandlersRef.current.set(
-                                        tab.id,
-                                        handlers,
-                                      );
+                                      fileHistoryHandlersRef.current.set(tab.id, handlers);
                                     } else {
-                                      fileHistoryHandlersRef.current.delete(
-                                        tab.id,
-                                      );
+                                      fileHistoryHandlersRef.current.delete(tab.id);
                                     }
                                   }}
                                   editable={!isViewingHistory}
@@ -7361,53 +6823,38 @@ function App() {
                             onRestore={async (oid) => {
                               try {
                                 await window.ipc.invoke("knowledge:restore", {
-                                  path: versionHistoryPath.startsWith(
-                                    "knowledge/",
-                                  )
-                                    ? versionHistoryPath.slice(
-                                        "knowledge/".length,
-                                      )
+                                  path: versionHistoryPath.startsWith("knowledge/")
+                                    ? versionHistoryPath.slice("knowledge/".length)
                                     : versionHistoryPath,
                                   oid,
                                 });
                                 // Reload file content
-                                const result = await window.ipc.invoke(
-                                  "workspace:readFile",
-                                  { path: versionHistoryPath },
-                                );
-                                handleEditorChange(
-                                  versionHistoryPath,
-                                  result.data,
-                                );
+                                const result = await window.ipc.invoke("workspace:readFile", {
+                                  path: versionHistoryPath,
+                                });
+                                handleEditorChange(versionHistoryPath, result.data);
                                 setViewingHistoricalVersion(null);
                                 setVersionHistoryPath(null);
                               } catch (err) {
-                                console.error(
-                                  "Failed to restore version:",
-                                  err,
-                                );
+                                console.error("Failed to restore version:", err);
                               }
                             }}
                           />
                         )}
                       </div>
-                    ) : selectedPath &&
-                      getViewerType(selectedPath) === "image" ? (
+                    ) : selectedPath && getViewerType(selectedPath) === "image" ? (
                       <div className="flex-1 min-h-0 overflow-hidden">
                         <ImageFileViewer path={selectedPath} />
                       </div>
-                    ) : selectedPath &&
-                      getViewerType(selectedPath) === "video" ? (
+                    ) : selectedPath && getViewerType(selectedPath) === "video" ? (
                       <div className="flex-1 min-h-0 overflow-hidden">
                         <VideoFileViewer path={selectedPath} />
                       </div>
-                    ) : selectedPath &&
-                      getViewerType(selectedPath) === "audio" ? (
+                    ) : selectedPath && getViewerType(selectedPath) === "audio" ? (
                       <div className="flex-1 min-h-0 overflow-hidden">
                         <AudioFileViewer path={selectedPath} />
                       </div>
-                    ) : selectedPath &&
-                      getViewerType(selectedPath) === "docx" ? (
+                    ) : selectedPath && getViewerType(selectedPath) === "docx" ? (
                       <div className="flex-1 min-h-0 overflow-hidden">
                         <DocxFileViewer path={selectedPath} />
                       </div>
@@ -7446,12 +6893,10 @@ function App() {
                         const isActive = tab.id === activeChatTabId;
                         const tabState = getChatTabStateForRender(tab.id);
                         const tabHasConversation =
-                          tabState.conversation.length > 0 ||
-                          tabState.currentAssistantMessage;
-                        const tabConversationContentClassName =
-                          tabHasConversation
-                            ? "mx-auto w-full max-w-4xl pb-28"
-                            : "mx-auto w-full max-w-4xl min-h-full items-center justify-center pb-0";
+                          tabState.conversation.length > 0 || tabState.currentAssistantMessage;
+                        const tabConversationContentClassName = tabHasConversation
+                          ? "mx-auto w-full max-w-4xl pb-28"
+                          : "mx-auto w-full max-w-4xl min-h-full items-center justify-center pb-0";
                         return (
                           <div
                             key={tab.id}
@@ -7465,17 +6910,11 @@ function App() {
                             aria-hidden={!isActive}
                           >
                             <Conversation
-                              anchorMessageId={
-                                chatViewportAnchorByTab[tab.id]?.messageId
-                              }
-                              anchorRequestKey={
-                                chatViewportAnchorByTab[tab.id]?.requestKey
-                              }
+                              anchorMessageId={chatViewportAnchorByTab[tab.id]?.messageId}
+                              anchorRequestKey={chatViewportAnchorByTab[tab.id]?.requestKey}
                               className="relative flex-1"
                             >
-                              <ConversationContent
-                                className={tabConversationContentClassName}
-                              >
+                              <ConversationContent className={tabConversationContentClassName}>
                                 {!tabHasConversation ? (
                                   <ChatEmptyState
                                     wide
@@ -7498,12 +6937,8 @@ function App() {
                                     {groupConversationItems(
                                       tabState.conversation,
                                       (id) =>
-                                        !!tabState.allPermissionRequests.get(
-                                          id,
-                                        ) ||
-                                        !!tabState.autoPermissionDecisions.get(
-                                          id,
-                                        ),
+                                        !!tabState.allPermissionRequests.get(id) ||
+                                        !!tabState.autoPermissionDecisions.get(id),
                                     ).map((item) => {
                                       if (isToolGroup(item)) {
                                         return (
@@ -7514,19 +6949,13 @@ function App() {
                                               isToolOpenForTab(tab.id, toolId)
                                             }
                                             onToolOpenChange={(toolId, open) =>
-                                              setToolOpenForTab(
-                                                tab.id,
-                                                toolId,
-                                                open,
-                                              )
+                                              setToolOpenForTab(tab.id, toolId, open)
                                             }
                                           />
                                         );
                                       }
                                       const autoDecision = isToolCall(item)
-                                        ? tabState.autoPermissionDecisions.get(
-                                            item.id,
-                                          )
+                                        ? tabState.autoPermissionDecisions.get(item.id)
                                         : undefined;
                                       const rendered = renderConversationItem(
                                         item,
@@ -7542,56 +6971,37 @@ function App() {
                                       );
                                       if (isToolCall(item)) {
                                         const deniedAutoDecision =
-                                          autoDecision?.decision === "deny"
-                                            ? autoDecision
-                                            : null;
-                                        const permRequest =
-                                          tabState.allPermissionRequests.get(
-                                            item.id,
-                                          );
+                                          autoDecision?.decision === "deny" ? autoDecision : null;
+                                        const permRequest = tabState.allPermissionRequests.get(
+                                          item.id,
+                                        );
                                         if (deniedAutoDecision || permRequest) {
                                           const response =
-                                            tabState.permissionResponses.get(
-                                              item.id,
-                                            ) || null;
+                                            tabState.permissionResponses.get(item.id) || null;
                                           return (
                                             <React.Fragment key={item.id}>
                                               {deniedAutoDecision && (
                                                 <AutoPermissionDecision
-                                                  toolCall={
-                                                    deniedAutoDecision.toolCall
-                                                  }
-                                                  permission={
-                                                    deniedAutoDecision.permission
-                                                  }
-                                                  decision={
-                                                    deniedAutoDecision.decision
-                                                  }
-                                                  reason={
-                                                    deniedAutoDecision.reason
-                                                  }
+                                                  toolCall={deniedAutoDecision.toolCall}
+                                                  permission={deniedAutoDecision.permission}
+                                                  decision={deniedAutoDecision.decision}
+                                                  reason={deniedAutoDecision.reason}
                                                 />
                                               )}
                                               {permRequest && (
                                                 <PermissionRequest
-                                                  toolCall={
-                                                    permRequest.toolCall
-                                                  }
-                                                  permission={
-                                                    permRequest.permission
-                                                  }
+                                                  toolCall={permRequest.toolCall}
+                                                  permission={permRequest.permission}
                                                   onApprove={() =>
                                                     handlePermissionResponse(
-                                                      permRequest.toolCall
-                                                        .toolCallId,
+                                                      permRequest.toolCall.toolCallId,
                                                       permRequest.subflow,
                                                       "approve",
                                                     )
                                                   }
                                                   onApproveSession={() =>
                                                     handlePermissionResponse(
-                                                      permRequest.toolCall
-                                                        .toolCallId,
+                                                      permRequest.toolCall.toolCallId,
                                                       permRequest.subflow,
                                                       "approve",
                                                       "session",
@@ -7599,8 +7009,7 @@ function App() {
                                                   }
                                                   onApproveAlways={() =>
                                                     handlePermissionResponse(
-                                                      permRequest.toolCall
-                                                        .toolCallId,
+                                                      permRequest.toolCall.toolCallId,
                                                       permRequest.subflow,
                                                       "approve",
                                                       "always",
@@ -7608,42 +7017,32 @@ function App() {
                                                   }
                                                   onDeny={() =>
                                                     handlePermissionResponse(
-                                                      permRequest.toolCall
-                                                        .toolCallId,
+                                                      permRequest.toolCall.toolCallId,
                                                       permRequest.subflow,
                                                       "deny",
                                                     )
                                                   }
-                                                  onSwitchAgent={async (
-                                                    newAgent,
-                                                  ) => {
-                                                    const runIdForSwitch =
-                                                      tab.runId;
+                                                  onSwitchAgent={async (newAgent) => {
+                                                    const runIdForSwitch = tab.runId;
                                                     await handlePermissionResponse(
-                                                      permRequest.toolCall
-                                                        .toolCallId,
+                                                      permRequest.toolCall.toolCallId,
                                                       permRequest.subflow,
                                                       "deny",
                                                     );
                                                     window.dispatchEvent(
-                                                      new CustomEvent(
-                                                        "code-mode-detected",
-                                                        {
-                                                          detail: {
-                                                            runId:
-                                                              runIdForSwitch,
-                                                            agent: newAgent,
-                                                          },
+                                                      new CustomEvent("code-mode-detected", {
+                                                        detail: {
+                                                          runId: runIdForSwitch,
+                                                          agent: newAgent,
                                                         },
-                                                      ),
+                                                      }),
                                                     );
                                                     if (runIdForSwitch) {
                                                       try {
                                                         await window.ipc.invoke(
                                                           "runs:createMessage",
                                                           {
-                                                            runId:
-                                                              runIdForSwitch,
+                                                            runId: runIdForSwitch,
                                                             message: `Use ${newAgent === "claude" ? "Claude Code" : "Codex"} instead — rerun the same task with the same prompt, just swap the agent binary to \`${newAgent}\`.`,
                                                             codeMode: newAgent,
                                                           },
@@ -7656,9 +7055,7 @@ function App() {
                                                       }
                                                     }
                                                   }}
-                                                  isProcessing={
-                                                    isActive && isProcessing
-                                                  }
+                                                  isProcessing={isActive && isProcessing}
                                                   response={response}
                                                 />
                                               )}
@@ -7670,23 +7067,23 @@ function App() {
                                       return rendered;
                                     })}
 
-                                    {Array.from(
-                                      tabState.pendingAskHumanRequests.values(),
-                                    ).map((request) => (
-                                      <AskHumanRequest
-                                        key={request.toolCallId}
-                                        query={request.query}
-                                        options={request.options}
-                                        onResponse={(response) =>
-                                          handleAskHumanResponse(
-                                            request.toolCallId,
-                                            request.subflow,
-                                            response,
-                                          )
-                                        }
-                                        isProcessing={isActive && isProcessing}
-                                      />
-                                    ))}
+                                    {Array.from(tabState.pendingAskHumanRequests.values()).map(
+                                      (request) => (
+                                        <AskHumanRequest
+                                          key={request.toolCallId}
+                                          query={request.query}
+                                          options={request.options}
+                                          onResponse={(response) =>
+                                            handleAskHumanResponse(
+                                              request.toolCallId,
+                                              request.subflow,
+                                              response,
+                                            )
+                                          }
+                                          isProcessing={isActive && isProcessing}
+                                        />
+                                      ),
+                                    )}
 
                                     {tabState.currentAssistantMessage && (
                                       <Message from="assistant">
@@ -7707,9 +7104,7 @@ function App() {
                                       !tabState.currentAssistantMessage && (
                                         <Message from="assistant">
                                           <MessageContent>
-                                            <Shimmer duration={1}>
-                                              Thinking...
-                                            </Shimmer>
+                                            <Shimmer duration={1}>Thinking...</Shimmer>
                                           </MessageContent>
                                         </Message>
                                       )}
@@ -7745,39 +7140,24 @@ function App() {
                                 isProcessing={isActive && isProcessing}
                                 isStopping={isActive && isStopping}
                                 isActive={isActive}
-                                presetMessage={
-                                  isActive ? presetMessage : undefined
-                                }
+                                presetMessage={isActive ? presetMessage : undefined}
                                 onPresetMessageConsumed={
-                                  isActive
-                                    ? () => setPresetMessage(undefined)
-                                    : undefined
+                                  isActive ? () => setPresetMessage(undefined) : undefined
                                 }
                                 runId={tabState.runId}
                                 initialDraft={chatDraftsRef.current.get(tab.id)}
-                                onDraftChange={(text) =>
-                                  setChatDraftForTab(tab.id, text)
-                                }
+                                onDraftChange={(text) => setChatDraftForTab(tab.id, text)}
                                 onSelectedModelChange={(m) => {
                                   if (m) {
-                                    selectedModelByTabRef.current.set(
-                                      tab.id,
-                                      m,
-                                    );
+                                    selectedModelByTabRef.current.set(tab.id, m);
                                   } else {
-                                    selectedModelByTabRef.current.delete(
-                                      tab.id,
-                                    );
+                                    selectedModelByTabRef.current.delete(tab.id);
                                   }
                                 }}
                                 workDir={workDirByTab[tab.id] ?? null}
-                                onWorkDirChange={(v) =>
-                                  setTabWorkDir(tab.id, v)
-                                }
+                                onWorkDirChange={(v) => setTabWorkDir(tab.id, v)}
                                 isRecording={isActive && isRecording}
-                                recordingText={
-                                  isActive ? voice.interimText : undefined
-                                }
+                                recordingText={isActive ? voice.interimText : undefined}
                                 recordingState={
                                   isActive
                                     ? voice.state === "connecting"
@@ -7785,25 +7165,15 @@ function App() {
                                       : "listening"
                                     : undefined
                                 }
-                                onStartRecording={
-                                  isActive ? handleStartRecording : undefined
-                                }
-                                onSubmitRecording={
-                                  isActive ? handleSubmitRecording : undefined
-                                }
-                                onCancelRecording={
-                                  isActive ? handleCancelRecording : undefined
-                                }
+                                onStartRecording={isActive ? handleStartRecording : undefined}
+                                onSubmitRecording={isActive ? handleSubmitRecording : undefined}
+                                onCancelRecording={isActive ? handleCancelRecording : undefined}
                                 voiceAvailable={isActive && voiceAvailable}
                                 ttsAvailable={isActive && ttsAvailable}
                                 ttsEnabled={ttsEnabled}
                                 ttsMode={ttsMode}
-                                onToggleTts={
-                                  isActive ? handleToggleTts : undefined
-                                }
-                                onTtsModeChange={
-                                  isActive ? handleTtsModeChange : undefined
-                                }
+                                onToggleTts={isActive ? handleToggleTts : undefined}
+                                onTtsModeChange={isActive ? handleTtsModeChange : undefined}
                               />
                             </div>
                           );
@@ -7836,15 +7206,11 @@ function App() {
                     return;
                   }
                   setChatTabs((prev) =>
-                    prev.map((t) =>
-                      t.id === activeChatTabId ? { ...t, runId: rid } : t,
-                    ),
+                    prev.map((t) => (t.id === activeChatTabId ? { ...t, runId: rid } : t)),
                   );
                   loadRun(rid);
                 }}
-                onOpenChatHistory={() =>
-                  void navigateToView({ type: "chat-history" })
-                }
+                onOpenChatHistory={() => void navigateToView({ type: "chat-history" })}
                 onOpenFullScreen={toggleRightPaneMaximize}
                 conversation={conversation}
                 currentAssistantMessage={currentAssistantMessage}
@@ -7886,9 +7252,7 @@ function App() {
                 collapsedLeftPaddingPx={collapsedLeftPaddingPx}
                 isRecording={isRecording}
                 recordingText={voice.interimText}
-                recordingState={
-                  voice.state === "connecting" ? "connecting" : "listening"
-                }
+                recordingState={voice.state === "connecting" ? "connecting" : "listening"}
                 onStartRecording={handleStartRecording}
                 onSubmitRecording={handleSubmitRecording}
                 onCancelRecording={handleCancelRecording}
@@ -7902,9 +7266,7 @@ function App() {
               />
             )}
             {/* Rendered last so its no-drag region paints over the sidebar drag region */}
-            <FixedSidebarToggle
-              leftInsetPx={isMac ? MACOS_TRAFFIC_LIGHTS_RESERVED_PX : 0}
-            />
+            <FixedSidebarToggle leftInsetPx={isMac ? MACOS_TRAFFIC_LIGHTS_RESERVED_PX : 0} />
           </SidebarProvider>
         </div>
         <CommandPalette
@@ -7926,10 +7288,7 @@ function App() {
         match={billingErrorMatch}
         onOpenChange={setBillingErrorOpen}
       />
-      <OnboardingModal
-        open={showOnboarding}
-        onComplete={handleOnboardingComplete}
-      />
+      <OnboardingModal open={showOnboarding} onComplete={handleOnboardingComplete} />
       <ComposioGoogleMigrationModal
         open={showComposioGoogleMigration}
         onOpenChange={setShowComposioGoogleMigration}
@@ -7941,25 +7300,20 @@ function App() {
           void window.ipc.invoke("oauth:connect", { provider: "google" });
         }}
       />
-      <Dialog
-        open={showMeetingPermissions}
-        onOpenChange={setShowMeetingPermissions}
-      >
+      <Dialog open={showMeetingPermissions} onOpenChange={setShowMeetingPermissions}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Screen recording permission required</DialogTitle>
             <DialogDescription>
-              {PRODUCT_NAME} needs <strong>Screen Recording</strong> permission
-              to capture meeting audio from other apps (Zoom, Meet, etc.). This
-              feature won't work without it.
+              {PRODUCT_NAME} needs <strong>Screen Recording</strong> permission to capture meeting
+              audio from other apps (Zoom, Meet, etc.). This feature won't work without it.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>To enable this:</p>
             <ol className="list-decimal list-inside space-y-1.5">
               <li>
-                Open <strong>System Settings</strong> →{" "}
-                <strong>Privacy & Security</strong> →{" "}
+                Open <strong>System Settings</strong> → <strong>Privacy & Security</strong> →{" "}
                 <strong>Screen Recording</strong>
               </li>
               <li>
@@ -7969,10 +7323,7 @@ function App() {
             </ol>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowMeetingPermissions(false)}
-            >
+            <Button variant="outline" onClick={() => setShowMeetingPermissions(false)}>
               Cancel
             </Button>
             <Button

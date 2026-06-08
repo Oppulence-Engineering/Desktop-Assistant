@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   RefreshCw,
   PanelRight,
+  AudioLines,
 } from "@/lib/icons";
 
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -49,6 +50,7 @@ import { useTheme } from "@/contexts/theme-context";
 import { toast } from "sonner";
 import { AccountSettings } from "@/components/settings/account-settings";
 import { ConnectedAccountsSettings } from "@/components/settings/connected-accounts-settings";
+import { TranscriptionSettings } from "@/components/settings/transcription-settings";
 import {
   PRODUCT_NAME,
   PRODUCT_PROVIDER_ID,
@@ -60,6 +62,7 @@ type ConfigTab =
   | "account"
   | "connections"
   | "models"
+  | "transcription"
   | "mcp"
   | "security"
   | "code-mode"
@@ -94,6 +97,12 @@ const tabs: TabConfig[] = [
     icon: Key,
     path: "config/models.json",
     description: "Configure LLM providers and API keys",
+  },
+  {
+    id: "transcription",
+    label: "Transcription",
+    icon: AudioLines,
+    description: "Choose on-device or cloud speech-to-text",
   },
   {
     id: "mcp",
@@ -153,9 +162,7 @@ function HelpSettings() {
     <div className="space-y-4">
       <div>
         <h4 className="text-sm font-medium">Help &amp; Support</h4>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Get help from our community
-        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">Get help from our community</p>
       </div>
       <Button
         variant="outline"
@@ -180,18 +187,14 @@ function HelpSettings() {
       <Button
         variant="outline"
         className="w-full justify-start gap-3 h-auto py-3"
-        onClick={() =>
-          window.open("https://discord.com/invite/wajrgmJQ6b", "_blank")
-        }
+        onClick={() => window.open("https://discord.com/invite/wajrgmJQ6b", "_blank")}
       >
         <div className="flex size-8 items-center justify-center rounded-none bg-[#5865F2]">
           <MessageCircle className="size-4 text-white" />
         </div>
         <div className="flex flex-col items-start">
           <span className="text-sm font-medium">Join our Discord</span>
-          <span className="text-xs text-muted-foreground">
-            Chat with the community
-          </span>
+          <span className="text-xs text-muted-foreground">Chat with the community</span>
         </div>
       </Button>
       <Button
@@ -204,9 +207,7 @@ function HelpSettings() {
         </div>
         <div className="flex flex-col items-start">
           <span className="text-sm font-medium">Contact us</span>
-          <span className="text-xs text-muted-foreground">
-            contact@solomon-ai.co
-          </span>
+          <span className="text-xs text-muted-foreground">contact@solomon-ai.co</span>
         </div>
       </Button>
       <div className="flex gap-3 text-xs text-muted-foreground">
@@ -255,18 +256,8 @@ function ThemeOption({
           : "border-border hover:border-primary/50 hover:bg-muted/50",
       )}
     >
-      <Icon
-        className={cn(
-          "size-6",
-          isSelected ? "text-primary" : "text-muted-foreground",
-        )}
-      />
-      <span
-        className={cn(
-          "text-sm font-medium",
-          isSelected ? "text-primary" : "text-foreground",
-        )}
-      >
+      <Icon className={cn("size-6", isSelected ? "text-primary" : "text-muted-foreground")} />
+      <span className={cn("text-sm font-medium", isSelected ? "text-primary" : "text-foreground")}>
         {label}
       </span>
     </button>
@@ -287,9 +278,7 @@ function AppearanceSettings() {
     <div className="space-y-6">
       <div>
         <h4 className="text-sm font-medium mb-3">Theme</h4>
-        <p className="text-xs text-muted-foreground mb-4">
-          Select your preferred color scheme
-        </p>
+        <p className="text-xs text-muted-foreground mb-4">Select your preferred color scheme</p>
         <div className="grid grid-cols-3 gap-3">
           <ThemeOption
             label="Light"
@@ -431,8 +420,7 @@ type ProviderModelConfig = {
 
 function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [provider, setProvider] = useState<LlmProviderFlavor>("openai");
-  const [defaultProvider, setDefaultProvider] =
-    useState<LlmProviderFlavor | null>(null);
+  const [defaultProvider, setDefaultProvider] = useState<LlmProviderFlavor | null>(null);
   const [providerConfigs, setProviderConfigs] = useState<
     Record<LlmProviderFlavor, ProviderModelConfig>
   >({
@@ -500,9 +488,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
       autoPermissionDecisionModel: "",
     },
   });
-  const [modelsCatalog, setModelsCatalog] = useState<
-    Record<string, LlmModelOption[]>
-  >({});
+  const [modelsCatalog, setModelsCatalog] = useState<Record<string, LlmModelOption[]>>({});
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState<string | null>(null);
   const [testState, setTestState] = useState<{
@@ -527,13 +513,9 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
     provider === "openrouter" ||
     provider === "aigateway";
   const showBaseURL =
-    provider === "ollama" ||
-    provider === "openai-compatible" ||
-    provider === "aigateway";
-  const requiresBaseURL =
-    provider === "ollama" || provider === "openai-compatible";
-  const isLocalProvider =
-    provider === "ollama" || provider === "openai-compatible";
+    provider === "ollama" || provider === "openai-compatible" || provider === "aigateway";
+  const requiresBaseURL = provider === "ollama" || provider === "openai-compatible";
+  const isLocalProvider = provider === "ollama" || provider === "openai-compatible";
   const modelsForProvider = modelsCatalog[provider] || [];
   const showModelInput = isLocalProvider || modelsForProvider.length === 0;
   const isMoreProvider = moreProviders.some((p) => p.id === provider);
@@ -555,17 +537,14 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
     [],
   );
 
-  const updateModelAt = useCallback(
-    (prov: LlmProviderFlavor, index: number, value: string) => {
-      setProviderConfigs((prev) => {
-        const models = [...prev[prov].models];
-        models[index] = value;
-        return { ...prev, [prov]: { ...prev[prov], models } };
-      });
-      setTestState({ status: "idle" });
-    },
-    [],
-  );
+  const updateModelAt = useCallback((prov: LlmProviderFlavor, index: number, value: string) => {
+    setProviderConfigs((prev) => {
+      const models = [...prev[prov].models];
+      models[index] = value;
+      return { ...prev, [prov]: { ...prev[prov], models } };
+    });
+    setTestState({ status: "idle" });
+  }, []);
 
   const addModel = useCallback((prov: LlmProviderFlavor) => {
     setProviderConfigs((prev) => ({
@@ -615,16 +594,12 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
                         : [""];
                   next[key as LlmProviderFlavor] = {
                     apiKey: e.apiKey || "",
-                    baseURL:
-                      e.baseURL ||
-                      defaultBaseURLs[key as LlmProviderFlavor] ||
-                      "",
+                    baseURL: e.baseURL || defaultBaseURLs[key as LlmProviderFlavor] || "",
                     models: savedModels,
                     knowledgeGraphModel: e.knowledgeGraphModel || "",
                     meetingNotesModel: e.meetingNotesModel || "",
                     liveNoteAgentModel: e.liveNoteAgentModel || "",
-                    autoPermissionDecisionModel:
-                      e.autoPermissionDecisionModel || "",
+                    autoPermissionDecisionModel: e.autoPermissionDecisionModel || "",
                   };
                 }
               }
@@ -638,20 +613,16 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   ? existingModels
                   : [
                       parsed.model,
-                      ...existingModels.filter(
-                        (m: string) => m && m !== parsed.model,
-                      ),
+                      ...existingModels.filter((m: string) => m && m !== parsed.model),
                     ];
               next[flavor] = {
                 apiKey: parsed.provider.apiKey || "",
-                baseURL:
-                  parsed.provider.baseURL || defaultBaseURLs[flavor] || "",
+                baseURL: parsed.provider.baseURL || defaultBaseURLs[flavor] || "",
                 models: activeModels.length > 0 ? activeModels : [""],
                 knowledgeGraphModel: parsed.knowledgeGraphModel || "",
                 meetingNotesModel: parsed.meetingNotesModel || "",
                 liveNoteAgentModel: parsed.liveNoteAgentModel || "",
-                autoPermissionDecisionModel:
-                  parsed.autoPermissionDecisionModel || "",
+                autoPermissionDecisionModel: parsed.autoPermissionDecisionModel || "",
               };
             }
             return next;
@@ -697,17 +668,12 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
     if (Object.keys(modelsCatalog).length === 0) return;
     setProviderConfigs((prev) => {
       const next = { ...prev };
-      const cloudProviders: LlmProviderFlavor[] = [
-        "openai",
-        "anthropic",
-        "google",
-      ];
+      const cloudProviders: LlmProviderFlavor[] = ["openai", "anthropic", "google"];
       for (const prov of cloudProviders) {
         const catalog = modelsCatalog[prov];
         if (catalog?.length && !next[prov].models[0]) {
           const preferred = preferredDefaults[prov];
-          const hasPreferred =
-            preferred && catalog.some((m) => m.id === preferred);
+          const hasPreferred = preferred && catalog.some((m) => m.id === preferred);
           const defaultModel = hasPreferred ? preferred! : catalog[0]?.id || "";
           next[prov] = { ...next[prov], models: [defaultModel] };
         }
@@ -720,9 +686,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
     if (!canTest) return;
     setTestState({ status: "testing" });
     try {
-      const allModels = activeConfig.models
-        .map((m) => m.trim())
-        .filter(Boolean);
+      const allModels = activeConfig.models.map((m) => m.trim()).filter(Boolean);
       const providerConfig = {
         provider: {
           flavor: provider,
@@ -731,12 +695,10 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
         },
         model: allModels[0] || "",
         models: allModels,
-        knowledgeGraphModel:
-          activeConfig.knowledgeGraphModel.trim() || undefined,
+        knowledgeGraphModel: activeConfig.knowledgeGraphModel.trim() || undefined,
         meetingNotesModel: activeConfig.meetingNotesModel.trim() || undefined,
         liveNoteAgentModel: activeConfig.liveNoteAgentModel.trim() || undefined,
-        autoPermissionDecisionModel:
-          activeConfig.autoPermissionDecisionModel.trim() || undefined,
+        autoPermissionDecisionModel: activeConfig.autoPermissionDecisionModel.trim() || undefined,
       };
       const result = await window.ipc.invoke("models:test", providerConfig);
       if (result.success) {
@@ -772,8 +734,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           knowledgeGraphModel: config.knowledgeGraphModel.trim() || undefined,
           meetingNotesModel: config.meetingNotesModel.trim() || undefined,
           liveNoteAgentModel: config.liveNoteAgentModel.trim() || undefined,
-          autoPermissionDecisionModel:
-            config.autoPermissionDecisionModel.trim() || undefined,
+          autoPermissionDecisionModel: config.autoPermissionDecisionModel.trim() || undefined,
         });
         setDefaultProvider(prov);
         window.dispatchEvent(new Event("models-config-changed"));
@@ -797,15 +758,9 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
         }
         // If the deleted provider is the current top-level active one,
         // switch top-level config to the current default provider
-        if (
-          parsed?.provider?.flavor === prov &&
-          defaultProvider &&
-          defaultProvider !== prov
-        ) {
+        if (parsed?.provider?.flavor === prov && defaultProvider && defaultProvider !== prov) {
           const defConfig = providerConfigs[defaultProvider];
-          const defModels = defConfig.models
-            .map((m) => m.trim())
-            .filter(Boolean);
+          const defModels = defConfig.models.map((m) => m.trim()).filter(Boolean);
           parsed.provider = {
             flavor: defaultProvider,
             apiKey: defConfig.apiKey.trim() || undefined,
@@ -813,12 +768,9 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           };
           parsed.model = defModels[0] || "";
           parsed.models = defModels;
-          parsed.knowledgeGraphModel =
-            defConfig.knowledgeGraphModel.trim() || undefined;
-          parsed.meetingNotesModel =
-            defConfig.meetingNotesModel.trim() || undefined;
-          parsed.liveNoteAgentModel =
-            defConfig.liveNoteAgentModel.trim() || undefined;
+          parsed.knowledgeGraphModel = defConfig.knowledgeGraphModel.trim() || undefined;
+          parsed.meetingNotesModel = defConfig.meetingNotesModel.trim() || undefined;
+          parsed.liveNoteAgentModel = defConfig.liveNoteAgentModel.trim() || undefined;
           parsed.autoPermissionDecisionModel =
             defConfig.autoPermissionDecisionModel.trim() || undefined;
         }
@@ -848,11 +800,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
     [defaultProvider, providerConfigs],
   );
 
-  const renderProviderCard = (p: {
-    id: LlmProviderFlavor;
-    name: string;
-    description: string;
-  }) => {
+  const renderProviderCard = (p: { id: LlmProviderFlavor; name: string; description: string }) => {
     const isDefault = defaultProvider === p.id;
     const isSelected = provider === p.id;
     const hasModel = providerConfigs[p.id].models[0]?.trim().length > 0;
@@ -878,9 +826,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
             </span>
           )}
         </div>
-        <div className="text-xs text-muted-foreground mt-0.5">
-          {p.description}
-        </div>
+        <div className="text-xs text-muted-foreground mt-0.5">{p.description}</div>
         {!isDefault && hasModel && isSelected && (
           <div className="mt-1.5 flex items-center gap-3">
             <span
@@ -925,13 +871,9 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Provider
         </span>
-        <div className="grid gap-2 grid-cols-2">
-          {primaryProviders.map(renderProviderCard)}
-        </div>
+        <div className="grid gap-2 grid-cols-2">{primaryProviders.map(renderProviderCard)}</div>
         {showMoreProviders || isMoreProvider ? (
-          <div className="grid gap-2 grid-cols-2 mt-2">
-            {moreProviders.map(renderProviderCard)}
-          </div>
+          <div className="grid gap-2 grid-cols-2 mt-2">{moreProviders.map(renderProviderCard)}</div>
         ) : (
           <button
             onClick={() => setShowMoreProviders(true)}
@@ -961,17 +903,13 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   {showModelInput ? (
                     <Input
                       value={model}
-                      onChange={(e) =>
-                        updateModelAt(provider, index, e.target.value)
-                      }
+                      onChange={(e) => updateModelAt(provider, index, e.target.value)}
                       placeholder="Enter model"
                     />
                   ) : (
                     <Select
                       value={model}
-                      onValueChange={(value) =>
-                        updateModelAt(provider, index, value)
-                      }
+                      onValueChange={(value) => updateModelAt(provider, index, value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a model" />
@@ -1004,9 +942,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
               </button>
             </div>
           )}
-          {modelsError && (
-            <div className="text-xs text-destructive">{modelsError}</div>
-          )}
+          {modelsError && <div className="text-xs text-destructive">{modelsError}</div>}
         </div>
 
         {/* Knowledge graph model (right column) */}
@@ -1022,9 +958,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           ) : showModelInput ? (
             <Input
               value={activeConfig.knowledgeGraphModel}
-              onChange={(e) =>
-                updateConfig(provider, { knowledgeGraphModel: e.target.value })
-              }
+              onChange={(e) => updateConfig(provider, { knowledgeGraphModel: e.target.value })}
               placeholder={primaryModel || "Enter model"}
             />
           ) : (
@@ -1064,9 +998,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           ) : showModelInput ? (
             <Input
               value={activeConfig.meetingNotesModel}
-              onChange={(e) =>
-                updateConfig(provider, { meetingNotesModel: e.target.value })
-              }
+              onChange={(e) => updateConfig(provider, { meetingNotesModel: e.target.value })}
               placeholder={primaryModel || "Enter model"}
             />
           ) : (
@@ -1106,9 +1038,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           ) : showModelInput ? (
             <Input
               value={activeConfig.liveNoteAgentModel}
-              onChange={(e) =>
-                updateConfig(provider, { liveNoteAgentModel: e.target.value })
-              }
+              onChange={(e) => updateConfig(provider, { liveNoteAgentModel: e.target.value })}
               placeholder={primaryModel || "Enter model"}
             />
           ) : (
@@ -1160,8 +1090,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
               value={activeConfig.autoPermissionDecisionModel || "__same__"}
               onValueChange={(value) =>
                 updateConfig(provider, {
-                  autoPermissionDecisionModel:
-                    value === "__same__" ? "" : value,
+                  autoPermissionDecisionModel: value === "__same__" ? "" : value,
                 })
               }
             >
@@ -1185,26 +1114,21 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
       {showApiKey && (
         <div className="space-y-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            {provider === "openai-compatible"
-              ? "API Key (optional)"
-              : "API Key"}
+            {provider === "openai-compatible" ? "API Key (optional)" : "API Key"}
           </span>
           <div className="relative">
             <Key className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="password"
               value={activeConfig.apiKey}
-              onChange={(e) =>
-                updateConfig(provider, { apiKey: e.target.value })
-              }
+              onChange={(e) => updateConfig(provider, { apiKey: e.target.value })}
               placeholder="Paste your API key"
               className="pl-9 font-mono tracking-tight"
             />
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Stored locally in{" "}
-            <code className="font-mono text-[10px]">config/models.json</code>{" "}
-            and sent only to the selected provider.
+            Stored locally in <code className="font-mono text-[10px]">config/models.json</code> and
+            sent only to the selected provider.
           </p>
         </div>
       )}
@@ -1217,9 +1141,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           </span>
           <Input
             value={activeConfig.baseURL}
-            onChange={(e) =>
-              updateConfig(provider, { baseURL: e.target.value })
-            }
+            onChange={(e) => updateConfig(provider, { baseURL: e.target.value })}
             placeholder={
               provider === "ollama"
                 ? "http://localhost:11434"
@@ -1295,18 +1217,12 @@ function ToolsLibrarySettings({
   // Toolkit browsing state
   const [toolkits, setToolkits] = useState<ToolkitInfo[]>([]);
   const [toolkitsLoading, setToolkitsLoading] = useState(false);
-  const [toolkitsUnavailableMessage, setToolkitsUnavailableMessage] = useState<
-    string | null
-  >(null);
+  const [toolkitsUnavailableMessage, setToolkitsUnavailableMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Connection state
-  const [connectedToolkits, setConnectedToolkits] = useState<Set<string>>(
-    new Set(),
-  );
-  const [connectingToolkit, setConnectingToolkit] = useState<string | null>(
-    null,
-  );
+  const [connectedToolkits, setConnectedToolkits] = useState<Set<string>>(new Set());
+  const [connectingToolkit, setConnectingToolkit] = useState<string | null>(null);
 
   // Check API key configuration
   const checkApiKey = useCallback(async () => {
@@ -1340,8 +1256,7 @@ function ToolsLibrarySettings({
       setToolkits(result.items || []);
       if (result.providerConfigured === false) {
         setToolkitsUnavailableMessage(
-          result.message ||
-            `Tool integrations are disabled for this ${PRODUCT_NAME} API.`,
+          result.message || `Tool integrations are disabled for this ${PRODUCT_NAME} API.`,
         );
       }
     } catch (error) {
@@ -1482,8 +1397,8 @@ function ToolsLibrarySettings({
           ) : (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                Enter your Composio API key to browse and enable tool
-                integrations. Get your key from{" "}
+                Enter your Composio API key to browse and enable tool integrations. Get your key
+                from{" "}
                 <a
                   href="https://app.composio.dev/settings"
                   target="_blank"
@@ -1507,11 +1422,7 @@ function ToolsLibrarySettings({
                   disabled={!apiKeyInput.trim() || apiKeySaving}
                   size="sm"
                 >
-                  {apiKeySaving ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    "Save"
-                  )}
+                  {apiKeySaving ? <Loader2 className="size-4 animate-spin" /> : "Save"}
                 </Button>
                 {apiKeyConfigured && (
                   <Button
@@ -1567,10 +1478,7 @@ function ToolsLibrarySettings({
                 const isConnecting = connectingToolkit === toolkit.slug;
 
                 return (
-                  <div
-                    key={toolkit.slug}
-                    className="border rounded-none overflow-hidden"
-                  >
+                  <div key={toolkit.slug} className="border rounded-none overflow-hidden">
                     <div className="flex items-center gap-3 px-3 py-2.5">
                       {/* Logo */}
                       {toolkit.meta.logo ? (
@@ -1579,8 +1487,7 @@ function ToolsLibrarySettings({
                           alt=""
                           className="size-7 rounded object-contain shrink-0"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).style.display =
-                              "none";
+                            (e.target as HTMLImageElement).style.display = "none";
                           }}
                         />
                       ) : (
@@ -1592,9 +1499,7 @@ function ToolsLibrarySettings({
                       {/* Name & description */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-medium truncate">
-                            {toolkit.name}
-                          </span>
+                          <span className="text-sm font-medium truncate">{toolkit.name}</span>
                           {isConnected && (
                             <span className="rounded-full bg-green-500/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-green-600">
                               Connected
@@ -1643,9 +1548,7 @@ function ToolsLibrarySettings({
 
               {filteredToolkits.length === 0 && !toolkitsLoading && (
                 <div className="text-center py-6 text-sm text-muted-foreground">
-                  {searchQuery
-                    ? "No toolkits match your search"
-                    : "No toolkits available"}
+                  {searchQuery ? "No toolkits match your search" : "No toolkits available"}
                 </div>
               )}
             </div>
@@ -1686,8 +1589,7 @@ function SolomonModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           });
           const parsed = JSON.parse(configResult.data);
           if (parsed?.model) setSelectedModel(parsed.model);
-          if (parsed?.knowledgeGraphModel)
-            setSelectedKgModel(parsed.knowledgeGraphModel);
+          if (parsed?.knowledgeGraphModel) setSelectedKgModel(parsed.knowledgeGraphModel);
         } catch {
           // No config yet — pick first model as default
           if (models.length > 0) setSelectedModel(models[0].id);
@@ -1731,8 +1633,8 @@ function SolomonModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
-        Select the models {PRODUCT_NAME} uses. These are provided through your{" "}
-        {PRODUCT_NAME} account.
+        Select the models {PRODUCT_NAME} uses. These are provided through your {PRODUCT_NAME}{" "}
+        account.
       </p>
 
       {/* Assistant model */}
@@ -1808,14 +1710,7 @@ const NOTE_TAG_TYPE_ORDER = [
   "source",
 ];
 
-const EMAIL_TAG_TYPE_ORDER = [
-  "relationship",
-  "topic",
-  "email-type",
-  "noise",
-  "action",
-  "status",
-];
+const EMAIL_TAG_TYPE_ORDER = ["relationship", "topic", "email-type", "noise", "action", "status"];
 
 const TAG_TYPE_LABELS: Record<string, string> = {
   relationship: "Relationship",
@@ -1844,11 +1739,7 @@ function TagGroupTable({
   collapsed: boolean;
   onToggle: () => void;
   onAdd: () => void;
-  onUpdate: (
-    index: number,
-    field: keyof TagDef,
-    value: string | boolean,
-  ) => void;
+  onUpdate: (index: number, field: keyof TagDef, value: string | boolean) => void;
   onRemove: (index: number) => void;
   getGlobalIndex: (type: string, localIndex: number) => number;
   isEmail: boolean;
@@ -1861,20 +1752,12 @@ function TagGroupTable({
           className="flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronRight
-            className={cn(
-              "size-3.5 transition-transform",
-              !collapsed && "rotate-90",
-            )}
+            className={cn("size-3.5 transition-transform", !collapsed && "rotate-90")}
           />
           {group.label}
           <span className="text-[10px] ml-0.5">({group.tags.length})</span>
         </button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-xs"
-          onClick={onAdd}
-        >
+        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={onAdd}>
           <Plus className="size-3 mr-1" />
           Add
         </Button>
@@ -1884,9 +1767,7 @@ function TagGroupTable({
           <div
             className={cn(
               "gap-1 bg-muted/50 px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider grid",
-              isEmail
-                ? "grid-cols-[100px_1fr_1fr_60px_24px]"
-                : "grid-cols-[100px_1fr_1fr_24px]",
+              isEmail ? "grid-cols-[100px_1fr_1fr_60px_24px]" : "grid-cols-[100px_1fr_1fr_24px]",
             )}
           >
             <div>Label</div>
@@ -1923,18 +1804,14 @@ function TagGroupTable({
                 />
                 <Input
                   value={tag.description}
-                  onChange={(e) =>
-                    onUpdate(globalIdx, "description", e.target.value)
-                  }
+                  onChange={(e) => onUpdate(globalIdx, "description", e.target.value)}
                   className="h-7 text-xs"
                   placeholder="Description"
                   title={tag.description}
                 />
                 <Input
                   value={tag.example || ""}
-                  onChange={(e) =>
-                    onUpdate(globalIdx, "example", e.target.value)
-                  }
+                  onChange={(e) => onUpdate(globalIdx, "example", e.target.value)}
                   className="h-7 text-xs"
                   placeholder="Example"
                   title={tag.example || ""}
@@ -1944,11 +1821,7 @@ function TagGroupTable({
                     <Switch
                       checked={tag.noteEffect === "skip"}
                       onCheckedChange={(checked) =>
-                        onUpdate(
-                          globalIdx,
-                          "noteEffect",
-                          checked ? "skip" : "create",
-                        )
+                        onUpdate(globalIdx, "noteEffect", checked ? "skip" : "create")
                       }
                       className="scale-75"
                     />
@@ -1966,9 +1839,7 @@ function TagGroupTable({
         </div>
       )}
       {!collapsed && group.tags.length === 0 && (
-        <div className="text-xs text-muted-foreground italic px-2">
-          No tags in this group
-        </div>
+        <div className="text-xs text-muted-foreground italic px-2">No tags in this group</div>
       )}
     </div>
   );
@@ -1979,12 +1850,8 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [originalTags, setOriginalTags] = useState<TagDef[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
-    new Set(),
-  );
-  const [activeSection, setActiveSection] = useState<"notes" | "email">(
-    "notes",
-  );
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [activeSection, setActiveSection] = useState<"notes" | "email">("notes");
 
   const hasChanges = JSON.stringify(tags) !== JSON.stringify(originalTags);
 
@@ -2053,14 +1920,9 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
     [tags],
   );
 
-  const updateTag = useCallback(
-    (index: number, field: keyof TagDef, value: string | boolean) => {
-      setTags((prev) =>
-        prev.map((t, i) => (i === index ? { ...t, [field]: value } : t)),
-      );
-    },
-    [],
-  );
+  const updateTag = useCallback((index: number, field: keyof TagDef, value: string | boolean) => {
+    setTags((prev) => prev.map((t, i) => (i === index ? { ...t, [field]: value } : t)));
+  }, []);
 
   const removeTag = useCallback((index: number) => {
     setTags((prev) => prev.filter((_, i) => i !== index));
@@ -2069,9 +1931,7 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const addTag = useCallback(
     (type: string) => {
       const isEmailSection = activeSection === "email";
-      const applicability = isEmailSection
-        ? ("email" as const)
-        : ("notes" as const);
+      const applicability = isEmailSection ? ("email" as const) : ("notes" as const);
       // For email-only types, always use "email"; for notes-only types, always use "notes"; otherwise use "both"
       const emailOnlyTypes = ["email-type", "noise"];
       const notesOnlyTypes = ["relationship-sub", "source"];
@@ -2092,18 +1952,11 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
         description: "",
         noteEffect: isEmailSection ? "create" : "none",
       };
-      const lastIndex = tags.reduce(
-        (acc, t, i) => (t.type === type ? i : acc),
-        -1,
-      );
+      const lastIndex = tags.reduce((acc, t, i) => (t.type === type ? i : acc), -1);
       if (lastIndex === -1) {
         setTags((prev) => [...prev, newTag]);
       } else {
-        setTags((prev) => [
-          ...prev.slice(0, lastIndex + 1),
-          newTag,
-          ...prev.slice(lastIndex + 1),
-        ]);
+        setTags((prev) => [...prev.slice(0, lastIndex + 1), newTag, ...prev.slice(lastIndex + 1)]);
       }
     },
     [tags, activeSection],
@@ -2191,18 +2044,10 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
       </div>
       <div className="pt-3 border-t mt-3 flex items-center justify-between">
         <div>
-          {hasChanges && (
-            <span className="text-xs text-muted-foreground">
-              Unsaved changes
-            </span>
-          )}
+          {hasChanges && <span className="text-xs text-muted-foreground">Unsaved changes</span>}
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving || !hasChanges}
-          >
+          <Button size="sm" onClick={handleSave} disabled={saving || !hasChanges}>
             {saving ? "Saving..." : "Save"}
           </Button>
         </div>
@@ -2241,11 +2086,7 @@ function AgentStatusRow({
               status?.installed ? "text-green-600" : "text-muted-foreground",
             )}
           >
-            {status?.installed ? (
-              <CheckCircle2 className="size-3" />
-            ) : (
-              <X className="size-3" />
-            )}
+            {status?.installed ? <CheckCircle2 className="size-3" /> : <X className="size-3" />}
             Installed
           </span>
           <span
@@ -2254,11 +2095,7 @@ function AgentStatusRow({
               status?.signedIn ? "text-green-600" : "text-muted-foreground",
             )}
           >
-            {status?.signedIn ? (
-              <CheckCircle2 className="size-3" />
-            ) : (
-              <X className="size-3" />
-            )}
+            {status?.signedIn ? <CheckCircle2 className="size-3" /> : <X className="size-3" />}
             Signed in
           </span>
         </div>
@@ -2391,19 +2228,16 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
     <div className="space-y-5">
       <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
         <p>
-          <strong className="text-foreground">Code mode</strong> lets the
-          assistant delegate coding tasks to{" "}
-          <strong className="text-foreground">Claude Code</strong> or{" "}
-          <strong className="text-foreground">Codex</strong> running on your
-          machine. Pick the agent inline from the composer; the assistant runs
-          it on-device and streams its work — tool calls, file diffs, and
-          approvals — back into chat.
+          <strong className="text-foreground">Code mode</strong> lets the assistant delegate coding
+          tasks to <strong className="text-foreground">Claude Code</strong> or{" "}
+          <strong className="text-foreground">Codex</strong> running on your machine. Pick the agent
+          inline from the composer; the assistant runs it on-device and streams its work — tool
+          calls, file diffs, and approvals — back into chat.
         </p>
         <p>
-          Requires an active{" "}
-          <strong className="text-foreground">Claude Code</strong> subscription
-          or a <strong className="text-foreground">ChatGPT/Codex</strong>{" "}
-          subscription. You can have one or both.
+          Requires an active <strong className="text-foreground">Claude Code</strong> subscription
+          or a <strong className="text-foreground">ChatGPT/Codex</strong> subscription. You can have
+          one or both.
         </p>
       </div>
 
@@ -2447,24 +2281,19 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium">Enable code mode</div>
           <div className="text-xs text-muted-foreground mt-0.5">
-            Shows the code mode chip in the composer and lets the assistant
-            delegate to your installed agents.
+            Shows the code mode chip in the composer and lets the assistant delegate to your
+            installed agents.
           </div>
         </div>
-        <Switch
-          checked={enabled}
-          onCheckedChange={handleToggle}
-          disabled={saving}
-        />
+        <Switch checked={enabled} onCheckedChange={handleToggle} disabled={saving} />
       </div>
 
       {enabled && (
         <div className="rounded-md border px-3 py-3 space-y-2">
           <div className="text-sm font-medium">Approvals</div>
           <div className="text-xs text-muted-foreground">
-            How the coding agent checks in before changing files or running
-            commands. You always see everything it does in the timeline — this
-            only controls the prompts.
+            How the coding agent checks in before changing files or running commands. You always see
+            everything it does in the timeline — this only controls the prompts.
           </div>
           <Select
             value={approvalPolicy}
@@ -2476,12 +2305,8 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ask">Ask every time</SelectItem>
-              <SelectItem value="auto-approve-reads">
-                Auto-approve reads
-              </SelectItem>
-              <SelectItem value="yolo">
-                Auto-approve everything (YOLO)
-              </SelectItem>
+              <SelectItem value="auto-approve-reads">Auto-approve reads</SelectItem>
+              <SelectItem value="yolo">Auto-approve everything (YOLO)</SelectItem>
             </SelectContent>
           </Select>
           <div className="text-xs text-muted-foreground">
@@ -2499,8 +2324,8 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
         <div className="rounded-none border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 px-3 py-2.5 flex items-start gap-2 text-xs">
           <AlertTriangle className="size-4 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
           <div className="text-amber-900 dark:text-amber-200">
-            Neither Claude Code nor Codex is ready. Install at least one and
-            sign in with a subscription account, then click Re-check.
+            Neither Claude Code nor Codex is ready. Install at least one and sign in with a
+            subscription account, then click Re-check.
           </div>
         </div>
       )}
@@ -2544,8 +2369,7 @@ export function SettingsDialog({
     window.ipc
       .invoke("oauth:getState", null)
       .then((result) => {
-        const connected =
-          getProductProviderState(result.config)?.connected ?? false;
+        const connected = getProductProviderState(result.config)?.connected ?? false;
         setSolomonConnected(connected);
       })
       .catch(() => {
@@ -2558,8 +2382,7 @@ export function SettingsDialog({
     [solomonConnected],
   );
 
-  const activeTabConfig =
-    visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0];
+  const activeTabConfig = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0];
   const isJsonTab = activeTab === "mcp" || activeTab === "security";
 
   const formatJson = (jsonString: string): string => {
@@ -2689,9 +2512,7 @@ export function SettingsDialog({
           <div className="flex-1 flex flex-col min-w-0 min-h-0">
             {/* Header */}
             <div className="px-5 py-4 border-b">
-              <h3 className="text-[15px] font-semibold tracking-tight">
-                {activeTabConfig.label}
-              </h3>
+              <h3 className="text-[15px] font-semibold tracking-tight">{activeTabConfig.label}</h3>
               <p className="text-[13px] text-muted-foreground mt-1">
                 {activeTab === "models" && solomonConnected
                   ? "Select your default models"
@@ -2724,10 +2545,7 @@ export function SettingsDialog({
                   <Separator />
                   <div className="space-y-2">
                     <h4 className="text-sm font-semibold">Library</h4>
-                    <ToolsLibrarySettings
-                      dialogOpen={open}
-                      rowboatConnected={solomonConnected}
-                    />
+                    <ToolsLibrarySettings dialogOpen={open} rowboatConnected={solomonConnected} />
                   </div>
                 </div>
               ) : activeTab === "models" ? (
@@ -2736,6 +2554,8 @@ export function SettingsDialog({
                 ) : (
                   <ModelSettings dialogOpen={open} />
                 )
+              ) : activeTab === "transcription" ? (
+                <TranscriptionSettings dialogOpen={open} />
               ) : activeTab === "note-tagging" ? (
                 <NoteTaggingSettings dialogOpen={open} />
               ) : activeTab === "appearance" ? (
@@ -2763,13 +2583,9 @@ export function SettingsDialog({
             {isJsonTab && (
               <div className="px-4 py-3 border-t flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  {error && (
-                    <span className="text-xs text-destructive">{error}</span>
-                  )}
+                  {error && <span className="text-xs text-destructive">{error}</span>}
                   {hasChanges && !error && (
-                    <span className="text-xs text-muted-foreground">
-                      Unsaved changes
-                    </span>
+                    <span className="text-xs text-muted-foreground">Unsaved changes</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
