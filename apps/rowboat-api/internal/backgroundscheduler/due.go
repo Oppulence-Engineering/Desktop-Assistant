@@ -27,12 +27,35 @@ func dueTimedTrigger(tr Triggers, lastRunAt *time.Time, now time.Time) string {
 	if isCronDue(tr.CronExpr, lastRunAt, now) {
 		return "cron"
 	}
-	for _, w := range tr.Windows {
-		if isWindowDue(w.StartTime, w.EndTime, lastRunAt, now) {
-			return "window"
-		}
+	if _, ok := firstDueWindow(tr, lastRunAt, now); ok {
+		return "window"
 	}
 	return ""
+}
+
+// firstDueWindow returns the first window whose daily cycle is ready to fire,
+// matching the iteration order dueTimedTrigger uses to report "window".
+func firstDueWindow(tr Triggers, lastRunAt *time.Time, now time.Time) (Window, bool) {
+	for _, w := range tr.Windows {
+		if isWindowDue(w.StartTime, w.EndTime, lastRunAt, now) {
+			return w, true
+		}
+	}
+	return Window{}, false
+}
+
+// cronOccurrence returns the most-recent occurrence at-or-before now for a valid
+// expression, used to build run provenance and the lease key. The bool is false
+// for an empty/invalid expression.
+func cronOccurrence(expr string, now time.Time) (time.Time, bool) {
+	if expr == "" || !gronx.IsValid(expr) {
+		return time.Time{}, false
+	}
+	occ, err := gronx.PrevTickBefore(expr, now, true)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return occ, true
 }
 
 // isCronDue reports whether the cron cycle is ready to fire at `now`.
