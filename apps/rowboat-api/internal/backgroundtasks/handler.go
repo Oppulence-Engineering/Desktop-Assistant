@@ -46,9 +46,12 @@ type Handler struct {
 	runStarter *backgroundtaskruns.Starter
 }
 
-// New builds a background task mirror handler.
+// New builds a background task mirror handler. The run starter is created with
+// no Temporal controller, so triggering an api-target task before SetTemporal
+// returns 503 (temporal_unavailable) rather than panicking; SetTemporal swaps
+// in a Temporal-backed starter.
 func New(client *ent.Client, log *zap.Logger) *Handler {
-	return &Handler{client: client, log: log}
+	return &Handler{client: client, log: log, runStarter: backgroundtaskruns.New(client, nil, log)}
 }
 
 // SetTemporal enables API-native Temporal execution for api-target tasks. It
