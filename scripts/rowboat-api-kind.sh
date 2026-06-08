@@ -234,8 +234,14 @@ deploy_chart() {
   if kubectl get deployment -n "$NAMESPACE" rowboat-api-worker >/dev/null 2>&1; then
     kubectl rollout restart -n "$NAMESPACE" deployment/rowboat-api-worker
   fi
+  if kubectl get deployment -n "$NAMESPACE" rowboat-api-scheduler >/dev/null 2>&1; then
+    kubectl rollout restart -n "$NAMESPACE" deployment/rowboat-api-scheduler
+  fi
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api --timeout=180s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-worker --timeout=180s
+  if kubectl get deployment -n "$NAMESPACE" rowboat-api-scheduler >/dev/null 2>&1; then
+    kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-scheduler --timeout=180s
+  fi
 }
 
 port_in_use() {
@@ -391,6 +397,7 @@ validate_stack() {
   echo
 
   validate_temporal_background_task "$token"
+  validate_scheduler_background_task "$token"
 }
 
 validate_temporal_background_task() {
@@ -471,6 +478,84 @@ validate_temporal_background_task() {
   fi
 }
 
+# validate_scheduler_background_task proves RFC 001: with NO HTTP /trigger call
+# (the "desktop closed" scenario), the in-cluster scheduler fires an API-target
+# cron task on its own and the run executes to success in the cloud.
+validate_scheduler_background_task() {
+  local token="$1"
+  if ! kubectl get deployment -n "$NAMESPACE" rowboat-api-scheduler >/dev/null 2>&1; then
+    echo "scheduler deployment not present; skipping desktop-closed scheduler check"
+    return 0
+  fi
+  local slug="kind-scheduler-$(date +%s)"
+
+  echo "api-owned scheduler (desktop-closed) cron task:"
+  # Create an API-target task with a once-a-minute cron trigger. We deliberately
+  # never call POST /trigger — a never-run cron is immediately due, so the
+  # scheduler must create the run by itself within a poll interval.
+  curl_smoke \
+    -H "Authorization: Bearer ${token}" \
+    -H "Content-Type: application/json" \
+    -X POST \
+    --data "{\"slug\":\"${slug}\",\"name\":\"Kind Scheduler Smoke\",\"instructions\":\"Write a short status artifact for the scheduler smoke test.\",\"executionTarget\":\"api\",\"triggers\":{\"cronExpr\":\"*/1 * * * *\"}}" \
+    "http://localhost:${API_PORT}/v1/background-tasks" >/dev/null
+
+  # Wait for a scheduler-created run to appear: run id prefixed sched-cron-,
+  # trigger=cron, executor=api — none of which an HTTP trigger would produce.
+  local runs_json="" run_id=""
+  for _ in $(seq 1 36); do # ~180s = two 2-minute grace windows + slack
+    runs_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs")"
+    run_id="$(sed -n 's/.*"runId"[[:space:]]*:[[:space:]]*"\(sched-cron-[^"]*\)".*/\1/p' <<<"$runs_json" | head -1)"
+    if [[ -n "$run_id" ]]; then
+      break
+    fi
+    sleep 5
+  done
+  if [[ -z "$run_id" ]]; then
+    echo "$runs_json" >&2
+    echo "scheduler did not fire a cron run with the desktop closed" >&2
+    exit 1
+  fi
+  if [[ "$runs_json" != *'"trigger":"cron"'* || "$runs_json" != *'"executor":"api"'* ]]; then
+    echo "$runs_json" >&2
+    echo "scheduler run is not trigger=cron/executor=api" >&2
+    exit 1
+  fi
+  echo "scheduler created ${run_id} (trigger=cron, executor=api) with no HTTP trigger"
+
+  # The run should execute to success within two grace windows.
+  local status_json=""
+  for _ in $(seq 1 60); do # ~300s
+    status_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs/${run_id}/status")"
+    if [[ "$status_json" == *'"status":"succeeded"'* ]]; then
+      break
+    fi
+    if [[ "$status_json" == *'"status":"failed"'* ]]; then
+      echo "$status_json" >&2
+      echo "scheduler-fired run failed" >&2
+      exit 1
+    fi
+    sleep 3
+  done
+  if [[ "$status_json" != *'"status":"succeeded"'* ]]; then
+    echo "$status_json" >&2
+    echo "scheduler-fired run did not complete within two grace windows" >&2
+    exit 1
+  fi
+  echo "api-owned scheduler desktop-closed run: ok"
+
+  # Cleanup: deactivate + delete so the cron stops and the task is removed.
+  local latest_task_json revision
+  latest_task_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}")"
+  revision="$(sed -n 's/.*"revision"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' <<<"$latest_task_json" | head -1)"
+  if [[ -n "$revision" ]]; then
+    curl_smoke \
+      -H "Authorization: Bearer ${token}" \
+      -X DELETE \
+      "http://localhost:${API_PORT}/v1/background-tasks/${slug}?revision=${revision}" >/dev/null || true
+  fi
+}
+
 helm_validate() {
   need helm
   local rendered_dir
@@ -500,6 +585,17 @@ helm_validate() {
         exit 1
       fi
       grep -q 'name: rowboat-api-secrets' "${rendered_dir}/${env}.yaml"
+      # RFC 001: kind enables the scheduler, so its Deployment must render.
+      if ! grep -q 'name: rowboat-api-scheduler' "${rendered_dir}/${env}.yaml"; then
+        echo "kind values must render the rowboat-api-scheduler Deployment" >&2
+        exit 1
+      fi
+    else
+      # The scheduler must stay gated off outside kind until RFC 002 lands.
+      if grep -q 'name: rowboat-api-scheduler' "${rendered_dir}/${env}.yaml"; then
+        echo "${env} values must not render the scheduler (scheduler.enabled should be false)" >&2
+        exit 1
+      fi
     fi
     echo "ok"
   done
