@@ -98,6 +98,29 @@ func TestReserveExhaustionIsRejected(t *testing.T) {
 	}
 }
 
+func TestRemainingIsScopedPerUser(t *testing.T) {
+	client, ctx1 := setup(t)
+	g := minutes.New(client, zap.NewNop(), allowance)
+
+	// user_1 reserves 300s of their allowance.
+	if _, err := g.Reserve(ctx1, "free", 300); err != nil {
+		t.Fatalf("reserve: %v", err)
+	}
+
+	// A different user must see the FULL allowance — never user_1's usage. This is
+	// the tenant-isolation guarantee (the per-user query interceptor), and the
+	// regression test for the IDOR where MeetingMinuteUsage queries were unscoped.
+	u2 := client.User.Create().SetEmail("b@x.co").SetWorkosUserID("user_2").SaveX(context.Background())
+	ctx2 := auth.WithUser(context.Background(), u2)
+	rem2, err := g.Remaining(ctx2, "free")
+	if err != nil {
+		t.Fatalf("remaining (user_2): %v", err)
+	}
+	if rem2 != 600 {
+		t.Fatalf("cross-tenant leak: user_2 remaining = %d, want 600", rem2)
+	}
+}
+
 func TestPaidPlanIsUnlimited(t *testing.T) {
 	client, ctx := setup(t)
 	g := minutes.New(client, zap.NewNop(), allowance)
