@@ -7,6 +7,7 @@ require (
 	entgo.io/contrib v0.7.0
 	entgo.io/ent v0.14.6
 	github.com/99designs/gqlgen v0.17.90
+	github.com/adhocore/gronx v1.20.0
 	github.com/flume/enthistory v0.17.4
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/go-redis/redis/v8 v8.11.3
