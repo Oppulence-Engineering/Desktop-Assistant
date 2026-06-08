@@ -1190,10 +1190,13 @@ export function setupIpcHandlers() {
     },
     "whisper:transcribe": async (_event, req) => {
       try {
+        // Honor the persisted model/language when the renderer didn't specify one
+        // (the settings model picker writes whisper.model; callers send neither).
+        const cfg = await voice.getTranscriptionConfig();
         const result = await getWhisper().transcribe(new Int16Array(req.pcm16), {
           channels: req.channels,
-          model: req.model,
-          lang: req.lang,
+          model: req.model ?? cfg.whisper.model,
+          lang: req.lang ?? cfg.whisper.language,
         });
         return {
           success: true,
@@ -1209,9 +1212,14 @@ export function setupIpcHandlers() {
     "whisper:openStream": async (event, { model, channels }) => {
       // Open a MessageChannel; the Session owns port1, the renderer gets port2 (transferred).
       const { port1, port2 } = new MessageChannelMain();
+      // Honor the persisted model when the renderer didn't specify one (meeting hook sends none).
+      const resolvedModel = model ?? (await voice.getTranscriptionConfig()).whisper.model;
       let streamId: string;
       try {
-        streamId = getWhisper().openStream(port1 as unknown as StreamPort, { model, channels });
+        streamId = getWhisper().openStream(port1 as unknown as StreamPort, {
+          model: resolvedModel,
+          channels,
+        });
       } catch (err) {
         port1.close();
         return { streamId: "", code: whisperCodeOf(err) };

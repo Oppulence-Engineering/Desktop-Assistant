@@ -129,6 +129,15 @@ export class ModelManager {
     const dest = this.pathFor(id);
     const led = await this.loadLedger();
 
+    // Every success path returns through here so the companion VAD model is ensured
+    // even when the main model was already installed — otherwise a VAD that failed to
+    // download (or was removed) after the main model is recorded never self-heals, and
+    // buildArgs keeps passing `--vad-model <missing>`, failing every transcription.
+    const finish = async (): Promise<string> => {
+      if (opts.withVad && id !== VAD_MODEL_ID) await this.ensure(VAD_MODEL_ID); // coalesced
+      return dest;
+    };
+
     // Already installed? Re-confirm lazily past the TTL — but with a CHEAP size check,
     // not a full sha256 re-hash: ensure() is on the user-facing hot path (every voice
     // submit / meeting start) and the active model can be ~1 GB. The authoritative hash
@@ -146,13 +155,13 @@ export class ModelManager {
         if (sizeOk) {
           rec.lastVerifiedAt = new Date(this.now()).toISOString();
           await this.saveLedger(led);
-          return dest;
+          return finish();
         }
         await rmQuiet(dest);
         delete led.installed[id];
         await this.saveLedger(led);
       } else {
-        return dest;
+        return finish();
       }
     }
 
@@ -193,8 +202,7 @@ export class ModelManager {
     };
     await this.saveLedger(led);
 
-    if (opts.withVad && id !== VAD_MODEL_ID) await this.ensure(VAD_MODEL_ID); // coalesced recursion
-    return dest;
+    return finish();
   }
 
   /** Resumable download to `<dest>.part` with backoff; atomic rename on success. */
@@ -211,6 +219,14 @@ export class ModelManager {
         const res = await this.fetchImpl(m.url, {
           headers: from > 0 ? { Range: `bytes=${from}-` } : {},
         });
+        // 416 on a resume means the .part is already >= the full length (e.g. a complete
+        // file left by a crash before rename, or a stale/oversized partial). Discard it and
+        // restart from scratch instead of retrying the same unsatisfiable Range forever.
+        if (res.status === 416 && from > 0) {
+          await rmQuiet(part);
+          from = 0;
+          continue;
+        }
         if (!res.ok || !res.body) throw new WhisperError("download_failed", `HTTP ${res.status}`);
         if (from > 0 && res.status !== 206) {
           await rmQuiet(part); // server ignored Range → restart from scratch

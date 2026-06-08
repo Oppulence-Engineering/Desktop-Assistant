@@ -1,5 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
+import { randomUUID } from "node:crypto";
 import { isSignedIn } from "../account/account.js";
 import { getAccessToken } from "../auth/tokens.js";
 import { WorkDir } from "../config/config.js";
@@ -54,6 +55,9 @@ export async function synthesizeSpeech(
     headers = {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
+      // The proxy requires an idempotency key (httpx.RequireIdempotencyKey → 428 without it).
+      // Each synthesis is a distinct one-shot request, so a fresh key per call is correct.
+      "Idempotency-Key": randomUUID(),
     };
     console.log(
       "[voice] synthesizing speech via Rowboat proxy, text length:",

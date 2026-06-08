@@ -21,7 +21,7 @@ let cached: Capability | null = null;
 export async function probe(force = false): Promise<Capability> {
   if (cached && !force) return cached;
 
-  const cores = os.cpus()?.length ?? 4;
+  const cores = os.cpus()?.length || 4; // `|| 4`: an empty cpus() array (0) must fall back, not gate as <4
   const info = await systemInfo().catch(() => "");
   const accel = parseAccel(info);
 

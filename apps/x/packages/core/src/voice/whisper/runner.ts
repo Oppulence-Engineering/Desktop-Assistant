@@ -40,7 +40,7 @@ export interface RunResult {
 
 /** Thread count: leave one core free, cap at 8 (RFC §5). */
 export function autoThreads(): number {
-  const cores = os.cpus()?.length ?? 4;
+  const cores = os.cpus()?.length || 4; // `|| 4`: an empty cpus() array (0) must fall back, not stick at 0
   return Math.max(1, Math.min(8, cores - 1));
 }
 
@@ -124,30 +124,29 @@ export function spawnWhisper(bin: string, args: string[], timeoutMs: number): Pr
     let done = false;
     const child = spawn(bin, args, { stdio: ["ignore", "ignore", "pipe"] });
     const timer = setTimeout(() => {
-      if (!done) {
-        done = true;
-        child.kill("SIGKILL");
-      }
+      if (done) return;
+      done = true;
+      child.kill("SIGKILL");
+      // Settle on timeout immediately rather than waiting for 'close'. 'close' fires
+      // only after every stdio stream reaches EOF, and a grandchild that inherited the
+      // stderr pipe can hold it open long after we kill the parent — which would hang
+      // run() (and the batch semaphore) indefinitely. Report SIGKILL → engine_timeout.
+      resolve({ code: null, signal: "SIGKILL", stderr });
     }, timeoutMs);
     child.stderr?.on("data", (d) => {
       if (stderr.length < 4096) stderr += d.toString();
     });
     child.on("error", (err) => {
-      if (!done) {
-        done = true;
-        clearTimeout(timer);
-        reject(new WhisperError("engine_unavailable", err.message));
-      }
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      reject(new WhisperError("engine_unavailable", err.message));
     });
     child.on("close", (code, signal) => {
-      if (!done) {
-        done = true;
-        clearTimeout(timer);
-        resolve({ code, signal, stderr });
-      } else if (signal === "SIGKILL") {
-        // timed out and killed → report so run() maps to engine_timeout
-        resolve({ code, signal: "SIGKILL", stderr });
-      }
+      if (done) return; // already settled by the timeout or error path
+      done = true;
+      clearTimeout(timer);
+      resolve({ code, signal, stderr });
     });
   });
 }

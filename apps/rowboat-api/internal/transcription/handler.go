@@ -69,7 +69,9 @@ func (h *Handler) Quota(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, quotaResponse{
-		MeetingMinutesRemaining: remainingSeconds / 60,
+		// Ceil, not truncate: 1–59 leftover seconds must still read as ≥1 minute, or the
+		// desktop's "<=0 → fall back to on-device" gate discards up to 59s of allowance.
+		MeetingMinutesRemaining: (remainingSeconds + 59) / 60,
 		Unlimited:               h.gate.IsUnlimited(plan),
 		TranscriptionDefaults: transcriptionDefaults{
 			VoiceProvider:   h.cfg.TranscriptionVoiceDefault,
@@ -78,9 +80,13 @@ func (h *Handler) Quota(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// planFor returns the scoped user's subscription plan. A genuinely absent
-// subscription resolves to "free"; any other error is propagated so the caller
-// fails closed (500) instead of misclassifying a paid user as free.
+// planFor returns the scoped user's *entitled* subscription plan. A genuinely
+// absent subscription resolves to "free"; any other error is propagated so the
+// caller fails closed (500) instead of misclassifying a paid user as free.
+//
+// Plan and status are tracked independently: a canceled/past_due row can still
+// carry plan="pro". Only active/trialing subscriptions confer the paid (unlimited)
+// allowance — otherwise a lapsed payer would keep unlimited free cloud minutes.
 func (h *Handler) planFor(ctx context.Context) (string, error) {
 	sub, err := h.client.Subscription.Query().Only(ctx)
 	if ent.IsNotFound(err) {
@@ -88,6 +94,9 @@ func (h *Handler) planFor(ctx context.Context) (string, error) {
 	}
 	if err != nil {
 		return "", err
+	}
+	if sub.Status != "active" && sub.Status != "trialing" {
+		return "free", nil
 	}
 	return sub.Plan, nil
 }

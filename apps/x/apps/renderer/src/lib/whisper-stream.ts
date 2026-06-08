@@ -97,6 +97,7 @@ export async function openWhisperStream(
 
   let credits = 3;
   let seq = 0;
+  let closed = false;
   let onDone: (() => void) | null = null;
 
   port.onmessage = (event: MessageEvent) => {
@@ -115,16 +116,28 @@ export async function openWhisperStream(
 
   return {
     send(pcm16: ArrayBuffer) {
-      if (credits <= 0) return; // backpressure: drop rather than grow an unbounded buffer
+      if (closed || credits <= 0) return; // backpressure / teardown: drop rather than buffer or throw
       credits--;
-      port.postMessage({ v: 1, type: "audio", seq: seq++, pcm16, channels: opts.channels }, [
-        pcm16,
-      ]);
+      try {
+        port.postMessage({ v: 1, type: "audio", seq: seq++, pcm16, channels: opts.channels }, [
+          pcm16,
+        ]);
+      } catch {
+        /* port closed mid-teardown (a late onaudioprocess) — drop the frame */
+      }
     },
     flush() {
-      port.postMessage({ v: 1, type: "flush" });
+      if (closed) return;
+      try {
+        port.postMessage({ v: 1, type: "flush" });
+      } catch {
+        /* port already closed */
+      }
     },
     async close() {
+      // Stop accepting frames first, so a late onaudioprocess can't post onto the port
+      // we're about to tear down.
+      closed = true;
       // Ask the engine to transcribe the tail, then wait (bounded) for it to deliver
       // the trailing finals + the 'done' signal BEFORE closing our port — otherwise
       // the last utterance's final would arrive on an already-closed port and be lost.

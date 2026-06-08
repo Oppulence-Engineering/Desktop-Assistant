@@ -260,7 +260,12 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
             const handle = await openWhisperStream({
               channels: 2,
               onFinal: (seg) => appendLocalFinal(seg),
-              onError: (code) => console.error("[meeting] whisper stream error:", code),
+              onError: (code) => {
+                console.error("[meeting] whisper stream error:", code);
+                // Record the failure so an empty on-device transcript is observable
+                // rather than silent (cloud failures already surface; this matched it).
+                analytics.transcriptionFailed({ provider: "whisper-local", mode: "meeting", code });
+              },
             });
             if (!handle) throw new Error("whisper stream failed to open");
             console.log("[meeting] On-device streaming session opened");
