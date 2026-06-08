@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -41,62 +42,66 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeBackgroundTask         = "BackgroundTask"
-	TypeBackgroundTaskArtifact = "BackgroundTaskArtifact"
-	TypeBackgroundTaskRun      = "BackgroundTaskRun"
-	TypeBackgroundTaskRunEvent = "BackgroundTaskRunEvent"
-	TypeCreditLedger           = "CreditLedger"
-	TypeLLMUsage               = "LLMUsage"
-	TypeLLMUsageHistory        = "LLMUsageHistory"
-	TypeMCPConnection          = "MCPConnection"
-	TypeMCPConnectionHistory   = "MCPConnectionHistory"
-	TypeOAuthConnection        = "OAuthConnection"
-	TypeOAuthConnectionHistory = "OAuthConnectionHistory"
-	TypeOAuthPending           = "OAuthPending"
-	TypeSubscription           = "Subscription"
-	TypeSubscriptionHistory    = "SubscriptionHistory"
-	TypeUser                   = "User"
-	TypeUserHistory            = "UserHistory"
+	TypeBackgroundTask              = "BackgroundTask"
+	TypeBackgroundTaskArtifact      = "BackgroundTaskArtifact"
+	TypeBackgroundTaskRun           = "BackgroundTaskRun"
+	TypeBackgroundTaskRunEvent      = "BackgroundTaskRunEvent"
+	TypeBackgroundTaskScheduleState = "BackgroundTaskScheduleState"
+	TypeCreditLedger                = "CreditLedger"
+	TypeLLMUsage                    = "LLMUsage"
+	TypeLLMUsageHistory             = "LLMUsageHistory"
+	TypeMCPConnection               = "MCPConnection"
+	TypeMCPConnectionHistory        = "MCPConnectionHistory"
+	TypeOAuthConnection             = "OAuthConnection"
+	TypeOAuthConnectionHistory      = "OAuthConnectionHistory"
+	TypeOAuthPending                = "OAuthPending"
+	TypeSubscription                = "Subscription"
+	TypeSubscriptionHistory         = "SubscriptionHistory"
+	TypeUser                        = "User"
+	TypeUserHistory                 = "UserHistory"
 )
 
 // BackgroundTaskMutation represents an operation that mutates the BackgroundTask nodes in the graph.
 type BackgroundTaskMutation struct {
 	config
-	op                Op
-	typ               string
-	id                *uuid.UUID
-	created_at        *time.Time
-	updated_at        *time.Time
-	slug              *string
-	name              *string
-	instructions      *string
-	active            *bool
-	triggers_json     *string
-	model             *string
-	provider          *string
-	execution_target  *string
-	task_created_at   *time.Time
-	last_attempt_at   *time.Time
-	last_run_id       *string
-	last_run_at       *time.Time
-	last_run_summary  *string
-	last_run_error    *string
-	revision          *int
-	addrevision       *int
-	clearedFields     map[string]struct{}
-	user              *uuid.UUID
-	cleareduser       bool
-	artifact          *uuid.UUID
-	clearedartifact   bool
-	runs              map[uuid.UUID]struct{}
-	removedruns       map[uuid.UUID]struct{}
-	clearedruns       bool
-	run_events        map[uuid.UUID]struct{}
-	removedrun_events map[uuid.UUID]struct{}
-	clearedrun_events bool
-	done              bool
-	oldValue          func(context.Context) (*BackgroundTask, error)
-	predicates        []predicate.BackgroundTask
+	op                     Op
+	typ                    string
+	id                     *uuid.UUID
+	created_at             *time.Time
+	updated_at             *time.Time
+	slug                   *string
+	name                   *string
+	instructions           *string
+	active                 *bool
+	triggers_json          *string
+	model                  *string
+	provider               *string
+	execution_target       *string
+	task_created_at        *time.Time
+	last_attempt_at        *time.Time
+	last_run_id            *string
+	last_run_at            *time.Time
+	last_run_summary       *string
+	last_run_error         *string
+	revision               *int
+	addrevision            *int
+	clearedFields          map[string]struct{}
+	user                   *uuid.UUID
+	cleareduser            bool
+	artifact               *uuid.UUID
+	clearedartifact        bool
+	runs                   map[uuid.UUID]struct{}
+	removedruns            map[uuid.UUID]struct{}
+	clearedruns            bool
+	run_events             map[uuid.UUID]struct{}
+	removedrun_events      map[uuid.UUID]struct{}
+	clearedrun_events      bool
+	schedule_states        map[uuid.UUID]struct{}
+	removedschedule_states map[uuid.UUID]struct{}
+	clearedschedule_states bool
+	done                   bool
+	oldValue               func(context.Context) (*BackgroundTask, error)
+	predicates             []predicate.BackgroundTask
 }
 
 var _ ent.Mutation = (*BackgroundTaskMutation)(nil)
@@ -1138,6 +1143,60 @@ func (m *BackgroundTaskMutation) ResetRunEvents() {
 	m.removedrun_events = nil
 }
 
+// AddScheduleStateIDs adds the "schedule_states" edge to the BackgroundTaskScheduleState entity by ids.
+func (m *BackgroundTaskMutation) AddScheduleStateIDs(ids ...uuid.UUID) {
+	if m.schedule_states == nil {
+		m.schedule_states = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.schedule_states[ids[i]] = struct{}{}
+	}
+}
+
+// ClearScheduleStates clears the "schedule_states" edge to the BackgroundTaskScheduleState entity.
+func (m *BackgroundTaskMutation) ClearScheduleStates() {
+	m.clearedschedule_states = true
+}
+
+// ScheduleStatesCleared reports if the "schedule_states" edge to the BackgroundTaskScheduleState entity was cleared.
+func (m *BackgroundTaskMutation) ScheduleStatesCleared() bool {
+	return m.clearedschedule_states
+}
+
+// RemoveScheduleStateIDs removes the "schedule_states" edge to the BackgroundTaskScheduleState entity by IDs.
+func (m *BackgroundTaskMutation) RemoveScheduleStateIDs(ids ...uuid.UUID) {
+	if m.removedschedule_states == nil {
+		m.removedschedule_states = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.schedule_states, ids[i])
+		m.removedschedule_states[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedScheduleStates returns the removed IDs of the "schedule_states" edge to the BackgroundTaskScheduleState entity.
+func (m *BackgroundTaskMutation) RemovedScheduleStatesIDs() (ids []uuid.UUID) {
+	for id := range m.removedschedule_states {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ScheduleStatesIDs returns the "schedule_states" edge IDs in the mutation.
+func (m *BackgroundTaskMutation) ScheduleStatesIDs() (ids []uuid.UUID) {
+	for id := range m.schedule_states {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetScheduleStates resets all changes to the "schedule_states" edge.
+func (m *BackgroundTaskMutation) ResetScheduleStates() {
+	m.schedule_states = nil
+	m.clearedschedule_states = false
+	m.removedschedule_states = nil
+}
+
 // Where appends a list predicates to the BackgroundTaskMutation builder.
 func (m *BackgroundTaskMutation) Where(ps ...predicate.BackgroundTask) {
 	m.predicates = append(m.predicates, ps...)
@@ -1615,7 +1674,7 @@ func (m *BackgroundTaskMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BackgroundTaskMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.user != nil {
 		edges = append(edges, backgroundtask.EdgeUser)
 	}
@@ -1627,6 +1686,9 @@ func (m *BackgroundTaskMutation) AddedEdges() []string {
 	}
 	if m.run_events != nil {
 		edges = append(edges, backgroundtask.EdgeRunEvents)
+	}
+	if m.schedule_states != nil {
+		edges = append(edges, backgroundtask.EdgeScheduleStates)
 	}
 	return edges
 }
@@ -1655,18 +1717,27 @@ func (m *BackgroundTaskMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case backgroundtask.EdgeScheduleStates:
+		ids := make([]ent.Value, 0, len(m.schedule_states))
+		for id := range m.schedule_states {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BackgroundTaskMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.removedruns != nil {
 		edges = append(edges, backgroundtask.EdgeRuns)
 	}
 	if m.removedrun_events != nil {
 		edges = append(edges, backgroundtask.EdgeRunEvents)
+	}
+	if m.removedschedule_states != nil {
+		edges = append(edges, backgroundtask.EdgeScheduleStates)
 	}
 	return edges
 }
@@ -1687,13 +1758,19 @@ func (m *BackgroundTaskMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case backgroundtask.EdgeScheduleStates:
+		ids := make([]ent.Value, 0, len(m.removedschedule_states))
+		for id := range m.removedschedule_states {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BackgroundTaskMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.cleareduser {
 		edges = append(edges, backgroundtask.EdgeUser)
 	}
@@ -1705,6 +1782,9 @@ func (m *BackgroundTaskMutation) ClearedEdges() []string {
 	}
 	if m.clearedrun_events {
 		edges = append(edges, backgroundtask.EdgeRunEvents)
+	}
+	if m.clearedschedule_states {
+		edges = append(edges, backgroundtask.EdgeScheduleStates)
 	}
 	return edges
 }
@@ -1721,6 +1801,8 @@ func (m *BackgroundTaskMutation) EdgeCleared(name string) bool {
 		return m.clearedruns
 	case backgroundtask.EdgeRunEvents:
 		return m.clearedrun_events
+	case backgroundtask.EdgeScheduleStates:
+		return m.clearedschedule_states
 	}
 	return false
 }
@@ -1754,6 +1836,9 @@ func (m *BackgroundTaskMutation) ResetEdge(name string) error {
 		return nil
 	case backgroundtask.EdgeRunEvents:
 		m.ResetRunEvents()
+		return nil
+	case backgroundtask.EdgeScheduleStates:
+		m.ResetScheduleStates()
 		return nil
 	}
 	return fmt.Errorf("unknown BackgroundTask edge %s", name)
@@ -6094,6 +6179,1157 @@ func (m *BackgroundTaskRunEventMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown BackgroundTaskRunEvent edge %s", name)
+}
+
+// BackgroundTaskScheduleStateMutation represents an operation that mutates the BackgroundTaskScheduleState nodes in the graph.
+type BackgroundTaskScheduleStateMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *uuid.UUID
+	created_at        *time.Time
+	updated_at        *time.Time
+	trigger_type      *string
+	schedule_key      *string
+	last_evaluated_at *time.Time
+	last_due_at       *time.Time
+	last_triggered_at *time.Time
+	last_run_id       *string
+	lease_owner       *string
+	lease_expires_at  *time.Time
+	revision          *int
+	addrevision       *int
+	clearedFields     map[string]struct{}
+	user              *uuid.UUID
+	cleareduser       bool
+	task              *uuid.UUID
+	clearedtask       bool
+	done              bool
+	oldValue          func(context.Context) (*BackgroundTaskScheduleState, error)
+	predicates        []predicate.BackgroundTaskScheduleState
+}
+
+var _ ent.Mutation = (*BackgroundTaskScheduleStateMutation)(nil)
+
+// backgroundtaskschedulestateOption allows management of the mutation configuration using functional options.
+type backgroundtaskschedulestateOption func(*BackgroundTaskScheduleStateMutation)
+
+// newBackgroundTaskScheduleStateMutation creates new mutation for the BackgroundTaskScheduleState entity.
+func newBackgroundTaskScheduleStateMutation(c config, op Op, opts ...backgroundtaskschedulestateOption) *BackgroundTaskScheduleStateMutation {
+	m := &BackgroundTaskScheduleStateMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeBackgroundTaskScheduleState,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withBackgroundTaskScheduleStateID sets the ID field of the mutation.
+func withBackgroundTaskScheduleStateID(id uuid.UUID) backgroundtaskschedulestateOption {
+	return func(m *BackgroundTaskScheduleStateMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *BackgroundTaskScheduleState
+		)
+		m.oldValue = func(ctx context.Context) (*BackgroundTaskScheduleState, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().BackgroundTaskScheduleState.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withBackgroundTaskScheduleState sets the old BackgroundTaskScheduleState of the mutation.
+func withBackgroundTaskScheduleState(node *BackgroundTaskScheduleState) backgroundtaskschedulestateOption {
+	return func(m *BackgroundTaskScheduleStateMutation) {
+		m.oldValue = func(context.Context) (*BackgroundTaskScheduleState, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m BackgroundTaskScheduleStateMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m BackgroundTaskScheduleStateMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of BackgroundTaskScheduleState entities.
+func (m *BackgroundTaskScheduleStateMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *BackgroundTaskScheduleStateMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *BackgroundTaskScheduleStateMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().BackgroundTaskScheduleState.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *BackgroundTaskScheduleStateMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *BackgroundTaskScheduleStateMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetTriggerType sets the "trigger_type" field.
+func (m *BackgroundTaskScheduleStateMutation) SetTriggerType(s string) {
+	m.trigger_type = &s
+}
+
+// TriggerType returns the value of the "trigger_type" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) TriggerType() (r string, exists bool) {
+	v := m.trigger_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTriggerType returns the old "trigger_type" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldTriggerType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTriggerType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTriggerType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTriggerType: %w", err)
+	}
+	return oldValue.TriggerType, nil
+}
+
+// ResetTriggerType resets all changes to the "trigger_type" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetTriggerType() {
+	m.trigger_type = nil
+}
+
+// SetScheduleKey sets the "schedule_key" field.
+func (m *BackgroundTaskScheduleStateMutation) SetScheduleKey(s string) {
+	m.schedule_key = &s
+}
+
+// ScheduleKey returns the value of the "schedule_key" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) ScheduleKey() (r string, exists bool) {
+	v := m.schedule_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScheduleKey returns the old "schedule_key" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldScheduleKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScheduleKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScheduleKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScheduleKey: %w", err)
+	}
+	return oldValue.ScheduleKey, nil
+}
+
+// ResetScheduleKey resets all changes to the "schedule_key" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetScheduleKey() {
+	m.schedule_key = nil
+}
+
+// SetLastEvaluatedAt sets the "last_evaluated_at" field.
+func (m *BackgroundTaskScheduleStateMutation) SetLastEvaluatedAt(t time.Time) {
+	m.last_evaluated_at = &t
+}
+
+// LastEvaluatedAt returns the value of the "last_evaluated_at" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) LastEvaluatedAt() (r time.Time, exists bool) {
+	v := m.last_evaluated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastEvaluatedAt returns the old "last_evaluated_at" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldLastEvaluatedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastEvaluatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastEvaluatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastEvaluatedAt: %w", err)
+	}
+	return oldValue.LastEvaluatedAt, nil
+}
+
+// ClearLastEvaluatedAt clears the value of the "last_evaluated_at" field.
+func (m *BackgroundTaskScheduleStateMutation) ClearLastEvaluatedAt() {
+	m.last_evaluated_at = nil
+	m.clearedFields[backgroundtaskschedulestate.FieldLastEvaluatedAt] = struct{}{}
+}
+
+// LastEvaluatedAtCleared returns if the "last_evaluated_at" field was cleared in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) LastEvaluatedAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskschedulestate.FieldLastEvaluatedAt]
+	return ok
+}
+
+// ResetLastEvaluatedAt resets all changes to the "last_evaluated_at" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetLastEvaluatedAt() {
+	m.last_evaluated_at = nil
+	delete(m.clearedFields, backgroundtaskschedulestate.FieldLastEvaluatedAt)
+}
+
+// SetLastDueAt sets the "last_due_at" field.
+func (m *BackgroundTaskScheduleStateMutation) SetLastDueAt(t time.Time) {
+	m.last_due_at = &t
+}
+
+// LastDueAt returns the value of the "last_due_at" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) LastDueAt() (r time.Time, exists bool) {
+	v := m.last_due_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastDueAt returns the old "last_due_at" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldLastDueAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastDueAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastDueAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastDueAt: %w", err)
+	}
+	return oldValue.LastDueAt, nil
+}
+
+// ClearLastDueAt clears the value of the "last_due_at" field.
+func (m *BackgroundTaskScheduleStateMutation) ClearLastDueAt() {
+	m.last_due_at = nil
+	m.clearedFields[backgroundtaskschedulestate.FieldLastDueAt] = struct{}{}
+}
+
+// LastDueAtCleared returns if the "last_due_at" field was cleared in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) LastDueAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskschedulestate.FieldLastDueAt]
+	return ok
+}
+
+// ResetLastDueAt resets all changes to the "last_due_at" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetLastDueAt() {
+	m.last_due_at = nil
+	delete(m.clearedFields, backgroundtaskschedulestate.FieldLastDueAt)
+}
+
+// SetLastTriggeredAt sets the "last_triggered_at" field.
+func (m *BackgroundTaskScheduleStateMutation) SetLastTriggeredAt(t time.Time) {
+	m.last_triggered_at = &t
+}
+
+// LastTriggeredAt returns the value of the "last_triggered_at" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) LastTriggeredAt() (r time.Time, exists bool) {
+	v := m.last_triggered_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastTriggeredAt returns the old "last_triggered_at" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldLastTriggeredAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastTriggeredAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastTriggeredAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastTriggeredAt: %w", err)
+	}
+	return oldValue.LastTriggeredAt, nil
+}
+
+// ClearLastTriggeredAt clears the value of the "last_triggered_at" field.
+func (m *BackgroundTaskScheduleStateMutation) ClearLastTriggeredAt() {
+	m.last_triggered_at = nil
+	m.clearedFields[backgroundtaskschedulestate.FieldLastTriggeredAt] = struct{}{}
+}
+
+// LastTriggeredAtCleared returns if the "last_triggered_at" field was cleared in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) LastTriggeredAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskschedulestate.FieldLastTriggeredAt]
+	return ok
+}
+
+// ResetLastTriggeredAt resets all changes to the "last_triggered_at" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetLastTriggeredAt() {
+	m.last_triggered_at = nil
+	delete(m.clearedFields, backgroundtaskschedulestate.FieldLastTriggeredAt)
+}
+
+// SetLastRunID sets the "last_run_id" field.
+func (m *BackgroundTaskScheduleStateMutation) SetLastRunID(s string) {
+	m.last_run_id = &s
+}
+
+// LastRunID returns the value of the "last_run_id" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) LastRunID() (r string, exists bool) {
+	v := m.last_run_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastRunID returns the old "last_run_id" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldLastRunID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastRunID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastRunID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastRunID: %w", err)
+	}
+	return oldValue.LastRunID, nil
+}
+
+// ClearLastRunID clears the value of the "last_run_id" field.
+func (m *BackgroundTaskScheduleStateMutation) ClearLastRunID() {
+	m.last_run_id = nil
+	m.clearedFields[backgroundtaskschedulestate.FieldLastRunID] = struct{}{}
+}
+
+// LastRunIDCleared returns if the "last_run_id" field was cleared in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) LastRunIDCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskschedulestate.FieldLastRunID]
+	return ok
+}
+
+// ResetLastRunID resets all changes to the "last_run_id" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetLastRunID() {
+	m.last_run_id = nil
+	delete(m.clearedFields, backgroundtaskschedulestate.FieldLastRunID)
+}
+
+// SetLeaseOwner sets the "lease_owner" field.
+func (m *BackgroundTaskScheduleStateMutation) SetLeaseOwner(s string) {
+	m.lease_owner = &s
+}
+
+// LeaseOwner returns the value of the "lease_owner" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) LeaseOwner() (r string, exists bool) {
+	v := m.lease_owner
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLeaseOwner returns the old "lease_owner" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldLeaseOwner(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLeaseOwner is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLeaseOwner requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLeaseOwner: %w", err)
+	}
+	return oldValue.LeaseOwner, nil
+}
+
+// ClearLeaseOwner clears the value of the "lease_owner" field.
+func (m *BackgroundTaskScheduleStateMutation) ClearLeaseOwner() {
+	m.lease_owner = nil
+	m.clearedFields[backgroundtaskschedulestate.FieldLeaseOwner] = struct{}{}
+}
+
+// LeaseOwnerCleared returns if the "lease_owner" field was cleared in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) LeaseOwnerCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskschedulestate.FieldLeaseOwner]
+	return ok
+}
+
+// ResetLeaseOwner resets all changes to the "lease_owner" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetLeaseOwner() {
+	m.lease_owner = nil
+	delete(m.clearedFields, backgroundtaskschedulestate.FieldLeaseOwner)
+}
+
+// SetLeaseExpiresAt sets the "lease_expires_at" field.
+func (m *BackgroundTaskScheduleStateMutation) SetLeaseExpiresAt(t time.Time) {
+	m.lease_expires_at = &t
+}
+
+// LeaseExpiresAt returns the value of the "lease_expires_at" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) LeaseExpiresAt() (r time.Time, exists bool) {
+	v := m.lease_expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLeaseExpiresAt returns the old "lease_expires_at" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldLeaseExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLeaseExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLeaseExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLeaseExpiresAt: %w", err)
+	}
+	return oldValue.LeaseExpiresAt, nil
+}
+
+// ClearLeaseExpiresAt clears the value of the "lease_expires_at" field.
+func (m *BackgroundTaskScheduleStateMutation) ClearLeaseExpiresAt() {
+	m.lease_expires_at = nil
+	m.clearedFields[backgroundtaskschedulestate.FieldLeaseExpiresAt] = struct{}{}
+}
+
+// LeaseExpiresAtCleared returns if the "lease_expires_at" field was cleared in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) LeaseExpiresAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskschedulestate.FieldLeaseExpiresAt]
+	return ok
+}
+
+// ResetLeaseExpiresAt resets all changes to the "lease_expires_at" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetLeaseExpiresAt() {
+	m.lease_expires_at = nil
+	delete(m.clearedFields, backgroundtaskschedulestate.FieldLeaseExpiresAt)
+}
+
+// SetRevision sets the "revision" field.
+func (m *BackgroundTaskScheduleStateMutation) SetRevision(i int) {
+	m.revision = &i
+	m.addrevision = nil
+}
+
+// Revision returns the value of the "revision" field in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) Revision() (r int, exists bool) {
+	v := m.revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRevision returns the old "revision" field's value of the BackgroundTaskScheduleState entity.
+// If the BackgroundTaskScheduleState object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskScheduleStateMutation) OldRevision(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRevision is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRevision requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRevision: %w", err)
+	}
+	return oldValue.Revision, nil
+}
+
+// AddRevision adds i to the "revision" field.
+func (m *BackgroundTaskScheduleStateMutation) AddRevision(i int) {
+	if m.addrevision != nil {
+		*m.addrevision += i
+	} else {
+		m.addrevision = &i
+	}
+}
+
+// AddedRevision returns the value that was added to the "revision" field in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) AddedRevision() (r int, exists bool) {
+	v := m.addrevision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRevision resets all changes to the "revision" field.
+func (m *BackgroundTaskScheduleStateMutation) ResetRevision() {
+	m.revision = nil
+	m.addrevision = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *BackgroundTaskScheduleStateMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *BackgroundTaskScheduleStateMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *BackgroundTaskScheduleStateMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskScheduleStateMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *BackgroundTaskScheduleStateMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetTaskID sets the "task" edge to the BackgroundTask entity by id.
+func (m *BackgroundTaskScheduleStateMutation) SetTaskID(id uuid.UUID) {
+	m.task = &id
+}
+
+// ClearTask clears the "task" edge to the BackgroundTask entity.
+func (m *BackgroundTaskScheduleStateMutation) ClearTask() {
+	m.clearedtask = true
+}
+
+// TaskCleared reports if the "task" edge to the BackgroundTask entity was cleared.
+func (m *BackgroundTaskScheduleStateMutation) TaskCleared() bool {
+	return m.clearedtask
+}
+
+// TaskID returns the "task" edge ID in the mutation.
+func (m *BackgroundTaskScheduleStateMutation) TaskID() (id uuid.UUID, exists bool) {
+	if m.task != nil {
+		return *m.task, true
+	}
+	return
+}
+
+// TaskIDs returns the "task" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TaskID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskScheduleStateMutation) TaskIDs() (ids []uuid.UUID) {
+	if id := m.task; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTask resets all changes to the "task" edge.
+func (m *BackgroundTaskScheduleStateMutation) ResetTask() {
+	m.task = nil
+	m.clearedtask = false
+}
+
+// Where appends a list predicates to the BackgroundTaskScheduleStateMutation builder.
+func (m *BackgroundTaskScheduleStateMutation) Where(ps ...predicate.BackgroundTaskScheduleState) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the BackgroundTaskScheduleStateMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *BackgroundTaskScheduleStateMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.BackgroundTaskScheduleState, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *BackgroundTaskScheduleStateMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *BackgroundTaskScheduleStateMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (BackgroundTaskScheduleState).
+func (m *BackgroundTaskScheduleStateMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *BackgroundTaskScheduleStateMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldUpdatedAt)
+	}
+	if m.trigger_type != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldTriggerType)
+	}
+	if m.schedule_key != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldScheduleKey)
+	}
+	if m.last_evaluated_at != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldLastEvaluatedAt)
+	}
+	if m.last_due_at != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldLastDueAt)
+	}
+	if m.last_triggered_at != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldLastTriggeredAt)
+	}
+	if m.last_run_id != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldLastRunID)
+	}
+	if m.lease_owner != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldLeaseOwner)
+	}
+	if m.lease_expires_at != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldLeaseExpiresAt)
+	}
+	if m.revision != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldRevision)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *BackgroundTaskScheduleStateMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case backgroundtaskschedulestate.FieldCreatedAt:
+		return m.CreatedAt()
+	case backgroundtaskschedulestate.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case backgroundtaskschedulestate.FieldTriggerType:
+		return m.TriggerType()
+	case backgroundtaskschedulestate.FieldScheduleKey:
+		return m.ScheduleKey()
+	case backgroundtaskschedulestate.FieldLastEvaluatedAt:
+		return m.LastEvaluatedAt()
+	case backgroundtaskschedulestate.FieldLastDueAt:
+		return m.LastDueAt()
+	case backgroundtaskschedulestate.FieldLastTriggeredAt:
+		return m.LastTriggeredAt()
+	case backgroundtaskschedulestate.FieldLastRunID:
+		return m.LastRunID()
+	case backgroundtaskschedulestate.FieldLeaseOwner:
+		return m.LeaseOwner()
+	case backgroundtaskschedulestate.FieldLeaseExpiresAt:
+		return m.LeaseExpiresAt()
+	case backgroundtaskschedulestate.FieldRevision:
+		return m.Revision()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *BackgroundTaskScheduleStateMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case backgroundtaskschedulestate.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case backgroundtaskschedulestate.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case backgroundtaskschedulestate.FieldTriggerType:
+		return m.OldTriggerType(ctx)
+	case backgroundtaskschedulestate.FieldScheduleKey:
+		return m.OldScheduleKey(ctx)
+	case backgroundtaskschedulestate.FieldLastEvaluatedAt:
+		return m.OldLastEvaluatedAt(ctx)
+	case backgroundtaskschedulestate.FieldLastDueAt:
+		return m.OldLastDueAt(ctx)
+	case backgroundtaskschedulestate.FieldLastTriggeredAt:
+		return m.OldLastTriggeredAt(ctx)
+	case backgroundtaskschedulestate.FieldLastRunID:
+		return m.OldLastRunID(ctx)
+	case backgroundtaskschedulestate.FieldLeaseOwner:
+		return m.OldLeaseOwner(ctx)
+	case backgroundtaskschedulestate.FieldLeaseExpiresAt:
+		return m.OldLeaseExpiresAt(ctx)
+	case backgroundtaskschedulestate.FieldRevision:
+		return m.OldRevision(ctx)
+	}
+	return nil, fmt.Errorf("unknown BackgroundTaskScheduleState field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BackgroundTaskScheduleStateMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case backgroundtaskschedulestate.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case backgroundtaskschedulestate.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case backgroundtaskschedulestate.FieldTriggerType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTriggerType(v)
+		return nil
+	case backgroundtaskschedulestate.FieldScheduleKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScheduleKey(v)
+		return nil
+	case backgroundtaskschedulestate.FieldLastEvaluatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastEvaluatedAt(v)
+		return nil
+	case backgroundtaskschedulestate.FieldLastDueAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastDueAt(v)
+		return nil
+	case backgroundtaskschedulestate.FieldLastTriggeredAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastTriggeredAt(v)
+		return nil
+	case backgroundtaskschedulestate.FieldLastRunID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastRunID(v)
+		return nil
+	case backgroundtaskschedulestate.FieldLeaseOwner:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLeaseOwner(v)
+		return nil
+	case backgroundtaskschedulestate.FieldLeaseExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLeaseExpiresAt(v)
+		return nil
+	case backgroundtaskschedulestate.FieldRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRevision(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskScheduleState field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *BackgroundTaskScheduleStateMutation) AddedFields() []string {
+	var fields []string
+	if m.addrevision != nil {
+		fields = append(fields, backgroundtaskschedulestate.FieldRevision)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *BackgroundTaskScheduleStateMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case backgroundtaskschedulestate.FieldRevision:
+		return m.AddedRevision()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BackgroundTaskScheduleStateMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case backgroundtaskschedulestate.FieldRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRevision(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskScheduleState numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *BackgroundTaskScheduleStateMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(backgroundtaskschedulestate.FieldLastEvaluatedAt) {
+		fields = append(fields, backgroundtaskschedulestate.FieldLastEvaluatedAt)
+	}
+	if m.FieldCleared(backgroundtaskschedulestate.FieldLastDueAt) {
+		fields = append(fields, backgroundtaskschedulestate.FieldLastDueAt)
+	}
+	if m.FieldCleared(backgroundtaskschedulestate.FieldLastTriggeredAt) {
+		fields = append(fields, backgroundtaskschedulestate.FieldLastTriggeredAt)
+	}
+	if m.FieldCleared(backgroundtaskschedulestate.FieldLastRunID) {
+		fields = append(fields, backgroundtaskschedulestate.FieldLastRunID)
+	}
+	if m.FieldCleared(backgroundtaskschedulestate.FieldLeaseOwner) {
+		fields = append(fields, backgroundtaskschedulestate.FieldLeaseOwner)
+	}
+	if m.FieldCleared(backgroundtaskschedulestate.FieldLeaseExpiresAt) {
+		fields = append(fields, backgroundtaskschedulestate.FieldLeaseExpiresAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *BackgroundTaskScheduleStateMutation) ClearField(name string) error {
+	switch name {
+	case backgroundtaskschedulestate.FieldLastEvaluatedAt:
+		m.ClearLastEvaluatedAt()
+		return nil
+	case backgroundtaskschedulestate.FieldLastDueAt:
+		m.ClearLastDueAt()
+		return nil
+	case backgroundtaskschedulestate.FieldLastTriggeredAt:
+		m.ClearLastTriggeredAt()
+		return nil
+	case backgroundtaskschedulestate.FieldLastRunID:
+		m.ClearLastRunID()
+		return nil
+	case backgroundtaskschedulestate.FieldLeaseOwner:
+		m.ClearLeaseOwner()
+		return nil
+	case backgroundtaskschedulestate.FieldLeaseExpiresAt:
+		m.ClearLeaseExpiresAt()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskScheduleState nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *BackgroundTaskScheduleStateMutation) ResetField(name string) error {
+	switch name {
+	case backgroundtaskschedulestate.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case backgroundtaskschedulestate.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case backgroundtaskschedulestate.FieldTriggerType:
+		m.ResetTriggerType()
+		return nil
+	case backgroundtaskschedulestate.FieldScheduleKey:
+		m.ResetScheduleKey()
+		return nil
+	case backgroundtaskschedulestate.FieldLastEvaluatedAt:
+		m.ResetLastEvaluatedAt()
+		return nil
+	case backgroundtaskschedulestate.FieldLastDueAt:
+		m.ResetLastDueAt()
+		return nil
+	case backgroundtaskschedulestate.FieldLastTriggeredAt:
+		m.ResetLastTriggeredAt()
+		return nil
+	case backgroundtaskschedulestate.FieldLastRunID:
+		m.ResetLastRunID()
+		return nil
+	case backgroundtaskschedulestate.FieldLeaseOwner:
+		m.ResetLeaseOwner()
+		return nil
+	case backgroundtaskschedulestate.FieldLeaseExpiresAt:
+		m.ResetLeaseExpiresAt()
+		return nil
+	case backgroundtaskschedulestate.FieldRevision:
+		m.ResetRevision()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskScheduleState field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, backgroundtaskschedulestate.EdgeUser)
+	}
+	if m.task != nil {
+		edges = append(edges, backgroundtaskschedulestate.EdgeTask)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case backgroundtaskschedulestate.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case backgroundtaskschedulestate.EdgeTask:
+		if id := m.task; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, backgroundtaskschedulestate.EdgeUser)
+	}
+	if m.clearedtask {
+		edges = append(edges, backgroundtaskschedulestate.EdgeTask)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *BackgroundTaskScheduleStateMutation) EdgeCleared(name string) bool {
+	switch name {
+	case backgroundtaskschedulestate.EdgeUser:
+		return m.cleareduser
+	case backgroundtaskschedulestate.EdgeTask:
+		return m.clearedtask
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *BackgroundTaskScheduleStateMutation) ClearEdge(name string) error {
+	switch name {
+	case backgroundtaskschedulestate.EdgeUser:
+		m.ClearUser()
+		return nil
+	case backgroundtaskschedulestate.EdgeTask:
+		m.ClearTask()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskScheduleState unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *BackgroundTaskScheduleStateMutation) ResetEdge(name string) error {
+	switch name {
+	case backgroundtaskschedulestate.EdgeUser:
+		m.ResetUser()
+		return nil
+	case backgroundtaskschedulestate.EdgeTask:
+		m.ResetTask()
+		return nil
+	}
+	return fmt.Errorf("unknown BackgroundTaskScheduleState edge %s", name)
 }
 
 // CreditLedgerMutation represents an operation that mutates the CreditLedger nodes in the graph.
@@ -14832,44 +16068,47 @@ func (m *SubscriptionHistoryMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                                Op
-	typ                               string
-	id                                *uuid.UUID
-	created_at                        *time.Time
-	updated_at                        *time.Time
-	email                             *string
-	workos_user_id                    *string
-	workos_org_id                     *string
-	clearedFields                     map[string]struct{}
-	subscription                      *uuid.UUID
-	clearedsubscription               bool
-	ledger_entries                    map[uuid.UUID]struct{}
-	removedledger_entries             map[uuid.UUID]struct{}
-	clearedledger_entries             bool
-	llm_usages                        map[uuid.UUID]struct{}
-	removedllm_usages                 map[uuid.UUID]struct{}
-	clearedllm_usages                 bool
-	oauth_connections                 map[uuid.UUID]struct{}
-	removedoauth_connections          map[uuid.UUID]struct{}
-	clearedoauth_connections          bool
-	mcp_connections                   map[uuid.UUID]struct{}
-	removedmcp_connections            map[uuid.UUID]struct{}
-	clearedmcp_connections            bool
-	background_tasks                  map[uuid.UUID]struct{}
-	removedbackground_tasks           map[uuid.UUID]struct{}
-	clearedbackground_tasks           bool
-	background_task_artifacts         map[uuid.UUID]struct{}
-	removedbackground_task_artifacts  map[uuid.UUID]struct{}
-	clearedbackground_task_artifacts  bool
-	background_task_runs              map[uuid.UUID]struct{}
-	removedbackground_task_runs       map[uuid.UUID]struct{}
-	clearedbackground_task_runs       bool
-	background_task_run_events        map[uuid.UUID]struct{}
-	removedbackground_task_run_events map[uuid.UUID]struct{}
-	clearedbackground_task_run_events bool
-	done                              bool
-	oldValue                          func(context.Context) (*User, error)
-	predicates                        []predicate.User
+	op                                     Op
+	typ                                    string
+	id                                     *uuid.UUID
+	created_at                             *time.Time
+	updated_at                             *time.Time
+	email                                  *string
+	workos_user_id                         *string
+	workos_org_id                          *string
+	clearedFields                          map[string]struct{}
+	subscription                           *uuid.UUID
+	clearedsubscription                    bool
+	ledger_entries                         map[uuid.UUID]struct{}
+	removedledger_entries                  map[uuid.UUID]struct{}
+	clearedledger_entries                  bool
+	llm_usages                             map[uuid.UUID]struct{}
+	removedllm_usages                      map[uuid.UUID]struct{}
+	clearedllm_usages                      bool
+	oauth_connections                      map[uuid.UUID]struct{}
+	removedoauth_connections               map[uuid.UUID]struct{}
+	clearedoauth_connections               bool
+	mcp_connections                        map[uuid.UUID]struct{}
+	removedmcp_connections                 map[uuid.UUID]struct{}
+	clearedmcp_connections                 bool
+	background_tasks                       map[uuid.UUID]struct{}
+	removedbackground_tasks                map[uuid.UUID]struct{}
+	clearedbackground_tasks                bool
+	background_task_artifacts              map[uuid.UUID]struct{}
+	removedbackground_task_artifacts       map[uuid.UUID]struct{}
+	clearedbackground_task_artifacts       bool
+	background_task_runs                   map[uuid.UUID]struct{}
+	removedbackground_task_runs            map[uuid.UUID]struct{}
+	clearedbackground_task_runs            bool
+	background_task_run_events             map[uuid.UUID]struct{}
+	removedbackground_task_run_events      map[uuid.UUID]struct{}
+	clearedbackground_task_run_events      bool
+	background_task_schedule_states        map[uuid.UUID]struct{}
+	removedbackground_task_schedule_states map[uuid.UUID]struct{}
+	clearedbackground_task_schedule_states bool
+	done                                   bool
+	oldValue                               func(context.Context) (*User, error)
+	predicates                             []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -15653,6 +16892,60 @@ func (m *UserMutation) ResetBackgroundTaskRunEvents() {
 	m.removedbackground_task_run_events = nil
 }
 
+// AddBackgroundTaskScheduleStateIDs adds the "background_task_schedule_states" edge to the BackgroundTaskScheduleState entity by ids.
+func (m *UserMutation) AddBackgroundTaskScheduleStateIDs(ids ...uuid.UUID) {
+	if m.background_task_schedule_states == nil {
+		m.background_task_schedule_states = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.background_task_schedule_states[ids[i]] = struct{}{}
+	}
+}
+
+// ClearBackgroundTaskScheduleStates clears the "background_task_schedule_states" edge to the BackgroundTaskScheduleState entity.
+func (m *UserMutation) ClearBackgroundTaskScheduleStates() {
+	m.clearedbackground_task_schedule_states = true
+}
+
+// BackgroundTaskScheduleStatesCleared reports if the "background_task_schedule_states" edge to the BackgroundTaskScheduleState entity was cleared.
+func (m *UserMutation) BackgroundTaskScheduleStatesCleared() bool {
+	return m.clearedbackground_task_schedule_states
+}
+
+// RemoveBackgroundTaskScheduleStateIDs removes the "background_task_schedule_states" edge to the BackgroundTaskScheduleState entity by IDs.
+func (m *UserMutation) RemoveBackgroundTaskScheduleStateIDs(ids ...uuid.UUID) {
+	if m.removedbackground_task_schedule_states == nil {
+		m.removedbackground_task_schedule_states = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.background_task_schedule_states, ids[i])
+		m.removedbackground_task_schedule_states[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBackgroundTaskScheduleStates returns the removed IDs of the "background_task_schedule_states" edge to the BackgroundTaskScheduleState entity.
+func (m *UserMutation) RemovedBackgroundTaskScheduleStatesIDs() (ids []uuid.UUID) {
+	for id := range m.removedbackground_task_schedule_states {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// BackgroundTaskScheduleStatesIDs returns the "background_task_schedule_states" edge IDs in the mutation.
+func (m *UserMutation) BackgroundTaskScheduleStatesIDs() (ids []uuid.UUID) {
+	for id := range m.background_task_schedule_states {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetBackgroundTaskScheduleStates resets all changes to the "background_task_schedule_states" edge.
+func (m *UserMutation) ResetBackgroundTaskScheduleStates() {
+	m.background_task_schedule_states = nil
+	m.clearedbackground_task_schedule_states = false
+	m.removedbackground_task_schedule_states = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -15869,7 +17162,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 9)
+	edges := make([]string, 0, 10)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -15896,6 +17189,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.background_task_run_events != nil {
 		edges = append(edges, user.EdgeBackgroundTaskRunEvents)
+	}
+	if m.background_task_schedule_states != nil {
+		edges = append(edges, user.EdgeBackgroundTaskScheduleStates)
 	}
 	return edges
 }
@@ -15956,13 +17252,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeBackgroundTaskScheduleStates:
+		ids := make([]ent.Value, 0, len(m.background_task_schedule_states))
+		for id := range m.background_task_schedule_states {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 9)
+	edges := make([]string, 0, 10)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -15986,6 +17288,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedbackground_task_run_events != nil {
 		edges = append(edges, user.EdgeBackgroundTaskRunEvents)
+	}
+	if m.removedbackground_task_schedule_states != nil {
+		edges = append(edges, user.EdgeBackgroundTaskScheduleStates)
 	}
 	return edges
 }
@@ -16042,13 +17347,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeBackgroundTaskScheduleStates:
+		ids := make([]ent.Value, 0, len(m.removedbackground_task_schedule_states))
+		for id := range m.removedbackground_task_schedule_states {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 9)
+	edges := make([]string, 0, 10)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -16076,6 +17387,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedbackground_task_run_events {
 		edges = append(edges, user.EdgeBackgroundTaskRunEvents)
 	}
+	if m.clearedbackground_task_schedule_states {
+		edges = append(edges, user.EdgeBackgroundTaskScheduleStates)
+	}
 	return edges
 }
 
@@ -16101,6 +17415,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedbackground_task_runs
 	case user.EdgeBackgroundTaskRunEvents:
 		return m.clearedbackground_task_run_events
+	case user.EdgeBackgroundTaskScheduleStates:
+		return m.clearedbackground_task_schedule_states
 	}
 	return false
 }
@@ -16146,6 +17462,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeBackgroundTaskRunEvents:
 		m.ResetBackgroundTaskRunEvents()
+		return nil
+	case user.EdgeBackgroundTaskScheduleStates:
+		m.ResetBackgroundTaskScheduleStates()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

@@ -220,6 +220,60 @@ var (
 			},
 		},
 	}
+	// BackgroundTaskScheduleStatesColumns holds the columns for the "background_task_schedule_states" table.
+	BackgroundTaskScheduleStatesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "trigger_type", Type: field.TypeString},
+		{Name: "schedule_key", Type: field.TypeString},
+		{Name: "last_evaluated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_due_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_triggered_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_run_id", Type: field.TypeString, Nullable: true},
+		{Name: "lease_owner", Type: field.TypeString, Nullable: true},
+		{Name: "lease_expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revision", Type: field.TypeInt, Default: 1},
+		{Name: "background_task_id", Type: field.TypeUUID},
+		{Name: "user_background_task_schedule_states", Type: field.TypeUUID},
+	}
+	// BackgroundTaskScheduleStatesTable holds the schema information for the "background_task_schedule_states" table.
+	BackgroundTaskScheduleStatesTable = &schema.Table{
+		Name:       "background_task_schedule_states",
+		Columns:    BackgroundTaskScheduleStatesColumns,
+		PrimaryKey: []*schema.Column{BackgroundTaskScheduleStatesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "background_task_schedule_states_background_tasks_schedule_states",
+				Columns:    []*schema.Column{BackgroundTaskScheduleStatesColumns[12]},
+				RefColumns: []*schema.Column{BackgroundTasksColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "background_task_schedule_states_users_background_task_schedule_states",
+				Columns:    []*schema.Column{BackgroundTaskScheduleStatesColumns[13]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "backgroundtaskschedulestate_trigger_type_schedule_key_background_task_id",
+				Unique:  true,
+				Columns: []*schema.Column{BackgroundTaskScheduleStatesColumns[3], BackgroundTaskScheduleStatesColumns[4], BackgroundTaskScheduleStatesColumns[12]},
+			},
+			{
+				Name:    "backgroundtaskschedulestate_lease_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{BackgroundTaskScheduleStatesColumns[10]},
+			},
+			{
+				Name:    "backgroundtaskschedulestate_last_run_id",
+				Unique:  false,
+				Columns: []*schema.Column{BackgroundTaskScheduleStatesColumns[8]},
+			},
+		},
+	}
 	// CreditLedgersColumns holds the columns for the "credit_ledgers" table.
 	CreditLedgersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -565,6 +619,7 @@ var (
 		BackgroundTaskArtifactsTable,
 		BackgroundTaskRunsTable,
 		BackgroundTaskRunEventsTable,
+		BackgroundTaskScheduleStatesTable,
 		CreditLedgersTable,
 		LlmUsagesTable,
 		LlmUsageHistoriesTable,
@@ -589,6 +644,8 @@ func init() {
 	BackgroundTaskRunEventsTable.ForeignKeys[0].RefTable = BackgroundTasksTable
 	BackgroundTaskRunEventsTable.ForeignKeys[1].RefTable = BackgroundTaskRunsTable
 	BackgroundTaskRunEventsTable.ForeignKeys[2].RefTable = UsersTable
+	BackgroundTaskScheduleStatesTable.ForeignKeys[0].RefTable = BackgroundTasksTable
+	BackgroundTaskScheduleStatesTable.ForeignKeys[1].RefTable = UsersTable
 	CreditLedgersTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	McpConnectionsTable.ForeignKeys[0].RefTable = UsersTable

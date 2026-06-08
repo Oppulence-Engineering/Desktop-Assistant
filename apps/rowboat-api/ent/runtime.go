@@ -9,6 +9,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -229,6 +230,39 @@ func init() {
 	backgroundtaskruneventDescID := backgroundtaskruneventMixinFields0[0].Descriptor()
 	// backgroundtaskrunevent.DefaultID holds the default value on creation for the id field.
 	backgroundtaskrunevent.DefaultID = backgroundtaskruneventDescID.Default.(func() uuid.UUID)
+	backgroundtaskschedulestateMixin := schema.BackgroundTaskScheduleState{}.Mixin()
+	backgroundtaskschedulestateMixinFields0 := backgroundtaskschedulestateMixin[0].Fields()
+	_ = backgroundtaskschedulestateMixinFields0
+	backgroundtaskschedulestateFields := schema.BackgroundTaskScheduleState{}.Fields()
+	_ = backgroundtaskschedulestateFields
+	// backgroundtaskschedulestateDescCreatedAt is the schema descriptor for created_at field.
+	backgroundtaskschedulestateDescCreatedAt := backgroundtaskschedulestateMixinFields0[1].Descriptor()
+	// backgroundtaskschedulestate.DefaultCreatedAt holds the default value on creation for the created_at field.
+	backgroundtaskschedulestate.DefaultCreatedAt = backgroundtaskschedulestateDescCreatedAt.Default.(func() time.Time)
+	// backgroundtaskschedulestateDescUpdatedAt is the schema descriptor for updated_at field.
+	backgroundtaskschedulestateDescUpdatedAt := backgroundtaskschedulestateMixinFields0[2].Descriptor()
+	// backgroundtaskschedulestate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	backgroundtaskschedulestate.DefaultUpdatedAt = backgroundtaskschedulestateDescUpdatedAt.Default.(func() time.Time)
+	// backgroundtaskschedulestate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	backgroundtaskschedulestate.UpdateDefaultUpdatedAt = backgroundtaskschedulestateDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// backgroundtaskschedulestateDescTriggerType is the schema descriptor for trigger_type field.
+	backgroundtaskschedulestateDescTriggerType := backgroundtaskschedulestateFields[0].Descriptor()
+	// backgroundtaskschedulestate.TriggerTypeValidator is a validator for the "trigger_type" field. It is called by the builders before save.
+	backgroundtaskschedulestate.TriggerTypeValidator = backgroundtaskschedulestateDescTriggerType.Validators[0].(func(string) error)
+	// backgroundtaskschedulestateDescScheduleKey is the schema descriptor for schedule_key field.
+	backgroundtaskschedulestateDescScheduleKey := backgroundtaskschedulestateFields[1].Descriptor()
+	// backgroundtaskschedulestate.ScheduleKeyValidator is a validator for the "schedule_key" field. It is called by the builders before save.
+	backgroundtaskschedulestate.ScheduleKeyValidator = backgroundtaskschedulestateDescScheduleKey.Validators[0].(func(string) error)
+	// backgroundtaskschedulestateDescRevision is the schema descriptor for revision field.
+	backgroundtaskschedulestateDescRevision := backgroundtaskschedulestateFields[8].Descriptor()
+	// backgroundtaskschedulestate.DefaultRevision holds the default value on creation for the revision field.
+	backgroundtaskschedulestate.DefaultRevision = backgroundtaskschedulestateDescRevision.Default.(int)
+	// backgroundtaskschedulestate.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
+	backgroundtaskschedulestate.RevisionValidator = backgroundtaskschedulestateDescRevision.Validators[0].(func(int) error)
+	// backgroundtaskschedulestateDescID is the schema descriptor for id field.
+	backgroundtaskschedulestateDescID := backgroundtaskschedulestateMixinFields0[0].Descriptor()
+	// backgroundtaskschedulestate.DefaultID holds the default value on creation for the id field.
+	backgroundtaskschedulestate.DefaultID = backgroundtaskschedulestateDescID.Default.(func() uuid.UUID)
 	creditledgerFields := schema.CreditLedger{}.Fields()
 	_ = creditledgerFields
 	// creditledgerDescTs is the schema descriptor for ts field.

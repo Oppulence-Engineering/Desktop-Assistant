@@ -19,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
@@ -518,6 +519,16 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		Exec(r.Context()); err != nil {
 		_ = tx.Rollback()
 		h.log.Error("delete background task artifact", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not delete background task", "internal_error")
+		return
+	}
+	// Schedule-state rows FK the task with ON DELETE NO ACTION (RFC 002), so
+	// they must be removed inside this transaction before the task delete.
+	if _, err := tx.BackgroundTaskScheduleState.Delete().
+		Where(backgroundtaskschedulestate.HasTaskWith(backgroundtask.IDEQ(task.ID))).
+		Exec(r.Context()); err != nil {
+		_ = tx.Rollback()
+		h.log.Error("delete background task schedule states", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not delete background task", "internal_error")
 		return
 	}

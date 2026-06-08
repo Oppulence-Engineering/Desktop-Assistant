@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -246,6 +247,21 @@ func (_c *UserCreate) AddBackgroundTaskRunEvents(v ...*BackgroundTaskRunEvent) *
 		ids[i] = v[i].ID
 	}
 	return _c.AddBackgroundTaskRunEventIDs(ids...)
+}
+
+// AddBackgroundTaskScheduleStateIDs adds the "background_task_schedule_states" edge to the BackgroundTaskScheduleState entity by IDs.
+func (_c *UserCreate) AddBackgroundTaskScheduleStateIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddBackgroundTaskScheduleStateIDs(ids...)
+	return _c
+}
+
+// AddBackgroundTaskScheduleStates adds the "background_task_schedule_states" edges to the BackgroundTaskScheduleState entity.
+func (_c *UserCreate) AddBackgroundTaskScheduleStates(v ...*BackgroundTaskScheduleState) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddBackgroundTaskScheduleStateIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -506,6 +522,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrunevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.BackgroundTaskScheduleStatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskScheduleStatesTable,
+			Columns: []string{user.BackgroundTaskScheduleStatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskschedulestate.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -29,29 +30,31 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx                              *QueryContext
-	order                            []user.OrderOption
-	inters                           []Interceptor
-	predicates                       []predicate.User
-	withSubscription                 *SubscriptionQuery
-	withLedgerEntries                *CreditLedgerQuery
-	withLlmUsages                    *LLMUsageQuery
-	withOauthConnections             *OAuthConnectionQuery
-	withMcpConnections               *MCPConnectionQuery
-	withBackgroundTasks              *BackgroundTaskQuery
-	withBackgroundTaskArtifacts      *BackgroundTaskArtifactQuery
-	withBackgroundTaskRuns           *BackgroundTaskRunQuery
-	withBackgroundTaskRunEvents      *BackgroundTaskRunEventQuery
-	modifiers                        []func(*sql.Selector)
-	loadTotal                        []func(context.Context, []*User) error
-	withNamedLedgerEntries           map[string]*CreditLedgerQuery
-	withNamedLlmUsages               map[string]*LLMUsageQuery
-	withNamedOauthConnections        map[string]*OAuthConnectionQuery
-	withNamedMcpConnections          map[string]*MCPConnectionQuery
-	withNamedBackgroundTasks         map[string]*BackgroundTaskQuery
-	withNamedBackgroundTaskArtifacts map[string]*BackgroundTaskArtifactQuery
-	withNamedBackgroundTaskRuns      map[string]*BackgroundTaskRunQuery
-	withNamedBackgroundTaskRunEvents map[string]*BackgroundTaskRunEventQuery
+	ctx                                   *QueryContext
+	order                                 []user.OrderOption
+	inters                                []Interceptor
+	predicates                            []predicate.User
+	withSubscription                      *SubscriptionQuery
+	withLedgerEntries                     *CreditLedgerQuery
+	withLlmUsages                         *LLMUsageQuery
+	withOauthConnections                  *OAuthConnectionQuery
+	withMcpConnections                    *MCPConnectionQuery
+	withBackgroundTasks                   *BackgroundTaskQuery
+	withBackgroundTaskArtifacts           *BackgroundTaskArtifactQuery
+	withBackgroundTaskRuns                *BackgroundTaskRunQuery
+	withBackgroundTaskRunEvents           *BackgroundTaskRunEventQuery
+	withBackgroundTaskScheduleStates      *BackgroundTaskScheduleStateQuery
+	modifiers                             []func(*sql.Selector)
+	loadTotal                             []func(context.Context, []*User) error
+	withNamedLedgerEntries                map[string]*CreditLedgerQuery
+	withNamedLlmUsages                    map[string]*LLMUsageQuery
+	withNamedOauthConnections             map[string]*OAuthConnectionQuery
+	withNamedMcpConnections               map[string]*MCPConnectionQuery
+	withNamedBackgroundTasks              map[string]*BackgroundTaskQuery
+	withNamedBackgroundTaskArtifacts      map[string]*BackgroundTaskArtifactQuery
+	withNamedBackgroundTaskRuns           map[string]*BackgroundTaskRunQuery
+	withNamedBackgroundTaskRunEvents      map[string]*BackgroundTaskRunEventQuery
+	withNamedBackgroundTaskScheduleStates map[string]*BackgroundTaskScheduleStateQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -286,6 +289,28 @@ func (_q *UserQuery) QueryBackgroundTaskRunEvents() *BackgroundTaskRunEventQuery
 	return query
 }
 
+// QueryBackgroundTaskScheduleStates chains the current query on the "background_task_schedule_states" edge.
+func (_q *UserQuery) QueryBackgroundTaskScheduleStates() *BackgroundTaskScheduleStateQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(backgroundtaskschedulestate.Table, backgroundtaskschedulestate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTaskScheduleStatesTable, user.BackgroundTaskScheduleStatesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -473,20 +498,21 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:                      _q.config,
-		ctx:                         _q.ctx.Clone(),
-		order:                       append([]user.OrderOption{}, _q.order...),
-		inters:                      append([]Interceptor{}, _q.inters...),
-		predicates:                  append([]predicate.User{}, _q.predicates...),
-		withSubscription:            _q.withSubscription.Clone(),
-		withLedgerEntries:           _q.withLedgerEntries.Clone(),
-		withLlmUsages:               _q.withLlmUsages.Clone(),
-		withOauthConnections:        _q.withOauthConnections.Clone(),
-		withMcpConnections:          _q.withMcpConnections.Clone(),
-		withBackgroundTasks:         _q.withBackgroundTasks.Clone(),
-		withBackgroundTaskArtifacts: _q.withBackgroundTaskArtifacts.Clone(),
-		withBackgroundTaskRuns:      _q.withBackgroundTaskRuns.Clone(),
-		withBackgroundTaskRunEvents: _q.withBackgroundTaskRunEvents.Clone(),
+		config:                           _q.config,
+		ctx:                              _q.ctx.Clone(),
+		order:                            append([]user.OrderOption{}, _q.order...),
+		inters:                           append([]Interceptor{}, _q.inters...),
+		predicates:                       append([]predicate.User{}, _q.predicates...),
+		withSubscription:                 _q.withSubscription.Clone(),
+		withLedgerEntries:                _q.withLedgerEntries.Clone(),
+		withLlmUsages:                    _q.withLlmUsages.Clone(),
+		withOauthConnections:             _q.withOauthConnections.Clone(),
+		withMcpConnections:               _q.withMcpConnections.Clone(),
+		withBackgroundTasks:              _q.withBackgroundTasks.Clone(),
+		withBackgroundTaskArtifacts:      _q.withBackgroundTaskArtifacts.Clone(),
+		withBackgroundTaskRuns:           _q.withBackgroundTaskRuns.Clone(),
+		withBackgroundTaskRunEvents:      _q.withBackgroundTaskRunEvents.Clone(),
+		withBackgroundTaskScheduleStates: _q.withBackgroundTaskScheduleStates.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -592,6 +618,17 @@ func (_q *UserQuery) WithBackgroundTaskRunEvents(opts ...func(*BackgroundTaskRun
 	return _q
 }
 
+// WithBackgroundTaskScheduleStates tells the query-builder to eager-load the nodes that are connected to
+// the "background_task_schedule_states" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithBackgroundTaskScheduleStates(opts ...func(*BackgroundTaskScheduleStateQuery)) *UserQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withBackgroundTaskScheduleStates = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -670,7 +707,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [9]bool{
+		loadedTypes = [10]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withLlmUsages != nil,
@@ -680,6 +717,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withBackgroundTaskArtifacts != nil,
 			_q.withBackgroundTaskRuns != nil,
 			_q.withBackgroundTaskRunEvents != nil,
+			_q.withBackgroundTaskScheduleStates != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -771,6 +809,15 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withBackgroundTaskScheduleStates; query != nil {
+		if err := _q.loadBackgroundTaskScheduleStates(ctx, query, nodes,
+			func(n *User) { n.Edges.BackgroundTaskScheduleStates = []*BackgroundTaskScheduleState{} },
+			func(n *User, e *BackgroundTaskScheduleState) {
+				n.Edges.BackgroundTaskScheduleStates = append(n.Edges.BackgroundTaskScheduleStates, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -824,6 +871,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadBackgroundTaskRunEvents(ctx, query, nodes,
 			func(n *User) { n.appendNamedBackgroundTaskRunEvents(name) },
 			func(n *User, e *BackgroundTaskRunEvent) { n.appendNamedBackgroundTaskRunEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedBackgroundTaskScheduleStates {
+		if err := _q.loadBackgroundTaskScheduleStates(ctx, query, nodes,
+			func(n *User) { n.appendNamedBackgroundTaskScheduleStates(name) },
+			func(n *User, e *BackgroundTaskScheduleState) { n.appendNamedBackgroundTaskScheduleStates(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1111,6 +1165,37 @@ func (_q *UserQuery) loadBackgroundTaskRunEvents(ctx context.Context, query *Bac
 	}
 	return nil
 }
+func (_q *UserQuery) loadBackgroundTaskScheduleStates(ctx context.Context, query *BackgroundTaskScheduleStateQuery, nodes []*User, init func(*User), assign func(*User, *BackgroundTaskScheduleState)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.BackgroundTaskScheduleState(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.BackgroundTaskScheduleStatesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_background_task_schedule_states
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_background_task_schedule_states" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_background_task_schedule_states" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -1305,6 +1390,20 @@ func (_q *UserQuery) WithNamedBackgroundTaskRunEvents(name string, opts ...func(
 		_q.withNamedBackgroundTaskRunEvents = make(map[string]*BackgroundTaskRunEventQuery)
 	}
 	_q.withNamedBackgroundTaskRunEvents[name] = query
+	return _q
+}
+
+// WithNamedBackgroundTaskScheduleStates tells the query-builder to eager-load the nodes that are connected to the "background_task_schedule_states"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedBackgroundTaskScheduleStates(name string, opts ...func(*BackgroundTaskScheduleStateQuery)) *UserQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedBackgroundTaskScheduleStates == nil {
+		_q.withNamedBackgroundTaskScheduleStates = make(map[string]*BackgroundTaskScheduleStateQuery)
+	}
+	_q.withNamedBackgroundTaskScheduleStates[name] = query
 	return _q
 }
 

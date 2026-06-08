@@ -65,6 +65,8 @@ func (BackgroundTask) Edges() []ent.Edge {
 			StorageKey(edge.Column("background_task_id")),
 		edge.To("run_events", BackgroundTaskRunEvent.Type).
 			StorageKey(edge.Column("background_task_id")),
+		edge.To("schedule_states", BackgroundTaskScheduleState.Type).
+			StorageKey(edge.Column("background_task_id")),
 	}
 }
 

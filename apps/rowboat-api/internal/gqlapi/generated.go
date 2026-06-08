@@ -58,6 +58,7 @@ type ComplexityRoot struct {
 		Revision        func(childComplexity int) int
 		RunEvents       func(childComplexity int) int
 		Runs            func(childComplexity int) int
+		ScheduleStates  func(childComplexity int) int
 		Slug            func(childComplexity int) int
 		TaskCreatedAt   func(childComplexity int) int
 		TriggersJSON    func(childComplexity int) int
@@ -172,6 +173,34 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	BackgroundTaskScheduleState struct {
+		CreatedAt       func(childComplexity int) int
+		ID              func(childComplexity int) int
+		LastDueAt       func(childComplexity int) int
+		LastEvaluatedAt func(childComplexity int) int
+		LastRunID       func(childComplexity int) int
+		LastTriggeredAt func(childComplexity int) int
+		LeaseExpiresAt  func(childComplexity int) int
+		LeaseOwner      func(childComplexity int) int
+		Revision        func(childComplexity int) int
+		ScheduleKey     func(childComplexity int) int
+		Task            func(childComplexity int) int
+		TriggerType     func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
+		User            func(childComplexity int) int
+	}
+
+	BackgroundTaskScheduleStateConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	BackgroundTaskScheduleStateEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	BillingSubscription struct {
 		CreatedAt            func(childComplexity int) int
 		ID                   func(childComplexity int) int
@@ -280,34 +309,36 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		BackgroundTaskArtifacts func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskArtifactWhereInput) int
-		BackgroundTaskRunEvents func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskRunEventWhereInput) int
-		BackgroundTaskRuns      func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskRunWhereInput) int
-		BackgroundTasks         func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskWhereInput) int
-		BillingSubscriptions    func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BillingSubscriptionWhereInput) int
-		LlmUsages               func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.LLMUsageWhereInput) int
-		McpConnections          func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.MCPConnectionWhereInput) int
-		Node                    func(childComplexity int, id uuid.UUID) int
-		Nodes                   func(childComplexity int, ids []uuid.UUID) int
-		Users                   func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.UserWhereInput) int
+		BackgroundTaskArtifacts      func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskArtifactWhereInput) int
+		BackgroundTaskRunEvents      func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskRunEventWhereInput) int
+		BackgroundTaskRuns           func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskRunWhereInput) int
+		BackgroundTaskScheduleStates func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskScheduleStateWhereInput) int
+		BackgroundTasks              func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskWhereInput) int
+		BillingSubscriptions         func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BillingSubscriptionWhereInput) int
+		LlmUsages                    func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.LLMUsageWhereInput) int
+		McpConnections               func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.MCPConnectionWhereInput) int
+		Node                         func(childComplexity int, id uuid.UUID) int
+		Nodes                        func(childComplexity int, ids []uuid.UUID) int
+		Users                        func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.UserWhereInput) int
 	}
 
 	User struct {
-		BackgroundTaskArtifacts func(childComplexity int) int
-		BackgroundTaskRunEvents func(childComplexity int) int
-		BackgroundTaskRuns      func(childComplexity int) int
-		BackgroundTasks         func(childComplexity int) int
-		CreatedAt               func(childComplexity int) int
-		Email                   func(childComplexity int) int
-		ID                      func(childComplexity int) int
-		LedgerEntries           func(childComplexity int) int
-		LlmUsages               func(childComplexity int) int
-		McpConnections          func(childComplexity int) int
-		OauthConnections        func(childComplexity int) int
-		Subscription            func(childComplexity int) int
-		UpdatedAt               func(childComplexity int) int
-		WorkosOrgID             func(childComplexity int) int
-		WorkosUserID            func(childComplexity int) int
+		BackgroundTaskArtifacts      func(childComplexity int) int
+		BackgroundTaskRunEvents      func(childComplexity int) int
+		BackgroundTaskRuns           func(childComplexity int) int
+		BackgroundTaskScheduleStates func(childComplexity int) int
+		BackgroundTasks              func(childComplexity int) int
+		CreatedAt                    func(childComplexity int) int
+		Email                        func(childComplexity int) int
+		ID                           func(childComplexity int) int
+		LedgerEntries                func(childComplexity int) int
+		LlmUsages                    func(childComplexity int) int
+		McpConnections               func(childComplexity int) int
+		OauthConnections             func(childComplexity int) int
+		Subscription                 func(childComplexity int) int
+		UpdatedAt                    func(childComplexity int) int
+		WorkosOrgID                  func(childComplexity int) int
+		WorkosUserID                 func(childComplexity int) int
 	}
 
 	UserConnection struct {
@@ -329,6 +360,7 @@ type QueryResolver interface {
 	BackgroundTaskArtifacts(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskArtifactWhereInput) (*ent.BackgroundTaskArtifactConnection, error)
 	BackgroundTaskRuns(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskRunWhereInput) (*ent.BackgroundTaskRunConnection, error)
 	BackgroundTaskRunEvents(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskRunEventWhereInput) (*ent.BackgroundTaskRunEventConnection, error)
+	BackgroundTaskScheduleStates(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskScheduleStateWhereInput) (*ent.BackgroundTaskScheduleStateConnection, error)
 	LlmUsages(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.LLMUsageWhereInput) (*ent.LLMUsageConnection, error)
 	McpConnections(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.MCPConnectionWhereInput) (*ent.MCPConnectionConnection, error)
 	BillingSubscriptions(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BillingSubscriptionWhereInput) (*ent.BillingSubscriptionConnection, error)
@@ -451,6 +483,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.BackgroundTask.Runs(childComplexity), true
+	case "BackgroundTask.scheduleStates":
+		if e.ComplexityRoot.BackgroundTask.ScheduleStates == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTask.ScheduleStates(childComplexity), true
 	case "BackgroundTask.slug":
 		if e.ComplexityRoot.BackgroundTask.Slug == nil {
 			break
@@ -937,6 +975,123 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.BackgroundTaskRunEventEdge.Node(childComplexity), true
 
+	case "BackgroundTaskScheduleState.createdAt":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.CreatedAt(childComplexity), true
+	case "BackgroundTaskScheduleState.id":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.ID(childComplexity), true
+	case "BackgroundTaskScheduleState.lastDueAt":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.LastDueAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.LastDueAt(childComplexity), true
+	case "BackgroundTaskScheduleState.lastEvaluatedAt":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.LastEvaluatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.LastEvaluatedAt(childComplexity), true
+	case "BackgroundTaskScheduleState.lastRunID":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.LastRunID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.LastRunID(childComplexity), true
+	case "BackgroundTaskScheduleState.lastTriggeredAt":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.LastTriggeredAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.LastTriggeredAt(childComplexity), true
+	case "BackgroundTaskScheduleState.leaseExpiresAt":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.LeaseExpiresAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.LeaseExpiresAt(childComplexity), true
+	case "BackgroundTaskScheduleState.leaseOwner":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.LeaseOwner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.LeaseOwner(childComplexity), true
+	case "BackgroundTaskScheduleState.revision":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.Revision == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.Revision(childComplexity), true
+	case "BackgroundTaskScheduleState.scheduleKey":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.ScheduleKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.ScheduleKey(childComplexity), true
+	case "BackgroundTaskScheduleState.task":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.Task == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.Task(childComplexity), true
+	case "BackgroundTaskScheduleState.triggerType":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.TriggerType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.TriggerType(childComplexity), true
+	case "BackgroundTaskScheduleState.updatedAt":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.UpdatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.UpdatedAt(childComplexity), true
+	case "BackgroundTaskScheduleState.user":
+		if e.ComplexityRoot.BackgroundTaskScheduleState.User == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleState.User(childComplexity), true
+
+	case "BackgroundTaskScheduleStateConnection.edges":
+		if e.ComplexityRoot.BackgroundTaskScheduleStateConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleStateConnection.Edges(childComplexity), true
+	case "BackgroundTaskScheduleStateConnection.pageInfo":
+		if e.ComplexityRoot.BackgroundTaskScheduleStateConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleStateConnection.PageInfo(childComplexity), true
+	case "BackgroundTaskScheduleStateConnection.totalCount":
+		if e.ComplexityRoot.BackgroundTaskScheduleStateConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleStateConnection.TotalCount(childComplexity), true
+
+	case "BackgroundTaskScheduleStateEdge.cursor":
+		if e.ComplexityRoot.BackgroundTaskScheduleStateEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleStateEdge.Cursor(childComplexity), true
+	case "BackgroundTaskScheduleStateEdge.node":
+		if e.ComplexityRoot.BackgroundTaskScheduleStateEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTaskScheduleStateEdge.Node(childComplexity), true
+
 	case "BillingSubscription.createdAt":
 		if e.ComplexityRoot.BillingSubscription.CreatedAt == nil {
 			break
@@ -1391,6 +1546,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.BackgroundTaskRuns(childComplexity, args["after"].(*entgql.Cursor[uuid.UUID]), args["first"].(*int), args["before"].(*entgql.Cursor[uuid.UUID]), args["last"].(*int), args["where"].(*ent.BackgroundTaskRunWhereInput)), true
+	case "Query.backgroundTaskScheduleStates":
+		if e.ComplexityRoot.Query.BackgroundTaskScheduleStates == nil {
+			break
+		}
+
+		args, err := ec.field_Query_backgroundTaskScheduleStates_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.BackgroundTaskScheduleStates(childComplexity, args["after"].(*entgql.Cursor[uuid.UUID]), args["first"].(*int), args["before"].(*entgql.Cursor[uuid.UUID]), args["last"].(*int), args["where"].(*ent.BackgroundTaskScheduleStateWhereInput)), true
 	case "Query.backgroundTasks":
 		if e.ComplexityRoot.Query.BackgroundTasks == nil {
 			break
@@ -1488,6 +1654,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.User.BackgroundTaskRuns(childComplexity), true
+	case "User.backgroundTaskScheduleStates":
+		if e.ComplexityRoot.User.BackgroundTaskScheduleStates == nil {
+			break
+		}
+
+		return e.ComplexityRoot.User.BackgroundTaskScheduleStates(childComplexity), true
 	case "User.backgroundTasks":
 		if e.ComplexityRoot.User.BackgroundTasks == nil {
 			break
@@ -1604,6 +1776,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputBackgroundTaskArtifactWhereInput,
 		ec.unmarshalInputBackgroundTaskRunEventWhereInput,
 		ec.unmarshalInputBackgroundTaskRunWhereInput,
+		ec.unmarshalInputBackgroundTaskScheduleStateWhereInput,
 		ec.unmarshalInputBackgroundTaskWhereInput,
 		ec.unmarshalInputBillingSubscriptionWhereInput,
 		ec.unmarshalInputCreditLedgerWhereInput,
@@ -1738,6 +1911,8 @@ func (ec *executionContext) childFields_BackgroundTask(ctx context.Context, fiel
 		return ec.fieldContext_BackgroundTask_runs(ctx, field)
 	case "runEvents":
 		return ec.fieldContext_BackgroundTask_runEvents(ctx, field)
+	case "scheduleStates":
+		return ec.fieldContext_BackgroundTask_scheduleStates(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type BackgroundTask", field.Name)
 }
@@ -1954,6 +2129,62 @@ func (ec *executionContext) childFields_BackgroundTaskRunEventEdge(ctx context.C
 		return ec.fieldContext_BackgroundTaskRunEventEdge_cursor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type BackgroundTaskRunEventEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_BackgroundTaskScheduleState(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_BackgroundTaskScheduleState_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_BackgroundTaskScheduleState_createdAt(ctx, field)
+	case "updatedAt":
+		return ec.fieldContext_BackgroundTaskScheduleState_updatedAt(ctx, field)
+	case "triggerType":
+		return ec.fieldContext_BackgroundTaskScheduleState_triggerType(ctx, field)
+	case "scheduleKey":
+		return ec.fieldContext_BackgroundTaskScheduleState_scheduleKey(ctx, field)
+	case "lastEvaluatedAt":
+		return ec.fieldContext_BackgroundTaskScheduleState_lastEvaluatedAt(ctx, field)
+	case "lastDueAt":
+		return ec.fieldContext_BackgroundTaskScheduleState_lastDueAt(ctx, field)
+	case "lastTriggeredAt":
+		return ec.fieldContext_BackgroundTaskScheduleState_lastTriggeredAt(ctx, field)
+	case "lastRunID":
+		return ec.fieldContext_BackgroundTaskScheduleState_lastRunID(ctx, field)
+	case "leaseOwner":
+		return ec.fieldContext_BackgroundTaskScheduleState_leaseOwner(ctx, field)
+	case "leaseExpiresAt":
+		return ec.fieldContext_BackgroundTaskScheduleState_leaseExpiresAt(ctx, field)
+	case "revision":
+		return ec.fieldContext_BackgroundTaskScheduleState_revision(ctx, field)
+	case "user":
+		return ec.fieldContext_BackgroundTaskScheduleState_user(ctx, field)
+	case "task":
+		return ec.fieldContext_BackgroundTaskScheduleState_task(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type BackgroundTaskScheduleState", field.Name)
+}
+
+func (ec *executionContext) childFields_BackgroundTaskScheduleStateConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_BackgroundTaskScheduleStateConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_BackgroundTaskScheduleStateConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_BackgroundTaskScheduleStateConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type BackgroundTaskScheduleStateConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_BackgroundTaskScheduleStateEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_BackgroundTaskScheduleStateEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_BackgroundTaskScheduleStateEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type BackgroundTaskScheduleStateEdge", field.Name)
 }
 
 func (ec *executionContext) childFields_BillingSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -2184,6 +2415,8 @@ func (ec *executionContext) childFields_User(ctx context.Context, field graphql.
 		return ec.fieldContext_User_backgroundTaskRuns(ctx, field)
 	case "backgroundTaskRunEvents":
 		return ec.fieldContext_User_backgroundTaskRunEvents(ctx, field)
+	case "backgroundTaskScheduleStates":
+		return ec.fieldContext_User_backgroundTaskScheduleStates(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 }
@@ -2470,6 +2703,52 @@ func (ec *executionContext) field_Query_backgroundTaskRuns_args(ctx context.Cont
 	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "where",
 		func(ctx context.Context, v any) (*ent.BackgroundTaskRunWhereInput, error) {
 			return ec.unmarshalOBackgroundTaskRunWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskRunWhereInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_backgroundTaskScheduleStates_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after",
+		func(ctx context.Context, v any) (*entgql.Cursor[uuid.UUID], error) {
+			return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first",
+		func(ctx context.Context, v any) (*int, error) {
+			return ec.unmarshalOInt2ᚖint(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before",
+		func(ctx context.Context, v any) (*entgql.Cursor[uuid.UUID], error) {
+			return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last",
+		func(ctx context.Context, v any) (*int, error) {
+			return ec.unmarshalOInt2ᚖint(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "where",
+		func(ctx context.Context, v any) (*ent.BackgroundTaskScheduleStateWhereInput, error) {
+			return ec.unmarshalOBackgroundTaskScheduleStateWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateWhereInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -3337,6 +3616,38 @@ func (ec *executionContext) fieldContext_BackgroundTask_runEvents(_ context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_BackgroundTaskRunEvent(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BackgroundTask_scheduleStates(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTask) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTask_scheduleStates(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ScheduleStates(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*ent.BackgroundTaskScheduleState) graphql.Marshaler {
+			return ec.marshalOBackgroundTaskScheduleState2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTask_scheduleStates(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BackgroundTask",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_BackgroundTaskScheduleState(ctx, field)
 		},
 	}
 	return fc, nil
@@ -5222,6 +5533,488 @@ func (ec *executionContext) _BackgroundTaskRunEventEdge_cursor(ctx context.Conte
 }
 func (ec *executionContext) fieldContext_BackgroundTaskRunEventEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("BackgroundTaskRunEventEdge", field, false, false, errors.New("field of type Cursor does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_id(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v uuid.UUID) graphql.Marshaler {
+			return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_createdAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_updatedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_triggerType(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_triggerType(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TriggerType, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_triggerType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_scheduleKey(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_scheduleKey(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ScheduleKey, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_scheduleKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_lastEvaluatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_lastEvaluatedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastEvaluatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_lastEvaluatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_lastDueAt(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_lastDueAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastDueAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_lastDueAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_lastTriggeredAt(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_lastTriggeredAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastTriggeredAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_lastTriggeredAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_lastRunID(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_lastRunID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastRunID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_lastRunID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_leaseOwner(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_leaseOwner(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LeaseOwner, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_leaseOwner(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_leaseExpiresAt(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_leaseExpiresAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LeaseExpiresAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_leaseExpiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_revision(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_revision(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Revision, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleState", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_user(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_user(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.User(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.User) graphql.Marshaler {
+			return ec.marshalNUser2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐUser(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BackgroundTaskScheduleState",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_User(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleState_task(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleState_task(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Task(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.BackgroundTask) graphql.Marshaler {
+			return ec.marshalNBackgroundTask2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTask(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_task(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BackgroundTaskScheduleState",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_BackgroundTask(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleStateConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleStateConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleStateConnection_edges(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*ent.BackgroundTaskScheduleStateEdge) graphql.Marshaler {
+			return ec.marshalOBackgroundTaskScheduleStateEdge2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateEdge(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleStateConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BackgroundTaskScheduleStateConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_BackgroundTaskScheduleStateEdge(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleStateConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleStateConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleStateConnection_pageInfo(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v entgql.PageInfo[uuid.UUID]) graphql.Marshaler {
+			return ec.marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleStateConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BackgroundTaskScheduleStateConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_PageInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleStateConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleStateConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleStateConnection_totalCount(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleStateConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleStateConnection", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleStateEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleStateEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleStateEdge_node(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.BackgroundTaskScheduleState) graphql.Marshaler {
+			return ec.marshalOBackgroundTaskScheduleState2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleState(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleStateEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BackgroundTaskScheduleStateEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_BackgroundTaskScheduleState(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BackgroundTaskScheduleStateEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTaskScheduleStateEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTaskScheduleStateEdge_cursor(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v entgql.Cursor[uuid.UUID]) graphql.Marshaler {
+			return ec.marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTaskScheduleStateEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTaskScheduleStateEdge", field, false, false, errors.New("field of type Cursor does not have child fields"))
 }
 
 func (ec *executionContext) _BillingSubscription_id(ctx context.Context, field graphql.CollectedField, obj *ent.Subscription) (ret graphql.Marshaler) {
@@ -7178,6 +7971,50 @@ func (ec *executionContext) fieldContext_Query_backgroundTaskRunEvents(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_backgroundTaskScheduleStates(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_backgroundTaskScheduleStates(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().BackgroundTaskScheduleStates(ctx, fc.Args["after"].(*entgql.Cursor[uuid.UUID]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[uuid.UUID]), fc.Args["last"].(*int), fc.Args["where"].(*ent.BackgroundTaskScheduleStateWhereInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.BackgroundTaskScheduleStateConnection) graphql.Marshaler {
+			return ec.marshalNBackgroundTaskScheduleStateConnection2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateConnection(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_backgroundTaskScheduleStates(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_BackgroundTaskScheduleStateConnection(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_backgroundTaskScheduleStates_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_llmUsages(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7851,6 +8688,38 @@ func (ec *executionContext) fieldContext_User_backgroundTaskRunEvents(_ context.
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_BackgroundTaskRunEvent(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_backgroundTaskScheduleStates(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_User_backgroundTaskScheduleStates(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.BackgroundTaskScheduleStates(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*ent.BackgroundTaskScheduleState) graphql.Marshaler {
+			return ec.marshalOBackgroundTaskScheduleState2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_User_backgroundTaskScheduleStates(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_BackgroundTaskScheduleState(ctx, field)
 		},
 	}
 	return fc, nil
@@ -13102,6 +13971,974 @@ func (ec *executionContext) unmarshalInputBackgroundTaskRunWhereInput(ctx contex
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputBackgroundTaskScheduleStateWhereInput(ctx context.Context, obj any) (ent.BackgroundTaskScheduleStateWhereInput, error) {
+	var it ent.BackgroundTaskScheduleStateWhereInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "triggerType", "triggerTypeNEQ", "triggerTypeIn", "triggerTypeNotIn", "triggerTypeGT", "triggerTypeGTE", "triggerTypeLT", "triggerTypeLTE", "triggerTypeContains", "triggerTypeHasPrefix", "triggerTypeHasSuffix", "triggerTypeEqualFold", "triggerTypeContainsFold", "scheduleKey", "scheduleKeyNEQ", "scheduleKeyIn", "scheduleKeyNotIn", "scheduleKeyGT", "scheduleKeyGTE", "scheduleKeyLT", "scheduleKeyLTE", "scheduleKeyContains", "scheduleKeyHasPrefix", "scheduleKeyHasSuffix", "scheduleKeyEqualFold", "scheduleKeyContainsFold", "lastEvaluatedAt", "lastEvaluatedAtNEQ", "lastEvaluatedAtIn", "lastEvaluatedAtNotIn", "lastEvaluatedAtGT", "lastEvaluatedAtGTE", "lastEvaluatedAtLT", "lastEvaluatedAtLTE", "lastEvaluatedAtIsNil", "lastEvaluatedAtNotNil", "lastDueAt", "lastDueAtNEQ", "lastDueAtIn", "lastDueAtNotIn", "lastDueAtGT", "lastDueAtGTE", "lastDueAtLT", "lastDueAtLTE", "lastDueAtIsNil", "lastDueAtNotNil", "lastTriggeredAt", "lastTriggeredAtNEQ", "lastTriggeredAtIn", "lastTriggeredAtNotIn", "lastTriggeredAtGT", "lastTriggeredAtGTE", "lastTriggeredAtLT", "lastTriggeredAtLTE", "lastTriggeredAtIsNil", "lastTriggeredAtNotNil", "lastRunID", "lastRunIDNEQ", "lastRunIDIn", "lastRunIDNotIn", "lastRunIDGT", "lastRunIDGTE", "lastRunIDLT", "lastRunIDLTE", "lastRunIDContains", "lastRunIDHasPrefix", "lastRunIDHasSuffix", "lastRunIDIsNil", "lastRunIDNotNil", "lastRunIDEqualFold", "lastRunIDContainsFold", "leaseOwner", "leaseOwnerNEQ", "leaseOwnerIn", "leaseOwnerNotIn", "leaseOwnerGT", "leaseOwnerGTE", "leaseOwnerLT", "leaseOwnerLTE", "leaseOwnerContains", "leaseOwnerHasPrefix", "leaseOwnerHasSuffix", "leaseOwnerIsNil", "leaseOwnerNotNil", "leaseOwnerEqualFold", "leaseOwnerContainsFold", "leaseExpiresAt", "leaseExpiresAtNEQ", "leaseExpiresAtIn", "leaseExpiresAtNotIn", "leaseExpiresAtGT", "leaseExpiresAtGTE", "leaseExpiresAtLT", "leaseExpiresAtLTE", "leaseExpiresAtIsNil", "leaseExpiresAtNotNil", "revision", "revisionNEQ", "revisionIn", "revisionNotIn", "revisionGT", "revisionGTE", "revisionLT", "revisionLTE", "hasUser", "hasUserWith", "hasTask", "hasTaskWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalOBackgroundTaskScheduleStateWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalOBackgroundTaskScheduleStateWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalOBackgroundTaskScheduleStateWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNEQ = data
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDIn = data
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNotIn = data
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGT = data
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGTE = data
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLT = data
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLTE = data
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "updatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNEQ = data
+		case "updatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtIn = data
+		case "updatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNotIn = data
+		case "updatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGT = data
+		case "updatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGTE = data
+		case "updatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLT = data
+		case "updatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLTE = data
+		case "triggerType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerType"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerType = data
+		case "triggerTypeNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeNEQ = data
+		case "triggerTypeIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeIn = data
+		case "triggerTypeNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeNotIn = data
+		case "triggerTypeGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeGT = data
+		case "triggerTypeGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeGTE = data
+		case "triggerTypeLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeLT = data
+		case "triggerTypeLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeLTE = data
+		case "triggerTypeContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeContains = data
+		case "triggerTypeHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeHasPrefix = data
+		case "triggerTypeHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeHasSuffix = data
+		case "triggerTypeEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeEqualFold = data
+		case "triggerTypeContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("triggerTypeContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TriggerTypeContainsFold = data
+		case "scheduleKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKey"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKey = data
+		case "scheduleKeyNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyNEQ = data
+		case "scheduleKeyIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyIn = data
+		case "scheduleKeyNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyNotIn = data
+		case "scheduleKeyGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyGT = data
+		case "scheduleKeyGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyGTE = data
+		case "scheduleKeyLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyLT = data
+		case "scheduleKeyLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyLTE = data
+		case "scheduleKeyContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyContains = data
+		case "scheduleKeyHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyHasPrefix = data
+		case "scheduleKeyHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyHasSuffix = data
+		case "scheduleKeyEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyEqualFold = data
+		case "scheduleKeyContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleKeyContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleKeyContainsFold = data
+		case "lastEvaluatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastEvaluatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastEvaluatedAt = data
+		case "lastEvaluatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastEvaluatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastEvaluatedAtNEQ = data
+		case "lastEvaluatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastEvaluatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastEvaluatedAtIn = data
+		case "lastEvaluatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastEvaluatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastEvaluatedAtNotIn = data
+		case "lastEvaluatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastEvaluatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastEvaluatedAtGT = data
+		case "lastEvaluatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastEvaluatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastEvaluatedAtGTE = data
+		case "lastEvaluatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastEvaluatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastEvaluatedAtLT = data
+		case "lastEvaluatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastEvaluatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastEvaluatedAtLTE = data
+		case "lastEvaluatedAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastEvaluatedAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastEvaluatedAtIsNil = data
+		case "lastEvaluatedAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastEvaluatedAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastEvaluatedAtNotNil = data
+		case "lastDueAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDueAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastDueAt = data
+		case "lastDueAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDueAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastDueAtNEQ = data
+		case "lastDueAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDueAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastDueAtIn = data
+		case "lastDueAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDueAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastDueAtNotIn = data
+		case "lastDueAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDueAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastDueAtGT = data
+		case "lastDueAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDueAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastDueAtGTE = data
+		case "lastDueAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDueAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastDueAtLT = data
+		case "lastDueAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDueAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastDueAtLTE = data
+		case "lastDueAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDueAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastDueAtIsNil = data
+		case "lastDueAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDueAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastDueAtNotNil = data
+		case "lastTriggeredAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastTriggeredAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastTriggeredAt = data
+		case "lastTriggeredAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastTriggeredAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastTriggeredAtNEQ = data
+		case "lastTriggeredAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastTriggeredAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastTriggeredAtIn = data
+		case "lastTriggeredAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastTriggeredAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastTriggeredAtNotIn = data
+		case "lastTriggeredAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastTriggeredAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastTriggeredAtGT = data
+		case "lastTriggeredAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastTriggeredAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastTriggeredAtGTE = data
+		case "lastTriggeredAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastTriggeredAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastTriggeredAtLT = data
+		case "lastTriggeredAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastTriggeredAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastTriggeredAtLTE = data
+		case "lastTriggeredAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastTriggeredAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastTriggeredAtIsNil = data
+		case "lastTriggeredAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastTriggeredAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastTriggeredAtNotNil = data
+		case "lastRunID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunID = data
+		case "lastRunIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDNEQ = data
+		case "lastRunIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDIn = data
+		case "lastRunIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDNotIn = data
+		case "lastRunIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDGT = data
+		case "lastRunIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDGTE = data
+		case "lastRunIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDLT = data
+		case "lastRunIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDLTE = data
+		case "lastRunIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDContains = data
+		case "lastRunIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDHasPrefix = data
+		case "lastRunIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDHasSuffix = data
+		case "lastRunIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDIsNil = data
+		case "lastRunIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDNotNil = data
+		case "lastRunIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDEqualFold = data
+		case "lastRunIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRunIDContainsFold = data
+		case "leaseOwner":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwner"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwner = data
+		case "leaseOwnerNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerNEQ = data
+		case "leaseOwnerIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerIn = data
+		case "leaseOwnerNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerNotIn = data
+		case "leaseOwnerGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerGT = data
+		case "leaseOwnerGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerGTE = data
+		case "leaseOwnerLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerLT = data
+		case "leaseOwnerLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerLTE = data
+		case "leaseOwnerContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerContains = data
+		case "leaseOwnerHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerHasPrefix = data
+		case "leaseOwnerHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerHasSuffix = data
+		case "leaseOwnerIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerIsNil = data
+		case "leaseOwnerNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerNotNil = data
+		case "leaseOwnerEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerEqualFold = data
+		case "leaseOwnerContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseOwnerContainsFold = data
+		case "leaseExpiresAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseExpiresAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseExpiresAt = data
+		case "leaseExpiresAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseExpiresAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseExpiresAtNEQ = data
+		case "leaseExpiresAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseExpiresAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseExpiresAtIn = data
+		case "leaseExpiresAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseExpiresAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseExpiresAtNotIn = data
+		case "leaseExpiresAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseExpiresAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseExpiresAtGT = data
+		case "leaseExpiresAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseExpiresAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseExpiresAtGTE = data
+		case "leaseExpiresAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseExpiresAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseExpiresAtLT = data
+		case "leaseExpiresAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseExpiresAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseExpiresAtLTE = data
+		case "leaseExpiresAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseExpiresAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseExpiresAtIsNil = data
+		case "leaseExpiresAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseExpiresAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeaseExpiresAtNotNil = data
+		case "revision":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revision"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Revision = data
+		case "revisionNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revisionNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevisionNEQ = data
+		case "revisionIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revisionIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevisionIn = data
+		case "revisionNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revisionNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevisionNotIn = data
+		case "revisionGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revisionGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevisionGT = data
+		case "revisionGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revisionGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevisionGTE = data
+		case "revisionLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revisionLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevisionLT = data
+		case "revisionLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revisionLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevisionLTE = data
+		case "hasUser":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUser"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasUser = data
+		case "hasUserWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUserWith"))
+			data, err := ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasUserWith = data
+		case "hasTask":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTask"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasTask = data
+		case "hasTaskWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTaskWith"))
+			data, err := ec.unmarshalOBackgroundTaskWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasTaskWith = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputBackgroundTaskWhereInput(ctx context.Context, obj any) (ent.BackgroundTaskWhereInput, error) {
 	var it ent.BackgroundTaskWhereInput
 	if obj == nil {
@@ -13113,7 +14950,7 @@ func (ec *executionContext) unmarshalInputBackgroundTaskWhereInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "slug", "slugNEQ", "slugIn", "slugNotIn", "slugGT", "slugGTE", "slugLT", "slugLTE", "slugContains", "slugHasPrefix", "slugHasSuffix", "slugEqualFold", "slugContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "instructions", "instructionsNEQ", "instructionsIn", "instructionsNotIn", "instructionsGT", "instructionsGTE", "instructionsLT", "instructionsLTE", "instructionsContains", "instructionsHasPrefix", "instructionsHasSuffix", "instructionsEqualFold", "instructionsContainsFold", "active", "activeNEQ", "triggersJSON", "triggersJSONNEQ", "triggersJSONIn", "triggersJSONNotIn", "triggersJSONGT", "triggersJSONGTE", "triggersJSONLT", "triggersJSONLTE", "triggersJSONContains", "triggersJSONHasPrefix", "triggersJSONHasSuffix", "triggersJSONIsNil", "triggersJSONNotNil", "triggersJSONEqualFold", "triggersJSONContainsFold", "model", "modelNEQ", "modelIn", "modelNotIn", "modelGT", "modelGTE", "modelLT", "modelLTE", "modelContains", "modelHasPrefix", "modelHasSuffix", "modelIsNil", "modelNotNil", "modelEqualFold", "modelContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerIsNil", "providerNotNil", "providerEqualFold", "providerContainsFold", "executionTarget", "executionTargetNEQ", "executionTargetIn", "executionTargetNotIn", "executionTargetGT", "executionTargetGTE", "executionTargetLT", "executionTargetLTE", "executionTargetContains", "executionTargetHasPrefix", "executionTargetHasSuffix", "executionTargetEqualFold", "executionTargetContainsFold", "taskCreatedAt", "taskCreatedAtNEQ", "taskCreatedAtIn", "taskCreatedAtNotIn", "taskCreatedAtGT", "taskCreatedAtGTE", "taskCreatedAtLT", "taskCreatedAtLTE", "taskCreatedAtIsNil", "taskCreatedAtNotNil", "lastAttemptAt", "lastAttemptAtNEQ", "lastAttemptAtIn", "lastAttemptAtNotIn", "lastAttemptAtGT", "lastAttemptAtGTE", "lastAttemptAtLT", "lastAttemptAtLTE", "lastAttemptAtIsNil", "lastAttemptAtNotNil", "lastRunID", "lastRunIDNEQ", "lastRunIDIn", "lastRunIDNotIn", "lastRunIDGT", "lastRunIDGTE", "lastRunIDLT", "lastRunIDLTE", "lastRunIDContains", "lastRunIDHasPrefix", "lastRunIDHasSuffix", "lastRunIDIsNil", "lastRunIDNotNil", "lastRunIDEqualFold", "lastRunIDContainsFold", "lastRunAt", "lastRunAtNEQ", "lastRunAtIn", "lastRunAtNotIn", "lastRunAtGT", "lastRunAtGTE", "lastRunAtLT", "lastRunAtLTE", "lastRunAtIsNil", "lastRunAtNotNil", "lastRunSummary", "lastRunSummaryNEQ", "lastRunSummaryIn", "lastRunSummaryNotIn", "lastRunSummaryGT", "lastRunSummaryGTE", "lastRunSummaryLT", "lastRunSummaryLTE", "lastRunSummaryContains", "lastRunSummaryHasPrefix", "lastRunSummaryHasSuffix", "lastRunSummaryIsNil", "lastRunSummaryNotNil", "lastRunSummaryEqualFold", "lastRunSummaryContainsFold", "lastRunError", "lastRunErrorNEQ", "lastRunErrorIn", "lastRunErrorNotIn", "lastRunErrorGT", "lastRunErrorGTE", "lastRunErrorLT", "lastRunErrorLTE", "lastRunErrorContains", "lastRunErrorHasPrefix", "lastRunErrorHasSuffix", "lastRunErrorIsNil", "lastRunErrorNotNil", "lastRunErrorEqualFold", "lastRunErrorContainsFold", "revision", "revisionNEQ", "revisionIn", "revisionNotIn", "revisionGT", "revisionGTE", "revisionLT", "revisionLTE", "hasUser", "hasUserWith", "hasArtifact", "hasArtifactWith", "hasRuns", "hasRunsWith", "hasRunEvents", "hasRunEventsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "slug", "slugNEQ", "slugIn", "slugNotIn", "slugGT", "slugGTE", "slugLT", "slugLTE", "slugContains", "slugHasPrefix", "slugHasSuffix", "slugEqualFold", "slugContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "instructions", "instructionsNEQ", "instructionsIn", "instructionsNotIn", "instructionsGT", "instructionsGTE", "instructionsLT", "instructionsLTE", "instructionsContains", "instructionsHasPrefix", "instructionsHasSuffix", "instructionsEqualFold", "instructionsContainsFold", "active", "activeNEQ", "triggersJSON", "triggersJSONNEQ", "triggersJSONIn", "triggersJSONNotIn", "triggersJSONGT", "triggersJSONGTE", "triggersJSONLT", "triggersJSONLTE", "triggersJSONContains", "triggersJSONHasPrefix", "triggersJSONHasSuffix", "triggersJSONIsNil", "triggersJSONNotNil", "triggersJSONEqualFold", "triggersJSONContainsFold", "model", "modelNEQ", "modelIn", "modelNotIn", "modelGT", "modelGTE", "modelLT", "modelLTE", "modelContains", "modelHasPrefix", "modelHasSuffix", "modelIsNil", "modelNotNil", "modelEqualFold", "modelContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerIsNil", "providerNotNil", "providerEqualFold", "providerContainsFold", "executionTarget", "executionTargetNEQ", "executionTargetIn", "executionTargetNotIn", "executionTargetGT", "executionTargetGTE", "executionTargetLT", "executionTargetLTE", "executionTargetContains", "executionTargetHasPrefix", "executionTargetHasSuffix", "executionTargetEqualFold", "executionTargetContainsFold", "taskCreatedAt", "taskCreatedAtNEQ", "taskCreatedAtIn", "taskCreatedAtNotIn", "taskCreatedAtGT", "taskCreatedAtGTE", "taskCreatedAtLT", "taskCreatedAtLTE", "taskCreatedAtIsNil", "taskCreatedAtNotNil", "lastAttemptAt", "lastAttemptAtNEQ", "lastAttemptAtIn", "lastAttemptAtNotIn", "lastAttemptAtGT", "lastAttemptAtGTE", "lastAttemptAtLT", "lastAttemptAtLTE", "lastAttemptAtIsNil", "lastAttemptAtNotNil", "lastRunID", "lastRunIDNEQ", "lastRunIDIn", "lastRunIDNotIn", "lastRunIDGT", "lastRunIDGTE", "lastRunIDLT", "lastRunIDLTE", "lastRunIDContains", "lastRunIDHasPrefix", "lastRunIDHasSuffix", "lastRunIDIsNil", "lastRunIDNotNil", "lastRunIDEqualFold", "lastRunIDContainsFold", "lastRunAt", "lastRunAtNEQ", "lastRunAtIn", "lastRunAtNotIn", "lastRunAtGT", "lastRunAtGTE", "lastRunAtLT", "lastRunAtLTE", "lastRunAtIsNil", "lastRunAtNotNil", "lastRunSummary", "lastRunSummaryNEQ", "lastRunSummaryIn", "lastRunSummaryNotIn", "lastRunSummaryGT", "lastRunSummaryGTE", "lastRunSummaryLT", "lastRunSummaryLTE", "lastRunSummaryContains", "lastRunSummaryHasPrefix", "lastRunSummaryHasSuffix", "lastRunSummaryIsNil", "lastRunSummaryNotNil", "lastRunSummaryEqualFold", "lastRunSummaryContainsFold", "lastRunError", "lastRunErrorNEQ", "lastRunErrorIn", "lastRunErrorNotIn", "lastRunErrorGT", "lastRunErrorGTE", "lastRunErrorLT", "lastRunErrorLTE", "lastRunErrorContains", "lastRunErrorHasPrefix", "lastRunErrorHasSuffix", "lastRunErrorIsNil", "lastRunErrorNotNil", "lastRunErrorEqualFold", "lastRunErrorContainsFold", "revision", "revisionNEQ", "revisionIn", "revisionNotIn", "revisionGT", "revisionGTE", "revisionLT", "revisionLTE", "hasUser", "hasUserWith", "hasArtifact", "hasArtifactWith", "hasRuns", "hasRunsWith", "hasRunEvents", "hasRunEventsWith", "hasScheduleStates", "hasScheduleStatesWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14639,6 +16476,20 @@ func (ec *executionContext) unmarshalInputBackgroundTaskWhereInput(ctx context.C
 				return it, err
 			}
 			it.HasRunEventsWith = data
+		case "hasScheduleStates":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasScheduleStates"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasScheduleStates = data
+		case "hasScheduleStatesWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasScheduleStatesWith"))
+			data, err := ec.unmarshalOBackgroundTaskScheduleStateWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasScheduleStatesWith = data
 		}
 	}
 	return it, nil
@@ -17957,7 +19808,7 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailIsNil", "emailNotNil", "emailEqualFold", "emailContainsFold", "workosUserID", "workosUserIDNEQ", "workosUserIDIn", "workosUserIDNotIn", "workosUserIDGT", "workosUserIDGTE", "workosUserIDLT", "workosUserIDLTE", "workosUserIDContains", "workosUserIDHasPrefix", "workosUserIDHasSuffix", "workosUserIDEqualFold", "workosUserIDContainsFold", "workosOrgID", "workosOrgIDNEQ", "workosOrgIDIn", "workosOrgIDNotIn", "workosOrgIDGT", "workosOrgIDGTE", "workosOrgIDLT", "workosOrgIDLTE", "workosOrgIDContains", "workosOrgIDHasPrefix", "workosOrgIDHasSuffix", "workosOrgIDIsNil", "workosOrgIDNotNil", "workosOrgIDEqualFold", "workosOrgIDContainsFold", "hasSubscription", "hasSubscriptionWith", "hasLedgerEntries", "hasLedgerEntriesWith", "hasLlmUsages", "hasLlmUsagesWith", "hasOauthConnections", "hasOauthConnectionsWith", "hasMcpConnections", "hasMcpConnectionsWith", "hasBackgroundTasks", "hasBackgroundTasksWith", "hasBackgroundTaskArtifacts", "hasBackgroundTaskArtifactsWith", "hasBackgroundTaskRuns", "hasBackgroundTaskRunsWith", "hasBackgroundTaskRunEvents", "hasBackgroundTaskRunEventsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailIsNil", "emailNotNil", "emailEqualFold", "emailContainsFold", "workosUserID", "workosUserIDNEQ", "workosUserIDIn", "workosUserIDNotIn", "workosUserIDGT", "workosUserIDGTE", "workosUserIDLT", "workosUserIDLTE", "workosUserIDContains", "workosUserIDHasPrefix", "workosUserIDHasSuffix", "workosUserIDEqualFold", "workosUserIDContainsFold", "workosOrgID", "workosOrgIDNEQ", "workosOrgIDIn", "workosOrgIDNotIn", "workosOrgIDGT", "workosOrgIDGTE", "workosOrgIDLT", "workosOrgIDLTE", "workosOrgIDContains", "workosOrgIDHasPrefix", "workosOrgIDHasSuffix", "workosOrgIDIsNil", "workosOrgIDNotNil", "workosOrgIDEqualFold", "workosOrgIDContainsFold", "hasSubscription", "hasSubscriptionWith", "hasLedgerEntries", "hasLedgerEntriesWith", "hasLlmUsages", "hasLlmUsagesWith", "hasOauthConnections", "hasOauthConnectionsWith", "hasMcpConnections", "hasMcpConnectionsWith", "hasBackgroundTasks", "hasBackgroundTasksWith", "hasBackgroundTaskArtifacts", "hasBackgroundTaskArtifactsWith", "hasBackgroundTaskRuns", "hasBackgroundTaskRunsWith", "hasBackgroundTaskRunEvents", "hasBackgroundTaskRunEventsWith", "hasBackgroundTaskScheduleStates", "hasBackgroundTaskScheduleStatesWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -18580,6 +20431,20 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.HasBackgroundTaskRunEventsWith = data
+		case "hasBackgroundTaskScheduleStates":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasBackgroundTaskScheduleStates"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasBackgroundTaskScheduleStates = data
+		case "hasBackgroundTaskScheduleStatesWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasBackgroundTaskScheduleStatesWith"))
+			data, err := ec.unmarshalOBackgroundTaskScheduleStateWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasBackgroundTaskScheduleStatesWith = data
 		}
 	}
 	return it, nil
@@ -18628,6 +20493,11 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._BillingSubscription(ctx, sel, obj)
+	case *ent.BackgroundTaskScheduleState:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._BackgroundTaskScheduleState(ctx, sel, obj)
 	case *ent.BackgroundTaskRunEvent:
 		if obj == nil {
 			return graphql.Null
@@ -18847,6 +20717,39 @@ func (ec *executionContext) _BackgroundTask(ctx context.Context, sel ast.Selecti
 					}
 				}()
 				res = ec._BackgroundTask_runEvents(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "scheduleStates":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._BackgroundTask_scheduleStates(ctx, field, obj)
 				return res
 			}
 
@@ -19757,6 +21660,241 @@ func (ec *executionContext) _BackgroundTaskRunEventEdge(ctx context.Context, sel
 			out.Values[i] = ec._BackgroundTaskRunEventEdge_node(ctx, field, obj)
 		case "cursor":
 			out.Values[i] = ec._BackgroundTaskRunEventEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var backgroundTaskScheduleStateImplementors = []string{"BackgroundTaskScheduleState", "Node"}
+
+func (ec *executionContext) _BackgroundTaskScheduleState(ctx context.Context, sel ast.SelectionSet, obj *ent.BackgroundTaskScheduleState) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, backgroundTaskScheduleStateImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BackgroundTaskScheduleState")
+		case "id":
+			out.Values[i] = ec._BackgroundTaskScheduleState_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._BackgroundTaskScheduleState_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._BackgroundTaskScheduleState_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "triggerType":
+			out.Values[i] = ec._BackgroundTaskScheduleState_triggerType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "scheduleKey":
+			out.Values[i] = ec._BackgroundTaskScheduleState_scheduleKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "lastEvaluatedAt":
+			out.Values[i] = ec._BackgroundTaskScheduleState_lastEvaluatedAt(ctx, field, obj)
+		case "lastDueAt":
+			out.Values[i] = ec._BackgroundTaskScheduleState_lastDueAt(ctx, field, obj)
+		case "lastTriggeredAt":
+			out.Values[i] = ec._BackgroundTaskScheduleState_lastTriggeredAt(ctx, field, obj)
+		case "lastRunID":
+			out.Values[i] = ec._BackgroundTaskScheduleState_lastRunID(ctx, field, obj)
+		case "leaseOwner":
+			out.Values[i] = ec._BackgroundTaskScheduleState_leaseOwner(ctx, field, obj)
+		case "leaseExpiresAt":
+			out.Values[i] = ec._BackgroundTaskScheduleState_leaseExpiresAt(ctx, field, obj)
+		case "revision":
+			out.Values[i] = ec._BackgroundTaskScheduleState_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._BackgroundTaskScheduleState_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "task":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._BackgroundTaskScheduleState_task(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var backgroundTaskScheduleStateConnectionImplementors = []string{"BackgroundTaskScheduleStateConnection"}
+
+func (ec *executionContext) _BackgroundTaskScheduleStateConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.BackgroundTaskScheduleStateConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, backgroundTaskScheduleStateConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BackgroundTaskScheduleStateConnection")
+		case "edges":
+			out.Values[i] = ec._BackgroundTaskScheduleStateConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._BackgroundTaskScheduleStateConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._BackgroundTaskScheduleStateConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var backgroundTaskScheduleStateEdgeImplementors = []string{"BackgroundTaskScheduleStateEdge"}
+
+func (ec *executionContext) _BackgroundTaskScheduleStateEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.BackgroundTaskScheduleStateEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, backgroundTaskScheduleStateEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BackgroundTaskScheduleStateEdge")
+		case "node":
+			out.Values[i] = ec._BackgroundTaskScheduleStateEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._BackgroundTaskScheduleStateEdge_cursor(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -20811,6 +22949,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "backgroundTaskScheduleStates":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_backgroundTaskScheduleStates(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "llmUsages":
 			field := field
 
@@ -21239,6 +23399,39 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_backgroundTaskRunEvents(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "backgroundTaskScheduleStates":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_backgroundTaskScheduleStates(ctx, field, obj)
 				return res
 			}
 
@@ -21815,6 +24008,35 @@ func (ec *executionContext) unmarshalNBackgroundTaskRunEventWhereInput2ᚖgithub
 
 func (ec *executionContext) unmarshalNBackgroundTaskRunWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskRunWhereInput(ctx context.Context, v any) (*ent.BackgroundTaskRunWhereInput, error) {
 	res, err := ec.unmarshalInputBackgroundTaskRunWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNBackgroundTaskScheduleState2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleState(ctx context.Context, sel ast.SelectionSet, v *ent.BackgroundTaskScheduleState) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._BackgroundTaskScheduleState(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNBackgroundTaskScheduleStateConnection2githubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateConnection(ctx context.Context, sel ast.SelectionSet, v ent.BackgroundTaskScheduleStateConnection) graphql.Marshaler {
+	return ec._BackgroundTaskScheduleStateConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNBackgroundTaskScheduleStateConnection2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateConnection(ctx context.Context, sel ast.SelectionSet, v *ent.BackgroundTaskScheduleStateConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._BackgroundTaskScheduleStateConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNBackgroundTaskScheduleStateWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateWhereInput(ctx context.Context, v any) (*ent.BackgroundTaskScheduleStateWhereInput, error) {
+	res, err := ec.unmarshalInputBackgroundTaskScheduleStateWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -22514,6 +24736,78 @@ func (ec *executionContext) unmarshalOBackgroundTaskRunWhereInput2ᚖgithubᚗco
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputBackgroundTaskRunWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOBackgroundTaskScheduleState2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.BackgroundTaskScheduleState) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNBackgroundTaskScheduleState2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleState(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOBackgroundTaskScheduleState2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleState(ctx context.Context, sel ast.SelectionSet, v *ent.BackgroundTaskScheduleState) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._BackgroundTaskScheduleState(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOBackgroundTaskScheduleStateEdge2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.BackgroundTaskScheduleStateEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOBackgroundTaskScheduleStateEdge2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateEdge(ctx, sel, v[i])
+	})
+
+	return ret
+}
+
+func (ec *executionContext) marshalOBackgroundTaskScheduleStateEdge2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateEdge(ctx context.Context, sel ast.SelectionSet, v *ent.BackgroundTaskScheduleStateEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._BackgroundTaskScheduleStateEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOBackgroundTaskScheduleStateWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateWhereInputᚄ(ctx context.Context, v any) ([]*ent.BackgroundTaskScheduleStateWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.BackgroundTaskScheduleStateWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNBackgroundTaskScheduleStateWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOBackgroundTaskScheduleStateWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐBackgroundTaskScheduleStateWhereInput(ctx context.Context, v any) (*ent.BackgroundTaskScheduleStateWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputBackgroundTaskScheduleStateWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -1097,6 +1098,255 @@ func (_m *BackgroundTaskRunEvent) ToEdge(order *BackgroundTaskRunEventOrder) *Ba
 		order = DefaultBackgroundTaskRunEventOrder
 	}
 	return &BackgroundTaskRunEventEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// BackgroundTaskScheduleStateEdge is the edge representation of BackgroundTaskScheduleState.
+type BackgroundTaskScheduleStateEdge struct {
+	Node   *BackgroundTaskScheduleState `json:"node"`
+	Cursor Cursor                       `json:"cursor"`
+}
+
+// BackgroundTaskScheduleStateConnection is the connection containing edges to BackgroundTaskScheduleState.
+type BackgroundTaskScheduleStateConnection struct {
+	Edges      []*BackgroundTaskScheduleStateEdge `json:"edges"`
+	PageInfo   PageInfo                           `json:"pageInfo"`
+	TotalCount int                                `json:"totalCount"`
+}
+
+func (c *BackgroundTaskScheduleStateConnection) build(nodes []*BackgroundTaskScheduleState, pager *backgroundtaskschedulestatePager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *BackgroundTaskScheduleState
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *BackgroundTaskScheduleState {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *BackgroundTaskScheduleState {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*BackgroundTaskScheduleStateEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &BackgroundTaskScheduleStateEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// BackgroundTaskScheduleStatePaginateOption enables pagination customization.
+type BackgroundTaskScheduleStatePaginateOption func(*backgroundtaskschedulestatePager) error
+
+// WithBackgroundTaskScheduleStateOrder configures pagination ordering.
+func WithBackgroundTaskScheduleStateOrder(order *BackgroundTaskScheduleStateOrder) BackgroundTaskScheduleStatePaginateOption {
+	if order == nil {
+		order = DefaultBackgroundTaskScheduleStateOrder
+	}
+	o := *order
+	return func(pager *backgroundtaskschedulestatePager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultBackgroundTaskScheduleStateOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithBackgroundTaskScheduleStateFilter configures pagination filter.
+func WithBackgroundTaskScheduleStateFilter(filter func(*BackgroundTaskScheduleStateQuery) (*BackgroundTaskScheduleStateQuery, error)) BackgroundTaskScheduleStatePaginateOption {
+	return func(pager *backgroundtaskschedulestatePager) error {
+		if filter == nil {
+			return errors.New("BackgroundTaskScheduleStateQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type backgroundtaskschedulestatePager struct {
+	reverse bool
+	order   *BackgroundTaskScheduleStateOrder
+	filter  func(*BackgroundTaskScheduleStateQuery) (*BackgroundTaskScheduleStateQuery, error)
+}
+
+func newBackgroundTaskScheduleStatePager(opts []BackgroundTaskScheduleStatePaginateOption, reverse bool) (*backgroundtaskschedulestatePager, error) {
+	pager := &backgroundtaskschedulestatePager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultBackgroundTaskScheduleStateOrder
+	}
+	return pager, nil
+}
+
+func (p *backgroundtaskschedulestatePager) applyFilter(query *BackgroundTaskScheduleStateQuery) (*BackgroundTaskScheduleStateQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskschedulestatePager) toCursor(_m *BackgroundTaskScheduleState) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *backgroundtaskschedulestatePager) applyCursors(query *BackgroundTaskScheduleStateQuery, after, before *Cursor) (*BackgroundTaskScheduleStateQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultBackgroundTaskScheduleStateOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskschedulestatePager) applyOrder(query *BackgroundTaskScheduleStateQuery) *BackgroundTaskScheduleStateQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultBackgroundTaskScheduleStateOrder.Field {
+		query = query.Order(DefaultBackgroundTaskScheduleStateOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *backgroundtaskschedulestatePager) orderExpr(query *BackgroundTaskScheduleStateQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultBackgroundTaskScheduleStateOrder.Field {
+			b.Comma().Ident(DefaultBackgroundTaskScheduleStateOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to BackgroundTaskScheduleState.
+func (_m *BackgroundTaskScheduleStateQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...BackgroundTaskScheduleStatePaginateOption,
+) (*BackgroundTaskScheduleStateConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newBackgroundTaskScheduleStatePager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &BackgroundTaskScheduleStateConnection{Edges: []*BackgroundTaskScheduleStateEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// BackgroundTaskScheduleStateOrderField defines the ordering field of BackgroundTaskScheduleState.
+type BackgroundTaskScheduleStateOrderField struct {
+	// Value extracts the ordering value from the given BackgroundTaskScheduleState.
+	Value    func(*BackgroundTaskScheduleState) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) backgroundtaskschedulestate.OrderOption
+	toCursor func(*BackgroundTaskScheduleState) Cursor
+}
+
+// BackgroundTaskScheduleStateOrder defines the ordering of BackgroundTaskScheduleState.
+type BackgroundTaskScheduleStateOrder struct {
+	Direction OrderDirection                         `json:"direction"`
+	Field     *BackgroundTaskScheduleStateOrderField `json:"field"`
+}
+
+// DefaultBackgroundTaskScheduleStateOrder is the default ordering of BackgroundTaskScheduleState.
+var DefaultBackgroundTaskScheduleStateOrder = &BackgroundTaskScheduleStateOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &BackgroundTaskScheduleStateOrderField{
+		Value: func(_m *BackgroundTaskScheduleState) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: backgroundtaskschedulestate.FieldID,
+		toTerm: backgroundtaskschedulestate.ByID,
+		toCursor: func(_m *BackgroundTaskScheduleState) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts BackgroundTaskScheduleState into BackgroundTaskScheduleStateEdge.
+func (_m *BackgroundTaskScheduleState) ToEdge(order *BackgroundTaskScheduleStateOrder) *BackgroundTaskScheduleStateEdge {
+	if order == nil {
+		order = DefaultBackgroundTaskScheduleStateOrder
+	}
+	return &BackgroundTaskScheduleStateEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

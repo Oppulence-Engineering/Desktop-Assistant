@@ -9,6 +9,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -68,6 +69,13 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.BackgroundTaskRunEventQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(backgroundtaskrunevent.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.BackgroundTaskScheduleState.Intercept(intercept.TraverseBackgroundTaskScheduleState(
+		func(ctx context.Context, q *ent.BackgroundTaskScheduleStateQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(backgroundtaskschedulestate.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

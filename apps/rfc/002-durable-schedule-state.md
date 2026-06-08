@@ -333,9 +333,10 @@ A lightweight sweep at the end of each tick (or a separate slow loop):
 - **Reclaim**: rows with `last_run_id == ''` and `lease_expires_at < now - 2*ttl` whose
   task has a newer `last_run_at` for that cycle → mark fired (heals the
   Start-without-Complete crash).
-- **Prune**: delete `Fired` rows older than a retention window (e.g. 30 days) — cycles are
-  immutable history; only the latest few per key matter. Bounded growth: one row per fired
-  cycle per task. Emit `cloud_scheduler_schedule_states_pruned_total`.
+- **Prune**: delete `Fired` rows older than the retention window (7 days; see
+  [Decisions](#decisions)) — cycles are immutable history; only the latest few per key
+  matter. Bounded growth: one row per fired cycle per task. Emit
+  `cloud_scheduler_schedule_states_pruned_total`.
 
 ## Observability
 
@@ -550,8 +551,8 @@ scheduler tick (for example every 5 minutes):
 3. If the task's latest run belongs to the same cycle key, set the row fired with that run
    id. This heals "Start succeeded, Complete crashed".
 4. Otherwise clear the lease so the cycle can be stolen if still within its semantic window.
-5. Delete fired rows older than retention (`created_at < now - 30d` or
-   `last_triggered_at < now - 30d`).
+5. Delete fired rows older than retention (`created_at < now - 7d` or
+   `last_triggered_at < now - 7d`).
 
 Do not reconcile by scanning all runs for all tasks on every tick. Keep the sweep bounded
 by the `lease_expires_at` and `last_run_id` indexes.
@@ -654,16 +655,16 @@ Estimate row growth before GA:
 
 ```
 rows_per_day = active_scheduled_api_tasks * fires_per_task_per_day
-30d_rows = rows_per_day * 30
+7d_rows = rows_per_day * 7
 ```
 
 Examples:
 
-| Tasks  | Cadence         | Rows/day  | 30-day rows |
-| ------ | --------------- | --------- | ----------- |
-| 1,000  | hourly cron     | 24,000    | 720,000     |
-| 5,000  | daily window    | 5,000     | 150,000     |
-| 10,000 | every 5 minutes | 2,880,000 | 86,400,000  |
+| Tasks  | Cadence         | Rows/day  | 7-day rows |
+| ------ | --------------- | --------- | ---------- |
+| 1,000  | hourly cron     | 24,000    | 168,000    |
+| 5,000  | daily window    | 5,000     | 35,000     |
+| 10,000 | every 5 minutes | 2,880,000 | 20,160,000 |
 
 The every-5-min case is the one that forces retention and indexing discipline. If staging
 shows high-frequency schedules becoming common, add a product-level minimum cadence or move
@@ -709,7 +710,7 @@ full `Acquire→Start→Complete` against a fake `Starter` and assert exactly on
 
 Resolved forks (consolidated in [`README.md`](./README.md#consolidated-decisions)):
 
-- **Retention → 30 days for `Fired` rows**, pruned by the reconciler, aligned with
+- **Retention → 7 days for `Fired` rows**, pruned by the reconciler, aligned with
   run-history retention. Growth is one row per fired cycle per task; the prune keeps the
   table bounded. Revisit only if run-history retention changes.
 - **`last_evaluated_at` writes only on state transitions** (acquire / steal / complete /

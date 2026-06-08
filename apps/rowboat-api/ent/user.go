@@ -55,20 +55,23 @@ type UserEdges struct {
 	BackgroundTaskRuns []*BackgroundTaskRun `json:"background_task_runs,omitempty"`
 	// BackgroundTaskRunEvents holds the value of the background_task_run_events edge.
 	BackgroundTaskRunEvents []*BackgroundTaskRunEvent `json:"background_task_run_events,omitempty"`
+	// BackgroundTaskScheduleStates holds the value of the background_task_schedule_states edge.
+	BackgroundTaskScheduleStates []*BackgroundTaskScheduleState `json:"background_task_schedule_states,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [9]bool
+	loadedTypes [10]bool
 	// totalCount holds the count of the edges above.
-	totalCount [9]map[string]int
+	totalCount [10]map[string]int
 
-	namedLedgerEntries           map[string][]*CreditLedger
-	namedLlmUsages               map[string][]*LLMUsage
-	namedOauthConnections        map[string][]*OAuthConnection
-	namedMcpConnections          map[string][]*MCPConnection
-	namedBackgroundTasks         map[string][]*BackgroundTask
-	namedBackgroundTaskArtifacts map[string][]*BackgroundTaskArtifact
-	namedBackgroundTaskRuns      map[string][]*BackgroundTaskRun
-	namedBackgroundTaskRunEvents map[string][]*BackgroundTaskRunEvent
+	namedLedgerEntries                map[string][]*CreditLedger
+	namedLlmUsages                    map[string][]*LLMUsage
+	namedOauthConnections             map[string][]*OAuthConnection
+	namedMcpConnections               map[string][]*MCPConnection
+	namedBackgroundTasks              map[string][]*BackgroundTask
+	namedBackgroundTaskArtifacts      map[string][]*BackgroundTaskArtifact
+	namedBackgroundTaskRuns           map[string][]*BackgroundTaskRun
+	namedBackgroundTaskRunEvents      map[string][]*BackgroundTaskRunEvent
+	namedBackgroundTaskScheduleStates map[string][]*BackgroundTaskScheduleState
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -152,6 +155,15 @@ func (e UserEdges) BackgroundTaskRunEventsOrErr() ([]*BackgroundTaskRunEvent, er
 		return e.BackgroundTaskRunEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_run_events"}
+}
+
+// BackgroundTaskScheduleStatesOrErr returns the BackgroundTaskScheduleStates value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) BackgroundTaskScheduleStatesOrErr() ([]*BackgroundTaskScheduleState, error) {
+	if e.loadedTypes[9] {
+		return e.BackgroundTaskScheduleStates, nil
+	}
+	return nil, &NotLoadedError{edge: "background_task_schedule_states"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -272,6 +284,11 @@ func (_m *User) QueryBackgroundTaskRuns() *BackgroundTaskRunQuery {
 // QueryBackgroundTaskRunEvents queries the "background_task_run_events" edge of the User entity.
 func (_m *User) QueryBackgroundTaskRunEvents() *BackgroundTaskRunEventQuery {
 	return NewUserClient(_m.config).QueryBackgroundTaskRunEvents(_m)
+}
+
+// QueryBackgroundTaskScheduleStates queries the "background_task_schedule_states" edge of the User entity.
+func (_m *User) QueryBackgroundTaskScheduleStates() *BackgroundTaskScheduleStateQuery {
+	return NewUserClient(_m.config).QueryBackgroundTaskScheduleStates(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -504,6 +521,30 @@ func (_m *User) appendNamedBackgroundTaskRunEvents(name string, edges ...*Backgr
 		_m.Edges.namedBackgroundTaskRunEvents[name] = []*BackgroundTaskRunEvent{}
 	} else {
 		_m.Edges.namedBackgroundTaskRunEvents[name] = append(_m.Edges.namedBackgroundTaskRunEvents[name], edges...)
+	}
+}
+
+// NamedBackgroundTaskScheduleStates returns the BackgroundTaskScheduleStates named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedBackgroundTaskScheduleStates(name string) ([]*BackgroundTaskScheduleState, error) {
+	if _m.Edges.namedBackgroundTaskScheduleStates == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedBackgroundTaskScheduleStates[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedBackgroundTaskScheduleStates(name string, edges ...*BackgroundTaskScheduleState) {
+	if _m.Edges.namedBackgroundTaskScheduleStates == nil {
+		_m.Edges.namedBackgroundTaskScheduleStates = make(map[string][]*BackgroundTaskScheduleState)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedBackgroundTaskScheduleStates[name] = []*BackgroundTaskScheduleState{}
+	} else {
+		_m.Edges.namedBackgroundTaskScheduleStates[name] = append(_m.Edges.namedBackgroundTaskScheduleStates[name], edges...)
 	}
 }
 

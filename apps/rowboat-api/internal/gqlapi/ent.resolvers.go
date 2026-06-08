@@ -44,6 +44,11 @@ func (r *queryResolver) BackgroundTaskRunEvents(ctx context.Context, after *entg
 	panic(fmt.Errorf("not implemented: BackgroundTaskRunEvents - backgroundTaskRunEvents"))
 }
 
+// BackgroundTaskScheduleStates is the resolver for the backgroundTaskScheduleStates field.
+func (r *queryResolver) BackgroundTaskScheduleStates(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskScheduleStateWhereInput) (*ent.BackgroundTaskScheduleStateConnection, error) {
+	panic(fmt.Errorf("not implemented: BackgroundTaskScheduleStates - backgroundTaskScheduleStates"))
+}
+
 // LlmUsages is the resolver for the llmUsages field.
 func (r *queryResolver) LlmUsages(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.LLMUsageWhereInput) (*ent.LLMUsageConnection, error) {
 	var opts []ent.LLMUsagePaginateOption

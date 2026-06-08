@@ -11,6 +11,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -286,6 +287,10 @@ type BackgroundTaskWhereInput struct {
 	// "run_events" edge predicates.
 	HasRunEvents     *bool                               `json:"hasRunEvents,omitempty"`
 	HasRunEventsWith []*BackgroundTaskRunEventWhereInput `json:"hasRunEventsWith,omitempty"`
+
+	// "schedule_states" edge predicates.
+	HasScheduleStates     *bool                                    `json:"hasScheduleStates,omitempty"`
+	HasScheduleStatesWith []*BackgroundTaskScheduleStateWhereInput `json:"hasScheduleStatesWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -1049,6 +1054,24 @@ func (i *BackgroundTaskWhereInput) P() (predicate.BackgroundTask, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, backgroundtask.HasRunEventsWith(with...))
+	}
+	if i.HasScheduleStates != nil {
+		p := backgroundtask.HasScheduleStates()
+		if !*i.HasScheduleStates {
+			p = backgroundtask.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasScheduleStatesWith) > 0 {
+		with := make([]predicate.BackgroundTaskScheduleState, 0, len(i.HasScheduleStatesWith))
+		for _, w := range i.HasScheduleStatesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasScheduleStatesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, backgroundtask.HasScheduleStatesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -3770,6 +3793,676 @@ func (i *BackgroundTaskRunEventWhereInput) P() (predicate.BackgroundTaskRunEvent
 	}
 }
 
+// BackgroundTaskScheduleStateWhereInput represents a where input for filtering BackgroundTaskScheduleState queries.
+type BackgroundTaskScheduleStateWhereInput struct {
+	Predicates []predicate.BackgroundTaskScheduleState  `json:"-"`
+	Not        *BackgroundTaskScheduleStateWhereInput   `json:"not,omitempty"`
+	Or         []*BackgroundTaskScheduleStateWhereInput `json:"or,omitempty"`
+	And        []*BackgroundTaskScheduleStateWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "trigger_type" field predicates.
+	TriggerType             *string  `json:"triggerType,omitempty"`
+	TriggerTypeNEQ          *string  `json:"triggerTypeNEQ,omitempty"`
+	TriggerTypeIn           []string `json:"triggerTypeIn,omitempty"`
+	TriggerTypeNotIn        []string `json:"triggerTypeNotIn,omitempty"`
+	TriggerTypeGT           *string  `json:"triggerTypeGT,omitempty"`
+	TriggerTypeGTE          *string  `json:"triggerTypeGTE,omitempty"`
+	TriggerTypeLT           *string  `json:"triggerTypeLT,omitempty"`
+	TriggerTypeLTE          *string  `json:"triggerTypeLTE,omitempty"`
+	TriggerTypeContains     *string  `json:"triggerTypeContains,omitempty"`
+	TriggerTypeHasPrefix    *string  `json:"triggerTypeHasPrefix,omitempty"`
+	TriggerTypeHasSuffix    *string  `json:"triggerTypeHasSuffix,omitempty"`
+	TriggerTypeEqualFold    *string  `json:"triggerTypeEqualFold,omitempty"`
+	TriggerTypeContainsFold *string  `json:"triggerTypeContainsFold,omitempty"`
+
+	// "schedule_key" field predicates.
+	ScheduleKey             *string  `json:"scheduleKey,omitempty"`
+	ScheduleKeyNEQ          *string  `json:"scheduleKeyNEQ,omitempty"`
+	ScheduleKeyIn           []string `json:"scheduleKeyIn,omitempty"`
+	ScheduleKeyNotIn        []string `json:"scheduleKeyNotIn,omitempty"`
+	ScheduleKeyGT           *string  `json:"scheduleKeyGT,omitempty"`
+	ScheduleKeyGTE          *string  `json:"scheduleKeyGTE,omitempty"`
+	ScheduleKeyLT           *string  `json:"scheduleKeyLT,omitempty"`
+	ScheduleKeyLTE          *string  `json:"scheduleKeyLTE,omitempty"`
+	ScheduleKeyContains     *string  `json:"scheduleKeyContains,omitempty"`
+	ScheduleKeyHasPrefix    *string  `json:"scheduleKeyHasPrefix,omitempty"`
+	ScheduleKeyHasSuffix    *string  `json:"scheduleKeyHasSuffix,omitempty"`
+	ScheduleKeyEqualFold    *string  `json:"scheduleKeyEqualFold,omitempty"`
+	ScheduleKeyContainsFold *string  `json:"scheduleKeyContainsFold,omitempty"`
+
+	// "last_evaluated_at" field predicates.
+	LastEvaluatedAt       *time.Time  `json:"lastEvaluatedAt,omitempty"`
+	LastEvaluatedAtNEQ    *time.Time  `json:"lastEvaluatedAtNEQ,omitempty"`
+	LastEvaluatedAtIn     []time.Time `json:"lastEvaluatedAtIn,omitempty"`
+	LastEvaluatedAtNotIn  []time.Time `json:"lastEvaluatedAtNotIn,omitempty"`
+	LastEvaluatedAtGT     *time.Time  `json:"lastEvaluatedAtGT,omitempty"`
+	LastEvaluatedAtGTE    *time.Time  `json:"lastEvaluatedAtGTE,omitempty"`
+	LastEvaluatedAtLT     *time.Time  `json:"lastEvaluatedAtLT,omitempty"`
+	LastEvaluatedAtLTE    *time.Time  `json:"lastEvaluatedAtLTE,omitempty"`
+	LastEvaluatedAtIsNil  bool        `json:"lastEvaluatedAtIsNil,omitempty"`
+	LastEvaluatedAtNotNil bool        `json:"lastEvaluatedAtNotNil,omitempty"`
+
+	// "last_due_at" field predicates.
+	LastDueAt       *time.Time  `json:"lastDueAt,omitempty"`
+	LastDueAtNEQ    *time.Time  `json:"lastDueAtNEQ,omitempty"`
+	LastDueAtIn     []time.Time `json:"lastDueAtIn,omitempty"`
+	LastDueAtNotIn  []time.Time `json:"lastDueAtNotIn,omitempty"`
+	LastDueAtGT     *time.Time  `json:"lastDueAtGT,omitempty"`
+	LastDueAtGTE    *time.Time  `json:"lastDueAtGTE,omitempty"`
+	LastDueAtLT     *time.Time  `json:"lastDueAtLT,omitempty"`
+	LastDueAtLTE    *time.Time  `json:"lastDueAtLTE,omitempty"`
+	LastDueAtIsNil  bool        `json:"lastDueAtIsNil,omitempty"`
+	LastDueAtNotNil bool        `json:"lastDueAtNotNil,omitempty"`
+
+	// "last_triggered_at" field predicates.
+	LastTriggeredAt       *time.Time  `json:"lastTriggeredAt,omitempty"`
+	LastTriggeredAtNEQ    *time.Time  `json:"lastTriggeredAtNEQ,omitempty"`
+	LastTriggeredAtIn     []time.Time `json:"lastTriggeredAtIn,omitempty"`
+	LastTriggeredAtNotIn  []time.Time `json:"lastTriggeredAtNotIn,omitempty"`
+	LastTriggeredAtGT     *time.Time  `json:"lastTriggeredAtGT,omitempty"`
+	LastTriggeredAtGTE    *time.Time  `json:"lastTriggeredAtGTE,omitempty"`
+	LastTriggeredAtLT     *time.Time  `json:"lastTriggeredAtLT,omitempty"`
+	LastTriggeredAtLTE    *time.Time  `json:"lastTriggeredAtLTE,omitempty"`
+	LastTriggeredAtIsNil  bool        `json:"lastTriggeredAtIsNil,omitempty"`
+	LastTriggeredAtNotNil bool        `json:"lastTriggeredAtNotNil,omitempty"`
+
+	// "last_run_id" field predicates.
+	LastRunID             *string  `json:"lastRunID,omitempty"`
+	LastRunIDNEQ          *string  `json:"lastRunIDNEQ,omitempty"`
+	LastRunIDIn           []string `json:"lastRunIDIn,omitempty"`
+	LastRunIDNotIn        []string `json:"lastRunIDNotIn,omitempty"`
+	LastRunIDGT           *string  `json:"lastRunIDGT,omitempty"`
+	LastRunIDGTE          *string  `json:"lastRunIDGTE,omitempty"`
+	LastRunIDLT           *string  `json:"lastRunIDLT,omitempty"`
+	LastRunIDLTE          *string  `json:"lastRunIDLTE,omitempty"`
+	LastRunIDContains     *string  `json:"lastRunIDContains,omitempty"`
+	LastRunIDHasPrefix    *string  `json:"lastRunIDHasPrefix,omitempty"`
+	LastRunIDHasSuffix    *string  `json:"lastRunIDHasSuffix,omitempty"`
+	LastRunIDIsNil        bool     `json:"lastRunIDIsNil,omitempty"`
+	LastRunIDNotNil       bool     `json:"lastRunIDNotNil,omitempty"`
+	LastRunIDEqualFold    *string  `json:"lastRunIDEqualFold,omitempty"`
+	LastRunIDContainsFold *string  `json:"lastRunIDContainsFold,omitempty"`
+
+	// "lease_owner" field predicates.
+	LeaseOwner             *string  `json:"leaseOwner,omitempty"`
+	LeaseOwnerNEQ          *string  `json:"leaseOwnerNEQ,omitempty"`
+	LeaseOwnerIn           []string `json:"leaseOwnerIn,omitempty"`
+	LeaseOwnerNotIn        []string `json:"leaseOwnerNotIn,omitempty"`
+	LeaseOwnerGT           *string  `json:"leaseOwnerGT,omitempty"`
+	LeaseOwnerGTE          *string  `json:"leaseOwnerGTE,omitempty"`
+	LeaseOwnerLT           *string  `json:"leaseOwnerLT,omitempty"`
+	LeaseOwnerLTE          *string  `json:"leaseOwnerLTE,omitempty"`
+	LeaseOwnerContains     *string  `json:"leaseOwnerContains,omitempty"`
+	LeaseOwnerHasPrefix    *string  `json:"leaseOwnerHasPrefix,omitempty"`
+	LeaseOwnerHasSuffix    *string  `json:"leaseOwnerHasSuffix,omitempty"`
+	LeaseOwnerIsNil        bool     `json:"leaseOwnerIsNil,omitempty"`
+	LeaseOwnerNotNil       bool     `json:"leaseOwnerNotNil,omitempty"`
+	LeaseOwnerEqualFold    *string  `json:"leaseOwnerEqualFold,omitempty"`
+	LeaseOwnerContainsFold *string  `json:"leaseOwnerContainsFold,omitempty"`
+
+	// "lease_expires_at" field predicates.
+	LeaseExpiresAt       *time.Time  `json:"leaseExpiresAt,omitempty"`
+	LeaseExpiresAtNEQ    *time.Time  `json:"leaseExpiresAtNEQ,omitempty"`
+	LeaseExpiresAtIn     []time.Time `json:"leaseExpiresAtIn,omitempty"`
+	LeaseExpiresAtNotIn  []time.Time `json:"leaseExpiresAtNotIn,omitempty"`
+	LeaseExpiresAtGT     *time.Time  `json:"leaseExpiresAtGT,omitempty"`
+	LeaseExpiresAtGTE    *time.Time  `json:"leaseExpiresAtGTE,omitempty"`
+	LeaseExpiresAtLT     *time.Time  `json:"leaseExpiresAtLT,omitempty"`
+	LeaseExpiresAtLTE    *time.Time  `json:"leaseExpiresAtLTE,omitempty"`
+	LeaseExpiresAtIsNil  bool        `json:"leaseExpiresAtIsNil,omitempty"`
+	LeaseExpiresAtNotNil bool        `json:"leaseExpiresAtNotNil,omitempty"`
+
+	// "revision" field predicates.
+	Revision      *int  `json:"revision,omitempty"`
+	RevisionNEQ   *int  `json:"revisionNEQ,omitempty"`
+	RevisionIn    []int `json:"revisionIn,omitempty"`
+	RevisionNotIn []int `json:"revisionNotIn,omitempty"`
+	RevisionGT    *int  `json:"revisionGT,omitempty"`
+	RevisionGTE   *int  `json:"revisionGTE,omitempty"`
+	RevisionLT    *int  `json:"revisionLT,omitempty"`
+	RevisionLTE   *int  `json:"revisionLTE,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+
+	// "task" edge predicates.
+	HasTask     *bool                       `json:"hasTask,omitempty"`
+	HasTaskWith []*BackgroundTaskWhereInput `json:"hasTaskWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *BackgroundTaskScheduleStateWhereInput) AddPredicates(predicates ...predicate.BackgroundTaskScheduleState) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the BackgroundTaskScheduleStateWhereInput filter on the BackgroundTaskScheduleStateQuery builder.
+func (i *BackgroundTaskScheduleStateWhereInput) Filter(q *BackgroundTaskScheduleStateQuery) (*BackgroundTaskScheduleStateQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyBackgroundTaskScheduleStateWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyBackgroundTaskScheduleStateWhereInput is returned in case the BackgroundTaskScheduleStateWhereInput is empty.
+var ErrEmptyBackgroundTaskScheduleStateWhereInput = errors.New("ent: empty predicate BackgroundTaskScheduleStateWhereInput")
+
+// P returns a predicate for filtering backgroundtaskschedulestates.
+// An error is returned if the input is empty or invalid.
+func (i *BackgroundTaskScheduleStateWhereInput) P() (predicate.BackgroundTaskScheduleState, error) {
+	var predicates []predicate.BackgroundTaskScheduleState
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, backgroundtaskschedulestate.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.BackgroundTaskScheduleState, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, backgroundtaskschedulestate.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.BackgroundTaskScheduleState, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, backgroundtaskschedulestate.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.TriggerType != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeEQ(*i.TriggerType))
+	}
+	if i.TriggerTypeNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeNEQ(*i.TriggerTypeNEQ))
+	}
+	if len(i.TriggerTypeIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeIn(i.TriggerTypeIn...))
+	}
+	if len(i.TriggerTypeNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeNotIn(i.TriggerTypeNotIn...))
+	}
+	if i.TriggerTypeGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeGT(*i.TriggerTypeGT))
+	}
+	if i.TriggerTypeGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeGTE(*i.TriggerTypeGTE))
+	}
+	if i.TriggerTypeLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeLT(*i.TriggerTypeLT))
+	}
+	if i.TriggerTypeLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeLTE(*i.TriggerTypeLTE))
+	}
+	if i.TriggerTypeContains != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeContains(*i.TriggerTypeContains))
+	}
+	if i.TriggerTypeHasPrefix != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeHasPrefix(*i.TriggerTypeHasPrefix))
+	}
+	if i.TriggerTypeHasSuffix != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeHasSuffix(*i.TriggerTypeHasSuffix))
+	}
+	if i.TriggerTypeEqualFold != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeEqualFold(*i.TriggerTypeEqualFold))
+	}
+	if i.TriggerTypeContainsFold != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.TriggerTypeContainsFold(*i.TriggerTypeContainsFold))
+	}
+	if i.ScheduleKey != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyEQ(*i.ScheduleKey))
+	}
+	if i.ScheduleKeyNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyNEQ(*i.ScheduleKeyNEQ))
+	}
+	if len(i.ScheduleKeyIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyIn(i.ScheduleKeyIn...))
+	}
+	if len(i.ScheduleKeyNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyNotIn(i.ScheduleKeyNotIn...))
+	}
+	if i.ScheduleKeyGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyGT(*i.ScheduleKeyGT))
+	}
+	if i.ScheduleKeyGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyGTE(*i.ScheduleKeyGTE))
+	}
+	if i.ScheduleKeyLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyLT(*i.ScheduleKeyLT))
+	}
+	if i.ScheduleKeyLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyLTE(*i.ScheduleKeyLTE))
+	}
+	if i.ScheduleKeyContains != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyContains(*i.ScheduleKeyContains))
+	}
+	if i.ScheduleKeyHasPrefix != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyHasPrefix(*i.ScheduleKeyHasPrefix))
+	}
+	if i.ScheduleKeyHasSuffix != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyHasSuffix(*i.ScheduleKeyHasSuffix))
+	}
+	if i.ScheduleKeyEqualFold != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyEqualFold(*i.ScheduleKeyEqualFold))
+	}
+	if i.ScheduleKeyContainsFold != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.ScheduleKeyContainsFold(*i.ScheduleKeyContainsFold))
+	}
+	if i.LastEvaluatedAt != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastEvaluatedAtEQ(*i.LastEvaluatedAt))
+	}
+	if i.LastEvaluatedAtNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastEvaluatedAtNEQ(*i.LastEvaluatedAtNEQ))
+	}
+	if len(i.LastEvaluatedAtIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LastEvaluatedAtIn(i.LastEvaluatedAtIn...))
+	}
+	if len(i.LastEvaluatedAtNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LastEvaluatedAtNotIn(i.LastEvaluatedAtNotIn...))
+	}
+	if i.LastEvaluatedAtGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastEvaluatedAtGT(*i.LastEvaluatedAtGT))
+	}
+	if i.LastEvaluatedAtGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastEvaluatedAtGTE(*i.LastEvaluatedAtGTE))
+	}
+	if i.LastEvaluatedAtLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastEvaluatedAtLT(*i.LastEvaluatedAtLT))
+	}
+	if i.LastEvaluatedAtLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastEvaluatedAtLTE(*i.LastEvaluatedAtLTE))
+	}
+	if i.LastEvaluatedAtIsNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastEvaluatedAtIsNil())
+	}
+	if i.LastEvaluatedAtNotNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastEvaluatedAtNotNil())
+	}
+	if i.LastDueAt != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastDueAtEQ(*i.LastDueAt))
+	}
+	if i.LastDueAtNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastDueAtNEQ(*i.LastDueAtNEQ))
+	}
+	if len(i.LastDueAtIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LastDueAtIn(i.LastDueAtIn...))
+	}
+	if len(i.LastDueAtNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LastDueAtNotIn(i.LastDueAtNotIn...))
+	}
+	if i.LastDueAtGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastDueAtGT(*i.LastDueAtGT))
+	}
+	if i.LastDueAtGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastDueAtGTE(*i.LastDueAtGTE))
+	}
+	if i.LastDueAtLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastDueAtLT(*i.LastDueAtLT))
+	}
+	if i.LastDueAtLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastDueAtLTE(*i.LastDueAtLTE))
+	}
+	if i.LastDueAtIsNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastDueAtIsNil())
+	}
+	if i.LastDueAtNotNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastDueAtNotNil())
+	}
+	if i.LastTriggeredAt != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastTriggeredAtEQ(*i.LastTriggeredAt))
+	}
+	if i.LastTriggeredAtNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastTriggeredAtNEQ(*i.LastTriggeredAtNEQ))
+	}
+	if len(i.LastTriggeredAtIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LastTriggeredAtIn(i.LastTriggeredAtIn...))
+	}
+	if len(i.LastTriggeredAtNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LastTriggeredAtNotIn(i.LastTriggeredAtNotIn...))
+	}
+	if i.LastTriggeredAtGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastTriggeredAtGT(*i.LastTriggeredAtGT))
+	}
+	if i.LastTriggeredAtGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastTriggeredAtGTE(*i.LastTriggeredAtGTE))
+	}
+	if i.LastTriggeredAtLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastTriggeredAtLT(*i.LastTriggeredAtLT))
+	}
+	if i.LastTriggeredAtLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastTriggeredAtLTE(*i.LastTriggeredAtLTE))
+	}
+	if i.LastTriggeredAtIsNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastTriggeredAtIsNil())
+	}
+	if i.LastTriggeredAtNotNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastTriggeredAtNotNil())
+	}
+	if i.LastRunID != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDEQ(*i.LastRunID))
+	}
+	if i.LastRunIDNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDNEQ(*i.LastRunIDNEQ))
+	}
+	if len(i.LastRunIDIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDIn(i.LastRunIDIn...))
+	}
+	if len(i.LastRunIDNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDNotIn(i.LastRunIDNotIn...))
+	}
+	if i.LastRunIDGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDGT(*i.LastRunIDGT))
+	}
+	if i.LastRunIDGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDGTE(*i.LastRunIDGTE))
+	}
+	if i.LastRunIDLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDLT(*i.LastRunIDLT))
+	}
+	if i.LastRunIDLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDLTE(*i.LastRunIDLTE))
+	}
+	if i.LastRunIDContains != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDContains(*i.LastRunIDContains))
+	}
+	if i.LastRunIDHasPrefix != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDHasPrefix(*i.LastRunIDHasPrefix))
+	}
+	if i.LastRunIDHasSuffix != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDHasSuffix(*i.LastRunIDHasSuffix))
+	}
+	if i.LastRunIDIsNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDIsNil())
+	}
+	if i.LastRunIDNotNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDNotNil())
+	}
+	if i.LastRunIDEqualFold != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDEqualFold(*i.LastRunIDEqualFold))
+	}
+	if i.LastRunIDContainsFold != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDContainsFold(*i.LastRunIDContainsFold))
+	}
+	if i.LeaseOwner != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerEQ(*i.LeaseOwner))
+	}
+	if i.LeaseOwnerNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerNEQ(*i.LeaseOwnerNEQ))
+	}
+	if len(i.LeaseOwnerIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerIn(i.LeaseOwnerIn...))
+	}
+	if len(i.LeaseOwnerNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerNotIn(i.LeaseOwnerNotIn...))
+	}
+	if i.LeaseOwnerGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerGT(*i.LeaseOwnerGT))
+	}
+	if i.LeaseOwnerGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerGTE(*i.LeaseOwnerGTE))
+	}
+	if i.LeaseOwnerLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerLT(*i.LeaseOwnerLT))
+	}
+	if i.LeaseOwnerLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerLTE(*i.LeaseOwnerLTE))
+	}
+	if i.LeaseOwnerContains != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerContains(*i.LeaseOwnerContains))
+	}
+	if i.LeaseOwnerHasPrefix != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerHasPrefix(*i.LeaseOwnerHasPrefix))
+	}
+	if i.LeaseOwnerHasSuffix != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerHasSuffix(*i.LeaseOwnerHasSuffix))
+	}
+	if i.LeaseOwnerIsNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerIsNil())
+	}
+	if i.LeaseOwnerNotNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerNotNil())
+	}
+	if i.LeaseOwnerEqualFold != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerEqualFold(*i.LeaseOwnerEqualFold))
+	}
+	if i.LeaseOwnerContainsFold != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerContainsFold(*i.LeaseOwnerContainsFold))
+	}
+	if i.LeaseExpiresAt != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseExpiresAtEQ(*i.LeaseExpiresAt))
+	}
+	if i.LeaseExpiresAtNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseExpiresAtNEQ(*i.LeaseExpiresAtNEQ))
+	}
+	if len(i.LeaseExpiresAtIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseExpiresAtIn(i.LeaseExpiresAtIn...))
+	}
+	if len(i.LeaseExpiresAtNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseExpiresAtNotIn(i.LeaseExpiresAtNotIn...))
+	}
+	if i.LeaseExpiresAtGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseExpiresAtGT(*i.LeaseExpiresAtGT))
+	}
+	if i.LeaseExpiresAtGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseExpiresAtGTE(*i.LeaseExpiresAtGTE))
+	}
+	if i.LeaseExpiresAtLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseExpiresAtLT(*i.LeaseExpiresAtLT))
+	}
+	if i.LeaseExpiresAtLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseExpiresAtLTE(*i.LeaseExpiresAtLTE))
+	}
+	if i.LeaseExpiresAtIsNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseExpiresAtIsNil())
+	}
+	if i.LeaseExpiresAtNotNil {
+		predicates = append(predicates, backgroundtaskschedulestate.LeaseExpiresAtNotNil())
+	}
+	if i.Revision != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.RevisionEQ(*i.Revision))
+	}
+	if i.RevisionNEQ != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.RevisionNEQ(*i.RevisionNEQ))
+	}
+	if len(i.RevisionIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.RevisionIn(i.RevisionIn...))
+	}
+	if len(i.RevisionNotIn) > 0 {
+		predicates = append(predicates, backgroundtaskschedulestate.RevisionNotIn(i.RevisionNotIn...))
+	}
+	if i.RevisionGT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.RevisionGT(*i.RevisionGT))
+	}
+	if i.RevisionGTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.RevisionGTE(*i.RevisionGTE))
+	}
+	if i.RevisionLT != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.RevisionLT(*i.RevisionLT))
+	}
+	if i.RevisionLTE != nil {
+		predicates = append(predicates, backgroundtaskschedulestate.RevisionLTE(*i.RevisionLTE))
+	}
+
+	if i.HasUser != nil {
+		p := backgroundtaskschedulestate.HasUser()
+		if !*i.HasUser {
+			p = backgroundtaskschedulestate.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, backgroundtaskschedulestate.HasUserWith(with...))
+	}
+	if i.HasTask != nil {
+		p := backgroundtaskschedulestate.HasTask()
+		if !*i.HasTask {
+			p = backgroundtaskschedulestate.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasTaskWith) > 0 {
+		with := make([]predicate.BackgroundTask, 0, len(i.HasTaskWith))
+		for _, w := range i.HasTaskWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasTaskWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, backgroundtaskschedulestate.HasTaskWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyBackgroundTaskScheduleStateWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return backgroundtaskschedulestate.And(predicates...), nil
+	}
+}
+
 // CreditLedgerWhereInput represents a where input for filtering CreditLedger queries.
 type CreditLedgerWhereInput struct {
 	Predicates []predicate.CreditLedger  `json:"-"`
@@ -6321,6 +7014,10 @@ type UserWhereInput struct {
 	// "background_task_run_events" edge predicates.
 	HasBackgroundTaskRunEvents     *bool                               `json:"hasBackgroundTaskRunEvents,omitempty"`
 	HasBackgroundTaskRunEventsWith []*BackgroundTaskRunEventWhereInput `json:"hasBackgroundTaskRunEventsWith,omitempty"`
+
+	// "background_task_schedule_states" edge predicates.
+	HasBackgroundTaskScheduleStates     *bool                                    `json:"hasBackgroundTaskScheduleStates,omitempty"`
+	HasBackgroundTaskScheduleStatesWith []*BackgroundTaskScheduleStateWhereInput `json:"hasBackgroundTaskScheduleStatesWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -6757,6 +7454,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasBackgroundTaskRunEventsWith(with...))
+	}
+	if i.HasBackgroundTaskScheduleStates != nil {
+		p := user.HasBackgroundTaskScheduleStates()
+		if !*i.HasBackgroundTaskScheduleStates {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasBackgroundTaskScheduleStatesWith) > 0 {
+		with := make([]predicate.BackgroundTaskScheduleState, 0, len(i.HasBackgroundTaskScheduleStatesWith))
+		for _, w := range i.HasBackgroundTaskScheduleStatesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasBackgroundTaskScheduleStatesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasBackgroundTaskScheduleStatesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

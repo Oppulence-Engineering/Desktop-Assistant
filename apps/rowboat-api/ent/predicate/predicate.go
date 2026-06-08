@@ -18,6 +18,9 @@ type BackgroundTaskRun func(*sql.Selector)
 // BackgroundTaskRunEvent is the predicate function for backgroundtaskrunevent builders.
 type BackgroundTaskRunEvent func(*sql.Selector)
 
+// BackgroundTaskScheduleState is the predicate function for backgroundtaskschedulestate builders.
+type BackgroundTaskScheduleState func(*sql.Selector)
+
 // CreditLedger is the predicate function for creditledger builders.
 type CreditLedger func(*sql.Selector)
 

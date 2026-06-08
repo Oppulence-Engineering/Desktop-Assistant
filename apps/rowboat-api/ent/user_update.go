@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -237,6 +238,21 @@ func (_u *UserUpdate) AddBackgroundTaskRunEvents(v ...*BackgroundTaskRunEvent) *
 	return _u.AddBackgroundTaskRunEventIDs(ids...)
 }
 
+// AddBackgroundTaskScheduleStateIDs adds the "background_task_schedule_states" edge to the BackgroundTaskScheduleState entity by IDs.
+func (_u *UserUpdate) AddBackgroundTaskScheduleStateIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddBackgroundTaskScheduleStateIDs(ids...)
+	return _u
+}
+
+// AddBackgroundTaskScheduleStates adds the "background_task_schedule_states" edges to the BackgroundTaskScheduleState entity.
+func (_u *UserUpdate) AddBackgroundTaskScheduleStates(v ...*BackgroundTaskScheduleState) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddBackgroundTaskScheduleStateIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -414,6 +430,27 @@ func (_u *UserUpdate) RemoveBackgroundTaskRunEvents(v ...*BackgroundTaskRunEvent
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveBackgroundTaskRunEventIDs(ids...)
+}
+
+// ClearBackgroundTaskScheduleStates clears all "background_task_schedule_states" edges to the BackgroundTaskScheduleState entity.
+func (_u *UserUpdate) ClearBackgroundTaskScheduleStates() *UserUpdate {
+	_u.mutation.ClearBackgroundTaskScheduleStates()
+	return _u
+}
+
+// RemoveBackgroundTaskScheduleStateIDs removes the "background_task_schedule_states" edge to BackgroundTaskScheduleState entities by IDs.
+func (_u *UserUpdate) RemoveBackgroundTaskScheduleStateIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveBackgroundTaskScheduleStateIDs(ids...)
+	return _u
+}
+
+// RemoveBackgroundTaskScheduleStates removes "background_task_schedule_states" edges to BackgroundTaskScheduleState entities.
+func (_u *UserUpdate) RemoveBackgroundTaskScheduleStates(v ...*BackgroundTaskScheduleState) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveBackgroundTaskScheduleStateIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -881,6 +918,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.BackgroundTaskScheduleStatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskScheduleStatesTable,
+			Columns: []string{user.BackgroundTaskScheduleStatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskschedulestate.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedBackgroundTaskScheduleStatesIDs(); len(nodes) > 0 && !_u.mutation.BackgroundTaskScheduleStatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskScheduleStatesTable,
+			Columns: []string{user.BackgroundTaskScheduleStatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskschedulestate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BackgroundTaskScheduleStatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskScheduleStatesTable,
+			Columns: []string{user.BackgroundTaskScheduleStatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskschedulestate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -1100,6 +1182,21 @@ func (_u *UserUpdateOne) AddBackgroundTaskRunEvents(v ...*BackgroundTaskRunEvent
 	return _u.AddBackgroundTaskRunEventIDs(ids...)
 }
 
+// AddBackgroundTaskScheduleStateIDs adds the "background_task_schedule_states" edge to the BackgroundTaskScheduleState entity by IDs.
+func (_u *UserUpdateOne) AddBackgroundTaskScheduleStateIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddBackgroundTaskScheduleStateIDs(ids...)
+	return _u
+}
+
+// AddBackgroundTaskScheduleStates adds the "background_task_schedule_states" edges to the BackgroundTaskScheduleState entity.
+func (_u *UserUpdateOne) AddBackgroundTaskScheduleStates(v ...*BackgroundTaskScheduleState) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddBackgroundTaskScheduleStateIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -1277,6 +1374,27 @@ func (_u *UserUpdateOne) RemoveBackgroundTaskRunEvents(v ...*BackgroundTaskRunEv
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveBackgroundTaskRunEventIDs(ids...)
+}
+
+// ClearBackgroundTaskScheduleStates clears all "background_task_schedule_states" edges to the BackgroundTaskScheduleState entity.
+func (_u *UserUpdateOne) ClearBackgroundTaskScheduleStates() *UserUpdateOne {
+	_u.mutation.ClearBackgroundTaskScheduleStates()
+	return _u
+}
+
+// RemoveBackgroundTaskScheduleStateIDs removes the "background_task_schedule_states" edge to BackgroundTaskScheduleState entities by IDs.
+func (_u *UserUpdateOne) RemoveBackgroundTaskScheduleStateIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveBackgroundTaskScheduleStateIDs(ids...)
+	return _u
+}
+
+// RemoveBackgroundTaskScheduleStates removes "background_task_schedule_states" edges to BackgroundTaskScheduleState entities.
+func (_u *UserUpdateOne) RemoveBackgroundTaskScheduleStates(v ...*BackgroundTaskScheduleState) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveBackgroundTaskScheduleStateIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -1767,6 +1885,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskrunevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BackgroundTaskScheduleStatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskScheduleStatesTable,
+			Columns: []string{user.BackgroundTaskScheduleStatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskschedulestate.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedBackgroundTaskScheduleStatesIDs(); len(nodes) > 0 && !_u.mutation.BackgroundTaskScheduleStatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskScheduleStatesTable,
+			Columns: []string{user.BackgroundTaskScheduleStatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskschedulestate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BackgroundTaskScheduleStatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BackgroundTaskScheduleStatesTable,
+			Columns: []string{user.BackgroundTaskScheduleStatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backgroundtaskschedulestate.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

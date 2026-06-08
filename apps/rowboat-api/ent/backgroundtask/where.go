@@ -1223,6 +1223,29 @@ func HasRunEventsWith(preds ...predicate.BackgroundTaskRunEvent) predicate.Backg
 	})
 }
 
+// HasScheduleStates applies the HasEdge predicate on the "schedule_states" edge.
+func HasScheduleStates() predicate.BackgroundTask {
+	return predicate.BackgroundTask(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ScheduleStatesTable, ScheduleStatesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasScheduleStatesWith applies the HasEdge predicate on the "schedule_states" edge with a given conditions (other predicates).
+func HasScheduleStatesWith(preds ...predicate.BackgroundTaskScheduleState) predicate.BackgroundTask {
+	return predicate.BackgroundTask(func(s *sql.Selector) {
+		step := newScheduleStatesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.BackgroundTask) predicate.BackgroundTask {
 	return predicate.BackgroundTask(sql.AndPredicates(predicates...))
