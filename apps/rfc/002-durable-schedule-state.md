@@ -3,7 +3,7 @@
 |                  |                                                                                                            |
 | ---------------- | ---------------------------------------------------------------------------------------------------------- |
 | **RFC**          | 002                                                                                                        |
-| **Status**       | Implemented — durable lease + cross-replica Postgres tests (slices 002-A…002-F); enables the multi-replica scheduler. |
+| **Status**       | Complete — implemented (slices 002-A…002-F) and merged to `develop` in PR #51. Enables the multi-replica scheduler via the durable lease. |
 | **Track**        | Cloud-native background workflows                                                                          |
 | **Owners**       | `apps/rowboat-api` (Go backend / ent schema)                                                               |
 | **Created**      | 2026-06-05                                                                                                 |
