@@ -14,6 +14,20 @@ worker:
       cpu: "1"
       memory: 512Mi
 
+# API-owned scheduler (RFC 001). Disabled by default; enable per-environment.
+# Keep replicaCount at 1 until the RFC 002 durable lease lands — the no-op lease
+# only makes a single evaluator safe.
+scheduler:
+  enabled: false
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: "500m"
+      memory: 256Mi
+
 image:
   repository: ghcr.io/oppulence-engineering/rowboat-api
   pullPolicy: IfNotPresent
@@ -191,6 +205,13 @@ config:
   TEMPORAL_NAMESPACE: default
   TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
   TEMPORAL_WORKER_ENABLED: "false"
+  # Cloud scheduler (RFC 001). CLOUD_SCHEDULER_ENABLED stays false in the shared
+  # configmap so only the scheduler Deployment (which sets it true on its own
+  # pod) runs the loop; the rest are tunable defaults.
+  CLOUD_SCHEDULER_ENABLED: "false"
+  CLOUD_SCHEDULER_INTERVAL: 15s
+  CLOUD_SCHEDULER_LEASE_TTL: 90s
+  CLOUD_SCHEDULER_TIMEZONE: UTC
 
 # Secret env. In production these are projected from an existing Secret
 # (existingSecret) rather than templated into the chart. When existingSecret is

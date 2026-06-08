@@ -1,0 +1,95 @@
+{{- if .Values.scheduler.enabled }}
+# API-owned background-task scheduler (RFC 001). Evaluates cron/window triggers
+# for executionTarget=api tasks so scheduled cloud runs fire while the desktop
+# is offline. Structurally mirrors the worker Deployment: own pod, own crash
+# domain, own /metrics + /healthz.
+#
+# Run AT MOST ONE replica until the RFC 002 durable lease is in place — the
+# no-op lease only protects a single evaluator.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}-scheduler
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scheduler
+spec:
+  replicas: {{ .Values.scheduler.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "rowboat-api.schedulerSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "rowboat-api.schedulerSelectorLabels" . | nindent 8 }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    spec:
+      serviceAccountName: {{ include "rowboat-api.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: rowboat-api-scheduler
+          image: {{ include "rowboat-api.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/rowboat-api-scheduler"]
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "rowboat-api.fullname" . }}-config
+            - secretRef:
+                name: {{ include "rowboat-api.secretName" . }}
+          env:
+            - name: SERVICE_NAME
+              value: rowboat-api-scheduler
+            # The scheduler creates executor=api runs, so it needs Temporal and
+            # the loop enabled regardless of the shared configmap defaults.
+            - name: CLOUD_SCHEDULER_ENABLED
+              value: "true"
+            - name: TEMPORAL_ENABLED
+              value: "true"
+            # Lease owner identity = pod name (downward API).
+            - name: CLOUD_SCHEDULER_OWNER
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.ports.metrics }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.scheduler.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

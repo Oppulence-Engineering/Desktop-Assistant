@@ -29,6 +29,12 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: worker
 {{- end -}}
 
+{{- define "rowboat-api.schedulerSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "rowboat-api.name" . }}-scheduler
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: scheduler
+{{- end -}}
+
 {{- define "rowboat-api.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
 {{- default (include "rowboat-api.fullname" .) .Values.serviceAccount.name -}}

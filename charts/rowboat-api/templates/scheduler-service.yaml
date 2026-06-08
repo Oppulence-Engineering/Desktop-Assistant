@@ -1,0 +1,20 @@
+{{- if .Values.scheduler.enabled }}
+# Headless service exposing the scheduler's /metrics port for Prometheus.
+# The scheduler has no inbound traffic; this exists only for the ServiceMonitor.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}-scheduler
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scheduler
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "rowboat-api.schedulerSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: metrics
+      port: {{ .Values.ports.metrics }}
+      targetPort: metrics
+{{- end }}
