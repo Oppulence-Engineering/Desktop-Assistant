@@ -224,8 +224,15 @@ export class ModelManager {
         // restart from scratch instead of retrying the same unsatisfiable Range forever.
         if (res.status === 416 && from > 0) {
           await rmQuiet(part);
-          from = 0;
-          continue;
+          // Only restart (a fresh from=0 download) once the stale partial is actually gone;
+          // a `continue` here can't re-hit 416 because the next request sends no Range. If the
+          // file couldn't be removed (locked / read-only), fall into the BOUNDED retry path
+          // below rather than spinning on the same unsatisfiable Range forever.
+          if (!(await exists(part))) continue;
+          throw new WhisperError(
+            "download_failed",
+            "stale partial (HTTP 416) could not be cleared",
+          );
         }
         if (!res.ok || !res.body) throw new WhisperError("download_failed", `HTTP ${res.status}`);
         if (from > 0 && res.status !== 206) {

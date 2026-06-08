@@ -1210,10 +1210,12 @@ export function setupIpcHandlers() {
       }
     },
     "whisper:openStream": async (event, { model, channels }) => {
+      // Resolve the model (honoring the persisted choice when the meeting hook sends none)
+      // BEFORE allocating the channel — if the config read ever threw, allocating first would
+      // leak the two native MessagePorts that only the catch below knows how to close.
+      const resolvedModel = model ?? (await voice.getTranscriptionConfig()).whisper.model;
       // Open a MessageChannel; the Session owns port1, the renderer gets port2 (transferred).
       const { port1, port2 } = new MessageChannelMain();
-      // Honor the persisted model when the renderer didn't specify one (meeting hook sends none).
-      const resolvedModel = model ?? (await voice.getTranscriptionConfig()).whisper.model;
       let streamId: string;
       try {
         streamId = getWhisper().openStream(port1 as unknown as StreamPort, {

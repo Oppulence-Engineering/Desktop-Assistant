@@ -135,6 +135,10 @@ export async function openWhisperStream(
       }
     },
     async close() {
+      // Idempotent: a second close() (e.g. stop() and a teardown both calling it) must not
+      // re-post 'close', overwrite onDone, or double-invoke closeStream — which would leave
+      // the first caller's drain to time out for the full CLOSE_DRAIN_TIMEOUT_MS.
+      if (closed) return;
       // Stop accepting frames first, so a late onaudioprocess can't post onto the port
       // we're about to tear down.
       closed = true;

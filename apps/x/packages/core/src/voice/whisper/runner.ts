@@ -136,6 +136,10 @@ export function spawnWhisper(bin: string, args: string[], timeoutMs: number): Pr
     child.stderr?.on("data", (d) => {
       if (stderr.length < 4096) stderr += d.toString();
     });
+    // The stderr pipe can emit 'error' (e.g. EPIPE after we SIGKILL the child while a
+    // grandchild still holds it). A Readable 'error' with no listener throws and could
+    // crash the main process — swallow it; the spawn outcome is decided by exit/timeout.
+    child.stderr?.on("error", () => {});
     child.on("error", (err) => {
       if (done) return;
       done = true;
