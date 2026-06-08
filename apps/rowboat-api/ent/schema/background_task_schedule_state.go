@@ -40,7 +40,10 @@ func (BackgroundTaskScheduleState) Fields() []ent.Field {
 		// last_evaluated_at advances only on state transitions (acquire/steal/
 		// complete/release), not on every non-due scan.
 		field.Time("last_evaluated_at").Optional().Nillable(),
-		// last_due_at is the occurrence/window start the scheduler decided was due.
+		// last_due_at is reserved for the occurrence/window start the scheduler
+		// decided was due. Not yet populated — the occurrence is already encoded
+		// in schedule_key (see CronKey/WindowKey), so this stays nil until a
+		// consumer needs it as a first-class column.
 		field.Time("last_due_at").Optional().Nillable(),
 		// last_triggered_at is when Starter.Start succeeded (set by Complete).
 		field.Time("last_triggered_at").Optional().Nillable(),

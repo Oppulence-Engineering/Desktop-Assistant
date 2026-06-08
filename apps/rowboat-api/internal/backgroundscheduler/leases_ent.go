@@ -199,9 +199,6 @@ func (l *EntLeases) CleanupExpired(ctx context.Context) error {
 	now := time.Now().UTC()
 	l.mu.Lock()
 	due := now.Sub(l.lastPrunedAt) >= pruneInterval
-	if due {
-		l.lastPrunedAt = now
-	}
 	l.mu.Unlock()
 	if !due {
 		return nil
@@ -211,9 +208,16 @@ func (l *EntLeases) CleanupExpired(ctx context.Context) error {
 		Where(btss.CreatedAtLT(now.Add(-scheduleStateRetention))).
 		Exec(ctx)
 	if err != nil {
+		// Leave lastPrunedAt unadvanced so the next tick retries — otherwise a
+		// persistently failing prune would only retry hourly and the table could
+		// grow unbounded between attempts.
 		leaseMetrics.Errors.WithLabelValues("prune").Inc()
 		return err
 	}
+	// Throttle only successful prunes.
+	l.mu.Lock()
+	l.lastPrunedAt = now
+	l.mu.Unlock()
 	if n > 0 {
 		leaseMetrics.Pruned.Add(float64(n))
 		l.log.Info("pruned old schedule-state rows", zap.Int("count", n))
