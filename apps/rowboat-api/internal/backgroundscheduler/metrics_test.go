@@ -20,7 +20,7 @@ func TestMetricsAreWired(t *testing.T) {
 	metrics.BackoffSuppressed.Inc()
 	metrics.InFlightSuppressed.Inc()
 	metrics.OrphansReaped.Inc()
-	for _, stage := range []string{"query", "parse", "user_edge", "lease", "start", "stamp", "reap"} {
+	for _, stage := range []string{"query", "parse", "user_edge", "lease", "start", "persist", "stamp", "reap"} {
 		metrics.Errors.WithLabelValues(stage).Inc()
 	}
 	metrics.TickDuration.Observe(0.01)

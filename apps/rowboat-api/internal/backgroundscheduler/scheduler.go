@@ -261,12 +261,12 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 		// only persisting its ids failed — so this is a fire, not a retryable
 		// failure. Advancing the cycle (rather than backing off and re-firing)
 		// avoids starting a second workflow for the same occurrence; the worker
-		// reconciles the run row by run id.
+		// reconciles the run row by run id. It is still counted as an error so
+		// the partial-success state is alertable.
 		var persistErr *backgroundtaskruns.PersistIDsError
 		if errors.As(err, &persistErr) {
-			_ = s.leases.Complete(ctx, lease.ID, run.RunID)
-			s.stampFired(ctx, task, now, run.RunID)
-			metrics.RunsTriggered.WithLabelValues(due.source).Inc()
+			s.recordFire(ctx, lease.ID, task, due.source, now, run.RunID)
+			metrics.Errors.WithLabelValues("persist").Inc()
 			s.log.Warn("scheduler run started but temporal ids not persisted",
 				zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
 			return
@@ -282,28 +282,32 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 			zap.String("scheduleKey", key), zap.Error(err))
 		return
 	}
-	_ = s.leases.Complete(ctx, lease.ID, run.RunID)
-	// Advance the task runtime at fire time exactly like the desktop does
-	// (cloud-sync.ts triggerCloudRun): last_run_at (the cron/window cycle
-	// anchor) + last_attempt_at + last_run_id, so the next tick does not re-fire
-	// the same occurrence before the worker reports terminal state. This is what
-	// makes single-replica at-most-once hold without depending on the worker's
-	// async MarkRunRunning.
-	//
-	// Tradeoffs accepted for v1 (both resolved by the RFC 002 durable lease):
-	//   - A run that starts then FAILS leaves last_run_at advanced, so that
-	//     cycle is not auto-retried (the next cron occurrence / next day's
-	//     window fires normally; a failed run can be retried explicitly). This
-	//     matches the desktop, which also advances lastRunAt at fire.
-	//   - A crash between Start returning and this stamp committing can re-fire
-	//     the occurrence once on restart.
-	s.stampFired(ctx, task, now, run.RunID)
-	metrics.RunsTriggered.WithLabelValues(due.source).Inc()
+	s.recordFire(ctx, lease.ID, task, due.source, now, run.RunID)
 	s.logDecision(task, user, due.source, "fired", key, due.occurrence, 0, zap.String("runId", run.RunID))
 }
 
+// recordFire performs the bookkeeping shared by the success and PersistIDsError
+// fire paths: complete the lease, advance the task cycle, and count the run.
+// Keeping it in one place stops the two paths from drifting.
+func (s *Scheduler) recordFire(ctx context.Context, leaseID string, task *ent.BackgroundTask, trigger string, now time.Time, runID string) {
+	_ = s.leases.Complete(ctx, leaseID, runID)
+	s.stampFired(ctx, task, now, runID)
+	metrics.RunsTriggered.WithLabelValues(trigger).Inc()
+}
+
 // stampFired advances the task's cycle anchor and attempt/run markers at fire
-// time so the cycle is not re-evaluated until the worker writes terminal state.
+// time, exactly like the desktop does (cloud-sync.ts triggerCloudRun):
+// last_run_at (the cron/window cycle anchor) + last_attempt_at + last_run_id, so
+// the next tick does not re-fire the same occurrence before the worker reports
+// terminal state. This is what makes single-replica at-most-once hold without
+// depending on the worker's async MarkRunRunning.
+//
+// Tradeoffs accepted for v1 (both resolved by the RFC 002 durable lease):
+//   - A run that starts then FAILS leaves last_run_at advanced, so that cycle is
+//     not auto-retried (the next cron occurrence / next day's window fires
+//     normally; a failed run can be retried explicitly). Matches the desktop.
+//   - A crash between Start returning and this stamp committing can re-fire the
+//     occurrence once on restart.
 func (s *Scheduler) stampFired(ctx context.Context, task *ent.BackgroundTask, now time.Time, runID string) {
 	if err := s.client.BackgroundTask.UpdateOneID(task.ID).
 		SetLastAttemptAt(now).

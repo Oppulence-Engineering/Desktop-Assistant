@@ -481,10 +481,10 @@ validate_temporal_background_task() {
 # validate_scheduler_background_task proves RFC 001: with NO HTTP /trigger call
 # (the "desktop closed" scenario), the in-cluster scheduler fires an API-target
 # cron task on its own and the run executes to success in the cloud.
-# Deletes the scheduler smoke task by slug, best-effort. Called from a RETURN
-# trap so the `*/1` cron is removed on EVERY exit path — without it, a failed
-# assertion under `set -euo pipefail` would leave the cron firing a new run
-# every minute for the life of the cluster.
+# Deletes the scheduler smoke task by slug, best-effort. The caller routes every
+# path (success, assertion failure, guarded curl failure) to a single call of
+# this, so the `*/1` cron is always removed — without it, a leftover task would
+# fire a new run every minute for the life of the cluster.
 delete_scheduler_task() {
   local token="$1" slug="$2" task_json revision
   task_json="$(curl --fail --silent "http://localhost:${API_PORT}/v1/background-tasks/${slug}" -H "Authorization: Bearer ${token}" 2>/dev/null)" || return 0
@@ -502,45 +502,50 @@ validate_scheduler_background_task() {
     return 0
   fi
   local slug="kind-scheduler-$(date +%s)"
-  # Guarantee cleanup regardless of how this function returns (success, failed
-  # assertion, or a curl_smoke failure tripping set -e).
-  trap 'delete_scheduler_task "$token" "$slug"' RETURN
+  local fail="" runs_json="" run_id="" status_json=""
 
   echo "api-owned scheduler (desktop-closed) cron task:"
   # Create an API-target task with a once-a-minute cron trigger. We deliberately
   # never call POST /trigger — a never-run cron is immediately due, so the
   # scheduler must create the run by itself within a poll interval.
-  curl_smoke \
+  #
+  # Every curl_smoke is guarded with `|| fail=...` so a hard failure routes to
+  # the single cleanup+exit at the end of the function instead of tripping
+  # `set -e` (which would skip cleanup and leak the */1 cron task — a RETURN
+  # trap does NOT fire on a set -e abort).
+  if ! curl_smoke \
     -H "Authorization: Bearer ${token}" \
     -H "Content-Type: application/json" \
     -X POST \
     --data "{\"slug\":\"${slug}\",\"name\":\"Kind Scheduler Smoke\",\"instructions\":\"Write a short status artifact for the scheduler smoke test.\",\"executionTarget\":\"api\",\"triggers\":{\"cronExpr\":\"*/1 * * * *\"}}" \
-    "http://localhost:${API_PORT}/v1/background-tasks" >/dev/null
+    "http://localhost:${API_PORT}/v1/background-tasks" >/dev/null; then
+    fail="could not create scheduler smoke task"
+  fi
 
   # Wait for a scheduler-created run to appear: run id prefixed sched-cron-,
   # trigger=cron, executor=api — none of which an HTTP trigger would produce.
-  local runs_json="" run_id="" fail=""
-  for _ in $(seq 1 36); do # ~180s = two 2-minute grace windows + slack
-    runs_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs")"
-    run_id="$(sed -n 's/.*"runId"[[:space:]]*:[[:space:]]*"\(sched-cron-[^"]*\)".*/\1/p' <<<"$runs_json" | head -1)"
-    if [[ -n "$run_id" ]]; then
-      break
-    fi
-    sleep 5
-  done
-  if [[ -z "$run_id" ]]; then
+  if [[ -z "$fail" ]]; then
+    for _ in $(seq 1 36); do # ~180s = two 2-minute grace windows + slack
+      runs_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs")" || { fail="run list query failed"; break; }
+      run_id="$(sed -n 's/.*"runId"[[:space:]]*:[[:space:]]*"\(sched-cron-[^"]*\)".*/\1/p' <<<"$runs_json" | head -1)"
+      if [[ -n "$run_id" ]]; then
+        break
+      fi
+      sleep 5
+    done
+  fi
+  if [[ -z "$fail" && -z "$run_id" ]]; then
     fail="scheduler did not fire a cron run with the desktop closed"
-  elif [[ "$runs_json" != *'"trigger":"cron"'* || "$runs_json" != *'"executor":"api"'* ]]; then
+  elif [[ -z "$fail" && ("$runs_json" != *'"trigger":"cron"'* || "$runs_json" != *'"executor":"api"'*) ]]; then
     fail="scheduler run is not trigger=cron/executor=api"
   fi
 
-  local status_json=""
   if [[ -z "$fail" ]]; then
     echo "scheduler created ${run_id} (trigger=cron, executor=api) with no HTTP trigger"
     # The run should execute to success within two grace windows (~300s budget
     # for a real LLM run on a cold cluster).
     for _ in $(seq 1 100); do # 100 * 3s = ~300s
-      status_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs/${run_id}/status")"
+      status_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs/${run_id}/status")" || { fail="status query failed"; break; }
       if [[ "$status_json" == *'"status":"succeeded"'* ]]; then
         break
       fi
@@ -555,11 +560,8 @@ validate_scheduler_background_task() {
     fi
   fi
 
-  # Clear the RETURN trap before any normal return so it does not leak to the
-  # caller (a stale RETURN trap would re-fire on the caller's return with $slug
-  # out of scope), then clean up explicitly. The trap only covers a set -e abort
-  # mid-body, where the script exits anyway.
-  trap - RETURN
+  # Single cleanup point reached by every path (success, assertion failure, or a
+  # guarded curl failure), so the */1 cron task is always removed.
   delete_scheduler_task "$token" "$slug"
 
   if [[ -n "$fail" ]]; then

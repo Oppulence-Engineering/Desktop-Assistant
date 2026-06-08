@@ -59,7 +59,7 @@ var metrics = struct {
 	}),
 	Errors: promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "cloud_scheduler_errors_total",
-		Help: "Scheduler errors by stage (query|parse|user_edge|lease|start|stamp|reap).",
+		Help: "Scheduler errors by stage (query|parse|user_edge|lease|start|persist|stamp|reap).",
 	}, []string{"stage"}),
 	TickDuration: promauto.NewHistogram(prometheus.HistogramOpts{
 		Name:    "cloud_scheduler_tick_duration_seconds",

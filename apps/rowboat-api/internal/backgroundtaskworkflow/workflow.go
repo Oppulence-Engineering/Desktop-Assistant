@@ -200,15 +200,17 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		return err
 	}
 	n, err := a.Client.BackgroundTaskRun.Update().
-		// Never claim a run that already reached a terminal state. This makes
-		// the activity safe against the scheduler's orphan reaper: a run failed
-		// by the reaper (or cancelled) stays terminal instead of being
-		// resurrected to "running" here. Re-claiming a still-"running" run
-		// (activity retry) stays idempotent.
+		// Refuse to claim a run the user cancelled (stopped) or one already
+		// succeeded. A "failed" row is deliberately still claimable: this
+		// activity only ever runs for a LIVE workflow, so a failed row here
+		// means the scheduler's orphan reaper prematurely failed a run whose
+		// workflow is in fact running — claiming it lets the run self-heal and
+		// complete rather than being stuck failed. Re-claiming a still-"running"
+		// run (activity retry) stays idempotent.
 		Where(
 			backgroundtaskrun.RunIDEQ(in.RunID),
 			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
-			backgroundtaskrun.StatusNotIn("succeeded", "failed", "stopped"),
+			backgroundtaskrun.StatusNotIn("succeeded", "stopped"),
 		).
 		SetExecutor("api").
 		SetStatus("running").
@@ -224,7 +226,11 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("background task run %s not claimable (missing or already terminal)", in.RunID)
+		// Cancelled/succeeded/missing run: it will never become claimable, so
+		// fail the workflow fast instead of burning the activity retry budget.
+		return temporal.NewNonRetryableApplicationError(
+			fmt.Sprintf("background task run %s not claimable (cancelled, completed, or missing)", in.RunID),
+			"RunNotClaimable", nil)
 	}
 	if err := a.Client.BackgroundTask.UpdateOneID(taskID).
 		SetLastAttemptAt(now).

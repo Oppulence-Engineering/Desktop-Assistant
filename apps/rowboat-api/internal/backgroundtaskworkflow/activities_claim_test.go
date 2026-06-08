@@ -25,27 +25,52 @@ func claimTestClient(t *testing.T) *ent.Client {
 	return d.Client
 }
 
-// TestMarkRunRunningDoesNotResurrectTerminalRun guards the orphan-reaper
-// interaction: a run already in a terminal state (e.g. failed by the scheduler's
-// reaper, or stopped by a cancel) must NOT be claimed back to running.
-func TestMarkRunRunningDoesNotResurrectTerminalRun(t *testing.T) {
+// TestMarkRunRunningRefusesCancelledRun: a run the user cancelled (stopped) must
+// NOT be claimed back to running.
+func TestMarkRunRunningRefusesCancelledRun(t *testing.T) {
 	client := claimTestClient(t)
 	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("u1").SaveX(ctx)
 	task := client.BackgroundTask.Create().
 		SetUser(u).SetSlug("t").SetName("t").SetInstructions("x").SetExecutionTarget("api").SaveX(ctx)
-	failed := client.BackgroundTaskRun.Create().
+	stopped := client.BackgroundTaskRun.Create().
 		SetUser(u).SetTask(task).SetRunID("sched-cron-x").SetTrigger("cron").
-		SetStatus("failed").SetExecutor("api").SetTemporalStatus("StartFailed").SaveX(ctx)
+		SetStatus("stopped").SetExecutor("api").SetTemporalStatus("Stopped").SaveX(ctx)
 
 	a := &Activities{Client: client, Log: zap.NewNop()}
 	if err := a.MarkRunRunning(context.Background(), StartInput{
 		UserID: u.ID.String(), TaskID: task.ID.String(), Slug: "t", RunID: "sched-cron-x",
 	}); err == nil {
-		t.Fatalf("MarkRunRunning should refuse to claim a terminal run")
+		t.Fatalf("MarkRunRunning should refuse to claim a cancelled run")
 	}
-	if got := client.BackgroundTaskRun.GetX(ctx, failed.ID); got.Status != "failed" {
-		t.Fatalf("terminal run was resurrected to %q", got.Status)
+	if got := client.BackgroundTaskRun.GetX(ctx, stopped.ID); got.Status != "stopped" {
+		t.Fatalf("cancelled run was resurrected to %q", got.Status)
+	}
+}
+
+// TestMarkRunRunningSelfHealsReaperFailedRun: a run the orphan reaper failed
+// while its workflow was actually live IS claimable, so the live run completes
+// instead of being stuck failed. (MarkRunRunning only ever runs for a live
+// workflow, so a "failed" row here is a false-positive reap, not a real failure.)
+func TestMarkRunRunningSelfHealsReaperFailedRun(t *testing.T) {
+	client := claimTestClient(t)
+	ctx := auth.WithInternal(context.Background())
+	u := client.User.Create().SetEmail("c@x.co").SetWorkosUserID("u3").SaveX(ctx)
+	task := client.BackgroundTask.Create().
+		SetUser(u).SetSlug("t3").SetName("t3").SetInstructions("x").SetExecutionTarget("api").SaveX(ctx)
+	reaped := client.BackgroundTaskRun.Create().
+		SetUser(u).SetTask(task).SetRunID("sched-cron-z").SetTrigger("cron").
+		SetStatus("failed").SetExecutor("api").SetTemporalStatus("StartFailed").
+		SetErrorCode(ErrCodeTemporalStartFailed).SaveX(ctx)
+
+	a := &Activities{Client: client, Log: zap.NewNop()}
+	if err := a.MarkRunRunning(context.Background(), StartInput{
+		UserID: u.ID.String(), TaskID: task.ID.String(), Slug: "t3", RunID: "sched-cron-z",
+	}); err != nil {
+		t.Fatalf("MarkRunRunning should reclaim a reaper-failed live run: %v", err)
+	}
+	if got := client.BackgroundTaskRun.GetX(ctx, reaped.ID); got.Status != "running" {
+		t.Fatalf("reaper-failed live run did not self-heal, status=%q", got.Status)
 	}
 }
 
