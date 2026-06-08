@@ -3,11 +3,11 @@
 |                  |                                                                                                            |
 | ---------------- | ---------------------------------------------------------------------------------------------------------- |
 | **RFC**          | 002                                                                                                        |
-| **Status**       | Draft                                                                                                      |
+| **Status**       | Implemented — durable lease + cross-replica Postgres tests (slices 002-A…002-F); enables the multi-replica scheduler. |
 | **Track**        | Cloud-native background workflows                                                                          |
 | **Owners**       | `apps/rowboat-api` (Go backend / ent schema)                                                               |
 | **Created**      | 2026-06-05                                                                                                 |
-| **Last updated** | 2026-06-06                                                                                                 |
+| **Last updated** | 2026-06-08                                                                                                 |
 | **Blocks**       | [RFC 001 — API-Owned Scheduler](./001-api-owned-scheduler.md) running with >1 replica                      |
 | **Related**      | [RFC 005 — Temporal Schedules](./005-temporal-schedule-integration.md) (supersedes leasing for exact cron) |
 | **Supersedes**   | Former cloud workflow planning and API execution-plan schedule-state sections.                             |
