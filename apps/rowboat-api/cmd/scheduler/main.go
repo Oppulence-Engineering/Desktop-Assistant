@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -83,24 +84,23 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 	}
 	defer func() { _ = database.Close() }()
 
-	// The scheduler emits its own metrics, so it serves /metrics (and /healthz)
-	// on the metrics port exactly like the worker.
-	stopMetrics := startMetricsServer(cfg, log)
+	// The scheduler emits its own metrics, so it serves /metrics (and health
+	// endpoints) on the metrics port. ready flips true only once Temporal is
+	// connected and the loop is running.
+	var ready atomic.Bool
+	stopMetrics := startMetricsServer(cfg, log, &ready)
 	defer stopMetrics()
 
-	return runScheduler(ctx, cfg, log, database, location)
+	return runScheduler(ctx, cfg, log, database, location, &ready)
 }
 
-// startMetricsServer serves Prometheus /metrics and a /healthz on the metrics
-// port and returns a graceful-shutdown func. Identical in shape to cmd/worker.
-func startMetricsServer(cfg appconfig.Config, log *zap.Logger) func() {
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", promhttp.Handler())
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
-	})
-	srv := &http.Server{Addr: cfg.MetricsAddr, Handler: mux}
+// startMetricsServer serves Prometheus /metrics, a liveness /healthz (200 once
+// the process is up), and a readiness /readyz that is 200 only after Temporal is
+// connected. Splitting the two means a scheduler stuck dialing Temporal reports
+// NotReady (so a rolling deploy won't retire the old pod and alerts fire)
+// without crash-looping on liveness.
+func startMetricsServer(cfg appconfig.Config, log *zap.Logger, ready *atomic.Bool) func() {
+	srv := &http.Server{Addr: cfg.MetricsAddr, Handler: newHealthMux(ready)}
 	go func() {
 		log.Info("scheduler metrics listener starting", zap.String("addr", cfg.MetricsAddr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -114,7 +114,29 @@ func startMetricsServer(cfg appconfig.Config, log *zap.Logger) func() {
 	}
 }
 
-func runScheduler(ctx context.Context, cfg appconfig.Config, log *zap.Logger, database *db.DB, location *time.Location) error {
+// newHealthMux builds the /metrics, liveness /healthz, and readiness /readyz
+// routes. /healthz is 200 once the process is up; /readyz is 200 only after
+// `ready` is set (Temporal connected), so the two report different things.
+func newHealthMux(ready *atomic.Bool) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
+	mux.HandleFunc("/readyz", func(w http.ResponseWriter, _ *http.Request) {
+		if !ready.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte(`{"status":"not_ready"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
+	return mux
+}
+
+func runScheduler(ctx context.Context, cfg appconfig.Config, log *zap.Logger, database *db.DB, location *time.Location, ready *atomic.Bool) error {
 	log.Info("starting rowboat-api scheduler",
 		zap.String("build_info", version.String()),
 		zap.Duration("interval", cfg.CloudSchedulerInterval),
@@ -133,6 +155,9 @@ func runScheduler(ctx context.Context, cfg appconfig.Config, log *zap.Logger, da
 		return nil // context cancelled during backoff
 	}
 	defer temporalClient.Close()
+
+	// Temporal is connected — the scheduler can now create runs, so report ready.
+	ready.Store(true)
 
 	starter := backgroundtaskruns.New(database.Client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log)
 

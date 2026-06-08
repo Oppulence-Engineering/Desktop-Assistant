@@ -15,6 +15,12 @@ metadata:
     app.kubernetes.io/component: scheduler
 spec:
   replicas: {{ .Values.scheduler.replicaCount }}
+  # Recreate (not RollingUpdate): the scheduler must be a SINGLE evaluator until
+  # the RFC 002 durable lease lands. A rolling update would briefly run the old
+  # and new pods together, and with the no-op lease both would fire every due
+  # task → duplicate cloud runs on each deploy.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "rowboat-api.schedulerSelectorLabels" . | nindent 6 }}
@@ -73,8 +79,11 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 20
           readinessProbe:
+            # /readyz is 200 only once Temporal is connected, so a scheduler
+            # stuck dialing Temporal stays NotReady (and a Recreate deploy waits)
+            # rather than reporting healthy while not scheduling.
             httpGet:
-              path: /healthz
+              path: /readyz
               port: metrics
             initialDelaySeconds: 5
             periodSeconds: 10
