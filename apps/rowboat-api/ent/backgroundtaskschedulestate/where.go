@@ -526,16 +526,6 @@ func LastRunIDHasSuffix(v string) predicate.BackgroundTaskScheduleState {
 	return predicate.BackgroundTaskScheduleState(sql.FieldHasSuffix(FieldLastRunID, v))
 }
 
-// LastRunIDIsNil applies the IsNil predicate on the "last_run_id" field.
-func LastRunIDIsNil() predicate.BackgroundTaskScheduleState {
-	return predicate.BackgroundTaskScheduleState(sql.FieldIsNull(FieldLastRunID))
-}
-
-// LastRunIDNotNil applies the NotNil predicate on the "last_run_id" field.
-func LastRunIDNotNil() predicate.BackgroundTaskScheduleState {
-	return predicate.BackgroundTaskScheduleState(sql.FieldNotNull(FieldLastRunID))
-}
-
 // LastRunIDEqualFold applies the EqualFold predicate on the "last_run_id" field.
 func LastRunIDEqualFold(v string) predicate.BackgroundTaskScheduleState {
 	return predicate.BackgroundTaskScheduleState(sql.FieldEqualFold(FieldLastRunID, v))
@@ -599,16 +589,6 @@ func LeaseOwnerHasPrefix(v string) predicate.BackgroundTaskScheduleState {
 // LeaseOwnerHasSuffix applies the HasSuffix predicate on the "lease_owner" field.
 func LeaseOwnerHasSuffix(v string) predicate.BackgroundTaskScheduleState {
 	return predicate.BackgroundTaskScheduleState(sql.FieldHasSuffix(FieldLeaseOwner, v))
-}
-
-// LeaseOwnerIsNil applies the IsNil predicate on the "lease_owner" field.
-func LeaseOwnerIsNil() predicate.BackgroundTaskScheduleState {
-	return predicate.BackgroundTaskScheduleState(sql.FieldIsNull(FieldLeaseOwner))
-}
-
-// LeaseOwnerNotNil applies the NotNil predicate on the "lease_owner" field.
-func LeaseOwnerNotNil() predicate.BackgroundTaskScheduleState {
-	return predicate.BackgroundTaskScheduleState(sql.FieldNotNull(FieldLeaseOwner))
 }
 
 // LeaseOwnerEqualFold applies the EqualFold predicate on the "lease_owner" field.

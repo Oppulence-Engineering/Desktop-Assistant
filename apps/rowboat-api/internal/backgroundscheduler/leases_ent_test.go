@@ -124,20 +124,31 @@ func TestEntLeasesPruneFiredAfterRetention(t *testing.T) {
 	task := leaseTask(t, client, u, "t5")
 	l := NewEntLeases(client, zap.NewNop())
 
-	// A fired row older than retention is pruned; a recent fired row is kept.
-	old := client.BackgroundTaskScheduleState.Create().
+	beyond := time.Now().UTC().Add(-scheduleStateRetention - time.Hour)
+	// An old fired row is pruned (history).
+	oldFired := client.BackgroundTaskScheduleState.Create().
 		SetUser(u).SetTask(task).SetTriggerType("cron").SetScheduleKey("cron:old").
 		SetLastRunID("run-old").SetLastTriggeredAt(time.Now().UTC()).
-		SetCreatedAt(time.Now().UTC().Add(-scheduleStateRetention - time.Hour)).
+		SetCreatedAt(beyond).
 		SaveX(ctx)
+	// An old UNFIRED orphan (e.g. a Release/crash on a now-lapsed cycle) must
+	// also be pruned — otherwise such rows leak unbounded.
+	oldOrphan := client.BackgroundTaskScheduleState.Create().
+		SetUser(u).SetTask(task).SetTriggerType("cron").SetScheduleKey("cron:orphan").
+		SetCreatedAt(beyond).
+		SaveX(ctx)
+	// A recent fired row is kept.
 	recentLease, _, _ := l.Acquire(ctx, task, "cron", "cron:recent", "o", time.Minute)
 	_ = l.Complete(ctx, recentLease, "run-recent")
 
 	if err := l.CleanupExpired(ctx); err != nil {
 		t.Fatalf("cleanup: %v", err)
 	}
-	if n := client.BackgroundTaskScheduleState.Query().Where(btss.IDEQ(old.ID)).CountX(ctx); n != 0 {
-		t.Fatalf("fired row older than retention should be pruned")
+	if n := client.BackgroundTaskScheduleState.Query().Where(btss.IDEQ(oldFired.ID)).CountX(ctx); n != 0 {
+		t.Fatalf("old fired row should be pruned")
+	}
+	if n := client.BackgroundTaskScheduleState.Query().Where(btss.IDEQ(oldOrphan.ID)).CountX(ctx); n != 0 {
+		t.Fatalf("old unfired orphan row should be pruned (leak fix)")
 	}
 	if n := client.BackgroundTaskScheduleState.Query().Where(btss.IDEQ(recentLease.ID)).CountX(ctx); n != 1 {
 		t.Fatalf("recent fired row should be kept")

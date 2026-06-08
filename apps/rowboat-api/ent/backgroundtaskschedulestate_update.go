@@ -139,12 +139,6 @@ func (_u *BackgroundTaskScheduleStateUpdate) SetNillableLastRunID(v *string) *Ba
 	return _u
 }
 
-// ClearLastRunID clears the value of the "last_run_id" field.
-func (_u *BackgroundTaskScheduleStateUpdate) ClearLastRunID() *BackgroundTaskScheduleStateUpdate {
-	_u.mutation.ClearLastRunID()
-	return _u
-}
-
 // SetLeaseOwner sets the "lease_owner" field.
 func (_u *BackgroundTaskScheduleStateUpdate) SetLeaseOwner(v string) *BackgroundTaskScheduleStateUpdate {
 	_u.mutation.SetLeaseOwner(v)
@@ -156,12 +150,6 @@ func (_u *BackgroundTaskScheduleStateUpdate) SetNillableLeaseOwner(v *string) *B
 	if v != nil {
 		_u.SetLeaseOwner(*v)
 	}
-	return _u
-}
-
-// ClearLeaseOwner clears the value of the "lease_owner" field.
-func (_u *BackgroundTaskScheduleStateUpdate) ClearLeaseOwner() *BackgroundTaskScheduleStateUpdate {
-	_u.mutation.ClearLeaseOwner()
 	return _u
 }
 
@@ -349,14 +337,8 @@ func (_u *BackgroundTaskScheduleStateUpdate) sqlSave(ctx context.Context) (_node
 	if value, ok := _u.mutation.LastRunID(); ok {
 		_spec.SetField(backgroundtaskschedulestate.FieldLastRunID, field.TypeString, value)
 	}
-	if _u.mutation.LastRunIDCleared() {
-		_spec.ClearField(backgroundtaskschedulestate.FieldLastRunID, field.TypeString)
-	}
 	if value, ok := _u.mutation.LeaseOwner(); ok {
 		_spec.SetField(backgroundtaskschedulestate.FieldLeaseOwner, field.TypeString, value)
-	}
-	if _u.mutation.LeaseOwnerCleared() {
-		_spec.ClearField(backgroundtaskschedulestate.FieldLeaseOwner, field.TypeString)
 	}
 	if value, ok := _u.mutation.LeaseExpiresAt(); ok {
 		_spec.SetField(backgroundtaskschedulestate.FieldLeaseExpiresAt, field.TypeTime, value)
@@ -556,12 +538,6 @@ func (_u *BackgroundTaskScheduleStateUpdateOne) SetNillableLastRunID(v *string) 
 	return _u
 }
 
-// ClearLastRunID clears the value of the "last_run_id" field.
-func (_u *BackgroundTaskScheduleStateUpdateOne) ClearLastRunID() *BackgroundTaskScheduleStateUpdateOne {
-	_u.mutation.ClearLastRunID()
-	return _u
-}
-
 // SetLeaseOwner sets the "lease_owner" field.
 func (_u *BackgroundTaskScheduleStateUpdateOne) SetLeaseOwner(v string) *BackgroundTaskScheduleStateUpdateOne {
 	_u.mutation.SetLeaseOwner(v)
@@ -573,12 +549,6 @@ func (_u *BackgroundTaskScheduleStateUpdateOne) SetNillableLeaseOwner(v *string)
 	if v != nil {
 		_u.SetLeaseOwner(*v)
 	}
-	return _u
-}
-
-// ClearLeaseOwner clears the value of the "lease_owner" field.
-func (_u *BackgroundTaskScheduleStateUpdateOne) ClearLeaseOwner() *BackgroundTaskScheduleStateUpdateOne {
-	_u.mutation.ClearLeaseOwner()
 	return _u
 }
 
@@ -796,14 +766,8 @@ func (_u *BackgroundTaskScheduleStateUpdateOne) sqlSave(ctx context.Context) (_n
 	if value, ok := _u.mutation.LastRunID(); ok {
 		_spec.SetField(backgroundtaskschedulestate.FieldLastRunID, field.TypeString, value)
 	}
-	if _u.mutation.LastRunIDCleared() {
-		_spec.ClearField(backgroundtaskschedulestate.FieldLastRunID, field.TypeString)
-	}
 	if value, ok := _u.mutation.LeaseOwner(); ok {
 		_spec.SetField(backgroundtaskschedulestate.FieldLeaseOwner, field.TypeString, value)
-	}
-	if _u.mutation.LeaseOwnerCleared() {
-		_spec.ClearField(backgroundtaskschedulestate.FieldLeaseOwner, field.TypeString)
 	}
 	if value, ok := _u.mutation.LeaseExpiresAt(); ok {
 		_spec.SetField(backgroundtaskschedulestate.FieldLeaseExpiresAt, field.TypeTime, value)

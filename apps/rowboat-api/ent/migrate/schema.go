@@ -230,8 +230,8 @@ var (
 		{Name: "last_evaluated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_due_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_triggered_at", Type: field.TypeTime, Nullable: true},
-		{Name: "last_run_id", Type: field.TypeString, Nullable: true, Default: ""},
-		{Name: "lease_owner", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "last_run_id", Type: field.TypeString, Default: ""},
+		{Name: "lease_owner", Type: field.TypeString, Default: ""},
 		{Name: "lease_expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "revision", Type: field.TypeInt, Default: 1},
 		{Name: "background_task_id", Type: field.TypeUUID},
@@ -271,6 +271,11 @@ var (
 				Name:    "backgroundtaskschedulestate_last_run_id",
 				Unique:  false,
 				Columns: []*schema.Column{BackgroundTaskScheduleStatesColumns[8]},
+			},
+			{
+				Name:    "backgroundtaskschedulestate_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{BackgroundTaskScheduleStatesColumns[1]},
 			},
 		},
 	}

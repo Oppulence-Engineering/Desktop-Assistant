@@ -3908,8 +3908,6 @@ type BackgroundTaskScheduleStateWhereInput struct {
 	LastRunIDContains     *string  `json:"lastRunIDContains,omitempty"`
 	LastRunIDHasPrefix    *string  `json:"lastRunIDHasPrefix,omitempty"`
 	LastRunIDHasSuffix    *string  `json:"lastRunIDHasSuffix,omitempty"`
-	LastRunIDIsNil        bool     `json:"lastRunIDIsNil,omitempty"`
-	LastRunIDNotNil       bool     `json:"lastRunIDNotNil,omitempty"`
 	LastRunIDEqualFold    *string  `json:"lastRunIDEqualFold,omitempty"`
 	LastRunIDContainsFold *string  `json:"lastRunIDContainsFold,omitempty"`
 
@@ -3925,8 +3923,6 @@ type BackgroundTaskScheduleStateWhereInput struct {
 	LeaseOwnerContains     *string  `json:"leaseOwnerContains,omitempty"`
 	LeaseOwnerHasPrefix    *string  `json:"leaseOwnerHasPrefix,omitempty"`
 	LeaseOwnerHasSuffix    *string  `json:"leaseOwnerHasSuffix,omitempty"`
-	LeaseOwnerIsNil        bool     `json:"leaseOwnerIsNil,omitempty"`
-	LeaseOwnerNotNil       bool     `json:"leaseOwnerNotNil,omitempty"`
 	LeaseOwnerEqualFold    *string  `json:"leaseOwnerEqualFold,omitempty"`
 	LeaseOwnerContainsFold *string  `json:"leaseOwnerContainsFold,omitempty"`
 
@@ -4305,12 +4301,6 @@ func (i *BackgroundTaskScheduleStateWhereInput) P() (predicate.BackgroundTaskSch
 	if i.LastRunIDHasSuffix != nil {
 		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDHasSuffix(*i.LastRunIDHasSuffix))
 	}
-	if i.LastRunIDIsNil {
-		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDIsNil())
-	}
-	if i.LastRunIDNotNil {
-		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDNotNil())
-	}
 	if i.LastRunIDEqualFold != nil {
 		predicates = append(predicates, backgroundtaskschedulestate.LastRunIDEqualFold(*i.LastRunIDEqualFold))
 	}
@@ -4349,12 +4339,6 @@ func (i *BackgroundTaskScheduleStateWhereInput) P() (predicate.BackgroundTaskSch
 	}
 	if i.LeaseOwnerHasSuffix != nil {
 		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerHasSuffix(*i.LeaseOwnerHasSuffix))
-	}
-	if i.LeaseOwnerIsNil {
-		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerIsNil())
-	}
-	if i.LeaseOwnerNotNil {
-		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerNotNil())
 	}
 	if i.LeaseOwnerEqualFold != nil {
 		predicates = append(predicates, backgroundtaskschedulestate.LeaseOwnerEqualFold(*i.LeaseOwnerEqualFold))

@@ -1703,12 +1703,12 @@ export interface components {
       last_due_at?: string;
       /** Format: date-time */
       last_evaluated_at?: string;
-      last_run_id?: string;
+      last_run_id: string;
       /** Format: date-time */
       last_triggered_at?: string;
       /** Format: date-time */
       lease_expires_at?: string;
-      lease_owner?: string;
+      lease_owner: string;
       revision: number;
       schedule_key: string;
       task: components["schemas"]["BackgroundTask"];

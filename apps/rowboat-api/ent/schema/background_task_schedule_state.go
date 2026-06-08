@@ -45,12 +45,13 @@ func (BackgroundTaskScheduleState) Fields() []ent.Field {
 		// last_triggered_at is when Starter.Start succeeded (set by Complete).
 		field.Time("last_triggered_at").Optional().Nillable(),
 		// last_run_id is the do-not-re-fire sentinel: non-empty ⇒ this cycle fired.
-		// Default "" (NOT NULL) so the LastRunIDEQ("")/NEQ("") guards match a
-		// never-fired row instead of NULL (RFC 002 migration checklist).
-		field.String("last_run_id").Optional().Default(""),
+		// NOT NULL with "" default (no Optional) so the LastRunIDEQ("")/NEQ("")
+		// guards match a never-fired row and can never see NULL — the pitfall the
+		// RFC 002 migration checklist calls out (NULL = '' is NULL, not true).
+		field.String("last_run_id").Default(""),
 		// lease_owner is the replica id (pod name); the lease is "held" while
-		// now < lease_expires_at and last_run_id == "". Default "" (NOT NULL).
-		field.String("lease_owner").Optional().Default(""),
+		// now < lease_expires_at and last_run_id == "". NOT NULL, "" default.
+		field.String("lease_owner").Default(""),
 		field.Time("lease_expires_at").Optional().Nillable(),
 		// revision guards steal/complete via optimistic concurrency.
 		field.Int("revision").Default(1).Positive(),
@@ -70,8 +71,10 @@ func (BackgroundTaskScheduleState) Indexes() []ent.Index {
 	return []ent.Index{
 		// The duplicate guard. Scoped by task edge so keys can't collide across tasks.
 		index.Fields("trigger_type", "schedule_key").Edges("task").Unique(),
-		// Sweep support: find expired, unfired leases to reclaim/prune.
+		// Operational/runbook support: list held leases by expiry, find by run.
 		index.Fields("lease_expires_at"),
 		index.Fields("last_run_id"),
+		// Retention prune scans by created_at (CleanupExpired).
+		index.Fields("created_at"),
 	}
 }

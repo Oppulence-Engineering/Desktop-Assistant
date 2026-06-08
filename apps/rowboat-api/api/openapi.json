@@ -1316,6 +1316,8 @@
           "updated_at",
           "trigger_type",
           "schedule_key",
+          "last_run_id",
+          "lease_owner",
           "revision",
           "user",
           "task"

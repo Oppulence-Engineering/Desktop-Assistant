@@ -3,6 +3,7 @@ package backgroundscheduler
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -12,9 +13,15 @@ import (
 	"go.uber.org/zap"
 )
 
-// scheduleStateRetention bounds how long Fired schedule-state rows are kept
-// before the per-tick cleanup prunes them (RFC 002 Decisions: 7 days).
-const scheduleStateRetention = 7 * 24 * time.Hour
+const (
+	// scheduleStateRetention bounds how long schedule-state rows are kept before
+	// the cleanup prunes them (RFC 002 Decisions: 7 days).
+	scheduleStateRetention = 7 * 24 * time.Hour
+	// pruneInterval throttles the retention DELETE: CleanupExpired is called
+	// every tick (~15s) but actually prunes at most this often, so the loop does
+	// not scan the table every tick to delete nothing.
+	pruneInterval = time.Hour
+)
 
 // EntLeases is the durable, ent/Postgres-backed Leases implementation (RFC 002).
 // The unique index (trigger_type, schedule_key, background_task_id) is the
@@ -27,6 +34,9 @@ const scheduleStateRetention = 7 * 24 * time.Hour
 type EntLeases struct {
 	client *ent.Client
 	log    *zap.Logger
+
+	mu           sync.Mutex
+	lastPrunedAt time.Time // throttles CleanupExpired's retention DELETE
 }
 
 // NewEntLeases builds a durable lease store over the given ent client.
@@ -135,7 +145,7 @@ func (l *EntLeases) Complete(ctx context.Context, lease Lease, runID string) err
 		).
 		SetLastRunID(runID).
 		SetLastTriggeredAt(now).
-		SetLastDueAt(now).
+		SetLastEvaluatedAt(now).
 		ClearLeaseExpiresAt().
 		SetLeaseOwner("").
 		AddRevision(1).
@@ -167,6 +177,7 @@ func (l *EntLeases) Release(ctx context.Context, lease Lease, cause error) error
 		).
 		ClearLeaseExpiresAt().
 		SetLeaseOwner("").
+		SetLastEvaluatedAt(time.Now().UTC()).
 		AddRevision(1).
 		Save(ctx)
 	if err != nil {
@@ -176,17 +187,28 @@ func (l *EntLeases) Release(ctx context.Context, lease Lease, cause error) error
 	return nil
 }
 
-// CleanupExpired prunes Fired cycle rows older than the retention window so the
-// table stays bounded (one row per fired cycle per task). Expired unfired leases
-// are reclaimed lazily by the next Acquire's steal path, so they need no sweep
-// here. Runs each tick under the scheduler's internal context.
+// CleanupExpired prunes schedule-state rows older than the retention window so
+// the table stays bounded. It deletes ALL old rows, not just Fired ones: a row
+// older than the window is for a cron occurrence / window date that is long past
+// and can never recur, so an unfired orphan (left by a Release or a
+// crash-before-Complete on a cycle that has since lapsed) is dead weight too —
+// pruning only Fired rows would leak those unbounded. Live leases are seconds
+// old and never within the window. It is throttled to pruneInterval since the
+// scheduler calls it every tick. Runs under the scheduler's internal context.
 func (l *EntLeases) CleanupExpired(ctx context.Context) error {
-	cutoff := time.Now().UTC().Add(-scheduleStateRetention)
+	now := time.Now().UTC()
+	l.mu.Lock()
+	due := now.Sub(l.lastPrunedAt) >= pruneInterval
+	if due {
+		l.lastPrunedAt = now
+	}
+	l.mu.Unlock()
+	if !due {
+		return nil
+	}
+
 	n, err := l.client.BackgroundTaskScheduleState.Delete().
-		Where(
-			btss.LastRunIDNEQ(""),
-			btss.CreatedAtLT(cutoff),
-		).
+		Where(btss.CreatedAtLT(now.Add(-scheduleStateRetention))).
 		Exec(ctx)
 	if err != nil {
 		leaseMetrics.Errors.WithLabelValues("prune").Inc()
@@ -194,7 +216,7 @@ func (l *EntLeases) CleanupExpired(ctx context.Context) error {
 	}
 	if n > 0 {
 		leaseMetrics.Pruned.Add(float64(n))
-		l.log.Info("pruned fired schedule-state rows", zap.Int("count", n))
+		l.log.Info("pruned old schedule-state rows", zap.Int("count", n))
 	}
 	return nil
 }

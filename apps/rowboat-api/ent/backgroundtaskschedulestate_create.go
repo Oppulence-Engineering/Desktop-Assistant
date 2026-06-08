@@ -285,6 +285,12 @@ func (_c *BackgroundTaskScheduleStateCreate) check() error {
 			return &ValidationError{Name: "schedule_key", err: fmt.Errorf(`ent: validator failed for field "BackgroundTaskScheduleState.schedule_key": %w`, err)}
 		}
 	}
+	if _, ok := _c.mutation.LastRunID(); !ok {
+		return &ValidationError{Name: "last_run_id", err: errors.New(`ent: missing required field "BackgroundTaskScheduleState.last_run_id"`)}
+	}
+	if _, ok := _c.mutation.LeaseOwner(); !ok {
+		return &ValidationError{Name: "lease_owner", err: errors.New(`ent: missing required field "BackgroundTaskScheduleState.lease_owner"`)}
+	}
 	if _, ok := _c.mutation.Revision(); !ok {
 		return &ValidationError{Name: "revision", err: errors.New(`ent: missing required field "BackgroundTaskScheduleState.revision"`)}
 	}
@@ -567,12 +573,6 @@ func (u *BackgroundTaskScheduleStateUpsert) UpdateLastRunID() *BackgroundTaskSch
 	return u
 }
 
-// ClearLastRunID clears the value of the "last_run_id" field.
-func (u *BackgroundTaskScheduleStateUpsert) ClearLastRunID() *BackgroundTaskScheduleStateUpsert {
-	u.SetNull(backgroundtaskschedulestate.FieldLastRunID)
-	return u
-}
-
 // SetLeaseOwner sets the "lease_owner" field.
 func (u *BackgroundTaskScheduleStateUpsert) SetLeaseOwner(v string) *BackgroundTaskScheduleStateUpsert {
 	u.Set(backgroundtaskschedulestate.FieldLeaseOwner, v)
@@ -582,12 +582,6 @@ func (u *BackgroundTaskScheduleStateUpsert) SetLeaseOwner(v string) *BackgroundT
 // UpdateLeaseOwner sets the "lease_owner" field to the value that was provided on create.
 func (u *BackgroundTaskScheduleStateUpsert) UpdateLeaseOwner() *BackgroundTaskScheduleStateUpsert {
 	u.SetExcluded(backgroundtaskschedulestate.FieldLeaseOwner)
-	return u
-}
-
-// ClearLeaseOwner clears the value of the "lease_owner" field.
-func (u *BackgroundTaskScheduleStateUpsert) ClearLeaseOwner() *BackgroundTaskScheduleStateUpsert {
-	u.SetNull(backgroundtaskschedulestate.FieldLeaseOwner)
 	return u
 }
 
@@ -797,13 +791,6 @@ func (u *BackgroundTaskScheduleStateUpsertOne) UpdateLastRunID() *BackgroundTask
 	})
 }
 
-// ClearLastRunID clears the value of the "last_run_id" field.
-func (u *BackgroundTaskScheduleStateUpsertOne) ClearLastRunID() *BackgroundTaskScheduleStateUpsertOne {
-	return u.Update(func(s *BackgroundTaskScheduleStateUpsert) {
-		s.ClearLastRunID()
-	})
-}
-
 // SetLeaseOwner sets the "lease_owner" field.
 func (u *BackgroundTaskScheduleStateUpsertOne) SetLeaseOwner(v string) *BackgroundTaskScheduleStateUpsertOne {
 	return u.Update(func(s *BackgroundTaskScheduleStateUpsert) {
@@ -815,13 +802,6 @@ func (u *BackgroundTaskScheduleStateUpsertOne) SetLeaseOwner(v string) *Backgrou
 func (u *BackgroundTaskScheduleStateUpsertOne) UpdateLeaseOwner() *BackgroundTaskScheduleStateUpsertOne {
 	return u.Update(func(s *BackgroundTaskScheduleStateUpsert) {
 		s.UpdateLeaseOwner()
-	})
-}
-
-// ClearLeaseOwner clears the value of the "lease_owner" field.
-func (u *BackgroundTaskScheduleStateUpsertOne) ClearLeaseOwner() *BackgroundTaskScheduleStateUpsertOne {
-	return u.Update(func(s *BackgroundTaskScheduleStateUpsert) {
-		s.ClearLeaseOwner()
 	})
 }
 
@@ -1204,13 +1184,6 @@ func (u *BackgroundTaskScheduleStateUpsertBulk) UpdateLastRunID() *BackgroundTas
 	})
 }
 
-// ClearLastRunID clears the value of the "last_run_id" field.
-func (u *BackgroundTaskScheduleStateUpsertBulk) ClearLastRunID() *BackgroundTaskScheduleStateUpsertBulk {
-	return u.Update(func(s *BackgroundTaskScheduleStateUpsert) {
-		s.ClearLastRunID()
-	})
-}
-
 // SetLeaseOwner sets the "lease_owner" field.
 func (u *BackgroundTaskScheduleStateUpsertBulk) SetLeaseOwner(v string) *BackgroundTaskScheduleStateUpsertBulk {
 	return u.Update(func(s *BackgroundTaskScheduleStateUpsert) {
@@ -1222,13 +1195,6 @@ func (u *BackgroundTaskScheduleStateUpsertBulk) SetLeaseOwner(v string) *Backgro
 func (u *BackgroundTaskScheduleStateUpsertBulk) UpdateLeaseOwner() *BackgroundTaskScheduleStateUpsertBulk {
 	return u.Update(func(s *BackgroundTaskScheduleStateUpsert) {
 		s.UpdateLeaseOwner()
-	})
-}
-
-// ClearLeaseOwner clears the value of the "lease_owner" field.
-func (u *BackgroundTaskScheduleStateUpsertBulk) ClearLeaseOwner() *BackgroundTaskScheduleStateUpsertBulk {
-	return u.Update(func(s *BackgroundTaskScheduleStateUpsert) {
-		s.ClearLeaseOwner()
 	})
 }
 

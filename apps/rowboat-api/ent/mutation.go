@@ -6635,22 +6635,9 @@ func (m *BackgroundTaskScheduleStateMutation) OldLastRunID(ctx context.Context) 
 	return oldValue.LastRunID, nil
 }
 
-// ClearLastRunID clears the value of the "last_run_id" field.
-func (m *BackgroundTaskScheduleStateMutation) ClearLastRunID() {
-	m.last_run_id = nil
-	m.clearedFields[backgroundtaskschedulestate.FieldLastRunID] = struct{}{}
-}
-
-// LastRunIDCleared returns if the "last_run_id" field was cleared in this mutation.
-func (m *BackgroundTaskScheduleStateMutation) LastRunIDCleared() bool {
-	_, ok := m.clearedFields[backgroundtaskschedulestate.FieldLastRunID]
-	return ok
-}
-
 // ResetLastRunID resets all changes to the "last_run_id" field.
 func (m *BackgroundTaskScheduleStateMutation) ResetLastRunID() {
 	m.last_run_id = nil
-	delete(m.clearedFields, backgroundtaskschedulestate.FieldLastRunID)
 }
 
 // SetLeaseOwner sets the "lease_owner" field.
@@ -6684,22 +6671,9 @@ func (m *BackgroundTaskScheduleStateMutation) OldLeaseOwner(ctx context.Context)
 	return oldValue.LeaseOwner, nil
 }
 
-// ClearLeaseOwner clears the value of the "lease_owner" field.
-func (m *BackgroundTaskScheduleStateMutation) ClearLeaseOwner() {
-	m.lease_owner = nil
-	m.clearedFields[backgroundtaskschedulestate.FieldLeaseOwner] = struct{}{}
-}
-
-// LeaseOwnerCleared returns if the "lease_owner" field was cleared in this mutation.
-func (m *BackgroundTaskScheduleStateMutation) LeaseOwnerCleared() bool {
-	_, ok := m.clearedFields[backgroundtaskschedulestate.FieldLeaseOwner]
-	return ok
-}
-
 // ResetLeaseOwner resets all changes to the "lease_owner" field.
 func (m *BackgroundTaskScheduleStateMutation) ResetLeaseOwner() {
 	m.lease_owner = nil
-	delete(m.clearedFields, backgroundtaskschedulestate.FieldLeaseOwner)
 }
 
 // SetLeaseExpiresAt sets the "lease_expires_at" field.
@@ -7154,12 +7128,6 @@ func (m *BackgroundTaskScheduleStateMutation) ClearedFields() []string {
 	if m.FieldCleared(backgroundtaskschedulestate.FieldLastTriggeredAt) {
 		fields = append(fields, backgroundtaskschedulestate.FieldLastTriggeredAt)
 	}
-	if m.FieldCleared(backgroundtaskschedulestate.FieldLastRunID) {
-		fields = append(fields, backgroundtaskschedulestate.FieldLastRunID)
-	}
-	if m.FieldCleared(backgroundtaskschedulestate.FieldLeaseOwner) {
-		fields = append(fields, backgroundtaskschedulestate.FieldLeaseOwner)
-	}
 	if m.FieldCleared(backgroundtaskschedulestate.FieldLeaseExpiresAt) {
 		fields = append(fields, backgroundtaskschedulestate.FieldLeaseExpiresAt)
 	}
@@ -7185,12 +7153,6 @@ func (m *BackgroundTaskScheduleStateMutation) ClearField(name string) error {
 		return nil
 	case backgroundtaskschedulestate.FieldLastTriggeredAt:
 		m.ClearLastTriggeredAt()
-		return nil
-	case backgroundtaskschedulestate.FieldLastRunID:
-		m.ClearLastRunID()
-		return nil
-	case backgroundtaskschedulestate.FieldLeaseOwner:
-		m.ClearLeaseOwner()
 		return nil
 	case backgroundtaskschedulestate.FieldLeaseExpiresAt:
 		m.ClearLeaseExpiresAt()

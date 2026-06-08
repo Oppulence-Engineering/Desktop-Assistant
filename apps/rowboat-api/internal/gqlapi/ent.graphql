@@ -962,8 +962,8 @@ type BackgroundTaskScheduleState implements Node {
   lastEvaluatedAt: Time
   lastDueAt: Time
   lastTriggeredAt: Time
-  lastRunID: String
-  leaseOwner: String
+  lastRunID: String!
+  leaseOwner: String!
   leaseExpiresAt: Time
   revision: Int!
   user: User!
@@ -1125,8 +1125,6 @@ input BackgroundTaskScheduleStateWhereInput {
   lastRunIDContains: String
   lastRunIDHasPrefix: String
   lastRunIDHasSuffix: String
-  lastRunIDIsNil: Boolean
-  lastRunIDNotNil: Boolean
   lastRunIDEqualFold: String
   lastRunIDContainsFold: String
   """
@@ -1143,8 +1141,6 @@ input BackgroundTaskScheduleStateWhereInput {
   leaseOwnerContains: String
   leaseOwnerHasPrefix: String
   leaseOwnerHasSuffix: String
-  leaseOwnerIsNil: Boolean
-  leaseOwnerNotNil: Boolean
   leaseOwnerEqualFold: String
   leaseOwnerContainsFold: String
   """

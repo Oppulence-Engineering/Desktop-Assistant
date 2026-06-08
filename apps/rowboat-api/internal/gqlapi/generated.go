@@ -5732,10 +5732,10 @@ func (ec *executionContext) _BackgroundTaskScheduleState_lastRunID(ctx context.C
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalOString2string(ctx, selections, v)
+			return ec.marshalNString2string(ctx, selections, v)
 		},
 		true,
-		false,
+		true,
 	)
 }
 func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_lastRunID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5755,10 +5755,10 @@ func (ec *executionContext) _BackgroundTaskScheduleState_leaseOwner(ctx context.
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalOString2string(ctx, selections, v)
+			return ec.marshalNString2string(ctx, selections, v)
 		},
 		true,
-		false,
+		true,
 	)
 }
 func (ec *executionContext) fieldContext_BackgroundTaskScheduleState_leaseOwner(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -13982,7 +13982,7 @@ func (ec *executionContext) unmarshalInputBackgroundTaskScheduleStateWhereInput(
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "triggerType", "triggerTypeNEQ", "triggerTypeIn", "triggerTypeNotIn", "triggerTypeGT", "triggerTypeGTE", "triggerTypeLT", "triggerTypeLTE", "triggerTypeContains", "triggerTypeHasPrefix", "triggerTypeHasSuffix", "triggerTypeEqualFold", "triggerTypeContainsFold", "scheduleKey", "scheduleKeyNEQ", "scheduleKeyIn", "scheduleKeyNotIn", "scheduleKeyGT", "scheduleKeyGTE", "scheduleKeyLT", "scheduleKeyLTE", "scheduleKeyContains", "scheduleKeyHasPrefix", "scheduleKeyHasSuffix", "scheduleKeyEqualFold", "scheduleKeyContainsFold", "lastEvaluatedAt", "lastEvaluatedAtNEQ", "lastEvaluatedAtIn", "lastEvaluatedAtNotIn", "lastEvaluatedAtGT", "lastEvaluatedAtGTE", "lastEvaluatedAtLT", "lastEvaluatedAtLTE", "lastEvaluatedAtIsNil", "lastEvaluatedAtNotNil", "lastDueAt", "lastDueAtNEQ", "lastDueAtIn", "lastDueAtNotIn", "lastDueAtGT", "lastDueAtGTE", "lastDueAtLT", "lastDueAtLTE", "lastDueAtIsNil", "lastDueAtNotNil", "lastTriggeredAt", "lastTriggeredAtNEQ", "lastTriggeredAtIn", "lastTriggeredAtNotIn", "lastTriggeredAtGT", "lastTriggeredAtGTE", "lastTriggeredAtLT", "lastTriggeredAtLTE", "lastTriggeredAtIsNil", "lastTriggeredAtNotNil", "lastRunID", "lastRunIDNEQ", "lastRunIDIn", "lastRunIDNotIn", "lastRunIDGT", "lastRunIDGTE", "lastRunIDLT", "lastRunIDLTE", "lastRunIDContains", "lastRunIDHasPrefix", "lastRunIDHasSuffix", "lastRunIDIsNil", "lastRunIDNotNil", "lastRunIDEqualFold", "lastRunIDContainsFold", "leaseOwner", "leaseOwnerNEQ", "leaseOwnerIn", "leaseOwnerNotIn", "leaseOwnerGT", "leaseOwnerGTE", "leaseOwnerLT", "leaseOwnerLTE", "leaseOwnerContains", "leaseOwnerHasPrefix", "leaseOwnerHasSuffix", "leaseOwnerIsNil", "leaseOwnerNotNil", "leaseOwnerEqualFold", "leaseOwnerContainsFold", "leaseExpiresAt", "leaseExpiresAtNEQ", "leaseExpiresAtIn", "leaseExpiresAtNotIn", "leaseExpiresAtGT", "leaseExpiresAtGTE", "leaseExpiresAtLT", "leaseExpiresAtLTE", "leaseExpiresAtIsNil", "leaseExpiresAtNotNil", "revision", "revisionNEQ", "revisionIn", "revisionNotIn", "revisionGT", "revisionGTE", "revisionLT", "revisionLTE", "hasUser", "hasUserWith", "hasTask", "hasTaskWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "triggerType", "triggerTypeNEQ", "triggerTypeIn", "triggerTypeNotIn", "triggerTypeGT", "triggerTypeGTE", "triggerTypeLT", "triggerTypeLTE", "triggerTypeContains", "triggerTypeHasPrefix", "triggerTypeHasSuffix", "triggerTypeEqualFold", "triggerTypeContainsFold", "scheduleKey", "scheduleKeyNEQ", "scheduleKeyIn", "scheduleKeyNotIn", "scheduleKeyGT", "scheduleKeyGTE", "scheduleKeyLT", "scheduleKeyLTE", "scheduleKeyContains", "scheduleKeyHasPrefix", "scheduleKeyHasSuffix", "scheduleKeyEqualFold", "scheduleKeyContainsFold", "lastEvaluatedAt", "lastEvaluatedAtNEQ", "lastEvaluatedAtIn", "lastEvaluatedAtNotIn", "lastEvaluatedAtGT", "lastEvaluatedAtGTE", "lastEvaluatedAtLT", "lastEvaluatedAtLTE", "lastEvaluatedAtIsNil", "lastEvaluatedAtNotNil", "lastDueAt", "lastDueAtNEQ", "lastDueAtIn", "lastDueAtNotIn", "lastDueAtGT", "lastDueAtGTE", "lastDueAtLT", "lastDueAtLTE", "lastDueAtIsNil", "lastDueAtNotNil", "lastTriggeredAt", "lastTriggeredAtNEQ", "lastTriggeredAtIn", "lastTriggeredAtNotIn", "lastTriggeredAtGT", "lastTriggeredAtGTE", "lastTriggeredAtLT", "lastTriggeredAtLTE", "lastTriggeredAtIsNil", "lastTriggeredAtNotNil", "lastRunID", "lastRunIDNEQ", "lastRunIDIn", "lastRunIDNotIn", "lastRunIDGT", "lastRunIDGTE", "lastRunIDLT", "lastRunIDLTE", "lastRunIDContains", "lastRunIDHasPrefix", "lastRunIDHasSuffix", "lastRunIDEqualFold", "lastRunIDContainsFold", "leaseOwner", "leaseOwnerNEQ", "leaseOwnerIn", "leaseOwnerNotIn", "leaseOwnerGT", "leaseOwnerGTE", "leaseOwnerLT", "leaseOwnerLTE", "leaseOwnerContains", "leaseOwnerHasPrefix", "leaseOwnerHasSuffix", "leaseOwnerEqualFold", "leaseOwnerContainsFold", "leaseExpiresAt", "leaseExpiresAtNEQ", "leaseExpiresAtIn", "leaseExpiresAtNotIn", "leaseExpiresAtGT", "leaseExpiresAtGTE", "leaseExpiresAtLT", "leaseExpiresAtLTE", "leaseExpiresAtIsNil", "leaseExpiresAtNotNil", "revision", "revisionNEQ", "revisionIn", "revisionNotIn", "revisionGT", "revisionGTE", "revisionLT", "revisionLTE", "hasUser", "hasUserWith", "hasTask", "hasTaskWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14647,20 +14647,6 @@ func (ec *executionContext) unmarshalInputBackgroundTaskScheduleStateWhereInput(
 				return it, err
 			}
 			it.LastRunIDHasSuffix = data
-		case "lastRunIDIsNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDIsNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.LastRunIDIsNil = data
-		case "lastRunIDNotNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDNotNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.LastRunIDNotNil = data
 		case "lastRunIDEqualFold":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRunIDEqualFold"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -14752,20 +14738,6 @@ func (ec *executionContext) unmarshalInputBackgroundTaskScheduleStateWhereInput(
 				return it, err
 			}
 			it.LeaseOwnerHasSuffix = data
-		case "leaseOwnerIsNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerIsNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.LeaseOwnerIsNil = data
-		case "leaseOwnerNotNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerNotNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.LeaseOwnerNotNil = data
 		case "leaseOwnerEqualFold":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leaseOwnerEqualFold"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -21730,8 +21702,14 @@ func (ec *executionContext) _BackgroundTaskScheduleState(ctx context.Context, se
 			out.Values[i] = ec._BackgroundTaskScheduleState_lastTriggeredAt(ctx, field, obj)
 		case "lastRunID":
 			out.Values[i] = ec._BackgroundTaskScheduleState_lastRunID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "leaseOwner":
 			out.Values[i] = ec._BackgroundTaskScheduleState_leaseOwner(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "leaseExpiresAt":
 			out.Values[i] = ec._BackgroundTaskScheduleState_leaseExpiresAt(ctx, field, obj)
 		case "revision":
