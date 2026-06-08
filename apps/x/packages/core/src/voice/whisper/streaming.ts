@@ -16,6 +16,12 @@ import type { WhisperErrorCode, WhisperSpeaker } from "@x/shared/dist/transcript
 const RATE = 16000;
 const FRAME = 480; // 30 ms @ 16 kHz
 
+// Backpressure: the renderer's credit window shrinks as the transcribe queue grows,
+// so a device slower than realtime sheds incoming frames instead of buffering them.
+const MAX_CREDITS = 6;
+// Hard backstop: never retain more than this many closed segments (≈0.9 MB each).
+const MAX_QUEUE = 16;
+
 /** Structural port (matches Electron's `MessagePortMain`) — keeps core Electron-free. */
 export interface StreamPort {
   on(event: "message", listener: (e: { data: unknown }) => void): void;
@@ -178,9 +184,11 @@ export class Session {
     other: new Int16Array(0),
   };
   private readonly queue: ClosedSegment[] = [];
-  private draining = false;
-  private credits = 3;
-  private closed = false;
+  // Serial transcribe chain: each closed segment appends a step, so segments
+  // transcribe one-at-a-time and close() can await the whole tail.
+  private pump: Promise<void> = Promise.resolve();
+  private closing = false; // tearing down: stop accepting audio, drain the tail
+  private closed = false; // fully torn down: port closed, no more work
 
   constructor(
     private readonly port: StreamPort,
@@ -196,13 +204,17 @@ export class Session {
   private onMessage(message: unknown): void {
     const m = message as { type?: string; pcm16?: ArrayBuffer; seq?: number };
     if (m?.type === "audio" && m.pcm16) {
+      if (this.closing) return; // tearing down — stop accepting new audio
       const { mic, sys } =
         this.opts.channels === 2
           ? deinterleaveStereoI16(new Int16Array(m.pcm16))
           : { mic: new Int16Array(m.pcm16), sys: new Int16Array(0) };
       this.feed("you", mic);
       if (this.opts.channels === 2) this.feed("other", sys);
-      this.port.postMessage({ v: 1, type: "ack", seq: m.seq ?? 0, credits: ++this.credits });
+      // Credit reflects queue depth: as the backlog grows the renderer's window
+      // shrinks to 0 and it drops frames, rather than buffering without bound.
+      const credits = Math.max(0, MAX_CREDITS - this.queue.length);
+      this.port.postMessage({ v: 1, type: "ack", seq: m.seq ?? 0, credits });
     } else if (m?.type === "flush") {
       this.chans.you.flush();
       this.chans.other.flush();
@@ -223,48 +235,56 @@ export class Session {
 
   private enqueue(seg: ClosedSegment): void {
     this.queue.push(seg);
-    void this.drain();
+    // Bounded backstop: under sustained backpressure drop the OLDEST queued segment
+    // rather than grow main-process memory without bound.
+    if (this.queue.length > MAX_QUEUE) this.queue.shift();
+    // Append to the serial pump so segments transcribe one at a time.
+    this.pump = this.pump.then(() => this.transcribeNext());
   }
 
-  /** Single-flight: transcribe closed segments serially. */
-  private async drain(): Promise<void> {
-    if (this.draining || this.closed) return;
-    this.draining = true;
+  /** Transcribe one queued segment (single-flight via the pump chain). */
+  private async transcribeNext(): Promise<void> {
+    const seg = this.queue.shift();
+    if (!seg || this.closed) return;
+    const audioSeconds = seg.endSec - seg.startSec;
     try {
-      while (this.queue.length) {
-        const seg = this.queue.shift()!;
-        const audioSeconds = seg.endSec - seg.startSec;
-        try {
-          const r = await transcribePcm(seg.pcm, {
-            modelPath: this.opts.modelPath,
-            vadModelPath: this.opts.vadModelPath,
-            lang: "en",
-            threads: autoThreads(),
-            audioSeconds,
-            timeoutMs: timeoutFor(audioSeconds),
-          });
-          if (r.text) {
-            this.port.postMessage({
-              v: 1,
-              type: "final",
-              segment: { start: seg.startSec, end: seg.endSec, text: r.text, speaker: seg.channel },
-            });
-          }
-        } catch (err) {
-          this.port.postMessage({ v: 1, type: "error", code: codeOf(err) as WhisperErrorCode });
-        }
+      const r = await transcribePcm(seg.pcm, {
+        modelPath: this.opts.modelPath,
+        vadModelPath: this.opts.vadModelPath,
+        lang: "en",
+        threads: autoThreads(),
+        audioSeconds,
+        timeoutMs: timeoutFor(audioSeconds),
+      });
+      if (r.text && !this.closed) {
+        this.port.postMessage({
+          v: 1,
+          type: "final",
+          segment: { start: seg.startSec, end: seg.endSec, text: r.text, speaker: seg.channel },
+        });
       }
-    } finally {
-      this.draining = false;
+    } catch (err) {
+      if (!this.closed)
+        this.port.postMessage({ v: 1, type: "error", code: codeOf(err) as WhisperErrorCode });
     }
   }
 
   close(): void {
-    if (this.closed) return;
-    this.closed = true;
+    if (this.closing) return;
+    this.closing = true;
+    // Flush the open tail segments — these append onto the pump BEFORE we await it.
     this.chans.you.flush();
     this.chans.other.flush();
-    // Let the drain finish the tail, then close the port.
-    void this.drain().finally(() => this.port.close());
+    // Await the entire pump (any in-flight transcription + the just-flushed tail),
+    // THEN signal completion and close the port — so trailing finals are delivered.
+    void this.pump.finally(() => {
+      this.closed = true;
+      try {
+        this.port.postMessage({ v: 1, type: "done" });
+      } catch {
+        /* port already gone */
+      }
+      this.port.close();
+    });
   }
 }

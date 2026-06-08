@@ -154,9 +154,13 @@ export async function setTranscriptionConfig(
   patch: TranscriptionConfigPatch,
 ): Promise<TranscriptionConfig> {
   const current = await getTranscriptionConfig();
+  // Only override keys the caller explicitly set — a patch field left `undefined`
+  // (the common case when the settings UI changes one thing) must NOT clobber the
+  // other persisted provider and get re-defaulted by the schema.
   const next = TranscriptionConfig.parse({
     ...current,
-    ...patch,
+    ...(patch.voiceProvider !== undefined ? { voiceProvider: patch.voiceProvider } : {}),
+    ...(patch.meetingProvider !== undefined ? { meetingProvider: patch.meetingProvider } : {}),
     whisper: { ...current.whisper, ...(patch.whisper ?? {}) },
   });
   const configPath = transcriptionConfigPath();

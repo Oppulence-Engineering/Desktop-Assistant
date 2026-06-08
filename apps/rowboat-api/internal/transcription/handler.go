@@ -53,7 +53,14 @@ func (h *Handler) Quota(w http.ResponseWriter, r *http.Request) {
 	}
 	MeetingQuotaReadsTotal.Inc()
 
-	plan := h.planFor(r.Context())
+	plan, err := h.planFor(r.Context())
+	if err != nil {
+		// A real lookup failure must not be silently treated as the free plan
+		// (which would meter a paying user / bump them to on-device).
+		h.log.Warn("plan lookup", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not read plan", "internal_error")
+		return
+	}
 	remainingSeconds, err := h.gate.Remaining(r.Context(), plan)
 	if err != nil {
 		h.log.Warn("meeting minutes remaining", zap.Error(err))
@@ -71,11 +78,16 @@ func (h *Handler) Quota(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// planFor returns the scoped user's subscription plan, defaulting to "free".
-func (h *Handler) planFor(ctx context.Context) string {
+// planFor returns the scoped user's subscription plan. A genuinely absent
+// subscription resolves to "free"; any other error is propagated so the caller
+// fails closed (500) instead of misclassifying a paid user as free.
+func (h *Handler) planFor(ctx context.Context) (string, error) {
 	sub, err := h.client.Subscription.Query().Only(ctx)
-	if err != nil {
-		return "free"
+	if ent.IsNotFound(err) {
+		return "free", nil
 	}
-	return sub.Plan
+	if err != nil {
+		return "", err
+	}
+	return sub.Plan, nil
 }

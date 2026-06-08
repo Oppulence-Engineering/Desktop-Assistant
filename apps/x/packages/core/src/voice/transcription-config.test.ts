@@ -56,6 +56,26 @@ describe("transcription config I/O", () => {
     expect(cfg?.whisper.vad).toBe(true); // untouched fields keep their defaults
   });
 
+  it("does not reset the other provider when a patch leaves fields undefined", async () => {
+    // Mirrors the transcription:setConfig handler, which always materializes
+    // voiceProvider/meetingProvider keys (undefined when the UI didn't change them).
+    await voice.setTranscriptionConfig({
+      voiceProvider: "deepgram",
+      meetingProvider: "whisper-local",
+    });
+    // A model-only change arrives with both provider keys present-but-undefined.
+    await voice.setTranscriptionConfig({
+      voiceProvider: undefined,
+      meetingProvider: undefined,
+      whisper: { model: "small.en-q5_1" },
+    });
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.voiceProvider).toBe("deepgram"); // preserved, not re-defaulted
+    expect(cfg?.meetingProvider).toBe("whisper-local"); // preserved, not reset to deepgram
+    expect(cfg?.whisper.model).toBe("small.en-q5_1");
+  });
+
   it("ignores unknown fields and tolerates partial files", async () => {
     const file = path.join(tmpDir, "config", "transcription.json");
     await fs.mkdir(path.dirname(file), { recursive: true });

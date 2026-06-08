@@ -129,11 +129,21 @@ export class ModelManager {
     const dest = this.pathFor(id);
     const led = await this.loadLedger();
 
-    // Already installed? Re-verify lazily past the TTL.
+    // Already installed? Re-confirm lazily past the TTL — but with a CHEAP size check,
+    // not a full sha256 re-hash: ensure() is on the user-facing hot path (every voice
+    // submit / meeting start) and the active model can be ~1 GB. The authoritative hash
+    // ran at install time (recorded as `bytes`); a size match re-confirms integrity
+    // here, and a mismatch falls through to re-download.
     const rec = led.installed[id];
     if (rec && (await exists(dest))) {
       if (this.now() - Date.parse(rec.lastVerifiedAt) > VERIFY_TTL_MS) {
-        if (await this.verify(dest, m.sha256, id)) {
+        let sizeOk = false;
+        try {
+          sizeOk = (await fs.stat(dest)).size === rec.bytes;
+        } catch {
+          sizeOk = false;
+        }
+        if (sizeOk) {
           rec.lastVerifiedAt = new Date(this.now()).toISOString();
           await this.saveLedger(led);
           return dest;

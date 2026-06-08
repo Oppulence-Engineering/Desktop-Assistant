@@ -35,6 +35,9 @@ export class WhisperService {
   private readonly mm: ModelManager;
   private readonly modelsDir: string;
   private readonly sessions = new Map<string, Session>();
+  // Streams closed before their Session finished constructing (model still downloading)
+  // — so the async openStream tail tears down instead of orphaning a Session.
+  private readonly closedBeforeReady = new Set<string>();
   private seq = 0;
 
   constructor(
@@ -114,6 +117,15 @@ export class WhisperService {
     const id = `wstream-${++this.seq}`;
     void (async () => {
       const modelPath = await this.mm.ensure(this.resolveModel(opts.model), { withVad: true });
+      // The renderer may have closed the stream while the model was downloading.
+      if (this.closedBeforeReady.delete(id)) {
+        try {
+          port.close();
+        } catch {
+          /* port already gone */
+        }
+        return;
+      }
       const sessionOpts: SessionOpts = {
         modelPath,
         vadModelPath: vadModelPath(this.modelsDir),
@@ -122,6 +134,7 @@ export class WhisperService {
       this.sessions.set(id, new Session(port, sessionOpts));
     })().catch(() => {
       // Model ensure failed → tell the renderer and tear down.
+      this.closedBeforeReady.delete(id);
       try {
         port.postMessage({ v: 1, type: "error", code: "model_not_installed" });
         port.close();
@@ -133,7 +146,14 @@ export class WhisperService {
   }
 
   closeStream(id: string): void {
-    this.sessions.get(id)?.close();
-    this.sessions.delete(id);
+    const session = this.sessions.get(id);
+    if (session) {
+      session.close();
+      this.sessions.delete(id);
+    } else {
+      // Session not constructed yet (model still downloading) — mark it so the
+      // openStream tail tears the port down instead of orphaning the Session.
+      this.closedBeforeReady.add(id);
+    }
   }
 }

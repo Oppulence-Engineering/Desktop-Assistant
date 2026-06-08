@@ -25,9 +25,16 @@ export async function probe(force = false): Promise<Capability> {
   const info = await systemInfo().catch(() => "");
   const accel = parseAccel(info);
 
+  // Apple Silicon always has Metal + Core ML in practice, even when the probe
+  // didn't surface the backend line (binary absent in dev, or --help not emitting
+  // system_info). Short-circuit so the generic CPU gate below isn't dead code here.
+  if (process.platform === "darwin" && process.arch === "arm64") {
+    return cache({ supported: true, accel: accel === "cpu" ? "coreml" : accel, cores });
+  }
+
+  // Everyone else: a parsed GPU backend is fine; CPU-only is gated on core count.
   let supported = true;
   let reason: string | undefined;
-
   if (accel === "cpu") {
     if (cores < 4) {
       supported = false;
@@ -35,13 +42,6 @@ export async function probe(force = false): Promise<Capability> {
     } else {
       reason = "CPU only — may be slow and use battery";
     }
-  }
-
-  // Apple Silicon always has Metal + Core ML in practice, even if the --help probe
-  // didn't surface the backend line (e.g. the binary isn't present yet in dev).
-  if (process.platform === "darwin" && process.arch === "arm64") {
-    supported = true;
-    if (accel === "cpu") return cache({ supported, accel: "coreml", cores, reason: undefined });
   }
 
   return cache({ supported, accel, cores, reason });
@@ -67,7 +67,16 @@ export function parseAccel(systemInfo: string): Accel {
   return "cpu";
 }
 
-/** Run the binary briefly to capture its `system_info:` line (stdout or stderr). */
+/**
+ * Run the binary briefly to capture its `system_info:` line (stdout or stderr).
+ *
+ * KNOWN LIMITATION: whisper.cpp prints `system_info` at the start of *inference*,
+ * not on `--help`, so on non-Apple-Silicon hosts this usually yields no backend
+ * tokens and {@link parseAccel} falls back to `cpu` — a pessimistic accel/UI label
+ * (local still works; `supported` is gated on core count, not the parsed backend).
+ * A precise probe would run a sub-second fixture inference once a model is present
+ * (RFC §13, Appendix F) — deferred until the eval corpus lands.
+ */
 function systemInfo(): Promise<string> {
   return new Promise((resolve, reject) => {
     let out = "";

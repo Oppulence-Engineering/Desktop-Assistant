@@ -95,10 +95,18 @@ type Charge struct {
 }
 
 // Reserve debits an estimate against the month's allowance inside a transaction
-// after a balance check. Paid/unlimited callers get a no-op charge. Concurrent
-// reservations serialize on the transaction (matching the credit gate's
-// accepted Postgres tradeoff — a tiny residual race, never an overspend on the
-// single-writer dev path).
+// after a balance check. Paid/unlimited callers get a no-op charge.
+//
+// NOTE — this reserve→settle/refund path is not yet wired to any route (only
+// Remaining is reachable today via GET /v1/transcription/quota). Before a caller
+// that fronts Deepgram uses it, two things must be added to match the credit
+// gate's retry-safety contract: (1) a requestID + idempotency key so a retried
+// reserve/settle does not double-debit (the credit gate keys its ledger on
+// request_id); (2) on the first reservation of a UTC month, two concurrent txns
+// can both miss the row and race the (period,user) unique create — handle that
+// with an ON CONFLICT upsert/retry rather than surfacing a 500. The balance
+// check is also a plain SELECT (no FOR UPDATE), the same accepted residual-race
+// tradeoff the credit gate documents.
 func (g *Gate) Reserve(ctx context.Context, plan string, estSeconds int) (*Charge, error) {
 	if estSeconds < 0 {
 		estSeconds = 0

@@ -501,6 +501,14 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
     if (state !== "recording") return;
     setState("stopping");
 
+    // On-device: drain the engine's tail first — close() flushes the open segment,
+    // waits for the trailing finals (which land in transcriptRef via appendLocalFinal)
+    // plus the 'done' signal, so the last utterance is included in the final write.
+    if (streamHandleRef.current) {
+      await streamHandleRef.current.close();
+      streamHandleRef.current = null;
+    }
+
     cleanup();
     interimRef.current = new Map();
     await writeTranscriptToFile();

@@ -556,50 +556,73 @@ async function localTranscriptionSupported(): Promise<boolean> {
   }
 }
 
-/**
- * Remote, A/B-able transcription defaults from the account payload (§16/§25).
- * Wired to the authenticated quota endpoint in WP 2.2; null until then (the
- * resolver falls back to the user override → hardcoded default).
- */
+type RemoteTranscriptionState = {
+  voiceProvider?: TranscriptionProvider;
+  meetingProvider?: TranscriptionProvider;
+  meetingMinutesRemaining?: number | null;
+};
+
 function asProvider(value: unknown): TranscriptionProvider | undefined {
   return value === "whisper-local" || value === "deepgram" || value === "solomon"
     ? value
     : undefined;
 }
 
-async function remoteTranscriptionState(): Promise<{
-  voiceProvider?: TranscriptionProvider;
-  meetingProvider?: TranscriptionProvider;
-  meetingMinutesRemaining?: number | null;
-} | null> {
-  // Per-user quota + fleet defaults from the authenticated endpoint (RFC 009
-  // Appendix O.6). Signed-out / failure → null, so the resolver falls back to the
-  // user override → hardcoded default.
-  if (!(await isSignedIn())) return null;
-  try {
-    const token = await getAccessToken();
-    const res = await fetch(`${API_URL}/v1/transcription/quota`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      meetingMinutesRemaining?: number;
-      unlimited?: boolean;
-      transcriptionDefaults?: { voiceProvider?: string; meetingProvider?: string };
-    };
-    return {
-      voiceProvider: asProvider(data.transcriptionDefaults?.voiceProvider),
-      meetingProvider: asProvider(data.transcriptionDefaults?.meetingProvider),
-      // Unlimited (paid) → null so the quota gate never trips.
-      meetingMinutesRemaining: data.unlimited
-        ? null
-        : typeof data.meetingMinutesRemaining === "number"
-          ? data.meetingMinutesRemaining
-          : null,
-    };
-  } catch {
+// Provider resolution runs on hot paths (mic warmup, every OAuth connect, meeting
+// start), so cache the remote payload briefly and never let a slow endpoint stall
+// resolution. Fleet defaults + quota change rarely; a 60s TTL is plenty.
+const REMOTE_TRANSCRIPTION_TTL_MS = 60_000;
+const REMOTE_TRANSCRIPTION_FETCH_TIMEOUT_MS = 4_000;
+let remoteTranscriptionCache: { at: number; value: RemoteTranscriptionState | null } | null = null;
+
+/**
+ * Per-user quota + A/B-able fleet defaults from the authenticated endpoint (RFC 009
+ * Appendix O.6). Signed-out / failure → null, so the resolver falls back to the user
+ * override → hardcoded default. Cached with a short TTL and a hard fetch timeout.
+ */
+async function remoteTranscriptionState(): Promise<RemoteTranscriptionState | null> {
+  if (!(await isSignedIn())) {
+    remoteTranscriptionCache = null;
     return null;
   }
+  const cached = remoteTranscriptionCache;
+  if (cached && Date.now() - cached.at < REMOTE_TRANSCRIPTION_TTL_MS) return cached.value;
+
+  let value: RemoteTranscriptionState | null = null;
+  try {
+    const token = await getAccessToken();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REMOTE_TRANSCRIPTION_FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${API_URL}/v1/transcription/quota`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+      });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          meetingMinutesRemaining?: number;
+          unlimited?: boolean;
+          transcriptionDefaults?: { voiceProvider?: string; meetingProvider?: string };
+        };
+        value = {
+          voiceProvider: asProvider(data.transcriptionDefaults?.voiceProvider),
+          meetingProvider: asProvider(data.transcriptionDefaults?.meetingProvider),
+          // Unlimited (paid) → null so the quota gate never trips.
+          meetingMinutesRemaining: data.unlimited
+            ? null
+            : typeof data.meetingMinutesRemaining === "number"
+              ? data.meetingMinutesRemaining
+              : null,
+        };
+      }
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    value = null; // network error / timeout → fall back, and brief-cache the null below
+  }
+  remoteTranscriptionCache = { at: Date.now(), value };
+  return value;
 }
 
 async function resolveVoiceProviderMain(): Promise<TranscriptionProvider> {
