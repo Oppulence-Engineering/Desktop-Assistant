@@ -37,9 +37,17 @@ type Leases interface {
 // Leases implementation (RFC 002) is wired.
 type NoopLeases struct{}
 
+// Acquire always grants the lease (single-replica safety comes from the task's
+// own last_run_at cycle anchoring).
 func (NoopLeases) Acquire(context.Context, *ent.BackgroundTask, string, string, string, time.Duration) (Lease, bool, error) {
 	return Lease{}, true, nil
 }
+
+// Complete is a no-op; there is no durable lease to mark satisfied.
 func (NoopLeases) Complete(context.Context, string, string) error { return nil }
-func (NoopLeases) Release(context.Context, string, error) error   { return nil }
-func (NoopLeases) CleanupExpired(context.Context) error           { return nil }
+
+// Release is a no-op; there is no durable lease to relinquish.
+func (NoopLeases) Release(context.Context, string, error) error { return nil }
+
+// CleanupExpired is a no-op; there are no durable leases to reap.
+func (NoopLeases) CleanupExpired(context.Context) error { return nil }
