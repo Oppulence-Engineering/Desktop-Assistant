@@ -372,17 +372,16 @@ func (s *Scheduler) reapStuckStartingRuns(ctx context.Context, now time.Time) {
 func provenance(due dueResult, tr Triggers, now time.Time) (key, requestedContext string) {
 	switch due.source {
 	case "cron":
-		key = "cron:" + due.occurrence.UTC().Format(time.RFC3339)
+		key = CronKey(tr.CronExpr, due.occurrence)
 		requestedContext = fmt.Sprintf(
 			"Scheduled cron trigger fired at %s for expression %q. Occurrence: %s.",
 			now.Format(time.RFC3339), tr.CronExpr, due.occurrence.Format(time.RFC3339),
 		)
 	case "window":
-		cycleDate := now.Format("2006-01-02")
-		key = fmt.Sprintf("window:%s:%s-%s", cycleDate, due.window.StartTime, due.window.EndTime)
+		key = WindowKey(due.window.StartTime, due.window.EndTime, now)
 		requestedContext = fmt.Sprintf(
 			"Scheduled window trigger fired at %s inside %s-%s window. Cycle date: %s.",
-			now.Format(time.RFC3339), due.window.StartTime, due.window.EndTime, cycleDate,
+			now.Format(time.RFC3339), due.window.StartTime, due.window.EndTime, now.Format("2006-01-02"),
 		)
 	}
 	return key, requestedContext
