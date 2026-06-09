@@ -244,6 +244,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// limit keys on the client IP recovered by RealIPFromTrustedProxies.
 	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
 		Post("/v1/webhooks/google", cloudEventsH.GoogleWebhook)
+	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
+		Post("/v1/webhooks/slack", cloudEventsH.SlackWebhook)
 
 	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer).
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).

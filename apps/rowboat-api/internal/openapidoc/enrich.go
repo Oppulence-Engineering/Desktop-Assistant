@@ -716,6 +716,16 @@ func addCloudEventPaths(paths obj) {
 		"401": responseRef("401"),
 		"500": responseRef("500"),
 	})}
+	paths["/v1/webhooks/slack"] = obj{"post": operation("Cloud Events", "Slack Events API webhook", "Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Rowboat user are ingested, others are acknowledged and dropped.", "slackWebhook", nil, nil, jsonRequest("Slack Events API envelope.", freeFormSchema("Slack event envelope."), obj{
+		"type": "event_callback", "team_id": "T0EXAMPLE", "event_id": "Ev001",
+		"event": obj{"type": "message", "text": "hello"},
+	}), obj{
+		"200": obj{"description": "Handshake challenge echoed, duplicate, or unmapped workspace (dropped)."},
+		"202": jsonResponse("Event ingested.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "pending", "deduped": false}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
 	paths["/v1/internal/events"] = obj{"post": operation("Internal", "Ingest a cloud event (server-to-server)", "Internal-secret ingestion used by backend services and test fixtures. Identical to /v1/events except the caller names the owning userId explicitly.", "ingestInternalCloudEvent", internalSecret(), nil, jsonRequest("Normalized event envelope with explicit owner.", ref("InternalCloudEventIngestRequest"), obj{
 		"userId":    "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
 		"source":    "internal",
