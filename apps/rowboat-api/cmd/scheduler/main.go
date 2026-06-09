@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -22,7 +23,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundscheduler"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlewatch"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -52,12 +56,14 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 		return err
 	}
 	// Disabled is a clean no-op exit, mirroring the worker's
-	// TEMPORAL_WORKER_ENABLED guard so the Deployment can ship dark.
-	if !cfg.CloudSchedulerEnabled {
-		log.Info("CLOUD_SCHEDULER_ENABLED is false; scheduler exiting cleanly")
+	// TEMPORAL_WORKER_ENABLED guard so the Deployment can ship dark. The
+	// process hosts two independent loops: the task scheduler (RFC 001) and
+	// the Google watch manager (RFC 003); it runs as long as either is on.
+	if !cfg.CloudSchedulerEnabled && !cfg.GoogleWatchEnabled {
+		log.Info("CLOUD_SCHEDULER_ENABLED and GOOGLE_WATCH_ENABLED are false; scheduler exiting cleanly")
 		return nil
 	}
-	if !cfg.TemporalEnabled {
+	if cfg.CloudSchedulerEnabled && !cfg.TemporalEnabled {
 		return fmt.Errorf("TEMPORAL_ENABLED must be true for the scheduler")
 	}
 	location, err := cfg.SchedulerLocation()
@@ -91,7 +97,49 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 	stopMetrics := startMetricsServer(cfg, log, &ready)
 	defer stopMetrics()
 
+	if cfg.GoogleWatchEnabled {
+		watchMgr, werr := buildWatchManager(ctx, cfg, log, database)
+		if werr != nil {
+			return werr
+		}
+		if !cfg.CloudSchedulerEnabled {
+			// Watch-only mode needs no Temporal; the watch loop is the process.
+			ready.Store(true)
+			return watchMgr.Run(ctx)
+		}
+		go func() { _ = watchMgr.Run(ctx) }()
+	}
+
 	return runScheduler(ctx, cfg, log, database, location, &ready)
+}
+
+// buildWatchManager assembles the RFC 003 Google watch manager: the sealer
+// (to unseal connection refresh tokens), the vendor-secret store (Google
+// OAuth client credentials), and the endpoint config.
+func buildWatchManager(ctx context.Context, cfg appconfig.Config, log *zap.Logger, database *db.DB) (*googlewatch.Manager, error) {
+	sealer, err := crypto.NewSealer(cfg.DBEncryptionKey)
+	if err != nil {
+		return nil, err
+	}
+	sec := secrets.NewFromConfig(cfg)
+	if err := sec.LoadInfisical(ctx, cfg); err != nil {
+		if cfg.InfisicalEnabled && cfg.IsProduction() {
+			return nil, fmt.Errorf("infisical secret load failed in production: %w", err)
+		}
+		log.Warn("infisical load failed; using env vendor keys", zap.Error(err))
+	}
+	sec.StartRefresh(ctx, cfg, 5*time.Minute, log)
+
+	return googlewatch.New(database.Client, sealer, sec, googlewatch.Config{
+		GmailPubSubTopic: cfg.GmailPubSubTopic,
+		WebhookURL:       strings.TrimRight(cfg.PublicBaseURL, "/") + "/v1/webhooks/google",
+		ChannelToken:     cfg.GoogleWebhookToken,
+		RenewMargin:      cfg.GoogleWatchRenewMargin,
+		Interval:         cfg.GoogleWatchInterval,
+		TokenURL:         cfg.GoogleTokenURL, // empty → real Google endpoint
+		GmailBaseURL:     cfg.GmailAPIBaseURL,
+		CalendarBaseURL:  cfg.CalendarAPIBaseURL,
+	}, log), nil
 }
 
 // startMetricsServer serves Prometheus /metrics, a liveness /healthz (200 once
