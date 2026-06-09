@@ -44,6 +44,17 @@ func gmailPushBody(t *testing.T, email string, historyID uint64) string {
 	return string(env)
 }
 
+// postWebhook POSTs and returns the status, closing the body (bodyclose).
+func postWebhook(t *testing.T, url, body string) int {
+	t.Helper()
+	resp, err := http.Post(url, "application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("post: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	return resp.StatusCode
+}
+
 func TestGoogleWebhookTokenVerification(t *testing.T) {
 	client, u := setup(t)
 	connectGoogle(t, client, u, "me@gmail.com")
@@ -52,19 +63,16 @@ func TestGoogleWebhookTokenVerification(t *testing.T) {
 	body := gmailPushBody(t, "me@gmail.com", 998877)
 
 	// Wrong token → 401.
-	resp, _ := http.Post(srv.URL+"/v1/webhooks/google?token=wrong", "application/json", strings.NewReader(body))
-	if resp.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("wrong token: %d, want 401", resp.StatusCode)
+	if status := postWebhook(t, srv.URL+"/v1/webhooks/google?token=wrong", body); status != http.StatusUnauthorized {
+		t.Fatalf("wrong token: %d, want 401", status)
 	}
 	// Missing token → 401.
-	resp, _ = http.Post(srv.URL+"/v1/webhooks/google", "application/json", strings.NewReader(body))
-	if resp.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("missing token: %d, want 401", resp.StatusCode)
+	if status := postWebhook(t, srv.URL+"/v1/webhooks/google", body); status != http.StatusUnauthorized {
+		t.Fatalf("missing token: %d, want 401", status)
 	}
 	// Correct token → 202 with a stored event.
-	resp, _ = http.Post(srv.URL+"/v1/webhooks/google?token=tok-1", "application/json", strings.NewReader(body))
-	if resp.StatusCode != http.StatusAccepted {
-		t.Fatalf("valid token: %d, want 202", resp.StatusCode)
+	if status := postWebhook(t, srv.URL+"/v1/webhooks/google?token=tok-1", body); status != http.StatusAccepted {
+		t.Fatalf("valid token: %d, want 202", status)
 	}
 
 	ev := client.CloudEvent.Query().OnlyX(auth.WithInternal(context.Background()))
@@ -78,9 +86,8 @@ func TestGoogleWebhookFailsClosedWithoutSecret(t *testing.T) {
 	h := New(client, testSealer(t), nil, Config{MaxPayloadBytes: 1 << 20}, zap.NewNop())
 	srv := newWebhookServer(t, h)
 
-	resp, _ := http.Post(srv.URL+"/v1/webhooks/google?token=anything", "application/json", strings.NewReader("{}"))
-	if resp.StatusCode != http.StatusInternalServerError {
-		t.Fatalf("unconfigured secret: %d, want 500 (fail closed)", resp.StatusCode)
+	if status := postWebhook(t, srv.URL+"/v1/webhooks/google?token=anything", "{}"); status != http.StatusInternalServerError {
+		t.Fatalf("unconfigured secret: %d, want 500 (fail closed)", status)
 	}
 }
 
@@ -89,10 +96,8 @@ func TestGoogleWebhookUnresolvedUserDropped(t *testing.T) {
 	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
 	srv := newWebhookServer(t, h)
 
-	resp, _ := http.Post(srv.URL+"/v1/webhooks/google?token=tok-1", "application/json",
-		strings.NewReader(gmailPushBody(t, "stranger@gmail.com", 1)))
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("unresolved account: %d, want 200 (ack, stop retries)", resp.StatusCode)
+	if status := postWebhook(t, srv.URL+"/v1/webhooks/google?token=tok-1", gmailPushBody(t, "stranger@gmail.com", 1)); status != http.StatusOK {
+		t.Fatalf("unresolved account: %d, want 200 (ack, stop retries)", status)
 	}
 	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 0 {
 		t.Fatalf("events = %d, want 0 (unresolved events are never stored)", n)
@@ -104,10 +109,8 @@ func TestGoogleWebhookEmailFallbackResolution(t *testing.T) {
 	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
 	srv := newWebhookServer(t, h)
 
-	resp, _ := http.Post(srv.URL+"/v1/webhooks/google?token=tok-1", "application/json",
-		strings.NewReader(gmailPushBody(t, "a@x.co", 7)))
-	if resp.StatusCode != http.StatusAccepted {
-		t.Fatalf("email-fallback resolution: %d, want 202", resp.StatusCode)
+	if status := postWebhook(t, srv.URL+"/v1/webhooks/google?token=tok-1", gmailPushBody(t, "a@x.co", 7)); status != http.StatusAccepted {
+		t.Fatalf("email-fallback resolution: %d, want 202", status)
 	}
 	ev := client.CloudEvent.Query().OnlyX(auth.WithInternal(context.Background()))
 	owner := ev.QueryUser().OnlyX(auth.WithInternal(context.Background()))
@@ -122,7 +125,7 @@ func TestCalendarNotification(t *testing.T) {
 	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
 	srv := newWebhookServer(t, h)
 
-	send := func(state, channelID, msgNum string) *http.Response {
+	send := func(state, channelID, msgNum string) int {
 		t.Helper()
 		req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/webhooks/google", nil)
 		req.Header.Set("X-Goog-Channel-Token", "tok-1")
@@ -134,24 +137,25 @@ func TestCalendarNotification(t *testing.T) {
 		if err != nil {
 			t.Fatalf("send: %v", err)
 		}
-		return resp
+		defer func() { _ = resp.Body.Close() }()
+		return resp.StatusCode
 	}
 
 	// sync handshake → plain 200, nothing stored.
-	if resp := send("sync", "gcal:me@gmail.com:abc", "1"); resp.StatusCode != http.StatusOK {
-		t.Fatalf("sync: %d, want 200", resp.StatusCode)
+	if status := send("sync", "gcal:me@gmail.com:abc", "1"); status != http.StatusOK {
+		t.Fatalf("sync: %d, want 200", status)
 	}
 	// real update → 202 + event.
-	if resp := send("exists", "gcal:me@gmail.com:abc", "2"); resp.StatusCode != http.StatusAccepted {
-		t.Fatalf("exists: %d, want 202", resp.StatusCode)
+	if status := send("exists", "gcal:me@gmail.com:abc", "2"); status != http.StatusAccepted {
+		t.Fatalf("exists: %d, want 202", status)
 	}
 	ev := client.CloudEvent.Query().OnlyX(auth.WithInternal(context.Background()))
 	if ev.Source != SourceGoogleCalendar || ev.DedupeKey != "gcal:gcal:me@gmail.com:abc:2" {
 		t.Fatalf("event = %s/%s", ev.Source, ev.DedupeKey)
 	}
 	// duplicate message number → 200 deduped, still one row.
-	if resp := send("exists", "gcal:me@gmail.com:abc", "2"); resp.StatusCode != http.StatusOK {
-		t.Fatalf("dup: %d, want 200", resp.StatusCode)
+	if status := send("exists", "gcal:me@gmail.com:abc", "2"); status != http.StatusOK {
+		t.Fatalf("dup: %d, want 200", status)
 	}
 	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
 		t.Fatalf("events = %d, want 1", n)

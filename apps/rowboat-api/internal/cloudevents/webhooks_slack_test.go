@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -37,7 +38,7 @@ func newSlackServer(t *testing.T, h *Handler) *httptest.Server {
 	return srv
 }
 
-func postSlack(t *testing.T, srv *httptest.Server, body, ts, sig string) *http.Response {
+func postSlack(t *testing.T, srv *httptest.Server, body, ts, sig string) (int, []byte) {
 	t.Helper()
 	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/webhooks/slack", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -51,7 +52,12 @@ func postSlack(t *testing.T, srv *httptest.Server, body, ts, sig string) *http.R
 	if err != nil {
 		t.Fatalf("post: %v", err)
 	}
-	return resp
+	defer func() { _ = resp.Body.Close() }()
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	return resp.StatusCode, respBody
 }
 
 func connectSlack(t *testing.T, client *ent.Client, u *ent.User, teamID string) {
@@ -105,28 +111,27 @@ func TestSlackWebhookFlow(t *testing.T) {
 
 	// url_verification handshake echoes the challenge.
 	challenge := `{"type":"url_verification","challenge":"abc123"}`
-	resp := postSlack(t, srv, challenge, ts, slackSign(slackSecret, ts, []byte(challenge)))
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("handshake: %d, want 200", resp.StatusCode)
+	status, respBody := postSlack(t, srv, challenge, ts, slackSign(slackSecret, ts, []byte(challenge)))
+	if status != http.StatusOK {
+		t.Fatalf("handshake: %d, want 200", status)
 	}
 	var ch struct {
 		Challenge string `json:"challenge"`
 	}
-	_ = json.NewDecoder(resp.Body).Decode(&ch)
-	_ = resp.Body.Close()
+	_ = json.Unmarshal(respBody, &ch)
 	if ch.Challenge != "abc123" {
 		t.Fatalf("challenge = %q, want abc123", ch.Challenge)
 	}
 
 	// Unsigned event → 401.
 	body := slackEventBody("T0EXAMPLE", "Ev001", "invoice dispute from acme")
-	if resp := postSlack(t, srv, body, ts, ""); resp.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("unsigned: %d, want 401", resp.StatusCode)
+	if status, _ := postSlack(t, srv, body, ts, ""); status != http.StatusUnauthorized {
+		t.Fatalf("unsigned: %d, want 401", status)
 	}
 
 	// Signed event for a mapped workspace → 202 + stored event.
-	if resp := postSlack(t, srv, body, ts, slackSign(slackSecret, ts, []byte(body))); resp.StatusCode != http.StatusAccepted {
-		t.Fatalf("signed event: %d, want 202", resp.StatusCode)
+	if status, _ := postSlack(t, srv, body, ts, slackSign(slackSecret, ts, []byte(body))); status != http.StatusAccepted {
+		t.Fatalf("signed event: %d, want 202", status)
 	}
 	ev := client.CloudEvent.Query().OnlyX(auth.WithInternal(context.Background()))
 	if ev.Source != SourceSlack || ev.DedupeKey != "slack:T0EXAMPLE:Ev001" || ev.EventType != "message" {
@@ -137,8 +142,8 @@ func TestSlackWebhookFlow(t *testing.T) {
 	}
 
 	// Slack retry (same event_id) → 200 deduped, one row.
-	if resp := postSlack(t, srv, body, ts, slackSign(slackSecret, ts, []byte(body))); resp.StatusCode != http.StatusOK {
-		t.Fatalf("retry: %d, want 200", resp.StatusCode)
+	if status, _ := postSlack(t, srv, body, ts, slackSign(slackSecret, ts, []byte(body))); status != http.StatusOK {
+		t.Fatalf("retry: %d, want 200", status)
 	}
 	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
 		t.Fatalf("events = %d, want 1", n)
@@ -146,8 +151,8 @@ func TestSlackWebhookFlow(t *testing.T) {
 
 	// Unmapped workspace → 200 ack, dropped.
 	foreign := slackEventBody("T9OTHER", "Ev002", "hi")
-	if resp := postSlack(t, srv, foreign, ts, slackSign(slackSecret, ts, []byte(foreign))); resp.StatusCode != http.StatusOK {
-		t.Fatalf("unmapped workspace: %d, want 200", resp.StatusCode)
+	if status, _ := postSlack(t, srv, foreign, ts, slackSign(slackSecret, ts, []byte(foreign))); status != http.StatusOK {
+		t.Fatalf("unmapped workspace: %d, want 200", status)
 	}
 	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
 		t.Fatalf("events = %d, want 1 (unmapped events never stored)", n)

@@ -36,7 +36,7 @@ func newMockGoogle(t *testing.T) *mockGoogle {
 	m := &mockGoogle{}
 	exp := fmt.Sprintf("%d", time.Now().Add(6*24*time.Hour).UnixMilli())
 	mux := http.NewServeMux()
-	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/token", func(w http.ResponseWriter, _ *http.Request) {
 		m.mu.Lock()
 		defer m.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")

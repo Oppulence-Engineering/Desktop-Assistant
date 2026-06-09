@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Watch kinds (mirror the GoogleWatch schema enum).
 const (
 	KindGmail    = "gmail"
 	KindCalendar = "calendar"

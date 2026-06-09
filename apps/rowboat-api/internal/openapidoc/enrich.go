@@ -592,8 +592,8 @@ func addCloudEventSchemas(schemas obj) {
 		"runs": arraySchema("Linked runs.", ref("CloudEventRun")),
 	}, "runs")
 	schemas["InternalCloudEventIngestRequest"] = objectSchema("Server-to-server cloud event ingestion: the caller names the event owner explicitly.", obj{
-		"userId": stringSchema("Rowboat user id (UUID) owning the event.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
-		"source": stringEnum("Event source.", "internal", "gmail", "google_calendar", "slack", "webhook", "internal"),
+		"userId":    stringSchema("Rowboat user id (UUID) owning the event.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+		"source":    stringEnum("Event source.", "internal", "gmail", "google_calendar", "slack", "webhook", "internal"),
 		"dedupeKey": stringSchema("Required idempotency anchor.", "internal:job:42"),
 	}, "userId", "source", "dedupeKey")
 }

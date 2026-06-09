@@ -155,11 +155,11 @@ func (r *Router) Route(ctx context.Context, eventID uuid.UUID) error {
 			if serr != nil {
 				// One task's start failure must not poison the whole event.
 				metricRouteFailures.WithLabelValues("start_run").Inc()
-				dec.routingDecision.Error = "run_start_failed: " + truncate(serr.Error(), 200)
+				dec.Error = "run_start_failed: " + truncate(serr.Error(), 200)
 				log.Error("cloud event run start failed",
 					zap.String("eventId", ev.ID.String()), zap.String("taskSlug", t.task.Slug), zap.Error(serr))
 			} else {
-				dec.routingDecision.RunID = run.RunID
+				dec.RunID = run.RunID
 				fired = append(fired, run)
 				metricTriggeredRuns.WithLabelValues(ev.Source).Inc()
 			}
@@ -198,11 +198,11 @@ func (r *Router) eligibleTargets(ctx context.Context, ownerID uuid.UUID) ([]elig
 		}
 	}
 	capped := false
-	if max := r.maxEligible(); len(eligible) > max {
+	if limit := r.maxEligible(); len(eligible) > limit {
 		sort.Slice(eligible, func(i, j int) bool {
 			return eligible[i].task.UpdatedAt.After(eligible[j].task.UpdatedAt)
 		})
-		eligible = eligible[:max]
+		eligible = eligible[:limit]
 		capped = true
 	}
 	return eligible, capped, nil
@@ -479,11 +479,4 @@ func pass2Prompt(ev *ent.CloudEvent, t eligibleTask) string {
 	b.WriteString("\ntext: ")
 	b.WriteString(ev.Text)
 	return b.String()
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

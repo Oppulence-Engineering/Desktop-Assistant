@@ -198,9 +198,9 @@ func stripCodeFences(s string) string {
 
 // truncateErrBody bounds an upstream error body folded into an error message.
 func truncateErrBody(b []byte) string {
-	const max = 512
-	if len(b) > max {
-		b = b[:max]
+	const maxLen = 512
+	if len(b) > maxLen {
+		b = b[:maxLen]
 	}
 	return string(b)
 }

@@ -55,9 +55,9 @@ func TestFixturesEndToEnd(t *testing.T) {
 	}
 
 	// 1. Invoice dispute matches the AR task, not the customer-status task.
-	resp, out := postEvent(t, srv, fixture(t, "gmail_invoice_dispute.json"))
-	if resp.StatusCode != http.StatusAccepted {
-		t.Fatalf("gmail fixture: status %d, want 202", resp.StatusCode)
+	status, out := postEvent(t, srv, fixture(t, "gmail_invoice_dispute.json"))
+	if status != http.StatusAccepted {
+		t.Fatalf("gmail fixture: status %d, want 202", status)
 	}
 	route(t, out.EventID, map[string]string{
 		"acme-ar-watch":   `{"match":true,"confidence":0.86,"explanation":"invoice dispute"}`,
@@ -70,9 +70,9 @@ func TestFixturesEndToEnd(t *testing.T) {
 
 	// 2. Duplicate (same dedupeKey, provider retry): 200, no re-route.
 	enqueuesBefore := len(rc.calls)
-	resp, dup := postEvent(t, srv, fixture(t, "duplicate_gmail.json"))
-	if resp.StatusCode != http.StatusOK || !dup.Deduped || dup.EventID != out.EventID {
-		t.Fatalf("duplicate fixture: status=%d deduped=%v id=%s, want 200/true/same", resp.StatusCode, dup.Deduped, dup.EventID)
+	status, dup := postEvent(t, srv, fixture(t, "duplicate_gmail.json"))
+	if status != http.StatusOK || !dup.Deduped || dup.EventID != out.EventID {
+		t.Fatalf("duplicate fixture: status=%d deduped=%v id=%s, want 200/true/same", status, dup.Deduped, dup.EventID)
 	}
 	if len(rc.calls) != enqueuesBefore {
 		t.Fatal("duplicate fixture must not enqueue routing again")
@@ -101,9 +101,9 @@ func TestFixturesEndToEnd(t *testing.T) {
 	}
 
 	// 5. Oversized payload rejected before sealing — no row.
-	resp, _ = postEvent(t, srv, fixture(t, "oversized_payload.json"))
-	if resp.StatusCode != http.StatusRequestEntityTooLarge {
-		t.Fatalf("oversized fixture: status %d, want 413", resp.StatusCode)
+	status, _ = postEvent(t, srv, fixture(t, "oversized_payload.json"))
+	if status != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized fixture: status %d, want 413", status)
 	}
 	if n := client.CloudEvent.Query().Where().CountX(internalCtx); n != 3 {
 		t.Fatalf("event rows = %d, want 3 (oversized must not be stored)", n)

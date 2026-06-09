@@ -119,9 +119,9 @@ func (c *oryClient) tokenRequest(ctx context.Context, form url.Values) (*oryToke
 	return &tok, nil
 }
 
-func truncateForLog(s string, max int) string {
-	if len(s) > max {
-		return s[:max] + "…"
+func truncateForLog(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return s[:maxLen] + "…"
 	}
 	return s
 }

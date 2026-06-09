@@ -74,7 +74,7 @@ func newTestServer(t *testing.T, h *Handler, u *ent.User) *httptest.Server {
 	return srv
 }
 
-func postEvent(t *testing.T, srv *httptest.Server, body string) (*http.Response, IngestResponse) {
+func postEvent(t *testing.T, srv *httptest.Server, body string) (int, IngestResponse) {
 	t.Helper()
 	resp, err := http.Post(srv.URL+"/v1/events", "application/json", strings.NewReader(body))
 	if err != nil {
@@ -83,7 +83,7 @@ func postEvent(t *testing.T, srv *httptest.Server, body string) (*http.Response,
 	defer func() { _ = resp.Body.Close() }()
 	var out IngestResponse
 	_ = json.NewDecoder(resp.Body).Decode(&out)
-	return resp, out
+	return resp.StatusCode, out
 }
 
 func TestIngestValidation(t *testing.T) {
@@ -103,9 +103,9 @@ func TestIngestValidation(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			resp, _ := postEvent(t, srv, tc.body)
-			if resp.StatusCode != tc.want {
-				t.Fatalf("status = %d, want %d", resp.StatusCode, tc.want)
+			status, _ := postEvent(t, srv, tc.body)
+			if status != tc.want {
+				t.Fatalf("status = %d, want %d", status, tc.want)
 			}
 		})
 	}
@@ -118,13 +118,13 @@ func TestIngestDedupe(t *testing.T) {
 	srv := newTestServer(t, h, u)
 
 	body := `{"source":"internal","dedupeKey":"gmail:msg:1","subject":"hi","payload":{"a":1}}`
-	resp1, out1 := postEvent(t, srv, body)
-	if resp1.StatusCode != http.StatusAccepted || out1.Deduped {
-		t.Fatalf("first post: status=%d deduped=%v, want 202/false", resp1.StatusCode, out1.Deduped)
+	status1, out1 := postEvent(t, srv, body)
+	if status1 != http.StatusAccepted || out1.Deduped {
+		t.Fatalf("first post: status=%d deduped=%v, want 202/false", status1, out1.Deduped)
 	}
-	resp2, out2 := postEvent(t, srv, body)
-	if resp2.StatusCode != http.StatusOK || !out2.Deduped {
-		t.Fatalf("replay: status=%d deduped=%v, want 200/true", resp2.StatusCode, out2.Deduped)
+	status2, out2 := postEvent(t, srv, body)
+	if status2 != http.StatusOK || !out2.Deduped {
+		t.Fatalf("replay: status=%d deduped=%v, want 200/true", status2, out2.Deduped)
 	}
 	if out2.EventID != out1.EventID {
 		t.Fatalf("replay returned a different event id")
@@ -156,9 +156,9 @@ func TestIngestRouteStartFailureMarksFailed(t *testing.T) {
 	h := New(client, testSealer(t), rc, Config{MaxPayloadBytes: 1 << 20}, zap.NewNop())
 	srv := newTestServer(t, h, u)
 
-	resp, out := postEvent(t, srv, `{"source":"internal","dedupeKey":"k1","text":"x"}`)
-	if resp.StatusCode != http.StatusAccepted {
-		t.Fatalf("status = %d, want 202 (event is preserved)", resp.StatusCode)
+	status, out := postEvent(t, srv, `{"source":"internal","dedupeKey":"k1","text":"x"}`)
+	if status != http.StatusAccepted {
+		t.Fatalf("status = %d, want 202 (event is preserved)", status)
 	}
 	if out.RoutingStatus != StatusFailed {
 		t.Fatalf("routingStatus = %q, want failed after route-start failure", out.RoutingStatus)
