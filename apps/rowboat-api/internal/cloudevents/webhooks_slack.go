@@ -144,9 +144,9 @@ func verifySlackSignature(secret, ts string, body []byte, got string, now time.T
 }
 
 // resolveSlackUser maps a Slack workspace (team_id) to the owning Rowboat
-// user via OAuthConnection(provider=slack, external_account_id=team_id).
-// No self-serve Slack connect flow exists yet; v1 rows are created
-// operationally via the admin GraphQL surface when a workspace is onboarded.
+// user via OAuthConnection(provider=slack, external_account_id=team_id),
+// written by the self-serve connect flow (internal/slack: /oauth/slack/start
+// → /v1/slack-oauth/claim).
 func (h *Handler) resolveSlackUser(r *http.Request, teamID string) (*ent.User, bool) {
 	ctx := auth.WithInternal(r.Context())
 	conn, err := h.client.OAuthConnection.Query().

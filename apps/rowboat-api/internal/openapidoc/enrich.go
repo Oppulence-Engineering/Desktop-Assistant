@@ -161,6 +161,7 @@ func addRuntimeSchemas(schemas obj) {
 	addVendorProxySchemas(schemas)
 	addOAuthSchemas(schemas)
 	addConnectorSchemas(schemas)
+	addSlackOAuthSchemas(schemas)
 	addCloudEventSchemas(schemas)
 	addInternalSchemas(schemas)
 }
@@ -526,6 +527,19 @@ func addConnectorSchemas(schemas obj) {
 	}, "access_token", "token_type", "mcpUrl")
 }
 
+func addSlackOAuthSchemas(schemas obj) {
+	schemas["SlackClaimRequest"] = objectSchema("Slack install session ticket redemption.", obj{
+		"session": stringSchema("State ticket from the solomon-ai://oauth/slack/done deep link.", "state_abc123"),
+	}, "session")
+	schemas["SlackClaimResponse"] = objectSchema("Connected Slack workspace metadata. The bot token is server-held and never returned.", obj{
+		"connected": boolSchema("Whether the workspace connection was stored.", true),
+		"teamId":    stringSchema("Slack workspace (team) id — the key Events API deliveries resolve against.", "T0EXAMPLE"),
+		"teamName":  stringSchema("Workspace display name.", "Acme", nullable()),
+		"scope":     stringSchema("Granted bot scopes, comma-separated.", "channels:history,channels:read", nullable()),
+		"botUserId": stringSchema("Bot user id in the workspace.", "U0BOT", nullable()),
+	}, "connected", "teamId")
+}
+
 func addCloudEventSchemas(schemas obj) {
 	schemas["CloudEventIngestRequest"] = objectSchema("Normalized cloud event envelope posted by internal services, tests, or the desktop (RFC 003).", obj{
 		"source":          stringEnum("Event source.", "internal", "gmail", "google_calendar", "slack", "webhook", "internal"),
@@ -653,6 +667,7 @@ func addRuntimePaths(paths obj) {
 	addLLMPaths(paths)
 	addVendorProxyPaths(paths)
 	addGoogleOAuthPaths(paths)
+	addSlackOAuthPaths(paths)
 	addConnectorPaths(paths)
 	addCloudEventPaths(paths)
 	addInternalPaths(paths)
@@ -1045,6 +1060,31 @@ func addGoogleOAuthPaths(paths obj) {
 		"409": responseRef("409"),
 		"502": responseRef("502"),
 		"503": responseRef("503"),
+	})}
+}
+
+func addSlackOAuthPaths(paths obj) {
+	paths["/oauth/slack/start"] = obj{"get": operation("Slack OAuth", "Start Slack workspace install", "Browser-facing endpoint opened by the desktop. It creates a one-time state ticket, then redirects the browser to Slack's OAuth v2 authorize screen with the configured bot scopes.", "startSlackOAuth", nil, nil, nil, obj{
+		"302": redirectResponse("Redirect to Slack OAuth consent."),
+		"500": htmlResponse("HTML error page when the flow cannot be started."),
+		"502": htmlResponse("HTML error page when Slack OAuth is not configured."),
+	})}
+	paths["/oauth/slack/callback"] = obj{"get": operation("Slack OAuth", "Handle Slack OAuth callback", "Slack redirect target. Exchanges the authorization code server-side, parks the sealed workspace bundle under the state ticket, and returns an HTML page that deep-links back to the desktop.", "handleSlackOAuthCallback", nil, []any{
+		queryParam("state", "Opaque state ticket minted by /oauth/slack/start.", true, stringSchema("State ticket.", "state_abc123")),
+		queryParam("code", "Authorization code returned by Slack.", false, stringSchema("Authorization code.", "1234.5678.abcd")),
+		queryParam("error", "OAuth error returned by Slack when the user cancels the install.", false, stringSchema("OAuth error.", "access_denied")),
+	}, nil, obj{
+		"200": htmlResponse("HTML page that redirects to solomon-ai://oauth/slack/done."),
+		"400": htmlResponse("HTML error page for missing or expired state/code."),
+	})}
+	paths["/v1/slack-oauth/claim"] = obj{"post": operation("Slack OAuth", "Claim Slack workspace connection", "Atomically consumes a one-time Slack install ticket and persists the workspace connection (the team_id-to-user mapping the Slack events webhook resolves against). The bot token stays server-held; the response carries workspace metadata only.", "claimSlackOAuth", bearer(), nil, jsonRequest("Slack install session ticket.", ref("SlackClaimRequest"), obj{"session": "state_abc123"}), obj{
+		"200": jsonResponse("Connected workspace metadata.", ref("SlackClaimResponse"), obj{"connected": true, "teamId": "T0EXAMPLE", "teamName": "Acme", "scope": "channels:history,channels:read", "botUserId": "U0BOT"}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"409": problemResponse("The browser install has not completed yet; retry after the deep link returns.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "slack install not completed yet", "install_incomplete")),
+		"410": responseRef("410"),
+		"500": responseRef("500"),
 	})}
 }
 

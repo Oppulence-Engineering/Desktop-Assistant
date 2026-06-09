@@ -30,6 +30,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/search"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/server"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slack"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/voice"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
 	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
@@ -179,6 +180,13 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	googleH.SetOAuthFlow(cfg.GoogleAuthorizeURL, googleRedirect, cfg.DesktopDeepLinkScheme, nil)
 	workosH := workosauth.New(cfg.WorkOSClientID, cfg.WorkOSAPIKey, cfg.WorkOSBaseURL, cfg.WorkOSAuthorizeBaseURL, log)
 	workosH.SetOutboundPolicy(vendorPolicy)
+	slackH := slack.New(client, sealer, sec, log)
+	slackH.SetOutboundPolicy(vendorPolicy)
+	slackRedirect := cfg.SlackRedirectURI
+	if slackRedirect == "" {
+		slackRedirect = strings.TrimRight(cfg.AppURL, "/") + "/oauth/slack/callback"
+	}
+	slackH.SetOAuthFlow(cfg.SlackAuthorizeURL, cfg.SlackTokenURL, slackRedirect, cfg.DesktopDeepLinkScheme, cfg.SlackOAuthScopes)
 	composioH := composio.New(sec, log)
 	composioPolicy := vendorPolicy
 	composioPolicy.MaxResponseBytes = cfg.ComposioResponseMaxBytes
@@ -238,6 +246,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		Get("/oauth/google/start", googleH.Start)
 	r.With(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute)).
 		Get("/oauth/google/callback", googleH.Callback)
+
+	// Slack workspace install front door (browser-facing, no bearer): the
+	// callback parks the sealed bundle for /v1/slack-oauth/claim, which writes
+	// the team_id→user mapping the Slack webhook resolves against.
+	r.With(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute)).
+		Get("/oauth/slack/start", slackH.Start)
+	r.With(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute)).
+		Get("/oauth/slack/callback", slackH.Callback)
 
 	// Provider event webhooks (public: providers carry no bearer; each handler
 	// verifies its own credential before ingesting). Pre-auth, so the rate
@@ -324,6 +340,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Post("/claim", googleH.Claim)
 			r.Post("/refresh", googleH.Refresh)
 		})
+
+		r.With(rl.PerUserWindow(ratelimit.GroupConnections, 30, time.Minute)).
+			Post("/v1/slack-oauth/claim", slackH.Claim)
 
 		r.With(rl.PerUser(ratelimit.GroupComposio, 120)).
 			Handle("/v1/composio/*", http.HandlerFunc(composioH.Proxy))
