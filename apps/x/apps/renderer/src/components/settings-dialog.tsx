@@ -48,9 +48,14 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/theme-context";
 import { toast } from "sonner";
+import { AnimatePresence, motion } from "motion/react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { AccountSettings } from "@/components/settings/account-settings";
 import { ConnectedAccountsSettings } from "@/components/settings/connected-accounts-settings";
 import { TranscriptionSettings } from "@/components/settings/transcription-settings";
+import { McpSettings } from "@/components/settings/mcp-settings";
+import { SecuritySettings } from "@/components/settings/security-settings";
+import { SettingsSection } from "@/components/settings/settings-ui";
 import {
   PRODUCT_NAME,
   PRODUCT_PROVIDER_ID,
@@ -70,13 +75,25 @@ type ConfigTab =
   | "note-tagging"
   | "help";
 
+type SettingsGroup = "account" | "workspace" | "advanced" | "help";
+
 interface TabConfig {
   id: ConfigTab;
   label: string;
   icon: React.ElementType;
   path?: string;
   description: string;
+  group: SettingsGroup;
 }
+
+const GROUP_LABELS: Record<SettingsGroup, string | null> = {
+  account: "Account",
+  workspace: "Workspace",
+  advanced: "Advanced",
+  help: null,
+};
+
+const GROUP_ORDER: SettingsGroup[] = ["account", "workspace", "advanced", "help"];
 
 const tabs: TabConfig[] = [
   {
@@ -84,12 +101,14 @@ const tabs: TabConfig[] = [
     label: "Account",
     icon: User,
     description: `Manage your ${PRODUCT_NAME} account`,
+    group: "account",
   },
   {
     id: "connections",
     label: "Connections",
     icon: Plug,
     description: "Manage accounts and tools",
+    group: "account",
   },
   {
     id: "models",
@@ -97,38 +116,14 @@ const tabs: TabConfig[] = [
     icon: Key,
     path: "config/models.json",
     description: "Configure LLM providers and API keys",
+    group: "workspace",
   },
   {
     id: "transcription",
     label: "Transcription",
     icon: AudioLines,
     description: "Choose on-device or cloud speech-to-text",
-  },
-  {
-    id: "mcp",
-    label: "MCP Servers",
-    icon: Server,
-    path: "config/mcp.json",
-    description: "Configure MCP server connections",
-  },
-  {
-    id: "security",
-    label: "Security",
-    icon: Shield,
-    path: "config/security.json",
-    description: "Configure allowed shell commands",
-  },
-  {
-    id: "code-mode",
-    label: "Code Mode",
-    icon: Terminal,
-    description: "Delegate coding tasks to Claude Code or Codex",
-  },
-  {
-    id: "appearance",
-    label: "Appearance",
-    icon: Palette,
-    description: "Customize the look and feel",
+    group: "workspace",
   },
   {
     id: "note-tagging",
@@ -136,12 +131,44 @@ const tabs: TabConfig[] = [
     icon: Tags,
     path: "config/tags.json",
     description: "Configure tags for notes and emails",
+    group: "workspace",
+  },
+  {
+    id: "appearance",
+    label: "Appearance",
+    icon: Palette,
+    description: "Customize the look and feel",
+    group: "workspace",
+  },
+  {
+    id: "mcp",
+    label: "MCP Servers",
+    icon: Server,
+    path: "config/mcp.json",
+    description: "Configure MCP server connections",
+    group: "advanced",
+  },
+  {
+    id: "security",
+    label: "Security",
+    icon: Shield,
+    path: "config/security.json",
+    description: "Configure allowed shell commands and file access",
+    group: "advanced",
+  },
+  {
+    id: "code-mode",
+    label: "Code Mode",
+    icon: Terminal,
+    description: "Delegate coding tasks to Claude Code or Codex",
+    group: "advanced",
   },
   {
     id: "help",
     label: "Help",
     icon: HelpCircle,
     description: "Get help and support",
+    group: "help",
   },
 ];
 
@@ -2351,11 +2378,6 @@ export function SettingsDialog({
     [onOpenChange],
   );
   const [activeTab, setActiveTab] = useState<ConfigTab>(defaultTab);
-  const [content, setContent] = useState("");
-  const [originalContent, setOriginalContent] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [solomonConnected, setSolomonConnected] = useState(false);
 
   // Reset to the requested default tab each time the dialog is opened
@@ -2383,230 +2405,142 @@ export function SettingsDialog({
   );
 
   const activeTabConfig = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0];
-  const isJsonTab = activeTab === "mcp" || activeTab === "security";
 
-  const formatJson = (jsonString: string): string => {
-    try {
-      return JSON.stringify(JSON.parse(jsonString), null, 2);
-    } catch {
-      return jsonString;
-    }
-  };
-
-  const loadConfig = useCallback(async (tab: ConfigTab) => {
-    if (
-      tab === "appearance" ||
-      tab === "models" ||
-      tab === "note-tagging" ||
-      tab === "account" ||
-      tab === "connections" ||
-      tab === "help" ||
-      tab === "code-mode"
-    )
-      return;
-    const tabConfig = tabs.find((t) => t.id === tab)!;
-    if (!tabConfig.path) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await window.ipc.invoke("workspace:readFile", {
-        path: tabConfig.path,
-      });
-      const formattedContent = formatJson(result.data);
-      setContent(formattedContent);
-      setOriginalContent(formattedContent);
-    } catch {
-      setError(`Failed to load ${tabConfig.label} config`);
-      setContent("");
-      setOriginalContent("");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const saveConfig = async () => {
-    if (!isJsonTab || !activeTabConfig.path) return;
-    setSaving(true);
-    setError(null);
-    try {
-      JSON.parse(content);
-      await window.ipc.invoke("workspace:writeFile", {
-        path: activeTabConfig.path,
-        data: content,
-      });
-      setOriginalContent(content);
-    } catch (err) {
-      if (err instanceof SyntaxError) {
-        setError("Invalid JSON syntax");
-      } else {
-        setError(`Failed to save ${activeTabConfig.label} config`);
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleFormat = () => {
-    setContent(formatJson(content));
-  };
-
-  const hasChanges = content !== originalContent;
-
-  useEffect(() => {
-    if (open && isJsonTab) {
-      loadConfig(activeTab);
-    }
-  }, [open, activeTab, isJsonTab, loadConfig]);
-
-  const handleTabChange = (tab: ConfigTab) => {
-    if (isJsonTab && hasChanges) {
-      if (!confirm("You have unsaved changes. Discard them?")) {
-        return;
-      }
-    }
-    setActiveTab(tab);
-  };
+  const ActiveIcon = activeTabConfig.icon;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent className="rowboat-settings max-w-[920px]! w-[920px] h-[620px] p-0 gap-0 overflow-hidden">
+      <DialogContent className="rowboat-settings w-[1000px]! max-w-[96vw]! h-[660px] max-h-[88vh] p-0 gap-0 overflow-hidden">
         <div className="flex h-full overflow-hidden">
-          {/* Sidebar nav — ElevenLabs developer-console rail */}
-          <div className="w-56 shrink-0 border-r bg-muted/20 p-3 flex flex-col">
-            <div className="px-2.5 pb-2 pt-1.5">
+          {/* Sidebar nav — grouped, ElevenLabs developer-console rail */}
+          <div className="flex w-60 shrink-0 flex-col border-r bg-muted/20">
+            <div className="px-4 pb-1 pt-4">
               <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Settings
               </h2>
             </div>
-            <nav className="flex flex-col gap-0.5">
-              {visibleTabs.map((tab) => {
-                const active = activeTab === tab.id;
+            <ScrollArea className="flex-1 px-2.5 pb-3">
+              {GROUP_ORDER.map((group) => {
+                const groupTabs = visibleTabs.filter((t) => t.group === group);
+                if (groupTabs.length === 0) return null;
+                const groupLabel = GROUP_LABELS[group];
                 return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
-                    className={cn(
-                      "group flex items-center gap-2.5 rounded-none px-2.5 py-2 text-sm font-medium text-left transition-colors",
-                      active
-                        ? "bg-background text-foreground ring-1 ring-border shadow-[0_1px_2px_rgb(16_24_40_/_0.06)]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+                  <div key={group} className="mb-1 mt-2 first:mt-1">
+                    {groupLabel && (
+                      <div className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                        {groupLabel}
+                      </div>
                     )}
-                  >
-                    <tab.icon
-                      className={cn(
-                        "size-4 shrink-0 transition-colors",
-                        active
-                          ? "text-foreground"
-                          : "text-muted-foreground group-hover:text-foreground",
-                      )}
-                    />
-                    {tab.label}
-                  </button>
+                    <nav className="flex flex-col gap-0.5">
+                      {groupTabs.map((tab) => {
+                        const active = activeTab === tab.id;
+                        return (
+                          <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={cn(
+                              "group flex items-center gap-2.5 rounded-none px-2.5 py-2 text-sm font-medium text-left transition-colors",
+                              active
+                                ? "bg-background text-foreground ring-1 ring-border shadow-[0_1px_2px_rgb(16_24_40_/_0.06)]"
+                                : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+                            )}
+                          >
+                            <tab.icon
+                              className={cn(
+                                "size-4 shrink-0 transition-colors",
+                                active
+                                  ? "text-foreground"
+                                  : "text-muted-foreground group-hover:text-foreground",
+                              )}
+                            />
+                            {tab.label}
+                          </button>
+                        );
+                      })}
+                    </nav>
+                  </div>
                 );
               })}
-            </nav>
+            </ScrollArea>
           </div>
 
           {/* Main content */}
-          <div className="flex-1 flex flex-col min-w-0 min-h-0">
+          <div className="flex min-w-0 flex-1 flex-col">
             {/* Header */}
-            <div className="px-5 py-4 border-b">
-              <h3 className="text-[15px] font-semibold tracking-tight">{activeTabConfig.label}</h3>
-              <p className="text-[13px] text-muted-foreground mt-1">
-                {activeTab === "models" && solomonConnected
-                  ? "Select your default models"
-                  : activeTabConfig.description}
-              </p>
-            </div>
-
-            {/* Content */}
-            <div
-              className={cn(
-                "flex-1 px-5 py-4 min-h-0",
-                activeTab === "models" ||
-                  activeTab === "connections" ||
-                  activeTab === "account" ||
-                  activeTab === "code-mode"
-                  ? "overflow-y-auto"
-                  : activeTab === "note-tagging"
-                    ? "overflow-hidden flex flex-col"
-                    : "overflow-hidden",
-              )}
-            >
-              {activeTab === "account" ? (
-                <AccountSettings dialogOpen={open} />
-              ) : activeTab === "connections" ? (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-semibold">Primary accounts</h4>
-                    <ConnectedAccountsSettings dialogOpen={open} />
-                  </div>
-                  <Separator />
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-semibold">Library</h4>
-                    <ToolsLibrarySettings dialogOpen={open} rowboatConnected={solomonConnected} />
-                  </div>
-                </div>
-              ) : activeTab === "models" ? (
-                solomonConnected ? (
-                  <SolomonModelSettings dialogOpen={open} />
-                ) : (
-                  <ModelSettings dialogOpen={open} />
-                )
-              ) : activeTab === "transcription" ? (
-                <TranscriptionSettings dialogOpen={open} />
-              ) : activeTab === "note-tagging" ? (
-                <NoteTaggingSettings dialogOpen={open} />
-              ) : activeTab === "appearance" ? (
-                <AppearanceSettings />
-              ) : activeTab === "help" ? (
-                <HelpSettings />
-              ) : activeTab === "code-mode" ? (
-                <CodeModeSettings dialogOpen={open} />
-              ) : loading ? (
-                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-                  Loading...
-                </div>
-              ) : (
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-full resize-none bg-muted/50 rounded-none p-3 font-mono text-sm border-0 focus:outline-none focus:ring-1 focus:ring-ring"
-                  spellCheck={false}
-                  placeholder="Loading configuration..."
-                />
-              )}
-            </div>
-
-            {/* Footer - only show for JSON config tabs */}
-            {isJsonTab && (
-              <div className="px-4 py-3 border-t flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  {error && <span className="text-xs text-destructive">{error}</span>}
-                  {hasChanges && !error && (
-                    <span className="text-xs text-muted-foreground">Unsaved changes</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleFormat}
-                    disabled={loading || saving}
-                  >
-                    Format
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={saveConfig}
-                    disabled={loading || saving || !hasChanges}
-                  >
-                    {saving ? "Saving..." : "Save"}
-                  </Button>
-                </div>
+            <div className="flex items-center gap-3 border-b px-6 py-4">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-none border bg-card text-foreground">
+                <ActiveIcon className="size-[18px]" />
               </div>
-            )}
+              <div className="min-w-0">
+                <h3 className="text-[15px] font-semibold tracking-tight">
+                  {activeTabConfig.label}
+                </h3>
+                <p className="mt-0.5 text-[13px] text-muted-foreground">
+                  {activeTab === "models" && solomonConnected
+                    ? "Select your default models"
+                    : activeTabConfig.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Content — animated per-tab */}
+            <div className="min-h-0 flex-1">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex h-full min-h-0 flex-col"
+                >
+                  {activeTab === "note-tagging" ? (
+                    // NoteTaggingSettings owns its own internal scroll.
+                    <div className="flex min-h-0 flex-1 flex-col px-6 py-5">
+                      <NoteTaggingSettings dialogOpen={open} />
+                    </div>
+                  ) : (
+                    <ScrollArea className="flex-1 px-6 py-5">
+                      {activeTab === "account" ? (
+                        <AccountSettings dialogOpen={open} />
+                      ) : activeTab === "connections" ? (
+                        <div className="space-y-6">
+                          <SettingsSection title="Primary accounts">
+                            <ConnectedAccountsSettings dialogOpen={open} />
+                          </SettingsSection>
+                          <Separator />
+                          <SettingsSection title="Library">
+                            <ToolsLibrarySettings
+                              dialogOpen={open}
+                              rowboatConnected={solomonConnected}
+                            />
+                          </SettingsSection>
+                        </div>
+                      ) : activeTab === "models" ? (
+                        solomonConnected ? (
+                          <SolomonModelSettings dialogOpen={open} />
+                        ) : (
+                          <ModelSettings dialogOpen={open} />
+                        )
+                      ) : activeTab === "transcription" ? (
+                        <TranscriptionSettings dialogOpen={open} />
+                      ) : activeTab === "appearance" ? (
+                        <AppearanceSettings />
+                      ) : activeTab === "help" ? (
+                        <HelpSettings />
+                      ) : activeTab === "code-mode" ? (
+                        <CodeModeSettings dialogOpen={open} />
+                      ) : activeTab === "mcp" ? (
+                        <McpSettings dialogOpen={open} />
+                      ) : activeTab === "security" ? (
+                        <SecuritySettings dialogOpen={open} />
+                      ) : null}
+                    </ScrollArea>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </DialogContent>
