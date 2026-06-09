@@ -187,6 +187,17 @@ type Config struct {
 	CloudSchedulerLeaseTTL time.Duration
 	CloudSchedulerTimezone string // IANA name; v1 is "UTC"
 	CloudSchedulerOwner    string // lease owner identity; defaults to hostname
+
+	// Cloud event ingestion + routing (RFC 003). Ingestion (/v1/events and
+	// provider webhooks) is always mounted; ROUTING — the Temporal workflow that
+	// matches events to tasks via LLM and fires trigger=event runs — is gated.
+	// Routing requires Temporal, exactly like the run path.
+	CloudEventsRoutingEnabled  bool
+	CloudEventsMatchThreshold  float64 // pass-2 confidence gate; fixed in v1
+	CloudEventsRouterModel     string  // model for pass-1/pass-2 routing calls
+	CloudEventsMaxPayloadBytes int     // reject larger payloads before sealing
+	SlackSigningSecret         string  // verifies /v1/webhooks/slack signatures
+	GoogleWebhookToken         string  // shared token for /v1/webhooks/google
 }
 
 // Load reads configuration from the environment, applying defaults.
@@ -319,6 +330,15 @@ func Load() Config {
 		CloudSchedulerLeaseTTL: getdur("CLOUD_SCHEDULER_LEASE_TTL", 150*time.Second),
 		CloudSchedulerTimezone: getenv("CLOUD_SCHEDULER_TIMEZONE", "UTC"),
 		CloudSchedulerOwner:    getenv("CLOUD_SCHEDULER_OWNER", defaultHostname()),
+
+		CloudEventsRoutingEnabled: getbool("CLOUD_EVENTS_ROUTING_ENABLED", false),
+		CloudEventsMatchThreshold: getfloat("CLOUD_EVENTS_MATCH_THRESHOLD", 0.7),
+		// Routing is two cheap bounded calls per event; default to the cheapest
+		// priced model (see internal/pricing DefaultTable).
+		CloudEventsRouterModel:     getenv("CLOUD_EVENTS_ROUTER_MODEL", "anthropic/claude-haiku-4-5"),
+		CloudEventsMaxPayloadBytes: getint("CLOUD_EVENTS_MAX_PAYLOAD_BYTES", 256<<10),
+		SlackSigningSecret:         getenv("SLACK_SIGNING_SECRET", ""),
+		GoogleWebhookToken:         getenv("GOOGLE_WEBHOOK_TOKEN", ""),
 	}
 }
 
@@ -433,6 +453,19 @@ func (c Config) Validate() error {
 		if tz := strings.TrimSpace(c.CloudSchedulerTimezone); tz != "" && !strings.EqualFold(tz, "UTC") {
 			return fmt.Errorf("CLOUD_SCHEDULER_TIMEZONE must be UTC in v1 (per-task timezone is a committed fast-follow); got %q", c.CloudSchedulerTimezone)
 		}
+	}
+	if c.CloudEventsRoutingEnabled {
+		// The router runs as a Temporal workflow; without Temporal events would
+		// pile up pending forever. Fail fast at boot.
+		if !c.TemporalEnabled {
+			return fmt.Errorf("TEMPORAL_ENABLED must be true when CLOUD_EVENTS_ROUTING_ENABLED=true")
+		}
+	}
+	if c.CloudEventsMatchThreshold <= 0 || c.CloudEventsMatchThreshold > 1 {
+		return fmt.Errorf("CLOUD_EVENTS_MATCH_THRESHOLD must be in (0, 1]; got %v", c.CloudEventsMatchThreshold)
+	}
+	if c.CloudEventsMaxPayloadBytes <= 0 {
+		return fmt.Errorf("CLOUD_EVENTS_MAX_PAYLOAD_BYTES must be > 0")
 	}
 	if c.IsProduction() {
 		return c.validateProduction()
@@ -558,6 +591,17 @@ func getint64(key string, def int64) int64 {
 			return n
 		}
 		log.Printf("appconfig: invalid %s=%q (%v); using default %d", key, v, err, def)
+	}
+	return def
+}
+
+func getfloat(key string, def float64) float64 {
+	if v, ok := os.LookupEnv(key); ok && v != "" {
+		f, err := strconv.ParseFloat(v, 64)
+		if err == nil {
+			return f
+		}
+		log.Printf("appconfig: invalid %s=%q (%v); using default %v", key, v, err, def)
 	}
 	return def
 }
