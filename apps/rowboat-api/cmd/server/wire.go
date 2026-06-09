@@ -13,6 +13,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtasks"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composio"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/config"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
@@ -179,6 +180,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	composioPolicy.MaxResponseBytes = cfg.ComposioResponseMaxBytes
 	composioH.SetOutboundPolicy(composioPolicy)
 
+	// Cloud event ingestion (RFC 003). The route controller is wired only when
+	// routing is enabled (it needs Temporal); without it events are stored with
+	// routing_status=skipped.
+	cloudEventsH := cloudevents.New(client, sealer, nil, cloudevents.Config{
+		MaxPayloadBytes:    cfg.CloudEventsMaxPayloadBytes,
+		SlackSigningSecret: cfg.SlackSigningSecret,
+		GoogleWebhookToken: cfg.GoogleWebhookToken,
+	}, log)
+
 	registry, err := connectors.LoadRegistry([]byte(cfg.ConnectorsJSON))
 	if err != nil {
 		return err
@@ -228,6 +238,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// Server-to-server internal API (static shared secret).
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
 		Post("/v1/internal/connections/invalidate", connectorsH.Invalidate)
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
+		Post("/v1/internal/events", cloudEventsH.IngestInternal)
 
 	// Admin GraphQL (entgql + gqlgen) over the full entity graph. Guarded by
 	// the internal secret, which also marks the context internal so the
@@ -299,6 +311,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 
 		r.With(rl.PerUser(ratelimit.GroupComposio, 120)).
 			Handle("/v1/composio/*", http.HandlerFunc(composioH.Proxy))
+
+		// Cloud event ingestion + audit reads (RFC 003).
+		r.Route("/v1/events", func(r chi.Router) {
+			r.Use(rl.PerUserWindow(ratelimit.GroupEvents, 120, time.Minute))
+			r.Post("/", cloudEventsH.Ingest)
+			r.Get("/", cloudEventsH.List)
+			r.Get("/{eventId}", cloudEventsH.Get)
+			r.Get("/{eventId}/runs", cloudEventsH.Runs)
+		})
 
 		r.Get("/v1/connectors", connectorsH.List)
 		r.Route("/v1/connections", func(r chi.Router) {

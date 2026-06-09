@@ -1551,92 +1551,309 @@
         "type": "object"
       },
       "CloudEvent": {
+        "description": "Stored cloud event. payload and routing appear only on the detail endpoint.",
         "properties": {
-          "created_at": {
-            "description": "Row creation timestamp.",
-            "example": "2026-06-04T20:38:00Z",
-            "format": "date-time",
+          "dedupeKey": {
+            "description": "Idempotency anchor.",
+            "example": "gmail:msg:msg_123",
             "type": "string"
           },
-          "dedupe_key": {
-            "type": "string"
-          },
-          "event_type": {
+          "eventType": {
+            "description": "Provider-specific event type.",
+            "example": "email.received",
+            "nullable": true,
             "type": "string"
           },
           "id": {
             "description": "Stable UUID primary key.",
             "example": "123e4567-e89b-12d3-a456-426614174000",
-            "format": "uuid",
             "type": "string"
           },
-          "matched_task_count": {
+          "matchedTaskCount": {
+            "description": "Tasks the router matched.",
+            "example": 1,
             "type": "integer"
           },
-          "occurred_at": {
-            "format": "date-time",
+          "occurredAt": {
+            "description": "RFC3339 provider event time.",
+            "example": "2026-06-06T14:00:00Z",
+            "nullable": true,
             "type": "string"
           },
-          "payload_ciphertext": {
-            "format": "byte",
+          "payload": {
+            "additionalProperties": true,
+            "description": "Decrypted normalized provider payload. Detail endpoint only.",
+            "type": "object"
+          },
+          "receivedAt": {
+            "description": "RFC3339 API receipt time.",
+            "example": "2026-06-06T14:00:02Z",
             "type": "string"
           },
-          "received_at": {
-            "format": "date-time",
+          "routedAt": {
+            "description": "RFC3339 router completion time.",
+            "example": "2026-06-06T14:00:09Z",
+            "nullable": true,
             "type": "string"
           },
-          "routed_at": {
-            "format": "date-time",
-            "type": "string"
+          "routing": {
+            "additionalProperties": true,
+            "description": "Routing decision summary (threshold, prompt versions, per-task decisions). Detail endpoint only.",
+            "type": "object"
           },
-          "routing_json": {
+          "routingStatus": {
+            "description": "Routing status.",
+            "enum": [
+              "pending",
+              "routed",
+              "skipped",
+              "failed"
+            ],
+            "example": "routed",
             "type": "string"
-          },
-          "routing_status": {
-            "type": "string"
-          },
-          "runs": {
-            "items": {
-              "$ref": "#/components/schemas/BackgroundTaskRun"
-            },
-            "type": "array"
           },
           "source": {
+            "description": "Event source.",
+            "enum": [
+              "gmail",
+              "google_calendar",
+              "slack",
+              "webhook",
+              "internal"
+            ],
+            "example": "gmail",
             "type": "string"
           },
-          "source_account_id": {
+          "sourceAccountId": {
+            "description": "Connected-account key.",
+            "example": "acct_google_primary",
+            "nullable": true,
             "type": "string"
           },
-          "source_event_id": {
+          "sourceEventId": {
+            "description": "Provider-side event id.",
+            "example": "evt_123",
+            "nullable": true,
             "type": "string"
           },
           "subject": {
+            "description": "Short title.",
+            "example": "Invoice #4821 dispute",
+            "nullable": true,
             "type": "string"
           },
           "text": {
+            "description": "Human-readable gist.",
+            "example": "Acme disputed invoice #4821.",
+            "nullable": true,
             "type": "string"
-          },
-          "updated_at": {
-            "description": "Last row update timestamp.",
-            "example": "2026-06-04T20:39:00Z",
-            "format": "date-time",
-            "type": "string"
-          },
-          "user": {
-            "$ref": "#/components/schemas/User",
-            "description": "User that owns this row."
           }
         },
         "required": [
           "id",
-          "created_at",
-          "updated_at",
           "source",
-          "dedupe_key",
-          "routing_status",
-          "matched_task_count",
-          "received_at",
-          "user"
+          "dedupeKey",
+          "routingStatus",
+          "receivedAt"
+        ],
+        "type": "object"
+      },
+      "CloudEventIngestRequest": {
+        "description": "Normalized cloud event envelope posted by internal services, tests, or the desktop (RFC 003).",
+        "properties": {
+          "dedupeKey": {
+            "description": "Required idempotency anchor, unique per (user, source).",
+            "example": "gmail:msg:msg_123",
+            "type": "string"
+          },
+          "eventType": {
+            "description": "Provider-specific event type.",
+            "example": "email.received",
+            "nullable": true,
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "RFC3339 provider event time.",
+            "example": "2026-06-06T14:00:00Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "description": "Full normalized provider object. Sealed at rest; returned only by the event detail endpoint.",
+            "type": "object"
+          },
+          "source": {
+            "description": "Event source.",
+            "enum": [
+              "gmail",
+              "google_calendar",
+              "slack",
+              "webhook",
+              "internal"
+            ],
+            "example": "internal",
+            "type": "string"
+          },
+          "sourceAccountId": {
+            "description": "Connected-account key the event belongs to.",
+            "example": "acct_google_primary",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceEventId": {
+            "description": "Provider-side event id.",
+            "example": "evt_123",
+            "nullable": true,
+            "type": "string"
+          },
+          "subject": {
+            "description": "Short title used in UI and routing prompts.",
+            "example": "Invoice #4821 dispute",
+            "nullable": true,
+            "type": "string"
+          },
+          "text": {
+            "description": "Human-readable gist used in routing prompts.",
+            "example": "Acme disputed invoice #4821 for $18,000.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "dedupeKey"
+        ],
+        "type": "object"
+      },
+      "CloudEventIngestResponse": {
+        "description": "Ingestion result. 202 for a fresh event; 200 with deduped=true for an idempotent replay.",
+        "properties": {
+          "deduped": {
+            "description": "Whether this post matched an existing (user, source, dedupeKey) event.",
+            "example": false,
+            "type": "boolean"
+          },
+          "eventId": {
+            "description": "Cloud event id.",
+            "example": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+            "type": "string"
+          },
+          "matchedTaskCount": {
+            "description": "Tasks the router matched (populated once routed).",
+            "example": 0,
+            "type": "integer"
+          },
+          "routingStatus": {
+            "description": "Routing status at response time.",
+            "enum": [
+              "pending",
+              "routed",
+              "skipped",
+              "failed"
+            ],
+            "example": "pending",
+            "type": "string"
+          }
+        },
+        "required": [
+          "eventId",
+          "routingStatus",
+          "deduped"
+        ],
+        "type": "object"
+      },
+      "CloudEventListResponse": {
+        "description": "Cloud event page ordered by receivedAt descending.",
+        "properties": {
+          "events": {
+            "description": "Events in this page (payload omitted).",
+            "items": {
+              "$ref": "#/components/schemas/CloudEvent"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "description": "Opaque cursor for the next page; empty when exhausted.",
+            "example": "2026-06-06T14:00:02.123456Z|0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "events"
+        ],
+        "type": "object"
+      },
+      "CloudEventRun": {
+        "description": "Run triggered by a cloud event.",
+        "properties": {
+          "completedAt": {
+            "description": "RFC3339 run completion time.",
+            "example": "2026-06-06T14:02:31Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "RFC3339 run creation time.",
+            "example": "2026-06-06T14:00:10Z",
+            "type": "string"
+          },
+          "executor": {
+            "description": "Run executor.",
+            "enum": [
+              "api"
+            ],
+            "example": "api",
+            "type": "string"
+          },
+          "runId": {
+            "description": "Run id.",
+            "example": "event-7e0a1f2b",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "taskSlug": {
+            "description": "Slug of the task the run executed.",
+            "example": "acme-ar-watch",
+            "nullable": true,
+            "type": "string"
+          },
+          "trigger": {
+            "description": "Run trigger.",
+            "enum": [
+              "event"
+            ],
+            "example": "event",
+            "type": "string"
+          }
+        },
+        "required": [
+          "runId",
+          "status",
+          "trigger",
+          "executor",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CloudEventRunsResponse": {
+        "description": "Runs triggered by one cloud event.",
+        "properties": {
+          "runs": {
+            "description": "Linked runs.",
+            "items": {
+              "$ref": "#/components/schemas/CloudEventRun"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "runs"
         ],
         "type": "object"
       },
@@ -2115,6 +2332,39 @@
         },
         "required": [
           "status"
+        ],
+        "type": "object"
+      },
+      "InternalCloudEventIngestRequest": {
+        "description": "Server-to-server cloud event ingestion: the caller names the event owner explicitly.",
+        "properties": {
+          "dedupeKey": {
+            "description": "Required idempotency anchor.",
+            "example": "internal:job:42",
+            "type": "string"
+          },
+          "source": {
+            "description": "Event source.",
+            "enum": [
+              "gmail",
+              "google_calendar",
+              "slack",
+              "webhook",
+              "internal"
+            ],
+            "example": "internal",
+            "type": "string"
+          },
+          "userId": {
+            "description": "Rowboat user id (UUID) owning the event.",
+            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "source",
+          "dedupeKey"
         ],
         "type": "object"
       },
@@ -6553,6 +6803,327 @@
         ]
       }
     },
+    "/v1/events": {
+      "get": {
+        "description": "Lists the authenticated user's ingested events ordered by receivedAt descending. Payload is omitted from list responses; fetch the detail endpoint for it.",
+        "operationId": "listCloudEvents",
+        "parameters": [
+          {
+            "description": "Filter by event source.",
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "description": "Source.",
+              "example": "gmail",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by routing status.",
+            "in": "query",
+            "name": "routingStatus",
+            "required": false,
+            "schema": {
+              "description": "Routing status.",
+              "example": "routed",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only events received at or after this RFC3339 time.",
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "description": "RFC3339 lower bound.",
+              "example": "2026-06-06T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only events received at or before this RFC3339 time.",
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "description": "RFC3339 upper bound.",
+              "example": "2026-06-07T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size (1-500, default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "description": "Page size.",
+              "example": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor from a prior page's nextCursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "description": "Pagination cursor.",
+              "example": "",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "events": [],
+                  "nextCursor": ""
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventListResponse"
+                }
+              }
+            },
+            "description": "Event page."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List cloud events",
+        "tags": [
+          "Cloud Events"
+        ]
+      },
+      "post": {
+        "description": "Stores one normalized event idempotently on (user, source, dedupeKey) and enqueues async routing to matching API-target background tasks. Returns 202 for a fresh event and 200 with deduped=true for a replay.",
+        "operationId": "ingestCloudEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "dedupeKey": "gmail:msg:msg_123",
+                "eventType": "email.received",
+                "payload": {
+                  "messageId": "msg_123",
+                  "provider": "gmail"
+                },
+                "source": "internal",
+                "subject": "Invoice #4821 dispute",
+                "text": "Acme disputed invoice #4821 for $18,000 due to a pricing mismatch."
+              },
+              "schema": {
+                "$ref": "#/components/schemas/CloudEventIngestRequest"
+              }
+            }
+          },
+          "description": "Normalized event envelope.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": true,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "matchedTaskCount": 1,
+                  "routingStatus": "routed"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Duplicate dedupeKey: existing event returned, routing not re-run."
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": false,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "pending"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Event stored, routing enqueued."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "payload_too_large",
+                  "detail": "payload exceeds 262144 bytes",
+                  "requestId": "req-abc123",
+                  "status": 413,
+                  "title": "Request Entity Too Large",
+                  "type": "https://api.rowboat.dev/problems/payload_too_large"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Payload exceeds the configured size cap."
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Ingest a cloud event",
+        "tags": [
+          "Cloud Events"
+        ]
+      }
+    },
+    "/v1/events/{eventId}": {
+      "get": {
+        "description": "Returns one event including the decrypted payload and the routing decision summary.",
+        "operationId": "getCloudEvent",
+        "parameters": [
+          {
+            "description": "Cloud event id.",
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "description": "Event id.",
+              "example": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "dedupeKey": "gmail:msg:msg_123",
+                  "id": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "matchedTaskCount": 1,
+                  "receivedAt": "2026-06-06T14:00:02Z",
+                  "routingStatus": "routed",
+                  "source": "internal"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEvent"
+                }
+              }
+            },
+            "description": "Event detail."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get a cloud event",
+        "tags": [
+          "Cloud Events"
+        ]
+      }
+    },
+    "/v1/events/{eventId}/runs": {
+      "get": {
+        "description": "Returns the trigger=event runs this event fired — the event-to-run audit link.",
+        "operationId": "listCloudEventRuns",
+        "parameters": [
+          {
+            "description": "Cloud event id.",
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "description": "Event id.",
+              "example": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "runs": [
+                    {
+                      "createdAt": "2026-06-06T14:00:10Z",
+                      "executor": "api",
+                      "runId": "event-7e0a1f2b",
+                      "status": "succeeded",
+                      "taskSlug": "acme-ar-watch",
+                      "trigger": "event"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventRunsResponse"
+                }
+              }
+            },
+            "description": "Linked runs."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List runs triggered by a cloud event",
+        "tags": [
+          "Cloud Events"
+        ]
+      }
+    },
     "/v1/google-oauth/claim": {
       "post": {
         "description": "Consumes a one-time Google OAuth session ticket, verifies it belongs to the authenticated user when bound, persists the refresh token when present, and returns the token bundle to the desktop.",
@@ -6734,6 +7305,79 @@
           }
         ],
         "summary": "Force-disconnect a connector",
+        "tags": [
+          "Internal"
+        ]
+      }
+    },
+    "/v1/internal/events": {
+      "post": {
+        "description": "Internal-secret ingestion used by backend services and test fixtures. Identical to /v1/events except the caller names the owning userId explicitly.",
+        "operationId": "ingestInternalCloudEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "dedupeKey": "internal:test:1",
+                "source": "internal",
+                "subject": "Synthetic event",
+                "userId": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/InternalCloudEventIngestRequest"
+              }
+            }
+          },
+          "description": "Normalized event envelope with explicit owner.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": true,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "routed"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Duplicate dedupeKey: existing event returned."
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": false,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "pending"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Event stored, routing enqueued."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "InternalSecret": []
+          }
+        ],
+        "summary": "Ingest a cloud event (server-to-server)",
         "tags": [
           "Internal"
         ]

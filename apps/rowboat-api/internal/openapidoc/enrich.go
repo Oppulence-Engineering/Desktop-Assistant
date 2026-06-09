@@ -161,6 +161,7 @@ func addRuntimeSchemas(schemas obj) {
 	addVendorProxySchemas(schemas)
 	addOAuthSchemas(schemas)
 	addConnectorSchemas(schemas)
+	addCloudEventSchemas(schemas)
 	addInternalSchemas(schemas)
 }
 
@@ -525,6 +526,64 @@ func addConnectorSchemas(schemas obj) {
 	}, "access_token", "token_type", "mcpUrl")
 }
 
+func addCloudEventSchemas(schemas obj) {
+	schemas["CloudEventIngestRequest"] = objectSchema("Normalized cloud event envelope posted by internal services, tests, or the desktop (RFC 003).", obj{
+		"source":          stringEnum("Event source.", "internal", "gmail", "google_calendar", "slack", "webhook", "internal"),
+		"sourceEventId":   stringSchema("Provider-side event id.", "evt_123", nullable()),
+		"sourceAccountId": stringSchema("Connected-account key the event belongs to.", "acct_google_primary", nullable()),
+		"eventType":       stringSchema("Provider-specific event type.", "email.received", nullable()),
+		"subject":         stringSchema("Short title used in UI and routing prompts.", "Invoice #4821 dispute", nullable()),
+		"text":            stringSchema("Human-readable gist used in routing prompts.", "Acme disputed invoice #4821 for $18,000.", nullable()),
+		"payload":         freeFormSchema("Full normalized provider object. Sealed at rest; returned only by the event detail endpoint."),
+		"dedupeKey":       stringSchema("Required idempotency anchor, unique per (user, source).", "gmail:msg:msg_123"),
+		"occurredAt":      stringSchema("RFC3339 provider event time.", "2026-06-06T14:00:00Z", nullable()),
+	}, "source", "dedupeKey")
+	schemas["CloudEventIngestResponse"] = objectSchema("Ingestion result. 202 for a fresh event; 200 with deduped=true for an idempotent replay.", obj{
+		"eventId":          stringSchema("Cloud event id.", "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111"),
+		"routingStatus":    stringEnum("Routing status at response time.", "pending", "pending", "routed", "skipped", "failed"),
+		"deduped":          boolSchema("Whether this post matched an existing (user, source, dedupeKey) event.", false),
+		"matchedTaskCount": intSchema("Tasks the router matched (populated once routed).", 0),
+	}, "eventId", "routingStatus", "deduped")
+	schemas["CloudEvent"] = objectSchema("Stored cloud event. payload and routing appear only on the detail endpoint.", obj{
+		"id":               stringSchema("Cloud event id.", "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111"),
+		"source":           stringEnum("Event source.", "gmail", "gmail", "google_calendar", "slack", "webhook", "internal"),
+		"sourceEventId":    stringSchema("Provider-side event id.", "evt_123", nullable()),
+		"sourceAccountId":  stringSchema("Connected-account key.", "acct_google_primary", nullable()),
+		"eventType":        stringSchema("Provider-specific event type.", "email.received", nullable()),
+		"subject":          stringSchema("Short title.", "Invoice #4821 dispute", nullable()),
+		"text":             stringSchema("Human-readable gist.", "Acme disputed invoice #4821.", nullable()),
+		"dedupeKey":        stringSchema("Idempotency anchor.", "gmail:msg:msg_123"),
+		"routingStatus":    stringEnum("Routing status.", "routed", "pending", "routed", "skipped", "failed"),
+		"matchedTaskCount": intSchema("Tasks the router matched.", 1),
+		"occurredAt":       stringSchema("RFC3339 provider event time.", "2026-06-06T14:00:00Z", nullable()),
+		"receivedAt":       stringSchema("RFC3339 API receipt time.", "2026-06-06T14:00:02Z"),
+		"routedAt":         stringSchema("RFC3339 router completion time.", "2026-06-06T14:00:09Z", nullable()),
+		"routing":          freeFormSchema("Routing decision summary (threshold, prompt versions, per-task decisions). Detail endpoint only."),
+		"payload":          freeFormSchema("Decrypted normalized provider payload. Detail endpoint only."),
+	}, "id", "source", "dedupeKey", "routingStatus", "receivedAt")
+	schemas["CloudEventListResponse"] = objectSchema("Cloud event page ordered by receivedAt descending.", obj{
+		"events":     arraySchema("Events in this page (payload omitted).", ref("CloudEvent")),
+		"nextCursor": stringSchema("Opaque cursor for the next page; empty when exhausted.", "2026-06-06T14:00:02.123456Z|0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", nullable()),
+	}, "events")
+	schemas["CloudEventRun"] = objectSchema("Run triggered by a cloud event.", obj{
+		"runId":       stringSchema("Run id.", "event-7e0a1f2b"),
+		"status":      stringSchema("Run status.", "succeeded"),
+		"trigger":     stringEnum("Run trigger.", "event", "event"),
+		"executor":    stringEnum("Run executor.", "api", "api"),
+		"taskSlug":    stringSchema("Slug of the task the run executed.", "acme-ar-watch", nullable()),
+		"createdAt":   stringSchema("RFC3339 run creation time.", "2026-06-06T14:00:10Z"),
+		"completedAt": stringSchema("RFC3339 run completion time.", "2026-06-06T14:02:31Z", nullable()),
+	}, "runId", "status", "trigger", "executor", "createdAt")
+	schemas["CloudEventRunsResponse"] = objectSchema("Runs triggered by one cloud event.", obj{
+		"runs": arraySchema("Linked runs.", ref("CloudEventRun")),
+	}, "runs")
+	schemas["InternalCloudEventIngestRequest"] = objectSchema("Server-to-server cloud event ingestion: the caller names the event owner explicitly.", obj{
+		"userId": stringSchema("Rowboat user id (UUID) owning the event.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+		"source": stringEnum("Event source.", "internal", "gmail", "google_calendar", "slack", "webhook", "internal"),
+		"dedupeKey": stringSchema("Required idempotency anchor.", "internal:job:42"),
+	}, "userId", "source", "dedupeKey")
+}
+
 func addInternalSchemas(schemas obj) {
 	schemas["PreConsentRequest"] = objectSchema("Ory pre-consent webhook payload mapped by ops.", obj{
 		"workos_user_id":     stringSchema("WorkOS user id. If absent, subject is used.", "user_01HABCDEF"),
@@ -595,7 +654,69 @@ func addRuntimePaths(paths obj) {
 	addVendorProxyPaths(paths)
 	addGoogleOAuthPaths(paths)
 	addConnectorPaths(paths)
+	addCloudEventPaths(paths)
 	addInternalPaths(paths)
+}
+
+func addCloudEventPaths(paths obj) {
+	paths["/v1/events"] = obj{
+		"post": operation("Cloud Events", "Ingest a cloud event", "Stores one normalized event idempotently on (user, source, dedupeKey) and enqueues async routing to matching API-target background tasks. Returns 202 for a fresh event and 200 with deduped=true for a replay.", "ingestCloudEvent", bearer(), nil, jsonRequest("Normalized event envelope.", ref("CloudEventIngestRequest"), obj{
+			"source":    "internal",
+			"eventType": "email.received",
+			"subject":   "Invoice #4821 dispute",
+			"text":      "Acme disputed invoice #4821 for $18,000 due to a pricing mismatch.",
+			"payload":   obj{"provider": "gmail", "messageId": "msg_123"},
+			"dedupeKey": "gmail:msg:msg_123",
+		}), obj{
+			"202": jsonResponse("Event stored, routing enqueued.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "pending", "deduped": false}),
+			"200": jsonResponse("Duplicate dedupeKey: existing event returned, routing not re-run.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "routed", "deduped": true, "matchedTaskCount": 1}),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"413": problemResponse("Payload exceeds the configured size cap.", ref("ErrorEnvelope"), problemExample(413, "Request Entity Too Large", "payload exceeds 262144 bytes", "payload_too_large")),
+			"500": responseRef("500"),
+		}),
+		"get": operation("Cloud Events", "List cloud events", "Lists the authenticated user's ingested events ordered by receivedAt descending. Payload is omitted from list responses; fetch the detail endpoint for it.", "listCloudEvents", bearer(), []any{
+			queryParam("source", "Filter by event source.", false, stringSchema("Source.", "gmail")),
+			queryParam("routingStatus", "Filter by routing status.", false, stringSchema("Routing status.", "routed")),
+			queryParam("since", "Only events received at or after this RFC3339 time.", false, stringSchema("RFC3339 lower bound.", "2026-06-06T00:00:00Z")),
+			queryParam("until", "Only events received at or before this RFC3339 time.", false, stringSchema("RFC3339 upper bound.", "2026-06-07T00:00:00Z")),
+			queryParam("limit", "Page size (1-500, default 100).", false, intSchema("Page size.", 100)),
+			queryParam("cursor", "Opaque cursor from a prior page's nextCursor.", false, stringSchema("Pagination cursor.", "")),
+		}, nil, obj{
+			"200": jsonResponse("Event page.", ref("CloudEventListResponse"), obj{"events": []any{}, "nextCursor": ""}),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/events/{eventId}"] = obj{"get": operation("Cloud Events", "Get a cloud event", "Returns one event including the decrypted payload and the routing decision summary.", "getCloudEvent", bearer(), []any{
+		pathParam("eventId", "Cloud event id.", stringSchema("Event id.", "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111")),
+	}, nil, obj{
+		"200": jsonResponse("Event detail.", ref("CloudEvent"), obj{"id": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "source": "internal", "dedupeKey": "gmail:msg:msg_123", "routingStatus": "routed", "matchedTaskCount": 1, "receivedAt": "2026-06-06T14:00:02Z"}),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/events/{eventId}/runs"] = obj{"get": operation("Cloud Events", "List runs triggered by a cloud event", "Returns the trigger=event runs this event fired — the event-to-run audit link.", "listCloudEventRuns", bearer(), []any{
+		pathParam("eventId", "Cloud event id.", stringSchema("Event id.", "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111")),
+	}, nil, obj{
+		"200": jsonResponse("Linked runs.", ref("CloudEventRunsResponse"), obj{"runs": []any{obj{"runId": "event-7e0a1f2b", "status": "succeeded", "trigger": "event", "executor": "api", "taskSlug": "acme-ar-watch", "createdAt": "2026-06-06T14:00:10Z"}}}),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/internal/events"] = obj{"post": operation("Internal", "Ingest a cloud event (server-to-server)", "Internal-secret ingestion used by backend services and test fixtures. Identical to /v1/events except the caller names the owning userId explicitly.", "ingestInternalCloudEvent", internalSecret(), nil, jsonRequest("Normalized event envelope with explicit owner.", ref("InternalCloudEventIngestRequest"), obj{
+		"userId":    "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+		"source":    "internal",
+		"subject":   "Synthetic event",
+		"dedupeKey": "internal:test:1",
+	}), obj{
+		"202": jsonResponse("Event stored, routing enqueued.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "pending", "deduped": false}),
+		"200": jsonResponse("Duplicate dedupeKey: existing event returned.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "routed", "deduped": true}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
 }
 
 func addAuthPaths(paths obj) {
