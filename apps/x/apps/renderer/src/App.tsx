@@ -110,7 +110,7 @@ import {
 } from "@/lib/wiki-links";
 import { splitFrontmatter, joinFrontmatter } from "@/lib/frontmatter";
 import { extractConferenceLink } from "@/lib/calendar-event";
-import { OnboardingModal } from "@/components/onboarding";
+import { FullPageOnboarding } from "@/components/onboarding";
 import { ComposioGoogleMigrationModal } from "@/components/composio-google-migration-modal";
 import {
   CommandPalette,
@@ -6221,6 +6221,18 @@ function App() {
     return markdownTabs;
   }, [fileTabs, selectedPath]);
 
+  // Onboarding is a full-window takeover, not an overlay: returning before the
+  // app shell mounts guarantees no sidebar / tab bar / chat panel renders behind
+  // it. (Placed after all hooks, so no hook is skipped.)
+  if (showOnboarding) {
+    return (
+      <TooltipProvider delayDuration={0}>
+        <FullPageOnboarding open onComplete={handleOnboardingComplete} />
+        <Toaster />
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider delayDuration={0}>
       <SidebarSectionProvider
@@ -7288,7 +7300,6 @@ function App() {
         match={billingErrorMatch}
         onOpenChange={setBillingErrorOpen}
       />
-      <OnboardingModal open={showOnboarding} onComplete={handleOnboardingComplete} />
       <ComposioGoogleMigrationModal
         open={showComposioGoogleMigration}
         onOpenChange={setShowComposioGoogleMigration}

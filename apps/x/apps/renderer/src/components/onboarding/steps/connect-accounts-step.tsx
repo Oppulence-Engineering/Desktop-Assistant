@@ -1,10 +1,4 @@
-import {
-  Loader2,
-  CheckCircle2,
-  ArrowLeft,
-  Calendar,
-  FileText,
-} from "@/lib/icons";
+import { Loader2, CheckCircle2, Calendar, FileText } from "@/lib/icons";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -53,18 +47,13 @@ function ProviderCard({
     >
       <div className="flex items-center gap-3 min-w-0">
         <div
-          className={cn(
-            "size-10 rounded-none flex items-center justify-center shrink-0",
-            iconBg,
-          )}
+          className={cn("size-10 rounded-none flex items-center justify-center shrink-0", iconBg)}
         >
           <span className={iconColor}>{icon}</span>
         </div>
         <div className="min-w-0">
           <div className="text-sm font-semibold">{name}</div>
-          <div className="text-xs text-muted-foreground truncate">
-            {description}
-          </div>
+          <div className="text-xs text-muted-foreground truncate">{description}</div>
         </div>
       </div>
       <div className="shrink-0">
@@ -77,11 +66,7 @@ function ProviderCard({
               <span className="font-medium">Connected</span>
             </div>
           ) : (
-            <Button
-              size="sm"
-              onClick={onConnect}
-              disabled={providerState?.isConnecting}
-            >
+            <Button size="sm" onClick={onConnect} disabled={providerState?.isConnecting}>
               {providerState?.isConnecting ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
@@ -110,8 +95,6 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
     googleCalendarLoading,
     googleCalendarConnecting,
     handleConnectGoogleCalendar,
-    handleNext,
-    handleBack,
   } = state;
 
   let cardIndex = 0;
@@ -119,12 +102,10 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
   return (
     <div className="flex flex-col flex-1">
       {/* Title */}
-      <h2 className="text-3xl font-bold tracking-tight text-center mb-2">
-        Connect Your Accounts
-      </h2>
+      <h2 className="text-3xl font-bold tracking-tight text-center mb-2">Connect Your Accounts</h2>
       <p className="text-base text-muted-foreground text-center leading-relaxed mb-8">
-        {PRODUCT_NAME} gets smarter the more it knows about your work. Connect your
-        accounts to get started. You can find more tools in Settings.
+        {PRODUCT_NAME} gets smarter the more it knows about your work. Connect your accounts to get
+        started. You can find more tools in Settings.
       </p>
 
       {providersLoading ? (
@@ -205,9 +186,7 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold">
-                    {PRODUCT_NAME} Meeting Notes
-                  </div>
+                  <div className="text-sm font-semibold">{PRODUCT_NAME} Meeting Notes</div>
                   <div className="text-xs text-muted-foreground truncate">
                     Built in. Ready to use.
                   </div>
@@ -235,29 +214,7 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
         </div>
       )}
 
-      {/* Footer */}
-      <div className="flex flex-col gap-3 mt-8 pt-4 border-t">
-        <Button
-          onClick={handleNext}
-          size="lg"
-          className="h-12 text-base font-medium"
-        >
-          Continue
-        </Button>
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={handleBack} className="gap-1">
-            <ArrowLeft className="size-4" />
-            Back
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={handleNext}
-            className="text-muted-foreground"
-          >
-            Skip for now
-          </Button>
-        </div>
-      </div>
+      {/* Footer (Back / Skip / Continue) lives in the shared OnboardingFooter. */}
     </div>
   );
 }
