@@ -212,6 +212,18 @@ type Config struct {
 	// SlackAuthorizeURL / SlackTokenURL override Slack's endpoints (dev mocks).
 	SlackAuthorizeURL string
 	SlackTokenURL     string
+
+	// Google watch manager (RFC 003): registers and renews the Gmail
+	// users.watch + Calendar events channel per connected Google account so
+	// Google actually delivers pushes to /v1/webhooks/google. Runs in the
+	// scheduler process.
+	GoogleWatchEnabled     bool
+	GmailPubSubTopic       string        // projects/{p}/topics/{t}; empty → Gmail watches skipped
+	GoogleWatchInterval    time.Duration // renewal scan cadence
+	GoogleWatchRenewMargin time.Duration // renew registrations expiring within this window
+	// GmailAPIBaseURL / CalendarAPIBaseURL override Google's API hosts (dev mocks).
+	GmailAPIBaseURL    string
+	CalendarAPIBaseURL string
 }
 
 // Load reads configuration from the environment, applying defaults.
@@ -360,6 +372,13 @@ func Load() Config {
 		SlackRedirectURI:  getenv("SLACK_REDIRECT_URI", ""),
 		SlackAuthorizeURL: getenv("SLACK_AUTHORIZE_URL", ""),
 		SlackTokenURL:     getenv("SLACK_TOKEN_URL", ""),
+
+		GoogleWatchEnabled:     getbool("GOOGLE_WATCH_ENABLED", false),
+		GmailPubSubTopic:       getenv("GMAIL_PUBSUB_TOPIC", ""),
+		GoogleWatchInterval:    getdur("GOOGLE_WATCH_INTERVAL", 15*time.Minute),
+		GoogleWatchRenewMargin: getdur("GOOGLE_WATCH_RENEW_MARGIN", 24*time.Hour),
+		GmailAPIBaseURL:        getenv("GMAIL_API_BASE_URL", ""),
+		CalendarAPIBaseURL:     getenv("CALENDAR_API_BASE_URL", ""),
 	}
 }
 
@@ -480,6 +499,20 @@ func (c Config) Validate() error {
 		// pile up pending forever. Fail fast at boot.
 		if !c.TemporalEnabled {
 			return fmt.Errorf("TEMPORAL_ENABLED must be true when CLOUD_EVENTS_ROUTING_ENABLED=true")
+		}
+	}
+	if c.GoogleWatchEnabled {
+		// Calendar channels are registered with PUBLIC_BASE_URL as the push
+		// address and GOOGLE_WEBHOOK_TOKEN as the channel token; without them
+		// the registrations would either point nowhere or be unverifiable.
+		if strings.TrimSpace(c.PublicBaseURL) == "" {
+			return fmt.Errorf("PUBLIC_BASE_URL is required when GOOGLE_WATCH_ENABLED=true")
+		}
+		if strings.TrimSpace(c.GoogleWebhookToken) == "" {
+			return fmt.Errorf("GOOGLE_WEBHOOK_TOKEN is required when GOOGLE_WATCH_ENABLED=true")
+		}
+		if c.GoogleWatchInterval <= 0 || c.GoogleWatchRenewMargin <= 0 {
+			return fmt.Errorf("GOOGLE_WATCH_INTERVAL and GOOGLE_WATCH_RENEW_MARGIN must be > 0")
 		}
 	}
 	if c.CloudEventsMatchThreshold <= 0 || c.CloudEventsMatchThreshold > 1 {

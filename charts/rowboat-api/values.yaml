@@ -219,6 +219,14 @@ config:
   CLOUD_EVENTS_MATCH_THRESHOLD: "0.7"
   CLOUD_EVENTS_ROUTER_MODEL: anthropic/claude-haiku-4-5
   CLOUD_EVENTS_MAX_PAYLOAD_BYTES: "262144"
+  # Google watch manager (RFC 003): registers/renews Gmail + Calendar push
+  # subscriptions in the scheduler pod. Requires GOOGLE_WEBHOOK_TOKEN and (for
+  # Gmail) GMAIL_PUBSUB_TOPIC, whose push subscription must target
+  # /v1/webhooks/google?token=<GOOGLE_WEBHOOK_TOKEN>.
+  GOOGLE_WATCH_ENABLED: "false"
+  GMAIL_PUBSUB_TOPIC: ""
+  GOOGLE_WATCH_INTERVAL: 15m
+  GOOGLE_WATCH_RENEW_MARGIN: 24h
 
 # Secret env. In production these are projected from an existing Secret
 # (existingSecret) rather than templated into the chart. When existingSecret is
