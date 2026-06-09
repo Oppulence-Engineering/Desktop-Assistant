@@ -18,6 +18,7 @@ import { isSignedIn } from '@x/core/dist/account/account.js';
 import { getWebappUrl } from '@x/core/dist/config/remote-config.js';
 import { claimTokensViaBackend } from '@x/core/dist/auth/google-backend-oauth.js';
 import { startConnectorViaBackend, claimConnectorViaBackend } from '@x/core/dist/connectors/connectors-backend.js';
+import { slackStartURL, claimSlackWorkspaceViaBackend } from '@x/core/dist/auth/slack-backend-oauth.js';
 import { getWorkosLoginUrl, exchangeWorkosCode } from '@x/core/dist/auth/workos-backend.js';
 import { PRODUCT_PROVIDER_ID, isProductProvider } from '@x/shared/dist/branding.js';
 import { isManagedAuthMode } from '@x/core/dist/auth/repo.js';
@@ -636,6 +637,51 @@ export async function completeConnectorConnect(connector: string, state: string)
       provider: connector,
       success: false,
       error: error instanceof Error ? error.message : 'Failed to claim connector grant',
+    });
+  }
+}
+
+/**
+ * Begin a Slack workspace install: open the api's browser-facing front door.
+ * The api runs the OAuth v2 dance (it holds the client secret), parks the
+ * sealed bundle, and deep-links back to
+ * solomon-ai://oauth/slack/done?session=<state>&status=success, where
+ * completeSolomonSlackConnect redeems it.
+ */
+export async function connectSlackWorkspace(): Promise<{ success: boolean; error?: string }> {
+  try {
+    await shell.openExternal(slackStartURL());
+    return { success: true };
+  } catch (error) {
+    console.error('[Slack] start workspace install failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to start Slack install',
+    };
+  }
+}
+
+/**
+ * Complete a Slack workspace install by claiming the bundle the api callback
+ * parked under `state`. The connection (team_id → user, what the api's Slack
+ * events webhook resolves against) lives server-side; the bot token never
+ * reaches the desktop, so we only surface success/failure to the renderer.
+ *
+ * Called by the deep-link dispatcher (deeplink.ts) on
+ * solomon-ai://oauth/slack/done?session=<state>&status=success.
+ */
+export async function completeSolomonSlackConnect(state: string): Promise<void> {
+  try {
+    console.log('[Slack] claiming workspace connection...');
+    const workspace = await claimSlackWorkspaceViaBackend(state);
+    emitOAuthEvent({ provider: 'slack', success: true });
+    console.log(`[Slack] workspace connected: ${workspace.teamName ?? workspace.teamId}`);
+  } catch (error) {
+    console.error('[Slack] failed to claim workspace connection:', error);
+    emitOAuthEvent({
+      provider: 'slack',
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to claim Slack workspace',
     });
   }
 }

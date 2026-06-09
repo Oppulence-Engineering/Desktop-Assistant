@@ -128,17 +128,18 @@ async function handleTakeMeetingNotes(eventId: string, openMeeting: boolean): Pr
     win.webContents.send("app:takeMeetingNotes", payload);
 }
 
-// --- OAuth completion (Solomon AI-managed Google connect) ---
+// --- OAuth completion (Solomon AI-managed Google / Slack connects) ---
 
 interface OAuthCompletion {
-    provider: "google";
+    provider: "google" | "slack";
     state: string;
+    status: string;
 }
 
 /**
- * Match solomon-ai://oauth/google/done?session=<state>. Returns null for
- * anything else — including paths with the right shape but wrong provider
- * or a missing `session` query param.
+ * Match solomon-ai://oauth/{google|slack}/done?session=<state>[&status=...].
+ * Returns null for anything else — including paths with the right shape but
+ * an unknown provider or a missing `session` query param.
  */
 function parseOAuthCompletion(url: string): OAuthCompletion | null {
     const rest = getDeepLinkPayload(url);
@@ -147,10 +148,11 @@ function parseOAuthCompletion(url: string): OAuthCompletion | null {
     const path = queryIdx >= 0 ? rest.slice(0, queryIdx) : rest;
     const parts = path.split("/").filter(Boolean);
     if (parts.length !== 3 || parts[0] !== "oauth" || parts[2] !== "done") return null;
-    if (parts[1] !== "google") return null;
+    if (parts[1] !== "google" && parts[1] !== "slack") return null;
     const params = new URLSearchParams(queryIdx >= 0 ? rest.slice(queryIdx + 1) : "");
     const state = params.get("session");
-    return state ? { provider: "google", state } : null;
+    if (!state) return null;
+    return { provider: parts[1], state, status: params.get("status") ?? "" };
 }
 
 async function dispatchOAuthCompletion(url: string): Promise<void> {
@@ -158,12 +160,26 @@ async function dispatchOAuthCompletion(url: string): Promise<void> {
     if (!parsed) return;
 
     // Bring the app to the front so the renderer can react to the
-    // oauthEvent IPC that completeSolomonGoogleConnect emits.
+    // oauthEvent IPC that the claim emits.
     const win = mainWindowRef;
     if (win && !win.isDestroyed()) focusWindow(win);
 
+    // The api deep-links status=error when the browser flow failed; surface it
+    // without claiming. (Google's callback predates the status param and omits
+    // it on success, so only an explicit "error" short-circuits.)
+    if (parsed.status === "error") {
+        const { emitOAuthEvent } = await import("./ipc.js");
+        emitOAuthEvent({ provider: parsed.provider, success: false, error: "connection failed" });
+        return;
+    }
+
     // Lazy-import to keep deeplink.ts free of OAuth deps and avoid a
     // potential circular dep with oauth-handler.ts.
+    if (parsed.provider === "slack") {
+        const { completeSolomonSlackConnect } = await import("./oauth-handler.js");
+        await completeSolomonSlackConnect(parsed.state);
+        return;
+    }
     const { completeSolomonGoogleConnect } = await import("./oauth-handler.js");
     await completeSolomonGoogleConnect(parsed.state);
 }

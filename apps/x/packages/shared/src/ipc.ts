@@ -385,6 +385,19 @@ const ipcSchemas = {
       error: z.string().optional(),
     }),
   },
+  // Begins a Slack workspace install (RFC 003 cloud events): main opens the
+  // api's /oauth/slack/start in the system browser; the api callback parks the
+  // sealed bundle and deep-links back to
+  // solomon-ai://oauth/slack/done?session=<state>&status=success, where main
+  // redeems it via /v1/slack-oauth/claim (see deeplink.ts / oauth-handler.ts).
+  // Completion is surfaced on oauth:didConnect with provider "slack".
+  'slack:connectWorkspace': {
+    req: z.null(),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
   'oauth:list-providers': {
     req: z.null(),
     res: z.object({

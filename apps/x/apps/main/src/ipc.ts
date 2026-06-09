@@ -5,6 +5,7 @@ import os from 'node:os';
 import {
   connectProvider,
   connectConnector,
+  connectSlackWorkspace,
   disconnectProvider,
   listProviders,
 } from './oauth-handler.js';
@@ -648,6 +649,11 @@ export function setupIpcHandlers() {
       // completes at the api callback, which deep-links back and main redeems
       // the grant via the connector /claim endpoint (see deeplink.ts).
       return await connectConnector(args.connector);
+    },
+    'slack:connectWorkspace': async () => {
+      // Opens the api's Slack install front door; the deep-link dispatcher
+      // redeems the parked bundle via /v1/slack-oauth/claim (see deeplink.ts).
+      return await connectSlackWorkspace();
     },
     'oauth:list-providers': async () => {
       return listProviders();
