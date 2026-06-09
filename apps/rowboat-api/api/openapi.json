@@ -7970,6 +7970,77 @@
           "Voice"
         ]
       }
+    },
+    "/v1/webhooks/google": {
+      "post": {
+        "description": "Receives Gmail Pub/Sub pushes and Google Calendar channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for Calendar). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.",
+        "operationId": "googleWebhook",
+        "parameters": [
+          {
+            "description": "Shared webhook token configured on the Pub/Sub push subscription URL.",
+            "in": "query",
+            "name": "token",
+            "required": false,
+            "schema": {
+              "description": "Webhook token.",
+              "example": "",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "message": {
+                  "data": "eyJlbWFpbEFkZHJlc3MiOiJtZUBnbWFpbC5jb20iLCJoaXN0b3J5SWQiOjk5ODg3N30=",
+                  "messageId": "m1"
+                }
+              },
+              "schema": {
+                "additionalProperties": true,
+                "description": "Pub/Sub push envelope.",
+                "type": "object"
+              }
+            }
+          },
+          "description": "Pub/Sub push envelope (Gmail). Calendar notifications carry no body.",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged: sync handshake, duplicate, or unresolved account (dropped)."
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": false,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "pending"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Event ingested."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "summary": "Google push webhook",
+        "tags": [
+          "Cloud Events"
+        ]
+      }
     }
   },
   "servers": [

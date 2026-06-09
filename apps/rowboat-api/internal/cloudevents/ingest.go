@@ -9,6 +9,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"go.uber.org/zap"
 )
 
@@ -58,6 +59,10 @@ func (h *Handler) ingest(ctx context.Context, u *ent.User, req IngestRequest) (*
 	if err := h.validate(&req); err != nil {
 		return nil, false, err
 	}
+	// The owner is resolved by the caller (JWT subject, explicit internal
+	// userId, or webhook account resolution); carry them as the viewer so the
+	// tenant-scoped dedupe re-query below works on the public webhook paths.
+	ctx = auth.WithUser(ctx, u)
 
 	var sealed []byte
 	if len(req.Payload) > 0 {

@@ -239,6 +239,12 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	r.With(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute)).
 		Get("/oauth/google/callback", googleH.Callback)
 
+	// Provider event webhooks (public: providers carry no bearer; each handler
+	// verifies its own credential before ingesting). Pre-auth, so the rate
+	// limit keys on the client IP recovered by RealIPFromTrustedProxies.
+	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
+		Post("/v1/webhooks/google", cloudEventsH.GoogleWebhook)
+
 	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer).
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
 		Post("/oauth-hooks/pre-consent", connectorsH.PreConsent)

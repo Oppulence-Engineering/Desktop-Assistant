@@ -59,6 +59,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/events",
 		"/v1/events/{eventId}",
 		"/v1/events/{eventId}/runs",
+		"/v1/webhooks/google",
 		"/v1/internal/events",
 		"/oauth-hooks/pre-consent",
 		"/v1/internal/connections/invalidate",

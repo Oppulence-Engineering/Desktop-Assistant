@@ -705,6 +705,17 @@ func addCloudEventPaths(paths obj) {
 		"404": responseRef("404"),
 		"500": responseRef("500"),
 	})}
+	paths["/v1/webhooks/google"] = obj{"post": operation("Cloud Events", "Google push webhook", "Receives Gmail Pub/Sub pushes and Google Calendar channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for Calendar). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.", "googleWebhook", nil, []any{
+		queryParam("token", "Shared webhook token configured on the Pub/Sub push subscription URL.", false, stringSchema("Webhook token.", "")),
+	}, jsonRequestOptional("Pub/Sub push envelope (Gmail). Calendar notifications carry no body.", freeFormSchema("Pub/Sub push envelope."), obj{
+		"message": obj{"data": "eyJlbWFpbEFkZHJlc3MiOiJtZUBnbWFpbC5jb20iLCJoaXN0b3J5SWQiOjk5ODg3N30=", "messageId": "m1"},
+	}), obj{
+		"200": obj{"description": "Acknowledged: sync handshake, duplicate, or unresolved account (dropped)."},
+		"202": jsonResponse("Event ingested.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "pending", "deduped": false}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
 	paths["/v1/internal/events"] = obj{"post": operation("Internal", "Ingest a cloud event (server-to-server)", "Internal-secret ingestion used by backend services and test fixtures. Identical to /v1/events except the caller names the owning userId explicitly.", "ingestInternalCloudEvent", internalSecret(), nil, jsonRequest("Normalized event envelope with explicit owner.", ref("InternalCloudEventIngestRequest"), obj{
 		"userId":    "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
 		"source":    "internal",
