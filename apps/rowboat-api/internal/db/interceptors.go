@@ -10,7 +10,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -83,6 +85,20 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.BackgroundTaskScheduleStateQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(backgroundtaskschedulestate.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.CloudEvent.Intercept(intercept.TraverseCloudEvent(
+		func(ctx context.Context, q *ent.CloudEventQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(cloudevent.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.GoogleWatch.Intercept(intercept.TraverseGoogleWatch(
+		func(ctx context.Context, q *ent.GoogleWatchQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(googlewatch.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

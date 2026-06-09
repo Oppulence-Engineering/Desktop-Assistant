@@ -105,6 +105,10 @@ type Params struct {
 	PreviousRunID string
 	RetryOfRunID  string
 	Attempt       *int
+
+	// CloudEventID links an event-triggered run back to the CloudEvent that
+	// fired it (RFC 003). Set only by the cloud event router.
+	CloudEventID *uuid.UUID
 }
 
 // Start performs the canonical queued-run → queued-event → Temporal-start →
@@ -212,6 +216,9 @@ func (s *Starter) createQueuedRun(ctx context.Context, p Params, runID, workflow
 		}
 		create = create.SetAttempt(*p.Attempt)
 	}
+	if p.CloudEventID != nil {
+		create = create.SetCloudEventID(*p.CloudEventID)
+	}
 	return create.Save(ctx)
 }
 
@@ -318,6 +325,9 @@ func runLogFields(ctx context.Context, p Params, run *ent.BackgroundTaskRun) []z
 	}
 	if p.User != nil {
 		fields = append(fields, zap.String("userId", p.User.ID.String()))
+	}
+	if p.CloudEventID != nil {
+		fields = append(fields, zap.String("cloudEventId", p.CloudEventID.String()))
 	}
 	fields = append(fields, zap.String("requestedBy", string(p.sourceOrDefault())))
 	if sc := trace.SpanContextFromContext(ctx); sc.HasTraceID() {

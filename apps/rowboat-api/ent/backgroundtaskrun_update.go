@@ -14,6 +14,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -582,6 +583,26 @@ func (_u *BackgroundTaskRunUpdate) ClearCompletedAt() *BackgroundTaskRunUpdate {
 	return _u
 }
 
+// SetCloudEventID sets the "cloud_event_id" field.
+func (_u *BackgroundTaskRunUpdate) SetCloudEventID(v uuid.UUID) *BackgroundTaskRunUpdate {
+	_u.mutation.SetCloudEventID(v)
+	return _u
+}
+
+// SetNillableCloudEventID sets the "cloud_event_id" field if the given value is not nil.
+func (_u *BackgroundTaskRunUpdate) SetNillableCloudEventID(v *uuid.UUID) *BackgroundTaskRunUpdate {
+	if v != nil {
+		_u.SetCloudEventID(*v)
+	}
+	return _u
+}
+
+// ClearCloudEventID clears the value of the "cloud_event_id" field.
+func (_u *BackgroundTaskRunUpdate) ClearCloudEventID() *BackgroundTaskRunUpdate {
+	_u.mutation.ClearCloudEventID()
+	return _u
+}
+
 // SetRevision sets the "revision" field.
 func (_u *BackgroundTaskRunUpdate) SetRevision(v int) *BackgroundTaskRunUpdate {
 	_u.mutation.ResetRevision()
@@ -625,6 +646,11 @@ func (_u *BackgroundTaskRunUpdate) SetTask(v *BackgroundTask) *BackgroundTaskRun
 	return _u.SetTaskID(v.ID)
 }
 
+// SetCloudEvent sets the "cloud_event" edge to the CloudEvent entity.
+func (_u *BackgroundTaskRunUpdate) SetCloudEvent(v *CloudEvent) *BackgroundTaskRunUpdate {
+	return _u.SetCloudEventID(v.ID)
+}
+
 // AddEventIDs adds the "events" edge to the BackgroundTaskRunEvent entity by IDs.
 func (_u *BackgroundTaskRunUpdate) AddEventIDs(ids ...uuid.UUID) *BackgroundTaskRunUpdate {
 	_u.mutation.AddEventIDs(ids...)
@@ -654,6 +680,12 @@ func (_u *BackgroundTaskRunUpdate) ClearUser() *BackgroundTaskRunUpdate {
 // ClearTask clears the "task" edge to the BackgroundTask entity.
 func (_u *BackgroundTaskRunUpdate) ClearTask() *BackgroundTaskRunUpdate {
 	_u.mutation.ClearTask()
+	return _u
+}
+
+// ClearCloudEvent clears the "cloud_event" edge to the CloudEvent entity.
+func (_u *BackgroundTaskRunUpdate) ClearCloudEvent() *BackgroundTaskRunUpdate {
+	_u.mutation.ClearCloudEvent()
 	return _u
 }
 
@@ -991,6 +1023,35 @@ func (_u *BackgroundTaskRunUpdate) sqlSave(ctx context.Context) (_node int, err 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backgroundtask.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CloudEventCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   backgroundtaskrun.CloudEventTable,
+			Columns: []string{backgroundtaskrun.CloudEventColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cloudevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CloudEventIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   backgroundtaskrun.CloudEventTable,
+			Columns: []string{backgroundtaskrun.CloudEventColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cloudevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1613,6 +1674,26 @@ func (_u *BackgroundTaskRunUpdateOne) ClearCompletedAt() *BackgroundTaskRunUpdat
 	return _u
 }
 
+// SetCloudEventID sets the "cloud_event_id" field.
+func (_u *BackgroundTaskRunUpdateOne) SetCloudEventID(v uuid.UUID) *BackgroundTaskRunUpdateOne {
+	_u.mutation.SetCloudEventID(v)
+	return _u
+}
+
+// SetNillableCloudEventID sets the "cloud_event_id" field if the given value is not nil.
+func (_u *BackgroundTaskRunUpdateOne) SetNillableCloudEventID(v *uuid.UUID) *BackgroundTaskRunUpdateOne {
+	if v != nil {
+		_u.SetCloudEventID(*v)
+	}
+	return _u
+}
+
+// ClearCloudEventID clears the value of the "cloud_event_id" field.
+func (_u *BackgroundTaskRunUpdateOne) ClearCloudEventID() *BackgroundTaskRunUpdateOne {
+	_u.mutation.ClearCloudEventID()
+	return _u
+}
+
 // SetRevision sets the "revision" field.
 func (_u *BackgroundTaskRunUpdateOne) SetRevision(v int) *BackgroundTaskRunUpdateOne {
 	_u.mutation.ResetRevision()
@@ -1656,6 +1737,11 @@ func (_u *BackgroundTaskRunUpdateOne) SetTask(v *BackgroundTask) *BackgroundTask
 	return _u.SetTaskID(v.ID)
 }
 
+// SetCloudEvent sets the "cloud_event" edge to the CloudEvent entity.
+func (_u *BackgroundTaskRunUpdateOne) SetCloudEvent(v *CloudEvent) *BackgroundTaskRunUpdateOne {
+	return _u.SetCloudEventID(v.ID)
+}
+
 // AddEventIDs adds the "events" edge to the BackgroundTaskRunEvent entity by IDs.
 func (_u *BackgroundTaskRunUpdateOne) AddEventIDs(ids ...uuid.UUID) *BackgroundTaskRunUpdateOne {
 	_u.mutation.AddEventIDs(ids...)
@@ -1685,6 +1771,12 @@ func (_u *BackgroundTaskRunUpdateOne) ClearUser() *BackgroundTaskRunUpdateOne {
 // ClearTask clears the "task" edge to the BackgroundTask entity.
 func (_u *BackgroundTaskRunUpdateOne) ClearTask() *BackgroundTaskRunUpdateOne {
 	_u.mutation.ClearTask()
+	return _u
+}
+
+// ClearCloudEvent clears the "cloud_event" edge to the CloudEvent entity.
+func (_u *BackgroundTaskRunUpdateOne) ClearCloudEvent() *BackgroundTaskRunUpdateOne {
+	_u.mutation.ClearCloudEvent()
 	return _u
 }
 
@@ -2052,6 +2144,35 @@ func (_u *BackgroundTaskRunUpdateOne) sqlSave(ctx context.Context) (_node *Backg
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backgroundtask.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CloudEventCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   backgroundtaskrun.CloudEventTable,
+			Columns: []string{backgroundtaskrun.CloudEventColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cloudevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CloudEventIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   backgroundtaskrun.CloudEventTable,
+			Columns: []string{backgroundtaskrun.CloudEventColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cloudevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -192,6 +192,7 @@ func (_m *OAuthConnectionHistory) Restore(ctx context.Context) (*OAuthConnection
 		SetProvider(_m.Provider).
 		SetRefreshTokenEncrypted(_m.RefreshTokenEncrypted).
 		SetScopes(_m.Scopes).
+		SetExternalAccountID(_m.ExternalAccountID).
 		Save(ctx)
 }
 

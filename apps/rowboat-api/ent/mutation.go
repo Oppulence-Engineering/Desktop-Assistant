@@ -16,7 +16,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -47,7 +49,9 @@ const (
 	TypeBackgroundTaskRun           = "BackgroundTaskRun"
 	TypeBackgroundTaskRunEvent      = "BackgroundTaskRunEvent"
 	TypeBackgroundTaskScheduleState = "BackgroundTaskScheduleState"
+	TypeCloudEvent                  = "CloudEvent"
 	TypeCreditLedger                = "CreditLedger"
+	TypeGoogleWatch                 = "GoogleWatch"
 	TypeLLMUsage                    = "LLMUsage"
 	TypeLLMUsageHistory             = "LLMUsageHistory"
 	TypeMCPConnection               = "MCPConnection"
@@ -2675,6 +2679,8 @@ type BackgroundTaskRunMutation struct {
 	cleareduser          bool
 	task                 *uuid.UUID
 	clearedtask          bool
+	cloud_event          *uuid.UUID
+	clearedcloud_event   bool
 	events               map[uuid.UUID]struct{}
 	removedevents        map[uuid.UUID]struct{}
 	clearedevents        bool
@@ -4207,6 +4213,55 @@ func (m *BackgroundTaskRunMutation) ResetCompletedAt() {
 	delete(m.clearedFields, backgroundtaskrun.FieldCompletedAt)
 }
 
+// SetCloudEventID sets the "cloud_event_id" field.
+func (m *BackgroundTaskRunMutation) SetCloudEventID(u uuid.UUID) {
+	m.cloud_event = &u
+}
+
+// CloudEventID returns the value of the "cloud_event_id" field in the mutation.
+func (m *BackgroundTaskRunMutation) CloudEventID() (r uuid.UUID, exists bool) {
+	v := m.cloud_event
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCloudEventID returns the old "cloud_event_id" field's value of the BackgroundTaskRun entity.
+// If the BackgroundTaskRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskRunMutation) OldCloudEventID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCloudEventID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCloudEventID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCloudEventID: %w", err)
+	}
+	return oldValue.CloudEventID, nil
+}
+
+// ClearCloudEventID clears the value of the "cloud_event_id" field.
+func (m *BackgroundTaskRunMutation) ClearCloudEventID() {
+	m.cloud_event = nil
+	m.clearedFields[backgroundtaskrun.FieldCloudEventID] = struct{}{}
+}
+
+// CloudEventIDCleared returns if the "cloud_event_id" field was cleared in this mutation.
+func (m *BackgroundTaskRunMutation) CloudEventIDCleared() bool {
+	_, ok := m.clearedFields[backgroundtaskrun.FieldCloudEventID]
+	return ok
+}
+
+// ResetCloudEventID resets all changes to the "cloud_event_id" field.
+func (m *BackgroundTaskRunMutation) ResetCloudEventID() {
+	m.cloud_event = nil
+	delete(m.clearedFields, backgroundtaskrun.FieldCloudEventID)
+}
+
 // SetRevision sets the "revision" field.
 func (m *BackgroundTaskRunMutation) SetRevision(i int) {
 	m.revision = &i
@@ -4341,6 +4396,33 @@ func (m *BackgroundTaskRunMutation) ResetTask() {
 	m.clearedtask = false
 }
 
+// ClearCloudEvent clears the "cloud_event" edge to the CloudEvent entity.
+func (m *BackgroundTaskRunMutation) ClearCloudEvent() {
+	m.clearedcloud_event = true
+	m.clearedFields[backgroundtaskrun.FieldCloudEventID] = struct{}{}
+}
+
+// CloudEventCleared reports if the "cloud_event" edge to the CloudEvent entity was cleared.
+func (m *BackgroundTaskRunMutation) CloudEventCleared() bool {
+	return m.CloudEventIDCleared() || m.clearedcloud_event
+}
+
+// CloudEventIDs returns the "cloud_event" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CloudEventID instead. It exists only for internal usage by the builders.
+func (m *BackgroundTaskRunMutation) CloudEventIDs() (ids []uuid.UUID) {
+	if id := m.cloud_event; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCloudEvent resets all changes to the "cloud_event" edge.
+func (m *BackgroundTaskRunMutation) ResetCloudEvent() {
+	m.cloud_event = nil
+	m.clearedcloud_event = false
+}
+
 // AddEventIDs adds the "events" edge to the BackgroundTaskRunEvent entity by ids.
 func (m *BackgroundTaskRunMutation) AddEventIDs(ids ...uuid.UUID) {
 	if m.events == nil {
@@ -4429,7 +4511,7 @@ func (m *BackgroundTaskRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackgroundTaskRunMutation) Fields() []string {
-	fields := make([]string, 0, 31)
+	fields := make([]string, 0, 32)
 	if m.created_at != nil {
 		fields = append(fields, backgroundtaskrun.FieldCreatedAt)
 	}
@@ -4520,6 +4602,9 @@ func (m *BackgroundTaskRunMutation) Fields() []string {
 	if m.completed_at != nil {
 		fields = append(fields, backgroundtaskrun.FieldCompletedAt)
 	}
+	if m.cloud_event != nil {
+		fields = append(fields, backgroundtaskrun.FieldCloudEventID)
+	}
 	if m.revision != nil {
 		fields = append(fields, backgroundtaskrun.FieldRevision)
 	}
@@ -4591,6 +4676,8 @@ func (m *BackgroundTaskRunMutation) Field(name string) (ent.Value, bool) {
 		return m.StartedAt()
 	case backgroundtaskrun.FieldCompletedAt:
 		return m.CompletedAt()
+	case backgroundtaskrun.FieldCloudEventID:
+		return m.CloudEventID()
 	case backgroundtaskrun.FieldRevision:
 		return m.Revision()
 	}
@@ -4662,6 +4749,8 @@ func (m *BackgroundTaskRunMutation) OldField(ctx context.Context, name string) (
 		return m.OldStartedAt(ctx)
 	case backgroundtaskrun.FieldCompletedAt:
 		return m.OldCompletedAt(ctx)
+	case backgroundtaskrun.FieldCloudEventID:
+		return m.OldCloudEventID(ctx)
 	case backgroundtaskrun.FieldRevision:
 		return m.OldRevision(ctx)
 	}
@@ -4883,6 +4972,13 @@ func (m *BackgroundTaskRunMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetCompletedAt(v)
 		return nil
+	case backgroundtaskrun.FieldCloudEventID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCloudEventID(v)
+		return nil
 	case backgroundtaskrun.FieldRevision:
 		v, ok := value.(int)
 		if !ok {
@@ -5028,6 +5124,9 @@ func (m *BackgroundTaskRunMutation) ClearedFields() []string {
 	if m.FieldCleared(backgroundtaskrun.FieldCompletedAt) {
 		fields = append(fields, backgroundtaskrun.FieldCompletedAt)
 	}
+	if m.FieldCleared(backgroundtaskrun.FieldCloudEventID) {
+		fields = append(fields, backgroundtaskrun.FieldCloudEventID)
+	}
 	return fields
 }
 
@@ -5110,6 +5209,9 @@ func (m *BackgroundTaskRunMutation) ClearField(name string) error {
 		return nil
 	case backgroundtaskrun.FieldCompletedAt:
 		m.ClearCompletedAt()
+		return nil
+	case backgroundtaskrun.FieldCloudEventID:
+		m.ClearCloudEventID()
 		return nil
 	}
 	return fmt.Errorf("unknown BackgroundTaskRun nullable field %s", name)
@@ -5209,6 +5311,9 @@ func (m *BackgroundTaskRunMutation) ResetField(name string) error {
 	case backgroundtaskrun.FieldCompletedAt:
 		m.ResetCompletedAt()
 		return nil
+	case backgroundtaskrun.FieldCloudEventID:
+		m.ResetCloudEventID()
+		return nil
 	case backgroundtaskrun.FieldRevision:
 		m.ResetRevision()
 		return nil
@@ -5218,12 +5323,15 @@ func (m *BackgroundTaskRunMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BackgroundTaskRunMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.user != nil {
 		edges = append(edges, backgroundtaskrun.EdgeUser)
 	}
 	if m.task != nil {
 		edges = append(edges, backgroundtaskrun.EdgeTask)
+	}
+	if m.cloud_event != nil {
+		edges = append(edges, backgroundtaskrun.EdgeCloudEvent)
 	}
 	if m.events != nil {
 		edges = append(edges, backgroundtaskrun.EdgeEvents)
@@ -5243,6 +5351,10 @@ func (m *BackgroundTaskRunMutation) AddedIDs(name string) []ent.Value {
 		if id := m.task; id != nil {
 			return []ent.Value{*id}
 		}
+	case backgroundtaskrun.EdgeCloudEvent:
+		if id := m.cloud_event; id != nil {
+			return []ent.Value{*id}
+		}
 	case backgroundtaskrun.EdgeEvents:
 		ids := make([]ent.Value, 0, len(m.events))
 		for id := range m.events {
@@ -5255,7 +5367,7 @@ func (m *BackgroundTaskRunMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BackgroundTaskRunMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedevents != nil {
 		edges = append(edges, backgroundtaskrun.EdgeEvents)
 	}
@@ -5278,12 +5390,15 @@ func (m *BackgroundTaskRunMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BackgroundTaskRunMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.cleareduser {
 		edges = append(edges, backgroundtaskrun.EdgeUser)
 	}
 	if m.clearedtask {
 		edges = append(edges, backgroundtaskrun.EdgeTask)
+	}
+	if m.clearedcloud_event {
+		edges = append(edges, backgroundtaskrun.EdgeCloudEvent)
 	}
 	if m.clearedevents {
 		edges = append(edges, backgroundtaskrun.EdgeEvents)
@@ -5299,6 +5414,8 @@ func (m *BackgroundTaskRunMutation) EdgeCleared(name string) bool {
 		return m.cleareduser
 	case backgroundtaskrun.EdgeTask:
 		return m.clearedtask
+	case backgroundtaskrun.EdgeCloudEvent:
+		return m.clearedcloud_event
 	case backgroundtaskrun.EdgeEvents:
 		return m.clearedevents
 	}
@@ -5315,6 +5432,9 @@ func (m *BackgroundTaskRunMutation) ClearEdge(name string) error {
 	case backgroundtaskrun.EdgeTask:
 		m.ClearTask()
 		return nil
+	case backgroundtaskrun.EdgeCloudEvent:
+		m.ClearCloudEvent()
+		return nil
 	}
 	return fmt.Errorf("unknown BackgroundTaskRun unique edge %s", name)
 }
@@ -5328,6 +5448,9 @@ func (m *BackgroundTaskRunMutation) ResetEdge(name string) error {
 		return nil
 	case backgroundtaskrun.EdgeTask:
 		m.ResetTask()
+		return nil
+	case backgroundtaskrun.EdgeCloudEvent:
+		m.ResetCloudEvent()
 		return nil
 	case backgroundtaskrun.EdgeEvents:
 		m.ResetEvents()
@@ -7294,6 +7417,1510 @@ func (m *BackgroundTaskScheduleStateMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown BackgroundTaskScheduleState edge %s", name)
 }
 
+// CloudEventMutation represents an operation that mutates the CloudEvent nodes in the graph.
+type CloudEventMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	created_at            *time.Time
+	updated_at            *time.Time
+	source                *string
+	source_event_id       *string
+	source_account_id     *string
+	event_type            *string
+	subject               *string
+	text                  *string
+	payload_ciphertext    *[]byte
+	routing_json          *string
+	dedupe_key            *string
+	routing_status        *string
+	matched_task_count    *int
+	addmatched_task_count *int
+	occurred_at           *time.Time
+	received_at           *time.Time
+	routed_at             *time.Time
+	clearedFields         map[string]struct{}
+	user                  *uuid.UUID
+	cleareduser           bool
+	runs                  map[uuid.UUID]struct{}
+	removedruns           map[uuid.UUID]struct{}
+	clearedruns           bool
+	done                  bool
+	oldValue              func(context.Context) (*CloudEvent, error)
+	predicates            []predicate.CloudEvent
+}
+
+var _ ent.Mutation = (*CloudEventMutation)(nil)
+
+// cloudeventOption allows management of the mutation configuration using functional options.
+type cloudeventOption func(*CloudEventMutation)
+
+// newCloudEventMutation creates new mutation for the CloudEvent entity.
+func newCloudEventMutation(c config, op Op, opts ...cloudeventOption) *CloudEventMutation {
+	m := &CloudEventMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCloudEvent,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCloudEventID sets the ID field of the mutation.
+func withCloudEventID(id uuid.UUID) cloudeventOption {
+	return func(m *CloudEventMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CloudEvent
+		)
+		m.oldValue = func(ctx context.Context) (*CloudEvent, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CloudEvent.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCloudEvent sets the old CloudEvent of the mutation.
+func withCloudEvent(node *CloudEvent) cloudeventOption {
+	return func(m *CloudEventMutation) {
+		m.oldValue = func(context.Context) (*CloudEvent, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CloudEventMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CloudEventMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CloudEvent entities.
+func (m *CloudEventMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CloudEventMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CloudEventMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CloudEvent.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CloudEventMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CloudEventMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CloudEventMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CloudEventMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CloudEventMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CloudEventMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSource sets the "source" field.
+func (m *CloudEventMutation) SetSource(s string) {
+	m.source = &s
+}
+
+// Source returns the value of the "source" field in the mutation.
+func (m *CloudEventMutation) Source() (r string, exists bool) {
+	v := m.source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSource returns the old "source" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldSource(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSource: %w", err)
+	}
+	return oldValue.Source, nil
+}
+
+// ResetSource resets all changes to the "source" field.
+func (m *CloudEventMutation) ResetSource() {
+	m.source = nil
+}
+
+// SetSourceEventID sets the "source_event_id" field.
+func (m *CloudEventMutation) SetSourceEventID(s string) {
+	m.source_event_id = &s
+}
+
+// SourceEventID returns the value of the "source_event_id" field in the mutation.
+func (m *CloudEventMutation) SourceEventID() (r string, exists bool) {
+	v := m.source_event_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceEventID returns the old "source_event_id" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldSourceEventID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceEventID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceEventID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceEventID: %w", err)
+	}
+	return oldValue.SourceEventID, nil
+}
+
+// ClearSourceEventID clears the value of the "source_event_id" field.
+func (m *CloudEventMutation) ClearSourceEventID() {
+	m.source_event_id = nil
+	m.clearedFields[cloudevent.FieldSourceEventID] = struct{}{}
+}
+
+// SourceEventIDCleared returns if the "source_event_id" field was cleared in this mutation.
+func (m *CloudEventMutation) SourceEventIDCleared() bool {
+	_, ok := m.clearedFields[cloudevent.FieldSourceEventID]
+	return ok
+}
+
+// ResetSourceEventID resets all changes to the "source_event_id" field.
+func (m *CloudEventMutation) ResetSourceEventID() {
+	m.source_event_id = nil
+	delete(m.clearedFields, cloudevent.FieldSourceEventID)
+}
+
+// SetSourceAccountID sets the "source_account_id" field.
+func (m *CloudEventMutation) SetSourceAccountID(s string) {
+	m.source_account_id = &s
+}
+
+// SourceAccountID returns the value of the "source_account_id" field in the mutation.
+func (m *CloudEventMutation) SourceAccountID() (r string, exists bool) {
+	v := m.source_account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceAccountID returns the old "source_account_id" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldSourceAccountID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceAccountID: %w", err)
+	}
+	return oldValue.SourceAccountID, nil
+}
+
+// ClearSourceAccountID clears the value of the "source_account_id" field.
+func (m *CloudEventMutation) ClearSourceAccountID() {
+	m.source_account_id = nil
+	m.clearedFields[cloudevent.FieldSourceAccountID] = struct{}{}
+}
+
+// SourceAccountIDCleared returns if the "source_account_id" field was cleared in this mutation.
+func (m *CloudEventMutation) SourceAccountIDCleared() bool {
+	_, ok := m.clearedFields[cloudevent.FieldSourceAccountID]
+	return ok
+}
+
+// ResetSourceAccountID resets all changes to the "source_account_id" field.
+func (m *CloudEventMutation) ResetSourceAccountID() {
+	m.source_account_id = nil
+	delete(m.clearedFields, cloudevent.FieldSourceAccountID)
+}
+
+// SetEventType sets the "event_type" field.
+func (m *CloudEventMutation) SetEventType(s string) {
+	m.event_type = &s
+}
+
+// EventType returns the value of the "event_type" field in the mutation.
+func (m *CloudEventMutation) EventType() (r string, exists bool) {
+	v := m.event_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventType returns the old "event_type" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldEventType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventType: %w", err)
+	}
+	return oldValue.EventType, nil
+}
+
+// ClearEventType clears the value of the "event_type" field.
+func (m *CloudEventMutation) ClearEventType() {
+	m.event_type = nil
+	m.clearedFields[cloudevent.FieldEventType] = struct{}{}
+}
+
+// EventTypeCleared returns if the "event_type" field was cleared in this mutation.
+func (m *CloudEventMutation) EventTypeCleared() bool {
+	_, ok := m.clearedFields[cloudevent.FieldEventType]
+	return ok
+}
+
+// ResetEventType resets all changes to the "event_type" field.
+func (m *CloudEventMutation) ResetEventType() {
+	m.event_type = nil
+	delete(m.clearedFields, cloudevent.FieldEventType)
+}
+
+// SetSubject sets the "subject" field.
+func (m *CloudEventMutation) SetSubject(s string) {
+	m.subject = &s
+}
+
+// Subject returns the value of the "subject" field in the mutation.
+func (m *CloudEventMutation) Subject() (r string, exists bool) {
+	v := m.subject
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubject returns the old "subject" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldSubject(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubject is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubject requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubject: %w", err)
+	}
+	return oldValue.Subject, nil
+}
+
+// ClearSubject clears the value of the "subject" field.
+func (m *CloudEventMutation) ClearSubject() {
+	m.subject = nil
+	m.clearedFields[cloudevent.FieldSubject] = struct{}{}
+}
+
+// SubjectCleared returns if the "subject" field was cleared in this mutation.
+func (m *CloudEventMutation) SubjectCleared() bool {
+	_, ok := m.clearedFields[cloudevent.FieldSubject]
+	return ok
+}
+
+// ResetSubject resets all changes to the "subject" field.
+func (m *CloudEventMutation) ResetSubject() {
+	m.subject = nil
+	delete(m.clearedFields, cloudevent.FieldSubject)
+}
+
+// SetText sets the "text" field.
+func (m *CloudEventMutation) SetText(s string) {
+	m.text = &s
+}
+
+// Text returns the value of the "text" field in the mutation.
+func (m *CloudEventMutation) Text() (r string, exists bool) {
+	v := m.text
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldText returns the old "text" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldText(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldText is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldText requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldText: %w", err)
+	}
+	return oldValue.Text, nil
+}
+
+// ClearText clears the value of the "text" field.
+func (m *CloudEventMutation) ClearText() {
+	m.text = nil
+	m.clearedFields[cloudevent.FieldText] = struct{}{}
+}
+
+// TextCleared returns if the "text" field was cleared in this mutation.
+func (m *CloudEventMutation) TextCleared() bool {
+	_, ok := m.clearedFields[cloudevent.FieldText]
+	return ok
+}
+
+// ResetText resets all changes to the "text" field.
+func (m *CloudEventMutation) ResetText() {
+	m.text = nil
+	delete(m.clearedFields, cloudevent.FieldText)
+}
+
+// SetPayloadCiphertext sets the "payload_ciphertext" field.
+func (m *CloudEventMutation) SetPayloadCiphertext(b []byte) {
+	m.payload_ciphertext = &b
+}
+
+// PayloadCiphertext returns the value of the "payload_ciphertext" field in the mutation.
+func (m *CloudEventMutation) PayloadCiphertext() (r []byte, exists bool) {
+	v := m.payload_ciphertext
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayloadCiphertext returns the old "payload_ciphertext" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldPayloadCiphertext(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadCiphertext is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayloadCiphertext requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadCiphertext: %w", err)
+	}
+	return oldValue.PayloadCiphertext, nil
+}
+
+// ClearPayloadCiphertext clears the value of the "payload_ciphertext" field.
+func (m *CloudEventMutation) ClearPayloadCiphertext() {
+	m.payload_ciphertext = nil
+	m.clearedFields[cloudevent.FieldPayloadCiphertext] = struct{}{}
+}
+
+// PayloadCiphertextCleared returns if the "payload_ciphertext" field was cleared in this mutation.
+func (m *CloudEventMutation) PayloadCiphertextCleared() bool {
+	_, ok := m.clearedFields[cloudevent.FieldPayloadCiphertext]
+	return ok
+}
+
+// ResetPayloadCiphertext resets all changes to the "payload_ciphertext" field.
+func (m *CloudEventMutation) ResetPayloadCiphertext() {
+	m.payload_ciphertext = nil
+	delete(m.clearedFields, cloudevent.FieldPayloadCiphertext)
+}
+
+// SetRoutingJSON sets the "routing_json" field.
+func (m *CloudEventMutation) SetRoutingJSON(s string) {
+	m.routing_json = &s
+}
+
+// RoutingJSON returns the value of the "routing_json" field in the mutation.
+func (m *CloudEventMutation) RoutingJSON() (r string, exists bool) {
+	v := m.routing_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoutingJSON returns the old "routing_json" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldRoutingJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoutingJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoutingJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoutingJSON: %w", err)
+	}
+	return oldValue.RoutingJSON, nil
+}
+
+// ClearRoutingJSON clears the value of the "routing_json" field.
+func (m *CloudEventMutation) ClearRoutingJSON() {
+	m.routing_json = nil
+	m.clearedFields[cloudevent.FieldRoutingJSON] = struct{}{}
+}
+
+// RoutingJSONCleared returns if the "routing_json" field was cleared in this mutation.
+func (m *CloudEventMutation) RoutingJSONCleared() bool {
+	_, ok := m.clearedFields[cloudevent.FieldRoutingJSON]
+	return ok
+}
+
+// ResetRoutingJSON resets all changes to the "routing_json" field.
+func (m *CloudEventMutation) ResetRoutingJSON() {
+	m.routing_json = nil
+	delete(m.clearedFields, cloudevent.FieldRoutingJSON)
+}
+
+// SetDedupeKey sets the "dedupe_key" field.
+func (m *CloudEventMutation) SetDedupeKey(s string) {
+	m.dedupe_key = &s
+}
+
+// DedupeKey returns the value of the "dedupe_key" field in the mutation.
+func (m *CloudEventMutation) DedupeKey() (r string, exists bool) {
+	v := m.dedupe_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDedupeKey returns the old "dedupe_key" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldDedupeKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDedupeKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDedupeKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDedupeKey: %w", err)
+	}
+	return oldValue.DedupeKey, nil
+}
+
+// ResetDedupeKey resets all changes to the "dedupe_key" field.
+func (m *CloudEventMutation) ResetDedupeKey() {
+	m.dedupe_key = nil
+}
+
+// SetRoutingStatus sets the "routing_status" field.
+func (m *CloudEventMutation) SetRoutingStatus(s string) {
+	m.routing_status = &s
+}
+
+// RoutingStatus returns the value of the "routing_status" field in the mutation.
+func (m *CloudEventMutation) RoutingStatus() (r string, exists bool) {
+	v := m.routing_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoutingStatus returns the old "routing_status" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldRoutingStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoutingStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoutingStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoutingStatus: %w", err)
+	}
+	return oldValue.RoutingStatus, nil
+}
+
+// ResetRoutingStatus resets all changes to the "routing_status" field.
+func (m *CloudEventMutation) ResetRoutingStatus() {
+	m.routing_status = nil
+}
+
+// SetMatchedTaskCount sets the "matched_task_count" field.
+func (m *CloudEventMutation) SetMatchedTaskCount(i int) {
+	m.matched_task_count = &i
+	m.addmatched_task_count = nil
+}
+
+// MatchedTaskCount returns the value of the "matched_task_count" field in the mutation.
+func (m *CloudEventMutation) MatchedTaskCount() (r int, exists bool) {
+	v := m.matched_task_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMatchedTaskCount returns the old "matched_task_count" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldMatchedTaskCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMatchedTaskCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMatchedTaskCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMatchedTaskCount: %w", err)
+	}
+	return oldValue.MatchedTaskCount, nil
+}
+
+// AddMatchedTaskCount adds i to the "matched_task_count" field.
+func (m *CloudEventMutation) AddMatchedTaskCount(i int) {
+	if m.addmatched_task_count != nil {
+		*m.addmatched_task_count += i
+	} else {
+		m.addmatched_task_count = &i
+	}
+}
+
+// AddedMatchedTaskCount returns the value that was added to the "matched_task_count" field in this mutation.
+func (m *CloudEventMutation) AddedMatchedTaskCount() (r int, exists bool) {
+	v := m.addmatched_task_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMatchedTaskCount resets all changes to the "matched_task_count" field.
+func (m *CloudEventMutation) ResetMatchedTaskCount() {
+	m.matched_task_count = nil
+	m.addmatched_task_count = nil
+}
+
+// SetOccurredAt sets the "occurred_at" field.
+func (m *CloudEventMutation) SetOccurredAt(t time.Time) {
+	m.occurred_at = &t
+}
+
+// OccurredAt returns the value of the "occurred_at" field in the mutation.
+func (m *CloudEventMutation) OccurredAt() (r time.Time, exists bool) {
+	v := m.occurred_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOccurredAt returns the old "occurred_at" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldOccurredAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOccurredAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOccurredAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOccurredAt: %w", err)
+	}
+	return oldValue.OccurredAt, nil
+}
+
+// ClearOccurredAt clears the value of the "occurred_at" field.
+func (m *CloudEventMutation) ClearOccurredAt() {
+	m.occurred_at = nil
+	m.clearedFields[cloudevent.FieldOccurredAt] = struct{}{}
+}
+
+// OccurredAtCleared returns if the "occurred_at" field was cleared in this mutation.
+func (m *CloudEventMutation) OccurredAtCleared() bool {
+	_, ok := m.clearedFields[cloudevent.FieldOccurredAt]
+	return ok
+}
+
+// ResetOccurredAt resets all changes to the "occurred_at" field.
+func (m *CloudEventMutation) ResetOccurredAt() {
+	m.occurred_at = nil
+	delete(m.clearedFields, cloudevent.FieldOccurredAt)
+}
+
+// SetReceivedAt sets the "received_at" field.
+func (m *CloudEventMutation) SetReceivedAt(t time.Time) {
+	m.received_at = &t
+}
+
+// ReceivedAt returns the value of the "received_at" field in the mutation.
+func (m *CloudEventMutation) ReceivedAt() (r time.Time, exists bool) {
+	v := m.received_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceivedAt returns the old "received_at" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldReceivedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceivedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceivedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceivedAt: %w", err)
+	}
+	return oldValue.ReceivedAt, nil
+}
+
+// ResetReceivedAt resets all changes to the "received_at" field.
+func (m *CloudEventMutation) ResetReceivedAt() {
+	m.received_at = nil
+}
+
+// SetRoutedAt sets the "routed_at" field.
+func (m *CloudEventMutation) SetRoutedAt(t time.Time) {
+	m.routed_at = &t
+}
+
+// RoutedAt returns the value of the "routed_at" field in the mutation.
+func (m *CloudEventMutation) RoutedAt() (r time.Time, exists bool) {
+	v := m.routed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoutedAt returns the old "routed_at" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldRoutedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoutedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoutedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoutedAt: %w", err)
+	}
+	return oldValue.RoutedAt, nil
+}
+
+// ClearRoutedAt clears the value of the "routed_at" field.
+func (m *CloudEventMutation) ClearRoutedAt() {
+	m.routed_at = nil
+	m.clearedFields[cloudevent.FieldRoutedAt] = struct{}{}
+}
+
+// RoutedAtCleared returns if the "routed_at" field was cleared in this mutation.
+func (m *CloudEventMutation) RoutedAtCleared() bool {
+	_, ok := m.clearedFields[cloudevent.FieldRoutedAt]
+	return ok
+}
+
+// ResetRoutedAt resets all changes to the "routed_at" field.
+func (m *CloudEventMutation) ResetRoutedAt() {
+	m.routed_at = nil
+	delete(m.clearedFields, cloudevent.FieldRoutedAt)
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *CloudEventMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *CloudEventMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *CloudEventMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *CloudEventMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *CloudEventMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *CloudEventMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// AddRunIDs adds the "runs" edge to the BackgroundTaskRun entity by ids.
+func (m *CloudEventMutation) AddRunIDs(ids ...uuid.UUID) {
+	if m.runs == nil {
+		m.runs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.runs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRuns clears the "runs" edge to the BackgroundTaskRun entity.
+func (m *CloudEventMutation) ClearRuns() {
+	m.clearedruns = true
+}
+
+// RunsCleared reports if the "runs" edge to the BackgroundTaskRun entity was cleared.
+func (m *CloudEventMutation) RunsCleared() bool {
+	return m.clearedruns
+}
+
+// RemoveRunIDs removes the "runs" edge to the BackgroundTaskRun entity by IDs.
+func (m *CloudEventMutation) RemoveRunIDs(ids ...uuid.UUID) {
+	if m.removedruns == nil {
+		m.removedruns = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.runs, ids[i])
+		m.removedruns[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRuns returns the removed IDs of the "runs" edge to the BackgroundTaskRun entity.
+func (m *CloudEventMutation) RemovedRunsIDs() (ids []uuid.UUID) {
+	for id := range m.removedruns {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RunsIDs returns the "runs" edge IDs in the mutation.
+func (m *CloudEventMutation) RunsIDs() (ids []uuid.UUID) {
+	for id := range m.runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRuns resets all changes to the "runs" edge.
+func (m *CloudEventMutation) ResetRuns() {
+	m.runs = nil
+	m.clearedruns = false
+	m.removedruns = nil
+}
+
+// Where appends a list predicates to the CloudEventMutation builder.
+func (m *CloudEventMutation) Where(ps ...predicate.CloudEvent) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CloudEventMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CloudEventMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CloudEvent, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CloudEventMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CloudEventMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CloudEvent).
+func (m *CloudEventMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CloudEventMutation) Fields() []string {
+	fields := make([]string, 0, 16)
+	if m.created_at != nil {
+		fields = append(fields, cloudevent.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, cloudevent.FieldUpdatedAt)
+	}
+	if m.source != nil {
+		fields = append(fields, cloudevent.FieldSource)
+	}
+	if m.source_event_id != nil {
+		fields = append(fields, cloudevent.FieldSourceEventID)
+	}
+	if m.source_account_id != nil {
+		fields = append(fields, cloudevent.FieldSourceAccountID)
+	}
+	if m.event_type != nil {
+		fields = append(fields, cloudevent.FieldEventType)
+	}
+	if m.subject != nil {
+		fields = append(fields, cloudevent.FieldSubject)
+	}
+	if m.text != nil {
+		fields = append(fields, cloudevent.FieldText)
+	}
+	if m.payload_ciphertext != nil {
+		fields = append(fields, cloudevent.FieldPayloadCiphertext)
+	}
+	if m.routing_json != nil {
+		fields = append(fields, cloudevent.FieldRoutingJSON)
+	}
+	if m.dedupe_key != nil {
+		fields = append(fields, cloudevent.FieldDedupeKey)
+	}
+	if m.routing_status != nil {
+		fields = append(fields, cloudevent.FieldRoutingStatus)
+	}
+	if m.matched_task_count != nil {
+		fields = append(fields, cloudevent.FieldMatchedTaskCount)
+	}
+	if m.occurred_at != nil {
+		fields = append(fields, cloudevent.FieldOccurredAt)
+	}
+	if m.received_at != nil {
+		fields = append(fields, cloudevent.FieldReceivedAt)
+	}
+	if m.routed_at != nil {
+		fields = append(fields, cloudevent.FieldRoutedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CloudEventMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case cloudevent.FieldCreatedAt:
+		return m.CreatedAt()
+	case cloudevent.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case cloudevent.FieldSource:
+		return m.Source()
+	case cloudevent.FieldSourceEventID:
+		return m.SourceEventID()
+	case cloudevent.FieldSourceAccountID:
+		return m.SourceAccountID()
+	case cloudevent.FieldEventType:
+		return m.EventType()
+	case cloudevent.FieldSubject:
+		return m.Subject()
+	case cloudevent.FieldText:
+		return m.Text()
+	case cloudevent.FieldPayloadCiphertext:
+		return m.PayloadCiphertext()
+	case cloudevent.FieldRoutingJSON:
+		return m.RoutingJSON()
+	case cloudevent.FieldDedupeKey:
+		return m.DedupeKey()
+	case cloudevent.FieldRoutingStatus:
+		return m.RoutingStatus()
+	case cloudevent.FieldMatchedTaskCount:
+		return m.MatchedTaskCount()
+	case cloudevent.FieldOccurredAt:
+		return m.OccurredAt()
+	case cloudevent.FieldReceivedAt:
+		return m.ReceivedAt()
+	case cloudevent.FieldRoutedAt:
+		return m.RoutedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CloudEventMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case cloudevent.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case cloudevent.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case cloudevent.FieldSource:
+		return m.OldSource(ctx)
+	case cloudevent.FieldSourceEventID:
+		return m.OldSourceEventID(ctx)
+	case cloudevent.FieldSourceAccountID:
+		return m.OldSourceAccountID(ctx)
+	case cloudevent.FieldEventType:
+		return m.OldEventType(ctx)
+	case cloudevent.FieldSubject:
+		return m.OldSubject(ctx)
+	case cloudevent.FieldText:
+		return m.OldText(ctx)
+	case cloudevent.FieldPayloadCiphertext:
+		return m.OldPayloadCiphertext(ctx)
+	case cloudevent.FieldRoutingJSON:
+		return m.OldRoutingJSON(ctx)
+	case cloudevent.FieldDedupeKey:
+		return m.OldDedupeKey(ctx)
+	case cloudevent.FieldRoutingStatus:
+		return m.OldRoutingStatus(ctx)
+	case cloudevent.FieldMatchedTaskCount:
+		return m.OldMatchedTaskCount(ctx)
+	case cloudevent.FieldOccurredAt:
+		return m.OldOccurredAt(ctx)
+	case cloudevent.FieldReceivedAt:
+		return m.OldReceivedAt(ctx)
+	case cloudevent.FieldRoutedAt:
+		return m.OldRoutedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown CloudEvent field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CloudEventMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case cloudevent.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case cloudevent.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case cloudevent.FieldSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSource(v)
+		return nil
+	case cloudevent.FieldSourceEventID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceEventID(v)
+		return nil
+	case cloudevent.FieldSourceAccountID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceAccountID(v)
+		return nil
+	case cloudevent.FieldEventType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventType(v)
+		return nil
+	case cloudevent.FieldSubject:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubject(v)
+		return nil
+	case cloudevent.FieldText:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetText(v)
+		return nil
+	case cloudevent.FieldPayloadCiphertext:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayloadCiphertext(v)
+		return nil
+	case cloudevent.FieldRoutingJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoutingJSON(v)
+		return nil
+	case cloudevent.FieldDedupeKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDedupeKey(v)
+		return nil
+	case cloudevent.FieldRoutingStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoutingStatus(v)
+		return nil
+	case cloudevent.FieldMatchedTaskCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMatchedTaskCount(v)
+		return nil
+	case cloudevent.FieldOccurredAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOccurredAt(v)
+		return nil
+	case cloudevent.FieldReceivedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReceivedAt(v)
+		return nil
+	case cloudevent.FieldRoutedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoutedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CloudEvent field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CloudEventMutation) AddedFields() []string {
+	var fields []string
+	if m.addmatched_task_count != nil {
+		fields = append(fields, cloudevent.FieldMatchedTaskCount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CloudEventMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case cloudevent.FieldMatchedTaskCount:
+		return m.AddedMatchedTaskCount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CloudEventMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case cloudevent.FieldMatchedTaskCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMatchedTaskCount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CloudEvent numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CloudEventMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(cloudevent.FieldSourceEventID) {
+		fields = append(fields, cloudevent.FieldSourceEventID)
+	}
+	if m.FieldCleared(cloudevent.FieldSourceAccountID) {
+		fields = append(fields, cloudevent.FieldSourceAccountID)
+	}
+	if m.FieldCleared(cloudevent.FieldEventType) {
+		fields = append(fields, cloudevent.FieldEventType)
+	}
+	if m.FieldCleared(cloudevent.FieldSubject) {
+		fields = append(fields, cloudevent.FieldSubject)
+	}
+	if m.FieldCleared(cloudevent.FieldText) {
+		fields = append(fields, cloudevent.FieldText)
+	}
+	if m.FieldCleared(cloudevent.FieldPayloadCiphertext) {
+		fields = append(fields, cloudevent.FieldPayloadCiphertext)
+	}
+	if m.FieldCleared(cloudevent.FieldRoutingJSON) {
+		fields = append(fields, cloudevent.FieldRoutingJSON)
+	}
+	if m.FieldCleared(cloudevent.FieldOccurredAt) {
+		fields = append(fields, cloudevent.FieldOccurredAt)
+	}
+	if m.FieldCleared(cloudevent.FieldRoutedAt) {
+		fields = append(fields, cloudevent.FieldRoutedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CloudEventMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CloudEventMutation) ClearField(name string) error {
+	switch name {
+	case cloudevent.FieldSourceEventID:
+		m.ClearSourceEventID()
+		return nil
+	case cloudevent.FieldSourceAccountID:
+		m.ClearSourceAccountID()
+		return nil
+	case cloudevent.FieldEventType:
+		m.ClearEventType()
+		return nil
+	case cloudevent.FieldSubject:
+		m.ClearSubject()
+		return nil
+	case cloudevent.FieldText:
+		m.ClearText()
+		return nil
+	case cloudevent.FieldPayloadCiphertext:
+		m.ClearPayloadCiphertext()
+		return nil
+	case cloudevent.FieldRoutingJSON:
+		m.ClearRoutingJSON()
+		return nil
+	case cloudevent.FieldOccurredAt:
+		m.ClearOccurredAt()
+		return nil
+	case cloudevent.FieldRoutedAt:
+		m.ClearRoutedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown CloudEvent nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CloudEventMutation) ResetField(name string) error {
+	switch name {
+	case cloudevent.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case cloudevent.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case cloudevent.FieldSource:
+		m.ResetSource()
+		return nil
+	case cloudevent.FieldSourceEventID:
+		m.ResetSourceEventID()
+		return nil
+	case cloudevent.FieldSourceAccountID:
+		m.ResetSourceAccountID()
+		return nil
+	case cloudevent.FieldEventType:
+		m.ResetEventType()
+		return nil
+	case cloudevent.FieldSubject:
+		m.ResetSubject()
+		return nil
+	case cloudevent.FieldText:
+		m.ResetText()
+		return nil
+	case cloudevent.FieldPayloadCiphertext:
+		m.ResetPayloadCiphertext()
+		return nil
+	case cloudevent.FieldRoutingJSON:
+		m.ResetRoutingJSON()
+		return nil
+	case cloudevent.FieldDedupeKey:
+		m.ResetDedupeKey()
+		return nil
+	case cloudevent.FieldRoutingStatus:
+		m.ResetRoutingStatus()
+		return nil
+	case cloudevent.FieldMatchedTaskCount:
+		m.ResetMatchedTaskCount()
+		return nil
+	case cloudevent.FieldOccurredAt:
+		m.ResetOccurredAt()
+		return nil
+	case cloudevent.FieldReceivedAt:
+		m.ResetReceivedAt()
+		return nil
+	case cloudevent.FieldRoutedAt:
+		m.ResetRoutedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown CloudEvent field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CloudEventMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, cloudevent.EdgeUser)
+	}
+	if m.runs != nil {
+		edges = append(edges, cloudevent.EdgeRuns)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CloudEventMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case cloudevent.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case cloudevent.EdgeRuns:
+		ids := make([]ent.Value, 0, len(m.runs))
+		for id := range m.runs {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CloudEventMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedruns != nil {
+		edges = append(edges, cloudevent.EdgeRuns)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CloudEventMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case cloudevent.EdgeRuns:
+		ids := make([]ent.Value, 0, len(m.removedruns))
+		for id := range m.removedruns {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CloudEventMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, cloudevent.EdgeUser)
+	}
+	if m.clearedruns {
+		edges = append(edges, cloudevent.EdgeRuns)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CloudEventMutation) EdgeCleared(name string) bool {
+	switch name {
+	case cloudevent.EdgeUser:
+		return m.cleareduser
+	case cloudevent.EdgeRuns:
+		return m.clearedruns
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CloudEventMutation) ClearEdge(name string) error {
+	switch name {
+	case cloudevent.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown CloudEvent unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CloudEventMutation) ResetEdge(name string) error {
+	switch name {
+	case cloudevent.EdgeUser:
+		m.ResetUser()
+		return nil
+	case cloudevent.EdgeRuns:
+		m.ResetRuns()
+		return nil
+	}
+	return fmt.Errorf("unknown CloudEvent edge %s", name)
+}
+
 // CreditLedgerMutation represents an operation that mutates the CreditLedger nodes in the graph.
 type CreditLedgerMutation struct {
 	config
@@ -7889,6 +9516,989 @@ func (m *CreditLedgerMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown CreditLedger edge %s", name)
+}
+
+// GoogleWatchMutation represents an operation that mutates the GoogleWatch nodes in the graph.
+type GoogleWatchMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	kind             *string
+	account_email    *string
+	channel_id       *string
+	resource_id      *string
+	history_id       *string
+	expires_at       *time.Time
+	renew_claimed_at *time.Time
+	last_error       *string
+	clearedFields    map[string]struct{}
+	user             *uuid.UUID
+	cleareduser      bool
+	done             bool
+	oldValue         func(context.Context) (*GoogleWatch, error)
+	predicates       []predicate.GoogleWatch
+}
+
+var _ ent.Mutation = (*GoogleWatchMutation)(nil)
+
+// googlewatchOption allows management of the mutation configuration using functional options.
+type googlewatchOption func(*GoogleWatchMutation)
+
+// newGoogleWatchMutation creates new mutation for the GoogleWatch entity.
+func newGoogleWatchMutation(c config, op Op, opts ...googlewatchOption) *GoogleWatchMutation {
+	m := &GoogleWatchMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeGoogleWatch,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withGoogleWatchID sets the ID field of the mutation.
+func withGoogleWatchID(id uuid.UUID) googlewatchOption {
+	return func(m *GoogleWatchMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *GoogleWatch
+		)
+		m.oldValue = func(ctx context.Context) (*GoogleWatch, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().GoogleWatch.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withGoogleWatch sets the old GoogleWatch of the mutation.
+func withGoogleWatch(node *GoogleWatch) googlewatchOption {
+	return func(m *GoogleWatchMutation) {
+		m.oldValue = func(context.Context) (*GoogleWatch, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m GoogleWatchMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m GoogleWatchMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of GoogleWatch entities.
+func (m *GoogleWatchMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *GoogleWatchMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *GoogleWatchMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().GoogleWatch.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *GoogleWatchMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *GoogleWatchMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *GoogleWatchMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *GoogleWatchMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *GoogleWatchMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *GoogleWatchMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *GoogleWatchMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *GoogleWatchMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *GoogleWatchMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetAccountEmail sets the "account_email" field.
+func (m *GoogleWatchMutation) SetAccountEmail(s string) {
+	m.account_email = &s
+}
+
+// AccountEmail returns the value of the "account_email" field in the mutation.
+func (m *GoogleWatchMutation) AccountEmail() (r string, exists bool) {
+	v := m.account_email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccountEmail returns the old "account_email" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldAccountEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccountEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccountEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccountEmail: %w", err)
+	}
+	return oldValue.AccountEmail, nil
+}
+
+// ResetAccountEmail resets all changes to the "account_email" field.
+func (m *GoogleWatchMutation) ResetAccountEmail() {
+	m.account_email = nil
+}
+
+// SetChannelID sets the "channel_id" field.
+func (m *GoogleWatchMutation) SetChannelID(s string) {
+	m.channel_id = &s
+}
+
+// ChannelID returns the value of the "channel_id" field in the mutation.
+func (m *GoogleWatchMutation) ChannelID() (r string, exists bool) {
+	v := m.channel_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChannelID returns the old "channel_id" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldChannelID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChannelID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChannelID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChannelID: %w", err)
+	}
+	return oldValue.ChannelID, nil
+}
+
+// ClearChannelID clears the value of the "channel_id" field.
+func (m *GoogleWatchMutation) ClearChannelID() {
+	m.channel_id = nil
+	m.clearedFields[googlewatch.FieldChannelID] = struct{}{}
+}
+
+// ChannelIDCleared returns if the "channel_id" field was cleared in this mutation.
+func (m *GoogleWatchMutation) ChannelIDCleared() bool {
+	_, ok := m.clearedFields[googlewatch.FieldChannelID]
+	return ok
+}
+
+// ResetChannelID resets all changes to the "channel_id" field.
+func (m *GoogleWatchMutation) ResetChannelID() {
+	m.channel_id = nil
+	delete(m.clearedFields, googlewatch.FieldChannelID)
+}
+
+// SetResourceID sets the "resource_id" field.
+func (m *GoogleWatchMutation) SetResourceID(s string) {
+	m.resource_id = &s
+}
+
+// ResourceID returns the value of the "resource_id" field in the mutation.
+func (m *GoogleWatchMutation) ResourceID() (r string, exists bool) {
+	v := m.resource_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResourceID returns the old "resource_id" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldResourceID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResourceID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResourceID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResourceID: %w", err)
+	}
+	return oldValue.ResourceID, nil
+}
+
+// ClearResourceID clears the value of the "resource_id" field.
+func (m *GoogleWatchMutation) ClearResourceID() {
+	m.resource_id = nil
+	m.clearedFields[googlewatch.FieldResourceID] = struct{}{}
+}
+
+// ResourceIDCleared returns if the "resource_id" field was cleared in this mutation.
+func (m *GoogleWatchMutation) ResourceIDCleared() bool {
+	_, ok := m.clearedFields[googlewatch.FieldResourceID]
+	return ok
+}
+
+// ResetResourceID resets all changes to the "resource_id" field.
+func (m *GoogleWatchMutation) ResetResourceID() {
+	m.resource_id = nil
+	delete(m.clearedFields, googlewatch.FieldResourceID)
+}
+
+// SetHistoryID sets the "history_id" field.
+func (m *GoogleWatchMutation) SetHistoryID(s string) {
+	m.history_id = &s
+}
+
+// HistoryID returns the value of the "history_id" field in the mutation.
+func (m *GoogleWatchMutation) HistoryID() (r string, exists bool) {
+	v := m.history_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHistoryID returns the old "history_id" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldHistoryID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHistoryID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHistoryID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHistoryID: %w", err)
+	}
+	return oldValue.HistoryID, nil
+}
+
+// ClearHistoryID clears the value of the "history_id" field.
+func (m *GoogleWatchMutation) ClearHistoryID() {
+	m.history_id = nil
+	m.clearedFields[googlewatch.FieldHistoryID] = struct{}{}
+}
+
+// HistoryIDCleared returns if the "history_id" field was cleared in this mutation.
+func (m *GoogleWatchMutation) HistoryIDCleared() bool {
+	_, ok := m.clearedFields[googlewatch.FieldHistoryID]
+	return ok
+}
+
+// ResetHistoryID resets all changes to the "history_id" field.
+func (m *GoogleWatchMutation) ResetHistoryID() {
+	m.history_id = nil
+	delete(m.clearedFields, googlewatch.FieldHistoryID)
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *GoogleWatchMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *GoogleWatchMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *GoogleWatchMutation) ResetExpiresAt() {
+	m.expires_at = nil
+}
+
+// SetRenewClaimedAt sets the "renew_claimed_at" field.
+func (m *GoogleWatchMutation) SetRenewClaimedAt(t time.Time) {
+	m.renew_claimed_at = &t
+}
+
+// RenewClaimedAt returns the value of the "renew_claimed_at" field in the mutation.
+func (m *GoogleWatchMutation) RenewClaimedAt() (r time.Time, exists bool) {
+	v := m.renew_claimed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRenewClaimedAt returns the old "renew_claimed_at" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldRenewClaimedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRenewClaimedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRenewClaimedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRenewClaimedAt: %w", err)
+	}
+	return oldValue.RenewClaimedAt, nil
+}
+
+// ClearRenewClaimedAt clears the value of the "renew_claimed_at" field.
+func (m *GoogleWatchMutation) ClearRenewClaimedAt() {
+	m.renew_claimed_at = nil
+	m.clearedFields[googlewatch.FieldRenewClaimedAt] = struct{}{}
+}
+
+// RenewClaimedAtCleared returns if the "renew_claimed_at" field was cleared in this mutation.
+func (m *GoogleWatchMutation) RenewClaimedAtCleared() bool {
+	_, ok := m.clearedFields[googlewatch.FieldRenewClaimedAt]
+	return ok
+}
+
+// ResetRenewClaimedAt resets all changes to the "renew_claimed_at" field.
+func (m *GoogleWatchMutation) ResetRenewClaimedAt() {
+	m.renew_claimed_at = nil
+	delete(m.clearedFields, googlewatch.FieldRenewClaimedAt)
+}
+
+// SetLastError sets the "last_error" field.
+func (m *GoogleWatchMutation) SetLastError(s string) {
+	m.last_error = &s
+}
+
+// LastError returns the value of the "last_error" field in the mutation.
+func (m *GoogleWatchMutation) LastError() (r string, exists bool) {
+	v := m.last_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastError returns the old "last_error" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldLastError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastError: %w", err)
+	}
+	return oldValue.LastError, nil
+}
+
+// ClearLastError clears the value of the "last_error" field.
+func (m *GoogleWatchMutation) ClearLastError() {
+	m.last_error = nil
+	m.clearedFields[googlewatch.FieldLastError] = struct{}{}
+}
+
+// LastErrorCleared returns if the "last_error" field was cleared in this mutation.
+func (m *GoogleWatchMutation) LastErrorCleared() bool {
+	_, ok := m.clearedFields[googlewatch.FieldLastError]
+	return ok
+}
+
+// ResetLastError resets all changes to the "last_error" field.
+func (m *GoogleWatchMutation) ResetLastError() {
+	m.last_error = nil
+	delete(m.clearedFields, googlewatch.FieldLastError)
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *GoogleWatchMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *GoogleWatchMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *GoogleWatchMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *GoogleWatchMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *GoogleWatchMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *GoogleWatchMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the GoogleWatchMutation builder.
+func (m *GoogleWatchMutation) Where(ps ...predicate.GoogleWatch) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the GoogleWatchMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *GoogleWatchMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.GoogleWatch, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *GoogleWatchMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *GoogleWatchMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (GoogleWatch).
+func (m *GoogleWatchMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *GoogleWatchMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.created_at != nil {
+		fields = append(fields, googlewatch.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, googlewatch.FieldUpdatedAt)
+	}
+	if m.kind != nil {
+		fields = append(fields, googlewatch.FieldKind)
+	}
+	if m.account_email != nil {
+		fields = append(fields, googlewatch.FieldAccountEmail)
+	}
+	if m.channel_id != nil {
+		fields = append(fields, googlewatch.FieldChannelID)
+	}
+	if m.resource_id != nil {
+		fields = append(fields, googlewatch.FieldResourceID)
+	}
+	if m.history_id != nil {
+		fields = append(fields, googlewatch.FieldHistoryID)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, googlewatch.FieldExpiresAt)
+	}
+	if m.renew_claimed_at != nil {
+		fields = append(fields, googlewatch.FieldRenewClaimedAt)
+	}
+	if m.last_error != nil {
+		fields = append(fields, googlewatch.FieldLastError)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *GoogleWatchMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case googlewatch.FieldCreatedAt:
+		return m.CreatedAt()
+	case googlewatch.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case googlewatch.FieldKind:
+		return m.Kind()
+	case googlewatch.FieldAccountEmail:
+		return m.AccountEmail()
+	case googlewatch.FieldChannelID:
+		return m.ChannelID()
+	case googlewatch.FieldResourceID:
+		return m.ResourceID()
+	case googlewatch.FieldHistoryID:
+		return m.HistoryID()
+	case googlewatch.FieldExpiresAt:
+		return m.ExpiresAt()
+	case googlewatch.FieldRenewClaimedAt:
+		return m.RenewClaimedAt()
+	case googlewatch.FieldLastError:
+		return m.LastError()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *GoogleWatchMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case googlewatch.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case googlewatch.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case googlewatch.FieldKind:
+		return m.OldKind(ctx)
+	case googlewatch.FieldAccountEmail:
+		return m.OldAccountEmail(ctx)
+	case googlewatch.FieldChannelID:
+		return m.OldChannelID(ctx)
+	case googlewatch.FieldResourceID:
+		return m.OldResourceID(ctx)
+	case googlewatch.FieldHistoryID:
+		return m.OldHistoryID(ctx)
+	case googlewatch.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case googlewatch.FieldRenewClaimedAt:
+		return m.OldRenewClaimedAt(ctx)
+	case googlewatch.FieldLastError:
+		return m.OldLastError(ctx)
+	}
+	return nil, fmt.Errorf("unknown GoogleWatch field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GoogleWatchMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case googlewatch.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case googlewatch.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case googlewatch.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case googlewatch.FieldAccountEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccountEmail(v)
+		return nil
+	case googlewatch.FieldChannelID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChannelID(v)
+		return nil
+	case googlewatch.FieldResourceID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResourceID(v)
+		return nil
+	case googlewatch.FieldHistoryID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHistoryID(v)
+		return nil
+	case googlewatch.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case googlewatch.FieldRenewClaimedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRenewClaimedAt(v)
+		return nil
+	case googlewatch.FieldLastError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastError(v)
+		return nil
+	}
+	return fmt.Errorf("unknown GoogleWatch field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *GoogleWatchMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *GoogleWatchMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GoogleWatchMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown GoogleWatch numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *GoogleWatchMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(googlewatch.FieldChannelID) {
+		fields = append(fields, googlewatch.FieldChannelID)
+	}
+	if m.FieldCleared(googlewatch.FieldResourceID) {
+		fields = append(fields, googlewatch.FieldResourceID)
+	}
+	if m.FieldCleared(googlewatch.FieldHistoryID) {
+		fields = append(fields, googlewatch.FieldHistoryID)
+	}
+	if m.FieldCleared(googlewatch.FieldRenewClaimedAt) {
+		fields = append(fields, googlewatch.FieldRenewClaimedAt)
+	}
+	if m.FieldCleared(googlewatch.FieldLastError) {
+		fields = append(fields, googlewatch.FieldLastError)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *GoogleWatchMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *GoogleWatchMutation) ClearField(name string) error {
+	switch name {
+	case googlewatch.FieldChannelID:
+		m.ClearChannelID()
+		return nil
+	case googlewatch.FieldResourceID:
+		m.ClearResourceID()
+		return nil
+	case googlewatch.FieldHistoryID:
+		m.ClearHistoryID()
+		return nil
+	case googlewatch.FieldRenewClaimedAt:
+		m.ClearRenewClaimedAt()
+		return nil
+	case googlewatch.FieldLastError:
+		m.ClearLastError()
+		return nil
+	}
+	return fmt.Errorf("unknown GoogleWatch nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *GoogleWatchMutation) ResetField(name string) error {
+	switch name {
+	case googlewatch.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case googlewatch.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case googlewatch.FieldKind:
+		m.ResetKind()
+		return nil
+	case googlewatch.FieldAccountEmail:
+		m.ResetAccountEmail()
+		return nil
+	case googlewatch.FieldChannelID:
+		m.ResetChannelID()
+		return nil
+	case googlewatch.FieldResourceID:
+		m.ResetResourceID()
+		return nil
+	case googlewatch.FieldHistoryID:
+		m.ResetHistoryID()
+		return nil
+	case googlewatch.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case googlewatch.FieldRenewClaimedAt:
+		m.ResetRenewClaimedAt()
+		return nil
+	case googlewatch.FieldLastError:
+		m.ResetLastError()
+		return nil
+	}
+	return fmt.Errorf("unknown GoogleWatch field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *GoogleWatchMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, googlewatch.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *GoogleWatchMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case googlewatch.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *GoogleWatchMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *GoogleWatchMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *GoogleWatchMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, googlewatch.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *GoogleWatchMutation) EdgeCleared(name string) bool {
+	switch name {
+	case googlewatch.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *GoogleWatchMutation) ClearEdge(name string) error {
+	switch name {
+	case googlewatch.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown GoogleWatch unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *GoogleWatchMutation) ResetEdge(name string) error {
+	switch name {
+	case googlewatch.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown GoogleWatch edge %s", name)
 }
 
 // LLMUsageMutation represents an operation that mutates the LLMUsage nodes in the graph.
@@ -12155,6 +14765,7 @@ type OAuthConnectionMutation struct {
 	refresh_token_encrypted *[]byte
 	scopes                  *[]string
 	appendscopes            []string
+	external_account_id     *string
 	clearedFields           map[string]struct{}
 	user                    *uuid.UUID
 	cleareduser             bool
@@ -12476,6 +15087,55 @@ func (m *OAuthConnectionMutation) ResetScopes() {
 	delete(m.clearedFields, oauthconnection.FieldScopes)
 }
 
+// SetExternalAccountID sets the "external_account_id" field.
+func (m *OAuthConnectionMutation) SetExternalAccountID(s string) {
+	m.external_account_id = &s
+}
+
+// ExternalAccountID returns the value of the "external_account_id" field in the mutation.
+func (m *OAuthConnectionMutation) ExternalAccountID() (r string, exists bool) {
+	v := m.external_account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalAccountID returns the old "external_account_id" field's value of the OAuthConnection entity.
+// If the OAuthConnection object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OAuthConnectionMutation) OldExternalAccountID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalAccountID: %w", err)
+	}
+	return oldValue.ExternalAccountID, nil
+}
+
+// ClearExternalAccountID clears the value of the "external_account_id" field.
+func (m *OAuthConnectionMutation) ClearExternalAccountID() {
+	m.external_account_id = nil
+	m.clearedFields[oauthconnection.FieldExternalAccountID] = struct{}{}
+}
+
+// ExternalAccountIDCleared returns if the "external_account_id" field was cleared in this mutation.
+func (m *OAuthConnectionMutation) ExternalAccountIDCleared() bool {
+	_, ok := m.clearedFields[oauthconnection.FieldExternalAccountID]
+	return ok
+}
+
+// ResetExternalAccountID resets all changes to the "external_account_id" field.
+func (m *OAuthConnectionMutation) ResetExternalAccountID() {
+	m.external_account_id = nil
+	delete(m.clearedFields, oauthconnection.FieldExternalAccountID)
+}
+
 // SetUserID sets the "user" edge to the User entity by id.
 func (m *OAuthConnectionMutation) SetUserID(id uuid.UUID) {
 	m.user = &id
@@ -12549,7 +15209,7 @@ func (m *OAuthConnectionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OAuthConnectionMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, oauthconnection.FieldCreatedAt)
 	}
@@ -12564,6 +15224,9 @@ func (m *OAuthConnectionMutation) Fields() []string {
 	}
 	if m.scopes != nil {
 		fields = append(fields, oauthconnection.FieldScopes)
+	}
+	if m.external_account_id != nil {
+		fields = append(fields, oauthconnection.FieldExternalAccountID)
 	}
 	return fields
 }
@@ -12583,6 +15246,8 @@ func (m *OAuthConnectionMutation) Field(name string) (ent.Value, bool) {
 		return m.RefreshTokenEncrypted()
 	case oauthconnection.FieldScopes:
 		return m.Scopes()
+	case oauthconnection.FieldExternalAccountID:
+		return m.ExternalAccountID()
 	}
 	return nil, false
 }
@@ -12602,6 +15267,8 @@ func (m *OAuthConnectionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldRefreshTokenEncrypted(ctx)
 	case oauthconnection.FieldScopes:
 		return m.OldScopes(ctx)
+	case oauthconnection.FieldExternalAccountID:
+		return m.OldExternalAccountID(ctx)
 	}
 	return nil, fmt.Errorf("unknown OAuthConnection field %s", name)
 }
@@ -12646,6 +15313,13 @@ func (m *OAuthConnectionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetScopes(v)
 		return nil
+	case oauthconnection.FieldExternalAccountID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalAccountID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnection field %s", name)
 }
@@ -12679,6 +15353,9 @@ func (m *OAuthConnectionMutation) ClearedFields() []string {
 	if m.FieldCleared(oauthconnection.FieldScopes) {
 		fields = append(fields, oauthconnection.FieldScopes)
 	}
+	if m.FieldCleared(oauthconnection.FieldExternalAccountID) {
+		fields = append(fields, oauthconnection.FieldExternalAccountID)
+	}
 	return fields
 }
 
@@ -12695,6 +15372,9 @@ func (m *OAuthConnectionMutation) ClearField(name string) error {
 	switch name {
 	case oauthconnection.FieldScopes:
 		m.ClearScopes()
+		return nil
+	case oauthconnection.FieldExternalAccountID:
+		m.ClearExternalAccountID()
 		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnection nullable field %s", name)
@@ -12718,6 +15398,9 @@ func (m *OAuthConnectionMutation) ResetField(name string) error {
 		return nil
 	case oauthconnection.FieldScopes:
 		m.ResetScopes()
+		return nil
+	case oauthconnection.FieldExternalAccountID:
+		m.ResetExternalAccountID()
 		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnection field %s", name)
@@ -12812,6 +15495,7 @@ type OAuthConnectionHistoryMutation struct {
 	refresh_token_encrypted *[]byte
 	scopes                  *[]string
 	appendscopes            []string
+	external_account_id     *string
 	clearedFields           map[string]struct{}
 	done                    bool
 	oldValue                func(context.Context) (*OAuthConnectionHistory, error)
@@ -13252,6 +15936,55 @@ func (m *OAuthConnectionHistoryMutation) ResetScopes() {
 	delete(m.clearedFields, oauthconnectionhistory.FieldScopes)
 }
 
+// SetExternalAccountID sets the "external_account_id" field.
+func (m *OAuthConnectionHistoryMutation) SetExternalAccountID(s string) {
+	m.external_account_id = &s
+}
+
+// ExternalAccountID returns the value of the "external_account_id" field in the mutation.
+func (m *OAuthConnectionHistoryMutation) ExternalAccountID() (r string, exists bool) {
+	v := m.external_account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalAccountID returns the old "external_account_id" field's value of the OAuthConnectionHistory entity.
+// If the OAuthConnectionHistory object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OAuthConnectionHistoryMutation) OldExternalAccountID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalAccountID: %w", err)
+	}
+	return oldValue.ExternalAccountID, nil
+}
+
+// ClearExternalAccountID clears the value of the "external_account_id" field.
+func (m *OAuthConnectionHistoryMutation) ClearExternalAccountID() {
+	m.external_account_id = nil
+	m.clearedFields[oauthconnectionhistory.FieldExternalAccountID] = struct{}{}
+}
+
+// ExternalAccountIDCleared returns if the "external_account_id" field was cleared in this mutation.
+func (m *OAuthConnectionHistoryMutation) ExternalAccountIDCleared() bool {
+	_, ok := m.clearedFields[oauthconnectionhistory.FieldExternalAccountID]
+	return ok
+}
+
+// ResetExternalAccountID resets all changes to the "external_account_id" field.
+func (m *OAuthConnectionHistoryMutation) ResetExternalAccountID() {
+	m.external_account_id = nil
+	delete(m.clearedFields, oauthconnectionhistory.FieldExternalAccountID)
+}
+
 // Where appends a list predicates to the OAuthConnectionHistoryMutation builder.
 func (m *OAuthConnectionHistoryMutation) Where(ps ...predicate.OAuthConnectionHistory) {
 	m.predicates = append(m.predicates, ps...)
@@ -13286,7 +16019,7 @@ func (m *OAuthConnectionHistoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OAuthConnectionHistoryMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, oauthconnectionhistory.FieldCreatedAt)
 	}
@@ -13310,6 +16043,9 @@ func (m *OAuthConnectionHistoryMutation) Fields() []string {
 	}
 	if m.scopes != nil {
 		fields = append(fields, oauthconnectionhistory.FieldScopes)
+	}
+	if m.external_account_id != nil {
+		fields = append(fields, oauthconnectionhistory.FieldExternalAccountID)
 	}
 	return fields
 }
@@ -13335,6 +16071,8 @@ func (m *OAuthConnectionHistoryMutation) Field(name string) (ent.Value, bool) {
 		return m.RefreshTokenEncrypted()
 	case oauthconnectionhistory.FieldScopes:
 		return m.Scopes()
+	case oauthconnectionhistory.FieldExternalAccountID:
+		return m.ExternalAccountID()
 	}
 	return nil, false
 }
@@ -13360,6 +16098,8 @@ func (m *OAuthConnectionHistoryMutation) OldField(ctx context.Context, name stri
 		return m.OldRefreshTokenEncrypted(ctx)
 	case oauthconnectionhistory.FieldScopes:
 		return m.OldScopes(ctx)
+	case oauthconnectionhistory.FieldExternalAccountID:
+		return m.OldExternalAccountID(ctx)
 	}
 	return nil, fmt.Errorf("unknown OAuthConnectionHistory field %s", name)
 }
@@ -13425,6 +16165,13 @@ func (m *OAuthConnectionHistoryMutation) SetField(name string, value ent.Value) 
 		}
 		m.SetScopes(v)
 		return nil
+	case oauthconnectionhistory.FieldExternalAccountID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalAccountID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnectionHistory field %s", name)
 }
@@ -13461,6 +16208,9 @@ func (m *OAuthConnectionHistoryMutation) ClearedFields() []string {
 	if m.FieldCleared(oauthconnectionhistory.FieldScopes) {
 		fields = append(fields, oauthconnectionhistory.FieldScopes)
 	}
+	if m.FieldCleared(oauthconnectionhistory.FieldExternalAccountID) {
+		fields = append(fields, oauthconnectionhistory.FieldExternalAccountID)
+	}
 	return fields
 }
 
@@ -13480,6 +16230,9 @@ func (m *OAuthConnectionHistoryMutation) ClearField(name string) error {
 		return nil
 	case oauthconnectionhistory.FieldScopes:
 		m.ClearScopes()
+		return nil
+	case oauthconnectionhistory.FieldExternalAccountID:
+		m.ClearExternalAccountID()
 		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnectionHistory nullable field %s", name)
@@ -13512,6 +16265,9 @@ func (m *OAuthConnectionHistoryMutation) ResetField(name string) error {
 		return nil
 	case oauthconnectionhistory.FieldScopes:
 		m.ResetScopes()
+		return nil
+	case oauthconnectionhistory.FieldExternalAccountID:
+		m.ResetExternalAccountID()
 		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnectionHistory field %s", name)
@@ -16068,6 +18824,12 @@ type UserMutation struct {
 	background_task_schedule_states        map[uuid.UUID]struct{}
 	removedbackground_task_schedule_states map[uuid.UUID]struct{}
 	clearedbackground_task_schedule_states bool
+	cloud_events                           map[uuid.UUID]struct{}
+	removedcloud_events                    map[uuid.UUID]struct{}
+	clearedcloud_events                    bool
+	google_watches                         map[uuid.UUID]struct{}
+	removedgoogle_watches                  map[uuid.UUID]struct{}
+	clearedgoogle_watches                  bool
 	done                                   bool
 	oldValue                               func(context.Context) (*User, error)
 	predicates                             []predicate.User
@@ -16908,6 +19670,114 @@ func (m *UserMutation) ResetBackgroundTaskScheduleStates() {
 	m.removedbackground_task_schedule_states = nil
 }
 
+// AddCloudEventIDs adds the "cloud_events" edge to the CloudEvent entity by ids.
+func (m *UserMutation) AddCloudEventIDs(ids ...uuid.UUID) {
+	if m.cloud_events == nil {
+		m.cloud_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.cloud_events[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCloudEvents clears the "cloud_events" edge to the CloudEvent entity.
+func (m *UserMutation) ClearCloudEvents() {
+	m.clearedcloud_events = true
+}
+
+// CloudEventsCleared reports if the "cloud_events" edge to the CloudEvent entity was cleared.
+func (m *UserMutation) CloudEventsCleared() bool {
+	return m.clearedcloud_events
+}
+
+// RemoveCloudEventIDs removes the "cloud_events" edge to the CloudEvent entity by IDs.
+func (m *UserMutation) RemoveCloudEventIDs(ids ...uuid.UUID) {
+	if m.removedcloud_events == nil {
+		m.removedcloud_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.cloud_events, ids[i])
+		m.removedcloud_events[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCloudEvents returns the removed IDs of the "cloud_events" edge to the CloudEvent entity.
+func (m *UserMutation) RemovedCloudEventsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcloud_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CloudEventsIDs returns the "cloud_events" edge IDs in the mutation.
+func (m *UserMutation) CloudEventsIDs() (ids []uuid.UUID) {
+	for id := range m.cloud_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCloudEvents resets all changes to the "cloud_events" edge.
+func (m *UserMutation) ResetCloudEvents() {
+	m.cloud_events = nil
+	m.clearedcloud_events = false
+	m.removedcloud_events = nil
+}
+
+// AddGoogleWatchIDs adds the "google_watches" edge to the GoogleWatch entity by ids.
+func (m *UserMutation) AddGoogleWatchIDs(ids ...uuid.UUID) {
+	if m.google_watches == nil {
+		m.google_watches = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.google_watches[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGoogleWatches clears the "google_watches" edge to the GoogleWatch entity.
+func (m *UserMutation) ClearGoogleWatches() {
+	m.clearedgoogle_watches = true
+}
+
+// GoogleWatchesCleared reports if the "google_watches" edge to the GoogleWatch entity was cleared.
+func (m *UserMutation) GoogleWatchesCleared() bool {
+	return m.clearedgoogle_watches
+}
+
+// RemoveGoogleWatchIDs removes the "google_watches" edge to the GoogleWatch entity by IDs.
+func (m *UserMutation) RemoveGoogleWatchIDs(ids ...uuid.UUID) {
+	if m.removedgoogle_watches == nil {
+		m.removedgoogle_watches = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.google_watches, ids[i])
+		m.removedgoogle_watches[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGoogleWatches returns the removed IDs of the "google_watches" edge to the GoogleWatch entity.
+func (m *UserMutation) RemovedGoogleWatchesIDs() (ids []uuid.UUID) {
+	for id := range m.removedgoogle_watches {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GoogleWatchesIDs returns the "google_watches" edge IDs in the mutation.
+func (m *UserMutation) GoogleWatchesIDs() (ids []uuid.UUID) {
+	for id := range m.google_watches {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGoogleWatches resets all changes to the "google_watches" edge.
+func (m *UserMutation) ResetGoogleWatches() {
+	m.google_watches = nil
+	m.clearedgoogle_watches = false
+	m.removedgoogle_watches = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -17124,7 +19994,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 12)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -17154,6 +20024,12 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.background_task_schedule_states != nil {
 		edges = append(edges, user.EdgeBackgroundTaskScheduleStates)
+	}
+	if m.cloud_events != nil {
+		edges = append(edges, user.EdgeCloudEvents)
+	}
+	if m.google_watches != nil {
+		edges = append(edges, user.EdgeGoogleWatches)
 	}
 	return edges
 }
@@ -17220,13 +20096,25 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeCloudEvents:
+		ids := make([]ent.Value, 0, len(m.cloud_events))
+		for id := range m.cloud_events {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeGoogleWatches:
+		ids := make([]ent.Value, 0, len(m.google_watches))
+		for id := range m.google_watches {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 12)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -17253,6 +20141,12 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedbackground_task_schedule_states != nil {
 		edges = append(edges, user.EdgeBackgroundTaskScheduleStates)
+	}
+	if m.removedcloud_events != nil {
+		edges = append(edges, user.EdgeCloudEvents)
+	}
+	if m.removedgoogle_watches != nil {
+		edges = append(edges, user.EdgeGoogleWatches)
 	}
 	return edges
 }
@@ -17315,13 +20209,25 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeCloudEvents:
+		ids := make([]ent.Value, 0, len(m.removedcloud_events))
+		for id := range m.removedcloud_events {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeGoogleWatches:
+		ids := make([]ent.Value, 0, len(m.removedgoogle_watches))
+		for id := range m.removedgoogle_watches {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 12)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -17352,6 +20258,12 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedbackground_task_schedule_states {
 		edges = append(edges, user.EdgeBackgroundTaskScheduleStates)
 	}
+	if m.clearedcloud_events {
+		edges = append(edges, user.EdgeCloudEvents)
+	}
+	if m.clearedgoogle_watches {
+		edges = append(edges, user.EdgeGoogleWatches)
+	}
 	return edges
 }
 
@@ -17379,6 +20291,10 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedbackground_task_run_events
 	case user.EdgeBackgroundTaskScheduleStates:
 		return m.clearedbackground_task_schedule_states
+	case user.EdgeCloudEvents:
+		return m.clearedcloud_events
+	case user.EdgeGoogleWatches:
+		return m.clearedgoogle_watches
 	}
 	return false
 }
@@ -17427,6 +20343,12 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeBackgroundTaskScheduleStates:
 		m.ResetBackgroundTaskScheduleStates()
+		return nil
+	case user.EdgeCloudEvents:
+		m.ResetCloudEvents()
+		return nil
+	case user.EdgeGoogleWatches:
+		m.ResetGoogleWatches()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

@@ -3,13 +3,13 @@
 |                  |                                                                                                                                                     |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **RFC**          | 003                                                                                                                                                 |
-| **Status**       | Draft                                                                                                                                               |
+| **Status**       | Complete — implemented (rollout stages 1–5) on `rfc-003-cloud-event-ingestion`: ingestion + dedupe, Temporal route workflow + two-pass router, fixtures, Google + Slack webhooks, the self-serve Slack workspace connect flow (`/oauth/slack/start` → `/v1/slack-oauth/claim`), and the Google watch manager (`internal/googlewatch`). GCP provisioning is specified by [RFC 019](./019-google-push-infrastructure.md); the stage-6 staging soak + threshold tuning ride the [RFC 007](./007-production-cloud-enablement.md) production rollout. |
 | **Track**        | Cloud-native background workflows                                                                                                                   |
 | **Owners**       | `apps/rowboat-api` (Go backend) · `apps/x` (desktop event consumers)                                                                                |
 | **Created**      | 2026-06-05                                                                                                                                          |
 | **Last updated** | 2026-06-06                                                                                                                                          |
 | **Depends on**   | [RFC 001](./001-api-owned-scheduler.md) (shared run-start `Starter`), [RFC 004](./004-cloud-agent-runtime.md) (runtime that consumes event context) |
-| **Related**      | [RFC 006](./006-desktop-cloud-control-plane.md) (event→run linkage in UI)                                                                           |
+| **Related**      | [RFC 006](./006-desktop-cloud-control-plane.md) (event→run linkage in UI) · [RFC 019](./019-google-push-infrastructure.md) (GCP-side push provisioning) |
 | **Supersedes**   | Former cloud workflow planning event-trigger sections.                                                                                              |
 
 ## Summary

@@ -41,6 +41,9 @@ func (OAuthConnectionHistory) Fields() []ent.Field {
 			Immutable(),
 		field.JSON("scopes", []string{}).
 			Optional().
+			Immutable(),
+		field.String("external_account_id").
+			Optional().
 			Immutable()}
 }
 func (OAuthConnectionHistory) Edges() []ent.Edge {

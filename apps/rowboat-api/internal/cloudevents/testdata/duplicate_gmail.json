@@ -1,0 +1,11 @@
+{
+  "source": "gmail",
+  "sourceEventId": "msg_18f2a9",
+  "sourceAccountId": "acct_google_primary",
+  "eventType": "email.received",
+  "subject": "Invoice #4821 dispute (provider retry)",
+  "text": "Acme disputed invoice #4821 for $18,000 due to a pricing mismatch.",
+  "payload": { "provider": "gmail", "messageId": "msg_18f2a9" },
+  "dedupeKey": "gmail:msg:msg_18f2a9",
+  "occurredAt": "2026-06-06T14:00:00Z"
+}

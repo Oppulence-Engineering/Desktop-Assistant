@@ -205,10 +205,10 @@ func (s *Server) AddReadyCheck(name string, check func(context.Context) error) {
 // AddCloser registers a cleanup function invoked during graceful shutdown,
 // after the HTTP + gRPC listeners have drained. Closers run in LIFO order
 // (mirroring defer semantics) so dependants close before their dependencies.
-func (s *Server) AddCloser(name string, close func() error) {
+func (s *Server) AddCloser(name string, closeFn func() error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.closers = append(s.closers, namedCloser{name: name, close: close})
+	s.closers = append(s.closers, namedCloser{name: name, close: closeFn})
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request) {

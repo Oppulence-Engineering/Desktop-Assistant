@@ -93,6 +93,9 @@ func (_u *OAuthConnectionHistoryUpdate) sqlSave(ctx context.Context) (_node int,
 	if _u.mutation.ScopesCleared() {
 		_spec.ClearField(oauthconnectionhistory.FieldScopes, field.TypeJSON)
 	}
+	if _u.mutation.ExternalAccountIDCleared() {
+		_spec.ClearField(oauthconnectionhistory.FieldExternalAccountID, field.TypeString)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{oauthconnectionhistory.Label}
@@ -207,6 +210,9 @@ func (_u *OAuthConnectionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *
 	}
 	if _u.mutation.ScopesCleared() {
 		_spec.ClearField(oauthconnectionhistory.FieldScopes, field.TypeJSON)
+	}
+	if _u.mutation.ExternalAccountIDCleared() {
+		_spec.ClearField(oauthconnectionhistory.FieldExternalAccountID, field.TypeString)
 	}
 	_node = &OAuthConnectionHistory{config: _u.config}
 	_spec.Assign = _node.assignValues

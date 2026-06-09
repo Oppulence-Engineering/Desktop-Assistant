@@ -212,6 +212,22 @@ config:
   CLOUD_SCHEDULER_INTERVAL: 15s
   CLOUD_SCHEDULER_LEASE_TTL: 150s
   CLOUD_SCHEDULER_TIMEZONE: UTC
+  # Cloud event ingestion + routing (RFC 003). Ingestion endpoints are always
+  # mounted; routing (the Temporal workflow matching events to tasks) is gated
+  # and requires TEMPORAL_ENABLED=true.
+  CLOUD_EVENTS_ROUTING_ENABLED: "false"
+  CLOUD_EVENTS_MATCH_THRESHOLD: "0.7"
+  CLOUD_EVENTS_ROUTER_MODEL: anthropic/claude-haiku-4-5
+  CLOUD_EVENTS_MAX_PAYLOAD_BYTES: "262144"
+  # Google watch manager (RFC 003): registers/renews Gmail + Calendar push
+  # subscriptions in the scheduler pod. Requires GOOGLE_WEBHOOK_TOKEN and (for
+  # Gmail) GMAIL_PUBSUB_TOPIC, whose push subscription must target
+  # /v1/webhooks/google?token=<GOOGLE_WEBHOOK_TOKEN>. GCP-side provisioning:
+  # apps/rfc/019-google-push-infrastructure.md.
+  GOOGLE_WATCH_ENABLED: "false"
+  GMAIL_PUBSUB_TOPIC: ""
+  GOOGLE_WATCH_INTERVAL: 15m
+  GOOGLE_WATCH_RENEW_MARGIN: 24h
 
 # Secret env. In production these are projected from an existing Secret
 # (existingSecret) rather than templated into the chart. When existingSecret is
@@ -224,6 +240,10 @@ secretValues: {}
   # WORKOS_API_KEY: ""
   # HOOK_HMAC_SECRET: ""
   # INTERNAL_API_SECRET: ""
+  # SLACK_SIGNING_SECRET: ""
+  # GOOGLE_WEBHOOK_TOKEN: ""
+  # SLACK_CLIENT_ID: ""
+  # SLACK_CLIENT_SECRET: ""
   # ORY_BROKER_CLIENT_ID: ""
   # ORY_BROKER_CLIENT_SECRET: ""
   # INFISICAL_TOKEN: ""

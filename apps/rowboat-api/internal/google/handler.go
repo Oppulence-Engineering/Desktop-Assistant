@@ -112,6 +112,10 @@ type tokenBundle struct {
 type parkedPayload struct {
 	tokenBundle
 	WorkOSUserID string `json:"workos_user_id,omitempty"`
+	// AccountEmail is the Google account's email from the token exchange's
+	// id_token; persisted as the connection's external_account_id so provider
+	// webhooks can resolve the owning user (RFC 003).
+	AccountEmail string `json:"account_email,omitempty"`
 }
 
 // Claim handles POST /v1/google-oauth/claim. Reads and consumes the parked
@@ -213,7 +217,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.RefreshToken != "" {
-		if err := h.persistConnection(ctx, u, payload.RefreshToken, splitScope(payload.Scope)); err != nil {
+		if err := h.persistConnection(ctx, u, payload.RefreshToken, splitScope(payload.Scope), payload.AccountEmail); err != nil {
 			h.log.Warn("claim: persist connection", zap.Error(err))
 		}
 	}
@@ -310,8 +314,8 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 }
 
 // persistConnection upserts the user's Google OAuthConnection with a sealed
-// refresh token.
-func (h *Handler) persistConnection(ctx context.Context, u *ent.User, refreshToken string, scopes []string) error {
+// refresh token and the provider-side account email (webhook user resolution).
+func (h *Handler) persistConnection(ctx context.Context, u *ent.User, refreshToken string, scopes []string, accountEmail string) error {
 	sealed, err := h.sealer.SealString(refreshToken)
 	if err != nil {
 		return err
@@ -321,14 +325,21 @@ func (h *Handler) persistConnection(ctx context.Context, u *ent.User, refreshTok
 		Only(ctx)
 	switch {
 	case err == nil:
-		return existing.Update().SetRefreshTokenEncrypted(sealed).SetScopes(scopes).Exec(ctx)
+		update := existing.Update().SetRefreshTokenEncrypted(sealed).SetScopes(scopes)
+		if accountEmail != "" {
+			update = update.SetExternalAccountID(accountEmail)
+		}
+		return update.Exec(ctx)
 	case ent.IsNotFound(err):
-		return h.client.OAuthConnection.Create().
+		create := h.client.OAuthConnection.Create().
 			SetUser(u).
 			SetProvider("google").
 			SetRefreshTokenEncrypted(sealed).
-			SetScopes(scopes).
-			Exec(ctx)
+			SetScopes(scopes)
+		if accountEmail != "" {
+			create = create.SetExternalAccountID(accountEmail)
+		}
+		return create.Exec(ctx)
 	default:
 		return err
 	}

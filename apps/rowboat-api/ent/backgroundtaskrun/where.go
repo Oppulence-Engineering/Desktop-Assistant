@@ -206,6 +206,11 @@ func CompletedAt(v time.Time) predicate.BackgroundTaskRun {
 	return predicate.BackgroundTaskRun(sql.FieldEQ(FieldCompletedAt, v))
 }
 
+// CloudEventID applies equality check predicate on the "cloud_event_id" field. It's identical to CloudEventIDEQ.
+func CloudEventID(v uuid.UUID) predicate.BackgroundTaskRun {
+	return predicate.BackgroundTaskRun(sql.FieldEQ(FieldCloudEventID, v))
+}
+
 // Revision applies equality check predicate on the "revision" field. It's identical to RevisionEQ.
 func Revision(v int) predicate.BackgroundTaskRun {
 	return predicate.BackgroundTaskRun(sql.FieldEQ(FieldRevision, v))
@@ -2141,6 +2146,36 @@ func CompletedAtNotNil() predicate.BackgroundTaskRun {
 	return predicate.BackgroundTaskRun(sql.FieldNotNull(FieldCompletedAt))
 }
 
+// CloudEventIDEQ applies the EQ predicate on the "cloud_event_id" field.
+func CloudEventIDEQ(v uuid.UUID) predicate.BackgroundTaskRun {
+	return predicate.BackgroundTaskRun(sql.FieldEQ(FieldCloudEventID, v))
+}
+
+// CloudEventIDNEQ applies the NEQ predicate on the "cloud_event_id" field.
+func CloudEventIDNEQ(v uuid.UUID) predicate.BackgroundTaskRun {
+	return predicate.BackgroundTaskRun(sql.FieldNEQ(FieldCloudEventID, v))
+}
+
+// CloudEventIDIn applies the In predicate on the "cloud_event_id" field.
+func CloudEventIDIn(vs ...uuid.UUID) predicate.BackgroundTaskRun {
+	return predicate.BackgroundTaskRun(sql.FieldIn(FieldCloudEventID, vs...))
+}
+
+// CloudEventIDNotIn applies the NotIn predicate on the "cloud_event_id" field.
+func CloudEventIDNotIn(vs ...uuid.UUID) predicate.BackgroundTaskRun {
+	return predicate.BackgroundTaskRun(sql.FieldNotIn(FieldCloudEventID, vs...))
+}
+
+// CloudEventIDIsNil applies the IsNil predicate on the "cloud_event_id" field.
+func CloudEventIDIsNil() predicate.BackgroundTaskRun {
+	return predicate.BackgroundTaskRun(sql.FieldIsNull(FieldCloudEventID))
+}
+
+// CloudEventIDNotNil applies the NotNil predicate on the "cloud_event_id" field.
+func CloudEventIDNotNil() predicate.BackgroundTaskRun {
+	return predicate.BackgroundTaskRun(sql.FieldNotNull(FieldCloudEventID))
+}
+
 // RevisionEQ applies the EQ predicate on the "revision" field.
 func RevisionEQ(v int) predicate.BackgroundTaskRun {
 	return predicate.BackgroundTaskRun(sql.FieldEQ(FieldRevision, v))
@@ -2219,6 +2254,29 @@ func HasTask() predicate.BackgroundTaskRun {
 func HasTaskWith(preds ...predicate.BackgroundTask) predicate.BackgroundTaskRun {
 	return predicate.BackgroundTaskRun(func(s *sql.Selector) {
 		step := newTaskStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCloudEvent applies the HasEdge predicate on the "cloud_event" edge.
+func HasCloudEvent() predicate.BackgroundTaskRun {
+	return predicate.BackgroundTaskRun(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, CloudEventTable, CloudEventColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCloudEventWith applies the HasEdge predicate on the "cloud_event" edge with a given conditions (other predicates).
+func HasCloudEventWith(preds ...predicate.CloudEvent) predicate.BackgroundTaskRun {
+	return predicate.BackgroundTaskRun(func(s *sql.Selector) {
+		step := newCloudEventStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

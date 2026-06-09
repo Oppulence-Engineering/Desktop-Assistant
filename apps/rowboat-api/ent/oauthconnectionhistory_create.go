@@ -105,6 +105,20 @@ func (_c *OAuthConnectionHistoryCreate) SetScopes(v []string) *OAuthConnectionHi
 	return _c
 }
 
+// SetExternalAccountID sets the "external_account_id" field.
+func (_c *OAuthConnectionHistoryCreate) SetExternalAccountID(v string) *OAuthConnectionHistoryCreate {
+	_c.mutation.SetExternalAccountID(v)
+	return _c
+}
+
+// SetNillableExternalAccountID sets the "external_account_id" field if the given value is not nil.
+func (_c *OAuthConnectionHistoryCreate) SetNillableExternalAccountID(v *string) *OAuthConnectionHistoryCreate {
+	if v != nil {
+		_c.SetExternalAccountID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *OAuthConnectionHistoryCreate) SetID(v uuid.UUID) *OAuthConnectionHistoryCreate {
 	_c.mutation.SetID(v)
@@ -265,6 +279,10 @@ func (_c *OAuthConnectionHistoryCreate) createSpec() (*OAuthConnectionHistory, *
 		_spec.SetField(oauthconnectionhistory.FieldScopes, field.TypeJSON, value)
 		_node.Scopes = value
 	}
+	if value, ok := _c.mutation.ExternalAccountID(); ok {
+		_spec.SetField(oauthconnectionhistory.FieldExternalAccountID, field.TypeString, value)
+		_node.ExternalAccountID = value
+	}
 	return _node, _spec
 }
 
@@ -366,6 +384,9 @@ func (u *OAuthConnectionHistoryUpsertOne) UpdateNewValues() *OAuthConnectionHist
 		}
 		if _, exists := u.create.mutation.Scopes(); exists {
 			s.SetIgnore(oauthconnectionhistory.FieldScopes)
+		}
+		if _, exists := u.create.mutation.ExternalAccountID(); exists {
+			s.SetIgnore(oauthconnectionhistory.FieldExternalAccountID)
 		}
 	}))
 	return u
@@ -615,6 +636,9 @@ func (u *OAuthConnectionHistoryUpsertBulk) UpdateNewValues() *OAuthConnectionHis
 			}
 			if _, exists := b.mutation.Scopes(); exists {
 				s.SetIgnore(oauthconnectionhistory.FieldScopes)
+			}
+			if _, exists := b.mutation.ExternalAccountID(); exists {
+				s.SetIgnore(oauthconnectionhistory.FieldExternalAccountID)
 			}
 		}
 	}))

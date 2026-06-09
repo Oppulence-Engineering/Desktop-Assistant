@@ -11,7 +11,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -386,6 +388,21 @@ func (_q *BackgroundTaskRunQuery) collectField(ctx context.Context, oneNode bool
 			}
 			_q.withTask = query
 
+		case "cloudEvent":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CloudEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, cloudeventImplementors)...); err != nil {
+				return err
+			}
+			_q.withCloudEvent = query
+			if _, ok := fieldSeen[backgroundtaskrun.FieldCloudEventID]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldCloudEventID)
+				fieldSeen[backgroundtaskrun.FieldCloudEventID] = struct{}{}
+			}
+
 		case "events":
 			var (
 				alias = field.Alias
@@ -547,6 +564,11 @@ func (_q *BackgroundTaskRunQuery) collectField(ctx context.Context, oneNode bool
 			if _, ok := fieldSeen[backgroundtaskrun.FieldCompletedAt]; !ok {
 				selectedFields = append(selectedFields, backgroundtaskrun.FieldCompletedAt)
 				fieldSeen[backgroundtaskrun.FieldCompletedAt] = struct{}{}
+			}
+		case "cloudEventID":
+			if _, ok := fieldSeen[backgroundtaskrun.FieldCloudEventID]; !ok {
+				selectedFields = append(selectedFields, backgroundtaskrun.FieldCloudEventID)
+				fieldSeen[backgroundtaskrun.FieldCloudEventID] = struct{}{}
 			}
 		case "revision":
 			if _, ok := fieldSeen[backgroundtaskrun.FieldRevision]; !ok {
@@ -859,6 +881,167 @@ func newBackgroundTaskScheduleStatePaginateArgs(rv map[string]any) *backgroundta
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *CloudEventQuery) CollectFields(ctx context.Context, satisfies ...string) (*CloudEventQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *CloudEventQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(cloudevent.Columns))
+		selectedFields = []string{cloudevent.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "runs":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&BackgroundTaskRunClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, backgroundtaskrunImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRuns(alias, func(wq *BackgroundTaskRunQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[cloudevent.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldCreatedAt)
+				fieldSeen[cloudevent.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[cloudevent.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldUpdatedAt)
+				fieldSeen[cloudevent.FieldUpdatedAt] = struct{}{}
+			}
+		case "source":
+			if _, ok := fieldSeen[cloudevent.FieldSource]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldSource)
+				fieldSeen[cloudevent.FieldSource] = struct{}{}
+			}
+		case "sourceEventID":
+			if _, ok := fieldSeen[cloudevent.FieldSourceEventID]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldSourceEventID)
+				fieldSeen[cloudevent.FieldSourceEventID] = struct{}{}
+			}
+		case "sourceAccountID":
+			if _, ok := fieldSeen[cloudevent.FieldSourceAccountID]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldSourceAccountID)
+				fieldSeen[cloudevent.FieldSourceAccountID] = struct{}{}
+			}
+		case "eventType":
+			if _, ok := fieldSeen[cloudevent.FieldEventType]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldEventType)
+				fieldSeen[cloudevent.FieldEventType] = struct{}{}
+			}
+		case "subject":
+			if _, ok := fieldSeen[cloudevent.FieldSubject]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldSubject)
+				fieldSeen[cloudevent.FieldSubject] = struct{}{}
+			}
+		case "text":
+			if _, ok := fieldSeen[cloudevent.FieldText]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldText)
+				fieldSeen[cloudevent.FieldText] = struct{}{}
+			}
+		case "routingJSON":
+			if _, ok := fieldSeen[cloudevent.FieldRoutingJSON]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldRoutingJSON)
+				fieldSeen[cloudevent.FieldRoutingJSON] = struct{}{}
+			}
+		case "dedupeKey":
+			if _, ok := fieldSeen[cloudevent.FieldDedupeKey]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldDedupeKey)
+				fieldSeen[cloudevent.FieldDedupeKey] = struct{}{}
+			}
+		case "routingStatus":
+			if _, ok := fieldSeen[cloudevent.FieldRoutingStatus]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldRoutingStatus)
+				fieldSeen[cloudevent.FieldRoutingStatus] = struct{}{}
+			}
+		case "matchedTaskCount":
+			if _, ok := fieldSeen[cloudevent.FieldMatchedTaskCount]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldMatchedTaskCount)
+				fieldSeen[cloudevent.FieldMatchedTaskCount] = struct{}{}
+			}
+		case "occurredAt":
+			if _, ok := fieldSeen[cloudevent.FieldOccurredAt]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldOccurredAt)
+				fieldSeen[cloudevent.FieldOccurredAt] = struct{}{}
+			}
+		case "receivedAt":
+			if _, ok := fieldSeen[cloudevent.FieldReceivedAt]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldReceivedAt)
+				fieldSeen[cloudevent.FieldReceivedAt] = struct{}{}
+			}
+		case "routedAt":
+			if _, ok := fieldSeen[cloudevent.FieldRoutedAt]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldRoutedAt)
+				fieldSeen[cloudevent.FieldRoutedAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type cloudeventPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CloudEventPaginateOption
+}
+
+func newCloudEventPaginateArgs(rv map[string]any) *cloudeventPaginateArgs {
+	args := &cloudeventPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*CloudEventWhereInput); ok {
+		args.opts = append(args.opts, WithCloudEventFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *CreditLedgerQuery) CollectFields(ctx context.Context, satisfies ...string) (*CreditLedgerQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -947,6 +1130,129 @@ func newCreditLedgerPaginateArgs(rv map[string]any) *creditledgerPaginateArgs {
 	}
 	if v, ok := rv[whereField].(*CreditLedgerWhereInput); ok {
 		args.opts = append(args.opts, WithCreditLedgerFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *GoogleWatchQuery) CollectFields(ctx context.Context, satisfies ...string) (*GoogleWatchQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *GoogleWatchQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(googlewatch.Columns))
+		selectedFields = []string{googlewatch.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[googlewatch.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldCreatedAt)
+				fieldSeen[googlewatch.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[googlewatch.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldUpdatedAt)
+				fieldSeen[googlewatch.FieldUpdatedAt] = struct{}{}
+			}
+		case "kind":
+			if _, ok := fieldSeen[googlewatch.FieldKind]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldKind)
+				fieldSeen[googlewatch.FieldKind] = struct{}{}
+			}
+		case "accountEmail":
+			if _, ok := fieldSeen[googlewatch.FieldAccountEmail]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldAccountEmail)
+				fieldSeen[googlewatch.FieldAccountEmail] = struct{}{}
+			}
+		case "channelID":
+			if _, ok := fieldSeen[googlewatch.FieldChannelID]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldChannelID)
+				fieldSeen[googlewatch.FieldChannelID] = struct{}{}
+			}
+		case "resourceID":
+			if _, ok := fieldSeen[googlewatch.FieldResourceID]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldResourceID)
+				fieldSeen[googlewatch.FieldResourceID] = struct{}{}
+			}
+		case "historyID":
+			if _, ok := fieldSeen[googlewatch.FieldHistoryID]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldHistoryID)
+				fieldSeen[googlewatch.FieldHistoryID] = struct{}{}
+			}
+		case "expiresAt":
+			if _, ok := fieldSeen[googlewatch.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldExpiresAt)
+				fieldSeen[googlewatch.FieldExpiresAt] = struct{}{}
+			}
+		case "renewClaimedAt":
+			if _, ok := fieldSeen[googlewatch.FieldRenewClaimedAt]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldRenewClaimedAt)
+				fieldSeen[googlewatch.FieldRenewClaimedAt] = struct{}{}
+			}
+		case "lastError":
+			if _, ok := fieldSeen[googlewatch.FieldLastError]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldLastError)
+				fieldSeen[googlewatch.FieldLastError] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type googlewatchPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []GoogleWatchPaginateOption
+}
+
+func newGoogleWatchPaginateArgs(rv map[string]any) *googlewatchPaginateArgs {
+	args := &googlewatchPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*GoogleWatchWhereInput); ok {
+		args.opts = append(args.opts, WithGoogleWatchFilter(v.Filter))
 	}
 	return args
 }
@@ -1233,6 +1539,11 @@ func (_q *OAuthConnectionQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[oauthconnection.FieldScopes]; !ok {
 				selectedFields = append(selectedFields, oauthconnection.FieldScopes)
 				fieldSeen[oauthconnection.FieldScopes] = struct{}{}
+			}
+		case "externalAccountID":
+			if _, ok := fieldSeen[oauthconnection.FieldExternalAccountID]; !ok {
+				selectedFields = append(selectedFields, oauthconnection.FieldExternalAccountID)
+				fieldSeen[oauthconnection.FieldExternalAccountID] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -1622,6 +1933,32 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedBackgroundTaskScheduleStates(alias, func(wq *BackgroundTaskScheduleStateQuery) {
+				*wq = *query
+			})
+
+		case "cloudEvents":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CloudEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, cloudeventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCloudEvents(alias, func(wq *CloudEventQuery) {
+				*wq = *query
+			})
+
+		case "googleWatches":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&GoogleWatchClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, googlewatchImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedGoogleWatches(alias, func(wq *GoogleWatchQuery) {
 				*wq = *query
 			})
 		case "createdAt":

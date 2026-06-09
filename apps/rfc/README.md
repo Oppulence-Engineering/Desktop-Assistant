@@ -33,9 +33,10 @@ to avoid parallel sources of truth.
 | [008](./008-conduit-eigen-faculties.md)       | Conduit & Eigen Faculties       | cross-portfolio | Plugs the **evidence** (Conduit) and **foresight** (Eigen) planes into the event bus + runtime — the federated financial brain. |
 
 RFCs 001–007 build the execution plane; **008** is the first _faculty_ RFC that proves the
-fabric extends to new portfolio planes. All are **Draft**. Each carries a metadata block,
-grounded `file:line` references into the current codebase, mermaid diagrams, a **Decisions**
-section (resolved forks), and a test plan.
+fabric extends to new portfolio planes. **002** and **003** are **Complete** (003 with its
+GCP provisioning companion [019](./019-google-push-infrastructure.md)); the rest are
+**Draft**. Each carries a metadata block, grounded `file:line` references into the current
+codebase, mermaid diagrams, a **Decisions** section (resolved forks), and a test plan.
 
 ## Other RFCs
 
@@ -53,6 +54,7 @@ Not part of the cloud-workflows set above, but living here under the same RFC co
 | [016](./016-app-family-consolidation.md)                    | App Family Consolidation                      | repo / apps         | Canonical app tiers and contract ownership across desktop, hosted platform, Go service plane, SDK, CLI, static frontends, widgets, experiments, simulation runner, and docs.                                                 |
 | [017](./017-on-device-meeting-diarization.md)               | On-Device Meeting Diarization                 | apps/x              | A local speaker diarization follow-up to RFC 009: VAD, speaker embeddings, clustering, alignment, provenance, quality gates, and a beta meetings mode that does not replace cloud diarization until it passes product gates. |
 | [018](./018-a2a-delegation-and-agent-identity.md)           | A2A Delegation and Agent Identity             | future protocol     | User-bound agent identity, scoped delegation tokens, A2A/MCP adapter boundaries, approval policy, connector-scope enforcement, and delegation-chain provenance for future cross-agent workflows.                             |
+| [019](./019-google-push-infrastructure.md)                  | Google Push Infrastructure                    | GCP / infra         | The operator-provisioned GCP half of RFC 003: Pub/Sub topic + Gmail publish grant + push subscription, Calendar domain verification, token rotation, verification, and the OIDC push-auth follow-up.                         |
 
 ## Dependency graph
 

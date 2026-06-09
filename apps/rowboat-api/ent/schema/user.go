@@ -62,5 +62,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("background_task_runs", BackgroundTaskRun.Type).Annotations(entproto.Skip()),
 		edge.To("background_task_run_events", BackgroundTaskRunEvent.Type).Annotations(entproto.Skip()),
 		edge.To("background_task_schedule_states", BackgroundTaskScheduleState.Type).Annotations(entproto.Skip()),
+		edge.To("cloud_events", CloudEvent.Type).Annotations(entproto.Skip()),
+		edge.To("google_watches", GoogleWatch.Type).Annotations(entproto.Skip()),
 	}
 }

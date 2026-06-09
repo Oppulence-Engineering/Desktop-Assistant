@@ -32,6 +32,8 @@ const (
 	GroupVoiceBurst  = "voice_burst"
 	GroupSearchBurst = "search_burst"
 	GroupTaskBurst   = "background_task_burst"
+	GroupEvents      = "events"
+	GroupWebhooks    = "webhooks"
 )
 
 // Limiter is a fixed-window rate limiter.

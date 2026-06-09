@@ -495,6 +495,10 @@ func (m *OAuthConnectionMutation) CreateHistoryFromCreate(ctx context.Context) e
 		create = create.SetScopes(scopes)
 	}
 
+	if externalAccountID, exists := m.ExternalAccountID(); exists {
+		create = create.SetExternalAccountID(externalAccountID)
+	}
+
 	_, err = create.Save(ctx)
 	if err != nil {
 		rollback(tx, err)
@@ -560,6 +564,12 @@ func (m *OAuthConnectionMutation) CreateHistoryFromUpdate(ctx context.Context) e
 			create = create.SetScopes(oauthconnection.Scopes)
 		}
 
+		if externalAccountID, exists := m.ExternalAccountID(); exists {
+			create = create.SetExternalAccountID(externalAccountID)
+		} else {
+			create = create.SetExternalAccountID(oauthconnection.ExternalAccountID)
+		}
+
 		_, err = create.Save(ctx)
 		if err != nil {
 			rollback(tx, err)
@@ -601,6 +611,7 @@ func (m *OAuthConnectionMutation) CreateHistoryFromDelete(ctx context.Context) e
 			SetProvider(oauthconnection.Provider).
 			SetRefreshTokenEncrypted(oauthconnection.RefreshTokenEncrypted).
 			SetScopes(oauthconnection.Scopes).
+			SetExternalAccountID(oauthconnection.ExternalAccountID).
 			Save(ctx)
 		if err != nil {
 			rollback(tx, err)

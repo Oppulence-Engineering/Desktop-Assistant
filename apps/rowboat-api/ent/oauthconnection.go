@@ -30,6 +30,8 @@ type OAuthConnection struct {
 	RefreshTokenEncrypted []byte `json:"-"`
 	// Scopes holds the value of the "scopes" field.
 	Scopes []string `json:"scopes,omitempty"`
+	// ExternalAccountID holds the value of the "external_account_id" field.
+	ExternalAccountID string `json:"external_account_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OAuthConnectionQuery when eager-loading is set.
 	Edges                  OAuthConnectionEdges `json:"edges"`
@@ -66,7 +68,7 @@ func (*OAuthConnection) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case oauthconnection.FieldRefreshTokenEncrypted, oauthconnection.FieldScopes:
 			values[i] = new([]byte)
-		case oauthconnection.FieldProvider:
+		case oauthconnection.FieldProvider, oauthconnection.FieldExternalAccountID:
 			values[i] = new(sql.NullString)
 		case oauthconnection.FieldCreatedAt, oauthconnection.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -126,6 +128,12 @@ func (_m *OAuthConnection) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.Scopes); err != nil {
 					return fmt.Errorf("unmarshal field scopes: %w", err)
 				}
+			}
+		case oauthconnection.FieldExternalAccountID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field external_account_id", values[i])
+			} else if value.Valid {
+				_m.ExternalAccountID = value.String
 			}
 		case oauthconnection.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -188,6 +196,9 @@ func (_m *OAuthConnection) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))
+	builder.WriteString(", ")
+	builder.WriteString("external_account_id=")
+	builder.WriteString(_m.ExternalAccountID)
 	builder.WriteByte(')')
 	return builder.String()
 }
