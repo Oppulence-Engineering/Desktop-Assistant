@@ -34,6 +34,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
 	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
 	"github.com/go-chi/chi/v5"
+	temporalsdk "go.temporal.io/sdk/client"
 	"go.uber.org/zap"
 )
 
@@ -123,9 +124,12 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	docsH := docs.New()
 	billingH := billing.New(client, cfg.FreeTierCredits, cfg.DailyCreditLimit, database.Cached, log)
 	backgroundTasksH := backgroundtasks.New(client, log)
+	// temporalClient outlives this block: the cloud-events route starter below
+	// reuses the same connection. Closed on shutdown by the goroutine.
+	var temporalClient temporalsdk.Client
 	if cfg.TemporalEnabled {
 		tctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		temporalClient, err := backgroundtaskworkflow.Dial(tctx, cfg)
+		temporalClient, err = backgroundtaskworkflow.Dial(tctx, cfg)
 		cancel()
 		if err != nil {
 			return err
@@ -183,7 +187,11 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// Cloud event ingestion (RFC 003). The route controller is wired only when
 	// routing is enabled (it needs Temporal); without it events are stored with
 	// routing_status=skipped.
-	cloudEventsH := cloudevents.New(client, sealer, nil, cloudevents.Config{
+	var routeCtl cloudevents.RouteController
+	if cfg.CloudEventsRoutingEnabled && temporalClient != nil {
+		routeCtl = cloudevents.NewRouteStarter(temporalClient, cfg)
+	}
+	cloudEventsH := cloudevents.New(client, sealer, routeCtl, cloudevents.Config{
 		MaxPayloadBytes:    cfg.CloudEventsMaxPayloadBytes,
 		SlackSigningSecret: cfg.SlackSigningSecret,
 		GoogleWebhookToken: cfg.GoogleWebhookToken,

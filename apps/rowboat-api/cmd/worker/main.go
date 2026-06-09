@@ -13,11 +13,19 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	temporalsdk "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
 )
@@ -122,6 +130,17 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 			Client: client,
 			Log:    log,
 		})
+		if cfg.CloudEventsRoutingEnabled {
+			router, err := buildEventRouter(ctx, cfg, log, client, temporalClient)
+			if err != nil {
+				temporalClient.Close()
+				return err
+			}
+			cloudevents.Register(w, &cloudevents.Activities{Router: router, Log: log})
+			log.Info("cloud event route workflow registered",
+				zap.String("model", cfg.CloudEventsRouterModel),
+				zap.Float64("threshold", cfg.CloudEventsMatchThreshold))
+		}
 
 		if err := w.Start(); err != nil {
 			temporalClient.Close()
@@ -138,6 +157,50 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		temporalClient.Close()
 		return nil
 	}
+}
+
+// buildEventRouter assembles the RFC 003 routing activity's dependencies: the
+// in-process LLM gateway (vendor secrets + pricing + the owner-billing quota
+// gate) and the shared run Starter. This is the worker's first vendor-key
+// surface — wire.go makes the same construction calls for the API process.
+func buildEventRouter(ctx context.Context, cfg appconfig.Config, log *zap.Logger, client *ent.Client, temporalClient temporalsdk.Client) (*cloudevents.Router, error) {
+	sec := secrets.NewFromConfig(cfg)
+	if err := sec.LoadInfisical(ctx, cfg); err != nil {
+		if cfg.InfisicalEnabled && cfg.IsProduction() {
+			return nil, fmt.Errorf("infisical secret load failed in production: %w", err)
+		}
+		log.Warn("infisical load failed; using env vendor keys", zap.Error(err))
+	}
+	sec.StartRefresh(ctx, cfg, 5*time.Minute, log)
+
+	prices, err := pricing.LoadJSON([]byte(cfg.PricingJSON))
+	if err != nil {
+		return nil, err
+	}
+
+	gate := quota.New(client, log)
+	llmH := llm.New(prices, gate, sec, client, log)
+	llmH.SetUpstreams(cfg.OpenAIBaseURL, cfg.OpenRouterBaseURL)
+	llmPolicy := outbound.Policy{
+		Timeout:               cfg.VendorTimeout,
+		ResponseHeaderTimeout: cfg.VendorResponseHeaderTimeout,
+		MaxConcurrent:         cfg.LLMMaxConcurrent,
+		MaxResponseBytes:      cfg.UpstreamResponseMaxBytes,
+	}
+	llmH.SetOutboundPolicy(llmPolicy)
+	llmH.SetPolicy(llm.Policy{
+		SpendLimits: quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit},
+	})
+
+	starter := backgroundtaskruns.New(client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log)
+	return &cloudevents.Router{
+		Client:    client,
+		LLM:       llmH,
+		Starter:   starter,
+		Threshold: cfg.CloudEventsMatchThreshold,
+		Model:     cfg.CloudEventsRouterModel,
+		Log:       log,
+	}, nil
 }
 
 func waitForRetry(ctx context.Context, log *zap.Logger, operation string, err error, delay time.Duration) error {
