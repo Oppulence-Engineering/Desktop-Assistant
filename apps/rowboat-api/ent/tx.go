@@ -26,6 +26,8 @@ type Tx struct {
 	CloudEvent *CloudEventClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
+	// GoogleWatch is the client for interacting with the GoogleWatch builders.
+	GoogleWatch *GoogleWatchClient
 	// LLMUsage is the client for interacting with the LLMUsage builders.
 	LLMUsage *LLMUsageClient
 	// LLMUsageHistory is the client for interacting with the LLMUsageHistory builders.
@@ -186,6 +188,7 @@ func (tx *Tx) init() {
 	tx.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(tx.config)
 	tx.CloudEvent = NewCloudEventClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
+	tx.GoogleWatch = NewGoogleWatchClient(tx.config)
 	tx.LLMUsage = NewLLMUsageClient(tx.config)
 	tx.LLMUsageHistory = NewLLMUsageHistoryClient(tx.config)
 	tx.MCPConnection = NewMCPConnectionClient(tx.config)

@@ -27,6 +27,9 @@ type CloudEvent func(*sql.Selector)
 // CreditLedger is the predicate function for creditledger builders.
 type CreditLedger func(*sql.Selector)
 
+// GoogleWatch is the predicate function for googlewatch builders.
+type GoogleWatch func(*sql.Selector)
+
 // LLMUsage is the predicate function for llmusage builders.
 type LLMUsage func(*sql.Selector)
 

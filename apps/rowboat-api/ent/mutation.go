@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -50,6 +51,7 @@ const (
 	TypeBackgroundTaskScheduleState = "BackgroundTaskScheduleState"
 	TypeCloudEvent                  = "CloudEvent"
 	TypeCreditLedger                = "CreditLedger"
+	TypeGoogleWatch                 = "GoogleWatch"
 	TypeLLMUsage                    = "LLMUsage"
 	TypeLLMUsageHistory             = "LLMUsageHistory"
 	TypeMCPConnection               = "MCPConnection"
@@ -9516,6 +9518,989 @@ func (m *CreditLedgerMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown CreditLedger edge %s", name)
 }
 
+// GoogleWatchMutation represents an operation that mutates the GoogleWatch nodes in the graph.
+type GoogleWatchMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	kind             *string
+	account_email    *string
+	channel_id       *string
+	resource_id      *string
+	history_id       *string
+	expires_at       *time.Time
+	renew_claimed_at *time.Time
+	last_error       *string
+	clearedFields    map[string]struct{}
+	user             *uuid.UUID
+	cleareduser      bool
+	done             bool
+	oldValue         func(context.Context) (*GoogleWatch, error)
+	predicates       []predicate.GoogleWatch
+}
+
+var _ ent.Mutation = (*GoogleWatchMutation)(nil)
+
+// googlewatchOption allows management of the mutation configuration using functional options.
+type googlewatchOption func(*GoogleWatchMutation)
+
+// newGoogleWatchMutation creates new mutation for the GoogleWatch entity.
+func newGoogleWatchMutation(c config, op Op, opts ...googlewatchOption) *GoogleWatchMutation {
+	m := &GoogleWatchMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeGoogleWatch,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withGoogleWatchID sets the ID field of the mutation.
+func withGoogleWatchID(id uuid.UUID) googlewatchOption {
+	return func(m *GoogleWatchMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *GoogleWatch
+		)
+		m.oldValue = func(ctx context.Context) (*GoogleWatch, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().GoogleWatch.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withGoogleWatch sets the old GoogleWatch of the mutation.
+func withGoogleWatch(node *GoogleWatch) googlewatchOption {
+	return func(m *GoogleWatchMutation) {
+		m.oldValue = func(context.Context) (*GoogleWatch, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m GoogleWatchMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m GoogleWatchMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of GoogleWatch entities.
+func (m *GoogleWatchMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *GoogleWatchMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *GoogleWatchMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().GoogleWatch.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *GoogleWatchMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *GoogleWatchMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *GoogleWatchMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *GoogleWatchMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *GoogleWatchMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *GoogleWatchMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *GoogleWatchMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *GoogleWatchMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *GoogleWatchMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetAccountEmail sets the "account_email" field.
+func (m *GoogleWatchMutation) SetAccountEmail(s string) {
+	m.account_email = &s
+}
+
+// AccountEmail returns the value of the "account_email" field in the mutation.
+func (m *GoogleWatchMutation) AccountEmail() (r string, exists bool) {
+	v := m.account_email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccountEmail returns the old "account_email" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldAccountEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccountEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccountEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccountEmail: %w", err)
+	}
+	return oldValue.AccountEmail, nil
+}
+
+// ResetAccountEmail resets all changes to the "account_email" field.
+func (m *GoogleWatchMutation) ResetAccountEmail() {
+	m.account_email = nil
+}
+
+// SetChannelID sets the "channel_id" field.
+func (m *GoogleWatchMutation) SetChannelID(s string) {
+	m.channel_id = &s
+}
+
+// ChannelID returns the value of the "channel_id" field in the mutation.
+func (m *GoogleWatchMutation) ChannelID() (r string, exists bool) {
+	v := m.channel_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChannelID returns the old "channel_id" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldChannelID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChannelID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChannelID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChannelID: %w", err)
+	}
+	return oldValue.ChannelID, nil
+}
+
+// ClearChannelID clears the value of the "channel_id" field.
+func (m *GoogleWatchMutation) ClearChannelID() {
+	m.channel_id = nil
+	m.clearedFields[googlewatch.FieldChannelID] = struct{}{}
+}
+
+// ChannelIDCleared returns if the "channel_id" field was cleared in this mutation.
+func (m *GoogleWatchMutation) ChannelIDCleared() bool {
+	_, ok := m.clearedFields[googlewatch.FieldChannelID]
+	return ok
+}
+
+// ResetChannelID resets all changes to the "channel_id" field.
+func (m *GoogleWatchMutation) ResetChannelID() {
+	m.channel_id = nil
+	delete(m.clearedFields, googlewatch.FieldChannelID)
+}
+
+// SetResourceID sets the "resource_id" field.
+func (m *GoogleWatchMutation) SetResourceID(s string) {
+	m.resource_id = &s
+}
+
+// ResourceID returns the value of the "resource_id" field in the mutation.
+func (m *GoogleWatchMutation) ResourceID() (r string, exists bool) {
+	v := m.resource_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResourceID returns the old "resource_id" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldResourceID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResourceID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResourceID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResourceID: %w", err)
+	}
+	return oldValue.ResourceID, nil
+}
+
+// ClearResourceID clears the value of the "resource_id" field.
+func (m *GoogleWatchMutation) ClearResourceID() {
+	m.resource_id = nil
+	m.clearedFields[googlewatch.FieldResourceID] = struct{}{}
+}
+
+// ResourceIDCleared returns if the "resource_id" field was cleared in this mutation.
+func (m *GoogleWatchMutation) ResourceIDCleared() bool {
+	_, ok := m.clearedFields[googlewatch.FieldResourceID]
+	return ok
+}
+
+// ResetResourceID resets all changes to the "resource_id" field.
+func (m *GoogleWatchMutation) ResetResourceID() {
+	m.resource_id = nil
+	delete(m.clearedFields, googlewatch.FieldResourceID)
+}
+
+// SetHistoryID sets the "history_id" field.
+func (m *GoogleWatchMutation) SetHistoryID(s string) {
+	m.history_id = &s
+}
+
+// HistoryID returns the value of the "history_id" field in the mutation.
+func (m *GoogleWatchMutation) HistoryID() (r string, exists bool) {
+	v := m.history_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHistoryID returns the old "history_id" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldHistoryID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHistoryID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHistoryID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHistoryID: %w", err)
+	}
+	return oldValue.HistoryID, nil
+}
+
+// ClearHistoryID clears the value of the "history_id" field.
+func (m *GoogleWatchMutation) ClearHistoryID() {
+	m.history_id = nil
+	m.clearedFields[googlewatch.FieldHistoryID] = struct{}{}
+}
+
+// HistoryIDCleared returns if the "history_id" field was cleared in this mutation.
+func (m *GoogleWatchMutation) HistoryIDCleared() bool {
+	_, ok := m.clearedFields[googlewatch.FieldHistoryID]
+	return ok
+}
+
+// ResetHistoryID resets all changes to the "history_id" field.
+func (m *GoogleWatchMutation) ResetHistoryID() {
+	m.history_id = nil
+	delete(m.clearedFields, googlewatch.FieldHistoryID)
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *GoogleWatchMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *GoogleWatchMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *GoogleWatchMutation) ResetExpiresAt() {
+	m.expires_at = nil
+}
+
+// SetRenewClaimedAt sets the "renew_claimed_at" field.
+func (m *GoogleWatchMutation) SetRenewClaimedAt(t time.Time) {
+	m.renew_claimed_at = &t
+}
+
+// RenewClaimedAt returns the value of the "renew_claimed_at" field in the mutation.
+func (m *GoogleWatchMutation) RenewClaimedAt() (r time.Time, exists bool) {
+	v := m.renew_claimed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRenewClaimedAt returns the old "renew_claimed_at" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldRenewClaimedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRenewClaimedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRenewClaimedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRenewClaimedAt: %w", err)
+	}
+	return oldValue.RenewClaimedAt, nil
+}
+
+// ClearRenewClaimedAt clears the value of the "renew_claimed_at" field.
+func (m *GoogleWatchMutation) ClearRenewClaimedAt() {
+	m.renew_claimed_at = nil
+	m.clearedFields[googlewatch.FieldRenewClaimedAt] = struct{}{}
+}
+
+// RenewClaimedAtCleared returns if the "renew_claimed_at" field was cleared in this mutation.
+func (m *GoogleWatchMutation) RenewClaimedAtCleared() bool {
+	_, ok := m.clearedFields[googlewatch.FieldRenewClaimedAt]
+	return ok
+}
+
+// ResetRenewClaimedAt resets all changes to the "renew_claimed_at" field.
+func (m *GoogleWatchMutation) ResetRenewClaimedAt() {
+	m.renew_claimed_at = nil
+	delete(m.clearedFields, googlewatch.FieldRenewClaimedAt)
+}
+
+// SetLastError sets the "last_error" field.
+func (m *GoogleWatchMutation) SetLastError(s string) {
+	m.last_error = &s
+}
+
+// LastError returns the value of the "last_error" field in the mutation.
+func (m *GoogleWatchMutation) LastError() (r string, exists bool) {
+	v := m.last_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastError returns the old "last_error" field's value of the GoogleWatch entity.
+// If the GoogleWatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GoogleWatchMutation) OldLastError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastError: %w", err)
+	}
+	return oldValue.LastError, nil
+}
+
+// ClearLastError clears the value of the "last_error" field.
+func (m *GoogleWatchMutation) ClearLastError() {
+	m.last_error = nil
+	m.clearedFields[googlewatch.FieldLastError] = struct{}{}
+}
+
+// LastErrorCleared returns if the "last_error" field was cleared in this mutation.
+func (m *GoogleWatchMutation) LastErrorCleared() bool {
+	_, ok := m.clearedFields[googlewatch.FieldLastError]
+	return ok
+}
+
+// ResetLastError resets all changes to the "last_error" field.
+func (m *GoogleWatchMutation) ResetLastError() {
+	m.last_error = nil
+	delete(m.clearedFields, googlewatch.FieldLastError)
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *GoogleWatchMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *GoogleWatchMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *GoogleWatchMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *GoogleWatchMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *GoogleWatchMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *GoogleWatchMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the GoogleWatchMutation builder.
+func (m *GoogleWatchMutation) Where(ps ...predicate.GoogleWatch) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the GoogleWatchMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *GoogleWatchMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.GoogleWatch, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *GoogleWatchMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *GoogleWatchMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (GoogleWatch).
+func (m *GoogleWatchMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *GoogleWatchMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.created_at != nil {
+		fields = append(fields, googlewatch.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, googlewatch.FieldUpdatedAt)
+	}
+	if m.kind != nil {
+		fields = append(fields, googlewatch.FieldKind)
+	}
+	if m.account_email != nil {
+		fields = append(fields, googlewatch.FieldAccountEmail)
+	}
+	if m.channel_id != nil {
+		fields = append(fields, googlewatch.FieldChannelID)
+	}
+	if m.resource_id != nil {
+		fields = append(fields, googlewatch.FieldResourceID)
+	}
+	if m.history_id != nil {
+		fields = append(fields, googlewatch.FieldHistoryID)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, googlewatch.FieldExpiresAt)
+	}
+	if m.renew_claimed_at != nil {
+		fields = append(fields, googlewatch.FieldRenewClaimedAt)
+	}
+	if m.last_error != nil {
+		fields = append(fields, googlewatch.FieldLastError)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *GoogleWatchMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case googlewatch.FieldCreatedAt:
+		return m.CreatedAt()
+	case googlewatch.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case googlewatch.FieldKind:
+		return m.Kind()
+	case googlewatch.FieldAccountEmail:
+		return m.AccountEmail()
+	case googlewatch.FieldChannelID:
+		return m.ChannelID()
+	case googlewatch.FieldResourceID:
+		return m.ResourceID()
+	case googlewatch.FieldHistoryID:
+		return m.HistoryID()
+	case googlewatch.FieldExpiresAt:
+		return m.ExpiresAt()
+	case googlewatch.FieldRenewClaimedAt:
+		return m.RenewClaimedAt()
+	case googlewatch.FieldLastError:
+		return m.LastError()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *GoogleWatchMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case googlewatch.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case googlewatch.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case googlewatch.FieldKind:
+		return m.OldKind(ctx)
+	case googlewatch.FieldAccountEmail:
+		return m.OldAccountEmail(ctx)
+	case googlewatch.FieldChannelID:
+		return m.OldChannelID(ctx)
+	case googlewatch.FieldResourceID:
+		return m.OldResourceID(ctx)
+	case googlewatch.FieldHistoryID:
+		return m.OldHistoryID(ctx)
+	case googlewatch.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case googlewatch.FieldRenewClaimedAt:
+		return m.OldRenewClaimedAt(ctx)
+	case googlewatch.FieldLastError:
+		return m.OldLastError(ctx)
+	}
+	return nil, fmt.Errorf("unknown GoogleWatch field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GoogleWatchMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case googlewatch.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case googlewatch.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case googlewatch.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case googlewatch.FieldAccountEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccountEmail(v)
+		return nil
+	case googlewatch.FieldChannelID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChannelID(v)
+		return nil
+	case googlewatch.FieldResourceID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResourceID(v)
+		return nil
+	case googlewatch.FieldHistoryID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHistoryID(v)
+		return nil
+	case googlewatch.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case googlewatch.FieldRenewClaimedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRenewClaimedAt(v)
+		return nil
+	case googlewatch.FieldLastError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastError(v)
+		return nil
+	}
+	return fmt.Errorf("unknown GoogleWatch field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *GoogleWatchMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *GoogleWatchMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GoogleWatchMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown GoogleWatch numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *GoogleWatchMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(googlewatch.FieldChannelID) {
+		fields = append(fields, googlewatch.FieldChannelID)
+	}
+	if m.FieldCleared(googlewatch.FieldResourceID) {
+		fields = append(fields, googlewatch.FieldResourceID)
+	}
+	if m.FieldCleared(googlewatch.FieldHistoryID) {
+		fields = append(fields, googlewatch.FieldHistoryID)
+	}
+	if m.FieldCleared(googlewatch.FieldRenewClaimedAt) {
+		fields = append(fields, googlewatch.FieldRenewClaimedAt)
+	}
+	if m.FieldCleared(googlewatch.FieldLastError) {
+		fields = append(fields, googlewatch.FieldLastError)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *GoogleWatchMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *GoogleWatchMutation) ClearField(name string) error {
+	switch name {
+	case googlewatch.FieldChannelID:
+		m.ClearChannelID()
+		return nil
+	case googlewatch.FieldResourceID:
+		m.ClearResourceID()
+		return nil
+	case googlewatch.FieldHistoryID:
+		m.ClearHistoryID()
+		return nil
+	case googlewatch.FieldRenewClaimedAt:
+		m.ClearRenewClaimedAt()
+		return nil
+	case googlewatch.FieldLastError:
+		m.ClearLastError()
+		return nil
+	}
+	return fmt.Errorf("unknown GoogleWatch nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *GoogleWatchMutation) ResetField(name string) error {
+	switch name {
+	case googlewatch.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case googlewatch.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case googlewatch.FieldKind:
+		m.ResetKind()
+		return nil
+	case googlewatch.FieldAccountEmail:
+		m.ResetAccountEmail()
+		return nil
+	case googlewatch.FieldChannelID:
+		m.ResetChannelID()
+		return nil
+	case googlewatch.FieldResourceID:
+		m.ResetResourceID()
+		return nil
+	case googlewatch.FieldHistoryID:
+		m.ResetHistoryID()
+		return nil
+	case googlewatch.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case googlewatch.FieldRenewClaimedAt:
+		m.ResetRenewClaimedAt()
+		return nil
+	case googlewatch.FieldLastError:
+		m.ResetLastError()
+		return nil
+	}
+	return fmt.Errorf("unknown GoogleWatch field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *GoogleWatchMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, googlewatch.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *GoogleWatchMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case googlewatch.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *GoogleWatchMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *GoogleWatchMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *GoogleWatchMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, googlewatch.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *GoogleWatchMutation) EdgeCleared(name string) bool {
+	switch name {
+	case googlewatch.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *GoogleWatchMutation) ClearEdge(name string) error {
+	switch name {
+	case googlewatch.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown GoogleWatch unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *GoogleWatchMutation) ResetEdge(name string) error {
+	switch name {
+	case googlewatch.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown GoogleWatch edge %s", name)
+}
+
 // LLMUsageMutation represents an operation that mutates the LLMUsage nodes in the graph.
 type LLMUsageMutation struct {
 	config
@@ -17842,6 +18827,9 @@ type UserMutation struct {
 	cloud_events                           map[uuid.UUID]struct{}
 	removedcloud_events                    map[uuid.UUID]struct{}
 	clearedcloud_events                    bool
+	google_watches                         map[uuid.UUID]struct{}
+	removedgoogle_watches                  map[uuid.UUID]struct{}
+	clearedgoogle_watches                  bool
 	done                                   bool
 	oldValue                               func(context.Context) (*User, error)
 	predicates                             []predicate.User
@@ -18736,6 +19724,60 @@ func (m *UserMutation) ResetCloudEvents() {
 	m.removedcloud_events = nil
 }
 
+// AddGoogleWatchIDs adds the "google_watches" edge to the GoogleWatch entity by ids.
+func (m *UserMutation) AddGoogleWatchIDs(ids ...uuid.UUID) {
+	if m.google_watches == nil {
+		m.google_watches = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.google_watches[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGoogleWatches clears the "google_watches" edge to the GoogleWatch entity.
+func (m *UserMutation) ClearGoogleWatches() {
+	m.clearedgoogle_watches = true
+}
+
+// GoogleWatchesCleared reports if the "google_watches" edge to the GoogleWatch entity was cleared.
+func (m *UserMutation) GoogleWatchesCleared() bool {
+	return m.clearedgoogle_watches
+}
+
+// RemoveGoogleWatchIDs removes the "google_watches" edge to the GoogleWatch entity by IDs.
+func (m *UserMutation) RemoveGoogleWatchIDs(ids ...uuid.UUID) {
+	if m.removedgoogle_watches == nil {
+		m.removedgoogle_watches = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.google_watches, ids[i])
+		m.removedgoogle_watches[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGoogleWatches returns the removed IDs of the "google_watches" edge to the GoogleWatch entity.
+func (m *UserMutation) RemovedGoogleWatchesIDs() (ids []uuid.UUID) {
+	for id := range m.removedgoogle_watches {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GoogleWatchesIDs returns the "google_watches" edge IDs in the mutation.
+func (m *UserMutation) GoogleWatchesIDs() (ids []uuid.UUID) {
+	for id := range m.google_watches {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGoogleWatches resets all changes to the "google_watches" edge.
+func (m *UserMutation) ResetGoogleWatches() {
+	m.google_watches = nil
+	m.clearedgoogle_watches = false
+	m.removedgoogle_watches = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -18952,7 +19994,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 11)
+	edges := make([]string, 0, 12)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -18985,6 +20027,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.cloud_events != nil {
 		edges = append(edges, user.EdgeCloudEvents)
+	}
+	if m.google_watches != nil {
+		edges = append(edges, user.EdgeGoogleWatches)
 	}
 	return edges
 }
@@ -19057,13 +20102,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeGoogleWatches:
+		ids := make([]ent.Value, 0, len(m.google_watches))
+		for id := range m.google_watches {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 11)
+	edges := make([]string, 0, 12)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -19093,6 +20144,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedcloud_events != nil {
 		edges = append(edges, user.EdgeCloudEvents)
+	}
+	if m.removedgoogle_watches != nil {
+		edges = append(edges, user.EdgeGoogleWatches)
 	}
 	return edges
 }
@@ -19161,13 +20215,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeGoogleWatches:
+		ids := make([]ent.Value, 0, len(m.removedgoogle_watches))
+		for id := range m.removedgoogle_watches {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 11)
+	edges := make([]string, 0, 12)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -19201,6 +20261,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedcloud_events {
 		edges = append(edges, user.EdgeCloudEvents)
 	}
+	if m.clearedgoogle_watches {
+		edges = append(edges, user.EdgeGoogleWatches)
+	}
 	return edges
 }
 
@@ -19230,6 +20293,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedbackground_task_schedule_states
 	case user.EdgeCloudEvents:
 		return m.clearedcloud_events
+	case user.EdgeGoogleWatches:
+		return m.clearedgoogle_watches
 	}
 	return false
 }
@@ -19281,6 +20346,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeCloudEvents:
 		m.ResetCloudEvents()
+		return nil
+	case user.EdgeGoogleWatches:
+		m.ResetGoogleWatches()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

@@ -629,6 +629,29 @@ func HasCloudEventsWith(preds ...predicate.CloudEvent) predicate.User {
 	})
 }
 
+// HasGoogleWatches applies the HasEdge predicate on the "google_watches" edge.
+func HasGoogleWatches() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GoogleWatchesTable, GoogleWatchesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGoogleWatchesWith applies the HasEdge predicate on the "google_watches" edge with a given conditions (other predicates).
+func HasGoogleWatchesWith(preds ...predicate.GoogleWatch) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newGoogleWatchesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

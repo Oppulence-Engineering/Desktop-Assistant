@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -1846,6 +1847,255 @@ func (_m *CreditLedger) ToEdge(order *CreditLedgerOrder) *CreditLedgerEdge {
 		order = DefaultCreditLedgerOrder
 	}
 	return &CreditLedgerEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// GoogleWatchEdge is the edge representation of GoogleWatch.
+type GoogleWatchEdge struct {
+	Node   *GoogleWatch `json:"node"`
+	Cursor Cursor       `json:"cursor"`
+}
+
+// GoogleWatchConnection is the connection containing edges to GoogleWatch.
+type GoogleWatchConnection struct {
+	Edges      []*GoogleWatchEdge `json:"edges"`
+	PageInfo   PageInfo           `json:"pageInfo"`
+	TotalCount int                `json:"totalCount"`
+}
+
+func (c *GoogleWatchConnection) build(nodes []*GoogleWatch, pager *googlewatchPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *GoogleWatch
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *GoogleWatch {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *GoogleWatch {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*GoogleWatchEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &GoogleWatchEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// GoogleWatchPaginateOption enables pagination customization.
+type GoogleWatchPaginateOption func(*googlewatchPager) error
+
+// WithGoogleWatchOrder configures pagination ordering.
+func WithGoogleWatchOrder(order *GoogleWatchOrder) GoogleWatchPaginateOption {
+	if order == nil {
+		order = DefaultGoogleWatchOrder
+	}
+	o := *order
+	return func(pager *googlewatchPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultGoogleWatchOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithGoogleWatchFilter configures pagination filter.
+func WithGoogleWatchFilter(filter func(*GoogleWatchQuery) (*GoogleWatchQuery, error)) GoogleWatchPaginateOption {
+	return func(pager *googlewatchPager) error {
+		if filter == nil {
+			return errors.New("GoogleWatchQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type googlewatchPager struct {
+	reverse bool
+	order   *GoogleWatchOrder
+	filter  func(*GoogleWatchQuery) (*GoogleWatchQuery, error)
+}
+
+func newGoogleWatchPager(opts []GoogleWatchPaginateOption, reverse bool) (*googlewatchPager, error) {
+	pager := &googlewatchPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultGoogleWatchOrder
+	}
+	return pager, nil
+}
+
+func (p *googlewatchPager) applyFilter(query *GoogleWatchQuery) (*GoogleWatchQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *googlewatchPager) toCursor(_m *GoogleWatch) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *googlewatchPager) applyCursors(query *GoogleWatchQuery, after, before *Cursor) (*GoogleWatchQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultGoogleWatchOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *googlewatchPager) applyOrder(query *GoogleWatchQuery) *GoogleWatchQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultGoogleWatchOrder.Field {
+		query = query.Order(DefaultGoogleWatchOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *googlewatchPager) orderExpr(query *GoogleWatchQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultGoogleWatchOrder.Field {
+			b.Comma().Ident(DefaultGoogleWatchOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to GoogleWatch.
+func (_m *GoogleWatchQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...GoogleWatchPaginateOption,
+) (*GoogleWatchConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newGoogleWatchPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &GoogleWatchConnection{Edges: []*GoogleWatchEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// GoogleWatchOrderField defines the ordering field of GoogleWatch.
+type GoogleWatchOrderField struct {
+	// Value extracts the ordering value from the given GoogleWatch.
+	Value    func(*GoogleWatch) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) googlewatch.OrderOption
+	toCursor func(*GoogleWatch) Cursor
+}
+
+// GoogleWatchOrder defines the ordering of GoogleWatch.
+type GoogleWatchOrder struct {
+	Direction OrderDirection         `json:"direction"`
+	Field     *GoogleWatchOrderField `json:"field"`
+}
+
+// DefaultGoogleWatchOrder is the default ordering of GoogleWatch.
+var DefaultGoogleWatchOrder = &GoogleWatchOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &GoogleWatchOrderField{
+		Value: func(_m *GoogleWatch) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: googlewatch.FieldID,
+		toTerm: googlewatch.ByID,
+		toCursor: func(_m *GoogleWatch) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts GoogleWatch into GoogleWatchEdge.
+func (_m *GoogleWatch) ToEdge(order *GoogleWatchOrder) *GoogleWatchEdge {
+	if order == nil {
+		order = DefaultGoogleWatchOrder
+	}
+	return &GoogleWatchEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

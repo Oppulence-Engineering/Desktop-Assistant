@@ -2273,6 +2273,70 @@
         ],
         "type": "object"
       },
+      "GoogleWatch": {
+        "properties": {
+          "account_email": {
+            "type": "string"
+          },
+          "channel_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "history_id": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "renew_claimed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "kind",
+          "account_email",
+          "expires_at",
+          "user"
+        ],
+        "type": "object"
+      },
       "GraphQLRequest": {
         "description": "GraphQL request envelope.",
         "properties": {
@@ -3728,6 +3792,12 @@
             "description": "Best-known WorkOS primary email for the user.",
             "example": "user@example.com",
             "type": "string"
+          },
+          "google_watches": {
+            "items": {
+              "$ref": "#/components/schemas/GoogleWatch"
+            },
+            "type": "array"
           },
           "id": {
             "description": "Stable UUID primary key.",

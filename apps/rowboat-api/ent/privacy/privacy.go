@@ -278,6 +278,30 @@ func (f CreditLedgerMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mu
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.CreditLedgerMutation", m)
 }
 
+// The GoogleWatchQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type GoogleWatchQueryRuleFunc func(context.Context, *ent.GoogleWatchQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f GoogleWatchQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GoogleWatchQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.GoogleWatchQuery", q)
+}
+
+// The GoogleWatchMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type GoogleWatchMutationRuleFunc func(context.Context, *ent.GoogleWatchMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f GoogleWatchMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.GoogleWatchMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.GoogleWatchMutation", m)
+}
+
 // The LLMUsageQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type LLMUsageQueryRuleFunc func(context.Context, *ent.LLMUsageQuery) error

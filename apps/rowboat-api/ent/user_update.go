@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -269,6 +270,21 @@ func (_u *UserUpdate) AddCloudEvents(v ...*CloudEvent) *UserUpdate {
 	return _u.AddCloudEventIDs(ids...)
 }
 
+// AddGoogleWatchIDs adds the "google_watches" edge to the GoogleWatch entity by IDs.
+func (_u *UserUpdate) AddGoogleWatchIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddGoogleWatchIDs(ids...)
+	return _u
+}
+
+// AddGoogleWatches adds the "google_watches" edges to the GoogleWatch entity.
+func (_u *UserUpdate) AddGoogleWatches(v ...*GoogleWatch) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGoogleWatchIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -488,6 +504,27 @@ func (_u *UserUpdate) RemoveCloudEvents(v ...*CloudEvent) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveCloudEventIDs(ids...)
+}
+
+// ClearGoogleWatches clears all "google_watches" edges to the GoogleWatch entity.
+func (_u *UserUpdate) ClearGoogleWatches() *UserUpdate {
+	_u.mutation.ClearGoogleWatches()
+	return _u
+}
+
+// RemoveGoogleWatchIDs removes the "google_watches" edge to GoogleWatch entities by IDs.
+func (_u *UserUpdate) RemoveGoogleWatchIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveGoogleWatchIDs(ids...)
+	return _u
+}
+
+// RemoveGoogleWatches removes "google_watches" edges to GoogleWatch entities.
+func (_u *UserUpdate) RemoveGoogleWatches(v ...*GoogleWatch) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGoogleWatchIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1045,6 +1082,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.GoogleWatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GoogleWatchesTable,
+			Columns: []string{user.GoogleWatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(googlewatch.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGoogleWatchesIDs(); len(nodes) > 0 && !_u.mutation.GoogleWatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GoogleWatchesTable,
+			Columns: []string{user.GoogleWatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(googlewatch.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GoogleWatchesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GoogleWatchesTable,
+			Columns: []string{user.GoogleWatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(googlewatch.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -1294,6 +1376,21 @@ func (_u *UserUpdateOne) AddCloudEvents(v ...*CloudEvent) *UserUpdateOne {
 	return _u.AddCloudEventIDs(ids...)
 }
 
+// AddGoogleWatchIDs adds the "google_watches" edge to the GoogleWatch entity by IDs.
+func (_u *UserUpdateOne) AddGoogleWatchIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddGoogleWatchIDs(ids...)
+	return _u
+}
+
+// AddGoogleWatches adds the "google_watches" edges to the GoogleWatch entity.
+func (_u *UserUpdateOne) AddGoogleWatches(v ...*GoogleWatch) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGoogleWatchIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -1513,6 +1610,27 @@ func (_u *UserUpdateOne) RemoveCloudEvents(v ...*CloudEvent) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveCloudEventIDs(ids...)
+}
+
+// ClearGoogleWatches clears all "google_watches" edges to the GoogleWatch entity.
+func (_u *UserUpdateOne) ClearGoogleWatches() *UserUpdateOne {
+	_u.mutation.ClearGoogleWatches()
+	return _u
+}
+
+// RemoveGoogleWatchIDs removes the "google_watches" edge to GoogleWatch entities by IDs.
+func (_u *UserUpdateOne) RemoveGoogleWatchIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveGoogleWatchIDs(ids...)
+	return _u
+}
+
+// RemoveGoogleWatches removes "google_watches" edges to GoogleWatch entities.
+func (_u *UserUpdateOne) RemoveGoogleWatches(v ...*GoogleWatch) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGoogleWatchIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -2093,6 +2211,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(cloudevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GoogleWatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GoogleWatchesTable,
+			Columns: []string{user.GoogleWatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(googlewatch.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGoogleWatchesIDs(); len(nodes) > 0 && !_u.mutation.GoogleWatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GoogleWatchesTable,
+			Columns: []string{user.GoogleWatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(googlewatch.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GoogleWatchesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GoogleWatchesTable,
+			Columns: []string{user.GoogleWatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(googlewatch.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

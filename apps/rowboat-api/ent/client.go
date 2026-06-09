@@ -24,6 +24,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -56,6 +57,8 @@ type Client struct {
 	CloudEvent *CloudEventClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
+	// GoogleWatch is the client for interacting with the GoogleWatch builders.
+	GoogleWatch *GoogleWatchClient
 	// LLMUsage is the client for interacting with the LLMUsage builders.
 	LLMUsage *LLMUsageClient
 	// LLMUsageHistory is the client for interacting with the LLMUsageHistory builders.
@@ -101,6 +104,7 @@ func (c *Client) init() {
 	c.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(c.config)
 	c.CloudEvent = NewCloudEventClient(c.config)
 	c.CreditLedger = NewCreditLedgerClient(c.config)
+	c.GoogleWatch = NewGoogleWatchClient(c.config)
 	c.LLMUsage = NewLLMUsageClient(c.config)
 	c.LLMUsageHistory = NewLLMUsageHistoryClient(c.config)
 	c.MCPConnection = NewMCPConnectionClient(c.config)
@@ -244,6 +248,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BackgroundTaskScheduleState: NewBackgroundTaskScheduleStateClient(cfg),
 		CloudEvent:                  NewCloudEventClient(cfg),
 		CreditLedger:                NewCreditLedgerClient(cfg),
+		GoogleWatch:                 NewGoogleWatchClient(cfg),
 		LLMUsage:                    NewLLMUsageClient(cfg),
 		LLMUsageHistory:             NewLLMUsageHistoryClient(cfg),
 		MCPConnection:               NewMCPConnectionClient(cfg),
@@ -281,6 +286,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BackgroundTaskScheduleState: NewBackgroundTaskScheduleStateClient(cfg),
 		CloudEvent:                  NewCloudEventClient(cfg),
 		CreditLedger:                NewCreditLedgerClient(cfg),
+		GoogleWatch:                 NewGoogleWatchClient(cfg),
 		LLMUsage:                    NewLLMUsageClient(cfg),
 		LLMUsageHistory:             NewLLMUsageHistoryClient(cfg),
 		MCPConnection:               NewMCPConnectionClient(cfg),
@@ -323,7 +329,7 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
-		c.CreditLedger, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
+		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
 		c.MCPConnectionHistory, c.OAuthConnection, c.OAuthConnectionHistory,
 		c.OAuthPending, c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
@@ -337,7 +343,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
-		c.CreditLedger, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
+		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
 		c.MCPConnectionHistory, c.OAuthConnection, c.OAuthConnectionHistory,
 		c.OAuthPending, c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
@@ -362,6 +368,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.CloudEvent.mutate(ctx, m)
 	case *CreditLedgerMutation:
 		return c.CreditLedger.mutate(ctx, m)
+	case *GoogleWatchMutation:
+		return c.GoogleWatch.mutate(ctx, m)
 	case *LLMUsageMutation:
 		return c.LLMUsage.mutate(ctx, m)
 	case *LLMUsageHistoryMutation:
@@ -1621,6 +1629,155 @@ func (c *CreditLedgerClient) mutate(ctx context.Context, m *CreditLedgerMutation
 		return (&CreditLedgerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CreditLedger mutation op: %q", m.Op())
+	}
+}
+
+// GoogleWatchClient is a client for the GoogleWatch schema.
+type GoogleWatchClient struct {
+	config
+}
+
+// NewGoogleWatchClient returns a client for the GoogleWatch from the given config.
+func NewGoogleWatchClient(c config) *GoogleWatchClient {
+	return &GoogleWatchClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `googlewatch.Hooks(f(g(h())))`.
+func (c *GoogleWatchClient) Use(hooks ...Hook) {
+	c.hooks.GoogleWatch = append(c.hooks.GoogleWatch, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `googlewatch.Intercept(f(g(h())))`.
+func (c *GoogleWatchClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GoogleWatch = append(c.inters.GoogleWatch, interceptors...)
+}
+
+// Create returns a builder for creating a GoogleWatch entity.
+func (c *GoogleWatchClient) Create() *GoogleWatchCreate {
+	mutation := newGoogleWatchMutation(c.config, OpCreate)
+	return &GoogleWatchCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GoogleWatch entities.
+func (c *GoogleWatchClient) CreateBulk(builders ...*GoogleWatchCreate) *GoogleWatchCreateBulk {
+	return &GoogleWatchCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GoogleWatchClient) MapCreateBulk(slice any, setFunc func(*GoogleWatchCreate, int)) *GoogleWatchCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GoogleWatchCreateBulk{err: fmt.Errorf("calling to GoogleWatchClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GoogleWatchCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GoogleWatchCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GoogleWatch.
+func (c *GoogleWatchClient) Update() *GoogleWatchUpdate {
+	mutation := newGoogleWatchMutation(c.config, OpUpdate)
+	return &GoogleWatchUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GoogleWatchClient) UpdateOne(_m *GoogleWatch) *GoogleWatchUpdateOne {
+	mutation := newGoogleWatchMutation(c.config, OpUpdateOne, withGoogleWatch(_m))
+	return &GoogleWatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GoogleWatchClient) UpdateOneID(id uuid.UUID) *GoogleWatchUpdateOne {
+	mutation := newGoogleWatchMutation(c.config, OpUpdateOne, withGoogleWatchID(id))
+	return &GoogleWatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GoogleWatch.
+func (c *GoogleWatchClient) Delete() *GoogleWatchDelete {
+	mutation := newGoogleWatchMutation(c.config, OpDelete)
+	return &GoogleWatchDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GoogleWatchClient) DeleteOne(_m *GoogleWatch) *GoogleWatchDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GoogleWatchClient) DeleteOneID(id uuid.UUID) *GoogleWatchDeleteOne {
+	builder := c.Delete().Where(googlewatch.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GoogleWatchDeleteOne{builder}
+}
+
+// Query returns a query builder for GoogleWatch.
+func (c *GoogleWatchClient) Query() *GoogleWatchQuery {
+	return &GoogleWatchQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGoogleWatch},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GoogleWatch entity by its id.
+func (c *GoogleWatchClient) Get(ctx context.Context, id uuid.UUID) (*GoogleWatch, error) {
+	return c.Query().Where(googlewatch.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GoogleWatchClient) GetX(ctx context.Context, id uuid.UUID) *GoogleWatch {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a GoogleWatch.
+func (c *GoogleWatchClient) QueryUser(_m *GoogleWatch) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(googlewatch.Table, googlewatch.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, googlewatch.UserTable, googlewatch.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GoogleWatchClient) Hooks() []Hook {
+	return c.hooks.GoogleWatch
+}
+
+// Interceptors returns the client interceptors.
+func (c *GoogleWatchClient) Interceptors() []Interceptor {
+	return c.inters.GoogleWatch
+}
+
+func (c *GoogleWatchClient) mutate(ctx context.Context, m *GoogleWatchMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GoogleWatchCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GoogleWatchUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GoogleWatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GoogleWatchDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GoogleWatch mutation op: %q", m.Op())
 	}
 }
 
@@ -3169,6 +3326,22 @@ func (c *UserClient) QueryCloudEvents(_m *User) *CloudEventQuery {
 	return query
 }
 
+// QueryGoogleWatches queries the google_watches edge of a User.
+func (c *UserClient) QueryGoogleWatches(_m *User) *GoogleWatchQuery {
+	query := (&GoogleWatchClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(googlewatch.Table, googlewatch.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GoogleWatchesTable, user.GoogleWatchesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -3332,14 +3505,14 @@ type (
 	hooks struct {
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
 		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, CreditLedger,
-		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
+		GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
 		OAuthConnection, OAuthConnectionHistory, OAuthPending, Subscription,
 		SubscriptionHistory, User, UserHistory []ent.Hook
 	}
 	inters struct {
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
 		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, CreditLedger,
-		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
+		GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
 		OAuthConnection, OAuthConnectionHistory, OAuthPending, Subscription,
 		SubscriptionHistory, User, UserHistory []ent.Interceptor
 	}

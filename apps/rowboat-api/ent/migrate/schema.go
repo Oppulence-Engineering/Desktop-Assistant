@@ -373,6 +373,47 @@ var (
 			},
 		},
 	}
+	// GoogleWatchesColumns holds the columns for the "google_watches" table.
+	GoogleWatchesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "account_email", Type: field.TypeString},
+		{Name: "channel_id", Type: field.TypeString, Nullable: true},
+		{Name: "resource_id", Type: field.TypeString, Nullable: true},
+		{Name: "history_id", Type: field.TypeString, Nullable: true},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "renew_claimed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "user_google_watches", Type: field.TypeUUID},
+	}
+	// GoogleWatchesTable holds the schema information for the "google_watches" table.
+	GoogleWatchesTable = &schema.Table{
+		Name:       "google_watches",
+		Columns:    GoogleWatchesColumns,
+		PrimaryKey: []*schema.Column{GoogleWatchesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "google_watches_users_google_watches",
+				Columns:    []*schema.Column{GoogleWatchesColumns[11]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "googlewatch_kind_user_google_watches",
+				Unique:  true,
+				Columns: []*schema.Column{GoogleWatchesColumns[3], GoogleWatchesColumns[11]},
+			},
+			{
+				Name:    "googlewatch_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{GoogleWatchesColumns[8]},
+			},
+		},
+	}
 	// LlmUsagesColumns holds the columns for the "llm_usages" table.
 	LlmUsagesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -703,6 +744,7 @@ var (
 		BackgroundTaskScheduleStatesTable,
 		CloudEventsTable,
 		CreditLedgersTable,
+		GoogleWatchesTable,
 		LlmUsagesTable,
 		LlmUsageHistoriesTable,
 		McpConnectionsTable,
@@ -731,6 +773,7 @@ func init() {
 	BackgroundTaskScheduleStatesTable.ForeignKeys[1].RefTable = UsersTable
 	CloudEventsTable.ForeignKeys[0].RefTable = UsersTable
 	CreditLedgersTable.ForeignKeys[0].RefTable = UsersTable
+	GoogleWatchesTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	McpConnectionsTable.ForeignKeys[0].RefTable = UsersTable
 	OauthConnectionsTable.ForeignKeys[0].RefTable = UsersTable

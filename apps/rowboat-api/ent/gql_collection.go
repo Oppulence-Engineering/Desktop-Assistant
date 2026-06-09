@@ -13,6 +13,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -1134,6 +1135,129 @@ func newCreditLedgerPaginateArgs(rv map[string]any) *creditledgerPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *GoogleWatchQuery) CollectFields(ctx context.Context, satisfies ...string) (*GoogleWatchQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *GoogleWatchQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(googlewatch.Columns))
+		selectedFields = []string{googlewatch.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[googlewatch.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldCreatedAt)
+				fieldSeen[googlewatch.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[googlewatch.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldUpdatedAt)
+				fieldSeen[googlewatch.FieldUpdatedAt] = struct{}{}
+			}
+		case "kind":
+			if _, ok := fieldSeen[googlewatch.FieldKind]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldKind)
+				fieldSeen[googlewatch.FieldKind] = struct{}{}
+			}
+		case "accountEmail":
+			if _, ok := fieldSeen[googlewatch.FieldAccountEmail]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldAccountEmail)
+				fieldSeen[googlewatch.FieldAccountEmail] = struct{}{}
+			}
+		case "channelID":
+			if _, ok := fieldSeen[googlewatch.FieldChannelID]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldChannelID)
+				fieldSeen[googlewatch.FieldChannelID] = struct{}{}
+			}
+		case "resourceID":
+			if _, ok := fieldSeen[googlewatch.FieldResourceID]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldResourceID)
+				fieldSeen[googlewatch.FieldResourceID] = struct{}{}
+			}
+		case "historyID":
+			if _, ok := fieldSeen[googlewatch.FieldHistoryID]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldHistoryID)
+				fieldSeen[googlewatch.FieldHistoryID] = struct{}{}
+			}
+		case "expiresAt":
+			if _, ok := fieldSeen[googlewatch.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldExpiresAt)
+				fieldSeen[googlewatch.FieldExpiresAt] = struct{}{}
+			}
+		case "renewClaimedAt":
+			if _, ok := fieldSeen[googlewatch.FieldRenewClaimedAt]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldRenewClaimedAt)
+				fieldSeen[googlewatch.FieldRenewClaimedAt] = struct{}{}
+			}
+		case "lastError":
+			if _, ok := fieldSeen[googlewatch.FieldLastError]; !ok {
+				selectedFields = append(selectedFields, googlewatch.FieldLastError)
+				fieldSeen[googlewatch.FieldLastError] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type googlewatchPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []GoogleWatchPaginateOption
+}
+
+func newGoogleWatchPaginateArgs(rv map[string]any) *googlewatchPaginateArgs {
+	args := &googlewatchPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*GoogleWatchWhereInput); ok {
+		args.opts = append(args.opts, WithGoogleWatchFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *LLMUsageQuery) CollectFields(ctx context.Context, satisfies ...string) (*LLMUsageQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -1822,6 +1946,19 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedCloudEvents(alias, func(wq *CloudEventQuery) {
+				*wq = *query
+			})
+
+		case "googleWatches":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&GoogleWatchClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, googlewatchImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedGoogleWatches(alias, func(wq *GoogleWatchQuery) {
 				*wq = *query
 			})
 		case "createdAt":

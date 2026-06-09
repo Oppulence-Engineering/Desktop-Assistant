@@ -180,6 +180,14 @@ func (_m *CreditLedger) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (_m *GoogleWatch) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *LLMUsage) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -336,6 +344,18 @@ func (_m *User) CloudEvents(ctx context.Context) (result []*CloudEvent, err erro
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryCloudEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) GoogleWatches(ctx context.Context) (result []*GoogleWatch, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedGoogleWatches(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.GoogleWatchesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryGoogleWatches().All(ctx)
 	}
 	return result, err
 }

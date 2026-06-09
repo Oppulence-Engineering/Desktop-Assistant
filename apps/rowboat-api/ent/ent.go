@@ -19,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -97,6 +98,7 @@ func checkColumn(t, c string) error {
 			backgroundtaskschedulestate.Table: backgroundtaskschedulestate.ValidColumn,
 			cloudevent.Table:                  cloudevent.ValidColumn,
 			creditledger.Table:                creditledger.ValidColumn,
+			googlewatch.Table:                 googlewatch.ValidColumn,
 			llmusage.Table:                    llmusage.ValidColumn,
 			llmusagehistory.Table:             llmusagehistory.ValidColumn,
 			mcpconnection.Table:               mcpconnection.ValidColumn,

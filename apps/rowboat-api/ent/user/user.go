@@ -47,6 +47,8 @@ const (
 	EdgeBackgroundTaskScheduleStates = "background_task_schedule_states"
 	// EdgeCloudEvents holds the string denoting the cloud_events edge name in mutations.
 	EdgeCloudEvents = "cloud_events"
+	// EdgeGoogleWatches holds the string denoting the google_watches edge name in mutations.
+	EdgeGoogleWatches = "google_watches"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -126,6 +128,13 @@ const (
 	CloudEventsInverseTable = "cloud_events"
 	// CloudEventsColumn is the table column denoting the cloud_events relation/edge.
 	CloudEventsColumn = "user_cloud_events"
+	// GoogleWatchesTable is the table that holds the google_watches relation/edge.
+	GoogleWatchesTable = "google_watches"
+	// GoogleWatchesInverseTable is the table name for the GoogleWatch entity.
+	// It exists in this package in order to avoid circular dependency with the "googlewatch" package.
+	GoogleWatchesInverseTable = "google_watches"
+	// GoogleWatchesColumn is the table column denoting the google_watches relation/edge.
+	GoogleWatchesColumn = "user_google_watches"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -340,6 +349,20 @@ func ByCloudEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newCloudEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByGoogleWatchesCount orders the results by google_watches count.
+func ByGoogleWatchesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGoogleWatchesStep(), opts...)
+	}
+}
+
+// ByGoogleWatches orders the results by google_watches terms.
+func ByGoogleWatches(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGoogleWatchesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -415,5 +438,12 @@ func newCloudEventsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(CloudEventsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, CloudEventsTable, CloudEventsColumn),
+	)
+}
+func newGoogleWatchesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GoogleWatchesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GoogleWatchesTable, GoogleWatchesColumn),
 	)
 }

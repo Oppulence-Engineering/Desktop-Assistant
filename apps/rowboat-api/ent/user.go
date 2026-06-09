@@ -59,11 +59,13 @@ type UserEdges struct {
 	BackgroundTaskScheduleStates []*BackgroundTaskScheduleState `json:"background_task_schedule_states,omitempty"`
 	// CloudEvents holds the value of the cloud_events edge.
 	CloudEvents []*CloudEvent `json:"cloud_events,omitempty"`
+	// GoogleWatches holds the value of the google_watches edge.
+	GoogleWatches []*GoogleWatch `json:"google_watches,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [11]bool
+	loadedTypes [12]bool
 	// totalCount holds the count of the edges above.
-	totalCount [11]map[string]int
+	totalCount [12]map[string]int
 
 	namedLedgerEntries                map[string][]*CreditLedger
 	namedLlmUsages                    map[string][]*LLMUsage
@@ -75,6 +77,7 @@ type UserEdges struct {
 	namedBackgroundTaskRunEvents      map[string][]*BackgroundTaskRunEvent
 	namedBackgroundTaskScheduleStates map[string][]*BackgroundTaskScheduleState
 	namedCloudEvents                  map[string][]*CloudEvent
+	namedGoogleWatches                map[string][]*GoogleWatch
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -176,6 +179,15 @@ func (e UserEdges) CloudEventsOrErr() ([]*CloudEvent, error) {
 		return e.CloudEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "cloud_events"}
+}
+
+// GoogleWatchesOrErr returns the GoogleWatches value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GoogleWatchesOrErr() ([]*GoogleWatch, error) {
+	if e.loadedTypes[11] {
+		return e.GoogleWatches, nil
+	}
+	return nil, &NotLoadedError{edge: "google_watches"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -306,6 +318,11 @@ func (_m *User) QueryBackgroundTaskScheduleStates() *BackgroundTaskScheduleState
 // QueryCloudEvents queries the "cloud_events" edge of the User entity.
 func (_m *User) QueryCloudEvents() *CloudEventQuery {
 	return NewUserClient(_m.config).QueryCloudEvents(_m)
+}
+
+// QueryGoogleWatches queries the "google_watches" edge of the User entity.
+func (_m *User) QueryGoogleWatches() *GoogleWatchQuery {
+	return NewUserClient(_m.config).QueryGoogleWatches(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -586,6 +603,30 @@ func (_m *User) appendNamedCloudEvents(name string, edges ...*CloudEvent) {
 		_m.Edges.namedCloudEvents[name] = []*CloudEvent{}
 	} else {
 		_m.Edges.namedCloudEvents[name] = append(_m.Edges.namedCloudEvents[name], edges...)
+	}
+}
+
+// NamedGoogleWatches returns the GoogleWatches named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedGoogleWatches(name string) ([]*GoogleWatch, error) {
+	if _m.Edges.namedGoogleWatches == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedGoogleWatches[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedGoogleWatches(name string, edges ...*GoogleWatch) {
+	if _m.Edges.namedGoogleWatches == nil {
+		_m.Edges.namedGoogleWatches = make(map[string][]*GoogleWatch)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedGoogleWatches[name] = []*GoogleWatch{}
+	} else {
+		_m.Edges.namedGoogleWatches[name] = append(_m.Edges.namedGoogleWatches[name], edges...)
 	}
 }
 

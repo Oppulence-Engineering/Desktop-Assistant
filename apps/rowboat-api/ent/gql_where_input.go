@@ -14,6 +14,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -5720,6 +5721,652 @@ func (i *CreditLedgerWhereInput) P() (predicate.CreditLedger, error) {
 	}
 }
 
+// GoogleWatchWhereInput represents a where input for filtering GoogleWatch queries.
+type GoogleWatchWhereInput struct {
+	Predicates []predicate.GoogleWatch  `json:"-"`
+	Not        *GoogleWatchWhereInput   `json:"not,omitempty"`
+	Or         []*GoogleWatchWhereInput `json:"or,omitempty"`
+	And        []*GoogleWatchWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "kind" field predicates.
+	Kind             *string  `json:"kind,omitempty"`
+	KindNEQ          *string  `json:"kindNEQ,omitempty"`
+	KindIn           []string `json:"kindIn,omitempty"`
+	KindNotIn        []string `json:"kindNotIn,omitempty"`
+	KindGT           *string  `json:"kindGT,omitempty"`
+	KindGTE          *string  `json:"kindGTE,omitempty"`
+	KindLT           *string  `json:"kindLT,omitempty"`
+	KindLTE          *string  `json:"kindLTE,omitempty"`
+	KindContains     *string  `json:"kindContains,omitempty"`
+	KindHasPrefix    *string  `json:"kindHasPrefix,omitempty"`
+	KindHasSuffix    *string  `json:"kindHasSuffix,omitempty"`
+	KindEqualFold    *string  `json:"kindEqualFold,omitempty"`
+	KindContainsFold *string  `json:"kindContainsFold,omitempty"`
+
+	// "account_email" field predicates.
+	AccountEmail             *string  `json:"accountEmail,omitempty"`
+	AccountEmailNEQ          *string  `json:"accountEmailNEQ,omitempty"`
+	AccountEmailIn           []string `json:"accountEmailIn,omitempty"`
+	AccountEmailNotIn        []string `json:"accountEmailNotIn,omitempty"`
+	AccountEmailGT           *string  `json:"accountEmailGT,omitempty"`
+	AccountEmailGTE          *string  `json:"accountEmailGTE,omitempty"`
+	AccountEmailLT           *string  `json:"accountEmailLT,omitempty"`
+	AccountEmailLTE          *string  `json:"accountEmailLTE,omitempty"`
+	AccountEmailContains     *string  `json:"accountEmailContains,omitempty"`
+	AccountEmailHasPrefix    *string  `json:"accountEmailHasPrefix,omitempty"`
+	AccountEmailHasSuffix    *string  `json:"accountEmailHasSuffix,omitempty"`
+	AccountEmailEqualFold    *string  `json:"accountEmailEqualFold,omitempty"`
+	AccountEmailContainsFold *string  `json:"accountEmailContainsFold,omitempty"`
+
+	// "channel_id" field predicates.
+	ChannelID             *string  `json:"channelID,omitempty"`
+	ChannelIDNEQ          *string  `json:"channelIDNEQ,omitempty"`
+	ChannelIDIn           []string `json:"channelIDIn,omitempty"`
+	ChannelIDNotIn        []string `json:"channelIDNotIn,omitempty"`
+	ChannelIDGT           *string  `json:"channelIDGT,omitempty"`
+	ChannelIDGTE          *string  `json:"channelIDGTE,omitempty"`
+	ChannelIDLT           *string  `json:"channelIDLT,omitempty"`
+	ChannelIDLTE          *string  `json:"channelIDLTE,omitempty"`
+	ChannelIDContains     *string  `json:"channelIDContains,omitempty"`
+	ChannelIDHasPrefix    *string  `json:"channelIDHasPrefix,omitempty"`
+	ChannelIDHasSuffix    *string  `json:"channelIDHasSuffix,omitempty"`
+	ChannelIDIsNil        bool     `json:"channelIDIsNil,omitempty"`
+	ChannelIDNotNil       bool     `json:"channelIDNotNil,omitempty"`
+	ChannelIDEqualFold    *string  `json:"channelIDEqualFold,omitempty"`
+	ChannelIDContainsFold *string  `json:"channelIDContainsFold,omitempty"`
+
+	// "resource_id" field predicates.
+	ResourceID             *string  `json:"resourceID,omitempty"`
+	ResourceIDNEQ          *string  `json:"resourceIDNEQ,omitempty"`
+	ResourceIDIn           []string `json:"resourceIDIn,omitempty"`
+	ResourceIDNotIn        []string `json:"resourceIDNotIn,omitempty"`
+	ResourceIDGT           *string  `json:"resourceIDGT,omitempty"`
+	ResourceIDGTE          *string  `json:"resourceIDGTE,omitempty"`
+	ResourceIDLT           *string  `json:"resourceIDLT,omitempty"`
+	ResourceIDLTE          *string  `json:"resourceIDLTE,omitempty"`
+	ResourceIDContains     *string  `json:"resourceIDContains,omitempty"`
+	ResourceIDHasPrefix    *string  `json:"resourceIDHasPrefix,omitempty"`
+	ResourceIDHasSuffix    *string  `json:"resourceIDHasSuffix,omitempty"`
+	ResourceIDIsNil        bool     `json:"resourceIDIsNil,omitempty"`
+	ResourceIDNotNil       bool     `json:"resourceIDNotNil,omitempty"`
+	ResourceIDEqualFold    *string  `json:"resourceIDEqualFold,omitempty"`
+	ResourceIDContainsFold *string  `json:"resourceIDContainsFold,omitempty"`
+
+	// "history_id" field predicates.
+	HistoryID             *string  `json:"historyID,omitempty"`
+	HistoryIDNEQ          *string  `json:"historyIDNEQ,omitempty"`
+	HistoryIDIn           []string `json:"historyIDIn,omitempty"`
+	HistoryIDNotIn        []string `json:"historyIDNotIn,omitempty"`
+	HistoryIDGT           *string  `json:"historyIDGT,omitempty"`
+	HistoryIDGTE          *string  `json:"historyIDGTE,omitempty"`
+	HistoryIDLT           *string  `json:"historyIDLT,omitempty"`
+	HistoryIDLTE          *string  `json:"historyIDLTE,omitempty"`
+	HistoryIDContains     *string  `json:"historyIDContains,omitempty"`
+	HistoryIDHasPrefix    *string  `json:"historyIDHasPrefix,omitempty"`
+	HistoryIDHasSuffix    *string  `json:"historyIDHasSuffix,omitempty"`
+	HistoryIDIsNil        bool     `json:"historyIDIsNil,omitempty"`
+	HistoryIDNotNil       bool     `json:"historyIDNotNil,omitempty"`
+	HistoryIDEqualFold    *string  `json:"historyIDEqualFold,omitempty"`
+	HistoryIDContainsFold *string  `json:"historyIDContainsFold,omitempty"`
+
+	// "expires_at" field predicates.
+	ExpiresAt      *time.Time  `json:"expiresAt,omitempty"`
+	ExpiresAtNEQ   *time.Time  `json:"expiresAtNEQ,omitempty"`
+	ExpiresAtIn    []time.Time `json:"expiresAtIn,omitempty"`
+	ExpiresAtNotIn []time.Time `json:"expiresAtNotIn,omitempty"`
+	ExpiresAtGT    *time.Time  `json:"expiresAtGT,omitempty"`
+	ExpiresAtGTE   *time.Time  `json:"expiresAtGTE,omitempty"`
+	ExpiresAtLT    *time.Time  `json:"expiresAtLT,omitempty"`
+	ExpiresAtLTE   *time.Time  `json:"expiresAtLTE,omitempty"`
+
+	// "renew_claimed_at" field predicates.
+	RenewClaimedAt       *time.Time  `json:"renewClaimedAt,omitempty"`
+	RenewClaimedAtNEQ    *time.Time  `json:"renewClaimedAtNEQ,omitempty"`
+	RenewClaimedAtIn     []time.Time `json:"renewClaimedAtIn,omitempty"`
+	RenewClaimedAtNotIn  []time.Time `json:"renewClaimedAtNotIn,omitempty"`
+	RenewClaimedAtGT     *time.Time  `json:"renewClaimedAtGT,omitempty"`
+	RenewClaimedAtGTE    *time.Time  `json:"renewClaimedAtGTE,omitempty"`
+	RenewClaimedAtLT     *time.Time  `json:"renewClaimedAtLT,omitempty"`
+	RenewClaimedAtLTE    *time.Time  `json:"renewClaimedAtLTE,omitempty"`
+	RenewClaimedAtIsNil  bool        `json:"renewClaimedAtIsNil,omitempty"`
+	RenewClaimedAtNotNil bool        `json:"renewClaimedAtNotNil,omitempty"`
+
+	// "last_error" field predicates.
+	LastError             *string  `json:"lastError,omitempty"`
+	LastErrorNEQ          *string  `json:"lastErrorNEQ,omitempty"`
+	LastErrorIn           []string `json:"lastErrorIn,omitempty"`
+	LastErrorNotIn        []string `json:"lastErrorNotIn,omitempty"`
+	LastErrorGT           *string  `json:"lastErrorGT,omitempty"`
+	LastErrorGTE          *string  `json:"lastErrorGTE,omitempty"`
+	LastErrorLT           *string  `json:"lastErrorLT,omitempty"`
+	LastErrorLTE          *string  `json:"lastErrorLTE,omitempty"`
+	LastErrorContains     *string  `json:"lastErrorContains,omitempty"`
+	LastErrorHasPrefix    *string  `json:"lastErrorHasPrefix,omitempty"`
+	LastErrorHasSuffix    *string  `json:"lastErrorHasSuffix,omitempty"`
+	LastErrorIsNil        bool     `json:"lastErrorIsNil,omitempty"`
+	LastErrorNotNil       bool     `json:"lastErrorNotNil,omitempty"`
+	LastErrorEqualFold    *string  `json:"lastErrorEqualFold,omitempty"`
+	LastErrorContainsFold *string  `json:"lastErrorContainsFold,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *GoogleWatchWhereInput) AddPredicates(predicates ...predicate.GoogleWatch) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the GoogleWatchWhereInput filter on the GoogleWatchQuery builder.
+func (i *GoogleWatchWhereInput) Filter(q *GoogleWatchQuery) (*GoogleWatchQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyGoogleWatchWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyGoogleWatchWhereInput is returned in case the GoogleWatchWhereInput is empty.
+var ErrEmptyGoogleWatchWhereInput = errors.New("ent: empty predicate GoogleWatchWhereInput")
+
+// P returns a predicate for filtering googlewatches.
+// An error is returned if the input is empty or invalid.
+func (i *GoogleWatchWhereInput) P() (predicate.GoogleWatch, error) {
+	var predicates []predicate.GoogleWatch
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, googlewatch.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.GoogleWatch, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, googlewatch.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.GoogleWatch, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, googlewatch.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, googlewatch.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, googlewatch.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, googlewatch.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, googlewatch.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, googlewatch.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, googlewatch.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, googlewatch.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, googlewatch.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, googlewatch.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, googlewatch.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, googlewatch.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, googlewatch.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, googlewatch.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, googlewatch.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, googlewatch.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, googlewatch.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, googlewatch.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, googlewatch.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, googlewatch.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, googlewatch.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, googlewatch.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, googlewatch.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, googlewatch.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, googlewatch.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.Kind != nil {
+		predicates = append(predicates, googlewatch.KindEQ(*i.Kind))
+	}
+	if i.KindNEQ != nil {
+		predicates = append(predicates, googlewatch.KindNEQ(*i.KindNEQ))
+	}
+	if len(i.KindIn) > 0 {
+		predicates = append(predicates, googlewatch.KindIn(i.KindIn...))
+	}
+	if len(i.KindNotIn) > 0 {
+		predicates = append(predicates, googlewatch.KindNotIn(i.KindNotIn...))
+	}
+	if i.KindGT != nil {
+		predicates = append(predicates, googlewatch.KindGT(*i.KindGT))
+	}
+	if i.KindGTE != nil {
+		predicates = append(predicates, googlewatch.KindGTE(*i.KindGTE))
+	}
+	if i.KindLT != nil {
+		predicates = append(predicates, googlewatch.KindLT(*i.KindLT))
+	}
+	if i.KindLTE != nil {
+		predicates = append(predicates, googlewatch.KindLTE(*i.KindLTE))
+	}
+	if i.KindContains != nil {
+		predicates = append(predicates, googlewatch.KindContains(*i.KindContains))
+	}
+	if i.KindHasPrefix != nil {
+		predicates = append(predicates, googlewatch.KindHasPrefix(*i.KindHasPrefix))
+	}
+	if i.KindHasSuffix != nil {
+		predicates = append(predicates, googlewatch.KindHasSuffix(*i.KindHasSuffix))
+	}
+	if i.KindEqualFold != nil {
+		predicates = append(predicates, googlewatch.KindEqualFold(*i.KindEqualFold))
+	}
+	if i.KindContainsFold != nil {
+		predicates = append(predicates, googlewatch.KindContainsFold(*i.KindContainsFold))
+	}
+	if i.AccountEmail != nil {
+		predicates = append(predicates, googlewatch.AccountEmailEQ(*i.AccountEmail))
+	}
+	if i.AccountEmailNEQ != nil {
+		predicates = append(predicates, googlewatch.AccountEmailNEQ(*i.AccountEmailNEQ))
+	}
+	if len(i.AccountEmailIn) > 0 {
+		predicates = append(predicates, googlewatch.AccountEmailIn(i.AccountEmailIn...))
+	}
+	if len(i.AccountEmailNotIn) > 0 {
+		predicates = append(predicates, googlewatch.AccountEmailNotIn(i.AccountEmailNotIn...))
+	}
+	if i.AccountEmailGT != nil {
+		predicates = append(predicates, googlewatch.AccountEmailGT(*i.AccountEmailGT))
+	}
+	if i.AccountEmailGTE != nil {
+		predicates = append(predicates, googlewatch.AccountEmailGTE(*i.AccountEmailGTE))
+	}
+	if i.AccountEmailLT != nil {
+		predicates = append(predicates, googlewatch.AccountEmailLT(*i.AccountEmailLT))
+	}
+	if i.AccountEmailLTE != nil {
+		predicates = append(predicates, googlewatch.AccountEmailLTE(*i.AccountEmailLTE))
+	}
+	if i.AccountEmailContains != nil {
+		predicates = append(predicates, googlewatch.AccountEmailContains(*i.AccountEmailContains))
+	}
+	if i.AccountEmailHasPrefix != nil {
+		predicates = append(predicates, googlewatch.AccountEmailHasPrefix(*i.AccountEmailHasPrefix))
+	}
+	if i.AccountEmailHasSuffix != nil {
+		predicates = append(predicates, googlewatch.AccountEmailHasSuffix(*i.AccountEmailHasSuffix))
+	}
+	if i.AccountEmailEqualFold != nil {
+		predicates = append(predicates, googlewatch.AccountEmailEqualFold(*i.AccountEmailEqualFold))
+	}
+	if i.AccountEmailContainsFold != nil {
+		predicates = append(predicates, googlewatch.AccountEmailContainsFold(*i.AccountEmailContainsFold))
+	}
+	if i.ChannelID != nil {
+		predicates = append(predicates, googlewatch.ChannelIDEQ(*i.ChannelID))
+	}
+	if i.ChannelIDNEQ != nil {
+		predicates = append(predicates, googlewatch.ChannelIDNEQ(*i.ChannelIDNEQ))
+	}
+	if len(i.ChannelIDIn) > 0 {
+		predicates = append(predicates, googlewatch.ChannelIDIn(i.ChannelIDIn...))
+	}
+	if len(i.ChannelIDNotIn) > 0 {
+		predicates = append(predicates, googlewatch.ChannelIDNotIn(i.ChannelIDNotIn...))
+	}
+	if i.ChannelIDGT != nil {
+		predicates = append(predicates, googlewatch.ChannelIDGT(*i.ChannelIDGT))
+	}
+	if i.ChannelIDGTE != nil {
+		predicates = append(predicates, googlewatch.ChannelIDGTE(*i.ChannelIDGTE))
+	}
+	if i.ChannelIDLT != nil {
+		predicates = append(predicates, googlewatch.ChannelIDLT(*i.ChannelIDLT))
+	}
+	if i.ChannelIDLTE != nil {
+		predicates = append(predicates, googlewatch.ChannelIDLTE(*i.ChannelIDLTE))
+	}
+	if i.ChannelIDContains != nil {
+		predicates = append(predicates, googlewatch.ChannelIDContains(*i.ChannelIDContains))
+	}
+	if i.ChannelIDHasPrefix != nil {
+		predicates = append(predicates, googlewatch.ChannelIDHasPrefix(*i.ChannelIDHasPrefix))
+	}
+	if i.ChannelIDHasSuffix != nil {
+		predicates = append(predicates, googlewatch.ChannelIDHasSuffix(*i.ChannelIDHasSuffix))
+	}
+	if i.ChannelIDIsNil {
+		predicates = append(predicates, googlewatch.ChannelIDIsNil())
+	}
+	if i.ChannelIDNotNil {
+		predicates = append(predicates, googlewatch.ChannelIDNotNil())
+	}
+	if i.ChannelIDEqualFold != nil {
+		predicates = append(predicates, googlewatch.ChannelIDEqualFold(*i.ChannelIDEqualFold))
+	}
+	if i.ChannelIDContainsFold != nil {
+		predicates = append(predicates, googlewatch.ChannelIDContainsFold(*i.ChannelIDContainsFold))
+	}
+	if i.ResourceID != nil {
+		predicates = append(predicates, googlewatch.ResourceIDEQ(*i.ResourceID))
+	}
+	if i.ResourceIDNEQ != nil {
+		predicates = append(predicates, googlewatch.ResourceIDNEQ(*i.ResourceIDNEQ))
+	}
+	if len(i.ResourceIDIn) > 0 {
+		predicates = append(predicates, googlewatch.ResourceIDIn(i.ResourceIDIn...))
+	}
+	if len(i.ResourceIDNotIn) > 0 {
+		predicates = append(predicates, googlewatch.ResourceIDNotIn(i.ResourceIDNotIn...))
+	}
+	if i.ResourceIDGT != nil {
+		predicates = append(predicates, googlewatch.ResourceIDGT(*i.ResourceIDGT))
+	}
+	if i.ResourceIDGTE != nil {
+		predicates = append(predicates, googlewatch.ResourceIDGTE(*i.ResourceIDGTE))
+	}
+	if i.ResourceIDLT != nil {
+		predicates = append(predicates, googlewatch.ResourceIDLT(*i.ResourceIDLT))
+	}
+	if i.ResourceIDLTE != nil {
+		predicates = append(predicates, googlewatch.ResourceIDLTE(*i.ResourceIDLTE))
+	}
+	if i.ResourceIDContains != nil {
+		predicates = append(predicates, googlewatch.ResourceIDContains(*i.ResourceIDContains))
+	}
+	if i.ResourceIDHasPrefix != nil {
+		predicates = append(predicates, googlewatch.ResourceIDHasPrefix(*i.ResourceIDHasPrefix))
+	}
+	if i.ResourceIDHasSuffix != nil {
+		predicates = append(predicates, googlewatch.ResourceIDHasSuffix(*i.ResourceIDHasSuffix))
+	}
+	if i.ResourceIDIsNil {
+		predicates = append(predicates, googlewatch.ResourceIDIsNil())
+	}
+	if i.ResourceIDNotNil {
+		predicates = append(predicates, googlewatch.ResourceIDNotNil())
+	}
+	if i.ResourceIDEqualFold != nil {
+		predicates = append(predicates, googlewatch.ResourceIDEqualFold(*i.ResourceIDEqualFold))
+	}
+	if i.ResourceIDContainsFold != nil {
+		predicates = append(predicates, googlewatch.ResourceIDContainsFold(*i.ResourceIDContainsFold))
+	}
+	if i.HistoryID != nil {
+		predicates = append(predicates, googlewatch.HistoryIDEQ(*i.HistoryID))
+	}
+	if i.HistoryIDNEQ != nil {
+		predicates = append(predicates, googlewatch.HistoryIDNEQ(*i.HistoryIDNEQ))
+	}
+	if len(i.HistoryIDIn) > 0 {
+		predicates = append(predicates, googlewatch.HistoryIDIn(i.HistoryIDIn...))
+	}
+	if len(i.HistoryIDNotIn) > 0 {
+		predicates = append(predicates, googlewatch.HistoryIDNotIn(i.HistoryIDNotIn...))
+	}
+	if i.HistoryIDGT != nil {
+		predicates = append(predicates, googlewatch.HistoryIDGT(*i.HistoryIDGT))
+	}
+	if i.HistoryIDGTE != nil {
+		predicates = append(predicates, googlewatch.HistoryIDGTE(*i.HistoryIDGTE))
+	}
+	if i.HistoryIDLT != nil {
+		predicates = append(predicates, googlewatch.HistoryIDLT(*i.HistoryIDLT))
+	}
+	if i.HistoryIDLTE != nil {
+		predicates = append(predicates, googlewatch.HistoryIDLTE(*i.HistoryIDLTE))
+	}
+	if i.HistoryIDContains != nil {
+		predicates = append(predicates, googlewatch.HistoryIDContains(*i.HistoryIDContains))
+	}
+	if i.HistoryIDHasPrefix != nil {
+		predicates = append(predicates, googlewatch.HistoryIDHasPrefix(*i.HistoryIDHasPrefix))
+	}
+	if i.HistoryIDHasSuffix != nil {
+		predicates = append(predicates, googlewatch.HistoryIDHasSuffix(*i.HistoryIDHasSuffix))
+	}
+	if i.HistoryIDIsNil {
+		predicates = append(predicates, googlewatch.HistoryIDIsNil())
+	}
+	if i.HistoryIDNotNil {
+		predicates = append(predicates, googlewatch.HistoryIDNotNil())
+	}
+	if i.HistoryIDEqualFold != nil {
+		predicates = append(predicates, googlewatch.HistoryIDEqualFold(*i.HistoryIDEqualFold))
+	}
+	if i.HistoryIDContainsFold != nil {
+		predicates = append(predicates, googlewatch.HistoryIDContainsFold(*i.HistoryIDContainsFold))
+	}
+	if i.ExpiresAt != nil {
+		predicates = append(predicates, googlewatch.ExpiresAtEQ(*i.ExpiresAt))
+	}
+	if i.ExpiresAtNEQ != nil {
+		predicates = append(predicates, googlewatch.ExpiresAtNEQ(*i.ExpiresAtNEQ))
+	}
+	if len(i.ExpiresAtIn) > 0 {
+		predicates = append(predicates, googlewatch.ExpiresAtIn(i.ExpiresAtIn...))
+	}
+	if len(i.ExpiresAtNotIn) > 0 {
+		predicates = append(predicates, googlewatch.ExpiresAtNotIn(i.ExpiresAtNotIn...))
+	}
+	if i.ExpiresAtGT != nil {
+		predicates = append(predicates, googlewatch.ExpiresAtGT(*i.ExpiresAtGT))
+	}
+	if i.ExpiresAtGTE != nil {
+		predicates = append(predicates, googlewatch.ExpiresAtGTE(*i.ExpiresAtGTE))
+	}
+	if i.ExpiresAtLT != nil {
+		predicates = append(predicates, googlewatch.ExpiresAtLT(*i.ExpiresAtLT))
+	}
+	if i.ExpiresAtLTE != nil {
+		predicates = append(predicates, googlewatch.ExpiresAtLTE(*i.ExpiresAtLTE))
+	}
+	if i.RenewClaimedAt != nil {
+		predicates = append(predicates, googlewatch.RenewClaimedAtEQ(*i.RenewClaimedAt))
+	}
+	if i.RenewClaimedAtNEQ != nil {
+		predicates = append(predicates, googlewatch.RenewClaimedAtNEQ(*i.RenewClaimedAtNEQ))
+	}
+	if len(i.RenewClaimedAtIn) > 0 {
+		predicates = append(predicates, googlewatch.RenewClaimedAtIn(i.RenewClaimedAtIn...))
+	}
+	if len(i.RenewClaimedAtNotIn) > 0 {
+		predicates = append(predicates, googlewatch.RenewClaimedAtNotIn(i.RenewClaimedAtNotIn...))
+	}
+	if i.RenewClaimedAtGT != nil {
+		predicates = append(predicates, googlewatch.RenewClaimedAtGT(*i.RenewClaimedAtGT))
+	}
+	if i.RenewClaimedAtGTE != nil {
+		predicates = append(predicates, googlewatch.RenewClaimedAtGTE(*i.RenewClaimedAtGTE))
+	}
+	if i.RenewClaimedAtLT != nil {
+		predicates = append(predicates, googlewatch.RenewClaimedAtLT(*i.RenewClaimedAtLT))
+	}
+	if i.RenewClaimedAtLTE != nil {
+		predicates = append(predicates, googlewatch.RenewClaimedAtLTE(*i.RenewClaimedAtLTE))
+	}
+	if i.RenewClaimedAtIsNil {
+		predicates = append(predicates, googlewatch.RenewClaimedAtIsNil())
+	}
+	if i.RenewClaimedAtNotNil {
+		predicates = append(predicates, googlewatch.RenewClaimedAtNotNil())
+	}
+	if i.LastError != nil {
+		predicates = append(predicates, googlewatch.LastErrorEQ(*i.LastError))
+	}
+	if i.LastErrorNEQ != nil {
+		predicates = append(predicates, googlewatch.LastErrorNEQ(*i.LastErrorNEQ))
+	}
+	if len(i.LastErrorIn) > 0 {
+		predicates = append(predicates, googlewatch.LastErrorIn(i.LastErrorIn...))
+	}
+	if len(i.LastErrorNotIn) > 0 {
+		predicates = append(predicates, googlewatch.LastErrorNotIn(i.LastErrorNotIn...))
+	}
+	if i.LastErrorGT != nil {
+		predicates = append(predicates, googlewatch.LastErrorGT(*i.LastErrorGT))
+	}
+	if i.LastErrorGTE != nil {
+		predicates = append(predicates, googlewatch.LastErrorGTE(*i.LastErrorGTE))
+	}
+	if i.LastErrorLT != nil {
+		predicates = append(predicates, googlewatch.LastErrorLT(*i.LastErrorLT))
+	}
+	if i.LastErrorLTE != nil {
+		predicates = append(predicates, googlewatch.LastErrorLTE(*i.LastErrorLTE))
+	}
+	if i.LastErrorContains != nil {
+		predicates = append(predicates, googlewatch.LastErrorContains(*i.LastErrorContains))
+	}
+	if i.LastErrorHasPrefix != nil {
+		predicates = append(predicates, googlewatch.LastErrorHasPrefix(*i.LastErrorHasPrefix))
+	}
+	if i.LastErrorHasSuffix != nil {
+		predicates = append(predicates, googlewatch.LastErrorHasSuffix(*i.LastErrorHasSuffix))
+	}
+	if i.LastErrorIsNil {
+		predicates = append(predicates, googlewatch.LastErrorIsNil())
+	}
+	if i.LastErrorNotNil {
+		predicates = append(predicates, googlewatch.LastErrorNotNil())
+	}
+	if i.LastErrorEqualFold != nil {
+		predicates = append(predicates, googlewatch.LastErrorEqualFold(*i.LastErrorEqualFold))
+	}
+	if i.LastErrorContainsFold != nil {
+		predicates = append(predicates, googlewatch.LastErrorContainsFold(*i.LastErrorContainsFold))
+	}
+
+	if i.HasUser != nil {
+		p := googlewatch.HasUser()
+		if !*i.HasUser {
+			p = googlewatch.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, googlewatch.HasUserWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyGoogleWatchWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return googlewatch.And(predicates...), nil
+	}
+}
+
 // LLMUsageWhereInput represents a where input for filtering LLMUsage queries.
 type LLMUsageWhereInput struct {
 	Predicates []predicate.LLMUsage  `json:"-"`
@@ -8039,6 +8686,10 @@ type UserWhereInput struct {
 	// "cloud_events" edge predicates.
 	HasCloudEvents     *bool                   `json:"hasCloudEvents,omitempty"`
 	HasCloudEventsWith []*CloudEventWhereInput `json:"hasCloudEventsWith,omitempty"`
+
+	// "google_watches" edge predicates.
+	HasGoogleWatches     *bool                    `json:"hasGoogleWatches,omitempty"`
+	HasGoogleWatchesWith []*GoogleWatchWhereInput `json:"hasGoogleWatchesWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -8511,6 +9162,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasCloudEventsWith(with...))
+	}
+	if i.HasGoogleWatches != nil {
+		p := user.HasGoogleWatches()
+		if !*i.HasGoogleWatches {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasGoogleWatchesWith) > 0 {
+		with := make([]predicate.GoogleWatch, 0, len(i.HasGoogleWatchesWith))
+		for _, w := range i.HasGoogleWatchesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasGoogleWatchesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasGoogleWatchesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

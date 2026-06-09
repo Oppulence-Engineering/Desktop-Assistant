@@ -19,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -46,6 +47,7 @@ type UserQuery struct {
 	withBackgroundTaskRunEvents           *BackgroundTaskRunEventQuery
 	withBackgroundTaskScheduleStates      *BackgroundTaskScheduleStateQuery
 	withCloudEvents                       *CloudEventQuery
+	withGoogleWatches                     *GoogleWatchQuery
 	modifiers                             []func(*sql.Selector)
 	loadTotal                             []func(context.Context, []*User) error
 	withNamedLedgerEntries                map[string]*CreditLedgerQuery
@@ -58,6 +60,7 @@ type UserQuery struct {
 	withNamedBackgroundTaskRunEvents      map[string]*BackgroundTaskRunEventQuery
 	withNamedBackgroundTaskScheduleStates map[string]*BackgroundTaskScheduleStateQuery
 	withNamedCloudEvents                  map[string]*CloudEventQuery
+	withNamedGoogleWatches                map[string]*GoogleWatchQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -336,6 +339,28 @@ func (_q *UserQuery) QueryCloudEvents() *CloudEventQuery {
 	return query
 }
 
+// QueryGoogleWatches chains the current query on the "google_watches" edge.
+func (_q *UserQuery) QueryGoogleWatches() *GoogleWatchQuery {
+	query := (&GoogleWatchClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(googlewatch.Table, googlewatch.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GoogleWatchesTable, user.GoogleWatchesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -539,6 +564,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withBackgroundTaskRunEvents:      _q.withBackgroundTaskRunEvents.Clone(),
 		withBackgroundTaskScheduleStates: _q.withBackgroundTaskScheduleStates.Clone(),
 		withCloudEvents:                  _q.withCloudEvents.Clone(),
+		withGoogleWatches:                _q.withGoogleWatches.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -666,6 +692,17 @@ func (_q *UserQuery) WithCloudEvents(opts ...func(*CloudEventQuery)) *UserQuery 
 	return _q
 }
 
+// WithGoogleWatches tells the query-builder to eager-load the nodes that are connected to
+// the "google_watches" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithGoogleWatches(opts ...func(*GoogleWatchQuery)) *UserQuery {
+	query := (&GoogleWatchClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGoogleWatches = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -744,7 +781,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [11]bool{
+		loadedTypes = [12]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withLlmUsages != nil,
@@ -756,6 +793,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withBackgroundTaskRunEvents != nil,
 			_q.withBackgroundTaskScheduleStates != nil,
 			_q.withCloudEvents != nil,
+			_q.withGoogleWatches != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -863,6 +901,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withGoogleWatches; query != nil {
+		if err := _q.loadGoogleWatches(ctx, query, nodes,
+			func(n *User) { n.Edges.GoogleWatches = []*GoogleWatch{} },
+			func(n *User, e *GoogleWatch) { n.Edges.GoogleWatches = append(n.Edges.GoogleWatches, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -930,6 +975,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadCloudEvents(ctx, query, nodes,
 			func(n *User) { n.appendNamedCloudEvents(name) },
 			func(n *User, e *CloudEvent) { n.appendNamedCloudEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedGoogleWatches {
+		if err := _q.loadGoogleWatches(ctx, query, nodes,
+			func(n *User) { n.appendNamedGoogleWatches(name) },
+			func(n *User, e *GoogleWatch) { n.appendNamedGoogleWatches(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1279,6 +1331,37 @@ func (_q *UserQuery) loadCloudEvents(ctx context.Context, query *CloudEventQuery
 	}
 	return nil
 }
+func (_q *UserQuery) loadGoogleWatches(ctx context.Context, query *GoogleWatchQuery, nodes []*User, init func(*User), assign func(*User, *GoogleWatch)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.GoogleWatch(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GoogleWatchesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_google_watches
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_google_watches" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_google_watches" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -1501,6 +1584,20 @@ func (_q *UserQuery) WithNamedCloudEvents(name string, opts ...func(*CloudEventQ
 		_q.withNamedCloudEvents = make(map[string]*CloudEventQuery)
 	}
 	_q.withNamedCloudEvents[name] = query
+	return _q
+}
+
+// WithNamedGoogleWatches tells the query-builder to eager-load the nodes that are connected to the "google_watches"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedGoogleWatches(name string, opts ...func(*GoogleWatchQuery)) *UserQuery {
+	query := (&GoogleWatchClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedGoogleWatches == nil {
+		_q.withNamedGoogleWatches = make(map[string]*GoogleWatchQuery)
+	}
+	_q.withNamedGoogleWatches[name] = query
 	return _q
 }
 

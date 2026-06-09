@@ -59,6 +59,16 @@ func (r *queryResolver) CloudEvents(ctx context.Context, after *entgql.Cursor[uu
 	return r.client.CloudEvent.Query().Paginate(ctx, after, first, before, last, opts...)
 }
 
+// GoogleWatches is the resolver for the googleWatches field.
+func (r *queryResolver) GoogleWatches(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.GoogleWatchWhereInput) (*ent.GoogleWatchConnection, error) {
+	first, last = clampPage(first, last)
+	var opts []ent.GoogleWatchPaginateOption
+	if where != nil {
+		opts = append(opts, ent.WithGoogleWatchFilter(where.Filter))
+	}
+	return r.client.GoogleWatch.Query().Paginate(ctx, after, first, before, last, opts...)
+}
+
 // LlmUsages is the resolver for the llmUsages field.
 func (r *queryResolver) LlmUsages(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.LLMUsageWhereInput) (*ent.LLMUsageConnection, error) {
 	first, last = clampPage(first, last)

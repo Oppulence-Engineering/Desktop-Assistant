@@ -268,6 +268,32 @@ type ComplexityRoot struct {
 		User      func(childComplexity int) int
 	}
 
+	GoogleWatch struct {
+		AccountEmail   func(childComplexity int) int
+		ChannelID      func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		ExpiresAt      func(childComplexity int) int
+		HistoryID      func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Kind           func(childComplexity int) int
+		LastError      func(childComplexity int) int
+		RenewClaimedAt func(childComplexity int) int
+		ResourceID     func(childComplexity int) int
+		UpdatedAt      func(childComplexity int) int
+		User           func(childComplexity int) int
+	}
+
+	GoogleWatchConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	GoogleWatchEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	LLMUsage struct {
 		AgentName    func(childComplexity int) int
 		CostUnits    func(childComplexity int) int
@@ -351,6 +377,7 @@ type ComplexityRoot struct {
 		BackgroundTasks              func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskWhereInput) int
 		BillingSubscriptions         func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BillingSubscriptionWhereInput) int
 		CloudEvents                  func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.CloudEventWhereInput) int
+		GoogleWatches                func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.GoogleWatchWhereInput) int
 		LlmUsages                    func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.LLMUsageWhereInput) int
 		McpConnections               func(childComplexity int, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.MCPConnectionWhereInput) int
 		Node                         func(childComplexity int, id uuid.UUID) int
@@ -367,6 +394,7 @@ type ComplexityRoot struct {
 		CloudEvents                  func(childComplexity int) int
 		CreatedAt                    func(childComplexity int) int
 		Email                        func(childComplexity int) int
+		GoogleWatches                func(childComplexity int) int
 		ID                           func(childComplexity int) int
 		LedgerEntries                func(childComplexity int) int
 		LlmUsages                    func(childComplexity int) int
@@ -399,6 +427,7 @@ type QueryResolver interface {
 	BackgroundTaskRunEvents(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskRunEventWhereInput) (*ent.BackgroundTaskRunEventConnection, error)
 	BackgroundTaskScheduleStates(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskScheduleStateWhereInput) (*ent.BackgroundTaskScheduleStateConnection, error)
 	CloudEvents(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.CloudEventWhereInput) (*ent.CloudEventConnection, error)
+	GoogleWatches(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.GoogleWatchWhereInput) (*ent.GoogleWatchConnection, error)
 	LlmUsages(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.LLMUsageWhereInput) (*ent.LLMUsageConnection, error)
 	McpConnections(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.MCPConnectionWhereInput) (*ent.MCPConnectionConnection, error)
 	BillingSubscriptions(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BillingSubscriptionWhereInput) (*ent.BillingSubscriptionConnection, error)
@@ -1413,6 +1442,111 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.CreditLedger.User(childComplexity), true
 
+	case "GoogleWatch.accountEmail":
+		if e.ComplexityRoot.GoogleWatch.AccountEmail == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.AccountEmail(childComplexity), true
+	case "GoogleWatch.channelID":
+		if e.ComplexityRoot.GoogleWatch.ChannelID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.ChannelID(childComplexity), true
+	case "GoogleWatch.createdAt":
+		if e.ComplexityRoot.GoogleWatch.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.CreatedAt(childComplexity), true
+	case "GoogleWatch.expiresAt":
+		if e.ComplexityRoot.GoogleWatch.ExpiresAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.ExpiresAt(childComplexity), true
+	case "GoogleWatch.historyID":
+		if e.ComplexityRoot.GoogleWatch.HistoryID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.HistoryID(childComplexity), true
+	case "GoogleWatch.id":
+		if e.ComplexityRoot.GoogleWatch.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.ID(childComplexity), true
+	case "GoogleWatch.kind":
+		if e.ComplexityRoot.GoogleWatch.Kind == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.Kind(childComplexity), true
+	case "GoogleWatch.lastError":
+		if e.ComplexityRoot.GoogleWatch.LastError == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.LastError(childComplexity), true
+	case "GoogleWatch.renewClaimedAt":
+		if e.ComplexityRoot.GoogleWatch.RenewClaimedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.RenewClaimedAt(childComplexity), true
+	case "GoogleWatch.resourceID":
+		if e.ComplexityRoot.GoogleWatch.ResourceID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.ResourceID(childComplexity), true
+	case "GoogleWatch.updatedAt":
+		if e.ComplexityRoot.GoogleWatch.UpdatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.UpdatedAt(childComplexity), true
+	case "GoogleWatch.user":
+		if e.ComplexityRoot.GoogleWatch.User == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatch.User(childComplexity), true
+
+	case "GoogleWatchConnection.edges":
+		if e.ComplexityRoot.GoogleWatchConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatchConnection.Edges(childComplexity), true
+	case "GoogleWatchConnection.pageInfo":
+		if e.ComplexityRoot.GoogleWatchConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatchConnection.PageInfo(childComplexity), true
+	case "GoogleWatchConnection.totalCount":
+		if e.ComplexityRoot.GoogleWatchConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatchConnection.TotalCount(childComplexity), true
+
+	case "GoogleWatchEdge.cursor":
+		if e.ComplexityRoot.GoogleWatchEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatchEdge.Cursor(childComplexity), true
+	case "GoogleWatchEdge.node":
+		if e.ComplexityRoot.GoogleWatchEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GoogleWatchEdge.Node(childComplexity), true
+
 	case "LLMUsage.agentName":
 		if e.ComplexityRoot.LLMUsage.AgentName == nil {
 			break
@@ -1787,6 +1921,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CloudEvents(childComplexity, args["after"].(*entgql.Cursor[uuid.UUID]), args["first"].(*int), args["before"].(*entgql.Cursor[uuid.UUID]), args["last"].(*int), args["where"].(*ent.CloudEventWhereInput)), true
+	case "Query.googleWatches":
+		if e.ComplexityRoot.Query.GoogleWatches == nil {
+			break
+		}
+
+		args, err := ec.field_Query_googleWatches_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.GoogleWatches(childComplexity, args["after"].(*entgql.Cursor[uuid.UUID]), args["first"].(*int), args["before"].(*entgql.Cursor[uuid.UUID]), args["last"].(*int), args["where"].(*ent.GoogleWatchWhereInput)), true
 
 	case "Query.llmUsages":
 		if e.ComplexityRoot.Query.LlmUsages == nil {
@@ -1892,6 +2037,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.User.Email(childComplexity), true
+	case "User.googleWatches":
+		if e.ComplexityRoot.User.GoogleWatches == nil {
+			break
+		}
+
+		return e.ComplexityRoot.User.GoogleWatches(childComplexity), true
 	case "User.id":
 		if e.ComplexityRoot.User.ID == nil {
 			break
@@ -1995,6 +2146,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputBillingSubscriptionWhereInput,
 		ec.unmarshalInputCloudEventWhereInput,
 		ec.unmarshalInputCreditLedgerWhereInput,
+		ec.unmarshalInputGoogleWatchWhereInput,
 		ec.unmarshalInputLLMUsageWhereInput,
 		ec.unmarshalInputMCPConnectionWhereInput,
 		ec.unmarshalInputOAuthConnectionWhereInput,
@@ -2536,6 +2688,58 @@ func (ec *executionContext) childFields_CreditLedger(ctx context.Context, field 
 	return nil, fmt.Errorf("no field named %q was found under type CreditLedger", field.Name)
 }
 
+func (ec *executionContext) childFields_GoogleWatch(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_GoogleWatch_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_GoogleWatch_createdAt(ctx, field)
+	case "updatedAt":
+		return ec.fieldContext_GoogleWatch_updatedAt(ctx, field)
+	case "kind":
+		return ec.fieldContext_GoogleWatch_kind(ctx, field)
+	case "accountEmail":
+		return ec.fieldContext_GoogleWatch_accountEmail(ctx, field)
+	case "channelID":
+		return ec.fieldContext_GoogleWatch_channelID(ctx, field)
+	case "resourceID":
+		return ec.fieldContext_GoogleWatch_resourceID(ctx, field)
+	case "historyID":
+		return ec.fieldContext_GoogleWatch_historyID(ctx, field)
+	case "expiresAt":
+		return ec.fieldContext_GoogleWatch_expiresAt(ctx, field)
+	case "renewClaimedAt":
+		return ec.fieldContext_GoogleWatch_renewClaimedAt(ctx, field)
+	case "lastError":
+		return ec.fieldContext_GoogleWatch_lastError(ctx, field)
+	case "user":
+		return ec.fieldContext_GoogleWatch_user(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type GoogleWatch", field.Name)
+}
+
+func (ec *executionContext) childFields_GoogleWatchConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_GoogleWatchConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_GoogleWatchConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_GoogleWatchConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type GoogleWatchConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_GoogleWatchEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_GoogleWatchEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_GoogleWatchEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type GoogleWatchEdge", field.Name)
+}
+
 func (ec *executionContext) childFields_LLMUsage(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -2704,6 +2908,8 @@ func (ec *executionContext) childFields_User(ctx context.Context, field graphql.
 		return ec.fieldContext_User_backgroundTaskScheduleStates(ctx, field)
 	case "cloudEvents":
 		return ec.fieldContext_User_cloudEvents(ctx, field)
+	case "googleWatches":
+		return ec.fieldContext_User_googleWatches(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 }
@@ -3174,6 +3380,52 @@ func (ec *executionContext) field_Query_cloudEvents_args(ctx context.Context, ra
 	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "where",
 		func(ctx context.Context, v any) (*ent.CloudEventWhereInput, error) {
 			return ec.unmarshalOCloudEventWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐCloudEventWhereInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_googleWatches_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after",
+		func(ctx context.Context, v any) (*entgql.Cursor[uuid.UUID], error) {
+			return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first",
+		func(ctx context.Context, v any) (*int, error) {
+			return ec.unmarshalOInt2ᚖint(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before",
+		func(ctx context.Context, v any) (*entgql.Cursor[uuid.UUID], error) {
+			return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last",
+		func(ctx context.Context, v any) (*int, error) {
+			return ec.unmarshalOInt2ᚖint(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "where",
+		func(ctx context.Context, v any) (*ent.GoogleWatchWhereInput, error) {
+			return ec.unmarshalOGoogleWatchWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchWhereInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -7507,6 +7759,433 @@ func (ec *executionContext) fieldContext_CreditLedger_user(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _GoogleWatch_id(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v uuid.UUID) graphql.Marshaler {
+			return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_createdAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_updatedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_kind(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_kind(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Kind, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_accountEmail(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_accountEmail(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AccountEmail, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_accountEmail(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_channelID(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_channelID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ChannelID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_channelID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_resourceID(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_resourceID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ResourceID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_resourceID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_historyID(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_historyID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.HistoryID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_historyID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_expiresAt(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_expiresAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExpiresAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_renewClaimedAt(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_renewClaimedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RenewClaimedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_renewClaimedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_lastError(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_lastError(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastError, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_lastError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatch", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatch_user(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatch_user(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.User(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.User) graphql.Marshaler {
+			return ec.marshalNUser2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐUser(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatch_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GoogleWatch",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_User(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GoogleWatchConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatchConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatchConnection_edges(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*ent.GoogleWatchEdge) graphql.Marshaler {
+			return ec.marshalOGoogleWatchEdge2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchEdge(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatchConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GoogleWatchConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GoogleWatchEdge(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GoogleWatchConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatchConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatchConnection_pageInfo(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v entgql.PageInfo[uuid.UUID]) graphql.Marshaler {
+			return ec.marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatchConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GoogleWatchConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_PageInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GoogleWatchConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatchConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatchConnection_totalCount(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatchConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatchConnection", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GoogleWatchEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatchEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatchEdge_node(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.GoogleWatch) graphql.Marshaler {
+			return ec.marshalOGoogleWatch2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatch(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatchEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GoogleWatchEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GoogleWatch(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GoogleWatchEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.GoogleWatchEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GoogleWatchEdge_cursor(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v entgql.Cursor[uuid.UUID]) graphql.Marshaler {
+			return ec.marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GoogleWatchEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GoogleWatchEdge", field, false, false, errors.New("field of type Cursor does not have child fields"))
+}
+
 func (ec *executionContext) _LLMUsage_id(ctx context.Context, field graphql.CollectedField, obj *ent.LLMUsage) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9044,6 +9723,50 @@ func (ec *executionContext) fieldContext_Query_cloudEvents(ctx context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_googleWatches(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_googleWatches(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().GoogleWatches(ctx, fc.Args["after"].(*entgql.Cursor[uuid.UUID]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[uuid.UUID]), fc.Args["last"].(*int), fc.Args["where"].(*ent.GoogleWatchWhereInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.GoogleWatchConnection) graphql.Marshaler {
+			return ec.marshalNGoogleWatchConnection2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchConnection(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_googleWatches(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GoogleWatchConnection(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_googleWatches_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_llmUsages(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9781,6 +10504,38 @@ func (ec *executionContext) fieldContext_User_cloudEvents(_ context.Context, fie
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_CloudEvent(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_googleWatches(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_User_googleWatches(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.GoogleWatches(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*ent.GoogleWatch) graphql.Marshaler {
+			return ec.marshalOGoogleWatch2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_User_googleWatches(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GoogleWatch(ctx, field)
 		},
 	}
 	return fc, nil
@@ -20096,6 +20851,960 @@ func (ec *executionContext) unmarshalInputCreditLedgerWhereInput(ctx context.Con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputGoogleWatchWhereInput(ctx context.Context, obj any) (ent.GoogleWatchWhereInput, error) {
+	var it ent.GoogleWatchWhereInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "kind", "kindNEQ", "kindIn", "kindNotIn", "kindGT", "kindGTE", "kindLT", "kindLTE", "kindContains", "kindHasPrefix", "kindHasSuffix", "kindEqualFold", "kindContainsFold", "accountEmail", "accountEmailNEQ", "accountEmailIn", "accountEmailNotIn", "accountEmailGT", "accountEmailGTE", "accountEmailLT", "accountEmailLTE", "accountEmailContains", "accountEmailHasPrefix", "accountEmailHasSuffix", "accountEmailEqualFold", "accountEmailContainsFold", "channelID", "channelIDNEQ", "channelIDIn", "channelIDNotIn", "channelIDGT", "channelIDGTE", "channelIDLT", "channelIDLTE", "channelIDContains", "channelIDHasPrefix", "channelIDHasSuffix", "channelIDIsNil", "channelIDNotNil", "channelIDEqualFold", "channelIDContainsFold", "resourceID", "resourceIDNEQ", "resourceIDIn", "resourceIDNotIn", "resourceIDGT", "resourceIDGTE", "resourceIDLT", "resourceIDLTE", "resourceIDContains", "resourceIDHasPrefix", "resourceIDHasSuffix", "resourceIDIsNil", "resourceIDNotNil", "resourceIDEqualFold", "resourceIDContainsFold", "historyID", "historyIDNEQ", "historyIDIn", "historyIDNotIn", "historyIDGT", "historyIDGTE", "historyIDLT", "historyIDLTE", "historyIDContains", "historyIDHasPrefix", "historyIDHasSuffix", "historyIDIsNil", "historyIDNotNil", "historyIDEqualFold", "historyIDContainsFold", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "renewClaimedAt", "renewClaimedAtNEQ", "renewClaimedAtIn", "renewClaimedAtNotIn", "renewClaimedAtGT", "renewClaimedAtGTE", "renewClaimedAtLT", "renewClaimedAtLTE", "renewClaimedAtIsNil", "renewClaimedAtNotNil", "lastError", "lastErrorNEQ", "lastErrorIn", "lastErrorNotIn", "lastErrorGT", "lastErrorGTE", "lastErrorLT", "lastErrorLTE", "lastErrorContains", "lastErrorHasPrefix", "lastErrorHasSuffix", "lastErrorIsNil", "lastErrorNotNil", "lastErrorEqualFold", "lastErrorContainsFold", "hasUser", "hasUserWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalOGoogleWatchWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalOGoogleWatchWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalOGoogleWatchWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNEQ = data
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDIn = data
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNotIn = data
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGT = data
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGTE = data
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLT = data
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLTE = data
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "updatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNEQ = data
+		case "updatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtIn = data
+		case "updatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNotIn = data
+		case "updatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGT = data
+		case "updatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGTE = data
+		case "updatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLT = data
+		case "updatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLTE = data
+		case "kind":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kind"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Kind = data
+		case "kindNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindNEQ = data
+		case "kindIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindIn = data
+		case "kindNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindNotIn = data
+		case "kindGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindGT = data
+		case "kindGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindGTE = data
+		case "kindLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindLT = data
+		case "kindLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindLTE = data
+		case "kindContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindContains = data
+		case "kindHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindHasPrefix = data
+		case "kindHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindHasSuffix = data
+		case "kindEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindEqualFold = data
+		case "kindContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kindContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KindContainsFold = data
+		case "accountEmail":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmail"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmail = data
+		case "accountEmailNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailNEQ = data
+		case "accountEmailIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailIn = data
+		case "accountEmailNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailNotIn = data
+		case "accountEmailGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailGT = data
+		case "accountEmailGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailGTE = data
+		case "accountEmailLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailLT = data
+		case "accountEmailLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailLTE = data
+		case "accountEmailContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailContains = data
+		case "accountEmailHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailHasPrefix = data
+		case "accountEmailHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailHasSuffix = data
+		case "accountEmailEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailEqualFold = data
+		case "accountEmailContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountEmailContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountEmailContainsFold = data
+		case "channelID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelID = data
+		case "channelIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDNEQ = data
+		case "channelIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDIn = data
+		case "channelIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDNotIn = data
+		case "channelIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDGT = data
+		case "channelIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDGTE = data
+		case "channelIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDLT = data
+		case "channelIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDLTE = data
+		case "channelIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDContains = data
+		case "channelIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDHasPrefix = data
+		case "channelIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDHasSuffix = data
+		case "channelIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDIsNil = data
+		case "channelIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDNotNil = data
+		case "channelIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDEqualFold = data
+		case "channelIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelIDContainsFold = data
+		case "resourceID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceID = data
+		case "resourceIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDNEQ = data
+		case "resourceIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDIn = data
+		case "resourceIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDNotIn = data
+		case "resourceIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDGT = data
+		case "resourceIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDGTE = data
+		case "resourceIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDLT = data
+		case "resourceIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDLTE = data
+		case "resourceIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDContains = data
+		case "resourceIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDHasPrefix = data
+		case "resourceIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDHasSuffix = data
+		case "resourceIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDIsNil = data
+		case "resourceIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDNotNil = data
+		case "resourceIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDEqualFold = data
+		case "resourceIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceIDContainsFold = data
+		case "historyID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryID = data
+		case "historyIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDNEQ = data
+		case "historyIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDIn = data
+		case "historyIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDNotIn = data
+		case "historyIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDGT = data
+		case "historyIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDGTE = data
+		case "historyIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDLT = data
+		case "historyIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDLTE = data
+		case "historyIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDContains = data
+		case "historyIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDHasPrefix = data
+		case "historyIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDHasSuffix = data
+		case "historyIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDIsNil = data
+		case "historyIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDNotNil = data
+		case "historyIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDEqualFold = data
+		case "historyIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("historyIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HistoryIDContainsFold = data
+		case "expiresAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAt = data
+		case "expiresAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtNEQ = data
+		case "expiresAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtIn = data
+		case "expiresAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtNotIn = data
+		case "expiresAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtGT = data
+		case "expiresAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtGTE = data
+		case "expiresAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtLT = data
+		case "expiresAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtLTE = data
+		case "renewClaimedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("renewClaimedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RenewClaimedAt = data
+		case "renewClaimedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("renewClaimedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RenewClaimedAtNEQ = data
+		case "renewClaimedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("renewClaimedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RenewClaimedAtIn = data
+		case "renewClaimedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("renewClaimedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RenewClaimedAtNotIn = data
+		case "renewClaimedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("renewClaimedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RenewClaimedAtGT = data
+		case "renewClaimedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("renewClaimedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RenewClaimedAtGTE = data
+		case "renewClaimedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("renewClaimedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RenewClaimedAtLT = data
+		case "renewClaimedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("renewClaimedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RenewClaimedAtLTE = data
+		case "renewClaimedAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("renewClaimedAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RenewClaimedAtIsNil = data
+		case "renewClaimedAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("renewClaimedAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RenewClaimedAtNotNil = data
+		case "lastError":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastError"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastError = data
+		case "lastErrorNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorNEQ = data
+		case "lastErrorIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorIn = data
+		case "lastErrorNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorNotIn = data
+		case "lastErrorGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorGT = data
+		case "lastErrorGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorGTE = data
+		case "lastErrorLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorLT = data
+		case "lastErrorLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorLTE = data
+		case "lastErrorContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorContains = data
+		case "lastErrorHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorHasPrefix = data
+		case "lastErrorHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorHasSuffix = data
+		case "lastErrorIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorIsNil = data
+		case "lastErrorNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorNotNil = data
+		case "lastErrorEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorEqualFold = data
+		case "lastErrorContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastErrorContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastErrorContainsFold = data
+		case "hasUser":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUser"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasUser = data
+		case "hasUserWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUserWith"))
+			data, err := ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasUserWith = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputLLMUsageWhereInput(ctx context.Context, obj any) (ent.LLMUsageWhereInput, error) {
 	var it ent.LLMUsageWhereInput
 	if obj == nil {
@@ -22397,7 +24106,7 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailIsNil", "emailNotNil", "emailEqualFold", "emailContainsFold", "workosUserID", "workosUserIDNEQ", "workosUserIDIn", "workosUserIDNotIn", "workosUserIDGT", "workosUserIDGTE", "workosUserIDLT", "workosUserIDLTE", "workosUserIDContains", "workosUserIDHasPrefix", "workosUserIDHasSuffix", "workosUserIDEqualFold", "workosUserIDContainsFold", "workosOrgID", "workosOrgIDNEQ", "workosOrgIDIn", "workosOrgIDNotIn", "workosOrgIDGT", "workosOrgIDGTE", "workosOrgIDLT", "workosOrgIDLTE", "workosOrgIDContains", "workosOrgIDHasPrefix", "workosOrgIDHasSuffix", "workosOrgIDIsNil", "workosOrgIDNotNil", "workosOrgIDEqualFold", "workosOrgIDContainsFold", "hasSubscription", "hasSubscriptionWith", "hasLedgerEntries", "hasLedgerEntriesWith", "hasLlmUsages", "hasLlmUsagesWith", "hasOauthConnections", "hasOauthConnectionsWith", "hasMcpConnections", "hasMcpConnectionsWith", "hasBackgroundTasks", "hasBackgroundTasksWith", "hasBackgroundTaskArtifacts", "hasBackgroundTaskArtifactsWith", "hasBackgroundTaskRuns", "hasBackgroundTaskRunsWith", "hasBackgroundTaskRunEvents", "hasBackgroundTaskRunEventsWith", "hasBackgroundTaskScheduleStates", "hasBackgroundTaskScheduleStatesWith", "hasCloudEvents", "hasCloudEventsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailIsNil", "emailNotNil", "emailEqualFold", "emailContainsFold", "workosUserID", "workosUserIDNEQ", "workosUserIDIn", "workosUserIDNotIn", "workosUserIDGT", "workosUserIDGTE", "workosUserIDLT", "workosUserIDLTE", "workosUserIDContains", "workosUserIDHasPrefix", "workosUserIDHasSuffix", "workosUserIDEqualFold", "workosUserIDContainsFold", "workosOrgID", "workosOrgIDNEQ", "workosOrgIDIn", "workosOrgIDNotIn", "workosOrgIDGT", "workosOrgIDGTE", "workosOrgIDLT", "workosOrgIDLTE", "workosOrgIDContains", "workosOrgIDHasPrefix", "workosOrgIDHasSuffix", "workosOrgIDIsNil", "workosOrgIDNotNil", "workosOrgIDEqualFold", "workosOrgIDContainsFold", "hasSubscription", "hasSubscriptionWith", "hasLedgerEntries", "hasLedgerEntriesWith", "hasLlmUsages", "hasLlmUsagesWith", "hasOauthConnections", "hasOauthConnectionsWith", "hasMcpConnections", "hasMcpConnectionsWith", "hasBackgroundTasks", "hasBackgroundTasksWith", "hasBackgroundTaskArtifacts", "hasBackgroundTaskArtifactsWith", "hasBackgroundTaskRuns", "hasBackgroundTaskRunsWith", "hasBackgroundTaskRunEvents", "hasBackgroundTaskRunEventsWith", "hasBackgroundTaskScheduleStates", "hasBackgroundTaskScheduleStatesWith", "hasCloudEvents", "hasCloudEventsWith", "hasGoogleWatches", "hasGoogleWatchesWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -23048,6 +24757,20 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.HasCloudEventsWith = data
+		case "hasGoogleWatches":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasGoogleWatches"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasGoogleWatches = data
+		case "hasGoogleWatchesWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasGoogleWatchesWith"))
+			data, err := ec.unmarshalOGoogleWatchWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasGoogleWatchesWith = data
 		}
 	}
 	return it, nil
@@ -23086,6 +24809,11 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._LLMUsage(ctx, sel, obj)
+	case *ent.GoogleWatch:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._GoogleWatch(ctx, sel, obj)
 	case *ent.CreditLedger:
 		if obj == nil {
 			return graphql.Null
@@ -25104,6 +26832,203 @@ func (ec *executionContext) _CreditLedger(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var googleWatchImplementors = []string{"GoogleWatch", "Node"}
+
+func (ec *executionContext) _GoogleWatch(ctx context.Context, sel ast.SelectionSet, obj *ent.GoogleWatch) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, googleWatchImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GoogleWatch")
+		case "id":
+			out.Values[i] = ec._GoogleWatch_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._GoogleWatch_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._GoogleWatch_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "kind":
+			out.Values[i] = ec._GoogleWatch_kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "accountEmail":
+			out.Values[i] = ec._GoogleWatch_accountEmail(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "channelID":
+			out.Values[i] = ec._GoogleWatch_channelID(ctx, field, obj)
+		case "resourceID":
+			out.Values[i] = ec._GoogleWatch_resourceID(ctx, field, obj)
+		case "historyID":
+			out.Values[i] = ec._GoogleWatch_historyID(ctx, field, obj)
+		case "expiresAt":
+			out.Values[i] = ec._GoogleWatch_expiresAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "renewClaimedAt":
+			out.Values[i] = ec._GoogleWatch_renewClaimedAt(ctx, field, obj)
+		case "lastError":
+			out.Values[i] = ec._GoogleWatch_lastError(ctx, field, obj)
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GoogleWatch_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var googleWatchConnectionImplementors = []string{"GoogleWatchConnection"}
+
+func (ec *executionContext) _GoogleWatchConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.GoogleWatchConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, googleWatchConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GoogleWatchConnection")
+		case "edges":
+			out.Values[i] = ec._GoogleWatchConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._GoogleWatchConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._GoogleWatchConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var googleWatchEdgeImplementors = []string{"GoogleWatchEdge"}
+
+func (ec *executionContext) _GoogleWatchEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.GoogleWatchEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, googleWatchEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GoogleWatchEdge")
+		case "node":
+			out.Values[i] = ec._GoogleWatchEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._GoogleWatchEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var lLMUsageImplementors = []string{"LLMUsage", "Node"}
 
 func (ec *executionContext) _LLMUsage(ctx context.Context, sel ast.SelectionSet, obj *ent.LLMUsage) graphql.Marshaler {
@@ -25890,6 +27815,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "googleWatches":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_googleWatches(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "llmUsages":
 			field := field
 
@@ -26384,6 +28331,39 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_cloudEvents(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "googleWatches":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_googleWatches(ctx, field, obj)
 				return res
 			}
 
@@ -27084,6 +29064,35 @@ func (ec *executionContext) unmarshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCur
 
 func (ec *executionContext) marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor(ctx context.Context, sel ast.SelectionSet, v entgql.Cursor[uuid.UUID]) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNGoogleWatch2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatch(ctx context.Context, sel ast.SelectionSet, v *ent.GoogleWatch) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GoogleWatch(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGoogleWatchConnection2githubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchConnection(ctx context.Context, sel ast.SelectionSet, v ent.GoogleWatchConnection) graphql.Marshaler {
+	return ec._GoogleWatchConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGoogleWatchConnection2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchConnection(ctx context.Context, sel ast.SelectionSet, v *ent.GoogleWatchConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GoogleWatchConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNGoogleWatchWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchWhereInput(ctx context.Context, v any) (*ent.GoogleWatchWhereInput, error) {
+	res, err := ec.unmarshalInputGoogleWatchWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx context.Context, v any) (uuid.UUID, error) {
@@ -28032,6 +30041,78 @@ func (ec *executionContext) marshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCu
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) marshalOGoogleWatch2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.GoogleWatch) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNGoogleWatch2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatch(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOGoogleWatch2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatch(ctx context.Context, sel ast.SelectionSet, v *ent.GoogleWatch) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._GoogleWatch(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOGoogleWatchEdge2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.GoogleWatchEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOGoogleWatchEdge2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchEdge(ctx, sel, v[i])
+	})
+
+	return ret
+}
+
+func (ec *executionContext) marshalOGoogleWatchEdge2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchEdge(ctx context.Context, sel ast.SelectionSet, v *ent.GoogleWatchEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._GoogleWatchEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOGoogleWatchWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchWhereInputᚄ(ctx context.Context, v any) ([]*ent.GoogleWatchWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.GoogleWatchWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNGoogleWatchWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOGoogleWatchWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐGoogleWatchWhereInput(ctx context.Context, v any) (*ent.GoogleWatchWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputGoogleWatchWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx context.Context, v any) ([]uuid.UUID, error) {

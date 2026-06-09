@@ -19,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -278,6 +279,21 @@ func (_c *UserCreate) AddCloudEvents(v ...*CloudEvent) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddCloudEventIDs(ids...)
+}
+
+// AddGoogleWatchIDs adds the "google_watches" edge to the GoogleWatch entity by IDs.
+func (_c *UserCreate) AddGoogleWatchIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddGoogleWatchIDs(ids...)
+	return _c
+}
+
+// AddGoogleWatches adds the "google_watches" edges to the GoogleWatch entity.
+func (_c *UserCreate) AddGoogleWatches(v ...*GoogleWatch) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddGoogleWatchIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -570,6 +586,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(cloudevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.GoogleWatchesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GoogleWatchesTable,
+			Columns: []string{user.GoogleWatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(googlewatch.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

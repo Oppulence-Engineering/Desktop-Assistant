@@ -12,6 +12,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -327,6 +328,33 @@ func init() {
 	creditledgerDescID := creditledgerFields[0].Descriptor()
 	// creditledger.DefaultID holds the default value on creation for the id field.
 	creditledger.DefaultID = creditledgerDescID.Default.(func() uuid.UUID)
+	googlewatchMixin := schema.GoogleWatch{}.Mixin()
+	googlewatchMixinFields0 := googlewatchMixin[0].Fields()
+	_ = googlewatchMixinFields0
+	googlewatchFields := schema.GoogleWatch{}.Fields()
+	_ = googlewatchFields
+	// googlewatchDescCreatedAt is the schema descriptor for created_at field.
+	googlewatchDescCreatedAt := googlewatchMixinFields0[1].Descriptor()
+	// googlewatch.DefaultCreatedAt holds the default value on creation for the created_at field.
+	googlewatch.DefaultCreatedAt = googlewatchDescCreatedAt.Default.(func() time.Time)
+	// googlewatchDescUpdatedAt is the schema descriptor for updated_at field.
+	googlewatchDescUpdatedAt := googlewatchMixinFields0[2].Descriptor()
+	// googlewatch.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	googlewatch.DefaultUpdatedAt = googlewatchDescUpdatedAt.Default.(func() time.Time)
+	// googlewatch.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	googlewatch.UpdateDefaultUpdatedAt = googlewatchDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// googlewatchDescKind is the schema descriptor for kind field.
+	googlewatchDescKind := googlewatchFields[0].Descriptor()
+	// googlewatch.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	googlewatch.KindValidator = googlewatchDescKind.Validators[0].(func(string) error)
+	// googlewatchDescAccountEmail is the schema descriptor for account_email field.
+	googlewatchDescAccountEmail := googlewatchFields[1].Descriptor()
+	// googlewatch.AccountEmailValidator is a validator for the "account_email" field. It is called by the builders before save.
+	googlewatch.AccountEmailValidator = googlewatchDescAccountEmail.Validators[0].(func(string) error)
+	// googlewatchDescID is the schema descriptor for id field.
+	googlewatchDescID := googlewatchMixinFields0[0].Descriptor()
+	// googlewatch.DefaultID holds the default value on creation for the id field.
+	googlewatch.DefaultID = googlewatchDescID.Default.(func() uuid.UUID)
 	llmusageFields := schema.LLMUsage{}.Fields()
 	_ = llmusageFields
 	// llmusageDescInputTokens is the schema descriptor for input_tokens field.
