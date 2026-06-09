@@ -1,5 +1,5 @@
-// Package api embeds the generated OpenAPI document served by rowboat-api.
-package api
+// Package apispec embeds the generated OpenAPI document served by rowboat-api.
+package apispec
 
 import _ "embed"
 
