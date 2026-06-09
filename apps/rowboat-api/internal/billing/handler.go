@@ -12,6 +12,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/credits"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -21,18 +22,21 @@ type CacheFunc func(context.Context, time.Duration) context.Context
 
 // Handler serves GET /v1/me.
 type Handler struct {
-	client          *ent.Client
-	freeTierCredits int
-	cache           CacheFunc
-	log             *zap.Logger
+	client           *ent.Client
+	freeTierCredits  int
+	dailyCreditLimit int // 0 → no daily spend cap modeled
+	cache            CacheFunc
+	log              *zap.Logger
 }
 
-// New builds the billing handler. cache may be nil (no caching).
-func New(client *ent.Client, freeTierCredits int, cache CacheFunc, log *zap.Logger) *Handler {
+// New builds the billing handler. cache may be nil (no caching). dailyCreditLimit
+// mirrors the cap the quota gate enforces (0 disables it) so the reported
+// "available today" figure agrees with what can actually be spent.
+func New(client *ent.Client, freeTierCredits, dailyCreditLimit int, cache CacheFunc, log *zap.Logger) *Handler {
 	if cache == nil {
 		cache = func(ctx context.Context, _ time.Duration) context.Context { return ctx }
 	}
-	return &Handler{client: client, freeTierCredits: freeTierCredits, cache: cache, log: log}
+	return &Handler{client: client, freeTierCredits: freeTierCredits, dailyCreditLimit: dailyCreditLimit, cache: cache, log: log}
 }
 
 // meResponse mirrors the shape parsed by the desktop in
@@ -100,7 +104,25 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "could not load billing", "internal_error")
 		return
 	}
-	dailyAvailable := sub.SanctionedCredits - dailyUsed
+	// Month-to-date usage = credits consumed since the start of the current UTC
+	// month. Previously the "monthly" figures surfaced the all-time ledger total.
+	monthlyUsed, err := h.usedSince(ctx, time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		h.log.Error("compute monthly credits", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not load billing", "internal_error")
+		return
+	}
+	// dailyAvailable = how much can still be spent today. Base it on the actual
+	// remaining balance: the old `sanctioned - dailyUsed` subtracted only today's
+	// usage from the full grant, ignoring prior-day consumption and overstating
+	// remaining credits. When a daily cap is configured, also clamp to the unused
+	// portion of today's cap (matching the quota gate).
+	dailyAvailable := available
+	if h.dailyCreditLimit > 0 {
+		if remainingToday := h.dailyCreditLimit - dailyUsed; remainingToday < dailyAvailable {
+			dailyAvailable = remainingToday
+		}
+	}
 	if dailyAvailable < 0 {
 		dailyAvailable = 0
 	}
@@ -119,7 +141,10 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	resp.Billing.Usage.UsedCredits = used
 	resp.Billing.Usage.AvailableCredits = available
 	resp.Billing.Usage.Monthly.SanctionedCredits = sub.SanctionedCredits
-	resp.Billing.Usage.Monthly.UsedCredits = used
+	resp.Billing.Usage.Monthly.UsedCredits = monthlyUsed
+	// AvailableCredits mirrors the overall available balance: the data model has
+	// a single sanctioned_credits balance with no monthly grant/reset, so monthly
+	// grants are not yet modeled. Revisit once a per-month allotment exists.
 	resp.Billing.Usage.Monthly.AvailableCredits = available
 	resp.Billing.Usage.Daily.SanctionedCredits = sub.SanctionedCredits
 	resp.Billing.Usage.Daily.UsedCredits = dailyUsed
@@ -139,21 +164,55 @@ func (h *Handler) subscriptionFor(ctx context.Context, u *ent.User) (*ent.Subscr
 	if !ent.IsNotFound(err) {
 		return nil, err
 	}
-	return h.client.Subscription.Create().
+	sub, err = h.client.Subscription.Create().
 		SetUser(u).
 		SetSanctionedCredits(h.freeTierCredits).
 		Save(ctx)
+	if err != nil {
+		// Lost the concurrent first-sight race against the one-subscription-per-
+		// user index → the row now exists; re-query it instead of surfacing the
+		// unique-index violation as a 500. Mirrors createUser in auth/identity.go.
+		if ent.IsConstraintError(err) {
+			return h.client.Subscription.Query().Only(ctx)
+		}
+		return nil, err
+	}
+	return sub, nil
 }
 
 func (h *Handler) usedSince(ctx context.Context, since time.Time) (int, error) {
+	// Attribute each charge to the period of its RESERVE row, not the individual
+	// timestamps of its rows. A charge spans a reserve and a terminal row written
+	// at different times; summing rows by their own ts skews usage across the
+	// period boundary (see quota.consumedSince). Find the request_ids reserved in
+	// the window, then sum the NET delta over all their phases.
+	const reserveReasonSuffix = ".reserve"
+	var idRows []struct {
+		RequestID uuid.UUID `json:"request_id"`
+	}
+	if err := h.client.CreditLedger.Query().
+		Where(
+			creditledger.ReasonHasSuffix(reserveReasonSuffix),
+			creditledger.TsGTE(since),
+		).
+		Select(creditledger.FieldRequestID).
+		Scan(ctx, &idRows); err != nil {
+		return 0, err
+	}
+	if len(idRows) == 0 {
+		return 0, nil
+	}
+	ids := make([]uuid.UUID, len(idRows))
+	for i, row := range idRows {
+		ids[i] = row.RequestID
+	}
 	var rows []struct {
 		Total *int `json:"total"`
 	}
-	err := h.client.CreditLedger.Query().
-		Where(creditledger.TsGTE(since)).
+	if err := h.client.CreditLedger.Query().
+		Where(creditledger.RequestIDIn(ids...)).
 		Aggregate(ent.As(ent.Sum(creditledger.FieldDelta), "total")).
-		Scan(ctx, &rows)
-	if err != nil {
+		Scan(ctx, &rows); err != nil {
 		return 0, err
 	}
 	if len(rows) == 0 || rows[0].Total == nil || *rows[0].Total >= 0 {

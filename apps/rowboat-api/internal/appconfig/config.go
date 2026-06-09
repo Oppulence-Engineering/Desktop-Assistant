@@ -7,6 +7,8 @@ package appconfig
 
 import (
 	"fmt"
+	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -32,6 +34,10 @@ type Config struct {
 	RequestTimeout   time.Duration
 	MaxRequestBody   int64
 	CORSOrigins      []string
+	// TrustedProxyCIDRs lists proxies (ingress) whose X-Forwarded-For may be
+	// trusted to recover the real client IP for pre-auth rate limiting. Empty →
+	// X-Forwarded-For is ignored and RemoteAddr is used as-is.
+	TrustedProxyCIDRs []string
 
 	// Observability.
 	LogLevel     string // debug | info | warn | error
@@ -195,9 +201,12 @@ func Load() Config {
 		ServiceName: getenv("SERVICE_NAME", "rowboat-api"),
 		Environment: environment,
 
-		HTTPAddr:         getenv("HTTP_ADDR", ":8080"),
-		MetricsAddr:      getenv("METRICS_ADDR", ":9090"),
-		GRPCAddr:         getenv("GRPC_ADDR", ":8081"),
+		HTTPAddr:    getenv("HTTP_ADDR", ":8080"),
+		MetricsAddr: getenv("METRICS_ADDR", ":9090"),
+		// allowEmpty: GRPC_ADDR="" deliberately disables the gRPC listener
+		// (Server.Run skips it when blank); plain getenv would coalesce the
+		// explicit empty back to the default and make it impossible to turn off.
+		GRPCAddr:         getenvAllowEmpty("GRPC_ADDR", ":8081"),
 		ReadTimeout:      getdur("READ_TIMEOUT", 30*time.Second),
 		WriteTimeout:     getdur("WRITE_TIMEOUT", 5*time.Minute),
 		IdleTimeout:      getdur("IDLE_TIMEOUT", 120*time.Second),
@@ -206,6 +215,12 @@ func Load() Config {
 		RequestTimeout:   getdur("REQUEST_TIMEOUT", 2*time.Minute),
 		MaxRequestBody:   getint64("MAX_REQUEST_BODY_BYTES", 32<<20),
 		CORSOrigins:      getcsv("CORS_ALLOWED_ORIGINS", corsDefault),
+		// Default to the RFC1918 + loopback ranges: in the k8s deployment the
+		// direct peer is always the cluster-internal ingress, and these ranges
+		// are not internet-routable, so a direct external client can never match
+		// them and spoof X-Forwarded-For. Operators terminating TLS elsewhere
+		// can narrow or blank this.
+		TrustedProxyCIDRs: getcsv("TRUSTED_PROXY_CIDRS", "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,::1/128"),
 
 		LogLevel:     getenv("LOG_LEVEL", "info"),
 		OTLPEndpoint: getenv("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
@@ -297,7 +312,11 @@ func Load() Config {
 
 		CloudSchedulerEnabled:  getbool("CLOUD_SCHEDULER_ENABLED", false),
 		CloudSchedulerInterval: getdur("CLOUD_SCHEDULER_INTERVAL", 15*time.Second),
-		CloudSchedulerLeaseTTL: getdur("CLOUD_SCHEDULER_LEASE_TTL", 90*time.Second),
+		// MUST exceed the scheduler's cron grace window (2m, due.go cronGrace):
+		// a lease that expires while a crashed owner's occurrence is still inside
+		// grace lets another replica steal it and double-fire. Validate enforces
+		// this; the 150s default matches backgroundscheduler.defaultLeaseTTL.
+		CloudSchedulerLeaseTTL: getdur("CLOUD_SCHEDULER_LEASE_TTL", 150*time.Second),
 		CloudSchedulerTimezone: getenv("CLOUD_SCHEDULER_TIMEZONE", "UTC"),
 		CloudSchedulerOwner:    getenv("CLOUD_SCHEDULER_OWNER", defaultHostname()),
 	}
@@ -327,6 +346,13 @@ func (c Config) SchedulerLocation() (*time.Location, error) {
 // IsProduction reports whether the service runs in a production-like env.
 func (c Config) IsProduction() bool {
 	return strings.EqualFold(c.Environment, "production")
+}
+
+// IsDevelopment reports whether the service runs in local development. Used to
+// gate convenience behaviors (e.g. an unauthenticated gRPC port) that must
+// fail closed in every deployed environment, including staging.
+func (c Config) IsDevelopment() bool {
+	return strings.EqualFold(c.Environment, "development")
 }
 
 // TemporalUseTLS reports whether the Temporal client should dial over TLS.
@@ -393,6 +419,13 @@ func (c Config) Validate() error {
 		if c.CloudSchedulerLeaseTTL <= c.CloudSchedulerInterval {
 			return fmt.Errorf("CLOUD_SCHEDULER_LEASE_TTL must exceed CLOUD_SCHEDULER_INTERVAL")
 		}
+		// The lease must also exceed the cron grace window (2m, due.go cronGrace):
+		// if an owner crashes between starting a run and completing the cycle, the
+		// lease must not expire while the occurrence is still due, or another
+		// replica steals it and fires a duplicate run for the same occurrence.
+		if c.CloudSchedulerLeaseTTL <= 2*time.Minute {
+			return fmt.Errorf("CLOUD_SCHEDULER_LEASE_TTL must exceed the 2m cron grace window (got %s); use >= 150s", c.CloudSchedulerLeaseTTL)
+		}
 		// v1 evaluates in UTC only. The window/cron math runs in the configured
 		// location, and a DST zone would mishandle the spring-forward gap and the
 		// fall-back ambiguous hour; per-task timezone is the committed
@@ -435,8 +468,17 @@ func (c Config) validateProduction() error {
 		return fmt.Errorf("CORS_ALLOWED_ORIGINS is required in production")
 	}
 	for _, origin := range c.CORSOrigins {
-		if origin == "*" || strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
+		if origin == "*" {
 			return fmt.Errorf("CORS_ALLOWED_ORIGINS contains non-production origin %q", origin)
+		}
+		// Match on the parsed HOST, not a substring: a legitimate production
+		// origin like https://localhost-tools.example.com contains "localhost"
+		// but is not a dev origin and must not be rejected.
+		if u, perr := url.Parse(origin); perr == nil {
+			switch u.Hostname() {
+			case "localhost", "127.0.0.1", "::1":
+				return fmt.Errorf("CORS_ALLOWED_ORIGINS contains non-production origin %q", origin)
+			}
 		}
 	}
 	if c.GraphQLIntrospection {
@@ -492,29 +534,41 @@ func getenvAllowEmpty(key, def string) string {
 	return def
 }
 
+// Load runs before the structured logger exists, so the get* helpers below
+// surface malformed env values via the standard library log package. A
+// non-empty value that fails to parse logs a warning and falls back to the
+// default (rather than silently swallowing the typo); unset/empty values fall
+// back to the default silently.
+
 func getint(key string, def int) int {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
+		n, err := strconv.Atoi(v)
+		if err == nil {
 			return n
 		}
+		log.Printf("appconfig: invalid %s=%q (%v); using default %d", key, v, err, def)
 	}
 	return def
 }
 
 func getint64(key string, def int64) int64 {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
-		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err == nil {
 			return n
 		}
+		log.Printf("appconfig: invalid %s=%q (%v); using default %d", key, v, err, def)
 	}
 	return def
 }
 
 func getbool(key string, def bool) bool {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
-		if b, err := strconv.ParseBool(v); err == nil {
+		b, err := strconv.ParseBool(v)
+		if err == nil {
 			return b
 		}
+		log.Printf("appconfig: invalid %s=%q (%v); using default %t", key, v, err, def)
 	}
 	return def
 }
@@ -537,9 +591,11 @@ func getcsv(key string, def string) []string {
 
 func getdur(key string, def time.Duration) time.Duration {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
+		d, err := time.ParseDuration(v)
+		if err == nil {
 			return d
 		}
+		log.Printf("appconfig: invalid %s=%q (%v); using default %s", key, v, err, def)
 	}
 	return def
 }

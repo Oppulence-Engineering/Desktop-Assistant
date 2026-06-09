@@ -178,6 +178,10 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	}
 	var body map[string]any
 	dec := json.NewDecoder(bytes.NewReader(raw))
+	// UseNumber keeps numeric fields byte-faithful through the decode→re-marshal
+	// round trip: plain float64 decoding silently corrupts integers above 2^53
+	// (e.g. a 64-bit seed) on the way to the upstream.
+	dec.UseNumber()
 	if err := dec.Decode(&body); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid JSON body", "bad_request")
 		return
@@ -204,22 +208,37 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 		return
 	}
 
-	// Reserve credits before contacting the upstream.
+	// Reserve credits before contacting the upstream. Spend caps are enforced
+	// inside the reservation transaction.
 	inputEst := estimateInputTokens(body)
 	estimate := h.prices.LLMEstimate(model, inputEst, requestedMaxOutput(body))
-	if err := h.gate.CheckSpendLimits(r.Context(), estimate, h.spendLimits); err != nil {
-		writeQuotaError(w, err)
+	requestID := httpx.IdempotencyKeyUUID(r, u.ID.String(), raw)
+	charge, err := h.gate.Reserve(r.Context(), "llm_call", estimate, requestID, h.spendLimits)
+	if err != nil {
+		switch {
+		case errors.Is(err, quota.ErrInsufficientCredits):
+			httpx.Error(w, http.StatusPaymentRequired, "insufficient_credits", "insufficient_credits")
+		case errors.Is(err, quota.ErrDailyLimitExceeded), errors.Is(err, quota.ErrMonthlyLimitExceeded), errors.Is(err, quota.ErrNoUser):
+			writeQuotaError(w, err)
+		default:
+			h.log.Error("quota reserve", zap.Error(err))
+			httpx.Error(w, http.StatusInternalServerError, "could not reserve credits", "internal_error")
+		}
 		return
 	}
-	requestID := httpx.IdempotencyKeyUUID(r, u.ID.String())
-	charge, err := h.gate.Reserve(r.Context(), "llm_call", estimate, requestID)
-	if err != nil {
-		if errors.Is(err, quota.ErrInsufficientCredits) {
-			httpx.Error(w, http.StatusPaymentRequired, "insufficient_credits", "insufficient_credits")
-			return
-		}
-		h.log.Error("quota reserve", zap.Error(err))
-		httpx.Error(w, http.StatusInternalServerError, "could not reserve credits", "internal_error")
+	if charge.Finalized() {
+		// This Idempotency-Key (+ body) already completed and settled. Re-calling
+		// the vendor would serve a fresh, vendor-billed completion whose accounting
+		// writes all no-op against the existing terminal ledger rows — i.e. free
+		// inference on replay.
+		httpx.Error(w, http.StatusConflict, "a request with this Idempotency-Key was already completed", "request_already_completed")
+		return
+	}
+	if charge.InProgress() {
+		// A concurrent request with the same Idempotency-Key is already calling the
+		// upstream; don't double-call the vendor (it bills per call). The client
+		// may retry once the in-flight request finishes.
+		httpx.Error(w, http.StatusConflict, "a request with this Idempotency-Key is already in progress", "request_in_progress")
 		return
 	}
 
@@ -265,17 +284,28 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 
 	var inTok, outTok int
 	var relayErr error
-	if streaming && isEventStream(resp) {
+	streamed := streaming && isEventStream(resp)
+	if streamed {
 		inTok, outTok, relayErr = h.streamThrough(w, resp)
 	} else {
 		inTok, outTok, relayErr = h.bufferThrough(w, resp)
 	}
-	if relayErr != nil {
-		h.refund(charge)
-		return
-	}
 	if inTok == 0 {
 		inTok = inputEst
+	}
+	if relayErr != nil {
+		if streamed {
+			// The upstream died mid-stream, but a 200 plus real, vendor-billed
+			// content already went out to the client. Settle for what was relayed
+			// instead of refunding: a full refund here would let anyone who can
+			// induce a mid-stream failure (e.g. by requesting a completion large
+			// enough to trip the response cap) collect free inference.
+			h.finalize(r.Context(), charge, u, requestID, model, inTok, outTok, telemetryFrom(r))
+		} else {
+			// Buffered path: nothing but an error envelope was written; refund.
+			h.refund(charge)
+		}
+		return
 	}
 
 	// Settle + record on a detached context so accounting completes even if the
@@ -310,7 +340,11 @@ func (h *Handler) finalize(reqCtx context.Context, charge *quota.Charge, u *ent.
 		create = create.SetAgentName(tel.agentName)
 	}
 	if err := create.Exec(ctx); err != nil {
-		h.log.Error("record llm usage", zap.Error(err), zap.String("request_id", requestID.String()))
+		// request_id is unique on llm_usage: an idempotent retry collides here,
+		// which means the call was already recorded — not an error.
+		if !ent.IsConstraintError(err) {
+			h.log.Error("record llm usage", zap.Error(err), zap.String("request_id", requestID.String()))
+		}
 	}
 }
 

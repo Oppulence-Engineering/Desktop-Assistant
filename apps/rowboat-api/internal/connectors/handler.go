@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
@@ -63,11 +63,15 @@ func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
 	h.ory.setOutboundPolicy(policy)
 }
 
-// connectPending is sealed into OAuthPending during /start.
+// connectPending is sealed into OAuthPending during /start. The token fields are
+// populated by Callback after a successful code exchange and consumed by the
+// authenticated Claim step.
 type connectPending struct {
 	Connector    string `json:"connector"`
 	Verifier     string `json:"code_verifier"`
 	WorkOSUserID string `json:"workos_user_id"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	Scope        string `json:"scope,omitempty"`
 }
 
 type connectorView struct {
@@ -164,15 +168,21 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 }
 
 // Callback handles GET /v1/connections/{name}/callback. This is the browser
-// redirect target from Ory, so it is NOT behind RequireJWT — the user is
-// resolved from the sealed pending ticket instead.
+// redirect target from Ory, so it is NOT behind RequireJWT. It exchanges the
+// code and PARKS the resulting grant in the ticket, then deep-links back to the
+// desktop, which redeems it with its bearer via Claim. It deliberately does NOT
+// persist the connection here: the callback is unauthenticated and the owning
+// user is known only from the ticket, so persisting now would let an attacker
+// who started a flow capture a phished victim's connector grant (the victim
+// completes the attacker's ticket). Binding persistence to the authenticated
+// user at Claim is what defeats that.
 func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 	q := r.URL.Query()
 	state := q.Get("state")
 
 	if oauthErr := q.Get("error"); oauthErr != "" {
-		h.deepLink(w, r, name, "error")
+		h.deepLink(w, r, name, "error", state)
 		return
 	}
 	code := q.Get("code")
@@ -187,11 +197,9 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "invalid or expired state", "bad_request")
 		return
 	}
-	defer func() {
-		_ = h.client.OAuthPending.DeleteOne(pending).Exec(context.WithoutCancel(ctx))
-	}()
 	if time.Now().After(pending.ExpiresAt) {
-		h.deepLink(w, r, name, "error")
+		h.deleteTicket(ctx, pending)
+		h.deepLink(w, r, name, "error", state)
 		return
 	}
 
@@ -206,28 +214,118 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c, _ := h.registry.Get(name)
-	u, err := h.client.User.Query().Where(user.WorkosUserIDEQ(cp.WorkOSUserID)).Only(ctx)
-	if err != nil {
-		httpx.Error(w, http.StatusBadRequest, "unknown user for ticket", "bad_request")
-		return
-	}
-	uctx := auth.WithUser(ctx, u)
-
 	redirectURI := strings.TrimRight(h.cfg.PublicBaseURL, "/") + "/v1/connections/" + name + "/callback"
 	tok, err := h.ory.exchange(ctx, code, redirectURI, cp.Verifier)
 	if err != nil {
 		h.log.Warn("token exchange failed", zap.String("connector", name), zap.Error(err))
-		h.deepLink(w, r, name, "error")
+		h.deepLink(w, r, name, "error", state)
 		return
 	}
 
-	if err := h.upsertConnection(uctx, u, c, tok); err != nil {
-		h.log.Error("persist connection", zap.Error(err))
-		h.deepLink(w, r, name, "error")
+	// Park the grant in the ticket for the authenticated Claim step.
+	cp.RefreshToken = tok.RefreshToken
+	cp.Scope = tok.Scope
+	resealed, mErr := json.Marshal(cp)
+	if mErr != nil {
+		h.deepLink(w, r, name, "error", state)
 		return
 	}
-	h.deepLink(w, r, name, "success")
+	sealed, sErr := h.sealer.Seal(resealed)
+	if sErr != nil {
+		h.deepLink(w, r, name, "error", state)
+		return
+	}
+	if uErr := pending.Update().SetPayloadEncrypted(sealed).Exec(ctx); uErr != nil {
+		h.log.Error("park connector grant", zap.Error(uErr))
+		h.deepLink(w, r, name, "error", state)
+		return
+	}
+	h.deepLink(w, r, name, "success", state)
+}
+
+// Claim handles POST /v1/connections/{name}/claim. The desktop calls it (with
+// its bearer) after the browser deep-links back, redeeming the connector grant
+// parked by Callback. Persistence is bound to the AUTHENTICATED user, who must
+// be the same user that started the flow — this is what prevents an attacker
+// from capturing a phished victim's grant via authorization-code injection.
+func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+		return
+	}
+	name := chi.URLParam(r, "name")
+	c, ok := h.registry.Get(name)
+	if !ok {
+		httpx.Error(w, http.StatusNotFound, "unknown connector", "not_found")
+		return
+	}
+	var req struct {
+		State string `json:"state"`
+	}
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
+		return
+	}
+	if req.State == "" {
+		httpx.Error(w, http.StatusBadRequest, "missing state", "bad_request")
+		return
+	}
+
+	ctx := r.Context()
+	pending, err := h.client.OAuthPending.Query().Where(oauthpending.StateEQ(req.State)).Only(ctx)
+	if err != nil {
+		httpx.Error(w, http.StatusNotFound, "ticket not found or already used", "ticket_expired")
+		return
+	}
+	if time.Now().After(pending.ExpiresAt) {
+		h.deleteTicket(ctx, pending)
+		httpx.Error(w, http.StatusGone, "ticket expired", "ticket_expired")
+		return
+	}
+	plain, err := h.sealer.Open(pending.PayloadEncrypted)
+	if err != nil {
+		h.deleteTicket(ctx, pending)
+		httpx.Error(w, http.StatusInternalServerError, "could not read ticket", "internal_error")
+		return
+	}
+	var cp connectPending
+	if err := json.Unmarshal(plain, &cp); err != nil || cp.Connector != name {
+		h.deleteTicket(ctx, pending)
+		httpx.Error(w, http.StatusBadRequest, "state/connector mismatch", "bad_request")
+		return
+	}
+	// Ownership: only the user who STARTED the flow may claim it.
+	if cp.WorkOSUserID != u.WorkosUserID {
+		// Do NOT consume the ticket on a wrong-user rejection, so a probe can't
+		// burn the legitimate owner's pending ticket.
+		httpx.Error(w, http.StatusForbidden, "ticket does not belong to this user", "forbidden")
+		return
+	}
+	if cp.RefreshToken == "" {
+		// The browser flow hasn't completed yet (Callback hasn't parked a grant);
+		// keep the ticket so the desktop can retry once it finishes.
+		httpx.Error(w, http.StatusConflict, "connection not ready", "not_ready")
+		return
+	}
+
+	h.deleteTicket(ctx, pending) // single-use: consume on the terminal success path
+	if err := h.upsertConnection(auth.WithUser(ctx, u), u, c, &oryToken{RefreshToken: cp.RefreshToken, Scope: cp.Scope}); err != nil {
+		h.log.Error("persist connection", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"connected": true})
+}
+
+// deleteTicket consumes a single-use pending ticket on a detached, time-bounded
+// context (so a stalled DB can't block the response or hang on a stripped
+// deadline).
+func (h *Handler) deleteTicket(ctx context.Context, pending *ent.OAuthPending) {
+	dctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	if err := h.client.OAuthPending.DeleteOne(pending).Exec(dctx); err != nil {
+		h.log.Warn("delete pending ticket", zap.Error(err))
+	}
 }
 
 func (h *Handler) upsertConnection(ctx context.Context, u *ent.User, c Connector, tok *oryToken) error {
@@ -309,13 +407,30 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// NOTE: concurrent mcp-token refreshes for the same connection remain a
+	// known race (no distributed lock here, out of scope): two in-flight
+	// refreshes can each rotate the Ory refresh token and clobber the other's
+	// persisted value.
 	upd := mc.Update().SetLastUsedAt(time.Now())
 	if tok.RefreshToken != "" { // Ory rotates refresh tokens
-		if newSealed, sErr := h.sealer.SealString(tok.RefreshToken); sErr == nil {
-			upd = upd.SetRefreshTokenEncrypted(newSealed)
+		newSealed, sErr := h.sealer.SealString(tok.RefreshToken)
+		if sErr != nil {
+			// Don't silently drop the rotated token: if we proceed without
+			// persisting it the stored token is already dead. Surface it.
+			h.log.Error("mcp-token seal rotated refresh token", zap.String("connector", name), zap.Error(sErr))
+			httpx.Error(w, http.StatusInternalServerError, "could not persist refreshed token", "internal_error")
+			return
 		}
+		upd = upd.SetRefreshTokenEncrypted(newSealed)
 	}
-	_ = upd.Exec(ctx)
+	if err := upd.Exec(ctx); err != nil {
+		// Ory uses refresh-token rotation: if persisting the rotated refresh
+		// token fails, the stored token is now dead and reuse-detection may
+		// revoke the grant. Surface the failure rather than swallowing it.
+		h.log.Error("mcp-token persist refreshed token", zap.String("connector", name), zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not persist refreshed token", "internal_error")
+		return
+	}
 
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
 		"access_token": tok.AccessToken,
@@ -352,8 +467,20 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) deepLink(w http.ResponseWriter, r *http.Request, connector, status string) {
-	target := h.cfg.DeepLinkScheme + "://connection-complete?connector=" + connector + "&status=" + status
+func (h *Handler) deepLink(w http.ResponseWriter, r *http.Request, connector, status, session string) {
+	// URL-encode the query params: `connector` is a raw path segment (and on the
+	// error/expired branches is reflected before registry validation), so a
+	// crafted value containing `&`/`=` could otherwise inject extra params the
+	// desktop deep-link handler might trust (e.g. spoofing &status=success).
+	q := url.Values{}
+	q.Set("connector", connector)
+	q.Set("status", status)
+	if session != "" {
+		// The desktop redeems this session/state via the authenticated Claim
+		// endpoint to persist the connection.
+		q.Set("session", session)
+	}
+	target := h.cfg.DeepLinkScheme + "://connection-complete?" + q.Encode()
 	http.Redirect(w, r, target, http.StatusFound)
 }
 

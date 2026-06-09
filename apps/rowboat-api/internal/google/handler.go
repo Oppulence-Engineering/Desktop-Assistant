@@ -125,7 +125,10 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Session string `json:"session"`
 	}
-	if !httpx.DecodeJSON(w, r, 1<<16, &req) || req.Session == "" {
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
+		return // DecodeJSON already wrote the error response
+	}
+	if req.Session == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing session", "bad_request")
 		return
 	}
@@ -144,32 +147,68 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Consume the ticket regardless of outcome (single use).
-	defer func() {
-		if delErr := h.client.OAuthPending.DeleteOne(pending).Exec(context.WithoutCancel(ctx)); delErr != nil {
+	// Consume the ticket ONLY on success and on terminal-invalid outcomes
+	// (expired / corrupt / malformed). We must NOT consume it on the 403
+	// ownership-mismatch branch below: an attacker who learns a valid state
+	// could otherwise burn a victim's still-valid ticket (DoS).
+	deleteTicket := func() {
+		// Detached from the request context so a client disconnect can't abort
+		// cleanup, but bounded with a short timeout so a stalled DB can't block
+		// the handler forever.
+		dctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		if delErr := h.client.OAuthPending.DeleteOne(pending).Exec(dctx); delErr != nil {
 			h.log.Warn("claim: delete pending", zap.Error(delErr))
 		}
-	}()
+	}
 
 	if time.Now().After(pending.ExpiresAt) {
+		deleteTicket()
 		httpx.Error(w, http.StatusGone, "ticket expired", "ticket_expired")
 		return
 	}
 
 	plain, err := h.sealer.Open(pending.PayloadEncrypted)
 	if err != nil {
+		deleteTicket()
 		h.log.Error("claim: decrypt payload", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not read ticket", "internal_error")
 		return
 	}
 	var payload parkedPayload
 	if err := json.Unmarshal(plain, &payload); err != nil {
+		deleteTicket()
 		httpx.Error(w, http.StatusInternalServerError, "malformed ticket", "internal_error")
 		return
 	}
-	// If the webapp bound the ticket to a user, enforce it matches the caller.
+	// If a producer bound the ticket to a user, enforce it matches the caller.
+	// NOTE: the browser-facing Callback in this service cannot set this field
+	// (the browser flow carries no bearer), so for tickets it parks the claim is
+	// first-authenticated-claimer-wins; the atomic consume below at least
+	// guarantees exactly ONE claimer ever receives the bundle. True start-time
+	// binding needs the desktop to mint the start ticket via an authenticated
+	// call — tracked as a protocol change.
+	// Deliberately do NOT consume the ticket here (see deleteTicket comment).
 	if payload.WorkOSUserID != "" && payload.WorkOSUserID != u.WorkosUserID {
 		httpx.Error(w, http.StatusForbidden, "ticket does not belong to this user", "forbidden")
+		return
+	}
+
+	// Consume the ticket ATOMICALLY before releasing the token bundle: two
+	// concurrent claims (e.g. an attacker racing the victim with a leaked state)
+	// must not both receive the tokens. Exactly one DELETE wins.
+	dctx, dcancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	n, err := h.client.OAuthPending.Delete().
+		Where(oauthpending.IDEQ(pending.ID)).
+		Exec(dctx)
+	dcancel()
+	if err != nil {
+		h.log.Error("claim: consume pending", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not consume ticket", "internal_error")
+		return
+	}
+	if n == 0 {
+		httpx.Error(w, http.StatusNotFound, "ticket not found or already used", "ticket_expired")
 		return
 	}
 
@@ -191,7 +230,10 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RefreshToken string `json:"refreshToken"`
 	}
-	if !httpx.DecodeJSON(w, r, 1<<16, &req) || req.RefreshToken == "" {
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
+		return // DecodeJSON already wrote the error response
+	}
+	if req.RefreshToken == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing refreshToken", "bad_request")
 		return
 	}

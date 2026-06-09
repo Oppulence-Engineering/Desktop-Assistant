@@ -307,6 +307,11 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{CreditLedgersColumns[3], CreditLedgersColumns[2]},
 			},
+			{
+				Name:    "creditledger_user_ledger_entries",
+				Unique:  false,
+				Columns: []*schema.Column{CreditLedgersColumns[5]},
+			},
 		},
 	}
 	// LlmUsagesColumns holds the columns for the "llm_usages" table.
@@ -339,13 +344,18 @@ var (
 		Indexes: []*schema.Index{
 			{
 				Name:    "llmusage_request_id",
-				Unique:  false,
+				Unique:  true,
 				Columns: []*schema.Column{LlmUsagesColumns[8]},
 			},
 			{
 				Name:    "llmusage_model",
 				Unique:  false,
 				Columns: []*schema.Column{LlmUsagesColumns[1]},
+			},
+			{
+				Name:    "llmusage_user_llm_usages",
+				Unique:  false,
+				Columns: []*schema.Column{LlmUsagesColumns[10]},
 			},
 		},
 	}

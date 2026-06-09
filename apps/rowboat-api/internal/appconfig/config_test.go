@@ -34,9 +34,23 @@ func TestValidateCloudScheduler(t *testing.T) {
 				c.CloudSchedulerEnabled = true
 				c.TemporalEnabled = true
 				c.CloudSchedulerInterval = 15 * time.Second
+				c.CloudSchedulerLeaseTTL = 150 * time.Second
+				c.CloudSchedulerTimezone = "UTC"
+			},
+		},
+		{
+			// 90s exceeds the interval but not the 2m cron grace window — a
+			// crashed owner's occurrence would still be due when the lease
+			// expires, so a peer could steal it and double-fire.
+			name: "lease ttl must exceed cron grace",
+			mutate: func(c *Config) {
+				c.CloudSchedulerEnabled = true
+				c.TemporalEnabled = true
+				c.CloudSchedulerInterval = 15 * time.Second
 				c.CloudSchedulerLeaseTTL = 90 * time.Second
 				c.CloudSchedulerTimezone = "UTC"
 			},
+			wantErr: true,
 		},
 		{
 			name: "lease ttl must exceed interval",
@@ -54,7 +68,7 @@ func TestValidateCloudScheduler(t *testing.T) {
 				c.CloudSchedulerEnabled = true
 				c.TemporalEnabled = true
 				c.CloudSchedulerInterval = 15 * time.Second
-				c.CloudSchedulerLeaseTTL = 90 * time.Second
+				c.CloudSchedulerLeaseTTL = 150 * time.Second
 				c.CloudSchedulerTimezone = "Not/AZone"
 			},
 			wantErr: true,
@@ -65,7 +79,7 @@ func TestValidateCloudScheduler(t *testing.T) {
 				c.CloudSchedulerEnabled = true
 				c.TemporalEnabled = true
 				c.CloudSchedulerInterval = 15 * time.Second
-				c.CloudSchedulerLeaseTTL = 90 * time.Second
+				c.CloudSchedulerLeaseTTL = 150 * time.Second
 				c.CloudSchedulerTimezone = "America/New_York"
 			},
 			wantErr: true,
@@ -117,7 +131,7 @@ func TestSchedulerLocationConsistentWithValidate(t *testing.T) {
 		c.CloudSchedulerEnabled = true
 		c.TemporalEnabled = true
 		c.CloudSchedulerInterval = 15 * time.Second
-		c.CloudSchedulerLeaseTTL = 90 * time.Second
+		c.CloudSchedulerLeaseTTL = 150 * time.Second
 		c.CloudSchedulerTimezone = tz
 		if err := c.Validate(); err != nil {
 			t.Fatalf("tz %q should pass Validate: %v", tz, err)
@@ -142,8 +156,8 @@ func TestLoadCloudSchedulerDefaults(t *testing.T) {
 	if c.CloudSchedulerInterval != 15*time.Second {
 		t.Fatalf("default interval = %v, want 15s", c.CloudSchedulerInterval)
 	}
-	if c.CloudSchedulerLeaseTTL != 90*time.Second {
-		t.Fatalf("default lease ttl = %v, want 90s", c.CloudSchedulerLeaseTTL)
+	if c.CloudSchedulerLeaseTTL != 150*time.Second {
+		t.Fatalf("default lease ttl = %v, want 150s (must exceed the 2m cron grace)", c.CloudSchedulerLeaseTTL)
 	}
 	if c.CloudSchedulerTimezone != "UTC" {
 		t.Fatalf("default timezone = %q, want UTC", c.CloudSchedulerTimezone)

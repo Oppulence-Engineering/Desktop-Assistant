@@ -308,8 +308,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req createTaskRequest
-	if err := readJSON(w, r, &req); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
+	if !readJSON(w, r, &req) {
 		return
 	}
 	req.Name = strings.TrimSpace(req.Name)
@@ -397,8 +396,7 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req patchTaskRequest
-	if err := readJSON(w, r, &req); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
+	if !readJSON(w, r, &req) {
 		return
 	}
 	if req.Revision == nil {
@@ -460,7 +458,12 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 		h.conflict(w, task.Revision)
 		return
 	}
-	task, _ = h.client.BackgroundTask.Query().Where(backgroundtask.IDEQ(task.ID)).Only(r.Context())
+	task, err = h.client.BackgroundTask.Query().Where(backgroundtask.IDEQ(task.ID)).Only(r.Context())
+	if err != nil {
+		h.log.Error("reload background task after patch", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not load updated task", "internal_error")
+		return
+	}
 	httpx.WriteJSON(w, http.StatusOK, viewTask(task))
 }
 
@@ -592,8 +595,7 @@ func (h *Handler) PutArtifact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req putArtifactRequest
-	if err := readJSON(w, r, &req); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
+	if !readJSON(w, r, &req) {
 		return
 	}
 	artifact, err := h.client.BackgroundTaskArtifact.Query().
@@ -618,6 +620,12 @@ func (h *Handler) PutArtifact(w http.ResponseWriter, r *http.Request) {
 		}
 		artifact, err = create.Save(r.Context())
 		if err != nil {
+			// One artifact per task (unique index): a concurrent first-write race
+			// is a revision conflict, not a 500.
+			if ent.IsConstraintError(err) {
+				h.conflict(w, 0)
+				return
+			}
 			h.log.Error("create background task artifact", zap.Error(err))
 			httpx.Error(w, http.StatusInternalServerError, "could not save artifact", "internal_error")
 			return
@@ -646,7 +654,12 @@ func (h *Handler) PutArtifact(w http.ResponseWriter, r *http.Request) {
 		h.conflict(w, artifact.Revision)
 		return
 	}
-	artifact, _ = h.client.BackgroundTaskArtifact.Query().Where(backgroundtaskartifact.IDEQ(artifact.ID)).Only(r.Context())
+	artifact, err = h.client.BackgroundTaskArtifact.Query().Where(backgroundtaskartifact.IDEQ(artifact.ID)).Only(r.Context())
+	if err != nil {
+		h.log.Error("reload artifact after update", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not load updated artifact", "internal_error")
+		return
+	}
 	httpx.WriteJSON(w, http.StatusOK, viewArtifact(task, artifact))
 }
 
@@ -658,7 +671,7 @@ func (h *Handler) ListRuns(w http.ResponseWriter, r *http.Request) {
 	}
 	q := h.client.BackgroundTaskRun.Query().
 		Where(backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(task.ID))).
-		Order(backgroundtaskrun.ByCreatedAt(entsql.OrderDesc()))
+		Order(backgroundtaskrun.ByCreatedAt(entsql.OrderDesc()), backgroundtaskrun.ByID(entsql.OrderDesc()))
 	q, limit, ok := h.applyRunFilters(w, r, q, false)
 	if !ok {
 		return
@@ -688,7 +701,7 @@ func (h *Handler) ListAllRuns(w http.ResponseWriter, r *http.Request) {
 	}
 	q := h.client.BackgroundTaskRun.Query().
 		WithTask().
-		Order(backgroundtaskrun.ByCreatedAt(entsql.OrderDesc()))
+		Order(backgroundtaskrun.ByCreatedAt(entsql.OrderDesc()), backgroundtaskrun.ByID(entsql.OrderDesc()))
 	q, limit, ok := h.applyRunFilters(w, r, q, true)
 	if !ok {
 		return
@@ -726,8 +739,7 @@ func (h *Handler) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req createRunRequest
-	if err := readJSON(w, r, &req); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
+	if !readJSON(w, r, &req) {
 		return
 	}
 	if strings.TrimSpace(req.RunID) == "" {
@@ -759,8 +771,7 @@ func (h *Handler) PatchRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req patchRunRequest
-	if err := readJSON(w, r, &req); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
+	if !readJSON(w, r, &req) {
 		return
 	}
 	if req.Revision == nil {
@@ -862,7 +873,12 @@ func (h *Handler) PatchRun(w http.ResponseWriter, r *http.Request) {
 		h.conflict(w, run.Revision)
 		return
 	}
-	run, _ = h.client.BackgroundTaskRun.Query().Where(backgroundtaskrun.IDEQ(run.ID)).Only(r.Context())
+	run, err = h.client.BackgroundTaskRun.Query().Where(backgroundtaskrun.IDEQ(run.ID)).Only(r.Context())
+	if err != nil {
+		h.log.Error("reload run after patch", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not load updated run", "internal_error")
+		return
+	}
 	httpx.WriteJSON(w, http.StatusOK, viewRun(task, run))
 }
 
@@ -903,9 +919,21 @@ func (h *Handler) CancelRun(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadGateway, "could not cancel temporal workflow", "temporal_cancel_failed")
 		return
 	}
+	// The Temporal cancel above already happened, and the canceled workflow
+	// deliberately skips MarkRunFailed on cancellation assuming THIS update set
+	// the run to stopped. Run it on a detached context: if the client
+	// disconnects right after the cancel RPC, an r.Context()-derived write would
+	// abort and strand the run as "running" forever.
+	cancelCtx, cancelDone := context.WithTimeout(auth.WithInternal(context.WithoutCancel(r.Context())), 10*time.Second)
+	defer cancelDone()
 	now := time.Now().UTC()
 	n, err := h.client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.IDEQ(run.ID)).
+		// Guard the transition: a run that already reached a terminal state
+		// cannot be stopped, and we must not overwrite a succeeded/failed row.
+		Where(
+			backgroundtaskrun.IDEQ(run.ID),
+			backgroundtaskrun.StatusNotIn("succeeded", "failed", "stopped"),
+		).
 		SetStatus("stopped").
 		SetTemporalStatus("Canceled").
 		SetTemporalClosedAt(now).
@@ -913,24 +941,39 @@ func (h *Handler) CancelRun(w http.ResponseWriter, r *http.Request) {
 		SetCompletedAt(now).
 		SetProgressMessage("Cancellation requested.").
 		AddRevision(1).
-		Save(auth.WithInternal(r.Context()))
-	if err != nil || n == 0 {
+		Save(cancelCtx)
+	if err != nil {
 		h.log.Error("mark canceled background task run", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not update run", "internal_error")
 		return
 	}
-	_ = h.appendSystemEvent(r.Context(), task, run, backgroundtaskworkflow.EventCancelRequested, map[string]any{
+	if n == 0 {
+		// Already terminal: the Temporal cancel above is harmless, so report the
+		// run's current state rather than double-recording a stop.
+		httpx.WriteJSON(w, http.StatusAccepted, viewRun(task, run))
+		return
+	}
+	if err := h.appendSystemEvent(cancelCtx, task, run, backgroundtaskworkflow.EventCancelRequested, map[string]any{
 		"type":    backgroundtaskworkflow.EventCancelRequested,
 		"message": "Cancellation requested.",
-	})
-	_ = h.appendSystemEvent(r.Context(), task, run, backgroundtaskworkflow.EventStopped, map[string]any{
+	}); err != nil {
+		h.log.Warn("append cancel-requested event failed", zap.String("runId", run.RunID), zap.Error(err))
+	}
+	if err := h.appendSystemEvent(cancelCtx, task, run, backgroundtaskworkflow.EventStopped, map[string]any{
 		"type":    backgroundtaskworkflow.EventStopped,
 		"message": "Run stopped.",
-	})
+	}); err != nil {
+		h.log.Warn("append stopped event failed", zap.String("runId", run.RunID), zap.Error(err))
+	}
 	backgroundtaskmetrics.CancelRequested.Inc()
 	backgroundtaskmetrics.Stopped.Inc()
 	h.log.Info("cloud run stopped", runLogFields(r.Context(), task, run)...)
-	run, _ = h.client.BackgroundTaskRun.Query().Where(backgroundtaskrun.IDEQ(run.ID)).Only(r.Context())
+	run, err = h.client.BackgroundTaskRun.Query().Where(backgroundtaskrun.IDEQ(run.ID)).Only(r.Context())
+	if err != nil {
+		h.log.Error("reload run after cancel", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not load updated run", "internal_error")
+		return
+	}
 	httpx.WriteJSON(w, http.StatusAccepted, viewRun(task, run))
 }
 
@@ -945,12 +988,36 @@ func (h *Handler) RetryRun(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if task.ExecutionTarget != "api" && run.Executor != "api" {
+	// The retry creates an executor=api Temporal run, so it only makes sense for
+	// api-target tasks. The previous `task != "api" && run != "api"` allowed a
+	// desktop-target task (whose original run happened to be executor=api) to
+	// spin up an API workflow — contradicting this very error message.
+	if task.ExecutionTarget != "api" {
 		httpx.Error(w, http.StatusBadRequest, "only api-target runs can be retried by the API worker", "bad_request")
 		return
 	}
 	if run.Status != "failed" && run.Status != "stopped" {
 		httpx.Error(w, http.StatusBadRequest, "only failed or stopped runs can be retried", "bad_request")
+		return
+	}
+	// Don't start a second retry while one is already in flight: each retry spins
+	// up a fresh Temporal workflow + execution, so a double-submit would
+	// duplicate the run (and the cost). (A small TOCTOU window remains between
+	// this check and the insert; a deterministic retry run-id or a partial unique
+	// index would close it fully.)
+	inFlight, err := h.client.BackgroundTaskRun.Query().
+		Where(
+			backgroundtaskrun.RetryOfRunIDEQ(run.RunID),
+			backgroundtaskrun.StatusIn("queued", "running"),
+		).
+		Exist(r.Context())
+	if err != nil {
+		h.log.Error("check in-flight retry", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not check retry state", "internal_error")
+		return
+	}
+	if inFlight {
+		httpx.Error(w, http.StatusConflict, "a retry for this run is already in progress", "retry_in_progress")
 		return
 	}
 	h.startRetryRun(w, r, u, task, run)
@@ -971,8 +1038,7 @@ func (h *Handler) SignalRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req signalRunRequest
-	if err := readJSON(w, r, &req); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
+	if !readJSON(w, r, &req) {
 		return
 	}
 	if err := validateSignal(req.Signal); err != nil {
@@ -1007,8 +1073,7 @@ func (h *Handler) AppendRunEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req appendEventsRequest
-	if err := readJSON(w, r, &req); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
+	if !readJSON(w, r, &req) {
 		return
 	}
 	if len(req.Events) == 0 {
@@ -1019,6 +1084,13 @@ func (h *Handler) AppendRunEvents(w http.ResponseWriter, r *http.Request) {
 	for _, ev := range req.Events {
 		if len(ev.Event) == 0 || !json.Valid(ev.Event) {
 			httpx.Error(w, http.StatusBadRequest, "event must be valid JSON", "bad_request")
+			return
+		}
+		// seq is client-supplied and orders the run's event stream; a negative
+		// value would sort ahead of the canonical seq-0 queued event and corrupt
+		// ordering for afterSeq consumers.
+		if ev.Seq < 0 {
+			httpx.Error(w, http.StatusBadRequest, "event seq must be non-negative", "bad_request")
 			return
 		}
 		eventType := ev.Type
@@ -1042,6 +1114,14 @@ func (h *Handler) AppendRunEvents(w http.ResponseWriter, r *http.Request) {
 			Exec(r.Context())
 		if err != nil {
 			if ent.IsConstraintError(err) {
+				// An existing row at this seq is normally an idempotent client
+				// retry — but it can also be a DIFFERENT payload (desktop seq
+				// counter reset). Surface the divergence in logs instead of
+				// silently discarding it with a 200.
+				h.log.Warn("background task run event seq collision; event skipped",
+					zap.String("runId", run.RunID),
+					zap.Int("seq", ev.Seq),
+					zap.String("eventType", eventType))
 				skipped++
 				continue
 			}
@@ -1071,7 +1151,23 @@ func (h *Handler) ListRunEvents(w http.ResponseWriter, r *http.Request) {
 		}
 		q = q.Where(backgroundtaskrunevent.SeqGT(seq))
 	}
-	events, err := q.All(r.Context())
+	// Bound the response: a long-running task can accumulate thousands of events,
+	// and an unlimited query would materialize/serialize the entire stream.
+	// Clients page forward with ?afterSeq=<nextSeq>.
+	const (
+		defaultEventLimit = 500
+		maxEventLimit     = 1000
+	)
+	limit := defaultEventLimit
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	if limit > maxEventLimit {
+		limit = maxEventLimit
+	}
+	events, err := q.Limit(limit).All(r.Context())
 	if err != nil {
 		h.log.Error("list background task run events", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not list events", "internal_error")
@@ -1081,7 +1177,11 @@ func (h *Handler) ListRunEvents(w http.ResponseWriter, r *http.Request) {
 	for _, ev := range events {
 		views = append(views, viewEvent(ev))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"events": views})
+	resp := map[string]any{"events": views}
+	if len(events) == limit {
+		resp["nextSeq"] = events[len(events)-1].Seq
+	}
+	httpx.WriteJSON(w, http.StatusOK, resp)
 }
 
 // Trigger handles POST /v1/background-tasks/{slug}/trigger.
@@ -1097,8 +1197,7 @@ func (h *Handler) Trigger(w http.ResponseWriter, r *http.Request) {
 	}
 	var req triggerRequest
 	if r.Body != nil && r.ContentLength != 0 {
-		if err := readJSON(w, r, &req); err != nil {
-			httpx.Error(w, http.StatusBadRequest, "invalid body", "bad_request")
+		if !readJSON(w, r, &req) {
 			return
 		}
 	}
@@ -1338,11 +1437,12 @@ func (h *Handler) conflict(w http.ResponseWriter, currentRevision int) {
 	})
 }
 
-func readJSON(w http.ResponseWriter, r *http.Request, v any) error {
-	if !httpx.DecodeJSON(w, r, maxBody, v) {
-		return badRequest("invalid JSON body")
-	}
-	return nil
+// readJSON decodes exactly one JSON document from the request body. On failure
+// it has ALREADY written the appropriate problem response (malformed JSON →
+// 400, over-limit → 413) via DecodeJSON and returns false; callers must simply
+// `return` without writing a second response.
+func readJSON(w http.ResponseWriter, r *http.Request, v any) bool {
+	return httpx.DecodeJSON(w, r, maxBody, v)
 }
 
 func normalizeRawJSON(raw json.RawMessage) (string, bool, bool, error) {
@@ -1489,7 +1589,10 @@ func parseOptionalTime(s string) (time.Time, bool, error) {
 	}
 	t, err := time.Parse(time.RFC3339, s)
 	if err != nil {
-		return time.Time{}, false, err
+		// Return a controlled message rather than leaking Go's time-layout parse
+		// error (e.g. `parsing time "x" as "2006-01-02T15:04:05Z07:00"...`) to
+		// clients, matching how the other time fields validate.
+		return time.Time{}, false, badRequest("invalid timestamp, expected RFC3339")
 	}
 	return t, true, nil
 }
@@ -1623,12 +1726,27 @@ func (h *Handler) applyRunFilters(w http.ResponseWriter, r *http.Request, q *ent
 		}
 	}
 	if raw := r.URL.Query().Get("cursor"); raw != "" {
-		t, err := time.Parse(time.RFC3339, raw)
-		if err != nil {
+		ct, cid, perr := parseRunCursor(raw)
+		if perr != nil {
 			httpx.Error(w, http.StatusBadRequest, "invalid cursor", "bad_request")
 			return nil, 0, false
 		}
-		q = q.Where(backgroundtaskrun.CreatedAtLT(t))
+		if cid == uuid.Nil {
+			// Legacy timestamp-only cursor (no id component).
+			q = q.Where(backgroundtaskrun.CreatedAtLT(ct))
+		} else {
+			// Composite (created_at, id) keyset matching the ORDER BY
+			// (created_at DESC, id DESC): resume strictly after the cursor row.
+			// created_at alone isn't unique, so a timestamp-only `<` would drop
+			// every run that shares the boundary timestamp.
+			q = q.Where(backgroundtaskrun.Or(
+				backgroundtaskrun.CreatedAtLT(ct),
+				backgroundtaskrun.And(
+					backgroundtaskrun.CreatedAtEQ(ct),
+					backgroundtaskrun.IDLT(cid),
+				),
+			))
+		}
 	}
 	limit := 100
 	if raw := r.URL.Query().Get("limit"); raw != "" {
@@ -1642,11 +1760,39 @@ func (h *Handler) applyRunFilters(w http.ResponseWriter, r *http.Request, q *ent
 	return q.Limit(limit), limit, true
 }
 
+// runCursorSep separates the timestamp and id components of a run cursor.
+// Neither RFC3339Nano timestamps nor UUIDs contain it.
+const runCursorSep = "|"
+
 func nextCursor(runs []*ent.BackgroundTaskRun, limit int) string {
 	if limit <= 0 || len(runs) < limit {
 		return ""
 	}
-	return runs[len(runs)-1].CreatedAt.UTC().Format(time.RFC3339)
+	last := runs[len(runs)-1]
+	// Composite (created_at, id) cursor. RFC3339Nano preserves the stored
+	// sub-second precision, and the id disambiguates rows sharing a timestamp so
+	// the next page can resume exactly after this row (see parseRunCursor and the
+	// keyset predicate in applyRunFilters) instead of dropping its timestamp ties.
+	return last.CreatedAt.UTC().Format(time.RFC3339Nano) + runCursorSep + last.ID.String()
+}
+
+// parseRunCursor decodes a run pagination cursor into its (created_at, id)
+// components. A cursor without an id component (legacy timestamp-only) returns
+// uuid.Nil for the id.
+func parseRunCursor(raw string) (time.Time, uuid.UUID, error) {
+	tsStr, idStr, hasID := strings.Cut(raw, runCursorSep)
+	t, err := time.Parse(time.RFC3339, tsStr)
+	if err != nil {
+		return time.Time{}, uuid.Nil, err
+	}
+	if !hasID {
+		return t, uuid.Nil, nil
+	}
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return time.Time{}, uuid.Nil, err
+	}
+	return t, id, nil
 }
 
 func applyTemporalCreateFields(create *ent.BackgroundTaskRunCreate, req createRunRequest) error {
@@ -1770,24 +1916,33 @@ func (h *Handler) appendSystemEvent(ctx context.Context, task *ent.BackgroundTas
 	if err != nil {
 		return err
 	}
-	last, err := h.client.BackgroundTaskRunEvent.Query().
-		Where(backgroundtaskrunevent.HasRunWith(backgroundtaskrun.IDEQ(run.ID))).
-		Order(backgroundtaskrunevent.BySeq(entsql.OrderDesc())).
-		First(ctx)
-	seq := 0
-	if err == nil {
-		seq = last.Seq + 1
-	} else if !ent.IsNotFound(err) {
-		return err
+	// Seq assignment is a non-transactional read-max-then-insert against the
+	// unique (run, seq) index; a concurrent writer (worker activity, another
+	// system event) can claim the same seq. Re-read and retry on the constraint
+	// collision instead of dropping the lifecycle event.
+	for attempt := 0; ; attempt++ {
+		last, err := h.client.BackgroundTaskRunEvent.Query().
+			Where(backgroundtaskrunevent.HasRunWith(backgroundtaskrun.IDEQ(run.ID))).
+			Order(backgroundtaskrunevent.BySeq(entsql.OrderDesc())).
+			First(ctx)
+		seq := 0
+		if err == nil {
+			seq = last.Seq + 1
+		} else if !ent.IsNotFound(err) {
+			return err
+		}
+		err = h.client.BackgroundTaskRunEvent.Create().
+			SetUser(u).
+			SetTask(task).
+			SetRun(run).
+			SetSeq(seq).
+			SetEventType(eventType).
+			SetEventJSON(string(raw)).
+			Exec(ctx)
+		if err == nil || !ent.IsConstraintError(err) || attempt >= 3 {
+			return err
+		}
 	}
-	return h.client.BackgroundTaskRunEvent.Create().
-		SetUser(u).
-		SetTask(task).
-		SetRun(run).
-		SetSeq(seq).
-		SetEventType(eventType).
-		SetEventJSON(string(raw)).
-		Exec(ctx)
 }
 
 func revisionQuery(w http.ResponseWriter, r *http.Request) (int, bool) {

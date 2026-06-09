@@ -4,6 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {
   connectProvider,
+  connectConnector,
   disconnectProvider,
   listProviders,
 } from './oauth-handler.js';
@@ -641,6 +642,12 @@ export function setupIpcHandlers() {
     },
     'oauth:disconnect': async (_event, args) => {
       return await disconnectProvider(args.provider);
+    },
+    'connectors:connect': async (_event, args) => {
+      // Starts the connector OAuth flow + opens the browser. The browser
+      // completes at the api callback, which deep-links back and main redeems
+      // the grant via the connector /claim endpoint (see deeplink.ts).
+      return await connectConnector(args.connector);
     },
     'oauth:list-providers': async () => {
       return listProviders();

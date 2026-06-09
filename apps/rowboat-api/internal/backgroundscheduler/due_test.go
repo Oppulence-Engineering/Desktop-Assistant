@@ -47,7 +47,7 @@ func TestDueParityFixtures(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var got bool
 			if tc.cron != "" {
-				got = isCronDue(tc.cron, tc.lastRun, tc.now)
+				got = isCronDue(tc.cron, tc.lastRun, nil, tc.now)
 			} else {
 				got = isWindowDue(tc.winStart, tc.winEnd, tc.lastRun, tc.now)
 			}
@@ -67,7 +67,7 @@ func TestDueTimedTriggerCronWinsOverWindow(t *testing.T) {
 	}
 	lastRun := ts(t, "2026-06-08T12:00:00Z")
 	now := ts(t, "2026-06-08T13:01:30Z") // cron due (13:00) and inside window band
-	if got := dueTimedTrigger(tr, &lastRun, now); got != "cron" {
+	if got := dueTimedTrigger(tr, &lastRun, nil, now); got != "cron" {
 		t.Fatalf("both due: got %q, want cron", got)
 	}
 }
@@ -75,7 +75,7 @@ func TestDueTimedTriggerCronWinsOverWindow(t *testing.T) {
 func TestDueTimedTriggerWindowWhenNoCron(t *testing.T) {
 	tr := Triggers{Windows: []Window{{StartTime: "09:00", EndTime: "12:00"}}}
 	now := ts(t, "2026-06-08T10:00:00Z")
-	if got := dueTimedTrigger(tr, nil, now); got != "window" {
+	if got := dueTimedTrigger(tr, nil, nil, now); got != "window" {
 		t.Fatalf("window only: got %q, want window", got)
 	}
 }
@@ -84,13 +84,13 @@ func TestDueTimedTriggerNoneWhenNeither(t *testing.T) {
 	tr := Triggers{CronExpr: "0 * * * *", Windows: []Window{{StartTime: "09:00", EndTime: "12:00"}}}
 	lastRun := ts(t, "2026-06-08T13:00:00Z") // cron already advanced
 	now := ts(t, "2026-06-08T13:01:00Z")     // and outside the window band
-	if got := dueTimedTrigger(tr, &lastRun, now); got != "" {
+	if got := dueTimedTrigger(tr, &lastRun, nil, now); got != "" {
 		t.Fatalf("neither due: got %q, want empty", got)
 	}
 }
 
 func TestDueTimedTriggerEmpty(t *testing.T) {
-	if got := dueTimedTrigger(Triggers{}, nil, ts(t, "2026-06-08T10:00:00Z")); got != "" {
+	if got := dueTimedTrigger(Triggers{}, nil, nil, ts(t, "2026-06-08T10:00:00Z")); got != "" {
 		t.Fatalf("empty triggers: got %q, want empty", got)
 	}
 }
@@ -100,7 +100,7 @@ func TestDueTimedTriggerEmpty(t *testing.T) {
 func TestDueTimedTriggerInvalidCronStillEvaluatesWindow(t *testing.T) {
 	tr := Triggers{CronExpr: "not a cron", Windows: []Window{{StartTime: "09:00", EndTime: "12:00"}}}
 	now := ts(t, "2026-06-08T10:00:00Z")
-	if got := dueTimedTrigger(tr, nil, now); got != "window" {
+	if got := dueTimedTrigger(tr, nil, nil, now); got != "window" {
 		t.Fatalf("invalid cron + valid window: got %q, want window", got)
 	}
 }
@@ -120,7 +120,7 @@ func TestIsCronDueStepExpressions(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := isCronDue("*/5 * * * *", &last, ts(t, tc.now)); got != tc.want {
+			if got := isCronDue("*/5 * * * *", &last, nil, ts(t, tc.now)); got != tc.want {
 				t.Fatalf("got %v, want %v", got, tc.want)
 			}
 		})
@@ -132,11 +132,11 @@ func TestIsCronDueStepExpressions(t *testing.T) {
 func TestIsCronDueLastRunEquality(t *testing.T) {
 	occ := ts(t, "2026-06-08T13:00:00Z")
 	now := ts(t, "2026-06-08T13:01:00Z")
-	if isCronDue("0 * * * *", &occ, now) {
+	if isCronDue("0 * * * *", &occ, nil, now) {
 		t.Fatalf("last run == occurrence should not be due")
 	}
 	justBefore := occ.Add(-time.Second)
-	if !isCronDue("0 * * * *", &justBefore, now) {
+	if !isCronDue("0 * * * *", &justBefore, nil, now) {
 		t.Fatalf("last run just before occurrence should be due")
 	}
 }
@@ -146,21 +146,21 @@ func TestIsCronDueLastRunEquality(t *testing.T) {
 func TestCronGraceBoundaryIsInclusive(t *testing.T) {
 	last := ts(t, "2026-06-08T12:00:00Z")
 	atGrace := ts(t, "2026-06-08T13:02:00Z") // 13:00 occurrence + 2m grace
-	if !isCronDue("0 * * * *", &last, atGrace) {
+	if !isCronDue("0 * * * *", &last, nil, atGrace) {
 		t.Fatalf("at grace boundary: want due")
 	}
 	pastGrace := ts(t, "2026-06-08T13:02:01Z")
-	if isCronDue("0 * * * *", &last, pastGrace) {
+	if isCronDue("0 * * * *", &last, nil, pastGrace) {
 		t.Fatalf("one second past grace: want not due")
 	}
 }
 
 func TestIsCronDueInvalidOrEmpty(t *testing.T) {
 	now := ts(t, "2026-06-08T13:00:00Z")
-	if isCronDue("", nil, now) {
+	if isCronDue("", nil, nil, now) {
 		t.Fatalf("empty expr should not be due")
 	}
-	if isCronDue("not a cron", nil, now) {
+	if isCronDue("not a cron", nil, nil, now) {
 		t.Fatalf("invalid expr should not be due even when never run")
 	}
 }
@@ -190,7 +190,7 @@ func TestAdjacentWindowsShareEndpoint(t *testing.T) {
 		t.Fatalf("start-inclusive window 12-15 should fire at 12:00")
 	}
 	tr := Triggers{Windows: []Window{{StartTime: "08:00", EndTime: "12:00"}, {StartTime: "12:00", EndTime: "15:00"}}}
-	if got := dueTimedTrigger(tr, nil, noonish); got != "window" {
+	if got := dueTimedTrigger(tr, nil, nil, noonish); got != "window" {
 		t.Fatalf("dueTimedTrigger = %q, want window", got)
 	}
 }
@@ -279,10 +279,10 @@ func TestCronEvaluatedInProvidedLocation(t *testing.T) {
 	}
 	yesterday := time.Date(2026, 6, 7, 9, 30, 0, 0, ny)
 	nowNY := time.Date(2026, 6, 8, 9, 1, 0, 0, ny) // just after the 9am NY occurrence
-	if !isCronDue("0 9 * * *", &yesterday, nowNY) {
+	if !isCronDue("0 9 * * *", &yesterday, nil, nowNY) {
 		t.Fatalf("09:01 local should be within grace of the 9am NY occurrence")
 	}
-	if isCronDue("0 9 * * *", &yesterday, nowNY.UTC()) {
+	if isCronDue("0 9 * * *", &yesterday, nil, nowNY.UTC()) {
 		t.Fatalf("13:01 UTC should be outside grace of the 9am UTC occurrence")
 	}
 }
@@ -292,19 +292,19 @@ func TestCronEvaluatedInProvidedLocation(t *testing.T) {
 // some sub-minute second (gronx would otherwise return now-to-the-second).
 func TestCronDueOccurrenceMinuteAligned(t *testing.T) {
 	now := ts(t, "2026-06-08T13:00:37Z") // inside the matching minute
-	occ, ok := cronDueOccurrence("0 * * * *", nil, now)
+	occ, ok := cronDueOccurrence("0 * * * *", nil, nil, now)
 	if !ok || !occ.Equal(ts(t, "2026-06-08T13:00:00Z")) {
 		t.Fatalf("occurrence = %v/%v, want 13:00:00/true (minute-aligned)", occ, ok)
 	}
 	last := ts(t, "2026-06-08T12:00:00Z")
-	occ2, ok2 := cronDueOccurrence("0 * * * *", &last, ts(t, "2026-06-08T13:01:30Z"))
+	occ2, ok2 := cronDueOccurrence("0 * * * *", &last, nil, ts(t, "2026-06-08T13:01:30Z"))
 	if !ok2 || !occ2.Equal(ts(t, "2026-06-08T13:00:00Z")) {
 		t.Fatalf("occurrence2 = %v/%v, want 13:00:00/true", occ2, ok2)
 	}
-	if _, ok := cronDueOccurrence("not a cron", nil, now); ok {
+	if _, ok := cronDueOccurrence("not a cron", nil, nil, now); ok {
 		t.Fatalf("invalid expr should return ok=false")
 	}
-	if _, ok := cronDueOccurrence("", nil, now); ok {
+	if _, ok := cronDueOccurrence("", nil, nil, now); ok {
 		t.Fatalf("empty expr should return ok=false")
 	}
 }
@@ -320,5 +320,33 @@ func TestFirstDueWindowPicksMatch(t *testing.T) {
 	w, ok := firstDueWindow(tr, &ranAt0930, now)
 	if !ok || w.StartTime != "13:00" {
 		t.Fatalf("firstDueWindow = %+v/%v, want 13:00 window", w, ok)
+	}
+}
+
+// TestCronRetryGraceExtension locks in the failed-start retry fix: with a
+// pending retry (lastAttemptAt newer than lastRunAt) the occurrence stays
+// fireable past the normal grace, so the post-backoff (5m) retry is not
+// silently dropped by the 2m grace window.
+func TestCronRetryGraceExtension(t *testing.T) {
+	last := ts(t, "2026-06-08T12:00:00Z")
+	attempt := ts(t, "2026-06-08T13:00:30Z") // failed start just after the 13:00 occurrence
+	pastGrace := ts(t, "2026-06-08T13:05:45Z")
+
+	// Without a pending retry the occurrence is already missed at +5m45s.
+	if isCronDue("0 * * * *", &last, nil, pastGrace) {
+		t.Fatal("occurrence past normal grace with no pending retry must not be due")
+	}
+	// With a pending retry the widened grace keeps it fireable.
+	occ, ok := cronDueOccurrence("0 * * * *", &last, &attempt, pastGrace)
+	if !ok {
+		t.Fatal("occurrence with a pending retry must stay due past the normal grace")
+	}
+	if want := ts(t, "2026-06-08T13:00:00Z"); !occ.Equal(want) {
+		t.Fatalf("occurrence = %s, want %s (schedule key must not drift on retry)", occ, want)
+	}
+	// The extension is bounded: well past backoff+grace the occurrence lapses.
+	wayPast := ts(t, "2026-06-08T13:09:00Z")
+	if isCronDue("0 * * * *", &last, &attempt, wayPast) {
+		t.Fatal("retry grace must still expire eventually")
 	}
 }

@@ -299,6 +299,8 @@ func init() {
 	llmusageDescCostUnits := llmusageFields[7].Descriptor()
 	// llmusage.DefaultCostUnits holds the default value on creation for the cost_units field.
 	llmusage.DefaultCostUnits = llmusageDescCostUnits.Default.(int)
+	// llmusage.CostUnitsValidator is a validator for the "cost_units" field. It is called by the builders before save.
+	llmusage.CostUnitsValidator = llmusageDescCostUnits.Validators[0].(func(int) error)
 	// llmusageDescTs is the schema descriptor for ts field.
 	llmusageDescTs := llmusageFields[9].Descriptor()
 	// llmusage.DefaultTs holds the default value on creation for the ts field.

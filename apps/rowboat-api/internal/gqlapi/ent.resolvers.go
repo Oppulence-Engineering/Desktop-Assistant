@@ -14,6 +14,34 @@ import (
 	"github.com/google/uuid"
 )
 
+// Page-size bounds for connection resolvers. When a query supplies neither
+// `first` nor `last`, ent's Paginate applies no limit and loads the entire
+// table; defaultPageSize guards against that, and maxPageSize caps explicit
+// requests to bound the worst-case query cost.
+const (
+	defaultPageSize = 50
+	maxPageSize     = 100
+)
+
+// clampPage applies the default and maximum page-size bounds. It never mutates
+// the caller's pointers: when a bound applies it returns a pointer to a fresh
+// int. When both first and last are nil, it defaults first to defaultPageSize.
+func clampPage(first, last *int) (*int, *int) {
+	if first == nil && last == nil {
+		n := defaultPageSize
+		return &n, last
+	}
+	if first != nil && *first > maxPageSize {
+		n := maxPageSize
+		first = &n
+	}
+	if last != nil && *last > maxPageSize {
+		n := maxPageSize
+		last = &n
+	}
+	return first, last
+}
+
 // Node is the resolver for the node field.
 func (r *queryResolver) Node(ctx context.Context, id uuid.UUID) (ent.Noder, error) {
 	return r.client.Noder(ctx, id)
@@ -51,6 +79,7 @@ func (r *queryResolver) BackgroundTaskScheduleStates(ctx context.Context, after 
 
 // LlmUsages is the resolver for the llmUsages field.
 func (r *queryResolver) LlmUsages(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.LLMUsageWhereInput) (*ent.LLMUsageConnection, error) {
+	first, last = clampPage(first, last)
 	var opts []ent.LLMUsagePaginateOption
 	if where != nil {
 		opts = append(opts, ent.WithLLMUsageFilter(where.Filter))
@@ -60,6 +89,7 @@ func (r *queryResolver) LlmUsages(ctx context.Context, after *entgql.Cursor[uuid
 
 // McpConnections is the resolver for the mcpConnections field.
 func (r *queryResolver) McpConnections(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.MCPConnectionWhereInput) (*ent.MCPConnectionConnection, error) {
+	first, last = clampPage(first, last)
 	var opts []ent.MCPConnectionPaginateOption
 	if where != nil {
 		opts = append(opts, ent.WithMCPConnectionFilter(where.Filter))
@@ -69,6 +99,7 @@ func (r *queryResolver) McpConnections(ctx context.Context, after *entgql.Cursor
 
 // BillingSubscriptions is the resolver for the billingSubscriptions field.
 func (r *queryResolver) BillingSubscriptions(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BillingSubscriptionWhereInput) (*ent.BillingSubscriptionConnection, error) {
+	first, last = clampPage(first, last)
 	var opts []ent.BillingSubscriptionPaginateOption
 	if where != nil {
 		opts = append(opts, ent.WithBillingSubscriptionFilter(where.Filter))
@@ -78,6 +109,7 @@ func (r *queryResolver) BillingSubscriptions(ctx context.Context, after *entgql.
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.UserWhereInput) (*ent.UserConnection, error) {
+	first, last = clampPage(first, last)
 	var opts []ent.UserPaginateOption
 	if where != nil {
 		opts = append(opts, ent.WithUserFilter(where.Filter))

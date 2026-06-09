@@ -17,6 +17,7 @@ import { capture as analyticsCapture, identify as analyticsIdentify, reset as an
 import { isSignedIn } from '@x/core/dist/account/account.js';
 import { getWebappUrl } from '@x/core/dist/config/remote-config.js';
 import { claimTokensViaBackend } from '@x/core/dist/auth/google-backend-oauth.js';
+import { startConnectorViaBackend, claimConnectorViaBackend } from '@x/core/dist/connectors/connectors-backend.js';
 import { getWorkosLoginUrl, exchangeWorkosCode } from '@x/core/dist/auth/workos-backend.js';
 import { PRODUCT_PROVIDER_ID, isProductProvider } from '@x/shared/dist/branding.js';
 import { isManagedAuthMode } from '@x/core/dist/auth/repo.js';
@@ -590,6 +591,51 @@ export async function completeSolomonGoogleConnect(state: string): Promise<void>
       provider: 'google',
       success: false,
       error: error instanceof Error ? error.message : 'Failed to claim Google tokens',
+    });
+  }
+}
+
+/**
+ * Begin a rowboat-api connector OAuth connect: ask the api for the provider
+ * authorize URL (which binds a pending ticket to this user) and open it in the
+ * system browser. The browser completes at the api callback, which parks the
+ * grant and deep-links back to solomon-ai://connection-complete?...&session=...,
+ * where completeConnectorConnect redeems it.
+ */
+export async function connectConnector(connector: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const authorizeUrl = await startConnectorViaBackend(connector);
+    await shell.openExternal(authorizeUrl);
+    return { success: true };
+  } catch (error) {
+    console.error(`[Connectors] start ${connector} failed:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to start connector connect',
+    };
+  }
+}
+
+/**
+ * Complete a connector connect by claiming the grant the api callback parked
+ * under `state`. Persistence happens server-side (the api verifies this user is
+ * the one who started the flow); we only surface success/failure to the renderer.
+ *
+ * Called by the deep-link dispatcher (deeplink.ts) on
+ * solomon-ai://connection-complete?connector=<name>&status=success&session=<state>.
+ */
+export async function completeConnectorConnect(connector: string, state: string): Promise<void> {
+  try {
+    console.log(`[Connectors] claiming ${connector} grant...`);
+    await claimConnectorViaBackend(connector, state);
+    emitOAuthEvent({ provider: connector, success: true });
+    console.log(`[Connectors] ${connector} connect complete`);
+  } catch (error) {
+    console.error(`[Connectors] failed to claim ${connector}:`, error);
+    emitOAuthEvent({
+      provider: connector,
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to claim connector grant',
     });
   }
 }

@@ -34,6 +34,11 @@ const (
 type EntLeases struct {
 	client *ent.Client
 	log    *zap.Logger
+	// clock is injectable for tests. NOTE: lease expiry is judged against each
+	// replica's wall clock (no DB-clock anchoring), so cross-replica skew of N
+	// seconds makes a lease steal-eligible N seconds early — keep the lease TTL
+	// comfortably above cronGrace plus realistic skew (NTP-disciplined nodes).
+	clock func() time.Time
 
 	mu           sync.Mutex
 	lastPrunedAt time.Time // throttles CleanupExpired's retention DELETE
@@ -44,7 +49,14 @@ func NewEntLeases(client *ent.Client, log *zap.Logger) *EntLeases {
 	if log == nil {
 		log = zap.NewNop()
 	}
-	return &EntLeases{client: client, log: log}
+	return &EntLeases{client: client, log: log, clock: time.Now}
+}
+
+// SetClock overrides the lease store's clock (tests only).
+func (l *EntLeases) SetClock(clock func() time.Time) {
+	if clock != nil {
+		l.clock = clock
+	}
 }
 
 // Acquire claims the cycle for owner. It inserts the cycle row with a
@@ -56,7 +68,7 @@ func (l *EntLeases) Acquire(ctx context.Context, task *ent.BackgroundTask, trigg
 	if task.Edges.User == nil {
 		return Lease{}, false, errors.New("backgroundscheduler: Acquire requires task.Edges.User")
 	}
-	now := time.Now().UTC()
+	now := l.clock().UTC()
 	exp := now.Add(ttl)
 	myID := uuid.New()
 
@@ -135,7 +147,7 @@ func (l *EntLeases) Acquire(ctx context.Context, task *ent.BackgroundTask, trigg
 // guarded by id+revision+owner and last_run_id==” so only the current,
 // not-yet-completed owner can finalize it.
 func (l *EntLeases) Complete(ctx context.Context, lease Lease, runID string) error {
-	now := time.Now().UTC()
+	now := l.clock().UTC()
 	n, err := l.client.BackgroundTaskScheduleState.Update().
 		Where(
 			btss.IDEQ(lease.ID),
@@ -177,7 +189,7 @@ func (l *EntLeases) Release(ctx context.Context, lease Lease, cause error) error
 		).
 		ClearLeaseExpiresAt().
 		SetLeaseOwner("").
-		SetLastEvaluatedAt(time.Now().UTC()).
+		SetLastEvaluatedAt(l.clock().UTC()).
 		AddRevision(1).
 		Save(ctx)
 	if err != nil {
@@ -196,7 +208,7 @@ func (l *EntLeases) Release(ctx context.Context, lease Lease, cause error) error
 // old and never within the window. It is throttled to pruneInterval since the
 // scheduler calls it every tick. Runs under the scheduler's internal context.
 func (l *EntLeases) CleanupExpired(ctx context.Context) error {
-	now := time.Now().UTC()
+	now := l.clock().UTC()
 	l.mu.Lock()
 	due := now.Sub(l.lastPrunedAt) >= pruneInterval
 	l.mu.Unlock()

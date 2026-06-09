@@ -210,7 +210,7 @@ config:
   # pod) runs the loop; the rest are tunable defaults.
   CLOUD_SCHEDULER_ENABLED: "false"
   CLOUD_SCHEDULER_INTERVAL: 15s
-  CLOUD_SCHEDULER_LEASE_TTL: 90s
+  CLOUD_SCHEDULER_LEASE_TTL: 150s
   CLOUD_SCHEDULER_TIMEZONE: UTC
 
 # Secret env. In production these are projected from an existing Secret

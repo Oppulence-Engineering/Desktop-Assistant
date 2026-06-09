@@ -49,6 +49,8 @@ export function dispatchUrl(url: string): void {
         void dispatchAction(url);
     } else if (parseOAuthCompletion(url)) {
         void dispatchOAuthCompletion(url);
+    } else if (parseConnectorCompletion(url)) {
+        void dispatchConnectorCompletion(url);
     } else {
         dispatchDeepLink(url);
     }
@@ -164,6 +166,55 @@ async function dispatchOAuthCompletion(url: string): Promise<void> {
     // potential circular dep with oauth-handler.ts.
     const { completeSolomonGoogleConnect } = await import("./oauth-handler.js");
     await completeSolomonGoogleConnect(parsed.state);
+}
+
+// --- Connector completion (rowboat-api connector OAuth broker) ---
+
+interface ConnectorCompletion {
+    connector: string;
+    status: string;
+    state: string;
+}
+
+/**
+ * Match solomon-ai://connection-complete?connector=<name>&status=<status>&session=<state>
+ * — the api connector callback's deep link. Returns null unless both the
+ * connector and the session (state) are present.
+ */
+function parseConnectorCompletion(url: string): ConnectorCompletion | null {
+    const rest = getDeepLinkPayload(url);
+    if (rest === null) return null;
+    const queryIdx = rest.indexOf("?");
+    const host = (queryIdx >= 0 ? rest.slice(0, queryIdx) : rest).replace(/\/$/, "");
+    if (host !== "connection-complete") return null;
+    const params = new URLSearchParams(queryIdx >= 0 ? rest.slice(queryIdx + 1) : "");
+    const connector = params.get("connector");
+    const state = params.get("session");
+    if (!connector || !state) return null;
+    return { connector, status: params.get("status") ?? "", state };
+}
+
+async function dispatchConnectorCompletion(url: string): Promise<void> {
+    const parsed = parseConnectorCompletion(url);
+    if (!parsed) return;
+
+    // Bring the app to the front so the renderer reacts to the oauth event the
+    // claim emits (connector connections reuse the oauth:didConnect channel,
+    // keyed by the connector name).
+    const win = mainWindowRef;
+    if (win && !win.isDestroyed()) focusWindow(win);
+
+    if (parsed.status !== "success") {
+        // The browser flow reported an error/expiry; surface it without claiming.
+        const { emitOAuthEvent } = await import("./ipc.js");
+        emitOAuthEvent({ provider: parsed.connector, success: false, error: "connection failed" });
+        return;
+    }
+
+    // Lazy-import to avoid a circular dep with oauth-handler.ts (which imports
+    // emitOAuthEvent from ipc.ts).
+    const { completeConnectorConnect } = await import("./oauth-handler.js");
+    await completeConnectorConnect(parsed.connector, parsed.state);
 }
 
 function focusWindow(win: BrowserWindow): void {

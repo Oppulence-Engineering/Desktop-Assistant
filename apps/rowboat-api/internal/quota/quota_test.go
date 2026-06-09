@@ -36,7 +36,7 @@ func TestReserveSettleHappyPath(t *testing.T) {
 	g := quota.New(client, zap.NewNop())
 	rid := uuid.New()
 
-	charge, err := g.Reserve(ctx, "llm_call", 40, rid)
+	charge, err := g.Reserve(ctx, "llm_call", 40, rid, quota.SpendLimits{})
 	if err != nil {
 		t.Fatalf("reserve: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestReserveSettleHappyPath(t *testing.T) {
 func TestReserveInsufficient(t *testing.T) {
 	client, ctx, _ := setup(t)
 	g := quota.New(client, zap.NewNop())
-	_, err := g.Reserve(ctx, "llm_call", 101, uuid.New())
+	_, err := g.Reserve(ctx, "llm_call", 101, uuid.New(), quota.SpendLimits{})
 	if !errors.Is(err, quota.ErrInsufficientCredits) {
 		t.Fatalf("want ErrInsufficientCredits, got %v", err)
 	}
@@ -65,7 +65,7 @@ func TestReserveInsufficient(t *testing.T) {
 func TestRefundReturnsFullReservation(t *testing.T) {
 	client, ctx, _ := setup(t)
 	g := quota.New(client, zap.NewNop())
-	charge, _ := g.Reserve(ctx, "llm_call", 40, uuid.New())
+	charge, _ := g.Reserve(ctx, "llm_call", 40, uuid.New(), quota.SpendLimits{})
 	if err := charge.Refund(ctx); err != nil {
 		t.Fatalf("refund: %v", err)
 	}
@@ -78,14 +78,192 @@ func TestReserveIsIdempotent(t *testing.T) {
 	client, ctx, _ := setup(t)
 	g := quota.New(client, zap.NewNop())
 	rid := uuid.New()
-	if _, err := g.Reserve(ctx, "llm_call", 40, rid); err != nil {
+	if _, err := g.Reserve(ctx, "llm_call", 40, rid, quota.SpendLimits{}); err != nil {
 		t.Fatalf("reserve 1: %v", err)
 	}
 	// Same request id → no double debit.
-	if _, err := g.Reserve(ctx, "llm_call", 40, rid); err != nil {
+	if _, err := g.Reserve(ctx, "llm_call", 40, rid, quota.SpendLimits{}); err != nil {
 		t.Fatalf("reserve 2: %v", err)
 	}
 	if avail, _ := credits.Available(ctx, client, 100); avail != 60 {
 		t.Fatalf("idempotent reserve available = %d, want 60", avail)
+	}
+}
+
+// TestDuplicateRequestCannotMintCredits guards the CRITICAL idempotency-key
+// minting bug: reusing one request_id with a larger estimate, or driving both a
+// settle and a refund for the same request, must never inflate the balance.
+func TestDuplicateRequestCannotMintCredits(t *testing.T) {
+	client, ctx, _ := setup(t)
+	g := quota.New(client, zap.NewNop())
+	rid := uuid.New()
+
+	// First request reserves 40 and settles at actual 25 (refunds the 15 excess).
+	chargeA, err := g.Reserve(ctx, "llm_call", 40, rid, quota.SpendLimits{})
+	if err != nil {
+		t.Fatalf("reserve A: %v", err)
+	}
+	if err := chargeA.Settle(ctx, 25); err != nil {
+		t.Fatalf("settle A: %v", err)
+	}
+	if avail, _ := credits.Available(ctx, client, 100); avail != 75 {
+		t.Fatalf("after settle A available = %d, want 75", avail)
+	}
+
+	// A duplicate request reuses the SAME request_id but claims a larger estimate
+	// (70, still within the 75 available balance so it passes the balance check
+	// and reaches the idempotent branch). The old bug returned reserved=70 and
+	// re-released it on refund; the fix reads back the original 40.
+	chargeB, err := g.Reserve(ctx, "llm_call", 70, rid, quota.SpendLimits{})
+	if err != nil {
+		t.Fatalf("reserve B (idempotent): %v", err)
+	}
+	if got := chargeB.Reserved(); got != 40 {
+		t.Fatalf("idempotent retry reserved = %d, want 40 (original), not the inflated estimate", got)
+	}
+	if !chargeB.Finalized() {
+		t.Fatalf("replay of a settled request must report Finalized so handlers refuse to re-call the vendor")
+	}
+	// Refunding the duplicate must be a no-op: the charge was already settled.
+	if err := chargeB.Refund(ctx); err != nil {
+		t.Fatalf("refund B: %v", err)
+	}
+	if avail, _ := credits.Available(ctx, client, 100); avail != 75 {
+		t.Fatalf("after duplicate refund available = %d, want 75 (no minting)", avail)
+	}
+}
+
+// TestFlatRateSettleBlocksDuplicateRefund covers the diff==0 path used by
+// flat-rate charges (voice/search): a settle where actual==reserved must still
+// record a terminal marker so a duplicate retry cannot refund the reservation.
+func TestFlatRateSettleBlocksDuplicateRefund(t *testing.T) {
+	client, ctx, _ := setup(t)
+	g := quota.New(client, zap.NewNop())
+	rid := uuid.New()
+
+	chargeA, err := g.Reserve(ctx, "voice_tts", 30, rid, quota.SpendLimits{})
+	if err != nil {
+		t.Fatalf("reserve A: %v", err)
+	}
+	// Flat-rate: actual == reserved, so diff is zero.
+	if err := chargeA.Settle(ctx, 30); err != nil {
+		t.Fatalf("settle A: %v", err)
+	}
+	if avail, _ := credits.Available(ctx, client, 100); avail != 70 {
+		t.Fatalf("after flat settle available = %d, want 70", avail)
+	}
+
+	// Duplicate retry (same request_id) that fails and refunds must be a no-op:
+	// the charge was already settled.
+	chargeB, err := g.Reserve(ctx, "voice_tts", 30, rid, quota.SpendLimits{})
+	if err != nil {
+		t.Fatalf("reserve B (idempotent): %v", err)
+	}
+	if err := chargeB.Refund(ctx); err != nil {
+		t.Fatalf("refund B: %v", err)
+	}
+	if avail, _ := credits.Available(ctx, client, 100); avail != 70 {
+		t.Fatalf("after duplicate refund available = %d, want 70 (no minting)", avail)
+	}
+}
+
+// TestRefundThenSettleIsMutuallyExclusive verifies the terminal phase is atomic
+// in BOTH orders: once a charge is refunded, a duplicate retry that settles must
+// be a no-op (and vice versa), so the reservation is never released twice.
+func TestRefundThenSettleIsMutuallyExclusive(t *testing.T) {
+	client, ctx, _ := setup(t)
+	g := quota.New(client, zap.NewNop())
+	rid := uuid.New()
+
+	// First attempt reserves 40 and fails → full refund. Net consumption 0.
+	chargeA, err := g.Reserve(ctx, "llm_call", 40, rid, quota.SpendLimits{})
+	if err != nil {
+		t.Fatalf("reserve A: %v", err)
+	}
+	if err := chargeA.Refund(ctx); err != nil {
+		t.Fatalf("refund A: %v", err)
+	}
+	if avail, _ := credits.Available(ctx, client, 100); avail != 100 {
+		t.Fatalf("after refund A available = %d, want 100", avail)
+	}
+
+	// A duplicate retry (same request_id) that succeeds must NOT settle on top of
+	// the refund (which would leave the user charged 0 AND credited the diff).
+	chargeB, err := g.Reserve(ctx, "llm_call", 40, rid, quota.SpendLimits{})
+	if err != nil {
+		t.Fatalf("reserve B (idempotent): %v", err)
+	}
+	if err := chargeB.Settle(ctx, 25); err != nil {
+		t.Fatalf("settle B: %v", err)
+	}
+	if avail, _ := credits.Available(ctx, client, 100); avail != 100 {
+		t.Fatalf("after duplicate settle available = %d, want 100 (terminal already refunded)", avail)
+	}
+}
+
+// TestFinalizedReplayIsFlagged guards the free-inference replay hole: once a
+// request settles, a sequential replay of the same request_id must come back
+// Finalized (not InProgress, not clear-to-proceed) so handlers reject it
+// instead of re-calling the vendor for a charge whose accounting writes all
+// no-op.
+func TestFinalizedReplayIsFlagged(t *testing.T) {
+	client, ctx, _ := setup(t)
+	g := quota.New(client, zap.NewNop())
+	rid := uuid.New()
+
+	chargeA, err := g.Reserve(ctx, "llm_call", 40, rid, quota.SpendLimits{})
+	if err != nil {
+		t.Fatalf("reserve A: %v", err)
+	}
+	if chargeA.Finalized() || chargeA.InProgress() {
+		t.Fatalf("fresh reserve must be neither finalized nor in progress")
+	}
+	if err := chargeA.Settle(ctx, 40); err != nil {
+		t.Fatalf("settle A: %v", err)
+	}
+
+	chargeB, err := g.Reserve(ctx, "llm_call", 40, rid, quota.SpendLimits{})
+	if err != nil {
+		t.Fatalf("reserve B (replay): %v", err)
+	}
+	if !chargeB.Finalized() {
+		t.Fatalf("replay after settle must be Finalized")
+	}
+	if chargeB.InProgress() {
+		t.Fatalf("replay after settle must not be InProgress")
+	}
+
+	// An unfinalized duplicate within the in-flight window is InProgress.
+	rid2 := uuid.New()
+	if _, err := g.Reserve(ctx, "llm_call", 10, rid2, quota.SpendLimits{}); err != nil {
+		t.Fatalf("reserve C: %v", err)
+	}
+	chargeD, err := g.Reserve(ctx, "llm_call", 10, rid2, quota.SpendLimits{})
+	if err != nil {
+		t.Fatalf("reserve D (concurrent dup): %v", err)
+	}
+	if !chargeD.InProgress() || chargeD.Finalized() {
+		t.Fatalf("concurrent duplicate: InProgress=%v Finalized=%v, want true/false", chargeD.InProgress(), chargeD.Finalized())
+	}
+}
+
+// TestSpendLimitsEnforcedInReserve verifies the caps are checked inside the
+// reservation transaction (the reserve itself counts toward the cap) and that
+// a cap rejection leaves no debit behind.
+func TestSpendLimitsEnforcedInReserve(t *testing.T) {
+	client, ctx, _ := setup(t)
+	g := quota.New(client, zap.NewNop())
+	limits := quota.SpendLimits{Daily: 50}
+
+	if _, err := g.Reserve(ctx, "llm_call", 30, uuid.New(), limits); err != nil {
+		t.Fatalf("reserve within cap: %v", err)
+	}
+	_, err := g.Reserve(ctx, "llm_call", 30, uuid.New(), limits)
+	if !errors.Is(err, quota.ErrDailyLimitExceeded) {
+		t.Fatalf("want ErrDailyLimitExceeded, got %v", err)
+	}
+	// The rejected reservation must have been rolled back: 100 - 30 = 70.
+	if avail, _ := credits.Available(ctx, client, 100); avail != 70 {
+		t.Fatalf("after cap rejection available = %d, want 70 (rejected reserve rolled back)", avail)
 	}
 }

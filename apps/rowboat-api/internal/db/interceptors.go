@@ -30,7 +30,14 @@ var ErrNoViewer = errors.New("db: query on per-user entity without a viewer in c
 // registerInterceptors installs read-side middleware:
 //   - query metrics (count by entity type)
 //   - per-user tenant scoping (the privacy policy from the plan, enforced at
-//     the client so it cannot be bypassed by forgetting a WHERE clause)
+//     the client so a READ cannot be bypassed by forgetting a WHERE clause)
+//
+// IMPORTANT: ent interceptors run only on QUERY execution. Mutations
+// (Update/UpdateOne/Delete/DeleteOne and OnConflict upserts) are NOT scoped here
+// — they must operate on an id/slug obtained from a prior tenant-scoped read
+// (the convention every handler follows: lookupTask/lookupRun/scoped Query →
+// mutate by verified id). A mutation that builds its predicate directly from
+// request input would bypass tenant isolation; keep the scoped-read-first rule.
 func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 	client.Intercept(intercept.Func(func(_ context.Context, q intercept.Query) error {
 		entQueriesTotal.WithLabelValues(q.Type()).Inc()

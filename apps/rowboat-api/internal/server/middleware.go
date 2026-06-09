@@ -2,13 +2,86 @@ package server
 
 import (
 	"context"
+	"net"
 	"net/http"
+	"net/netip"
 	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 )
+
+// RealIPFromTrustedProxies rewrites r.RemoteAddr to the real client IP from
+// X-Forwarded-For, but ONLY when the direct peer is inside a trusted-proxy
+// CIDR. chi's stock middleware.RealIP trusts the header unconditionally (any
+// client could spoof its own identity), so it is deliberately not used.
+//
+// Without this, every request behind the ingress shares the ingress pod's
+// RemoteAddr, which collapses all users of the PRE-AUTH rate-limit buckets
+// (sign-in, OAuth front door) into one bucket: legitimate aggregate traffic
+// trips the limit for everyone, and one attacker can lock all users out of
+// sign-in. Authenticated buckets are unaffected (keyed by user id).
+//
+// The algorithm walks X-Forwarded-For right-to-left, skipping trusted hops;
+// the first untrusted address is the client (entries further left are
+// client-supplied and forgeable). With no trusted CIDRs configured this is a
+// no-op.
+func RealIPFromTrustedProxies(cidrs []string) func(http.Handler) http.Handler {
+	prefixes := make([]netip.Prefix, 0, len(cidrs))
+	for _, c := range cidrs {
+		if p, err := netip.ParsePrefix(strings.TrimSpace(c)); err == nil {
+			prefixes = append(prefixes, p)
+		}
+	}
+	trusted := func(addr string) bool {
+		ip, err := netip.ParseAddr(addr)
+		if err != nil {
+			return false
+		}
+		ip = ip.Unmap()
+		for _, p := range prefixes {
+			if p.Contains(ip) {
+				return true
+			}
+		}
+		return false
+	}
+	return func(next http.Handler) http.Handler {
+		if len(prefixes) == 0 {
+			return next
+		}
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			peer, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err == nil && trusted(peer) {
+				if client := clientIPFromXFF(r.Header.Get("X-Forwarded-For"), trusted); client != "" {
+					r.RemoteAddr = net.JoinHostPort(client, "0")
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// clientIPFromXFF returns the rightmost untrusted address in an
+// X-Forwarded-For chain, or "" when none parses.
+func clientIPFromXFF(xff string, trusted func(string) bool) string {
+	if xff == "" {
+		return ""
+	}
+	parts := strings.Split(xff, ",")
+	for i := len(parts) - 1; i >= 0; i-- {
+		addr := strings.TrimSpace(parts[i])
+		if _, err := netip.ParseAddr(addr); err != nil {
+			return ""
+		}
+		if !trusted(addr) {
+			return addr
+		}
+	}
+	// Every hop was trusted: the leftmost entry is the origin.
+	return strings.TrimSpace(parts[0])
+}
 
 // RequestContext exposes request context to response-only helpers.
 func RequestContext(next http.Handler) http.Handler {
@@ -143,6 +216,12 @@ func NoCache(next http.Handler) http.Handler {
 }
 
 func sensitivePath(path string) bool {
+	// /v1/config is public, unauthenticated, and deliberately cacheable (its
+	// handler sets Cache-Control: public, max-age=300); stamping Pragma/Expires
+	// no-cache headers on it here would contradict that.
+	if path == "/v1/config" {
+		return false
+	}
 	return strings.HasPrefix(path, "/v1/") ||
 		strings.HasPrefix(path, "/oauth/") ||
 		path == "/graphql"

@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -110,5 +111,13 @@ func subject(r *http.Request) string {
 	if u, ok := auth.UserFromCtx(r.Context()); ok {
 		return "u:" + u.ID.String()
 	}
-	return "ip:" + r.RemoteAddr
+	// RemoteAddr is "IP:port"; the ephemeral source port changes per TCP
+	// connection, so key on the host portion only to avoid a per-connection
+	// bucket that defeats the limit. Fall back to the raw value if it lacks a
+	// parseable host:port form.
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	return "ip:" + host
 }

@@ -21,6 +21,13 @@ if c == 1 then
   redis.call('PEXPIRE', KEYS[1], ARGV[1])
 end
 local pttl = redis.call('PTTL', KEYS[1])
+if pttl < 0 then
+  -- Defensive: a key that lost its TTL (RDB restore stripping expires, manual
+  -- COPY/RESTORE) would otherwise count up forever and 429 the subject
+  -- permanently. Re-arm the window.
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+  pttl = tonumber(ARGV[1])
+end
 return {c, pttl}
 `)
 
@@ -48,8 +55,17 @@ func (r *redisLimiter) Allow(ctx context.Context, key string, limit int, window 
 	if !ok || len(arr) != 2 {
 		return false, 0, fmt.Errorf("ratelimit: unexpected redis reply %v", res)
 	}
-	count, _ := arr[0].(int64)
-	pttl, _ := arr[1].(int64)
+	count, ok := arr[0].(int64)
+	if !ok {
+		// Swallowing this assertion would yield count=0 (request allowed) even
+		// on a malformed reply, silently failing open and bypassing the
+		// failClosed deny path. Surface it as an error instead.
+		return false, 0, fmt.Errorf("ratelimit: unexpected redis reply type %T", arr[0])
+	}
+	pttl, ok := arr[1].(int64)
+	if !ok {
+		return false, 0, fmt.Errorf("ratelimit: unexpected redis reply type %T", arr[1])
+	}
 	if count > int64(limit) {
 		return false, time.Duration(pttl) * time.Millisecond, nil
 	}

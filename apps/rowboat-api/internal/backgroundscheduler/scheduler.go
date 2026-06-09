@@ -22,13 +22,26 @@ const (
 	defaultPageSize = 500
 	// defaultInterval / defaultLeaseTTL back the Config zero-value contract.
 	defaultInterval = 15 * time.Second
-	defaultLeaseTTL = 90 * time.Second
+	// defaultLeaseTTL MUST exceed cronGrace (due.go) so that a crash between
+	// Start returning and Complete committing cannot re-fire: by the time the
+	// lease expires the cron occurrence is already past its grace window and is
+	// no longer due, so no peer steals and re-fires it. 150s > 120s grace.
+	defaultLeaseTTL = 150 * time.Second
 	// orphanGrace is how long a run may sit in status=queued/temporal_status=
 	// Starting before it is treated as abandoned (the process died between the
 	// run insert and confirming the Temporal start). A live workflow flips
 	// temporal_status to Started within milliseconds (or Running once the worker
 	// claims it), so a Starting run this old never started.
 	orphanGrace = 5 * time.Minute
+	// staleRunGrace is how long a queued/running run may go without any
+	// heartbeat before the sweep fails it. The workflow's activity retry budget
+	// (5m start-to-close × 3 attempts per activity) bounds a live run's silent
+	// stretch well below this, so a run quiet this long has no workflow behind
+	// it (terminal bookkeeping exhausted its retries, or the workflow was
+	// terminated externally). Sweeping is safe even on a false positive:
+	// MarkRunRunning deliberately re-claims failed rows, so a live workflow
+	// self-heals a swept run.
+	staleRunGrace = 30 * time.Minute
 )
 
 // RunStarter creates an executor=api run and starts its Temporal workflow. It
@@ -39,7 +52,7 @@ type RunStarter interface {
 }
 
 // Config tunes the scheduler loop. Zero values fall back to safe defaults
-// (Interval=15s, LeaseTTL=90s, Location=UTC, PageSize=500, Clock=time.Now).
+// (Interval=15s, LeaseTTL=150s, Location=UTC, PageSize=500, Clock=time.Now).
 type Config struct {
 	Interval time.Duration    // tick cadence (CLOUD_SCHEDULER_INTERVAL)
 	LeaseTTL time.Duration    // lease lifetime handed to Leases.Acquire
@@ -71,6 +84,14 @@ func New(client *ent.Client, starter RunStarter, leases Leases, cfg Config, log 
 		cfg.Interval = defaultInterval
 	}
 	if cfg.LeaseTTL <= 0 {
+		cfg.LeaseTTL = defaultLeaseTTL
+	}
+	// Enforce the crash-safety invariant (lease TTL > cronGrace, see
+	// defaultLeaseTTL) even against an explicit misconfiguration: a shorter TTL
+	// lets a peer steal the lease while a crashed owner's occurrence is still
+	// inside grace and double-fire it. appconfig.Validate rejects this for the
+	// env-driven path; this clamp covers direct constructors.
+	if cfg.LeaseTTL <= cronGrace {
 		cfg.LeaseTTL = defaultLeaseTTL
 	}
 	if cfg.Location == nil {
@@ -135,6 +156,7 @@ func (s *Scheduler) tick(ctx context.Context) error {
 	now := s.now().In(s.cfg.Location)
 
 	s.reapStuckStartingRuns(ctx, now)
+	s.reapStaleRuns(ctx, now)
 
 	// Keyset pagination by id (ascending): each page fetches ids strictly
 	// greater than the last seen, so concurrent inserts/deletes can't shift a
@@ -170,6 +192,24 @@ func (s *Scheduler) tick(ctx context.Context) error {
 		}
 	}
 	return s.leases.CleanupExpired(ctx)
+}
+
+// startTimeout bounds a single Start RPC to strictly less than the lease TTL, so
+// a slow/hung start releases the lease (and stamps a backoff) before any peer
+// can treat the lease as expired and steal it. The margin keeps the owner's
+// give-up comfortably ahead of the peer's steal-eligibility at LeaseTTL.
+func (s *Scheduler) startTimeout() time.Duration {
+	margin := s.cfg.Interval
+	if margin < 10*time.Second {
+		margin = 10 * time.Second
+	}
+	if s.cfg.LeaseTTL > margin {
+		return s.cfg.LeaseTTL - margin
+	}
+	// Degenerate config (TTL <= margin): still keep the timeout STRICTLY below
+	// the TTL — returning the full TTL would let the owner's Start RPC be in
+	// flight at the exact moment a peer becomes steal-eligible.
+	return s.cfg.LeaseTTL * 3 / 4
 }
 
 // evaluateTask decides whether a single task's cycle should fire now and, if so,
@@ -221,7 +261,7 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 		return
 	}
 
-	due := evaluateDue(tr, task.LastRunAt, now)
+	due := evaluateDue(tr, task.LastRunAt, task.LastAttemptAt, now)
 	if due.source == "" {
 		return // not due — common case, not logged per-task to avoid noise
 	}
@@ -248,7 +288,11 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 		return
 	}
 
-	run, err := s.starter.Start(ctx, backgroundtaskruns.Params{
+	// Bound Start so a hung Temporal RPC gives up and releases the lease before
+	// the lease TTL elapses — otherwise a peer would observe the lease as expired
+	// while THIS replica is still inside Start and steal+re-fire the same cycle.
+	startCtx, cancelStart := context.WithTimeout(ctx, s.startTimeout())
+	run, err := s.starter.Start(startCtx, backgroundtaskruns.Params{
 		User:             user,
 		Task:             task,
 		Trigger:          due.source,
@@ -256,6 +300,12 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 		RunIDPrefix:      runIDPrefix(due.source),
 		Source:           backgroundtaskruns.SourceScheduler,
 	})
+	// Captured BEFORE cancelStart: after cancel, Err() is always non-nil. A
+	// non-nil value here means the Start RPC raced a deadline/shutdown — the
+	// Temporal SDK does not reliably wrap context errors, so this is the
+	// authoritative ambiguity signal.
+	startCtxErr := startCtx.Err()
+	cancelStart()
 	if err != nil {
 		// A PersistIDsError means the Temporal workflow IS already running and
 		// only persisting its ids failed — so this is a fire, not a retryable
@@ -271,10 +321,26 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 				zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
 			return
 		}
+		// An ambiguous start failure — the client-side deadline elapsed (or the
+		// scheduler is shutting down) AFTER Temporal may have durably accepted
+		// the start — must be treated as a FIRE, not released for retry. If the
+		// workflow is in fact live, it claims the failed run row and self-heals
+		// (MarkRunRunning); releasing the lease here would leave the window/cron
+		// cycle due and fire a SECOND run for the same cycle. If Temporal never
+		// received the start, the cycle is skipped (at-most-once) and the failed
+		// run row remains explicitly retryable.
+		if run != nil && (startCtxErr != nil || errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)) {
+			s.recordFire(ctx, lease, task, due.source, now, run.RunID)
+			metrics.Errors.WithLabelValues("start").Inc()
+			s.log.Warn("scheduler run start ambiguous (deadline/cancel); cycle marked fired",
+				zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
+			return
+		}
 		metrics.Errors.WithLabelValues("start").Inc()
 		// Release the lease. Stamp last_attempt_at so a persistent start failure
 		// backs off (retryBackoff) instead of re-firing every tick within the
-		// grace window; last_run_at stays unadvanced so the cycle retries.
+		// grace window; last_run_at stays unadvanced so the cycle retries (the
+		// cron grace is widened for a pending retry — see cronDueOccurrence).
 		_ = s.leases.Release(ctx, lease, err)
 		s.stampAttempt(ctx, task, now)
 		s.log.Error("scheduler start run failed",
@@ -362,6 +428,46 @@ func (s *Scheduler) reapStuckStartingRuns(ctx context.Context, now time.Time) {
 	if n > 0 {
 		metrics.OrphansReaped.Add(float64(n))
 		s.log.Warn("scheduler reaped abandoned runs", zap.Int("count", n))
+	}
+}
+
+// reapStaleRuns fails any executor=api run stuck non-terminal with no recent
+// heartbeat: a running run whose workflow exhausted the retry budget on its
+// terminal bookkeeping write (MarkRunDone/MarkRunFailed), was terminated
+// outside the HTTP cancel path (Temporal CLI/UI), or a queued run whose
+// MarkRunRunning never succeeded. Without this sweep such runs stay
+// queued/running forever — no other component reads last_heartbeat_at. A false
+// positive self-heals: MarkRunRunning re-claims failed rows, and
+// MarkRunDone/MarkRunFailed overwrite a swept row's terminal state.
+func (s *Scheduler) reapStaleRuns(ctx context.Context, now time.Time) {
+	cutoff := now.Add(-staleRunGrace)
+	n, err := s.client.BackgroundTaskRun.Update().
+		Where(
+			backgroundtaskrun.ExecutorEQ("api"),
+			backgroundtaskrun.StatusIn("queued", "running"),
+			backgroundtaskrun.CreatedAtLT(cutoff),
+			backgroundtaskrun.Or(
+				backgroundtaskrun.LastHeartbeatAtIsNil(),
+				backgroundtaskrun.LastHeartbeatAtLT(cutoff),
+			),
+		).
+		SetStatus("failed").
+		SetTemporalStatus("Failed").
+		SetErrorCode(backgroundtaskworkflow.ErrCodeActivityFailed).
+		SetError("run went silent: no heartbeat for over " + staleRunGrace.String()).
+		SetErrorDetails("scheduler reaped a run with a stale (or missing) last_heartbeat_at").
+		SetProgressMessage("Abandoned: workflow stopped heartbeating.").
+		SetCompletedAt(now).
+		AddRevision(1).
+		Save(ctx)
+	if err != nil {
+		metrics.Errors.WithLabelValues("reap").Inc()
+		s.log.Error("scheduler reap stale runs failed", zap.Error(err))
+		return
+	}
+	if n > 0 {
+		metrics.OrphansReaped.Add(float64(n))
+		s.log.Warn("scheduler reaped stale heartbeat runs", zap.Int("count", n))
 	}
 }
 

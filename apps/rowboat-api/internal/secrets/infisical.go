@@ -6,12 +6,26 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"go.uber.org/zap"
 )
+
+// infisicalClient is built once and reused across refresh ticks: a new client
+// per tick would discard the connection pool, semaphore, and circuit-breaker
+// state every interval. The policy is static (independent of cfg).
+var infisicalClient = sync.OnceValue(func() *outbound.Client {
+	return outbound.NewClient(outbound.Policy{
+		Name:                  "infisical",
+		Timeout:               10 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+		MaxConcurrent:         8,
+		MaxResponseBytes:      2 << 20,
+	})
+})
 
 // LoadInfisical fetches secrets from the configured Infisical project and
 // overlays them onto the env-seeded values. It is a no-op when Infisical is
@@ -71,14 +85,7 @@ func fetchInfisical(ctx context.Context, cfg appconfig.Config) (map[string]strin
 	}
 	req.Header.Set("Authorization", "Bearer "+cfg.InfisicalToken)
 
-	client := outbound.NewClient(outbound.Policy{
-		Name:                  "infisical",
-		Timeout:               10 * time.Second,
-		ResponseHeaderTimeout: 10 * time.Second,
-		MaxConcurrent:         8,
-		MaxResponseBytes:      2 << 20,
-	})
-	resp, err := client.Do(req)
+	resp, err := infisicalClient().Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("secrets: infisical request: %w", err)
 	}

@@ -37,12 +37,14 @@ func TestMeReturnsBillingShape(t *testing.T) {
 
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(ctx)
-	// Spend 1579 credits across two calls.
+	// Spend 1579 credits across two calls. Real charges are anchored by a
+	// `<op>.reserve` ledger row (written by quota.Reserve); usedSince attributes
+	// spend to the reserve's period, so the seeded rows must use that reason.
 	now := time.Now().UTC()
-	client.CreditLedger.Create().SetUser(u).SetDelta(-1000).SetReason("llm_call").SetRequestID(uuid.New()).SetTs(now).SaveX(ctx)
-	client.CreditLedger.Create().SetUser(u).SetDelta(-579).SetReason("llm_call").SetRequestID(uuid.New()).SetTs(now).SaveX(ctx)
+	client.CreditLedger.Create().SetUser(u).SetDelta(-1000).SetReason("llm_call.reserve").SetRequestID(uuid.New()).SetTs(now).SaveX(ctx)
+	client.CreditLedger.Create().SetUser(u).SetDelta(-579).SetReason("llm_call.reserve").SetRequestID(uuid.New()).SetTs(now).SaveX(ctx)
 
-	h := billing.New(client, 10000, nil, zap.NewNop())
+	h := billing.New(client, 10000, 0, nil, zap.NewNop())
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/me", nil)
 	req = req.WithContext(auth.WithUser(ctx, u)) // simulate RequireJWT
@@ -110,7 +112,7 @@ func TestMeReturnsBillingShape(t *testing.T) {
 
 func TestMeRejectsUnauthenticated(t *testing.T) {
 	client := testClient(t)
-	h := billing.New(client, 10000, nil, zap.NewNop())
+	h := billing.New(client, 10000, 0, nil, zap.NewNop())
 	req := httptest.NewRequest(http.MethodGet, "/v1/me", nil) // no user in ctx
 	rec := httptest.NewRecorder()
 	h.Me(rec, req)

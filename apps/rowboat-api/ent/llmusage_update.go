@@ -241,6 +241,11 @@ func (_u *LLMUsageUpdate) check() error {
 			return &ValidationError{Name: "output_tokens", err: fmt.Errorf(`ent: validator failed for field "LLMUsage.output_tokens": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CostUnits(); ok {
+		if err := llmusage.CostUnitsValidator(v); err != nil {
+			return &ValidationError{Name: "cost_units", err: fmt.Errorf(`ent: validator failed for field "LLMUsage.cost_units": %w`, err)}
+		}
+	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "LLMUsage.user"`)
 	}
@@ -573,6 +578,11 @@ func (_u *LLMUsageUpdateOne) check() error {
 	if v, ok := _u.mutation.OutputTokens(); ok {
 		if err := llmusage.OutputTokensValidator(v); err != nil {
 			return &ValidationError{Name: "output_tokens", err: fmt.Errorf(`ent: validator failed for field "LLMUsage.output_tokens": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CostUnits(); ok {
+		if err := llmusage.CostUnitsValidator(v); err != nil {
+			return &ValidationError{Name: "cost_units", err: fmt.Errorf(`ent: validator failed for field "LLMUsage.cost_units": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {

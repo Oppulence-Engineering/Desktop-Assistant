@@ -46,14 +46,23 @@ func Recoverer(log *zap.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
-				if rec := recover(); rec != nil && rec != http.ErrAbortHandler {
-					log.Error("panic recovered",
-						zap.Any("panic", rec),
-						zap.String("path", r.URL.Path),
-						zap.ByteString("stack", debug.Stack()),
-					)
-					httpx.Error(w, http.StatusInternalServerError, "internal server error", "internal_error")
+				rec := recover()
+				if rec == nil {
+					return
 				}
+				if rec == http.ErrAbortHandler {
+					// Re-panic: net/http relies on this sentinel to abort the
+					// connection without a clean terminating chunk, signalling
+					// truncation to the client. Swallowing it would deliver a
+					// truncated proxied/streamed response as if it were complete.
+					panic(rec)
+				}
+				log.Error("panic recovered",
+					zap.Any("panic", rec),
+					zap.String("path", r.URL.Path),
+					zap.ByteString("stack", debug.Stack()),
+				)
+				httpx.Error(w, http.StatusInternalServerError, "internal server error", "internal_error")
 			}()
 			next.ServeHTTP(w, r)
 		})

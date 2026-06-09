@@ -53,13 +53,27 @@ func New(ctx context.Context, cfg Config) (*Verifier, error) {
 		if cfg.IssuerURL == "" {
 			return nil, errors.New("oauthrs: JWKSURL or IssuerURL is required")
 		}
-		discovered, err := discoverJWKSURL(ctx, cfg.IssuerURL)
+		// Bound discovery with a derived context: it uses http.DefaultClient,
+		// which has no timeout of its own, so an unreachable issuer would
+		// otherwise hang startup. The refresh below must NOT use this bounded
+		// context.
+		dctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+		discovered, err := discoverJWKSURL(dctx, cfg.IssuerURL)
+		cancel()
 		if err != nil {
 			return nil, fmt.Errorf("oauthrs: discover jwks_uri from %s: %w", cfg.IssuerURL, err)
 		}
 		jwksURL = discovered
 	}
-	kf, err := keyfunc.NewDefaultCtx(ctx, []string{jwksURL})
+	// Pass the LONG-LIVED ctx so the periodic + on-demand (unknown-kid) JWKS
+	// refresh keeps working for the life of the process. Passing a soon-cancelled
+	// context permanently disables refresh, causing a full auth outage the next
+	// time the IdP rotates its signing keys (keys then 401 until restart). A
+	// timeout-bounded HTTP client keeps every fetch — including the initial one —
+	// from hanging startup despite the never-expiring ctx.
+	kf, err := keyfunc.NewDefaultOverrideCtx(ctx, []string{jwksURL}, keyfunc.Override{
+		Client: &http.Client{Timeout: 15 * time.Second},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("oauthrs: init JWKS from %s: %w", jwksURL, err)
 	}

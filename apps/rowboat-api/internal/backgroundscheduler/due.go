@@ -35,8 +35,11 @@ type dueResult struct {
 // (or, for the cloud scheduler, optimistically at fire), so a failed run leaves
 // the cycle unfired and this returns the matched trigger again. Mirrors
 // schedule/utils.ts:26-41.
-func evaluateDue(tr Triggers, lastRunAt *time.Time, now time.Time) dueResult {
-	if occ, ok := cronDueOccurrence(tr.CronExpr, lastRunAt, now); ok {
+//
+// lastAttemptAt widens the cron grace window for a pending retry — see
+// cronDueOccurrence.
+func evaluateDue(tr Triggers, lastRunAt, lastAttemptAt *time.Time, now time.Time) dueResult {
+	if occ, ok := cronDueOccurrence(tr.CronExpr, lastRunAt, lastAttemptAt, now); ok {
 		return dueResult{source: "cron", occurrence: occ}
 	}
 	if w, ok := firstDueWindow(tr, lastRunAt, now); ok {
@@ -47,8 +50,8 @@ func evaluateDue(tr Triggers, lastRunAt *time.Time, now time.Time) dueResult {
 
 // dueTimedTrigger reports which timed sub-trigger is ready to fire: "cron",
 // "window", or "" for none. Thin wrapper over evaluateDue.
-func dueTimedTrigger(tr Triggers, lastRunAt *time.Time, now time.Time) string {
-	return evaluateDue(tr, lastRunAt, now).source
+func dueTimedTrigger(tr Triggers, lastRunAt, lastAttemptAt *time.Time, now time.Time) string {
+	return evaluateDue(tr, lastRunAt, lastAttemptAt, now).source
 }
 
 // cronDueOccurrence reports whether the cron cycle is ready to fire at `now` and
@@ -64,7 +67,16 @@ func dueTimedTrigger(tr Triggers, lastRunAt *time.Time, now time.Time) string {
 // An invalid expression returns (_, false) rather than erroring, matching the
 // desktop's try/catch; the scheduler surfaces invalid cron via
 // Triggers.HasValidCron.
-func cronDueOccurrence(expr string, lastRunAt *time.Time, now time.Time) (time.Time, bool) {
+//
+// Grace: normally an occurrence is fireable for cronGrace after it ticks. But
+// when the current cycle has a PENDING RETRY — lastAttemptAt is newer than
+// lastRunAt, i.e. a start was attempted and failed without advancing the cycle
+// — the grace is widened by retryBackoff (plus a tick of slack). Without this,
+// retryBackoff (5m) > cronGrace (2m) guarantees the post-backoff retry finds
+// the occurrence already outside grace and the occurrence is silently dropped
+// on any single transient start failure. The schedule-state row (keyed by the
+// unchanged occurrence) still dedupes the retry against any concurrent fire.
+func cronDueOccurrence(expr string, lastRunAt, lastAttemptAt *time.Time, now time.Time) (time.Time, bool) {
 	if expr == "" || !gronx.IsValid(expr) {
 		return time.Time{}, false
 	}
@@ -79,16 +91,20 @@ func cronDueOccurrence(expr string, lastRunAt *time.Time, now time.Time) (time.T
 	if !lastRunAt.Before(occurrence) {
 		return time.Time{}, false
 	}
+	grace := cronGrace
+	if lastAttemptAt != nil && lastAttemptAt.After(*lastRunAt) {
+		grace += retryBackoff + time.Minute
+	}
 	// Within grace → fire; outside grace → missed, skip.
-	if now.After(occurrence.Add(cronGrace)) {
+	if now.After(occurrence.Add(grace)) {
 		return time.Time{}, false
 	}
 	return occurrence, true
 }
 
 // isCronDue reports whether the cron cycle is ready to fire at `now`.
-func isCronDue(expr string, lastRunAt *time.Time, now time.Time) bool {
-	_, ok := cronDueOccurrence(expr, lastRunAt, now)
+func isCronDue(expr string, lastRunAt, lastAttemptAt *time.Time, now time.Time) bool {
+	_, ok := cronDueOccurrence(expr, lastRunAt, lastAttemptAt, now)
 	return ok
 }
 

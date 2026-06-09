@@ -35,7 +35,13 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := randomState()
+	state, err := randomState()
+	if err != nil {
+		// crypto/rand failed: fail closed rather than emit a predictable state.
+		h.log.Error("google start: generate state", zap.Error(err))
+		h.errorPage(w, http.StatusInternalServerError, "Could not start sign-in.")
+		return
+	}
 	// Park the issued state (empty payload) so the callback can validate it and
 	// so an abandoned flow is swept by the row's TTL.
 	sealed, err := h.sealer.Seal([]byte("{}"))
@@ -93,7 +99,11 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if time.Now().After(pending.ExpiresAt) {
-		_ = h.client.OAuthPending.DeleteOne(pending).Exec(context.WithoutCancel(ctx))
+		// Detached from the request context but bounded so a stalled DB can't
+		// block the handler forever.
+		dctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		_ = h.client.OAuthPending.DeleteOne(pending).Exec(dctx)
+		cancel()
 		h.errorPage(w, http.StatusBadRequest, "Sign-in session expired. Please try again.")
 		return
 	}
@@ -184,10 +194,14 @@ func (h *Handler) errorPage(w http.ResponseWriter, code int, msg string) {
 		"<p style=\"font:14px system-ui;margin:3rem\">"+htmlEscape(msg)+"</p>")
 }
 
-func randomState() string {
+func randomState() (string, error) {
 	b := make([]byte, 24)
-	_, _ = rand.Read(b)
-	return base64.RawURLEncoding.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		// Propagate so the caller fails the request instead of returning a
+		// predictable (all-zero) state on the rare crypto/rand failure.
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 func jsString(s string) string { b, _ := json.Marshal(s); return string(b) }
