@@ -7,9 +7,6 @@ import {
   Key,
   Shield,
   Palette,
-  Monitor,
-  Sun,
-  Moon,
   Loader2,
   CheckCircle2,
   Plus,
@@ -29,7 +26,6 @@ import {
   Terminal,
   AlertTriangle,
   RefreshCw,
-  PanelRight,
   AudioLines,
 } from "@/lib/icons";
 
@@ -46,7 +42,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/contexts/theme-context";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -56,6 +51,7 @@ import { TranscriptionSettings } from "@/components/settings/transcription-setti
 import { McpSettings } from "@/components/settings/mcp-settings";
 import { SecuritySettings } from "@/components/settings/security-settings";
 import { ModelSettings, SolomonModelSettings } from "@/components/settings/model-settings";
+import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { SettingsSection } from "@/components/settings/settings-ui";
 import {
   PRODUCT_NAME,
@@ -253,119 +249,6 @@ function HelpSettings() {
           Privacy Policy
         </a>
       </div>
-    </div>
-  );
-}
-
-// --- Theme option for Appearance tab ---
-
-function ThemeOption({
-  label,
-  icon: Icon,
-  isSelected,
-  onClick,
-}: {
-  label: string;
-  icon: React.ElementType;
-  isSelected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "flex flex-col items-center gap-2 p-4 rounded-none border-2 transition-all",
-        isSelected
-          ? "border-primary bg-primary/5"
-          : "border-border hover:border-primary/50 hover:bg-muted/50",
-      )}
-    >
-      <Icon className={cn("size-6", isSelected ? "text-primary" : "text-muted-foreground")} />
-      <span className={cn("text-sm font-medium", isSelected ? "text-primary" : "text-foreground")}>
-        {label}
-      </span>
-    </button>
-  );
-}
-
-function AppearanceSettings() {
-  const {
-    theme,
-    setTheme,
-    chatPanePlacement,
-    setChatPanePlacement,
-    chatPaneSize,
-    setChatPaneSize,
-  } = useTheme();
-
-  return (
-    <div className="space-y-8">
-      <SettingsSection title="Theme" description="Select your preferred color scheme">
-        <div className="grid grid-cols-3 gap-3">
-          <ThemeOption
-            label="Light"
-            icon={Sun}
-            isSelected={theme === "light"}
-            onClick={() => setTheme("light")}
-          />
-          <ThemeOption
-            label="Dark"
-            icon={Moon}
-            isSelected={theme === "dark"}
-            onClick={() => setTheme("dark")}
-          />
-          <ThemeOption
-            label="System"
-            icon={Monitor}
-            isSelected={theme === "system"}
-            onClick={() => setTheme("system")}
-          />
-        </div>
-      </SettingsSection>
-      <SettingsSection
-        title="Chat placement"
-        description="Choose where chat sits when another pane is open"
-      >
-        <div className="grid grid-cols-2 gap-3">
-          <ThemeOption
-            label="Chat right"
-            icon={PanelRight}
-            isSelected={chatPanePlacement === "right"}
-            onClick={() => setChatPanePlacement("right")}
-          />
-          <ThemeOption
-            label="Chat middle"
-            icon={MessageCircle}
-            isSelected={chatPanePlacement === "middle"}
-            onClick={() => setChatPanePlacement("middle")}
-          />
-        </div>
-      </SettingsSection>
-      <SettingsSection
-        title="Chat size"
-        description="Choose how much width chat gets when another pane is open"
-      >
-        <div className="grid grid-cols-3 gap-3">
-          <ThemeOption
-            label="Chat smaller"
-            icon={MessageCircle}
-            isSelected={chatPaneSize === "chat-smaller"}
-            onClick={() => setChatPaneSize("chat-smaller")}
-          />
-          <ThemeOption
-            label="Chat equal"
-            icon={Monitor}
-            isSelected={chatPaneSize === "chat-equal"}
-            onClick={() => setChatPaneSize("chat-equal")}
-          />
-          <ThemeOption
-            label="Chat bigger"
-            icon={PanelRight}
-            isSelected={chatPaneSize === "chat-bigger"}
-            onClick={() => setChatPaneSize("chat-bigger")}
-          />
-        </div>
-      </SettingsSection>
     </div>
   );
 }
