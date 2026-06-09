@@ -6776,6 +6776,23 @@ type OAuthConnectionWhereInput struct {
 	ProviderEqualFold    *string  `json:"providerEqualFold,omitempty"`
 	ProviderContainsFold *string  `json:"providerContainsFold,omitempty"`
 
+	// "external_account_id" field predicates.
+	ExternalAccountID             *string  `json:"externalAccountID,omitempty"`
+	ExternalAccountIDNEQ          *string  `json:"externalAccountIDNEQ,omitempty"`
+	ExternalAccountIDIn           []string `json:"externalAccountIDIn,omitempty"`
+	ExternalAccountIDNotIn        []string `json:"externalAccountIDNotIn,omitempty"`
+	ExternalAccountIDGT           *string  `json:"externalAccountIDGT,omitempty"`
+	ExternalAccountIDGTE          *string  `json:"externalAccountIDGTE,omitempty"`
+	ExternalAccountIDLT           *string  `json:"externalAccountIDLT,omitempty"`
+	ExternalAccountIDLTE          *string  `json:"externalAccountIDLTE,omitempty"`
+	ExternalAccountIDContains     *string  `json:"externalAccountIDContains,omitempty"`
+	ExternalAccountIDHasPrefix    *string  `json:"externalAccountIDHasPrefix,omitempty"`
+	ExternalAccountIDHasSuffix    *string  `json:"externalAccountIDHasSuffix,omitempty"`
+	ExternalAccountIDIsNil        bool     `json:"externalAccountIDIsNil,omitempty"`
+	ExternalAccountIDNotNil       bool     `json:"externalAccountIDNotNil,omitempty"`
+	ExternalAccountIDEqualFold    *string  `json:"externalAccountIDEqualFold,omitempty"`
+	ExternalAccountIDContainsFold *string  `json:"externalAccountIDContainsFold,omitempty"`
+
 	// "user" edge predicates.
 	HasUser     *bool             `json:"hasUser,omitempty"`
 	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
@@ -6962,6 +6979,51 @@ func (i *OAuthConnectionWhereInput) P() (predicate.OAuthConnection, error) {
 	}
 	if i.ProviderContainsFold != nil {
 		predicates = append(predicates, oauthconnection.ProviderContainsFold(*i.ProviderContainsFold))
+	}
+	if i.ExternalAccountID != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDEQ(*i.ExternalAccountID))
+	}
+	if i.ExternalAccountIDNEQ != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDNEQ(*i.ExternalAccountIDNEQ))
+	}
+	if len(i.ExternalAccountIDIn) > 0 {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDIn(i.ExternalAccountIDIn...))
+	}
+	if len(i.ExternalAccountIDNotIn) > 0 {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDNotIn(i.ExternalAccountIDNotIn...))
+	}
+	if i.ExternalAccountIDGT != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDGT(*i.ExternalAccountIDGT))
+	}
+	if i.ExternalAccountIDGTE != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDGTE(*i.ExternalAccountIDGTE))
+	}
+	if i.ExternalAccountIDLT != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDLT(*i.ExternalAccountIDLT))
+	}
+	if i.ExternalAccountIDLTE != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDLTE(*i.ExternalAccountIDLTE))
+	}
+	if i.ExternalAccountIDContains != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDContains(*i.ExternalAccountIDContains))
+	}
+	if i.ExternalAccountIDHasPrefix != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDHasPrefix(*i.ExternalAccountIDHasPrefix))
+	}
+	if i.ExternalAccountIDHasSuffix != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDHasSuffix(*i.ExternalAccountIDHasSuffix))
+	}
+	if i.ExternalAccountIDIsNil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDIsNil())
+	}
+	if i.ExternalAccountIDNotNil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDNotNil())
+	}
+	if i.ExternalAccountIDEqualFold != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDEqualFold(*i.ExternalAccountIDEqualFold))
+	}
+	if i.ExternalAccountIDContainsFold != nil {
+		predicates = append(predicates, oauthconnection.ExternalAccountIDContainsFold(*i.ExternalAccountIDContainsFold))
 	}
 
 	if i.HasUser != nil {

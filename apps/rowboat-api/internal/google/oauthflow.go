@@ -147,19 +147,26 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		ExpiresIn    int64  `json:"expires_in"`
 		Scope        string `json:"scope"`
 		TokenType    string `json:"token_type"`
+		IDToken      string `json:"id_token"` // present: scopes include openid email
 	}
 	if err := json.Unmarshal(body, &gtok); err != nil || gtok.AccessToken == "" {
 		h.deepLink(w, state, "error")
 		return
 	}
 
-	payload := parkedPayload{tokenBundle: tokenBundle{
-		AccessToken:  gtok.AccessToken,
-		RefreshToken: gtok.RefreshToken,
-		ExpiresAt:    time.Now().Add(time.Duration(gtok.ExpiresIn) * time.Second).Unix(),
-		Scope:        gtok.Scope,
-		TokenType:    defaultStr(gtok.TokenType, "Bearer"),
-	}}
+	payload := parkedPayload{
+		tokenBundle: tokenBundle{
+			AccessToken:  gtok.AccessToken,
+			RefreshToken: gtok.RefreshToken,
+			ExpiresAt:    time.Now().Add(time.Duration(gtok.ExpiresIn) * time.Second).Unix(),
+			Scope:        gtok.Scope,
+			TokenType:    defaultStr(gtok.TokenType, "Bearer"),
+		},
+		// The Google account email keys webhook user resolution (RFC 003).
+		// Decoding without signature verification is fine here: the id_token
+		// came straight from Google's token endpoint over TLS.
+		AccountEmail: emailFromIDToken(gtok.IDToken),
+	}
 	raw, _ := json.Marshal(payload)
 	sealed, err := h.sealer.Seal(raw)
 	if err != nil {
@@ -202,6 +209,28 @@ func randomState() (string, error) {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+// emailFromIDToken extracts the email claim from a Google id_token by
+// decoding its payload segment. No signature check: callers only pass tokens
+// received directly from Google's TLS token endpoint, and the value is used
+// as an account label, not as proof of authentication.
+func emailFromIDToken(idToken string) string {
+	parts := strings.Split(idToken, ".")
+	if len(parts) != 3 {
+		return ""
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return ""
+	}
+	var claims struct {
+		Email string `json:"email"`
+	}
+	if err := json.Unmarshal(raw, &claims); err != nil {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(claims.Email))
 }
 
 func jsString(s string) string { b, _ := json.Marshal(s); return string(b) }

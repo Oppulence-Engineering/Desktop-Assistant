@@ -318,12 +318,13 @@ type ComplexityRoot struct {
 	}
 
 	OAuthConnection struct {
-		CreatedAt func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Provider  func(childComplexity int) int
-		Scopes    func(childComplexity int) int
-		UpdatedAt func(childComplexity int) int
-		User      func(childComplexity int) int
+		CreatedAt         func(childComplexity int) int
+		ExternalAccountID func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Provider          func(childComplexity int) int
+		Scopes            func(childComplexity int) int
+		UpdatedAt         func(childComplexity int) int
+		User              func(childComplexity int) int
 	}
 
 	OAuthPending struct {
@@ -1610,6 +1611,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.OAuthConnection.CreatedAt(childComplexity), true
+	case "OAuthConnection.externalAccountID":
+		if e.ComplexityRoot.OAuthConnection.ExternalAccountID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthConnection.ExternalAccountID(childComplexity), true
 	case "OAuthConnection.id":
 		if e.ComplexityRoot.OAuthConnection.ID == nil {
 			break
@@ -2639,6 +2646,8 @@ func (ec *executionContext) childFields_OAuthConnection(ctx context.Context, fie
 		return ec.fieldContext_OAuthConnection_provider(ctx, field)
 	case "scopes":
 		return ec.fieldContext_OAuthConnection_scopes(ctx, field)
+	case "externalAccountID":
+		return ec.fieldContext_OAuthConnection_externalAccountID(ctx, field)
 	case "user":
 		return ec.fieldContext_OAuthConnection_user(ctx, field)
 	}
@@ -8395,6 +8404,29 @@ func (ec *executionContext) _OAuthConnection_scopes(ctx context.Context, field g
 	)
 }
 func (ec *executionContext) fieldContext_OAuthConnection_scopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthConnection", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthConnection_externalAccountID(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthConnection_externalAccountID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExternalAccountID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthConnection_externalAccountID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("OAuthConnection", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -21493,7 +21525,7 @@ func (ec *executionContext) unmarshalInputOAuthConnectionWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerEqualFold", "providerContainsFold", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerEqualFold", "providerContainsFold", "externalAccountID", "externalAccountIDNEQ", "externalAccountIDIn", "externalAccountIDNotIn", "externalAccountIDGT", "externalAccountIDGTE", "externalAccountIDLT", "externalAccountIDLTE", "externalAccountIDContains", "externalAccountIDHasPrefix", "externalAccountIDHasSuffix", "externalAccountIDIsNil", "externalAccountIDNotNil", "externalAccountIDEqualFold", "externalAccountIDContainsFold", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -21780,6 +21812,111 @@ func (ec *executionContext) unmarshalInputOAuthConnectionWhereInput(ctx context.
 				return it, err
 			}
 			it.ProviderContainsFold = data
+		case "externalAccountID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountID = data
+		case "externalAccountIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDNEQ = data
+		case "externalAccountIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDIn = data
+		case "externalAccountIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDNotIn = data
+		case "externalAccountIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDGT = data
+		case "externalAccountIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDGTE = data
+		case "externalAccountIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDLT = data
+		case "externalAccountIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDLTE = data
+		case "externalAccountIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDContains = data
+		case "externalAccountIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDHasPrefix = data
+		case "externalAccountIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDHasSuffix = data
+		case "externalAccountIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDIsNil = data
+		case "externalAccountIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDNotNil = data
+		case "externalAccountIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDEqualFold = data
+		case "externalAccountIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalAccountIDContainsFold = data
 		case "hasUser":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUser"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -25388,6 +25525,8 @@ func (ec *executionContext) _OAuthConnection(ctx context.Context, sel ast.Select
 			}
 		case "scopes":
 			out.Values[i] = ec._OAuthConnection_scopes(ctx, field, obj)
+		case "externalAccountID":
+			out.Values[i] = ec._OAuthConnection_externalAccountID(ctx, field, obj)
 		case "user":
 			field := field
 

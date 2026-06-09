@@ -13780,6 +13780,7 @@ type OAuthConnectionMutation struct {
 	refresh_token_encrypted *[]byte
 	scopes                  *[]string
 	appendscopes            []string
+	external_account_id     *string
 	clearedFields           map[string]struct{}
 	user                    *uuid.UUID
 	cleareduser             bool
@@ -14101,6 +14102,55 @@ func (m *OAuthConnectionMutation) ResetScopes() {
 	delete(m.clearedFields, oauthconnection.FieldScopes)
 }
 
+// SetExternalAccountID sets the "external_account_id" field.
+func (m *OAuthConnectionMutation) SetExternalAccountID(s string) {
+	m.external_account_id = &s
+}
+
+// ExternalAccountID returns the value of the "external_account_id" field in the mutation.
+func (m *OAuthConnectionMutation) ExternalAccountID() (r string, exists bool) {
+	v := m.external_account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalAccountID returns the old "external_account_id" field's value of the OAuthConnection entity.
+// If the OAuthConnection object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OAuthConnectionMutation) OldExternalAccountID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalAccountID: %w", err)
+	}
+	return oldValue.ExternalAccountID, nil
+}
+
+// ClearExternalAccountID clears the value of the "external_account_id" field.
+func (m *OAuthConnectionMutation) ClearExternalAccountID() {
+	m.external_account_id = nil
+	m.clearedFields[oauthconnection.FieldExternalAccountID] = struct{}{}
+}
+
+// ExternalAccountIDCleared returns if the "external_account_id" field was cleared in this mutation.
+func (m *OAuthConnectionMutation) ExternalAccountIDCleared() bool {
+	_, ok := m.clearedFields[oauthconnection.FieldExternalAccountID]
+	return ok
+}
+
+// ResetExternalAccountID resets all changes to the "external_account_id" field.
+func (m *OAuthConnectionMutation) ResetExternalAccountID() {
+	m.external_account_id = nil
+	delete(m.clearedFields, oauthconnection.FieldExternalAccountID)
+}
+
 // SetUserID sets the "user" edge to the User entity by id.
 func (m *OAuthConnectionMutation) SetUserID(id uuid.UUID) {
 	m.user = &id
@@ -14174,7 +14224,7 @@ func (m *OAuthConnectionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OAuthConnectionMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, oauthconnection.FieldCreatedAt)
 	}
@@ -14189,6 +14239,9 @@ func (m *OAuthConnectionMutation) Fields() []string {
 	}
 	if m.scopes != nil {
 		fields = append(fields, oauthconnection.FieldScopes)
+	}
+	if m.external_account_id != nil {
+		fields = append(fields, oauthconnection.FieldExternalAccountID)
 	}
 	return fields
 }
@@ -14208,6 +14261,8 @@ func (m *OAuthConnectionMutation) Field(name string) (ent.Value, bool) {
 		return m.RefreshTokenEncrypted()
 	case oauthconnection.FieldScopes:
 		return m.Scopes()
+	case oauthconnection.FieldExternalAccountID:
+		return m.ExternalAccountID()
 	}
 	return nil, false
 }
@@ -14227,6 +14282,8 @@ func (m *OAuthConnectionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldRefreshTokenEncrypted(ctx)
 	case oauthconnection.FieldScopes:
 		return m.OldScopes(ctx)
+	case oauthconnection.FieldExternalAccountID:
+		return m.OldExternalAccountID(ctx)
 	}
 	return nil, fmt.Errorf("unknown OAuthConnection field %s", name)
 }
@@ -14271,6 +14328,13 @@ func (m *OAuthConnectionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetScopes(v)
 		return nil
+	case oauthconnection.FieldExternalAccountID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalAccountID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnection field %s", name)
 }
@@ -14304,6 +14368,9 @@ func (m *OAuthConnectionMutation) ClearedFields() []string {
 	if m.FieldCleared(oauthconnection.FieldScopes) {
 		fields = append(fields, oauthconnection.FieldScopes)
 	}
+	if m.FieldCleared(oauthconnection.FieldExternalAccountID) {
+		fields = append(fields, oauthconnection.FieldExternalAccountID)
+	}
 	return fields
 }
 
@@ -14320,6 +14387,9 @@ func (m *OAuthConnectionMutation) ClearField(name string) error {
 	switch name {
 	case oauthconnection.FieldScopes:
 		m.ClearScopes()
+		return nil
+	case oauthconnection.FieldExternalAccountID:
+		m.ClearExternalAccountID()
 		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnection nullable field %s", name)
@@ -14343,6 +14413,9 @@ func (m *OAuthConnectionMutation) ResetField(name string) error {
 		return nil
 	case oauthconnection.FieldScopes:
 		m.ResetScopes()
+		return nil
+	case oauthconnection.FieldExternalAccountID:
+		m.ResetExternalAccountID()
 		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnection field %s", name)
@@ -14437,6 +14510,7 @@ type OAuthConnectionHistoryMutation struct {
 	refresh_token_encrypted *[]byte
 	scopes                  *[]string
 	appendscopes            []string
+	external_account_id     *string
 	clearedFields           map[string]struct{}
 	done                    bool
 	oldValue                func(context.Context) (*OAuthConnectionHistory, error)
@@ -14877,6 +14951,55 @@ func (m *OAuthConnectionHistoryMutation) ResetScopes() {
 	delete(m.clearedFields, oauthconnectionhistory.FieldScopes)
 }
 
+// SetExternalAccountID sets the "external_account_id" field.
+func (m *OAuthConnectionHistoryMutation) SetExternalAccountID(s string) {
+	m.external_account_id = &s
+}
+
+// ExternalAccountID returns the value of the "external_account_id" field in the mutation.
+func (m *OAuthConnectionHistoryMutation) ExternalAccountID() (r string, exists bool) {
+	v := m.external_account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalAccountID returns the old "external_account_id" field's value of the OAuthConnectionHistory entity.
+// If the OAuthConnectionHistory object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OAuthConnectionHistoryMutation) OldExternalAccountID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalAccountID: %w", err)
+	}
+	return oldValue.ExternalAccountID, nil
+}
+
+// ClearExternalAccountID clears the value of the "external_account_id" field.
+func (m *OAuthConnectionHistoryMutation) ClearExternalAccountID() {
+	m.external_account_id = nil
+	m.clearedFields[oauthconnectionhistory.FieldExternalAccountID] = struct{}{}
+}
+
+// ExternalAccountIDCleared returns if the "external_account_id" field was cleared in this mutation.
+func (m *OAuthConnectionHistoryMutation) ExternalAccountIDCleared() bool {
+	_, ok := m.clearedFields[oauthconnectionhistory.FieldExternalAccountID]
+	return ok
+}
+
+// ResetExternalAccountID resets all changes to the "external_account_id" field.
+func (m *OAuthConnectionHistoryMutation) ResetExternalAccountID() {
+	m.external_account_id = nil
+	delete(m.clearedFields, oauthconnectionhistory.FieldExternalAccountID)
+}
+
 // Where appends a list predicates to the OAuthConnectionHistoryMutation builder.
 func (m *OAuthConnectionHistoryMutation) Where(ps ...predicate.OAuthConnectionHistory) {
 	m.predicates = append(m.predicates, ps...)
@@ -14911,7 +15034,7 @@ func (m *OAuthConnectionHistoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OAuthConnectionHistoryMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, oauthconnectionhistory.FieldCreatedAt)
 	}
@@ -14935,6 +15058,9 @@ func (m *OAuthConnectionHistoryMutation) Fields() []string {
 	}
 	if m.scopes != nil {
 		fields = append(fields, oauthconnectionhistory.FieldScopes)
+	}
+	if m.external_account_id != nil {
+		fields = append(fields, oauthconnectionhistory.FieldExternalAccountID)
 	}
 	return fields
 }
@@ -14960,6 +15086,8 @@ func (m *OAuthConnectionHistoryMutation) Field(name string) (ent.Value, bool) {
 		return m.RefreshTokenEncrypted()
 	case oauthconnectionhistory.FieldScopes:
 		return m.Scopes()
+	case oauthconnectionhistory.FieldExternalAccountID:
+		return m.ExternalAccountID()
 	}
 	return nil, false
 }
@@ -14985,6 +15113,8 @@ func (m *OAuthConnectionHistoryMutation) OldField(ctx context.Context, name stri
 		return m.OldRefreshTokenEncrypted(ctx)
 	case oauthconnectionhistory.FieldScopes:
 		return m.OldScopes(ctx)
+	case oauthconnectionhistory.FieldExternalAccountID:
+		return m.OldExternalAccountID(ctx)
 	}
 	return nil, fmt.Errorf("unknown OAuthConnectionHistory field %s", name)
 }
@@ -15050,6 +15180,13 @@ func (m *OAuthConnectionHistoryMutation) SetField(name string, value ent.Value) 
 		}
 		m.SetScopes(v)
 		return nil
+	case oauthconnectionhistory.FieldExternalAccountID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalAccountID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnectionHistory field %s", name)
 }
@@ -15086,6 +15223,9 @@ func (m *OAuthConnectionHistoryMutation) ClearedFields() []string {
 	if m.FieldCleared(oauthconnectionhistory.FieldScopes) {
 		fields = append(fields, oauthconnectionhistory.FieldScopes)
 	}
+	if m.FieldCleared(oauthconnectionhistory.FieldExternalAccountID) {
+		fields = append(fields, oauthconnectionhistory.FieldExternalAccountID)
+	}
 	return fields
 }
 
@@ -15105,6 +15245,9 @@ func (m *OAuthConnectionHistoryMutation) ClearField(name string) error {
 		return nil
 	case oauthconnectionhistory.FieldScopes:
 		m.ClearScopes()
+		return nil
+	case oauthconnectionhistory.FieldExternalAccountID:
+		m.ClearExternalAccountID()
 		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnectionHistory nullable field %s", name)
@@ -15137,6 +15280,9 @@ func (m *OAuthConnectionHistoryMutation) ResetField(name string) error {
 		return nil
 	case oauthconnectionhistory.FieldScopes:
 		m.ResetScopes()
+		return nil
+	case oauthconnectionhistory.FieldExternalAccountID:
+		m.ResetExternalAccountID()
 		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnectionHistory field %s", name)

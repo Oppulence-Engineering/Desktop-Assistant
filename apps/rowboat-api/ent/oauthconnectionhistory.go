@@ -35,8 +35,10 @@ type OAuthConnectionHistory struct {
 	// RefreshTokenEncrypted holds the value of the "refresh_token_encrypted" field.
 	RefreshTokenEncrypted []byte `json:"-"`
 	// Scopes holds the value of the "scopes" field.
-	Scopes       []string `json:"scopes,omitempty"`
-	selectValues sql.SelectValues
+	Scopes []string `json:"scopes,omitempty"`
+	// ExternalAccountID holds the value of the "external_account_id" field.
+	ExternalAccountID string `json:"external_account_id,omitempty"`
+	selectValues      sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -46,7 +48,7 @@ func (*OAuthConnectionHistory) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case oauthconnectionhistory.FieldRefreshTokenEncrypted, oauthconnectionhistory.FieldScopes:
 			values[i] = new([]byte)
-		case oauthconnectionhistory.FieldOperation, oauthconnectionhistory.FieldProvider:
+		case oauthconnectionhistory.FieldOperation, oauthconnectionhistory.FieldProvider, oauthconnectionhistory.FieldExternalAccountID:
 			values[i] = new(sql.NullString)
 		case oauthconnectionhistory.FieldCreatedAt, oauthconnectionhistory.FieldUpdatedAt, oauthconnectionhistory.FieldHistoryTime:
 			values[i] = new(sql.NullTime)
@@ -123,6 +125,12 @@ func (_m *OAuthConnectionHistory) assignValues(columns []string, values []any) e
 					return fmt.Errorf("unmarshal field scopes: %w", err)
 				}
 			}
+		case oauthconnectionhistory.FieldExternalAccountID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field external_account_id", values[i])
+			} else if value.Valid {
+				_m.ExternalAccountID = value.String
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -181,6 +189,9 @@ func (_m *OAuthConnectionHistory) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))
+	builder.WriteString(", ")
+	builder.WriteString("external_account_id=")
+	builder.WriteString(_m.ExternalAccountID)
 	builder.WriteByte(')')
 	return builder.String()
 }

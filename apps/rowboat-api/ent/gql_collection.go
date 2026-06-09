@@ -1416,6 +1416,11 @@ func (_q *OAuthConnectionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, oauthconnection.FieldScopes)
 				fieldSeen[oauthconnection.FieldScopes] = struct{}{}
 			}
+		case "externalAccountID":
+			if _, ok := fieldSeen[oauthconnection.FieldExternalAccountID]; !ok {
+				selectedFields = append(selectedFields, oauthconnection.FieldExternalAccountID)
+				fieldSeen[oauthconnection.FieldExternalAccountID] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:

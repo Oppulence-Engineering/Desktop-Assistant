@@ -521,6 +521,7 @@ var (
 		{Name: "provider", Type: field.TypeString},
 		{Name: "refresh_token_encrypted", Type: field.TypeBytes},
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "external_account_id", Type: field.TypeString, Nullable: true},
 		{Name: "user_oauth_connections", Type: field.TypeUUID},
 	}
 	// OauthConnectionsTable holds the schema information for the "oauth_connections" table.
@@ -531,7 +532,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "oauth_connections_users_oauth_connections",
-				Columns:    []*schema.Column{OauthConnectionsColumns[6]},
+				Columns:    []*schema.Column{OauthConnectionsColumns[7]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -540,6 +541,11 @@ var (
 			{
 				Name:    "oauthconnection_provider_user_oauth_connections",
 				Unique:  true,
+				Columns: []*schema.Column{OauthConnectionsColumns[3], OauthConnectionsColumns[7]},
+			},
+			{
+				Name:    "oauthconnection_provider_external_account_id",
+				Unique:  false,
 				Columns: []*schema.Column{OauthConnectionsColumns[3], OauthConnectionsColumns[6]},
 			},
 		},
@@ -555,6 +561,7 @@ var (
 		{Name: "provider", Type: field.TypeString},
 		{Name: "refresh_token_encrypted", Type: field.TypeBytes},
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "external_account_id", Type: field.TypeString, Nullable: true},
 	}
 	// OauthConnectionHistoriesTable holds the schema information for the "oauth_connection_histories" table.
 	OauthConnectionHistoriesTable = &schema.Table{

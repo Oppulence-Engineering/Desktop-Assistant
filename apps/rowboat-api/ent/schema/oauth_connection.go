@@ -33,6 +33,11 @@ func (OAuthConnection) Fields() []ent.Field {
 		field.String("provider"), // google
 		field.Bytes("refresh_token_encrypted").Sensitive(),
 		field.Strings("scopes").Optional(),
+		// external_account_id is the provider-side account key (google: the
+		// account email; slack: the team id). Provider webhooks resolve the
+		// owning Rowboat user through it (RFC 003). Optional: connections made
+		// before this field exists backfill on their next reconnect.
+		field.String("external_account_id").Optional(),
 	}
 }
 
@@ -47,5 +52,9 @@ func (OAuthConnection) Edges() []ent.Edge {
 func (OAuthConnection) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("provider").Edges("user").Unique(),
+		// Webhook user resolution: (provider, external_account_id) lookups run
+		// under the internal context. Non-unique: nothing prevents two Rowboat
+		// users from connecting the same provider account.
+		index.Fields("provider", "external_account_id"),
 	}
 }

@@ -3014,6 +3014,9 @@
             "format": "date-time",
             "type": "string"
           },
+          "external_account_id": {
+            "type": "string"
+          },
           "id": {
             "description": "Stable UUID primary key.",
             "example": "123e4567-e89b-12d3-a456-426614174000",
@@ -3070,6 +3073,9 @@
             "description": "Row creation timestamp.",
             "example": "2026-06-04T20:38:00Z",
             "format": "date-time",
+            "type": "string"
+          },
+          "external_account_id": {
             "type": "string"
           },
           "history_time": {

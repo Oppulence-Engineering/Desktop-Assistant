@@ -2431,6 +2431,7 @@ type OAuthConnection implements Node {
   updatedAt: Time!
   provider: String!
   scopes: [String!]
+  externalAccountID: String
   user: User!
 }
 """
@@ -2490,6 +2491,24 @@ input OAuthConnectionWhereInput {
   providerHasSuffix: String
   providerEqualFold: String
   providerContainsFold: String
+  """
+  external_account_id field predicates
+  """
+  externalAccountID: String
+  externalAccountIDNEQ: String
+  externalAccountIDIn: [String!]
+  externalAccountIDNotIn: [String!]
+  externalAccountIDGT: String
+  externalAccountIDGTE: String
+  externalAccountIDLT: String
+  externalAccountIDLTE: String
+  externalAccountIDContains: String
+  externalAccountIDHasPrefix: String
+  externalAccountIDHasSuffix: String
+  externalAccountIDIsNil: Boolean
+  externalAccountIDNotNil: Boolean
+  externalAccountIDEqualFold: String
+  externalAccountIDContainsFold: String
   """
   user edge predicates
   """

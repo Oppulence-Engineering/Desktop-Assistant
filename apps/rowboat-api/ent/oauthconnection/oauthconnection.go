@@ -25,6 +25,8 @@ const (
 	FieldRefreshTokenEncrypted = "refresh_token_encrypted"
 	// FieldScopes holds the string denoting the scopes field in the database.
 	FieldScopes = "scopes"
+	// FieldExternalAccountID holds the string denoting the external_account_id field in the database.
+	FieldExternalAccountID = "external_account_id"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// Table holds the table name of the oauthconnection in the database.
@@ -46,6 +48,7 @@ var Columns = []string{
 	FieldProvider,
 	FieldRefreshTokenEncrypted,
 	FieldScopes,
+	FieldExternalAccountID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "oauth_connections"
@@ -101,6 +104,11 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByProvider orders the results by the provider field.
 func ByProvider(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProvider, opts...).ToFunc()
+}
+
+// ByExternalAccountID orders the results by the external_account_id field.
+func ByExternalAccountID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExternalAccountID, opts...).ToFunc()
 }
 
 // ByUserField orders the results by user field.

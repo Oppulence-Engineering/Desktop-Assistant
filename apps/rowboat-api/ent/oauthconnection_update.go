@@ -75,6 +75,26 @@ func (_u *OAuthConnectionUpdate) ClearScopes() *OAuthConnectionUpdate {
 	return _u
 }
 
+// SetExternalAccountID sets the "external_account_id" field.
+func (_u *OAuthConnectionUpdate) SetExternalAccountID(v string) *OAuthConnectionUpdate {
+	_u.mutation.SetExternalAccountID(v)
+	return _u
+}
+
+// SetNillableExternalAccountID sets the "external_account_id" field if the given value is not nil.
+func (_u *OAuthConnectionUpdate) SetNillableExternalAccountID(v *string) *OAuthConnectionUpdate {
+	if v != nil {
+		_u.SetExternalAccountID(*v)
+	}
+	return _u
+}
+
+// ClearExternalAccountID clears the value of the "external_account_id" field.
+func (_u *OAuthConnectionUpdate) ClearExternalAccountID() *OAuthConnectionUpdate {
+	_u.mutation.ClearExternalAccountID()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *OAuthConnectionUpdate) SetUserID(id uuid.UUID) *OAuthConnectionUpdate {
 	_u.mutation.SetUserID(id)
@@ -173,6 +193,12 @@ func (_u *OAuthConnectionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if _u.mutation.ScopesCleared() {
 		_spec.ClearField(oauthconnection.FieldScopes, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.ExternalAccountID(); ok {
+		_spec.SetField(oauthconnection.FieldExternalAccountID, field.TypeString, value)
+	}
+	if _u.mutation.ExternalAccountIDCleared() {
+		_spec.ClearField(oauthconnection.FieldExternalAccountID, field.TypeString)
+	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -263,6 +289,26 @@ func (_u *OAuthConnectionUpdateOne) AppendScopes(v []string) *OAuthConnectionUpd
 // ClearScopes clears the value of the "scopes" field.
 func (_u *OAuthConnectionUpdateOne) ClearScopes() *OAuthConnectionUpdateOne {
 	_u.mutation.ClearScopes()
+	return _u
+}
+
+// SetExternalAccountID sets the "external_account_id" field.
+func (_u *OAuthConnectionUpdateOne) SetExternalAccountID(v string) *OAuthConnectionUpdateOne {
+	_u.mutation.SetExternalAccountID(v)
+	return _u
+}
+
+// SetNillableExternalAccountID sets the "external_account_id" field if the given value is not nil.
+func (_u *OAuthConnectionUpdateOne) SetNillableExternalAccountID(v *string) *OAuthConnectionUpdateOne {
+	if v != nil {
+		_u.SetExternalAccountID(*v)
+	}
+	return _u
+}
+
+// ClearExternalAccountID clears the value of the "external_account_id" field.
+func (_u *OAuthConnectionUpdateOne) ClearExternalAccountID() *OAuthConnectionUpdateOne {
+	_u.mutation.ClearExternalAccountID()
 	return _u
 }
 
@@ -393,6 +439,12 @@ func (_u *OAuthConnectionUpdateOne) sqlSave(ctx context.Context) (_node *OAuthCo
 	}
 	if _u.mutation.ScopesCleared() {
 		_spec.ClearField(oauthconnection.FieldScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ExternalAccountID(); ok {
+		_spec.SetField(oauthconnection.FieldExternalAccountID, field.TypeString, value)
+	}
+	if _u.mutation.ExternalAccountIDCleared() {
+		_spec.ClearField(oauthconnection.FieldExternalAccountID, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
