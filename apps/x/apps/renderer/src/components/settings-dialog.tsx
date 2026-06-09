@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Plus,
   X,
+  Trash2,
   Wrench,
   Search,
   ChevronRight,
@@ -681,30 +682,33 @@ function TagGroupTable({
   getGlobalIndex: (type: string, localIndex: number) => number;
   isEmail: boolean;
 }) {
+  const cols = isEmail ? "grid-cols-[110px_1fr_1fr_64px_28px]" : "grid-cols-[110px_1fr_1fr_28px]";
   return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
         <button
           onClick={onToggle}
-          className="flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronRight
             className={cn("size-3.5 transition-transform", !collapsed && "rotate-90")}
           />
           {group.label}
-          <span className="text-[10px] ml-0.5">({group.tags.length})</span>
+          <span className="rounded-full bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground">
+            {group.tags.length}
+          </span>
         </button>
-        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={onAdd}>
-          <Plus className="size-3 mr-1" />
+        <Button variant="ghost" size="sm" className="h-6 gap-1 px-2 text-xs" onClick={onAdd}>
+          <Plus className="size-3" />
           Add
         </Button>
       </div>
       {!collapsed && group.tags.length > 0 && (
-        <div className="border rounded-none overflow-hidden">
+        <div className="overflow-hidden rounded-none border">
           <div
             className={cn(
-              "gap-1 bg-muted/50 px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider grid",
-              isEmail ? "grid-cols-[100px_1fr_1fr_60px_24px]" : "grid-cols-[100px_1fr_1fr_24px]",
+              "grid gap-1 bg-muted/40 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground",
+              cols,
             )}
           >
             <div>Label</div>
@@ -715,7 +719,7 @@ function TagGroupTable({
                 className="text-center"
                 title="Emails with this label will be excluded from creating notes"
               >
-                Skip notes
+                Skip note
               </div>
             )}
             <div />
@@ -726,16 +730,14 @@ function TagGroupTable({
               <div
                 key={globalIdx}
                 className={cn(
-                  "gap-1 border-t px-2 py-0.5 items-center grid",
-                  isEmail
-                    ? "grid-cols-[100px_1fr_1fr_60px_24px]"
-                    : "grid-cols-[100px_1fr_1fr_24px]",
+                  "grid items-center gap-1 border-t px-2.5 py-1 transition-colors hover:bg-muted/20",
+                  cols,
                 )}
               >
                 <Input
                   value={tag.tag}
                   onChange={(e) => onUpdate(globalIdx, "tag", e.target.value)}
-                  className="h-7 text-xs"
+                  className="h-7 text-xs font-medium"
                   placeholder="tag-name"
                   title={tag.tag}
                 />
@@ -766,9 +768,10 @@ function TagGroupTable({
                 )}
                 <button
                   onClick={() => onRemove(globalIdx)}
-                  className="flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                  className="flex items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
+                  aria-label="Remove tag"
                 >
-                  <X className="size-3.5" />
+                  <Trash2 className="size-3.5" />
                 </button>
               </div>
             );
@@ -776,7 +779,13 @@ function TagGroupTable({
         </div>
       )}
       {!collapsed && group.tags.length === 0 && (
-        <div className="text-xs text-muted-foreground italic px-2">No tags in this group</div>
+        <button
+          onClick={onAdd}
+          className="flex w-full items-center justify-center gap-1.5 rounded-none border border-dashed py-3 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+        >
+          <Plus className="size-3.5" />
+          Add a {group.label.toLowerCase()} tag
+        </button>
       )}
     </div>
   );
@@ -937,31 +946,29 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center gap-1 mb-3 border-b">
-        <button
-          onClick={() => setActiveSection("notes")}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-b-2 -mb-px transition-colors",
-            activeSection === "notes"
-              ? "border-foreground text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground",
-          )}
-        >
-          <BookOpen className="size-3.5" />
-          Note Tags
-        </button>
-        <button
-          onClick={() => setActiveSection("email")}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-b-2 -mb-px transition-colors",
-            activeSection === "email"
-              ? "border-foreground text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground",
-          )}
-        >
-          <Mail className="size-3.5" />
-          Email Labels
-        </button>
+      <div className="mb-4 shrink-0">
+        <div className="inline-flex rounded-none border bg-muted/40 p-0.5">
+          {(
+            [
+              { id: "notes", label: "Note Tags", icon: BookOpen },
+              { id: "email", label: "Email Labels", icon: Mail },
+            ] as const
+          ).map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setActiveSection(s.id)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium transition-colors",
+                activeSection === s.id
+                  ? "bg-background text-foreground shadow-[0_1px_2px_rgb(16_24_40_/_0.06)] ring-1 ring-border"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <s.icon className="size-3.5" />
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto space-y-4 min-h-0">
         {currentGroups.map((group) => (
