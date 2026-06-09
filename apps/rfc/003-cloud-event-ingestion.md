@@ -3,7 +3,7 @@
 |                  |                                                                                                                                                     |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **RFC**          | 003                                                                                                                                                 |
-| **Status**       | Draft                                                                                                                                               |
+| **Status**       | Implemented (stages 1–5) on `rfc-003-cloud-event-ingestion` — ingestion + dedupe, Temporal route workflow + two-pass router, fixtures, Google + Slack webhooks. Staging soak (stage 6) pending. |
 | **Track**        | Cloud-native background workflows                                                                                                                   |
 | **Owners**       | `apps/rowboat-api` (Go backend) · `apps/x` (desktop event consumers)                                                                                |
 | **Created**      | 2026-06-05                                                                                                                                          |
