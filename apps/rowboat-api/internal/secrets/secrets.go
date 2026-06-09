@@ -22,6 +22,8 @@ const (
 	KeyComposio                = "COMPOSIO_API_KEY"
 	KeyGoogleOAuthClientID     = "GOOGLE_OAUTH_CLIENT_ID"
 	KeyGoogleOAuthClientSecret = "GOOGLE_OAUTH_CLIENT_SECRET"
+	KeySlackClientID           = "SLACK_CLIENT_ID"
+	KeySlackClientSecret       = "SLACK_CLIENT_SECRET"
 )
 
 // Store holds vendor secrets behind a read-write lock so background refresh is
@@ -43,6 +45,8 @@ func NewFromConfig(cfg appconfig.Config) *Store {
 		KeyComposio:                cfg.ComposioAPIKey,
 		KeyGoogleOAuthClientID:     cfg.GoogleOAuthClientID,
 		KeyGoogleOAuthClientSecret: cfg.GoogleOAuthClientSecret,
+		KeySlackClientID:           cfg.SlackClientID,
+		KeySlackClientSecret:       cfg.SlackClientSecret,
 	}}
 }
 
@@ -89,3 +93,9 @@ func (s *Store) GoogleOAuthClientID() string { return s.Get(KeyGoogleOAuthClient
 
 // GoogleOAuthClientSecret returns the Google OAuth client secret.
 func (s *Store) GoogleOAuthClientSecret() string { return s.Get(KeyGoogleOAuthClientSecret) }
+
+// SlackClientID returns the Slack app's OAuth client id.
+func (s *Store) SlackClientID() string { return s.Get(KeySlackClientID) }
+
+// SlackClientSecret returns the Slack app's OAuth client secret.
+func (s *Store) SlackClientSecret() string { return s.Get(KeySlackClientSecret) }

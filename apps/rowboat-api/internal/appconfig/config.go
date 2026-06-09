@@ -198,6 +198,20 @@ type Config struct {
 	CloudEventsMaxPayloadBytes int     // reject larger payloads before sealing
 	SlackSigningSecret         string  // verifies /v1/webhooks/slack signatures
 	GoogleWebhookToken         string  // shared token for /v1/webhooks/google
+
+	// Slack workspace connect flow (OAuth v2). The connection maps team_id →
+	// user, which is what /v1/webhooks/slack resolves events against.
+	SlackClientID     string
+	SlackClientSecret string
+	// SlackOAuthScopes are the bot scopes requested at install; they bound
+	// which Events API deliveries the workspace can produce.
+	SlackOAuthScopes string
+	// SlackRedirectURI is the /oauth/slack/callback URL registered on the
+	// Slack app. Empty → derived from AppURL. Must match Slack exactly.
+	SlackRedirectURI string
+	// SlackAuthorizeURL / SlackTokenURL override Slack's endpoints (dev mocks).
+	SlackAuthorizeURL string
+	SlackTokenURL     string
 }
 
 // Load reads configuration from the environment, applying defaults.
@@ -339,6 +353,13 @@ func Load() Config {
 		CloudEventsMaxPayloadBytes: getint("CLOUD_EVENTS_MAX_PAYLOAD_BYTES", 256<<10),
 		SlackSigningSecret:         getenv("SLACK_SIGNING_SECRET", ""),
 		GoogleWebhookToken:         getenv("GOOGLE_WEBHOOK_TOKEN", ""),
+
+		SlackClientID:     getenv("SLACK_CLIENT_ID", ""),
+		SlackClientSecret: getenv("SLACK_CLIENT_SECRET", ""),
+		SlackOAuthScopes:  getenv("SLACK_OAUTH_SCOPES", "channels:history,channels:read,users:read"),
+		SlackRedirectURI:  getenv("SLACK_REDIRECT_URI", ""),
+		SlackAuthorizeURL: getenv("SLACK_AUTHORIZE_URL", ""),
+		SlackTokenURL:     getenv("SLACK_TOKEN_URL", ""),
 	}
 }
 
