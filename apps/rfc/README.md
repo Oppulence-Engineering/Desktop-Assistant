@@ -53,6 +53,7 @@ Not part of the cloud-workflows set above, but living here under the same RFC co
 | [016](./016-app-family-consolidation.md)                    | App Family Consolidation                      | repo / apps         | Canonical app tiers and contract ownership across desktop, hosted platform, Go service plane, SDK, CLI, static frontends, widgets, experiments, simulation runner, and docs.                                                 |
 | [017](./017-on-device-meeting-diarization.md)               | On-Device Meeting Diarization                 | apps/x              | A local speaker diarization follow-up to RFC 009: VAD, speaker embeddings, clustering, alignment, provenance, quality gates, and a beta meetings mode that does not replace cloud diarization until it passes product gates. |
 | [018](./018-a2a-delegation-and-agent-identity.md)           | A2A Delegation and Agent Identity             | future protocol     | User-bound agent identity, scoped delegation tokens, A2A/MCP adapter boundaries, approval policy, connector-scope enforcement, and delegation-chain provenance for future cross-agent workflows.                             |
+| [019](./019-google-push-infrastructure.md)                  | Google Push Infrastructure                    | GCP / infra         | The operator-provisioned GCP half of RFC 003: Pub/Sub topic + Gmail publish grant + push subscription, Calendar domain verification, token rotation, verification, and the OIDC push-auth follow-up.                         |
 
 ## Dependency graph
 

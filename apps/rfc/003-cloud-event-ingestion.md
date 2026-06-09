@@ -9,7 +9,7 @@
 | **Created**      | 2026-06-05                                                                                                                                          |
 | **Last updated** | 2026-06-06                                                                                                                                          |
 | **Depends on**   | [RFC 001](./001-api-owned-scheduler.md) (shared run-start `Starter`), [RFC 004](./004-cloud-agent-runtime.md) (runtime that consumes event context) |
-| **Related**      | [RFC 006](./006-desktop-cloud-control-plane.md) (event→run linkage in UI)                                                                           |
+| **Related**      | [RFC 006](./006-desktop-cloud-control-plane.md) (event→run linkage in UI) · [RFC 019](./019-google-push-infrastructure.md) (GCP-side push provisioning) |
 | **Supersedes**   | Former cloud workflow planning event-trigger sections.                                                                                              |
 
 ## Summary
