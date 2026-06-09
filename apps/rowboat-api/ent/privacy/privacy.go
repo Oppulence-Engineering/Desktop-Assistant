@@ -230,6 +230,30 @@ func (f BackgroundTaskScheduleStateMutationRuleFunc) EvalMutation(ctx context.Co
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.BackgroundTaskScheduleStateMutation", m)
 }
 
+// The CloudEventQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type CloudEventQueryRuleFunc func(context.Context, *ent.CloudEventQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f CloudEventQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CloudEventQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.CloudEventQuery", q)
+}
+
+// The CloudEventMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type CloudEventMutationRuleFunc func(context.Context, *ent.CloudEventMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f CloudEventMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.CloudEventMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.CloudEventMutation", m)
+}
+
 // The CreditLedgerQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type CreditLedgerQueryRuleFunc func(context.Context, *ent.CreditLedgerQuery) error

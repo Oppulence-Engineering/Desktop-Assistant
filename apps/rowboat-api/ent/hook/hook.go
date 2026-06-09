@@ -69,6 +69,18 @@ func (f BackgroundTaskScheduleStateFunc) Mutate(ctx context.Context, m ent.Mutat
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BackgroundTaskScheduleStateMutation", m)
 }
 
+// The CloudEventFunc type is an adapter to allow the use of ordinary
+// function as CloudEvent mutator.
+type CloudEventFunc func(context.Context, *ent.CloudEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CloudEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CloudEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CloudEventMutation", m)
+}
+
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary
 // function as CreditLedger mutator.
 type CreditLedgerFunc func(context.Context, *ent.CreditLedgerMutation) (ent.Value, error)

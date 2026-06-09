@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -1347,6 +1348,255 @@ func (_m *BackgroundTaskScheduleState) ToEdge(order *BackgroundTaskScheduleState
 		order = DefaultBackgroundTaskScheduleStateOrder
 	}
 	return &BackgroundTaskScheduleStateEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// CloudEventEdge is the edge representation of CloudEvent.
+type CloudEventEdge struct {
+	Node   *CloudEvent `json:"node"`
+	Cursor Cursor      `json:"cursor"`
+}
+
+// CloudEventConnection is the connection containing edges to CloudEvent.
+type CloudEventConnection struct {
+	Edges      []*CloudEventEdge `json:"edges"`
+	PageInfo   PageInfo          `json:"pageInfo"`
+	TotalCount int               `json:"totalCount"`
+}
+
+func (c *CloudEventConnection) build(nodes []*CloudEvent, pager *cloudeventPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *CloudEvent
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *CloudEvent {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *CloudEvent {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*CloudEventEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &CloudEventEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// CloudEventPaginateOption enables pagination customization.
+type CloudEventPaginateOption func(*cloudeventPager) error
+
+// WithCloudEventOrder configures pagination ordering.
+func WithCloudEventOrder(order *CloudEventOrder) CloudEventPaginateOption {
+	if order == nil {
+		order = DefaultCloudEventOrder
+	}
+	o := *order
+	return func(pager *cloudeventPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultCloudEventOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithCloudEventFilter configures pagination filter.
+func WithCloudEventFilter(filter func(*CloudEventQuery) (*CloudEventQuery, error)) CloudEventPaginateOption {
+	return func(pager *cloudeventPager) error {
+		if filter == nil {
+			return errors.New("CloudEventQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type cloudeventPager struct {
+	reverse bool
+	order   *CloudEventOrder
+	filter  func(*CloudEventQuery) (*CloudEventQuery, error)
+}
+
+func newCloudEventPager(opts []CloudEventPaginateOption, reverse bool) (*cloudeventPager, error) {
+	pager := &cloudeventPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultCloudEventOrder
+	}
+	return pager, nil
+}
+
+func (p *cloudeventPager) applyFilter(query *CloudEventQuery) (*CloudEventQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *cloudeventPager) toCursor(_m *CloudEvent) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *cloudeventPager) applyCursors(query *CloudEventQuery, after, before *Cursor) (*CloudEventQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultCloudEventOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *cloudeventPager) applyOrder(query *CloudEventQuery) *CloudEventQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultCloudEventOrder.Field {
+		query = query.Order(DefaultCloudEventOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *cloudeventPager) orderExpr(query *CloudEventQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultCloudEventOrder.Field {
+			b.Comma().Ident(DefaultCloudEventOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to CloudEvent.
+func (_m *CloudEventQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...CloudEventPaginateOption,
+) (*CloudEventConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newCloudEventPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &CloudEventConnection{Edges: []*CloudEventEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// CloudEventOrderField defines the ordering field of CloudEvent.
+type CloudEventOrderField struct {
+	// Value extracts the ordering value from the given CloudEvent.
+	Value    func(*CloudEvent) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) cloudevent.OrderOption
+	toCursor func(*CloudEvent) Cursor
+}
+
+// CloudEventOrder defines the ordering of CloudEvent.
+type CloudEventOrder struct {
+	Direction OrderDirection        `json:"direction"`
+	Field     *CloudEventOrderField `json:"field"`
+}
+
+// DefaultCloudEventOrder is the default ordering of CloudEvent.
+var DefaultCloudEventOrder = &CloudEventOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &CloudEventOrderField{
+		Value: func(_m *CloudEvent) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: cloudevent.FieldID,
+		toTerm: cloudevent.ByID,
+		toCursor: func(_m *CloudEvent) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts CloudEvent into CloudEventEdge.
+func (_m *CloudEvent) ToEdge(order *CloudEventOrder) *CloudEventEdge {
+	if order == nil {
+		order = DefaultCloudEventOrder
+	}
+	return &CloudEventEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

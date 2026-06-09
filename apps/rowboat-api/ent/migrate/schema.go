@@ -125,6 +125,7 @@ var (
 		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
 		{Name: "revision", Type: field.TypeInt, Default: 1},
 		{Name: "background_task_id", Type: field.TypeUUID},
+		{Name: "cloud_event_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_background_task_runs", Type: field.TypeUUID},
 	}
 	// BackgroundTaskRunsTable holds the schema information for the "background_task_runs" table.
@@ -140,8 +141,14 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 			{
-				Symbol:     "background_task_runs_users_background_task_runs",
+				Symbol:     "background_task_runs_cloud_events_runs",
 				Columns:    []*schema.Column{BackgroundTaskRunsColumns[33]},
+				RefColumns: []*schema.Column{CloudEventsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "background_task_runs_users_background_task_runs",
+				Columns:    []*schema.Column{BackgroundTaskRunsColumns[34]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -150,7 +157,7 @@ var (
 			{
 				Name:    "backgroundtaskrun_run_id_user_background_task_runs",
 				Unique:  true,
-				Columns: []*schema.Column{BackgroundTaskRunsColumns[3], BackgroundTaskRunsColumns[33]},
+				Columns: []*schema.Column{BackgroundTaskRunsColumns[3], BackgroundTaskRunsColumns[34]},
 			},
 			{
 				Name:    "backgroundtaskrun_status",
@@ -276,6 +283,58 @@ var (
 				Name:    "backgroundtaskschedulestate_created_at",
 				Unique:  false,
 				Columns: []*schema.Column{BackgroundTaskScheduleStatesColumns[1]},
+			},
+		},
+	}
+	// CloudEventsColumns holds the columns for the "cloud_events" table.
+	CloudEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "source", Type: field.TypeString},
+		{Name: "source_event_id", Type: field.TypeString, Nullable: true},
+		{Name: "source_account_id", Type: field.TypeString, Nullable: true},
+		{Name: "event_type", Type: field.TypeString, Nullable: true},
+		{Name: "subject", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "text", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "payload_ciphertext", Type: field.TypeBytes, Nullable: true},
+		{Name: "routing_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "dedupe_key", Type: field.TypeString},
+		{Name: "routing_status", Type: field.TypeString, Default: "pending"},
+		{Name: "matched_task_count", Type: field.TypeInt, Default: 0},
+		{Name: "occurred_at", Type: field.TypeTime, Nullable: true},
+		{Name: "received_at", Type: field.TypeTime},
+		{Name: "routed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_cloud_events", Type: field.TypeUUID},
+	}
+	// CloudEventsTable holds the schema information for the "cloud_events" table.
+	CloudEventsTable = &schema.Table{
+		Name:       "cloud_events",
+		Columns:    CloudEventsColumns,
+		PrimaryKey: []*schema.Column{CloudEventsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cloud_events_users_cloud_events",
+				Columns:    []*schema.Column{CloudEventsColumns[17]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "cloudevent_source_dedupe_key_user_cloud_events",
+				Unique:  true,
+				Columns: []*schema.Column{CloudEventsColumns[3], CloudEventsColumns[11], CloudEventsColumns[17]},
+			},
+			{
+				Name:    "cloudevent_routing_status",
+				Unique:  false,
+				Columns: []*schema.Column{CloudEventsColumns[12]},
+			},
+			{
+				Name:    "cloudevent_received_at",
+				Unique:  false,
+				Columns: []*schema.Column{CloudEventsColumns[15]},
 			},
 		},
 	}
@@ -635,6 +694,7 @@ var (
 		BackgroundTaskRunsTable,
 		BackgroundTaskRunEventsTable,
 		BackgroundTaskScheduleStatesTable,
+		CloudEventsTable,
 		CreditLedgersTable,
 		LlmUsagesTable,
 		LlmUsageHistoriesTable,
@@ -655,12 +715,14 @@ func init() {
 	BackgroundTaskArtifactsTable.ForeignKeys[0].RefTable = BackgroundTasksTable
 	BackgroundTaskArtifactsTable.ForeignKeys[1].RefTable = UsersTable
 	BackgroundTaskRunsTable.ForeignKeys[0].RefTable = BackgroundTasksTable
-	BackgroundTaskRunsTable.ForeignKeys[1].RefTable = UsersTable
+	BackgroundTaskRunsTable.ForeignKeys[1].RefTable = CloudEventsTable
+	BackgroundTaskRunsTable.ForeignKeys[2].RefTable = UsersTable
 	BackgroundTaskRunEventsTable.ForeignKeys[0].RefTable = BackgroundTasksTable
 	BackgroundTaskRunEventsTable.ForeignKeys[1].RefTable = BackgroundTaskRunsTable
 	BackgroundTaskRunEventsTable.ForeignKeys[2].RefTable = UsersTable
 	BackgroundTaskScheduleStatesTable.ForeignKeys[0].RefTable = BackgroundTasksTable
 	BackgroundTaskScheduleStatesTable.ForeignKeys[1].RefTable = UsersTable
+	CloudEventsTable.ForeignKeys[0].RefTable = UsersTable
 	CreditLedgersTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	McpConnectionsTable.ForeignKeys[0].RefTable = UsersTable

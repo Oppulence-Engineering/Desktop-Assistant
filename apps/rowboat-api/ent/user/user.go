@@ -45,6 +45,8 @@ const (
 	EdgeBackgroundTaskRunEvents = "background_task_run_events"
 	// EdgeBackgroundTaskScheduleStates holds the string denoting the background_task_schedule_states edge name in mutations.
 	EdgeBackgroundTaskScheduleStates = "background_task_schedule_states"
+	// EdgeCloudEvents holds the string denoting the cloud_events edge name in mutations.
+	EdgeCloudEvents = "cloud_events"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -117,6 +119,13 @@ const (
 	BackgroundTaskScheduleStatesInverseTable = "background_task_schedule_states"
 	// BackgroundTaskScheduleStatesColumn is the table column denoting the background_task_schedule_states relation/edge.
 	BackgroundTaskScheduleStatesColumn = "user_background_task_schedule_states"
+	// CloudEventsTable is the table that holds the cloud_events relation/edge.
+	CloudEventsTable = "cloud_events"
+	// CloudEventsInverseTable is the table name for the CloudEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "cloudevent" package.
+	CloudEventsInverseTable = "cloud_events"
+	// CloudEventsColumn is the table column denoting the cloud_events relation/edge.
+	CloudEventsColumn = "user_cloud_events"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -317,6 +326,20 @@ func ByBackgroundTaskScheduleStates(term sql.OrderTerm, terms ...sql.OrderTerm) 
 		sqlgraph.OrderByNeighborTerms(s, newBackgroundTaskScheduleStatesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByCloudEventsCount orders the results by cloud_events count.
+func ByCloudEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCloudEventsStep(), opts...)
+	}
+}
+
+// ByCloudEvents orders the results by cloud_events terms.
+func ByCloudEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCloudEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -385,5 +408,12 @@ func newBackgroundTaskScheduleStatesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BackgroundTaskScheduleStatesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTaskScheduleStatesTable, BackgroundTaskScheduleStatesColumn),
+	)
+}
+func newCloudEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CloudEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CloudEventsTable, CloudEventsColumn),
 	)
 }

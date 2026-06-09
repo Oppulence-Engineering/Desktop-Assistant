@@ -17,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -94,6 +95,7 @@ func checkColumn(t, c string) error {
 			backgroundtaskrun.Table:           backgroundtaskrun.ValidColumn,
 			backgroundtaskrunevent.Table:      backgroundtaskrunevent.ValidColumn,
 			backgroundtaskschedulestate.Table: backgroundtaskschedulestate.ValidColumn,
+			cloudevent.Table:                  cloudevent.ValidColumn,
 			creditledger.Table:                creditledger.ValidColumn,
 			llmusage.Table:                    llmusage.ValidColumn,
 			llmusagehistory.Table:             llmusagehistory.ValidColumn,
