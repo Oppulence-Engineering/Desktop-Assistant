@@ -80,7 +80,7 @@ func newHandler(t *testing.T, baseURL, apiKey string, labels map[string]string) 
 	return h, u, ctx
 }
 
-func submit(t *testing.T, h *feedback.Handler, u *ent.User, ctx context.Context, body string) *httptest.ResponseRecorder {
+func submit(ctx context.Context, t *testing.T, h *feedback.Handler, u *ent.User, body string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, "/v1/feedback", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -96,7 +96,7 @@ func TestSubmitRelaysToPlain(t *testing.T) {
 	defer srv.Close()
 
 	h, u, ctx := newHandler(t, srv.URL, "plain-key", map[string]string{"bug": "lt_bug"})
-	rec := submit(t, h, u, ctx, `{"category":"bug","message":"it broke","appVersion":"0.1.10","platform":"darwin/arm64"}`)
+	rec := submit(ctx, t, h, u, `{"category":"bug","message":"it broke","appVersion":"0.1.10","platform":"darwin/arm64"}`)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("want 200, got %d: %s", rec.Code, rec.Body.String())
@@ -158,7 +158,7 @@ func TestSubmitOmitsLabelWhenUnmapped(t *testing.T) {
 	defer srv.Close()
 
 	h, u, ctx := newHandler(t, srv.URL, "plain-key", nil)
-	rec := submit(t, h, u, ctx, `{"category":"feature","message":"please add x"}`)
+	rec := submit(ctx, t, h, u, `{"category":"feature","message":"please add x"}`)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("want 200, got %d: %s", rec.Code, rec.Body.String())
@@ -180,7 +180,7 @@ func TestSubmitRejectsBadInput(t *testing.T) {
 		"empty message":     `{"category":"bug","message":"   "}`,
 		"oversized message": `{"category":"bug","message":"` + strings.Repeat("a", 5001) + `"}`,
 	} {
-		rec := submit(t, h, u, ctx, body)
+		rec := submit(ctx, t, h, u, body)
 		if rec.Code != http.StatusBadRequest {
 			t.Errorf("%s: want 400, got %d: %s", name, rec.Code, rec.Body.String())
 		}
@@ -192,7 +192,7 @@ func TestSubmitRejectsBadInput(t *testing.T) {
 
 func TestSubmitWithoutKeyIsUnconfigured(t *testing.T) {
 	h, u, ctx := newHandler(t, "http://plain.invalid", "", nil)
-	rec := submit(t, h, u, ctx, `{"category":"bug","message":"hi"}`)
+	rec := submit(ctx, t, h, u, `{"category":"bug","message":"hi"}`)
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("want 502, got %d", rec.Code)
 	}
@@ -208,7 +208,7 @@ func TestSubmitPlainServerErrorIs502(t *testing.T) {
 	defer srv.Close()
 
 	h, u, ctx := newHandler(t, srv.URL, "plain-key", nil)
-	rec := submit(t, h, u, ctx, `{"category":"bug","message":"hi"}`)
+	rec := submit(ctx, t, h, u, `{"category":"bug","message":"hi"}`)
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("want 502, got %d: %s", rec.Code, rec.Body.String())
 	}
@@ -224,7 +224,7 @@ func TestSubmitPlainMutationErrorIs502(t *testing.T) {
 	defer srv.Close()
 
 	h, u, ctx := newHandler(t, srv.URL, "plain-key", nil)
-	rec := submit(t, h, u, ctx, `{"category":"bug","message":"hi"}`)
+	rec := submit(ctx, t, h, u, `{"category":"bug","message":"hi"}`)
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("want 502, got %d: %s", rec.Code, rec.Body.String())
 	}
