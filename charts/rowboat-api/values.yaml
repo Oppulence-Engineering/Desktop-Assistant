@@ -200,6 +200,13 @@ config:
   GRAPHQL_INTROSPECTION_ENABLED: "false"
   GRAPHQL_MAX_COMPLEXITY: "250"
   GRAPHQL_MAX_DEPTH: "12"
+  # Plain (plain.com) feedback relay. Label type ids are workspace data —
+  # create the label types in the Plain workspace and map them per category,
+  # e.g. {"bug":"lt_...","feature":"lt_...","question":"lt_...","other":"lt_..."}.
+  # Empty → threads are submitted unlabelled. PLAIN_API_KEY comes from Infisical.
+  PLAIN_API_URL: https://core-api.uk.plain.com/graphql/v1
+  PLAIN_LABEL_TYPE_IDS: ""
+  PLAIN_TITLE_PREFIX: ""
   TEMPORAL_ENABLED: "false"
   TEMPORAL_ADDRESS: temporal-frontend.temporal:7233
   TEMPORAL_NAMESPACE: default
@@ -260,3 +267,4 @@ secretValues: {}
   # ORY_BROKER_CLIENT_SECRET: ""
   # INFISICAL_TOKEN: ""
   # INFISICAL_PROJECT_ID: ""
+  # PLAIN_API_KEY: ""

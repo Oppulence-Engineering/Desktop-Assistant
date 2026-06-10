@@ -27,6 +27,10 @@ config:
   # host in staging/prod. Register this exact URI in the Google Cloud OAuth client.
   GOOGLE_REDIRECT_URI: https://api.x.staging.solomon-ai.co/oauth/google/callback
   INFISICAL_ENVIRONMENT: staging
+  # Distinguish staging feedback in the shared Plain inbox. Label type ids are
+  # per-workspace — fill in once the staging label types exist in Plain.
+  PLAIN_TITLE_PREFIX: "[staging] "
+  PLAIN_LABEL_TYPE_IDS: ""
   # --- Temporal Cloud (API-native background task worker) -------------------
   # Staging/production execute API-target runs on Temporal Cloud (API-key auth
   # over TLS). To enable: set TEMPORAL_ENABLED to "true", point ADDRESS/NAMESPACE
