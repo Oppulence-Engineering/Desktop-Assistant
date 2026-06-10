@@ -207,6 +207,35 @@ export const BackgroundTaskCloudRunEventSchema = z.object({
 });
 export type BackgroundTaskCloudRunEventType = z.infer<typeof BackgroundTaskCloudRunEventSchema>;
 
+/**
+ * Canonical cloud run event types, mirroring the api's backgroundtaskworkflow
+ * vocabulary (events.go is the source of truth; keep in sync). `type` above
+ * deliberately stays a free string so unknown/newer types flow through.
+ * runtime.* entries are the RFC 004 agent-runtime transcript events.
+ */
+export const CLOUD_RUN_EVENT_TYPES = [
+    'temporal.queued', 'temporal.running', 'temporal.progress', 'temporal.artifact_updated',
+    'temporal.completed', 'temporal.failed', 'temporal.cancel_requested', 'temporal.stopped',
+    'temporal.signal', 'temporal.retry_requested',
+    'runtime.llm_call_started', 'runtime.llm_call_completed',
+    'runtime.tool_call_started', 'runtime.tool_call_completed',
+    'runtime.tool_denied', 'runtime.limit_exceeded', 'runtime.final_artifact_ready',
+] as const;
+
+/**
+ * Cloud run error codes surfaced raw in `errorCode`, mirroring errcodes.go.
+ * The runtime_* family plus llm/tool/connector codes are RFC 004's
+ * non-retryable runtime failures.
+ */
+export const CLOUD_RUN_ERROR_CODES = [
+    'temporal_unavailable', 'temporal_start_failed', 'temporal_cancel_failed', 'temporal_signal_failed',
+    'workflow_canceled', 'activity_timeout', 'activity_failed',
+    'task_not_found', 'task_invalid', 'artifact_write_failed', 'db_error', 'internal',
+    'runtime_deadline_exceeded', 'runtime_llm_budget_exceeded', 'runtime_tool_budget_exceeded',
+    'runtime_artifact_too_large', 'runtime_event_too_large',
+    'llm_call_failed', 'tool_not_allowed', 'tool_invoke_failed', 'connector_unavailable',
+] as const;
+
 export const BackgroundTaskAgentStartEvent = z.object({
     type: z.literal('background_task_agent_start'),
     slug: z.string(),

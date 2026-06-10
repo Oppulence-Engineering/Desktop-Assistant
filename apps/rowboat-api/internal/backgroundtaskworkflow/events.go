@@ -15,6 +15,17 @@ const (
 	EventStopped         = "temporal.stopped"
 	EventSignal          = "temporal.signal"
 	EventRetryRequested  = "temporal.retry_requested"
+
+	// Cloud runtime transcript events (RFC 004). Appended by the agent loop
+	// for debugging/transcript display; the desktop ignores unknown types, so
+	// these are additive.
+	EventRuntimeLLMCallStarted     = "runtime.llm_call_started"
+	EventRuntimeLLMCallCompleted   = "runtime.llm_call_completed"
+	EventRuntimeToolCallStarted    = "runtime.tool_call_started"
+	EventRuntimeToolCallCompleted  = "runtime.tool_call_completed"
+	EventRuntimeToolDenied         = "runtime.tool_denied"
+	EventRuntimeLimitExceeded      = "runtime.limit_exceeded"
+	EventRuntimeFinalArtifactReady = "runtime.final_artifact_ready"
 )
 
 var knownEventTypes = map[string]struct{}{
@@ -28,6 +39,14 @@ var knownEventTypes = map[string]struct{}{
 	EventStopped:         {},
 	EventSignal:          {},
 	EventRetryRequested:  {},
+
+	EventRuntimeLLMCallStarted:     {},
+	EventRuntimeLLMCallCompleted:   {},
+	EventRuntimeToolCallStarted:    {},
+	EventRuntimeToolCallCompleted:  {},
+	EventRuntimeToolDenied:         {},
+	EventRuntimeLimitExceeded:      {},
+	EventRuntimeFinalArtifactReady: {},
 }
 
 // IsKnownEventType reports whether t is part of the canonical lifecycle vocabulary.

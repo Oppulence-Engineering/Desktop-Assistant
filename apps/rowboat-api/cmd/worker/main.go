@@ -14,9 +14,12 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
@@ -126,17 +129,49 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		}
 
 		w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{})
-		backgroundtaskworkflow.Register(w, &backgroundtaskworkflow.Activities{
-			Client: client,
-			Log:    log,
-		})
-		if cfg.CloudEventsRoutingEnabled {
-			router, err := buildEventRouter(ctx, cfg, log, client, temporalClient)
+
+		// Shared vendor-facing dependencies, built once when either consumer
+		// (event router, cloud runtime) is enabled.
+		var deps *workerDeps
+		if cfg.CloudEventsRoutingEnabled || cfg.CloudRuntimeEnabled {
+			deps, err = buildWorkerDeps(ctx, cfg, log, client, temporalClient)
 			if err != nil {
 				temporalClient.Close()
 				return err
 			}
-			cloudevents.Register(w, &cloudevents.Activities{Router: router, Log: log})
+		}
+
+		activities := &backgroundtaskworkflow.Activities{Client: client, Log: log}
+		if cfg.CloudRuntimeEnabled && deps != nil {
+			activities.Runtime = backgroundtaskruntime.NewDefault()
+			activities.RuntimeLimits = backgroundtaskruntime.LimitsFromConfig(cfg)
+			activities.LLM = deps.LLM
+			activities.Sealer = deps.Sealer
+			activities.Secrets = deps.Secrets
+			activities.Google = deps.Google
+			activities.DefaultModel = cfg.CloudRuntimeModel
+			log.Info("cloud agent runtime enabled",
+				zap.String("model", cfg.CloudRuntimeModel),
+				zap.Duration("max_duration", cfg.CloudRuntimeMaxDuration),
+				zap.Int("max_llm_calls", cfg.CloudRuntimeMaxLLMCalls),
+				zap.Int("max_tool_calls", cfg.CloudRuntimeMaxToolCalls))
+		} else {
+			// Rollback path: the deterministic artifact, byte-identical to
+			// pre-RFC-004 behavior.
+			activities.Runtime = backgroundtaskruntime.NewNoop()
+			log.Info("cloud agent runtime disabled; using deterministic NoopRuntime")
+		}
+		backgroundtaskworkflow.Register(w, activities)
+
+		if cfg.CloudEventsRoutingEnabled && deps != nil {
+			cloudevents.Register(w, &cloudevents.Activities{Router: &cloudevents.Router{
+				Client:    client,
+				LLM:       deps.LLM,
+				Starter:   deps.Starter,
+				Threshold: cfg.CloudEventsMatchThreshold,
+				Model:     cfg.CloudEventsRouterModel,
+				Log:       log,
+			}, Log: log})
 			log.Info("cloud event route workflow registered",
 				zap.String("model", cfg.CloudEventsRouterModel),
 				zap.Float64("threshold", cfg.CloudEventsMatchThreshold))
@@ -159,11 +194,21 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 	}
 }
 
-// buildEventRouter assembles the RFC 003 routing activity's dependencies: the
-// in-process LLM gateway (vendor secrets + pricing + the owner-billing quota
-// gate) and the shared run Starter. This is the worker's first vendor-key
-// surface — wire.go makes the same construction calls for the API process.
-func buildEventRouter(ctx context.Context, cfg appconfig.Config, log *zap.Logger, client *ent.Client, temporalClient temporalsdk.Client) (*cloudevents.Router, error) {
+// workerDeps are the vendor-facing dependencies shared by the RFC 003 event
+// router and the RFC 004 cloud runtime: the in-process LLM gateway (vendor
+// secrets + pricing + the owner-billing quota gate), the shared run Starter,
+// the payload sealer, and the Google API client.
+type workerDeps struct {
+	Secrets *secrets.Store
+	Prices  *pricing.Table
+	Gate    *quota.Gate
+	LLM     *llm.Handler
+	Starter *backgroundtaskruns.Starter
+	Sealer  *crypto.Sealer
+	Google  *googleapi.Client
+}
+
+func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger, client *ent.Client, temporalClient temporalsdk.Client) (*workerDeps, error) {
 	sec := secrets.NewFromConfig(cfg)
 	if err := sec.LoadInfisical(ctx, cfg); err != nil {
 		if cfg.InfisicalEnabled && cfg.IsProduction() {
@@ -174,6 +219,10 @@ func buildEventRouter(ctx context.Context, cfg appconfig.Config, log *zap.Logger
 	sec.StartRefresh(ctx, cfg, 5*time.Minute, log)
 
 	prices, err := pricing.LoadJSON([]byte(cfg.PricingJSON))
+	if err != nil {
+		return nil, err
+	}
+	sealer, err := crypto.NewSealer(cfg.DBEncryptionKey)
 	if err != nil {
 		return nil, err
 	}
@@ -192,14 +241,18 @@ func buildEventRouter(ctx context.Context, cfg appconfig.Config, log *zap.Logger
 		SpendLimits: quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit},
 	})
 
-	starter := backgroundtaskruns.New(client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log)
-	return &cloudevents.Router{
-		Client:    client,
-		LLM:       llmH,
-		Starter:   starter,
-		Threshold: cfg.CloudEventsMatchThreshold,
-		Model:     cfg.CloudEventsRouterModel,
-		Log:       log,
+	return &workerDeps{
+		Secrets: sec,
+		Prices:  prices,
+		Gate:    gate,
+		LLM:     llmH,
+		Starter: backgroundtaskruns.New(client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log),
+		Sealer:  sealer,
+		Google: googleapi.New(googleapi.Config{
+			TokenURL:        cfg.GoogleTokenURL,
+			GmailBaseURL:    cfg.GmailAPIBaseURL,
+			CalendarBaseURL: cfg.CalendarAPIBaseURL,
+		}),
 	}, nil
 }
 

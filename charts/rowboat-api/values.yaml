@@ -228,6 +228,18 @@ config:
   GMAIL_PUBSUB_TOPIC: ""
   GOOGLE_WATCH_INTERVAL: 15m
   GOOGLE_WATCH_RENEW_MARGIN: 24h
+  # Cloud agent runtime (RFC 004): the LLM-backed, tool-scoped agent loop the
+  # Temporal worker's ExecuteAPITask delegates to. Enabled by default;
+  # flipping CLOUD_RUNTIME_ENABLED to "false" is the rollback to the
+  # deterministic-artifact NoopRuntime. MAX_DURATION must stay strictly under
+  # the 5m Temporal activity timeout (boot validation enforces it).
+  CLOUD_RUNTIME_ENABLED: "true"
+  CLOUD_RUNTIME_MODEL: anthropic/claude-sonnet-4-5
+  CLOUD_RUNTIME_MAX_DURATION: 4m
+  CLOUD_RUNTIME_MAX_LLM_CALLS: "12"
+  CLOUD_RUNTIME_MAX_TOOL_CALLS: "24"
+  CLOUD_RUNTIME_MAX_ARTIFACT_BYTES: "1048576"
+  CLOUD_RUNTIME_MAX_EVENT_BYTES: "65536"
 
 # Secret env. In production these are projected from an existing Secret
 # (existingSecret) rather than templated into the chart. When existingSecret is

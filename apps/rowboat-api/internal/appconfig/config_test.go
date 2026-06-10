@@ -198,3 +198,39 @@ func TestDefaultHostname(t *testing.T) {
 		t.Fatalf("defaultHostname should never be empty")
 	}
 }
+
+// TestCloudRuntimeDefaults locks the RFC 004 runtime knobs: enabled by
+// default (user decision overriding the RFC's ship-dark stance), with the
+// duration ceiling strictly under the 5m Temporal activity timeout.
+func TestCloudRuntimeDefaults(t *testing.T) {
+	for _, k := range []string{"CLOUD_RUNTIME_ENABLED", "CLOUD_RUNTIME_MODEL", "CLOUD_RUNTIME_MAX_DURATION", "CLOUD_RUNTIME_MAX_LLM_CALLS"} {
+		t.Setenv(k, "")
+	}
+	c := Load()
+	if !c.CloudRuntimeEnabled {
+		t.Fatal("cloud runtime must default to enabled")
+	}
+	if c.CloudRuntimeModel == "" || c.CloudRuntimeMaxDuration != 4*time.Minute ||
+		c.CloudRuntimeMaxLLMCalls != 12 || c.CloudRuntimeMaxToolCalls != 24 ||
+		c.CloudRuntimeMaxArtifactBytes != 1<<20 || c.CloudRuntimeMaxEventBytes != 64<<10 {
+		t.Fatalf("unexpected runtime defaults: %+v", c)
+	}
+	if err := c.Validate(); err != nil {
+		t.Fatalf("default config must validate: %v", err)
+	}
+}
+
+// TestCloudRuntimeDurationCoupling rejects a runtime deadline at or above the
+// activity StartToCloseTimeout (it would mask runtime_deadline_exceeded as
+// activity_timeout).
+func TestCloudRuntimeDurationCoupling(t *testing.T) {
+	c := baseConfig()
+	c.CloudRuntimeMaxDuration = 5 * time.Minute
+	if err := c.Validate(); err == nil {
+		t.Fatal("5m runtime duration must be rejected (activity timeout is 5m)")
+	}
+	c.CloudRuntimeMaxDuration = 4 * time.Minute
+	if err := c.Validate(); err != nil {
+		t.Fatalf("4m must validate: %v", err)
+	}
+}

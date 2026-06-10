@@ -73,6 +73,49 @@ var (
 		Help:    "Time an API-native run waited in queue before execution started.",
 		Buckets: prometheus.ExponentialBuckets(0.1, 2, 12), // 0.1s .. ~3.4m
 	})
+
+	// Cloud agent runtime series (RFC 004). The `tool` label is bounded by the
+	// fixed allowlist (artifact.*, run_history.read, event.read,
+	// connector.read.*) and `limit`/`provider` by small enums — all satisfy
+	// the cardinality rule above.
+
+	// RuntimeLLMCalls counts gateway LLM calls made by the agent loop.
+	RuntimeLLMCalls = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "cloud_runtime_llm_calls_total",
+		Help: "LLM calls made by the cloud agent runtime, by provider.",
+	}, []string{"provider"})
+
+	// RuntimeToolCalls counts tool invocations, by allowlisted tool name.
+	RuntimeToolCalls = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "cloud_runtime_tool_calls_total",
+		Help: "Tool invocations made by the cloud agent runtime, by tool.",
+	}, []string{"tool"})
+
+	// RuntimeToolFailures counts failed tool invocations.
+	RuntimeToolFailures = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "cloud_runtime_tool_failures_total",
+		Help: "Failed tool invocations in the cloud agent runtime, by tool.",
+	}, []string{"tool"})
+
+	// RuntimeLimitExceeded counts runs failed by a runtime budget/size limit.
+	RuntimeLimitExceeded = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "cloud_runtime_limit_exceeded_total",
+		Help: "Cloud runtime runs that breached a limit, by limit name.",
+	}, []string{"limit"})
+
+	// RuntimeArtifactBytes observes final artifact sizes.
+	RuntimeArtifactBytes = promauto.NewHistogram(prometheus.HistogramOpts{
+		Name:    "cloud_runtime_artifact_bytes",
+		Help:    "Final artifact size written by the cloud agent runtime.",
+		Buckets: prometheus.ExponentialBuckets(256, 4, 8), // 256B .. ~4MiB
+	})
+
+	// RuntimeLLMLatency observes per-call LLM latency.
+	RuntimeLLMLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "cloud_runtime_llm_latency_seconds",
+		Help:    "Latency of cloud runtime LLM calls, by provider.",
+		Buckets: prometheus.ExponentialBuckets(0.25, 2, 10), // 0.25s .. ~2m
+	}, []string{"provider"})
 )
 
 // ObserveDurationSince records a run duration if the start time is known and sane.
