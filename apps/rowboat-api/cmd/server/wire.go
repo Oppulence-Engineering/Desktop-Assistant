@@ -20,6 +20,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/docs"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/feedback"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/gqlapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
@@ -232,6 +233,17 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}, log)
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 
+	plainLabels, err := feedback.ParseLabelMap(cfg.PlainLabelTypeIDs)
+	if err != nil {
+		return err
+	}
+	feedbackH := feedback.New(sec, client, feedback.Config{
+		BaseURL:      cfg.PlainAPIURL,
+		LabelTypeIDs: plainLabels,
+		TitlePrefix:  cfg.PlainTitlePrefix,
+	}, log)
+	feedbackH.SetOutboundPolicy(vendorPolicy)
+
 	r := srv.Router()
 
 	// Public (no auth).
@@ -303,6 +315,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		r.Use(rl.PerUser(ratelimit.GroupDefault, 600)) // sanity bucket
 
 		r.Get("/v1/me", billingH.Me)
+
+		// Feedback relay to Plain. Tight per-user window: it's a human-driven form.
+		r.With(rl.PerUserWindow(ratelimit.GroupFeedback, 5, time.Minute)).
+			Post("/v1/feedback", feedbackH.Submit)
 
 		r.Get("/v1/background-task-runs", backgroundTasksH.ListAllRuns)
 		// NOTE: do not register /v1/background-tasks directly here — the Route
