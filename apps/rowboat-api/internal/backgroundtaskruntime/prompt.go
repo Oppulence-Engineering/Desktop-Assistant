@@ -30,6 +30,7 @@ func buildSystemPrompt(in RunInput) string {
 	b.WriteString("- Keep the artifact grounded in tool results and requested context.\n")
 	b.WriteString("- Never claim to have accessed local desktop files.\n")
 	b.WriteString("- If required data is unavailable, say what is missing and write the best safe artifact.\n")
+	b.WriteString("- If your view of the artifact is marked TRUNCATED, do not write a full replacement that drops content you have not seen — use artifact.read first and preserve unseen sections.\n")
 	return b.String()
 }
 
@@ -44,7 +45,12 @@ func buildInitialUserTurn(artifactBody string) string {
 		return b.String()
 	}
 	snapshot := truncate(artifactBody, artifactSnapshotCap)
-	b.WriteString("\nCurrent artifact (update it, do not lose still-relevant content):\n\n")
+	if len(artifactBody) > artifactSnapshotCap {
+		fmt.Fprintf(&b, "\nCurrent artifact — TRUNCATED to the first %d of %d bytes. Use artifact.read for the full content; do not rewrite sections you have not seen:\n\n",
+			artifactSnapshotCap, len(artifactBody))
+	} else {
+		b.WriteString("\nCurrent artifact (update it, do not lose still-relevant content):\n\n")
+	}
 	b.WriteString("```markdown\n")
 	b.WriteString(snapshot)
 	b.WriteString("\n```\n")
