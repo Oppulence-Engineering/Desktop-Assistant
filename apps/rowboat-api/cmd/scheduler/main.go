@@ -26,6 +26,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlewatch"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version"
@@ -96,6 +97,11 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 	var ready atomic.Bool
 	stopMetrics := startMetricsServer(cfg, log, &ready)
 	defer stopMetrics()
+
+	// Housekeeping: refund credit reservations orphaned by a process dying
+	// between Reserve and Settle (e.g. a worker OOM mid-LLM-call) — nothing
+	// else ever revisits those rows.
+	go quota.RunReaper(ctx, database.Client, log)
 
 	if cfg.GoogleWatchEnabled {
 		watchMgr, werr := buildWatchManager(ctx, cfg, log, database)
