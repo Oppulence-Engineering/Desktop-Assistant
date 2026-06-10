@@ -74,8 +74,14 @@ func init() {
 	backgroundtask.DefaultExecutionTarget = backgroundtaskDescExecutionTarget.Default.(string)
 	// backgroundtask.ExecutionTargetValidator is a validator for the "execution_target" field. It is called by the builders before save.
 	backgroundtask.ExecutionTargetValidator = backgroundtaskDescExecutionTarget.Validators[0].(func(string) error)
+	// backgroundtaskDescScheduleSyncState is the schema descriptor for schedule_sync_state field.
+	backgroundtaskDescScheduleSyncState := backgroundtaskFields[14].Descriptor()
+	// backgroundtask.DefaultScheduleSyncState holds the default value on creation for the schedule_sync_state field.
+	backgroundtask.DefaultScheduleSyncState = backgroundtaskDescScheduleSyncState.Default.(string)
+	// backgroundtask.ScheduleSyncStateValidator is a validator for the "schedule_sync_state" field. It is called by the builders before save.
+	backgroundtask.ScheduleSyncStateValidator = backgroundtaskDescScheduleSyncState.Validators[0].(func(string) error)
 	// backgroundtaskDescRevision is the schema descriptor for revision field.
-	backgroundtaskDescRevision := backgroundtaskFields[14].Descriptor()
+	backgroundtaskDescRevision := backgroundtaskFields[17].Descriptor()
 	// backgroundtask.DefaultRevision holds the default value on creation for the revision field.
 	backgroundtask.DefaultRevision = backgroundtaskDescRevision.Default.(int)
 	// backgroundtask.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.

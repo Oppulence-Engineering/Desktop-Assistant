@@ -89,6 +89,9 @@ type BackgroundTaskMutation struct {
 	last_run_at            *time.Time
 	last_run_summary       *string
 	last_run_error         *string
+	schedule_sync_state    *string
+	schedule_sync_error    *string
+	schedule_synced_at     *time.Time
 	revision               *int
 	addrevision            *int
 	clearedFields          map[string]struct{}
@@ -907,6 +910,140 @@ func (m *BackgroundTaskMutation) ResetLastRunError() {
 	delete(m.clearedFields, backgroundtask.FieldLastRunError)
 }
 
+// SetScheduleSyncState sets the "schedule_sync_state" field.
+func (m *BackgroundTaskMutation) SetScheduleSyncState(s string) {
+	m.schedule_sync_state = &s
+}
+
+// ScheduleSyncState returns the value of the "schedule_sync_state" field in the mutation.
+func (m *BackgroundTaskMutation) ScheduleSyncState() (r string, exists bool) {
+	v := m.schedule_sync_state
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScheduleSyncState returns the old "schedule_sync_state" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldScheduleSyncState(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScheduleSyncState is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScheduleSyncState requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScheduleSyncState: %w", err)
+	}
+	return oldValue.ScheduleSyncState, nil
+}
+
+// ResetScheduleSyncState resets all changes to the "schedule_sync_state" field.
+func (m *BackgroundTaskMutation) ResetScheduleSyncState() {
+	m.schedule_sync_state = nil
+}
+
+// SetScheduleSyncError sets the "schedule_sync_error" field.
+func (m *BackgroundTaskMutation) SetScheduleSyncError(s string) {
+	m.schedule_sync_error = &s
+}
+
+// ScheduleSyncError returns the value of the "schedule_sync_error" field in the mutation.
+func (m *BackgroundTaskMutation) ScheduleSyncError() (r string, exists bool) {
+	v := m.schedule_sync_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScheduleSyncError returns the old "schedule_sync_error" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldScheduleSyncError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScheduleSyncError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScheduleSyncError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScheduleSyncError: %w", err)
+	}
+	return oldValue.ScheduleSyncError, nil
+}
+
+// ClearScheduleSyncError clears the value of the "schedule_sync_error" field.
+func (m *BackgroundTaskMutation) ClearScheduleSyncError() {
+	m.schedule_sync_error = nil
+	m.clearedFields[backgroundtask.FieldScheduleSyncError] = struct{}{}
+}
+
+// ScheduleSyncErrorCleared returns if the "schedule_sync_error" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) ScheduleSyncErrorCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldScheduleSyncError]
+	return ok
+}
+
+// ResetScheduleSyncError resets all changes to the "schedule_sync_error" field.
+func (m *BackgroundTaskMutation) ResetScheduleSyncError() {
+	m.schedule_sync_error = nil
+	delete(m.clearedFields, backgroundtask.FieldScheduleSyncError)
+}
+
+// SetScheduleSyncedAt sets the "schedule_synced_at" field.
+func (m *BackgroundTaskMutation) SetScheduleSyncedAt(t time.Time) {
+	m.schedule_synced_at = &t
+}
+
+// ScheduleSyncedAt returns the value of the "schedule_synced_at" field in the mutation.
+func (m *BackgroundTaskMutation) ScheduleSyncedAt() (r time.Time, exists bool) {
+	v := m.schedule_synced_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScheduleSyncedAt returns the old "schedule_synced_at" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldScheduleSyncedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScheduleSyncedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScheduleSyncedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScheduleSyncedAt: %w", err)
+	}
+	return oldValue.ScheduleSyncedAt, nil
+}
+
+// ClearScheduleSyncedAt clears the value of the "schedule_synced_at" field.
+func (m *BackgroundTaskMutation) ClearScheduleSyncedAt() {
+	m.schedule_synced_at = nil
+	m.clearedFields[backgroundtask.FieldScheduleSyncedAt] = struct{}{}
+}
+
+// ScheduleSyncedAtCleared returns if the "schedule_synced_at" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) ScheduleSyncedAtCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldScheduleSyncedAt]
+	return ok
+}
+
+// ResetScheduleSyncedAt resets all changes to the "schedule_synced_at" field.
+func (m *BackgroundTaskMutation) ResetScheduleSyncedAt() {
+	m.schedule_synced_at = nil
+	delete(m.clearedFields, backgroundtask.FieldScheduleSyncedAt)
+}
+
 // SetRevision sets the "revision" field.
 func (m *BackgroundTaskMutation) SetRevision(i int) {
 	m.revision = &i
@@ -1237,7 +1374,7 @@ func (m *BackgroundTaskMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackgroundTaskMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 20)
 	if m.created_at != nil {
 		fields = append(fields, backgroundtask.FieldCreatedAt)
 	}
@@ -1286,6 +1423,15 @@ func (m *BackgroundTaskMutation) Fields() []string {
 	if m.last_run_error != nil {
 		fields = append(fields, backgroundtask.FieldLastRunError)
 	}
+	if m.schedule_sync_state != nil {
+		fields = append(fields, backgroundtask.FieldScheduleSyncState)
+	}
+	if m.schedule_sync_error != nil {
+		fields = append(fields, backgroundtask.FieldScheduleSyncError)
+	}
+	if m.schedule_synced_at != nil {
+		fields = append(fields, backgroundtask.FieldScheduleSyncedAt)
+	}
 	if m.revision != nil {
 		fields = append(fields, backgroundtask.FieldRevision)
 	}
@@ -1329,6 +1475,12 @@ func (m *BackgroundTaskMutation) Field(name string) (ent.Value, bool) {
 		return m.LastRunSummary()
 	case backgroundtask.FieldLastRunError:
 		return m.LastRunError()
+	case backgroundtask.FieldScheduleSyncState:
+		return m.ScheduleSyncState()
+	case backgroundtask.FieldScheduleSyncError:
+		return m.ScheduleSyncError()
+	case backgroundtask.FieldScheduleSyncedAt:
+		return m.ScheduleSyncedAt()
 	case backgroundtask.FieldRevision:
 		return m.Revision()
 	}
@@ -1372,6 +1524,12 @@ func (m *BackgroundTaskMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldLastRunSummary(ctx)
 	case backgroundtask.FieldLastRunError:
 		return m.OldLastRunError(ctx)
+	case backgroundtask.FieldScheduleSyncState:
+		return m.OldScheduleSyncState(ctx)
+	case backgroundtask.FieldScheduleSyncError:
+		return m.OldScheduleSyncError(ctx)
+	case backgroundtask.FieldScheduleSyncedAt:
+		return m.OldScheduleSyncedAt(ctx)
 	case backgroundtask.FieldRevision:
 		return m.OldRevision(ctx)
 	}
@@ -1495,6 +1653,27 @@ func (m *BackgroundTaskMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetLastRunError(v)
 		return nil
+	case backgroundtask.FieldScheduleSyncState:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScheduleSyncState(v)
+		return nil
+	case backgroundtask.FieldScheduleSyncError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScheduleSyncError(v)
+		return nil
+	case backgroundtask.FieldScheduleSyncedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScheduleSyncedAt(v)
+		return nil
 	case backgroundtask.FieldRevision:
 		v, ok := value.(int)
 		if !ok {
@@ -1574,6 +1753,12 @@ func (m *BackgroundTaskMutation) ClearedFields() []string {
 	if m.FieldCleared(backgroundtask.FieldLastRunError) {
 		fields = append(fields, backgroundtask.FieldLastRunError)
 	}
+	if m.FieldCleared(backgroundtask.FieldScheduleSyncError) {
+		fields = append(fields, backgroundtask.FieldScheduleSyncError)
+	}
+	if m.FieldCleared(backgroundtask.FieldScheduleSyncedAt) {
+		fields = append(fields, backgroundtask.FieldScheduleSyncedAt)
+	}
 	return fields
 }
 
@@ -1614,6 +1799,12 @@ func (m *BackgroundTaskMutation) ClearField(name string) error {
 		return nil
 	case backgroundtask.FieldLastRunError:
 		m.ClearLastRunError()
+		return nil
+	case backgroundtask.FieldScheduleSyncError:
+		m.ClearScheduleSyncError()
+		return nil
+	case backgroundtask.FieldScheduleSyncedAt:
+		m.ClearScheduleSyncedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown BackgroundTask nullable field %s", name)
@@ -1670,6 +1861,15 @@ func (m *BackgroundTaskMutation) ResetField(name string) error {
 		return nil
 	case backgroundtask.FieldLastRunError:
 		m.ResetLastRunError()
+		return nil
+	case backgroundtask.FieldScheduleSyncState:
+		m.ResetScheduleSyncState()
+		return nil
+	case backgroundtask.FieldScheduleSyncError:
+		m.ResetScheduleSyncError()
+		return nil
+	case backgroundtask.FieldScheduleSyncedAt:
+		m.ResetScheduleSyncedAt()
 		return nil
 	case backgroundtask.FieldRevision:
 		m.ResetRevision()

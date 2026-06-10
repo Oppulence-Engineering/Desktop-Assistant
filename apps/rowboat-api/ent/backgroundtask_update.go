@@ -290,6 +290,60 @@ func (_u *BackgroundTaskUpdate) ClearLastRunError() *BackgroundTaskUpdate {
 	return _u
 }
 
+// SetScheduleSyncState sets the "schedule_sync_state" field.
+func (_u *BackgroundTaskUpdate) SetScheduleSyncState(v string) *BackgroundTaskUpdate {
+	_u.mutation.SetScheduleSyncState(v)
+	return _u
+}
+
+// SetNillableScheduleSyncState sets the "schedule_sync_state" field if the given value is not nil.
+func (_u *BackgroundTaskUpdate) SetNillableScheduleSyncState(v *string) *BackgroundTaskUpdate {
+	if v != nil {
+		_u.SetScheduleSyncState(*v)
+	}
+	return _u
+}
+
+// SetScheduleSyncError sets the "schedule_sync_error" field.
+func (_u *BackgroundTaskUpdate) SetScheduleSyncError(v string) *BackgroundTaskUpdate {
+	_u.mutation.SetScheduleSyncError(v)
+	return _u
+}
+
+// SetNillableScheduleSyncError sets the "schedule_sync_error" field if the given value is not nil.
+func (_u *BackgroundTaskUpdate) SetNillableScheduleSyncError(v *string) *BackgroundTaskUpdate {
+	if v != nil {
+		_u.SetScheduleSyncError(*v)
+	}
+	return _u
+}
+
+// ClearScheduleSyncError clears the value of the "schedule_sync_error" field.
+func (_u *BackgroundTaskUpdate) ClearScheduleSyncError() *BackgroundTaskUpdate {
+	_u.mutation.ClearScheduleSyncError()
+	return _u
+}
+
+// SetScheduleSyncedAt sets the "schedule_synced_at" field.
+func (_u *BackgroundTaskUpdate) SetScheduleSyncedAt(v time.Time) *BackgroundTaskUpdate {
+	_u.mutation.SetScheduleSyncedAt(v)
+	return _u
+}
+
+// SetNillableScheduleSyncedAt sets the "schedule_synced_at" field if the given value is not nil.
+func (_u *BackgroundTaskUpdate) SetNillableScheduleSyncedAt(v *time.Time) *BackgroundTaskUpdate {
+	if v != nil {
+		_u.SetScheduleSyncedAt(*v)
+	}
+	return _u
+}
+
+// ClearScheduleSyncedAt clears the value of the "schedule_synced_at" field.
+func (_u *BackgroundTaskUpdate) ClearScheduleSyncedAt() *BackgroundTaskUpdate {
+	_u.mutation.ClearScheduleSyncedAt()
+	return _u
+}
+
 // SetRevision sets the "revision" field.
 func (_u *BackgroundTaskUpdate) SetRevision(v int) *BackgroundTaskUpdate {
 	_u.mutation.ResetRevision()
@@ -529,6 +583,11 @@ func (_u *BackgroundTaskUpdate) check() error {
 			return &ValidationError{Name: "execution_target", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.execution_target": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ScheduleSyncState(); ok {
+		if err := backgroundtask.ScheduleSyncStateValidator(v); err != nil {
+			return &ValidationError{Name: "schedule_sync_state", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.schedule_sync_state": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Revision(); ok {
 		if err := backgroundtask.RevisionValidator(v); err != nil {
 			return &ValidationError{Name: "revision", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.revision": %w`, err)}
@@ -623,6 +682,21 @@ func (_u *BackgroundTaskUpdate) sqlSave(ctx context.Context) (_node int, err err
 	}
 	if _u.mutation.LastRunErrorCleared() {
 		_spec.ClearField(backgroundtask.FieldLastRunError, field.TypeString)
+	}
+	if value, ok := _u.mutation.ScheduleSyncState(); ok {
+		_spec.SetField(backgroundtask.FieldScheduleSyncState, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ScheduleSyncError(); ok {
+		_spec.SetField(backgroundtask.FieldScheduleSyncError, field.TypeString, value)
+	}
+	if _u.mutation.ScheduleSyncErrorCleared() {
+		_spec.ClearField(backgroundtask.FieldScheduleSyncError, field.TypeString)
+	}
+	if value, ok := _u.mutation.ScheduleSyncedAt(); ok {
+		_spec.SetField(backgroundtask.FieldScheduleSyncedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ScheduleSyncedAtCleared() {
+		_spec.ClearField(backgroundtask.FieldScheduleSyncedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Revision(); ok {
 		_spec.SetField(backgroundtask.FieldRevision, field.TypeInt, value)
@@ -1099,6 +1173,60 @@ func (_u *BackgroundTaskUpdateOne) ClearLastRunError() *BackgroundTaskUpdateOne 
 	return _u
 }
 
+// SetScheduleSyncState sets the "schedule_sync_state" field.
+func (_u *BackgroundTaskUpdateOne) SetScheduleSyncState(v string) *BackgroundTaskUpdateOne {
+	_u.mutation.SetScheduleSyncState(v)
+	return _u
+}
+
+// SetNillableScheduleSyncState sets the "schedule_sync_state" field if the given value is not nil.
+func (_u *BackgroundTaskUpdateOne) SetNillableScheduleSyncState(v *string) *BackgroundTaskUpdateOne {
+	if v != nil {
+		_u.SetScheduleSyncState(*v)
+	}
+	return _u
+}
+
+// SetScheduleSyncError sets the "schedule_sync_error" field.
+func (_u *BackgroundTaskUpdateOne) SetScheduleSyncError(v string) *BackgroundTaskUpdateOne {
+	_u.mutation.SetScheduleSyncError(v)
+	return _u
+}
+
+// SetNillableScheduleSyncError sets the "schedule_sync_error" field if the given value is not nil.
+func (_u *BackgroundTaskUpdateOne) SetNillableScheduleSyncError(v *string) *BackgroundTaskUpdateOne {
+	if v != nil {
+		_u.SetScheduleSyncError(*v)
+	}
+	return _u
+}
+
+// ClearScheduleSyncError clears the value of the "schedule_sync_error" field.
+func (_u *BackgroundTaskUpdateOne) ClearScheduleSyncError() *BackgroundTaskUpdateOne {
+	_u.mutation.ClearScheduleSyncError()
+	return _u
+}
+
+// SetScheduleSyncedAt sets the "schedule_synced_at" field.
+func (_u *BackgroundTaskUpdateOne) SetScheduleSyncedAt(v time.Time) *BackgroundTaskUpdateOne {
+	_u.mutation.SetScheduleSyncedAt(v)
+	return _u
+}
+
+// SetNillableScheduleSyncedAt sets the "schedule_synced_at" field if the given value is not nil.
+func (_u *BackgroundTaskUpdateOne) SetNillableScheduleSyncedAt(v *time.Time) *BackgroundTaskUpdateOne {
+	if v != nil {
+		_u.SetScheduleSyncedAt(*v)
+	}
+	return _u
+}
+
+// ClearScheduleSyncedAt clears the value of the "schedule_synced_at" field.
+func (_u *BackgroundTaskUpdateOne) ClearScheduleSyncedAt() *BackgroundTaskUpdateOne {
+	_u.mutation.ClearScheduleSyncedAt()
+	return _u
+}
+
 // SetRevision sets the "revision" field.
 func (_u *BackgroundTaskUpdateOne) SetRevision(v int) *BackgroundTaskUpdateOne {
 	_u.mutation.ResetRevision()
@@ -1351,6 +1479,11 @@ func (_u *BackgroundTaskUpdateOne) check() error {
 			return &ValidationError{Name: "execution_target", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.execution_target": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ScheduleSyncState(); ok {
+		if err := backgroundtask.ScheduleSyncStateValidator(v); err != nil {
+			return &ValidationError{Name: "schedule_sync_state", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.schedule_sync_state": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Revision(); ok {
 		if err := backgroundtask.RevisionValidator(v); err != nil {
 			return &ValidationError{Name: "revision", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.revision": %w`, err)}
@@ -1462,6 +1595,21 @@ func (_u *BackgroundTaskUpdateOne) sqlSave(ctx context.Context) (_node *Backgrou
 	}
 	if _u.mutation.LastRunErrorCleared() {
 		_spec.ClearField(backgroundtask.FieldLastRunError, field.TypeString)
+	}
+	if value, ok := _u.mutation.ScheduleSyncState(); ok {
+		_spec.SetField(backgroundtask.FieldScheduleSyncState, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ScheduleSyncError(); ok {
+		_spec.SetField(backgroundtask.FieldScheduleSyncError, field.TypeString, value)
+	}
+	if _u.mutation.ScheduleSyncErrorCleared() {
+		_spec.ClearField(backgroundtask.FieldScheduleSyncError, field.TypeString)
+	}
+	if value, ok := _u.mutation.ScheduleSyncedAt(); ok {
+		_spec.SetField(backgroundtask.FieldScheduleSyncedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ScheduleSyncedAtCleared() {
+		_spec.ClearField(backgroundtask.FieldScheduleSyncedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Revision(); ok {
 		_spec.SetField(backgroundtask.FieldRevision, field.TypeInt, value)

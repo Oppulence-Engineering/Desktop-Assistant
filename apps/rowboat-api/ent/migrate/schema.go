@@ -27,6 +27,9 @@ var (
 		{Name: "last_run_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_run_summary", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "last_run_error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "schedule_sync_state", Type: field.TypeString, Default: "paused"},
+		{Name: "schedule_sync_error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "schedule_synced_at", Type: field.TypeTime, Nullable: true},
 		{Name: "revision", Type: field.TypeInt, Default: 1},
 		{Name: "user_background_tasks", Type: field.TypeUUID},
 	}
@@ -38,7 +41,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "background_tasks_users_background_tasks",
-				Columns:    []*schema.Column{BackgroundTasksColumns[18]},
+				Columns:    []*schema.Column{BackgroundTasksColumns[21]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -47,7 +50,7 @@ var (
 			{
 				Name:    "backgroundtask_slug_user_background_tasks",
 				Unique:  true,
-				Columns: []*schema.Column{BackgroundTasksColumns[3], BackgroundTasksColumns[18]},
+				Columns: []*schema.Column{BackgroundTasksColumns[3], BackgroundTasksColumns[21]},
 			},
 		},
 	}

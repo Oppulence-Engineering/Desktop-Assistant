@@ -52,6 +52,12 @@ type BackgroundTask struct {
 	LastRunSummary string `json:"last_run_summary,omitempty"`
 	// LastRunError holds the value of the "last_run_error" field.
 	LastRunError string `json:"last_run_error,omitempty"`
+	// ScheduleSyncState holds the value of the "schedule_sync_state" field.
+	ScheduleSyncState string `json:"schedule_sync_state,omitempty"`
+	// ScheduleSyncError holds the value of the "schedule_sync_error" field.
+	ScheduleSyncError string `json:"schedule_sync_error,omitempty"`
+	// ScheduleSyncedAt holds the value of the "schedule_synced_at" field.
+	ScheduleSyncedAt *time.Time `json:"schedule_synced_at,omitempty"`
 	// Revision holds the value of the "revision" field.
 	Revision int `json:"revision,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -142,9 +148,9 @@ func (*BackgroundTask) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case backgroundtask.FieldRevision:
 			values[i] = new(sql.NullInt64)
-		case backgroundtask.FieldSlug, backgroundtask.FieldName, backgroundtask.FieldInstructions, backgroundtask.FieldTriggersJSON, backgroundtask.FieldModel, backgroundtask.FieldProvider, backgroundtask.FieldExecutionTarget, backgroundtask.FieldLastRunID, backgroundtask.FieldLastRunSummary, backgroundtask.FieldLastRunError:
+		case backgroundtask.FieldSlug, backgroundtask.FieldName, backgroundtask.FieldInstructions, backgroundtask.FieldTriggersJSON, backgroundtask.FieldModel, backgroundtask.FieldProvider, backgroundtask.FieldExecutionTarget, backgroundtask.FieldLastRunID, backgroundtask.FieldLastRunSummary, backgroundtask.FieldLastRunError, backgroundtask.FieldScheduleSyncState, backgroundtask.FieldScheduleSyncError:
 			values[i] = new(sql.NullString)
-		case backgroundtask.FieldCreatedAt, backgroundtask.FieldUpdatedAt, backgroundtask.FieldTaskCreatedAt, backgroundtask.FieldLastAttemptAt, backgroundtask.FieldLastRunAt:
+		case backgroundtask.FieldCreatedAt, backgroundtask.FieldUpdatedAt, backgroundtask.FieldTaskCreatedAt, backgroundtask.FieldLastAttemptAt, backgroundtask.FieldLastRunAt, backgroundtask.FieldScheduleSyncedAt:
 			values[i] = new(sql.NullTime)
 		case backgroundtask.FieldID:
 			values[i] = new(uuid.UUID)
@@ -268,6 +274,25 @@ func (_m *BackgroundTask) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field last_run_error", values[i])
 			} else if value.Valid {
 				_m.LastRunError = value.String
+			}
+		case backgroundtask.FieldScheduleSyncState:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field schedule_sync_state", values[i])
+			} else if value.Valid {
+				_m.ScheduleSyncState = value.String
+			}
+		case backgroundtask.FieldScheduleSyncError:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field schedule_sync_error", values[i])
+			} else if value.Valid {
+				_m.ScheduleSyncError = value.String
+			}
+		case backgroundtask.FieldScheduleSyncedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field schedule_synced_at", values[i])
+			} else if value.Valid {
+				_m.ScheduleSyncedAt = new(time.Time)
+				*_m.ScheduleSyncedAt = value.Time
 			}
 		case backgroundtask.FieldRevision:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -394,6 +419,17 @@ func (_m *BackgroundTask) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("last_run_error=")
 	builder.WriteString(_m.LastRunError)
+	builder.WriteString(", ")
+	builder.WriteString("schedule_sync_state=")
+	builder.WriteString(_m.ScheduleSyncState)
+	builder.WriteString(", ")
+	builder.WriteString("schedule_sync_error=")
+	builder.WriteString(_m.ScheduleSyncError)
+	builder.WriteString(", ")
+	if v := _m.ScheduleSyncedAt; v != nil {
+		builder.WriteString("schedule_synced_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("revision=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Revision))
