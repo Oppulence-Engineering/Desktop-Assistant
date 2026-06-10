@@ -41,8 +41,37 @@ jobs:
             }
           - { os: ubuntu-22.04, plat: linux, arch: x64, flags: "-DGGML_VULKAN=ON" }
     runs-on: ${{ matrix.os }}
+    env:
+      # LunarG Vulkan SDK pin for the Windows installer (Linux uses the apt repo,
+      # which always serves the current SDK). Bump alongside the whisper PIN.
+      VULKAN_VERSION: 1.4.313.2
     steps:
       - uses: actions/checkout@v4
+
+      # The Vulkan legs (Linux/Windows) need the Vulkan SDK — loader, headers and
+      # the glslc shader compiler — which the GitHub runners don't ship. macOS uses
+      # Metal and needs nothing here. Without this, cmake's find_package(Vulkan)
+      # fails at configure ("missing: Vulkan_LIBRARY Vulkan_INCLUDE_DIR glslc").
+      - name: Install Vulkan SDK (Linux)
+        if: matrix.plat == 'linux'
+        shell: bash
+        run: |
+          wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc \
+            | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc >/dev/null
+          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list \
+            https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
+          sudo apt-get update
+          sudo apt-get install -y vulkan-sdk
+
+      - name: Install Vulkan SDK (Windows)
+        if: matrix.plat == 'win32'
+        shell: pwsh
+        run: |
+          curl.exe -L -o "$env:RUNNER_TEMP\VulkanSDK-Installer.exe" `
+            "https://sdk.lunarg.com/sdk/download/${env:VULKAN_VERSION}/windows/vulkansdk-windows-X64-${env:VULKAN_VERSION}.exe"
+          & "$env:RUNNER_TEMP\VulkanSDK-Installer.exe" --accept-licenses --default-answer --confirm-command install
+          Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
+          Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
 
       - name: Build whisper-cli (pinned tag)
         shell: bash
