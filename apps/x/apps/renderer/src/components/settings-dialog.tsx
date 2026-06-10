@@ -48,11 +48,7 @@ import { SecuritySettings } from "@/components/settings/security-settings";
 import { ModelSettings, SolomonModelSettings } from "@/components/settings/model-settings";
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { SettingsSection } from "@/components/settings/settings-ui";
-import {
-  PRODUCT_NAME,
-  PRODUCT_PROVIDER_ID,
-  getProductProviderState,
-} from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME, getProductProviderState } from "@x/shared/dist/branding.js";
 import type { ApprovalPolicy } from "@x/shared/src/code-mode.js";
 
 type ConfigTab =
