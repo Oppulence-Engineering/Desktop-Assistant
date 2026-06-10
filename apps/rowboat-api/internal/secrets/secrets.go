@@ -24,6 +24,7 @@ const (
 	KeyGoogleOAuthClientSecret = "GOOGLE_OAUTH_CLIENT_SECRET"
 	KeySlackClientID           = "SLACK_CLIENT_ID"
 	KeySlackClientSecret       = "SLACK_CLIENT_SECRET"
+	KeyPlain                   = "PLAIN_API_KEY"
 )
 
 // Store holds vendor secrets behind a read-write lock so background refresh is
@@ -47,6 +48,7 @@ func NewFromConfig(cfg appconfig.Config) *Store {
 		KeyGoogleOAuthClientSecret: cfg.GoogleOAuthClientSecret,
 		KeySlackClientID:           cfg.SlackClientID,
 		KeySlackClientSecret:       cfg.SlackClientSecret,
+		KeyPlain:                   cfg.PlainAPIKey,
 	}}
 }
 
@@ -99,3 +101,6 @@ func (s *Store) SlackClientID() string { return s.Get(KeySlackClientID) }
 
 // SlackClientSecret returns the Slack app's OAuth client secret.
 func (s *Store) SlackClientSecret() string { return s.Get(KeySlackClientSecret) }
+
+// Plain returns the Plain (plain.com) API key.
+func (s *Store) Plain() string { return s.Get(KeyPlain) }

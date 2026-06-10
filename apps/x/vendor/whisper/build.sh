@@ -18,7 +18,12 @@ git clone --branch "$TAG" --depth 1 https://github.com/ggml-org/whisper.cpp "$SR
 
 # Static-link ggml/whisper into one binary to minimize Mach-O/PE files to sign
 # and avoid @rpath dylib issues.
-cmake -S "$SRC" -B "$SRC/build" $FLAGS -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release
+#
+# FLAGS may carry a quoted multi-word value (Windows: -G "Visual Studio 17 2022").
+# eval re-tokenizes it honoring those quotes; a plain unquoted $FLAGS expansion
+# would word-split the generator into "-G Visual" and fail ("Could not create
+# named generator Visual"). $SRC is escaped so eval expands it as one quoted arg.
+eval "cmake -S \"\$SRC\" -B \"\$SRC/build\" $FLAGS -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release"
 cmake --build "$SRC/build" -j --config Release
 
 mkdir -p "$HERE/out"

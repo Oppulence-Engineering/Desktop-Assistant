@@ -23,6 +23,7 @@ import {
   Plug,
   HelpCircle,
   MessageCircle,
+  MessageSquare,
   Bug,
   Terminal,
   AlertTriangle,
@@ -48,6 +49,8 @@ import { SecuritySettings } from "@/components/settings/security-settings";
 import { ModelSettings, SolomonModelSettings } from "@/components/settings/model-settings";
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { SettingsSection } from "@/components/settings/settings-ui";
+import { FeedbackDialog } from "@/components/feedback-dialog";
+import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { PRODUCT_NAME, getProductProviderState } from "@x/shared/dist/branding.js";
 import type { ApprovalPolicy } from "@x/shared/src/code-mode.js";
 
@@ -173,12 +176,14 @@ interface SettingsDialogProps {
 // --- Help & Support tab ---
 
 function HelpSettings() {
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const { signedIn } = useSolomonAccount();
   const links = [
     {
       icon: Bug,
       wrap: "bg-destructive/10 text-destructive",
       title: "Report a bug",
-      subtitle: `Send feedback to the ${PRODUCT_NAME} team`,
+      subtitle: "Open a GitHub issue",
       href: "https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/new",
     },
     {
@@ -200,6 +205,26 @@ function HelpSettings() {
     <div className="space-y-6">
       <SettingsSection title="Get help" description="Reach the team or the community.">
         <div className="space-y-2">
+          <button
+            type="button"
+            disabled={!signedIn}
+            onClick={() => setFeedbackOpen(true)}
+            className="group flex w-full items-center gap-3 rounded-none border bg-card px-3.5 py-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-none bg-primary/10 text-primary">
+              <MessageSquare className="size-4" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-medium">Send feedback</span>
+              <span className="block text-xs text-muted-foreground">
+                {signedIn
+                  ? `Reach the ${PRODUCT_NAME} team — we reply by email`
+                  : "Sign in to send feedback"}
+              </span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+          </button>
+          <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
           {links.map((l) => (
             <button
               key={l.title}

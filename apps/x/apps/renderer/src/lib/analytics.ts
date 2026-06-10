@@ -149,3 +149,7 @@ export function searchExecuted(types: string[]) {
 export function noteExported(format: string) {
   posthog.capture("note_exported", { format });
 }
+
+export function feedbackSubmitted(category: string) {
+  posthog.capture("feedback_submitted", { category });
+}

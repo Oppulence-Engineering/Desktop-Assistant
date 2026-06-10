@@ -200,6 +200,14 @@ config:
   GRAPHQL_INTROSPECTION_ENABLED: "false"
   GRAPHQL_MAX_COMPLEXITY: "250"
   GRAPHQL_MAX_DEPTH: "12"
+  # Plain (plain.com) feedback relay. Label type ids are workspace data; these
+  # are the "Solomon AI" Plain workspace's label types mapped per category
+  # (bug→Bug, feature→Feature Request, question→Support, other→General). There
+  # is a single Plain workspace, so staging/prod share these ids. Unmapped
+  # categories submit unlabelled. PLAIN_API_KEY comes from Infisical.
+  PLAIN_API_URL: https://core-api.uk.plain.com/graphql/v1
+  PLAIN_LABEL_TYPE_IDS: '{"bug":"lt_01JN2Y0T823VHEYPD9KX3YA3XZ","feature":"lt_01HXTDSYX6SG3V7YB8CNB0YZB5","question":"lt_01JN2Y1BFY6FXD90REETNPWFJA","other":"lt_01JN2Y280HG5F8BH33Q1CDN7E7"}'
+  PLAIN_TITLE_PREFIX: ""
   TEMPORAL_ENABLED: "false"
   TEMPORAL_ADDRESS: temporal-frontend.temporal:7233
   TEMPORAL_NAMESPACE: default
@@ -260,3 +268,4 @@ secretValues: {}
   # ORY_BROKER_CLIENT_SECRET: ""
   # INFISICAL_TOKEN: ""
   # INFISICAL_PROJECT_ID: ""
+  # PLAIN_API_KEY: ""
