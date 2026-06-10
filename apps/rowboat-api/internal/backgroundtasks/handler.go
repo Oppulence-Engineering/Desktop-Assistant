@@ -80,7 +80,12 @@ type taskView struct {
 	LastRunAt       *string         `json:"lastRunAt,omitempty"`
 	LastRunSummary  string          `json:"lastRunSummary,omitempty"`
 	LastRunError    string          `json:"lastRunError,omitempty"`
-	Revision        int             `json:"revision"`
+	// Temporal Schedule sync health (RFC 005). Server-owned: absent from the
+	// create/patch request types so user writes can never force "current".
+	ScheduleSyncState string  `json:"scheduleSyncState"`
+	ScheduleSyncError string  `json:"scheduleSyncError,omitempty"`
+	ScheduleSyncedAt  *string `json:"scheduleSyncedAt,omitempty"`
+	Revision          int     `json:"revision"`
 }
 
 type artifactView struct {
@@ -1481,7 +1486,12 @@ func viewTask(t *ent.BackgroundTask) taskView {
 		LastRunAt:       formatOptionalTime(t.LastRunAt),
 		LastRunSummary:  t.LastRunSummary,
 		LastRunError:    t.LastRunError,
-		Revision:        t.Revision,
+
+		ScheduleSyncState: t.ScheduleSyncState,
+		ScheduleSyncError: t.ScheduleSyncError,
+		ScheduleSyncedAt:  formatOptionalTime(t.ScheduleSyncedAt),
+
+		Revision: t.Revision,
 	}
 }
 
