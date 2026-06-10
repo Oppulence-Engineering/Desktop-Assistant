@@ -12,13 +12,9 @@ package googlewatch
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -27,7 +23,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -42,10 +38,6 @@ const (
 	// renewal is a couple of HTTP calls; a claim older than this belongs to a
 	// crashed renewer and may be stolen.
 	claimTTL = 10 * time.Minute
-
-	defaultGmailBase    = "https://gmail.googleapis.com"
-	defaultCalendarBase = "https://www.googleapis.com/calendar/v3"
-	defaultTokenURL     = "https://oauth2.googleapis.com/token"
 )
 
 // Config tunes the manager.
@@ -67,7 +59,7 @@ type Manager struct {
 	client  *ent.Client
 	sealer  *crypto.Sealer
 	secrets *secrets.Store
-	http    *outbound.Client
+	google  *googleapi.Client
 	cfg     Config
 	log     *zap.Logger
 	now     func() time.Time
@@ -75,15 +67,6 @@ type Manager struct {
 
 // New builds a Manager, applying endpoint defaults.
 func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, cfg Config, log *zap.Logger) *Manager {
-	if cfg.TokenURL == "" {
-		cfg.TokenURL = defaultTokenURL
-	}
-	if cfg.GmailBaseURL == "" {
-		cfg.GmailBaseURL = defaultGmailBase
-	}
-	if cfg.CalendarBaseURL == "" {
-		cfg.CalendarBaseURL = defaultCalendarBase
-	}
 	if cfg.RenewMargin <= 0 {
 		cfg.RenewMargin = 24 * time.Hour
 	}
@@ -97,12 +80,10 @@ func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, cfg Conf
 		client:  client,
 		sealer:  sealer,
 		secrets: sec,
-		http: outbound.NewClient(outbound.Policy{
-			Name:                  "google-watch",
-			Timeout:               20 * time.Second,
-			ResponseHeaderTimeout: 10 * time.Second,
-			MaxConcurrent:         16,
-			MaxResponseBytes:      1 << 20,
+		google: googleapi.New(googleapi.Config{
+			TokenURL:        cfg.TokenURL,
+			GmailBaseURL:    cfg.GmailBaseURL,
+			CalendarBaseURL: cfg.CalendarBaseURL,
 		}),
 		cfg: cfg,
 		log: log,
@@ -256,8 +237,11 @@ func (m *Manager) ensureWatch(ctx context.Context, owner *ent.User, conn *ent.OA
 // register performs the Google-side registration for one kind and persists
 // the result on the row.
 func (m *Manager) register(ctx context.Context, conn *ent.OAuthConnection, kind string, row *ent.GoogleWatch) error {
-	token, err := m.accessToken(ctx, conn)
+	token, err := m.google.AccessTokenForConnection(ctx, m.sealer, m.secrets, conn)
 	if err != nil {
+		if errors.Is(err, googleapi.ErrReconnectRequired) {
+			return errReconnectRequired
+		}
 		return err
 	}
 	switch kind {
@@ -284,7 +268,7 @@ func (m *Manager) registerGmail(ctx context.Context, token string, conn *ent.OAu
 		"labelIds": []string{"INBOX"},
 	}
 	var resp googleWatchResponse
-	if err := m.googleJSON(ctx, token, m.cfg.GmailBaseURL+"/gmail/v1/users/me/watch", body, &resp); err != nil {
+	if err := m.google.PostJSON(ctx, token, m.google.GmailBaseURL()+"/gmail/v1/users/me/watch", body, &resp); err != nil {
 		return fmt.Errorf("gmail users.watch: %w", err)
 	}
 	exp, err := parseMsEpoch(resp.Expiration)
@@ -305,7 +289,7 @@ func (m *Manager) registerCalendar(ctx context.Context, token string, conn *ent.
 	// the old one best-effort first (an expired/unknown channel 404s; fine).
 	if row.ChannelID != "" && row.ResourceID != "" {
 		stopBody := map[string]any{"id": row.ChannelID, "resourceId": row.ResourceID}
-		if err := m.googleJSON(ctx, token, m.cfg.CalendarBaseURL+"/channels/stop", stopBody, nil); err != nil {
+		if err := m.google.PostJSON(ctx, token, m.google.CalendarBaseURL()+"/channels/stop", stopBody, nil); err != nil {
 			m.log.Warn("calendar channel stop failed (continuing)",
 				zap.String("channelId", row.ChannelID), zap.Error(err))
 		}
@@ -321,7 +305,7 @@ func (m *Manager) registerCalendar(ctx context.Context, token string, conn *ent.
 		"token":   m.cfg.ChannelToken,
 	}
 	var resp googleWatchResponse
-	if err := m.googleJSON(ctx, token, m.cfg.CalendarBaseURL+"/calendars/primary/events/watch", body, &resp); err != nil {
+	if err := m.google.PostJSON(ctx, token, m.google.CalendarBaseURL()+"/calendars/primary/events/watch", body, &resp); err != nil {
 		return fmt.Errorf("calendar events.watch: %w", err)
 	}
 	exp, err := parseMsEpoch(resp.Expiration)
@@ -369,88 +353,6 @@ func (m *Manager) sweepOrphans(ctx context.Context, connected map[uuid.UUID]*ent
 // errReconnectRequired marks a dead refresh token: retrying cannot fix it,
 // only a user reconnect can (which rewrites the connection row).
 var errReconnectRequired = errors.New("googlewatch: invalid_grant; user must reconnect Google")
-
-// accessToken exchanges the connection's sealed refresh token for an access
-// token using the server-held Google OAuth client.
-func (m *Manager) accessToken(ctx context.Context, conn *ent.OAuthConnection) (string, error) {
-	clientID := m.secrets.GoogleOAuthClientID()
-	clientSecret := m.secrets.GoogleOAuthClientSecret()
-	if clientID == "" || clientSecret == "" {
-		return "", errors.New("google oauth client not configured")
-	}
-	refresh, err := m.sealer.OpenString(conn.RefreshTokenEncrypted)
-	if err != nil {
-		return "", fmt.Errorf("unseal refresh token: %w", err)
-	}
-
-	form := url.Values{}
-	form.Set("client_id", clientID)
-	form.Set("client_secret", clientSecret)
-	form.Set("refresh_token", refresh)
-	form.Set("grant_type", "refresh_token")
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, m.cfg.TokenURL, strings.NewReader(form.Encode()))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := m.http.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("google token endpoint: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-	raw, err := outbound.ReadAll(resp.Body, m.http.MaxResponseBytes())
-	if err != nil {
-		return "", err
-	}
-	if resp.StatusCode != http.StatusOK {
-		var gerr struct {
-			Error string `json:"error"`
-		}
-		_ = json.Unmarshal(raw, &gerr)
-		if gerr.Error == "invalid_grant" {
-			return "", errReconnectRequired
-		}
-		return "", fmt.Errorf("google token endpoint returned %d (%s)", resp.StatusCode, gerr.Error)
-	}
-	var tok struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.Unmarshal(raw, &tok); err != nil || tok.AccessToken == "" {
-		return "", errors.New("google token endpoint returned no access token")
-	}
-	return tok.AccessToken, nil
-}
-
-// googleJSON POSTs a JSON body with the bearer token and decodes the JSON
-// response into out (out may be nil for fire-and-acknowledge calls).
-func (m *Manager) googleJSON(ctx context.Context, token, endpoint string, body any, out any) error {
-	raw, err := json.Marshal(body)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(string(raw)))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-	resp, err := m.http.Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	respBody, err := outbound.ReadAll(resp.Body, m.http.MaxResponseBytes())
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode >= http.StatusBadRequest {
-		return fmt.Errorf("google api %s returned %d", endpoint, resp.StatusCode)
-	}
-	if out == nil {
-		return nil
-	}
-	return json.Unmarshal(respBody, out)
-}
 
 // parseMsEpoch parses Google's decimal-string millisecond timestamps.
 func parseMsEpoch(s string) (time.Time, error) {
