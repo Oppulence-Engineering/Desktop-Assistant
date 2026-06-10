@@ -10,7 +10,10 @@ const PRODUCT_SLUG = "solomon-ai";
 const PRODUCT_ARTIFACT_NAME = "Solomon-AI";
 const LEGACY_DEEP_LINK_SCHEME = "rowboat";
 const appleSigningConfigured = Boolean(
-  process.env.APPLE_ID && process.env.APPLE_PASSWORD && process.env.APPLE_TEAM_ID,
+  process.env.APPLE_ID?.trim() &&
+  process.env.APPLE_PASSWORD?.trim() &&
+  process.env.APPLE_TEAM_ID?.trim() &&
+  process.env.APPLE_CERTIFICATE?.trim(),
 );
 
 const packagerConfig = {
@@ -56,7 +59,9 @@ module.exports = {
       name: "@electron-forge/maker-dmg",
       config: (arch) => ({
         format: "ULFO",
+        title: PRODUCT_NAME,
         name: `${PRODUCT_ARTIFACT_NAME}-darwin-${arch}-${pkg.version}`, // Architecture-specific name to avoid conflicts
+        volumeName: "Solomon AI", // short (<27 chars) — long names break the macOS DMG build
       }),
     },
     {

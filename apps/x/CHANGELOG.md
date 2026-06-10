@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.12](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.11...v0.1.12) (2026-06-07)
+
+
+### Bug Fixes
+
+* **x:** add volumeName to DMG maker to fix macOS build ([308b018](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/308b0188adb55b1cde8165dfe147f4fe5b1791c8))
+* **x:** set short DMG volume title ([f018d78](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f018d780c35b3cec93d4af796418dcf2e85ed0bc))
+* **x:** skip notarization when Apple credentials are missing or empty ([df36f93](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/df36f937269193d0f49226194888872adc5e10d6))
+
+## [0.1.11](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.10...v0.1.11) (2026-06-06)
+
+
+### Features
+
+* **x:** ElevenLabs UI rework + engineering quality gates ([#40](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/40)) ([27cf9b5](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/27cf9b5b9db1c8739c0ca1844606d6e3acc95133))
+
+
+### Bug Fixes
+
+* address code mode review feedback ([a5f10f6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a5f10f63ced50bea51d28f2485632e7705ddcddb))
+
 ## [0.1.10](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.9...v0.1.10) (2026-06-06)
 
 
