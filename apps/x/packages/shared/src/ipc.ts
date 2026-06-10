@@ -1277,6 +1277,8 @@ const ipcSchemas = {
           (u) => {
             const lower = u.trim().toLowerCase();
             if (lower.startsWith("javascript:")) return false;
+            if (lower.startsWith("data:")) return false;
+            if (lower.startsWith("vbscript:")) return false;
             if (lower.startsWith("file://")) return false;
             if (lower.startsWith("chrome://")) return false;
             if (lower.startsWith("chrome-extension://")) return false;
@@ -1309,6 +1311,8 @@ const ipcSchemas = {
           (u) => {
             const lower = u.trim().toLowerCase();
             if (lower.startsWith("javascript:")) return false;
+            if (lower.startsWith("data:")) return false;
+            if (lower.startsWith("vbscript:")) return false;
             if (lower.startsWith("file://")) return false;
             if (lower.startsWith("chrome://")) return false;
             if (lower.startsWith("chrome-extension://")) return false;
