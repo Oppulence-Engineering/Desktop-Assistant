@@ -29,6 +29,8 @@ const (
 	EdgeSubscription = "subscription"
 	// EdgeLedgerEntries holds the string denoting the ledger_entries edge name in mutations.
 	EdgeLedgerEntries = "ledger_entries"
+	// EdgeMeetingMinuteUsages holds the string denoting the meeting_minute_usages edge name in mutations.
+	EdgeMeetingMinuteUsages = "meeting_minute_usages"
 	// EdgeLlmUsages holds the string denoting the llm_usages edge name in mutations.
 	EdgeLlmUsages = "llm_usages"
 	// EdgeOauthConnections holds the string denoting the oauth_connections edge name in mutations.
@@ -65,6 +67,13 @@ const (
 	LedgerEntriesInverseTable = "credit_ledgers"
 	// LedgerEntriesColumn is the table column denoting the ledger_entries relation/edge.
 	LedgerEntriesColumn = "user_ledger_entries"
+	// MeetingMinuteUsagesTable is the table that holds the meeting_minute_usages relation/edge.
+	MeetingMinuteUsagesTable = "meeting_minute_usages"
+	// MeetingMinuteUsagesInverseTable is the table name for the MeetingMinuteUsage entity.
+	// It exists in this package in order to avoid circular dependency with the "meetingminuteusage" package.
+	MeetingMinuteUsagesInverseTable = "meeting_minute_usages"
+	// MeetingMinuteUsagesColumn is the table column denoting the meeting_minute_usages relation/edge.
+	MeetingMinuteUsagesColumn = "user_meeting_minute_usages"
 	// LlmUsagesTable is the table that holds the llm_usages relation/edge.
 	LlmUsagesTable = "llm_usages"
 	// LlmUsagesInverseTable is the table name for the LLMUsage entity.
@@ -224,6 +233,20 @@ func ByLedgerEntries(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByMeetingMinuteUsagesCount orders the results by meeting_minute_usages count.
+func ByMeetingMinuteUsagesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMeetingMinuteUsagesStep(), opts...)
+	}
+}
+
+// ByMeetingMinuteUsages orders the results by meeting_minute_usages terms.
+func ByMeetingMinuteUsages(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMeetingMinuteUsagesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByLlmUsagesCount orders the results by llm_usages count.
 func ByLlmUsagesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -375,6 +398,13 @@ func newLedgerEntriesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(LedgerEntriesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, LedgerEntriesTable, LedgerEntriesColumn),
+	)
+}
+func newMeetingMinuteUsagesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MeetingMinuteUsagesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MeetingMinuteUsagesTable, MeetingMinuteUsagesColumn),
 	)
 }
 func newLlmUsagesStep() *sqlgraph.Step {

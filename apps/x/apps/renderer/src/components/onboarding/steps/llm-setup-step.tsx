@@ -1,6 +1,5 @@
-import { Loader2, CheckCircle2, ArrowLeft, X, Lightbulb } from "@/lib/icons";
+import { Loader2, X, Lightbulb } from "@/lib/icons";
 import { motion } from "motion/react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,10 +18,7 @@ import {
   VercelIcon,
   GenericApiIcon,
 } from "../provider-icons";
-import type {
-  OnboardingState,
-  LlmProviderFlavor,
-} from "../use-onboarding-state";
+import type { OnboardingState, LlmProviderFlavor } from "../use-onboarding-state";
 import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
 
 interface LlmSetupStepProps {
@@ -104,17 +100,13 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
     modelsLoading,
     modelsError,
     activeConfig,
-    testState,
     setTestState,
     showApiKey,
     showBaseURL,
     isLocalProvider,
-    canTest,
     showMoreProviders,
     setShowMoreProviders,
     updateProviderConfig,
-    handleTestAndSaveLlmConfig,
-    handleBack,
     upsellDismissed,
     setUpsellDismissed,
     handleSwitchToRowboat,
@@ -124,10 +116,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
   const modelsForProvider = modelsCatalog[llmProvider] || [];
   const showModelInput = isLocalProvider || modelsForProvider.length === 0;
 
-  const renderProviderCard = (
-    provider: (typeof primaryProviders)[0],
-    index: number,
-  ) => {
+  const renderProviderCard = (provider: (typeof primaryProviders)[0], index: number) => {
     const isSelected = llmProvider === provider.id;
     return (
       <motion.button
@@ -157,9 +146,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
           </div>
           <div>
             <div className="text-sm font-semibold">{provider.name}</div>
-            <div className="text-xs text-muted-foreground">
-              {provider.description}
-            </div>
+            <div className="text-xs text-muted-foreground">{provider.description}</div>
           </div>
         </div>
       </motion.button>
@@ -169,9 +156,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
   return (
     <div className="flex flex-col flex-1">
       {/* Title */}
-      <h2 className="text-3xl font-bold tracking-tight text-center mb-2">
-        Choose your model
-      </h2>
+      <h2 className="text-3xl font-bold tracking-tight text-center mb-2">Choose your model</h2>
       <p className="text-base text-muted-foreground text-center mb-6">
         Select a provider and configure your API key
       </p>
@@ -187,10 +172,9 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
           <Lightbulb className="size-5 text-primary shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm text-foreground">
-              <span className="font-medium">Tip:</span> Hosted models
-              recommended. Locally run LLMs can struggle with {PRODUCT_NAME}'s parallel
-              background agents. Bring your own API keys below, or sign in for
-              instant access.
+              <span className="font-medium">Tip:</span> Hosted models recommended. Locally run LLMs
+              can struggle with {PRODUCT_NAME}'s parallel background agents. Bring your own API keys
+              below, or sign in for instant access.
             </p>
             <button
               onClick={handleSwitchToRowboat}
@@ -239,9 +223,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2 min-w-0">
-            <label className="text-xs font-medium text-muted-foreground">
-              Assistant Model
-            </label>
+            <label className="text-xs font-medium text-muted-foreground">Assistant Model</label>
             {modelsLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
@@ -250,17 +232,13 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
             ) : showModelInput ? (
               <Input
                 value={activeConfig.model}
-                onChange={(e) =>
-                  updateProviderConfig(llmProvider, { model: e.target.value })
-                }
+                onChange={(e) => updateProviderConfig(llmProvider, { model: e.target.value })}
                 placeholder="Enter model"
               />
             ) : (
               <Select
                 value={activeConfig.model}
-                onValueChange={(value) =>
-                  updateProviderConfig(llmProvider, { model: value })
-                }
+                onValueChange={(value) => updateProviderConfig(llmProvider, { model: value })}
               >
                 <SelectTrigger className="w-full truncate">
                   <SelectValue placeholder="Select a model" />
@@ -274,9 +252,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
                 </SelectContent>
               </Select>
             )}
-            {modelsError && (
-              <div className="text-xs text-destructive">{modelsError}</div>
-            )}
+            {modelsError && <div className="text-xs text-destructive">{modelsError}</div>}
           </div>
 
           <div className="space-y-2 min-w-0">
@@ -323,9 +299,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
           </div>
 
           <div className="space-y-2 min-w-0">
-            <label className="text-xs font-medium text-muted-foreground">
-              Meeting Notes Model
-            </label>
+            <label className="text-xs font-medium text-muted-foreground">Meeting Notes Model</label>
             {modelsLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
@@ -366,9 +340,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
           </div>
 
           <div className="space-y-2 min-w-0">
-            <label className="text-xs font-medium text-muted-foreground">
-              Track Block Model
-            </label>
+            <label className="text-xs font-medium text-muted-foreground">Track Block Model</label>
             {modelsLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
@@ -417,9 +389,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
             <Input
               type="password"
               value={activeConfig.apiKey}
-              onChange={(e) =>
-                updateProviderConfig(llmProvider, { apiKey: e.target.value })
-              }
+              onChange={(e) => updateProviderConfig(llmProvider, { apiKey: e.target.value })}
               placeholder="Paste your API key"
               className="font-mono"
             />
@@ -428,14 +398,10 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
 
         {showBaseURL && (
           <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">
-              Base URL
-            </label>
+            <label className="text-xs font-medium text-muted-foreground">Base URL</label>
             <Input
               value={activeConfig.baseURL}
-              onChange={(e) =>
-                updateProviderConfig(llmProvider, { baseURL: e.target.value })
-              }
+              onChange={(e) => updateProviderConfig(llmProvider, { baseURL: e.target.value })}
               placeholder={
                 llmProvider === "ollama"
                   ? "http://localhost:11434"
@@ -449,45 +415,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between mt-6 pt-4 border-t">
-        <Button variant="ghost" onClick={handleBack} className="gap-1">
-          <ArrowLeft className="size-4" />
-          Back
-        </Button>
-
-        <div className="flex items-center gap-3">
-          {testState.status === "success" && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400"
-            >
-              <CheckCircle2 className="size-4" />
-              Connected
-            </motion.div>
-          )}
-          {testState.status === "error" && (
-            <span className="text-sm text-destructive max-w-[200px] truncate">
-              {testState.error}
-            </span>
-          )}
-          <Button
-            onClick={handleTestAndSaveLlmConfig}
-            disabled={!canTest || testState.status === "testing"}
-            className="min-w-[140px]"
-          >
-            {testState.status === "testing" ? (
-              <>
-                <Loader2 className="size-4 animate-spin mr-2" />
-                Testing...
-              </>
-            ) : (
-              "Test & Continue"
-            )}
-          </Button>
-        </div>
-      </div>
+      {/* Footer (Back / Test & Continue) lives in the shared OnboardingFooter. */}
     </div>
   );
 }

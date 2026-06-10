@@ -54,6 +54,7 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("subscription", Subscription.Type).Unique().Annotations(entproto.Skip()),
 		edge.To("ledger_entries", CreditLedger.Type).Annotations(entproto.Skip()),
+		edge.To("meeting_minute_usages", MeetingMinuteUsage.Type).Annotations(entproto.Skip()),
 		edge.To("llm_usages", LLMUsage.Type).Annotations(entproto.Skip()),
 		edge.To("oauth_connections", OAuthConnection.Type).Annotations(entproto.Skip()),
 		edge.To("mcp_connections", MCPConnection.Type).Annotations(entproto.Skip()),

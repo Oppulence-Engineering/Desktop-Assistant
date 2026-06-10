@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer, webFrame, webUtils } from 'electron';
-import { ipc as ipcShared } from '@x/shared';
+import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
+import { ipc as ipcShared } from "@x/shared";
 
 type InvokeChannels = ipcShared.InvokeChannels;
 type IPCChannels = ipcShared.IPCChannels;
@@ -13,8 +13,8 @@ const ipc = {
    */
   invoke<K extends InvokeChannels>(
     channel: K,
-    args: IPCChannels[K]['req']
-  ): Promise<IPCChannels[K]['res']> {
+    args: IPCChannels[K]["req"],
+  ): Promise<IPCChannels[K]["res"]> {
     // Runtime validation of request payload
     const validatedArgs = validateRequest(channel, args);
     return ipcRenderer.invoke(channel, validatedArgs);
@@ -24,10 +24,7 @@ const ipc = {
    * Send a message to a channel without expecting a response (fire-and-forget)
    * Only channels with null responses can be sent
    */
-  send<K extends SendChannels>(
-    channel: K,
-    args: IPCChannels[K]['req']
-  ): void {
+  send<K extends SendChannels>(channel: K, args: IPCChannels[K]["req"]): void {
     // Runtime validation of request payload
     const validatedArgs = validateRequest(channel, args);
     ipcRenderer.send(channel, validatedArgs);
@@ -39,9 +36,9 @@ const ipc = {
    */
   on<K extends SendChannels>(
     channel: K,
-    handler: (event: IPCChannels[K]['req']) => void
+    handler: (event: IPCChannels[K]["req"]) => void,
   ): () => void {
-    const listener = (_event: unknown, data: IPCChannels[K]['req']) => {
+    const listener = (_event: unknown, data: IPCChannels[K]["req"]) => {
       handler(data);
     };
     ipcRenderer.on(channel, listener);
@@ -51,9 +48,18 @@ const ipc = {
   },
 };
 
-contextBridge.exposeInMainWorld('ipc', ipc);
+contextBridge.exposeInMainWorld("ipc", ipc);
 
-contextBridge.exposeInMainWorld('electronUtils', {
+contextBridge.exposeInMainWorld("electronUtils", {
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
   getZoomFactor: () => webFrame.getZoomFactor(),
+});
+
+// RFC 009 streaming transcription: the main process transfers a MessagePort for a
+// meeting session out-of-band on the `whisper:streamPort` channel. A MessagePort
+// cannot cross the contextBridge directly, so we re-post it onto the shared DOM
+// window (transferring the port); the renderer grabs it by streamId. This is the
+// standard Electron MessagePort hand-off pattern.
+ipcRenderer.on("whisper:streamPort", (event, payload: { streamId: string }) => {
+  window.postMessage({ __rowboatWhisperStreamPort: payload.streamId }, "*", event.ports);
 });

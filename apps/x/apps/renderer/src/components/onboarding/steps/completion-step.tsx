@@ -1,22 +1,14 @@
 import { CheckCircle2 } from "@/lib/icons";
 import { motion } from "motion/react";
-import { Button } from "@/components/ui/button";
 import type { OnboardingState } from "../use-onboarding-state";
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
 
 interface CompletionStepProps {
   state: OnboardingState;
 }
 
 export function CompletionStep({ state }: CompletionStepProps) {
-  const {
-    connectedProviders,
-    gmailConnected,
-    googleCalendarConnected,
-    handleComplete,
-  } = state;
-  const hasConnections =
-    connectedProviders.length > 0 || gmailConnected || googleCalendarConnected;
+  const { connectedProviders, gmailConnected, googleCalendarConnected } = state;
+  const hasConnections = connectedProviders.length > 0 || gmailConnected || googleCalendarConnected;
 
   return (
     <div className="flex flex-col items-center justify-center text-center flex-1">
@@ -57,14 +49,11 @@ export function CompletionStep({ state }: CompletionStepProps) {
       >
         {hasConnections ? (
           <>
-            Give me 30 minutes to build your context graph. I can still help
-            with other things on your computer.
+            Give me 30 minutes to build your context graph. I can still help with other things on
+            your computer.
           </>
         ) : (
-          <>
-            You can connect your accounts anytime from the sidebar to start
-            syncing data.
-          </>
+          <>You can connect your accounts anytime from the sidebar to start syncing data.</>
         )}
       </motion.p>
 
@@ -126,20 +115,7 @@ export function CompletionStep({ state }: CompletionStepProps) {
         </motion.div>
       )}
 
-      {/* CTA */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <Button
-          onClick={handleComplete}
-          size="lg"
-          className="w-full max-w-xs h-12 text-base font-medium"
-        >
-          Start Using {PRODUCT_NAME}
-        </Button>
-      </motion.div>
+      {/* "Start Using …" CTA lives in the shared OnboardingFooter. */}
     </div>
   );
 }

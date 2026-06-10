@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -50,6 +51,13 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.CreditLedgerQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(creditledger.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.MeetingMinuteUsage.Intercept(intercept.TraverseMeetingMinuteUsage(
+		func(ctx context.Context, q *ent.MeetingMinuteUsageQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(meetingminuteusage.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
@@ -2594,6 +2595,255 @@ func (_m *MCPConnection) ToEdge(order *MCPConnectionOrder) *MCPConnectionEdge {
 		order = DefaultMCPConnectionOrder
 	}
 	return &MCPConnectionEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// MeetingMinuteUsageEdge is the edge representation of MeetingMinuteUsage.
+type MeetingMinuteUsageEdge struct {
+	Node   *MeetingMinuteUsage `json:"node"`
+	Cursor Cursor              `json:"cursor"`
+}
+
+// MeetingMinuteUsageConnection is the connection containing edges to MeetingMinuteUsage.
+type MeetingMinuteUsageConnection struct {
+	Edges      []*MeetingMinuteUsageEdge `json:"edges"`
+	PageInfo   PageInfo                  `json:"pageInfo"`
+	TotalCount int                       `json:"totalCount"`
+}
+
+func (c *MeetingMinuteUsageConnection) build(nodes []*MeetingMinuteUsage, pager *meetingminuteusagePager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *MeetingMinuteUsage
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *MeetingMinuteUsage {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *MeetingMinuteUsage {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*MeetingMinuteUsageEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &MeetingMinuteUsageEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// MeetingMinuteUsagePaginateOption enables pagination customization.
+type MeetingMinuteUsagePaginateOption func(*meetingminuteusagePager) error
+
+// WithMeetingMinuteUsageOrder configures pagination ordering.
+func WithMeetingMinuteUsageOrder(order *MeetingMinuteUsageOrder) MeetingMinuteUsagePaginateOption {
+	if order == nil {
+		order = DefaultMeetingMinuteUsageOrder
+	}
+	o := *order
+	return func(pager *meetingminuteusagePager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultMeetingMinuteUsageOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithMeetingMinuteUsageFilter configures pagination filter.
+func WithMeetingMinuteUsageFilter(filter func(*MeetingMinuteUsageQuery) (*MeetingMinuteUsageQuery, error)) MeetingMinuteUsagePaginateOption {
+	return func(pager *meetingminuteusagePager) error {
+		if filter == nil {
+			return errors.New("MeetingMinuteUsageQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type meetingminuteusagePager struct {
+	reverse bool
+	order   *MeetingMinuteUsageOrder
+	filter  func(*MeetingMinuteUsageQuery) (*MeetingMinuteUsageQuery, error)
+}
+
+func newMeetingMinuteUsagePager(opts []MeetingMinuteUsagePaginateOption, reverse bool) (*meetingminuteusagePager, error) {
+	pager := &meetingminuteusagePager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultMeetingMinuteUsageOrder
+	}
+	return pager, nil
+}
+
+func (p *meetingminuteusagePager) applyFilter(query *MeetingMinuteUsageQuery) (*MeetingMinuteUsageQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *meetingminuteusagePager) toCursor(_m *MeetingMinuteUsage) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *meetingminuteusagePager) applyCursors(query *MeetingMinuteUsageQuery, after, before *Cursor) (*MeetingMinuteUsageQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultMeetingMinuteUsageOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *meetingminuteusagePager) applyOrder(query *MeetingMinuteUsageQuery) *MeetingMinuteUsageQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultMeetingMinuteUsageOrder.Field {
+		query = query.Order(DefaultMeetingMinuteUsageOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *meetingminuteusagePager) orderExpr(query *MeetingMinuteUsageQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultMeetingMinuteUsageOrder.Field {
+			b.Comma().Ident(DefaultMeetingMinuteUsageOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to MeetingMinuteUsage.
+func (_m *MeetingMinuteUsageQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...MeetingMinuteUsagePaginateOption,
+) (*MeetingMinuteUsageConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newMeetingMinuteUsagePager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &MeetingMinuteUsageConnection{Edges: []*MeetingMinuteUsageEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// MeetingMinuteUsageOrderField defines the ordering field of MeetingMinuteUsage.
+type MeetingMinuteUsageOrderField struct {
+	// Value extracts the ordering value from the given MeetingMinuteUsage.
+	Value    func(*MeetingMinuteUsage) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) meetingminuteusage.OrderOption
+	toCursor func(*MeetingMinuteUsage) Cursor
+}
+
+// MeetingMinuteUsageOrder defines the ordering of MeetingMinuteUsage.
+type MeetingMinuteUsageOrder struct {
+	Direction OrderDirection                `json:"direction"`
+	Field     *MeetingMinuteUsageOrderField `json:"field"`
+}
+
+// DefaultMeetingMinuteUsageOrder is the default ordering of MeetingMinuteUsage.
+var DefaultMeetingMinuteUsageOrder = &MeetingMinuteUsageOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &MeetingMinuteUsageOrderField{
+		Value: func(_m *MeetingMinuteUsage) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: meetingminuteusage.FieldID,
+		toTerm: meetingminuteusage.ByID,
+		toCursor: func(_m *MeetingMinuteUsage) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts MeetingMinuteUsage into MeetingMinuteUsageEdge.
+func (_m *MeetingMinuteUsage) ToEdge(order *MeetingMinuteUsageOrder) *MeetingMinuteUsageEdge {
+	if order == nil {
+		order = DefaultMeetingMinuteUsageOrder
+	}
+	return &MeetingMinuteUsageEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

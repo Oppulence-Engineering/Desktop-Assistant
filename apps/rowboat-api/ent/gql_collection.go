@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
@@ -1489,6 +1490,104 @@ func newMCPConnectionPaginateArgs(rv map[string]any) *mcpconnectionPaginateArgs 
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *MeetingMinuteUsageQuery) CollectFields(ctx context.Context, satisfies ...string) (*MeetingMinuteUsageQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *MeetingMinuteUsageQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(meetingminuteusage.Columns))
+		selectedFields = []string{meetingminuteusage.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[meetingminuteusage.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, meetingminuteusage.FieldCreatedAt)
+				fieldSeen[meetingminuteusage.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[meetingminuteusage.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, meetingminuteusage.FieldUpdatedAt)
+				fieldSeen[meetingminuteusage.FieldUpdatedAt] = struct{}{}
+			}
+		case "period":
+			if _, ok := fieldSeen[meetingminuteusage.FieldPeriod]; !ok {
+				selectedFields = append(selectedFields, meetingminuteusage.FieldPeriod)
+				fieldSeen[meetingminuteusage.FieldPeriod] = struct{}{}
+			}
+		case "usedSeconds":
+			if _, ok := fieldSeen[meetingminuteusage.FieldUsedSeconds]; !ok {
+				selectedFields = append(selectedFields, meetingminuteusage.FieldUsedSeconds)
+				fieldSeen[meetingminuteusage.FieldUsedSeconds] = struct{}{}
+			}
+		case "reservedSeconds":
+			if _, ok := fieldSeen[meetingminuteusage.FieldReservedSeconds]; !ok {
+				selectedFields = append(selectedFields, meetingminuteusage.FieldReservedSeconds)
+				fieldSeen[meetingminuteusage.FieldReservedSeconds] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type meetingminuteusagePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []MeetingMinuteUsagePaginateOption
+}
+
+func newMeetingMinuteUsagePaginateArgs(rv map[string]any) *meetingminuteusagePaginateArgs {
+	args := &meetingminuteusagePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*MeetingMinuteUsageWhereInput); ok {
+		args.opts = append(args.opts, WithMeetingMinuteUsageFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *OAuthConnectionQuery) CollectFields(ctx context.Context, satisfies ...string) (*OAuthConnectionQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -1829,6 +1928,19 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedLedgerEntries(alias, func(wq *CreditLedgerQuery) {
+				*wq = *query
+			})
+
+		case "meetingMinuteUsages":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&MeetingMinuteUsageClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, meetingminuteusageImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedMeetingMinuteUsages(alias, func(wq *MeetingMinuteUsageQuery) {
 				*wq = *query
 			})
 

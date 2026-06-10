@@ -202,17 +202,17 @@ fi
 
 wait_for_port "$CDP_PORT" "Electron CDP"
 agent-browser connect "$CDP_PORT" >/dev/null
-agent-browser wait --text "Welcome to Rowboat" >/dev/null
+agent-browser wait --text "Welcome to Solomon AI" >/dev/null
 
-if agent-browser snapshot -i -c | grep -q "Welcome to Rowboat"; then
+if agent-browser snapshot -i -c | grep -q "Welcome to Solomon AI"; then
   agent-browser find role button click --name "Continue" >/dev/null
   agent-browser wait --text "Connect Your Accounts" >/dev/null
   agent-browser find role button click --name "Skip for now" >/dev/null
   agent-browser wait --text "You're All Set!" >/dev/null
-  agent-browser find role button click --name "Start Using Rowboat" >/dev/null
+  agent-browser find role button click --name "Start Using Solomon AI" >/dev/null
 fi
 
-agent-browser wait --text "Free Plan" >/dev/null
+agent-browser wait --text "Free plan" >/dev/null
 model_snapshot="$(agent-browser snapshot -i -c)"
 if ! grep -Eq 'claude-haiku-4-5|claude-opus-4-1|claude-sonnet-4-5|gemini-2\.5-flash|gemini-2\.5-pro|gpt-4\.1|gpt-4\.1-mini|o4-mini' <<<"$model_snapshot"; then
   echo "desktop UI did not show a rowboat-api gateway model" >&2
