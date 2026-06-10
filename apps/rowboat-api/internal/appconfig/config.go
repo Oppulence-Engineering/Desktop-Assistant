@@ -116,6 +116,15 @@ type Config struct {
 	ComposioAPIKey          string
 	GoogleOAuthClientID     string
 	GoogleOAuthClientSecret string
+	// PlainAPIKey is optional: when unset, POST /v1/feedback returns
+	// provider_unconfigured instead of relaying to Plain.
+	PlainAPIKey string
+
+	// Plain (plain.com) feedback relay. Label type ids are workspace data and
+	// differ per environment; the raw JSON maps category -> lt_… id.
+	PlainAPIURL       string
+	PlainLabelTypeIDs string
+	PlainTitlePrefix  string
 
 	// Outbound vendor-call policy.
 	VendorTimeout               time.Duration
@@ -335,6 +344,10 @@ func Load() Config {
 		ComposioAPIKey:              getenv("COMPOSIO_API_KEY", ""),
 		GoogleOAuthClientID:         getenv("GOOGLE_OAUTH_CLIENT_ID", ""),
 		GoogleOAuthClientSecret:     getenv("GOOGLE_OAUTH_CLIENT_SECRET", ""),
+		PlainAPIKey:                 getenv("PLAIN_API_KEY", ""),
+		PlainAPIURL:                 getenv("PLAIN_API_URL", "https://core-api.uk.plain.com/graphql/v1"),
+		PlainLabelTypeIDs:           getenv("PLAIN_LABEL_TYPE_IDS", ""),
+		PlainTitlePrefix:            getenv("PLAIN_TITLE_PREFIX", ""),
 		VendorTimeout:               getdur("VENDOR_TIMEOUT", 30*time.Second),
 		VendorResponseHeaderTimeout: getdur("VENDOR_RESPONSE_HEADER_TIMEOUT", 15*time.Second),
 		VendorMaxConcurrent:         getint("VENDOR_MAX_CONCURRENT", 64),

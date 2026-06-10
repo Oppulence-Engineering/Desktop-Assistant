@@ -27,6 +27,7 @@ const (
 	GroupConnections = "connections"
 	GroupDefault     = "default"
 	GroupAuth        = "auth"
+	GroupFeedback    = "feedback"
 	GroupInternal    = "internal"
 	GroupLLMBurst    = "llm_burst"
 	GroupVoiceBurst  = "voice_burst"
