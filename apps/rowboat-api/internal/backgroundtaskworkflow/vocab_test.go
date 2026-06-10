@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 	"go.temporal.io/sdk/temporal"
 )
 
@@ -40,6 +41,29 @@ func TestTaggedErrorRetryPolicyUnchanged(t *testing.T) {
 	}
 	if err := taggedError(ErrCodeTaskNotFound, "x", nil); !errors.As(err, &appErr) || !appErr.NonRetryable() {
 		t.Fatalf("task_not_found must remain non-retryable through taggedError")
+	}
+}
+
+// TestRuntimeVocabularyMatchesRuntimePackage asserts the string constants
+// duplicated in backgroundtaskruntime (which cannot import this package — the
+// Activities.Runtime seam would cycle) stay identical to the canonical
+// taxonomy here.
+func TestRuntimeVocabularyMatchesRuntimePackage(t *testing.T) {
+	pairs := map[string]string{
+		backgroundtaskruntime.CodeRuntimeDeadlineExceeded:   ErrCodeRuntimeDeadlineExceeded,
+		backgroundtaskruntime.CodeRuntimeLLMBudgetExceeded:  ErrCodeRuntimeLLMBudgetExceeded,
+		backgroundtaskruntime.CodeRuntimeToolBudgetExceeded: ErrCodeRuntimeToolBudgetExceeded,
+		backgroundtaskruntime.CodeRuntimeArtifactTooLarge:   ErrCodeRuntimeArtifactTooLarge,
+		backgroundtaskruntime.CodeRuntimeEventTooLarge:      ErrCodeRuntimeEventTooLarge,
+		backgroundtaskruntime.CodeLLMCallFailed:             ErrCodeLLMCallFailed,
+		backgroundtaskruntime.CodeToolNotAllowed:            ErrCodeToolNotAllowed,
+		backgroundtaskruntime.CodeToolInvokeFailed:          ErrCodeToolInvokeFailed,
+		backgroundtaskruntime.CodeConnectorUnavailable:      ErrCodeConnectorUnavailable,
+	}
+	for runtimeCode, workflowCode := range pairs {
+		if runtimeCode != workflowCode {
+			t.Fatalf("runtime code %q diverged from workflow code %q", runtimeCode, workflowCode)
+		}
 	}
 }
 
