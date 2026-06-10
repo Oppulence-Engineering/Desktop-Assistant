@@ -76,7 +76,13 @@ jobs:
       - name: Build whisper-cli (pinned tag)
         shell: bash
         working-directory: apps/x/vendor/whisper
-        run: ./build.sh "${{ matrix.flags }}"
+        # Pass flags via env, not inline ${{ }} interpolation: the Windows flags
+        # contain quotes (-G "Visual Studio 17 2022") that would be re-parsed and
+        # mangled if substituted into the run-script text. As an env value the
+        # string stays intact; build.sh re-tokenizes it (honoring the quotes).
+        env:
+          WHISPER_CMAKE_FLAGS: ${{ matrix.flags }}
+        run: ./build.sh "$WHISPER_CMAKE_FLAGS"
 
       - name: Sign + verify (macOS, hardened runtime)
         if: matrix.plat == 'darwin'
