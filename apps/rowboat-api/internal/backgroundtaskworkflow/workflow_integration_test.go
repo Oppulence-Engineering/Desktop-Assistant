@@ -58,7 +58,7 @@ func resetRunToQueued(t *testing.T, h *integrationHarness) {
 // artifact, and the event stream carries the canonical
 // temporal.{running,progress,artifact_updated,completed} sequence.
 func TestWorkflowIntegrationDefaultRuntimeHappyPath(t *testing.T) {
-	h := newIntegrationHarness(t, func(call int, w http.ResponseWriter, body []byte) {
+	h := newIntegrationHarness(t, func(call int, w http.ResponseWriter, _ []byte) {
 		switch call {
 		case 1:
 			_, _ = io.WriteString(w, chatResponse(`""`,
