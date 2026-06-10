@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.1.13](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.12...v0.1.13) (2026-06-10)
+
+
+### Features
+
+* **desktop:** full-page onboarding + Solomon AI logo; fix stale smoke assertions ([202465a](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/202465ac651b4621bd68af14098bac450b6daccf))
+* **desktop:** further polish MCP, Security, Code Mode, and Help settings ([9bc23fd](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/9bc23fd38f05b3e6a2c61a6448b5d00cdccd101c))
+* **desktop:** local on-device transcription engine — P1 (RFC 009) ([db11172](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/db111726da165d39134f4bf5020e21e4bc459956))
+* **desktop:** meeting-mode local streaming transcription — P2 (RFC 009) ([1600be3](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/1600be3a9db6b20335d932a3116fcb60fb77b5b1))
+* **desktop:** polish the Note Tagging settings tab ([d941323](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/d94132307ee57e562446cf39200c557290ac9f13))
+* **desktop:** polish the Transcription settings tab ([133ca4d](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/133ca4d7de0b0ca5a020b9c482f819f232e5765b))
+* **desktop:** settings rework — grouped nav, motion, JSON tabs → forms ([1b710bb](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/1b710bb37b511b388dd063bc183d69fde8470e0d))
+* **desktop:** visual previews for the Appearance settings tab ([be6b709](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/be6b70922fad9c5f93593d017778a0911a27f58f))
+* in-app feedback via Plain.com ([#58](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/58)) ([81fb201](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/81fb20187bf6905d016ef2644ca46d220e88b7d3))
+* **rowboat-api:** free meeting-minutes quota + desktop fallback — RFC 009 WP 2.2 ([443b630](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/443b63072af350c92c336b04d758aee32fa40627))
+* **rowboat-api:** RFC 004 cloud agent runtime — LLM-backed, tool-scoped background task execution ([2cfc6a8](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/2cfc6a81d8603c0bbc0b85a45b0f25d49d371c1b))
+* **x:** Slack workspace connect — deep link, claim, IPC surface ([a527621](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a52762189960b2059e929c2603ac002d44623a1d))
+* **x:** Slack workspace connect flow — deep link, claim, IPC ([11cbf2b](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/11cbf2b44bb63eb563b277bc4cb2d0338f467f7b))
+
+
+### Bug Fixes
+
+* address all bugs ([a811db3](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a811db398b55775d5a0f397c8cb2b180080a67df))
+* **desktop:** lint cleanups in transcription settings + meeting hook ([8442617](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/84426175710ae1bfd477370ad901540dcbed2ec9))
+* **desktop:** send Idempotency-Key from the LLM gateway client ([c2c73ec](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c2c73ec9bb819cb9cbc9b71d48daf60c86d7ce9b))
+* **rfc-009:** address code-review findings (correctness + quota hardening) ([f5b9611](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f5b9611557a1fb3bb6197c5a018b3d2092ac264c))
+* **rfc-009:** fix regressions surfaced reviewing the prior fix commit ([739820c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/739820cc879d2d4d487416f8f19b9e2997ad9ee7))
+* **rfc-009:** resolve code-review findings (TTS, model selection, robustness) ([9903a28](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/9903a28493db9c492481206a5a9d780d0ddf183b))
+* **x:** block data: and vbscript: in browser IPC URL validators ([b1ba83d](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/b1ba83d9381612cfb68c46f517791413d4e306af))
+* **x:** block data: and vbscript: schemes in embedded browser nav ([a390d57](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a390d575ffecbdb9b0be123cd82abbd91773256d))
+
+
+### Documentation
+
+* **charts,x,rfc:** cloud runtime env defaults + vocabulary mirror; RFC 004 complete ([73e388d](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/73e388d5c6a4516afca8d32257c87b779c27a5cf))
+
+
+### Refactors
+
+* **desktop:** extract Models settings + polish remaining settings tabs ([98c5e90](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/98c5e9047df497ad56ab670bdf9dce244670b730))
+
 ## [0.1.12](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.11...v0.1.12) (2026-06-07)
 
 
