@@ -12,7 +12,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -49,10 +52,25 @@ var backgroundtaskruneventImplementors = []string{"BackgroundTaskRunEvent", "Nod
 // IsNode implements the Node interface check for GQLGen.
 func (*BackgroundTaskRunEvent) IsNode() {}
 
+var backgroundtaskschedulestateImplementors = []string{"BackgroundTaskScheduleState", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*BackgroundTaskScheduleState) IsNode() {}
+
+var cloudeventImplementors = []string{"CloudEvent", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CloudEvent) IsNode() {}
+
 var creditledgerImplementors = []string{"CreditLedger", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*CreditLedger) IsNode() {}
+
+var googlewatchImplementors = []string{"GoogleWatch", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*GoogleWatch) IsNode() {}
 
 var llmusageImplementors = []string{"LLMUsage", "Node"}
 
@@ -183,11 +201,38 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			}
 		}
 		return query.Only(ctx)
+	case backgroundtaskschedulestate.Table:
+		query := c.BackgroundTaskScheduleState.Query().
+			Where(backgroundtaskschedulestate.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, backgroundtaskschedulestateImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case cloudevent.Table:
+		query := c.CloudEvent.Query().
+			Where(cloudevent.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, cloudeventImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case creditledger.Table:
 		query := c.CreditLedger.Query().
 			Where(creditledger.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, creditledgerImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case googlewatch.Table:
+		query := c.GoogleWatch.Query().
+			Where(googlewatch.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, googlewatchImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -392,10 +437,58 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 				*noder = node
 			}
 		}
+	case backgroundtaskschedulestate.Table:
+		query := c.BackgroundTaskScheduleState.Query().
+			Where(backgroundtaskschedulestate.IDIn(ids...))
+		query, err := query.CollectFields(ctx, backgroundtaskschedulestateImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case cloudevent.Table:
+		query := c.CloudEvent.Query().
+			Where(cloudevent.IDIn(ids...))
+		query, err := query.CollectFields(ctx, cloudeventImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case creditledger.Table:
 		query := c.CreditLedger.Query().
 			Where(creditledger.IDIn(ids...))
 		query, err := query.CollectFields(ctx, creditledgerImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case googlewatch.Table:
+		query := c.GoogleWatch.Query().
+			Where(googlewatch.IDIn(ids...))
+		query, err := query.CollectFields(ctx, googlewatchImplementors...)
 		if err != nil {
 			return nil, err
 		}

@@ -9,6 +9,7 @@ package pricing
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"strings"
 )
@@ -47,8 +48,16 @@ func DefaultTable() *Table {
 	}
 }
 
+// maxRate bounds any operator-supplied per-unit rate. The cost math multiplies
+// rates by token/char counts clamped to maxBillableTokens (1e8); maxRate keeps
+// that product far inside int64, so a fat-fingered PRICING_JSON rate can never
+// overflow the multiplication, wrap negative, and be clamped to a FREE call.
+// 1e9 credits/1K tokens ≈ $100/token — far beyond any plausible price.
+const maxRate = 1_000_000_000
+
 // LoadJSON overlays a JSON document onto a copy of the default table. Unset
-// fields keep their defaults.
+// fields keep their defaults. Rates are validated: negative or absurdly large
+// values are rejected at boot rather than silently corrupting the cost math.
 func LoadJSON(data []byte) (*Table, error) {
 	t := DefaultTable()
 	if len(data) == 0 {
@@ -57,7 +66,40 @@ func LoadJSON(data []byte) (*Table, error) {
 	if err := json.Unmarshal(data, t); err != nil {
 		return nil, err
 	}
+	if err := t.validate(); err != nil {
+		return nil, err
+	}
 	return t, nil
+}
+
+func (t *Table) validate() error {
+	checkRate := func(name string, v int) error {
+		if v < 0 {
+			return fmt.Errorf("pricing: %s must be >= 0 (got %d)", name, v)
+		}
+		if v > maxRate {
+			return fmt.Errorf("pricing: %s exceeds the maximum allowed rate %d (got %d)", name, maxRate, v)
+		}
+		return nil
+	}
+	for model, r := range t.Models {
+		if err := checkRate("models."+model+".inputPer1k", r.InputPer1K); err != nil {
+			return err
+		}
+		if err := checkRate("models."+model+".outputPer1k", r.OutputPer1K); err != nil {
+			return err
+		}
+	}
+	if err := checkRate("defaultModel.inputPer1k", t.DefaultModel.InputPer1K); err != nil {
+		return err
+	}
+	if err := checkRate("defaultModel.outputPer1k", t.DefaultModel.OutputPer1K); err != nil {
+		return err
+	}
+	if err := checkRate("voicePerChar", t.VoicePerChar); err != nil {
+		return err
+	}
+	return checkRate("exaPerQuery", t.ExaPerQuery)
 }
 
 // rate returns the rate for a model, falling back to the default. Lookup is
@@ -75,14 +117,34 @@ func (t *Table) rate(model string) ModelRate {
 	return t.DefaultModel
 }
 
+// maxBillableTokens bounds the token counts fed into the cost math. It is far
+// above any real model context window, and keeps inputTokens*rate well inside
+// int64 so a hostile max_tokens (e.g. 1e17) can't overflow the multiplication
+// and wrap to a tiny/negative cost — which would silently defeat the pre-call
+// reservation gate. A clamped absurd request instead produces a huge cost that
+// the balance check correctly rejects.
+const maxBillableTokens = 100_000_000 // 100M tokens
+
 // LLMCost is the actual cost for a completed call.
 func (t *Table) LLMCost(model string, inputTokens, outputTokens int) int {
 	r := t.rate(model)
+	inputTokens = clampTokens(inputTokens)
+	outputTokens = clampTokens(outputTokens)
 	cost := ceilDiv(inputTokens*r.InputPer1K, 1000) + ceilDiv(outputTokens*r.OutputPer1K, 1000)
 	if cost < 0 {
 		return 0
 	}
 	return cost
+}
+
+func clampTokens(n int) int {
+	if n < 0 {
+		return 0
+	}
+	if n > maxBillableTokens {
+		return maxBillableTokens
+	}
+	return n
 }
 
 // LLMEstimate is the pre-call reservation: input tokens plus the expected
@@ -94,10 +156,15 @@ func (t *Table) LLMEstimate(model string, inputTokens, maxOutputTokens int) int 
 	return t.LLMCost(model, inputTokens, maxOutputTokens)
 }
 
-// VoiceCost charges per character: ceil(chars * VoicePerChar).
+// VoiceCost charges per character: chars * VoicePerChar. chars is clamped to
+// the same ceiling as tokens so the multiplication stays inside int64 even
+// against a hostile/buggy caller (the voice handler also caps bodies at 1 MiB).
 func (t *Table) VoiceCost(chars int) int {
 	if chars < 0 {
 		return 0
+	}
+	if chars > maxBillableTokens {
+		chars = maxBillableTokens
 	}
 	return chars * t.VoicePerChar
 }

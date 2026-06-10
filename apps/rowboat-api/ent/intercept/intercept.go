@@ -12,7 +12,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -192,6 +195,60 @@ func (f TraverseBackgroundTaskRunEvent) Traverse(ctx context.Context, q ent.Quer
 	return fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskRunEventQuery", q)
 }
 
+// The BackgroundTaskScheduleStateFunc type is an adapter to allow the use of ordinary function as a Querier.
+type BackgroundTaskScheduleStateFunc func(context.Context, *ent.BackgroundTaskScheduleStateQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f BackgroundTaskScheduleStateFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.BackgroundTaskScheduleStateQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskScheduleStateQuery", q)
+}
+
+// The TraverseBackgroundTaskScheduleState type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseBackgroundTaskScheduleState func(context.Context, *ent.BackgroundTaskScheduleStateQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseBackgroundTaskScheduleState) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseBackgroundTaskScheduleState) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BackgroundTaskScheduleStateQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskScheduleStateQuery", q)
+}
+
+// The CloudEventFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CloudEventFunc func(context.Context, *ent.CloudEventQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CloudEventFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CloudEventQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CloudEventQuery", q)
+}
+
+// The TraverseCloudEvent type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCloudEvent func(context.Context, *ent.CloudEventQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCloudEvent) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCloudEvent) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CloudEventQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CloudEventQuery", q)
+}
+
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary function as a Querier.
 type CreditLedgerFunc func(context.Context, *ent.CreditLedgerQuery) (ent.Value, error)
 
@@ -217,6 +274,33 @@ func (f TraverseCreditLedger) Traverse(ctx context.Context, q ent.Query) error {
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.CreditLedgerQuery", q)
+}
+
+// The GoogleWatchFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GoogleWatchFunc func(context.Context, *ent.GoogleWatchQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GoogleWatchFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GoogleWatchQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GoogleWatchQuery", q)
+}
+
+// The TraverseGoogleWatch type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGoogleWatch func(context.Context, *ent.GoogleWatchQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGoogleWatch) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGoogleWatch) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GoogleWatchQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GoogleWatchQuery", q)
 }
 
 // The LLMUsageFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -554,8 +638,14 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.BackgroundTaskRunQuery, predicate.BackgroundTaskRun, backgroundtaskrun.OrderOption]{typ: ent.TypeBackgroundTaskRun, tq: q}, nil
 	case *ent.BackgroundTaskRunEventQuery:
 		return &query[*ent.BackgroundTaskRunEventQuery, predicate.BackgroundTaskRunEvent, backgroundtaskrunevent.OrderOption]{typ: ent.TypeBackgroundTaskRunEvent, tq: q}, nil
+	case *ent.BackgroundTaskScheduleStateQuery:
+		return &query[*ent.BackgroundTaskScheduleStateQuery, predicate.BackgroundTaskScheduleState, backgroundtaskschedulestate.OrderOption]{typ: ent.TypeBackgroundTaskScheduleState, tq: q}, nil
+	case *ent.CloudEventQuery:
+		return &query[*ent.CloudEventQuery, predicate.CloudEvent, cloudevent.OrderOption]{typ: ent.TypeCloudEvent, tq: q}, nil
 	case *ent.CreditLedgerQuery:
 		return &query[*ent.CreditLedgerQuery, predicate.CreditLedger, creditledger.OrderOption]{typ: ent.TypeCreditLedger, tq: q}, nil
+	case *ent.GoogleWatchQuery:
+		return &query[*ent.GoogleWatchQuery, predicate.GoogleWatch, googlewatch.OrderOption]{typ: ent.TypeGoogleWatch, tq: q}, nil
 	case *ent.LLMUsageQuery:
 		return &query[*ent.LLMUsageQuery, predicate.LLMUsage, llmusage.OrderOption]{typ: ent.TypeLLMUsage, tq: q}, nil
 	case *ent.LLMUsageHistoryQuery:

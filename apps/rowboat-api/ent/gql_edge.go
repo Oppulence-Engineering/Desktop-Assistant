@@ -48,6 +48,18 @@ func (_m *BackgroundTask) RunEvents(ctx context.Context) (result []*BackgroundTa
 	return result, err
 }
 
+func (_m *BackgroundTask) ScheduleStates(ctx context.Context) (result []*BackgroundTaskScheduleState, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedScheduleStates(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ScheduleStatesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryScheduleStates().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *BackgroundTaskArtifact) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -78,6 +90,14 @@ func (_m *BackgroundTaskRun) Task(ctx context.Context) (*BackgroundTask, error) 
 		result, err = _m.QueryTask().Only(ctx)
 	}
 	return result, err
+}
+
+func (_m *BackgroundTaskRun) CloudEvent(ctx context.Context) (*CloudEvent, error) {
+	result, err := _m.Edges.CloudEventOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCloudEvent().Only(ctx)
+	}
+	return result, MaskNotFound(err)
 }
 
 func (_m *BackgroundTaskRun) Events(ctx context.Context) (result []*BackgroundTaskRunEvent, err error) {
@@ -116,7 +136,51 @@ func (_m *BackgroundTaskRunEvent) Run(ctx context.Context) (*BackgroundTaskRun, 
 	return result, err
 }
 
+func (_m *BackgroundTaskScheduleState) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *BackgroundTaskScheduleState) Task(ctx context.Context) (*BackgroundTask, error) {
+	result, err := _m.Edges.TaskOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTask().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CloudEvent) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CloudEvent) Runs(ctx context.Context) (result []*BackgroundTaskRun, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRuns(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RunsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRuns().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *CreditLedger) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *GoogleWatch) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryUser().Only(ctx)
@@ -276,6 +340,42 @@ func (_m *User) BackgroundTaskRunEvents(ctx context.Context) (result []*Backgrou
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryBackgroundTaskRunEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) BackgroundTaskScheduleStates(ctx context.Context) (result []*BackgroundTaskScheduleState, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedBackgroundTaskScheduleStates(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.BackgroundTaskScheduleStatesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryBackgroundTaskScheduleStates().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) CloudEvents(ctx context.Context) (result []*CloudEvent, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCloudEvents(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CloudEventsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCloudEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) GoogleWatches(ctx context.Context) (result []*GoogleWatch, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedGoogleWatches(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.GoogleWatchesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryGoogleWatches().All(ctx)
 	}
 	return result, err
 }

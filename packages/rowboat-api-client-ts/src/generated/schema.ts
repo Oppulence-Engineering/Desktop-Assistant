@@ -104,6 +104,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/oauth/slack/callback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Handle Slack OAuth callback
+     * @description Slack redirect target. Exchanges the authorization code server-side, parks the sealed workspace bundle under the state ticket, and returns an HTML page that deep-links back to the desktop.
+     */
+    get: operations["handleSlackOAuthCallback"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/oauth/slack/start": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Start Slack workspace install
+     * @description Browser-facing endpoint opened by the desktop. It creates a one-time state ticket, then redirects the browser to Slack's OAuth v2 authorize screen with the configured bot scopes.
+     */
+    get: operations["startSlackOAuth"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/openapi.json": {
     parameters: {
       query?: never;
@@ -628,6 +668,70 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List cloud events
+     * @description Lists the authenticated user's ingested events ordered by receivedAt descending. Payload is omitted from list responses; fetch the detail endpoint for it.
+     */
+    get: operations["listCloudEvents"];
+    put?: never;
+    /**
+     * Ingest a cloud event
+     * @description Stores one normalized event idempotently on (user, source, dedupeKey) and enqueues async routing to matching API-target background tasks. Returns 202 for a fresh event and 200 with deduped=true for a replay.
+     */
+    post: operations["ingestCloudEvent"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/events/{eventId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a cloud event
+     * @description Returns one event including the decrypted payload and the routing decision summary.
+     */
+    get: operations["getCloudEvent"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/events/{eventId}/runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List runs triggered by a cloud event
+     * @description Returns the trigger=event runs this event fired — the event-to-run audit link.
+     */
+    get: operations["listCloudEventRuns"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/google-oauth/claim": {
     parameters: {
       query?: never;
@@ -682,6 +786,26 @@ export interface paths {
      * @description Server-to-server endpoint for products to invalidate a user's connector connection. Unknown users are treated as successful no-ops.
      */
     post: operations["invalidateConnection"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/internal/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ingest a cloud event (server-to-server)
+     * @description Internal-secret ingestion used by backend services and test fixtures. Identical to /v1/events except the caller names the owning userId explicitly.
+     */
+    post: operations["ingestInternalCloudEvent"];
     delete?: never;
     options?: never;
     head?: never;
@@ -808,6 +932,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/slack-oauth/claim": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Claim Slack workspace connection
+     * @description Atomically consumes a one-time Slack install ticket and persists the workspace connection (the team_id-to-user mapping the Slack events webhook resolves against). The bot token stays server-held; the response carries workspace metadata only.
+     */
+    post: operations["claimSlackOAuth"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/voice/text-to-speech/{voiceId}": {
     parameters: {
       query?: never;
@@ -822,6 +966,46 @@ export interface paths {
      * @description Credit-gated ElevenLabs proxy. The text field is used for per-character credit charging and the full body is forwarded to ElevenLabs. Successful responses stream audio bytes back to the desktop.
      */
     post: operations["textToSpeech"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/webhooks/google": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Google push webhook
+     * @description Receives Gmail Pub/Sub pushes and Google Calendar channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for Calendar). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.
+     */
+    post: operations["googleWebhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/webhooks/slack": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Slack Events API webhook
+     * @description Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Rowboat user are ingested, others are acknowledged and dropped.
+     */
+    post: operations["slackWebhook"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1686,6 +1870,42 @@ export interface components {
       /** @description Runs ordered by server creation time. */
       runs: components["schemas"]["BackgroundTaskRun"][];
     };
+    BackgroundTaskScheduleState: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** Format: date-time */
+      last_due_at?: string;
+      /** Format: date-time */
+      last_evaluated_at?: string;
+      last_run_id: string;
+      /** Format: date-time */
+      last_triggered_at?: string;
+      /** Format: date-time */
+      lease_expires_at?: string;
+      lease_owner: string;
+      revision: number;
+      schedule_key: string;
+      task: components["schemas"]["BackgroundTask"];
+      trigger_type: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
     /** @description Control signal sent to a Temporal-backed API-worker run. */
     BackgroundTaskSignalRequest: {
       /** @description Optional signal payload. update_context can carry replacement context. */
@@ -1753,6 +1973,211 @@ export interface components {
        * @example 125
        */
       usedCredits: number;
+    };
+    /** @description Stored cloud event. payload and routing appear only on the detail endpoint. */
+    CloudEvent: {
+      /**
+       * @description Idempotency anchor.
+       * @example gmail:msg:msg_123
+       */
+      dedupeKey: string;
+      /**
+       * @description Provider-specific event type.
+       * @example email.received
+       */
+      eventType?: string | null;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Tasks the router matched.
+       * @example 1
+       */
+      matchedTaskCount?: number;
+      /**
+       * @description RFC3339 provider event time.
+       * @example 2026-06-06T14:00:00Z
+       */
+      occurredAt?: string | null;
+      /** @description Decrypted normalized provider payload. Detail endpoint only. */
+      payload?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description RFC3339 API receipt time.
+       * @example 2026-06-06T14:00:02Z
+       */
+      receivedAt: string;
+      /**
+       * @description RFC3339 router completion time.
+       * @example 2026-06-06T14:00:09Z
+       */
+      routedAt?: string | null;
+      /** @description Routing decision summary (threshold, prompt versions, per-task decisions). Detail endpoint only. */
+      routing?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Routing status.
+       * @example routed
+       * @enum {string}
+       */
+      routingStatus: "pending" | "routed" | "skipped" | "failed";
+      /**
+       * @description Event source.
+       * @example gmail
+       * @enum {string}
+       */
+      source: "gmail" | "google_calendar" | "slack" | "webhook" | "internal";
+      /**
+       * @description Connected-account key.
+       * @example acct_google_primary
+       */
+      sourceAccountId?: string | null;
+      /**
+       * @description Provider-side event id.
+       * @example evt_123
+       */
+      sourceEventId?: string | null;
+      /**
+       * @description Short title.
+       * @example Invoice #4821 dispute
+       */
+      subject?: string | null;
+      /**
+       * @description Human-readable gist.
+       * @example Acme disputed invoice #4821.
+       */
+      text?: string | null;
+    };
+    /** @description Normalized cloud event envelope posted by internal services, tests, or the desktop (RFC 003). */
+    CloudEventIngestRequest: {
+      /**
+       * @description Required idempotency anchor, unique per (user, source).
+       * @example gmail:msg:msg_123
+       */
+      dedupeKey: string;
+      /**
+       * @description Provider-specific event type.
+       * @example email.received
+       */
+      eventType?: string | null;
+      /**
+       * @description RFC3339 provider event time.
+       * @example 2026-06-06T14:00:00Z
+       */
+      occurredAt?: string | null;
+      /** @description Full normalized provider object. Sealed at rest; returned only by the event detail endpoint. */
+      payload?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Event source.
+       * @example internal
+       * @enum {string}
+       */
+      source: "gmail" | "google_calendar" | "slack" | "webhook" | "internal";
+      /**
+       * @description Connected-account key the event belongs to.
+       * @example acct_google_primary
+       */
+      sourceAccountId?: string | null;
+      /**
+       * @description Provider-side event id.
+       * @example evt_123
+       */
+      sourceEventId?: string | null;
+      /**
+       * @description Short title used in UI and routing prompts.
+       * @example Invoice #4821 dispute
+       */
+      subject?: string | null;
+      /**
+       * @description Human-readable gist used in routing prompts.
+       * @example Acme disputed invoice #4821 for $18,000.
+       */
+      text?: string | null;
+    };
+    /** @description Ingestion result. 202 for a fresh event; 200 with deduped=true for an idempotent replay. */
+    CloudEventIngestResponse: {
+      /**
+       * @description Whether this post matched an existing (user, source, dedupeKey) event.
+       * @example false
+       */
+      deduped: boolean;
+      /**
+       * @description Cloud event id.
+       * @example 0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111
+       */
+      eventId: string;
+      /**
+       * @description Tasks the router matched (populated once routed).
+       * @example 0
+       */
+      matchedTaskCount?: number;
+      /**
+       * @description Routing status at response time.
+       * @example pending
+       * @enum {string}
+       */
+      routingStatus: "pending" | "routed" | "skipped" | "failed";
+    };
+    /** @description Cloud event page ordered by receivedAt descending. */
+    CloudEventListResponse: {
+      /** @description Events in this page (payload omitted). */
+      events: components["schemas"]["CloudEvent"][];
+      /**
+       * @description Opaque cursor for the next page; empty when exhausted.
+       * @example 2026-06-06T14:00:02.123456Z|0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111
+       */
+      nextCursor?: string | null;
+    };
+    /** @description Run triggered by a cloud event. */
+    CloudEventRun: {
+      /**
+       * @description RFC3339 run completion time.
+       * @example 2026-06-06T14:02:31Z
+       */
+      completedAt?: string | null;
+      /**
+       * @description RFC3339 run creation time.
+       * @example 2026-06-06T14:00:10Z
+       */
+      createdAt: string;
+      /**
+       * @description Run executor.
+       * @example api
+       * @enum {string}
+       */
+      executor: "api";
+      /**
+       * @description Run id.
+       * @example event-7e0a1f2b
+       */
+      runId: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      /**
+       * @description Slug of the task the run executed.
+       * @example acme-ar-watch
+       */
+      taskSlug?: string | null;
+      /**
+       * @description Run trigger.
+       * @example event
+       * @enum {string}
+       */
+      trigger: "event";
+    };
+    /** @description Runs triggered by one cloud event. */
+    CloudEventRunsResponse: {
+      /** @description Linked runs. */
+      runs: components["schemas"]["CloudEventRun"][];
     };
     /** @description Composio v3 response body, proxied unchanged. */
     ComposioProxyResponse: {
@@ -2038,6 +2463,42 @@ export interface components {
        */
       refreshToken: string;
     };
+    GoogleWatch: {
+      account_email: string;
+      channel_id?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description Credential or one-time ticket expiry timestamp.
+       * @example 2026-06-04T20:48:00Z
+       */
+      expires_at: string;
+      history_id?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      last_error?: string;
+      /** Format: date-time */
+      renew_claimed_at?: string;
+      resource_id?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
     /** @description GraphQL request envelope. */
     GraphQLRequest: {
       /**
@@ -2074,6 +2535,25 @@ export interface components {
        * @enum {string}
        */
       status: "ok";
+    };
+    /** @description Server-to-server cloud event ingestion: the caller names the event owner explicitly. */
+    InternalCloudEventIngestRequest: {
+      /**
+       * @description Required idempotency anchor.
+       * @example internal:job:42
+       */
+      dedupeKey: string;
+      /**
+       * @description Event source.
+       * @example internal
+       * @enum {string}
+       */
+      source: "gmail" | "google_calendar" | "slack" | "webhook" | "internal";
+      /**
+       * @description Rowboat user id (UUID) owning the event.
+       * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
+       */
+      userId: string;
     };
     /** @description Server-to-server force disconnect request. */
     InternalInvalidateRequest: {
@@ -2558,6 +3038,7 @@ export interface components {
        * @example 2026-06-04T20:38:00Z
        */
       created_at: string;
+      external_account_id?: string;
       /**
        * Format: uuid
        * @description Stable UUID primary key.
@@ -2599,6 +3080,7 @@ export interface components {
        * @example 2026-06-04T20:38:00Z
        */
       created_at: string;
+      external_account_id?: string;
       /**
        * Format: date-time
        * @description Timestamp when this history record was written.
@@ -2854,6 +3336,42 @@ export interface components {
        */
       type: string;
     };
+    /** @description Slack install session ticket redemption. */
+    SlackClaimRequest: {
+      /**
+       * @description State ticket from the solomon-ai://oauth/slack/done deep link.
+       * @example state_abc123
+       */
+      session: string;
+    };
+    /** @description Connected Slack workspace metadata. The bot token is server-held and never returned. */
+    SlackClaimResponse: {
+      /**
+       * @description Bot user id in the workspace.
+       * @example U0BOT
+       */
+      botUserId?: string | null;
+      /**
+       * @description Whether the workspace connection was stored.
+       * @example true
+       */
+      connected: boolean;
+      /**
+       * @description Granted bot scopes, comma-separated.
+       * @example channels:history,channels:read
+       */
+      scope?: string | null;
+      /**
+       * @description Slack workspace (team) id — the key Events API deliveries resolve against.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Workspace display name.
+       * @example Acme
+       */
+      teamName?: string | null;
+    };
     /** @description User billing plan, status, trial expiry, Stripe identifiers, and credit grant. */
     Subscription: {
       /**
@@ -3002,8 +3520,10 @@ export interface components {
       background_task_run_events?: components["schemas"]["BackgroundTaskRunEvent"][];
       /** @description Background task run mirrors owned by the user. */
       background_task_runs?: components["schemas"]["BackgroundTaskRun"][];
+      background_task_schedule_states?: components["schemas"]["BackgroundTaskScheduleState"][];
       /** @description Background task mirrors owned by the user. */
       background_tasks?: components["schemas"]["BackgroundTask"][];
+      cloud_events?: components["schemas"]["CloudEvent"][];
       /**
        * Format: date-time
        * @description Row creation timestamp.
@@ -3015,6 +3535,7 @@ export interface components {
        * @example user@example.com
        */
       email?: string;
+      google_watches?: components["schemas"]["GoogleWatch"][];
       /**
        * Format: uuid
        * @description Stable UUID primary key.
@@ -3596,6 +4117,80 @@ export interface operations {
         };
       };
       /** @description HTML error page when Google OAuth is not configured. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
+      };
+    };
+  };
+  handleSlackOAuthCallback: {
+    parameters: {
+      query: {
+        /** @description Opaque state ticket minted by /oauth/slack/start. */
+        state: string;
+        /** @description Authorization code returned by Slack. */
+        code?: string;
+        /** @description OAuth error returned by Slack when the user cancels the install. */
+        error?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description HTML page that redirects to solomon-ai://oauth/slack/done. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
+      };
+      /** @description HTML error page for missing or expired state/code. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
+      };
+    };
+  };
+  startSlackOAuth: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Redirect to Slack OAuth consent. */
+      302: {
+        headers: {
+          /** @description Redirect target. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description HTML error page when the flow cannot be started. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
+      };
+      /** @description HTML error page when Slack OAuth is not configured. */
       502: {
         headers: {
           [name: string]: unknown;
@@ -5305,6 +5900,208 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
+  listCloudEvents: {
+    parameters: {
+      query?: {
+        /** @description Filter by event source. */
+        source?: string;
+        /** @description Filter by routing status. */
+        routingStatus?: string;
+        /** @description Only events received at or after this RFC3339 time. */
+        since?: string;
+        /** @description Only events received at or before this RFC3339 time. */
+        until?: string;
+        /** @description Page size (1-500, default 100). */
+        limit?: number;
+        /** @description Opaque cursor from a prior page's nextCursor. */
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Event page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "events": [],
+           *       "nextCursor": ""
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEventListResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  ingestCloudEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Normalized event envelope. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "dedupeKey": "gmail:msg:msg_123",
+         *       "eventType": "email.received",
+         *       "payload": {
+         *         "messageId": "msg_123",
+         *         "provider": "gmail"
+         *       },
+         *       "source": "internal",
+         *       "subject": "Invoice #4821 dispute",
+         *       "text": "Acme disputed invoice #4821 for $18,000 due to a pricing mismatch."
+         *     }
+         */
+        "application/json": components["schemas"]["CloudEventIngestRequest"];
+      };
+    };
+    responses: {
+      /** @description Duplicate dedupeKey: existing event returned, routing not re-run. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "deduped": true,
+           *       "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+           *       "matchedTaskCount": 1,
+           *       "routingStatus": "routed"
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEventIngestResponse"];
+        };
+      };
+      /** @description Event stored, routing enqueued. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "deduped": false,
+           *       "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+           *       "routingStatus": "pending"
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEventIngestResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      /** @description Payload exceeds the configured size cap. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "payload_too_large",
+           *       "detail": "payload exceeds 262144 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Request Entity Too Large",
+           *       "type": "https://api.rowboat.dev/problems/payload_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
+  getCloudEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cloud event id. */
+        eventId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Event detail. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "dedupeKey": "gmail:msg:msg_123",
+           *       "id": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+           *       "matchedTaskCount": 1,
+           *       "receivedAt": "2026-06-06T14:00:02Z",
+           *       "routingStatus": "routed",
+           *       "source": "internal"
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEvent"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  listCloudEventRuns: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cloud event id. */
+        eventId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Linked runs. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "runs": [
+           *         {
+           *           "createdAt": "2026-06-06T14:00:10Z",
+           *           "executor": "api",
+           *           "runId": "event-7e0a1f2b",
+           *           "status": "succeeded",
+           *           "taskSlug": "acme-ar-watch",
+           *           "trigger": "event"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEventRunsResponse"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
   claimGoogleOAuth: {
     parameters: {
       query?: never;
@@ -5427,6 +6224,65 @@ export interface operations {
            *     }
            */
           "application/json": components["schemas"]["InternalInvalidateResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  ingestInternalCloudEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Normalized event envelope with explicit owner. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "dedupeKey": "internal:test:1",
+         *       "source": "internal",
+         *       "subject": "Synthetic event",
+         *       "userId": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+         *     }
+         */
+        "application/json": components["schemas"]["InternalCloudEventIngestRequest"];
+      };
+    };
+    responses: {
+      /** @description Duplicate dedupeKey: existing event returned. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "deduped": true,
+           *       "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+           *       "routingStatus": "routed"
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEventIngestResponse"];
+        };
+      };
+      /** @description Event stored, routing enqueued. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "deduped": false,
+           *       "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+           *       "routingStatus": "pending"
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEventIngestResponse"];
         };
       };
       400: components["responses"]["400"];
@@ -5745,6 +6601,69 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
+  claimSlackOAuth: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Slack install session ticket. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "session": "state_abc123"
+         *     }
+         */
+        "application/json": components["schemas"]["SlackClaimRequest"];
+      };
+    };
+    responses: {
+      /** @description Connected workspace metadata. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "botUserId": "U0BOT",
+           *       "connected": true,
+           *       "scope": "channels:history,channels:read",
+           *       "teamId": "T0EXAMPLE",
+           *       "teamName": "Acme"
+           *     }
+           */
+          "application/json": components["schemas"]["SlackClaimResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      /** @description The browser install has not completed yet; retry after the deep link returns. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "install_incomplete",
+           *       "detail": "slack install not completed yet",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/install_incomplete"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      410: components["responses"]["410"];
+      500: components["responses"]["500"];
+    };
+  };
   textToSpeech: {
     parameters: {
       query?: never;
@@ -5785,6 +6704,116 @@ export interface operations {
       402: components["responses"]["402"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
+    };
+  };
+  googleWebhook: {
+    parameters: {
+      query?: {
+        /** @description Shared webhook token configured on the Pub/Sub push subscription URL. */
+        token?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Pub/Sub push envelope (Gmail). Calendar notifications carry no body. */
+    requestBody?: {
+      content: {
+        /**
+         * @example {
+         *       "message": {
+         *         "data": "eyJlbWFpbEFkZHJlc3MiOiJtZUBnbWFpbC5jb20iLCJoaXN0b3J5SWQiOjk5ODg3N30=",
+         *         "messageId": "m1"
+         *       }
+         *     }
+         */
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description Acknowledged: sync handshake, duplicate, or unresolved account (dropped). */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Event ingested. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "deduped": false,
+           *       "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+           *       "routingStatus": "pending"
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEventIngestResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  slackWebhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Slack Events API envelope. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "event": {
+         *         "text": "hello",
+         *         "type": "message"
+         *       },
+         *       "event_id": "Ev001",
+         *       "team_id": "T0EXAMPLE",
+         *       "type": "event_callback"
+         *     }
+         */
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description Handshake challenge echoed, duplicate, or unmapped workspace (dropped). */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Event ingested. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "deduped": false,
+           *       "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+           *       "routingStatus": "pending"
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEventIngestResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
     };
   };
 }

@@ -1,0 +1,17 @@
+{{- if and .Values.scheduler.enabled .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}-scheduler
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scheduler
+spec:
+  selector:
+    matchLabels:
+      {{- include "rowboat-api.schedulerSelectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+      path: /metrics
+{{- end }}

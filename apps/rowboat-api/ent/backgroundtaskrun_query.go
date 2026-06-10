@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -29,6 +30,7 @@ type BackgroundTaskRunQuery struct {
 	predicates      []predicate.BackgroundTaskRun
 	withUser        *UserQuery
 	withTask        *BackgroundTaskQuery
+	withCloudEvent  *CloudEventQuery
 	withEvents      *BackgroundTaskRunEventQuery
 	withFKs         bool
 	modifiers       []func(*sql.Selector)
@@ -107,6 +109,28 @@ func (_q *BackgroundTaskRunQuery) QueryTask() *BackgroundTaskQuery {
 			sqlgraph.From(backgroundtaskrun.Table, backgroundtaskrun.FieldID, selector),
 			sqlgraph.To(backgroundtask.Table, backgroundtask.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtaskrun.TaskTable, backgroundtaskrun.TaskColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCloudEvent chains the current query on the "cloud_event" edge.
+func (_q *BackgroundTaskRunQuery) QueryCloudEvent() *CloudEventQuery {
+	query := (&CloudEventClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtaskrun.Table, backgroundtaskrun.FieldID, selector),
+			sqlgraph.To(cloudevent.Table, cloudevent.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, backgroundtaskrun.CloudEventTable, backgroundtaskrun.CloudEventColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -323,14 +347,15 @@ func (_q *BackgroundTaskRunQuery) Clone() *BackgroundTaskRunQuery {
 		return nil
 	}
 	return &BackgroundTaskRunQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]backgroundtaskrun.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.BackgroundTaskRun{}, _q.predicates...),
-		withUser:   _q.withUser.Clone(),
-		withTask:   _q.withTask.Clone(),
-		withEvents: _q.withEvents.Clone(),
+		config:         _q.config,
+		ctx:            _q.ctx.Clone(),
+		order:          append([]backgroundtaskrun.OrderOption{}, _q.order...),
+		inters:         append([]Interceptor{}, _q.inters...),
+		predicates:     append([]predicate.BackgroundTaskRun{}, _q.predicates...),
+		withUser:       _q.withUser.Clone(),
+		withTask:       _q.withTask.Clone(),
+		withCloudEvent: _q.withCloudEvent.Clone(),
+		withEvents:     _q.withEvents.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -356,6 +381,17 @@ func (_q *BackgroundTaskRunQuery) WithTask(opts ...func(*BackgroundTaskQuery)) *
 		opt(query)
 	}
 	_q.withTask = query
+	return _q
+}
+
+// WithCloudEvent tells the query-builder to eager-load the nodes that are connected to
+// the "cloud_event" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *BackgroundTaskRunQuery) WithCloudEvent(opts ...func(*CloudEventQuery)) *BackgroundTaskRunQuery {
+	query := (&CloudEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCloudEvent = query
 	return _q
 }
 
@@ -449,9 +485,10 @@ func (_q *BackgroundTaskRunQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		nodes       = []*BackgroundTaskRun{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withUser != nil,
 			_q.withTask != nil,
+			_q.withCloudEvent != nil,
 			_q.withEvents != nil,
 		}
 	)
@@ -491,6 +528,12 @@ func (_q *BackgroundTaskRunQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	if query := _q.withTask; query != nil {
 		if err := _q.loadTask(ctx, query, nodes, nil,
 			func(n *BackgroundTaskRun, e *BackgroundTask) { n.Edges.Task = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCloudEvent; query != nil {
+		if err := _q.loadCloudEvent(ctx, query, nodes, nil,
+			func(n *BackgroundTaskRun, e *CloudEvent) { n.Edges.CloudEvent = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -580,6 +623,38 @@ func (_q *BackgroundTaskRunQuery) loadTask(ctx context.Context, query *Backgroun
 	}
 	return nil
 }
+func (_q *BackgroundTaskRunQuery) loadCloudEvent(ctx context.Context, query *CloudEventQuery, nodes []*BackgroundTaskRun, init func(*BackgroundTaskRun), assign func(*BackgroundTaskRun, *CloudEvent)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*BackgroundTaskRun)
+	for i := range nodes {
+		if nodes[i].CloudEventID == nil {
+			continue
+		}
+		fk := *nodes[i].CloudEventID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(cloudevent.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "cloud_event_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (_q *BackgroundTaskRunQuery) loadEvents(ctx context.Context, query *BackgroundTaskRunEventQuery, nodes []*BackgroundTaskRun, init func(*BackgroundTaskRun), assign func(*BackgroundTaskRun, *BackgroundTaskRunEvent)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*BackgroundTaskRun)
@@ -639,6 +714,9 @@ func (_q *BackgroundTaskRunQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != backgroundtaskrun.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withCloudEvent != nil {
+			_spec.Node.AddColumnOnce(backgroundtaskrun.FieldCloudEventID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

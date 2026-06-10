@@ -93,7 +93,15 @@ func main() {
 	mux.HandleFunc("/o/oauth2/v2/auth", handleGoogleAuthorizeMock)
 
 	log.Printf("devstack OIDC+mock listening on %s (issuer=%s aud=%s)", addr, issuer, audience)
-	log.Fatal(http.ListenAndServe(addr, mux))
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+	log.Fatal(srv.ListenAndServe())
 }
 
 // --- OIDC ------------------------------------------------------------------

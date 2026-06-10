@@ -57,6 +57,30 @@ func (f BackgroundTaskRunEventFunc) Mutate(ctx context.Context, m ent.Mutation) 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BackgroundTaskRunEventMutation", m)
 }
 
+// The BackgroundTaskScheduleStateFunc type is an adapter to allow the use of ordinary
+// function as BackgroundTaskScheduleState mutator.
+type BackgroundTaskScheduleStateFunc func(context.Context, *ent.BackgroundTaskScheduleStateMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BackgroundTaskScheduleStateFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BackgroundTaskScheduleStateMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BackgroundTaskScheduleStateMutation", m)
+}
+
+// The CloudEventFunc type is an adapter to allow the use of ordinary
+// function as CloudEvent mutator.
+type CloudEventFunc func(context.Context, *ent.CloudEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CloudEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CloudEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CloudEventMutation", m)
+}
+
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary
 // function as CreditLedger mutator.
 type CreditLedgerFunc func(context.Context, *ent.CreditLedgerMutation) (ent.Value, error)
@@ -67,6 +91,18 @@ func (f CreditLedgerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CreditLedgerMutation", m)
+}
+
+// The GoogleWatchFunc type is an adapter to allow the use of ordinary
+// function as GoogleWatch mutator.
+type GoogleWatchFunc func(context.Context, *ent.GoogleWatchMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GoogleWatchFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GoogleWatchMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GoogleWatchMutation", m)
 }
 
 // The LLMUsageFunc type is an adapter to allow the use of ordinary

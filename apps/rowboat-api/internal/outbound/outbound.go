@@ -28,6 +28,15 @@ type Policy struct {
 	MaxResponseBytes      int64
 	FailureThreshold      int
 	Cooldown              time.Duration
+
+	// RetryNonIdempotent opts this upstream into retrying non-idempotent
+	// methods (POST/PUT/PATCH/DELETE) that carry an Idempotency-Key, on network
+	// error or 502/503/504. Defaults to false (the safe zero value): only
+	// inherently safe methods (GET/HEAD/OPTIONS) are retried. Enable this ONLY
+	// for upstreams that are known to honor Idempotency-Key — replaying a
+	// request the provider already processed double-executes it (e.g. double
+	// billing on ElevenLabs / some OpenRouter providers that ignore the key).
+	RetryNonIdempotent bool
 }
 
 // Client is an http.Client with rowboat's vendor-call policy applied.
@@ -149,21 +158,31 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func (t *transport) roundTripWithRetry(req *http.Request) (*http.Response, error) {
 	resp, err := t.base.RoundTrip(req)
-	if !shouldRetry(req, resp, err) {
+	if !t.shouldRetry(req, resp, err) {
 		return resp, err
 	}
-	if resp != nil && resp.Body != nil {
-		_ = resp.Body.Close()
-	}
-	if req.Body != nil && req.GetBody == nil {
-		return resp, err
-	}
+	// Obtain a fresh body for the replay BEFORE discarding the first response. If
+	// the request body cannot be replayed (no GetBody, or GetBody fails), we must
+	// NOT retry — and must return the first response with its body still OPEN, so
+	// the caller can still read it. (The previous code closed the body first and
+	// then returned that dead response.)
+	var freshBody io.ReadCloser
 	if req.Body != nil {
-		body, bodyErr := req.GetBody()
+		if req.GetBody == nil {
+			return resp, err
+		}
+		b, bodyErr := req.GetBody()
 		if bodyErr != nil {
 			return resp, err
 		}
-		req.Body = body
+		freshBody = b
+	}
+	// Committed to retrying: discard the first response and replay.
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	if freshBody != nil {
+		req.Body = freshBody
 	}
 	timer := time.NewTimer(150 * time.Millisecond)
 	defer timer.Stop()
@@ -175,8 +194,8 @@ func (t *transport) roundTripWithRetry(req *http.Request) (*http.Response, error
 	return t.base.RoundTrip(req)
 }
 
-func shouldRetry(req *http.Request, resp *http.Response, err error) bool {
-	if !idempotent(req) {
+func (t *transport) shouldRetry(req *http.Request, resp *http.Response, err error) bool {
+	if !t.retryable(req) {
 		return false
 	}
 	if err != nil {
@@ -187,14 +206,25 @@ func shouldRetry(req *http.Request, resp *http.Response, err error) bool {
 		resp.StatusCode == http.StatusGatewayTimeout)
 }
 
-func idempotent(req *http.Request) bool {
+// retryable reports whether req may be SAFELY replayed.
+//
+// SAFETY RATIONALE: a network error or 502/503/504 does NOT prove the upstream
+// failed to process the request — it may have applied the request fully and
+// only the response was lost in transit. Replaying a POST/PUT/PATCH/DELETE in
+// that case double-executes the operation (e.g. double charge). An
+// Idempotency-Key only protects us if the upstream actually honors it, and some
+// providers (ElevenLabs, certain OpenRouter providers) do not. So by default we
+// retry only the inherently safe, side-effect-free methods (GET/HEAD/OPTIONS).
+// Retrying the others is OPT-IN per upstream via Policy.RetryNonIdempotent and
+// still requires an Idempotency-Key, so an operator enables it only for
+// upstreams known to dedupe by that key.
+func (t *transport) retryable(req *http.Request) bool {
 	switch req.Method {
 	case http.MethodGet, http.MethodHead, http.MethodOptions:
 		return true
-	case http.MethodPut, http.MethodDelete:
-		return true
-	case http.MethodPost, http.MethodPatch:
-		return strings.TrimSpace(req.Header.Get("Idempotency-Key")) != ""
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		return t.policy.RetryNonIdempotent &&
+			strings.TrimSpace(req.Header.Get("Idempotency-Key")) != ""
 	default:
 		return false
 	}

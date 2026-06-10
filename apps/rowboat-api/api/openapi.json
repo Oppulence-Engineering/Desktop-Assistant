@@ -218,7 +218,10 @@
           },
           "executionTarget": {
             "description": "Where this task executes. desktop preserves the local-first path; api dispatches to the Temporal-backed API worker.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "desktop",
             "type": "string"
           },
@@ -345,7 +348,12 @@
             "type": "string"
           }
         },
-        "required": ["slug", "body", "revision", "updatedAt"],
+        "required": [
+          "slug",
+          "body",
+          "revision",
+          "updatedAt"
+        ],
         "type": "object"
       },
       "BackgroundTaskArtifactPutRequest": {
@@ -362,7 +370,9 @@
             "type": "integer"
           }
         },
-        "required": ["body"],
+        "required": [
+          "body"
+        ],
         "type": "object"
       },
       "BackgroundTaskCreateRequest": {
@@ -382,7 +392,10 @@
           },
           "executionTarget": {
             "description": "Where this task should execute. Defaults to desktop.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "desktop",
             "type": "string"
           },
@@ -455,7 +468,10 @@
             "nullable": true
           }
         },
-        "required": ["name", "instructions"],
+        "required": [
+          "name",
+          "instructions"
+        ],
         "type": "object"
       },
       "BackgroundTaskListResponse": {
@@ -469,7 +485,9 @@
             "type": "array"
           }
         },
-        "required": ["tasks"],
+        "required": [
+          "tasks"
+        ],
         "type": "object"
       },
       "BackgroundTaskPatchRequest": {
@@ -489,7 +507,10 @@
           },
           "executionTarget": {
             "description": "Where this task should execute.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -563,7 +584,9 @@
             "nullable": true
           }
         },
-        "required": ["revision"],
+        "required": [
+          "revision"
+        ],
         "type": "object"
       },
       "BackgroundTaskRun": {
@@ -590,7 +613,10 @@
           },
           "executor": {
             "description": "Execution backend that owns this run.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -673,7 +699,13 @@
           },
           "status": {
             "description": "Background task run lifecycle state.",
-            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "stopped"
+            ],
             "example": "succeeded",
             "type": "string"
           },
@@ -723,7 +755,12 @@
           },
           "trigger": {
             "description": "Trigger source for a task run.",
-            "enum": ["manual", "cron", "window", "event"],
+            "enum": [
+              "manual",
+              "cron",
+              "window",
+              "event"
+            ],
             "example": "manual",
             "type": "string"
           },
@@ -771,7 +808,10 @@
           },
           "executor": {
             "description": "Execution backend. Defaults from task.executionTarget.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "desktop",
             "type": "string"
           },
@@ -838,7 +878,13 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "stopped"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -874,7 +920,12 @@
           },
           "trigger": {
             "description": "Trigger source. Defaults to manual.",
-            "enum": ["manual", "cron", "window", "event"],
+            "enum": [
+              "manual",
+              "cron",
+              "window",
+              "event"
+            ],
             "example": "manual",
             "type": "string"
           },
@@ -885,7 +936,9 @@
             "type": "string"
           }
         },
-        "required": ["runId"],
+        "required": [
+          "runId"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunEvent": {
@@ -920,7 +973,12 @@
             "type": "string"
           }
         },
-        "required": ["id", "seq", "event", "receivedAt"],
+        "required": [
+          "id",
+          "seq",
+          "event",
+          "receivedAt"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunEventInput": {
@@ -943,7 +1001,10 @@
             "type": "string"
           }
         },
-        "required": ["seq", "event"],
+        "required": [
+          "seq",
+          "event"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunEventsAppendRequest": {
@@ -957,7 +1018,9 @@
             "type": "array"
           }
         },
-        "required": ["events"],
+        "required": [
+          "events"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunEventsAppendResponse": {
@@ -974,7 +1037,10 @@
             "type": "integer"
           }
         },
-        "required": ["stored", "skipped"],
+        "required": [
+          "stored",
+          "skipped"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunEventsResponse": {
@@ -988,7 +1054,9 @@
             "type": "array"
           }
         },
-        "required": ["events"],
+        "required": [
+          "events"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunPatchRequest": {
@@ -1009,7 +1077,10 @@
           },
           "executor": {
             "description": "Execution backend.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -1076,7 +1147,13 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "stopped"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -1126,7 +1203,12 @@
           },
           "trigger": {
             "description": "Trigger source.",
-            "enum": ["manual", "cron", "window", "event"],
+            "enum": [
+              "manual",
+              "cron",
+              "window",
+              "event"
+            ],
             "example": "manual",
             "type": "string"
           },
@@ -1137,7 +1219,9 @@
             "type": "string"
           }
         },
-        "required": ["revision"],
+        "required": [
+          "revision"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunStatusResponse": {
@@ -1158,7 +1242,10 @@
           },
           "executor": {
             "description": "Execution backend.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -1205,7 +1292,13 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "stopped"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -1228,7 +1321,13 @@
             "type": "string"
           }
         },
-        "required": ["runId", "slug", "status", "executor", "revision"],
+        "required": [
+          "runId",
+          "slug",
+          "status",
+          "executor",
+          "revision"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunsResponse": {
@@ -1248,7 +1347,82 @@
             "type": "array"
           }
         },
-        "required": ["runs"],
+        "required": [
+          "runs"
+        ],
+        "type": "object"
+      },
+      "BackgroundTaskScheduleState": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "last_due_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "last_evaluated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "last_run_id": {
+            "type": "string"
+          },
+          "last_triggered_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lease_expires_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lease_owner": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "schedule_key": {
+            "type": "string"
+          },
+          "task": {
+            "$ref": "#/components/schemas/BackgroundTask"
+          },
+          "trigger_type": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "trigger_type",
+          "schedule_key",
+          "last_run_id",
+          "lease_owner",
+          "revision",
+          "user",
+          "task"
+        ],
         "type": "object"
       },
       "BackgroundTaskSignalRequest": {
@@ -1261,12 +1435,18 @@
           },
           "signal": {
             "description": "Supported control signal.",
-            "enum": ["pause", "resume", "update_context"],
+            "enum": [
+              "pause",
+              "resume",
+              "update_context"
+            ],
             "example": "pause",
             "type": "string"
           }
         },
-        "required": ["signal"],
+        "required": [
+          "signal"
+        ],
         "type": "object"
       },
       "BackgroundTaskTriggerRequest": {
@@ -1280,7 +1460,12 @@
           },
           "trigger": {
             "description": "Trigger source for the queued run. Defaults to manual.",
-            "enum": ["manual", "cron", "window", "event"],
+            "enum": [
+              "manual",
+              "cron",
+              "window",
+              "event"
+            ],
             "example": "manual",
             "type": "string"
           }
@@ -1292,14 +1477,23 @@
         "properties": {
           "plan": {
             "description": "Billing plan slug.",
-            "enum": ["free", "starter", "pro"],
+            "enum": [
+              "free",
+              "starter",
+              "pro"
+            ],
             "example": "free",
             "nullable": true,
             "type": "string"
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["active", "trialing", "past_due", "canceled"],
+            "enum": [
+              "active",
+              "trialing",
+              "past_due",
+              "canceled"
+            ],
             "example": "active",
             "nullable": true,
             "type": "string"
@@ -1314,7 +1508,12 @@
             "$ref": "#/components/schemas/BillingUsage"
           }
         },
-        "required": ["plan", "status", "trialExpiresAt", "usage"],
+        "required": [
+          "plan",
+          "status",
+          "trialExpiresAt",
+          "usage"
+        ],
         "type": "object"
       },
       "BillingUsage": {
@@ -1342,7 +1541,320 @@
             "type": "integer"
           }
         },
-        "required": ["sanctionedCredits", "usedCredits", "availableCredits", "monthly", "daily"],
+        "required": [
+          "sanctionedCredits",
+          "usedCredits",
+          "availableCredits",
+          "monthly",
+          "daily"
+        ],
+        "type": "object"
+      },
+      "CloudEvent": {
+        "description": "Stored cloud event. payload and routing appear only on the detail endpoint.",
+        "properties": {
+          "dedupeKey": {
+            "description": "Idempotency anchor.",
+            "example": "gmail:msg:msg_123",
+            "type": "string"
+          },
+          "eventType": {
+            "description": "Provider-specific event type.",
+            "example": "email.received",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "matchedTaskCount": {
+            "description": "Tasks the router matched.",
+            "example": 1,
+            "type": "integer"
+          },
+          "occurredAt": {
+            "description": "RFC3339 provider event time.",
+            "example": "2026-06-06T14:00:00Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "description": "Decrypted normalized provider payload. Detail endpoint only.",
+            "type": "object"
+          },
+          "receivedAt": {
+            "description": "RFC3339 API receipt time.",
+            "example": "2026-06-06T14:00:02Z",
+            "type": "string"
+          },
+          "routedAt": {
+            "description": "RFC3339 router completion time.",
+            "example": "2026-06-06T14:00:09Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "routing": {
+            "additionalProperties": true,
+            "description": "Routing decision summary (threshold, prompt versions, per-task decisions). Detail endpoint only.",
+            "type": "object"
+          },
+          "routingStatus": {
+            "description": "Routing status.",
+            "enum": [
+              "pending",
+              "routed",
+              "skipped",
+              "failed"
+            ],
+            "example": "routed",
+            "type": "string"
+          },
+          "source": {
+            "description": "Event source.",
+            "enum": [
+              "gmail",
+              "google_calendar",
+              "slack",
+              "webhook",
+              "internal"
+            ],
+            "example": "gmail",
+            "type": "string"
+          },
+          "sourceAccountId": {
+            "description": "Connected-account key.",
+            "example": "acct_google_primary",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceEventId": {
+            "description": "Provider-side event id.",
+            "example": "evt_123",
+            "nullable": true,
+            "type": "string"
+          },
+          "subject": {
+            "description": "Short title.",
+            "example": "Invoice #4821 dispute",
+            "nullable": true,
+            "type": "string"
+          },
+          "text": {
+            "description": "Human-readable gist.",
+            "example": "Acme disputed invoice #4821.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "dedupeKey",
+          "routingStatus",
+          "receivedAt"
+        ],
+        "type": "object"
+      },
+      "CloudEventIngestRequest": {
+        "description": "Normalized cloud event envelope posted by internal services, tests, or the desktop (RFC 003).",
+        "properties": {
+          "dedupeKey": {
+            "description": "Required idempotency anchor, unique per (user, source).",
+            "example": "gmail:msg:msg_123",
+            "type": "string"
+          },
+          "eventType": {
+            "description": "Provider-specific event type.",
+            "example": "email.received",
+            "nullable": true,
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "RFC3339 provider event time.",
+            "example": "2026-06-06T14:00:00Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "description": "Full normalized provider object. Sealed at rest; returned only by the event detail endpoint.",
+            "type": "object"
+          },
+          "source": {
+            "description": "Event source.",
+            "enum": [
+              "gmail",
+              "google_calendar",
+              "slack",
+              "webhook",
+              "internal"
+            ],
+            "example": "internal",
+            "type": "string"
+          },
+          "sourceAccountId": {
+            "description": "Connected-account key the event belongs to.",
+            "example": "acct_google_primary",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceEventId": {
+            "description": "Provider-side event id.",
+            "example": "evt_123",
+            "nullable": true,
+            "type": "string"
+          },
+          "subject": {
+            "description": "Short title used in UI and routing prompts.",
+            "example": "Invoice #4821 dispute",
+            "nullable": true,
+            "type": "string"
+          },
+          "text": {
+            "description": "Human-readable gist used in routing prompts.",
+            "example": "Acme disputed invoice #4821 for $18,000.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "dedupeKey"
+        ],
+        "type": "object"
+      },
+      "CloudEventIngestResponse": {
+        "description": "Ingestion result. 202 for a fresh event; 200 with deduped=true for an idempotent replay.",
+        "properties": {
+          "deduped": {
+            "description": "Whether this post matched an existing (user, source, dedupeKey) event.",
+            "example": false,
+            "type": "boolean"
+          },
+          "eventId": {
+            "description": "Cloud event id.",
+            "example": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+            "type": "string"
+          },
+          "matchedTaskCount": {
+            "description": "Tasks the router matched (populated once routed).",
+            "example": 0,
+            "type": "integer"
+          },
+          "routingStatus": {
+            "description": "Routing status at response time.",
+            "enum": [
+              "pending",
+              "routed",
+              "skipped",
+              "failed"
+            ],
+            "example": "pending",
+            "type": "string"
+          }
+        },
+        "required": [
+          "eventId",
+          "routingStatus",
+          "deduped"
+        ],
+        "type": "object"
+      },
+      "CloudEventListResponse": {
+        "description": "Cloud event page ordered by receivedAt descending.",
+        "properties": {
+          "events": {
+            "description": "Events in this page (payload omitted).",
+            "items": {
+              "$ref": "#/components/schemas/CloudEvent"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "description": "Opaque cursor for the next page; empty when exhausted.",
+            "example": "2026-06-06T14:00:02.123456Z|0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "events"
+        ],
+        "type": "object"
+      },
+      "CloudEventRun": {
+        "description": "Run triggered by a cloud event.",
+        "properties": {
+          "completedAt": {
+            "description": "RFC3339 run completion time.",
+            "example": "2026-06-06T14:02:31Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "RFC3339 run creation time.",
+            "example": "2026-06-06T14:00:10Z",
+            "type": "string"
+          },
+          "executor": {
+            "description": "Run executor.",
+            "enum": [
+              "api"
+            ],
+            "example": "api",
+            "type": "string"
+          },
+          "runId": {
+            "description": "Run id.",
+            "example": "event-7e0a1f2b",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "taskSlug": {
+            "description": "Slug of the task the run executed.",
+            "example": "acme-ar-watch",
+            "nullable": true,
+            "type": "string"
+          },
+          "trigger": {
+            "description": "Run trigger.",
+            "enum": [
+              "event"
+            ],
+            "example": "event",
+            "type": "string"
+          }
+        },
+        "required": [
+          "runId",
+          "status",
+          "trigger",
+          "executor",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CloudEventRunsResponse": {
+        "description": "Runs triggered by one cloud event.",
+        "properties": {
+          "runs": {
+            "description": "Linked runs.",
+            "items": {
+              "$ref": "#/components/schemas/CloudEventRun"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "runs"
+        ],
         "type": "object"
       },
       "ComposioProxyResponse": {
@@ -1379,7 +1891,13 @@
             "type": "string"
           }
         },
-        "required": ["appUrl", "oidcIssuerUrl", "supabaseUrl", "websocketApiUrl", "oauthClientId"],
+        "required": [
+          "appUrl",
+          "oidcIssuerUrl",
+          "supabaseUrl",
+          "websocketApiUrl",
+          "oauthClientId"
+        ],
         "type": "object"
       },
       "ConnectionStartResponse": {
@@ -1391,7 +1909,9 @@
             "type": "string"
           }
         },
-        "required": ["authorize_url"],
+        "required": [
+          "authorize_url"
+        ],
         "type": "object"
       },
       "Connector": {
@@ -1399,7 +1919,10 @@
         "properties": {
           "authType": {
             "description": "Connector credential flow.",
-            "enum": ["oauth", "api_key"],
+            "enum": [
+              "oauth",
+              "api_key"
+            ],
             "example": "oauth",
             "type": "string"
           },
@@ -1442,7 +1965,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "description": "Scope.",
               "example": "invoices:read",
@@ -1451,7 +1977,14 @@
             "type": "array"
           }
         },
-        "required": ["name", "displayName", "description", "mcpUrl", "authType", "connected"],
+        "required": [
+          "name",
+          "displayName",
+          "description",
+          "mcpUrl",
+          "authType",
+          "connected"
+        ],
         "type": "object"
       },
       "ConnectorsResponse": {
@@ -1465,7 +1998,9 @@
             "type": "array"
           }
         },
-        "required": ["connectors"],
+        "required": [
+          "connectors"
+        ],
         "type": "object"
       },
       "CreditLedger": {
@@ -1513,7 +2048,14 @@
             "description": "User that owns this row."
           }
         },
-        "required": ["id", "delta", "reason", "request_id", "ts", "user"],
+        "required": [
+          "id",
+          "delta",
+          "reason",
+          "request_id",
+          "ts",
+          "user"
+        ],
         "type": "object"
       },
       "CreditUsageBucket": {
@@ -1535,7 +2077,11 @@
             "type": "integer"
           }
         },
-        "required": ["sanctionedCredits", "usedCredits", "availableCredits"],
+        "required": [
+          "sanctionedCredits",
+          "usedCredits",
+          "availableCredits"
+        ],
         "type": "object"
       },
       "CurrentUser": {
@@ -1553,7 +2099,10 @@
             "type": "string"
           }
         },
-        "required": ["id", "email"],
+        "required": [
+          "id",
+          "email"
+        ],
         "type": "object"
       },
       "DailyCreditUsageBucket": {
@@ -1580,7 +2129,12 @@
             "type": "integer"
           }
         },
-        "required": ["sanctionedCredits", "usedCredits", "availableCredits", "usageDay"],
+        "required": [
+          "sanctionedCredits",
+          "usedCredits",
+          "availableCredits",
+          "usageDay"
+        ],
         "type": "object"
       },
       "ErrorEnvelope": {
@@ -1630,7 +2184,12 @@
             "type": "string"
           }
         },
-        "required": ["type", "title", "status", "code"],
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code"
+        ],
         "type": "object"
       },
       "ExaSearchRequest": {
@@ -1676,7 +2235,9 @@
             "type": "string"
           }
         },
-        "required": ["query"],
+        "required": [
+          "query"
+        ],
         "type": "object"
       },
       "ExaSearchResponse": {
@@ -1693,7 +2254,9 @@
             "type": "string"
           }
         },
-        "required": ["session"],
+        "required": [
+          "session"
+        ],
         "type": "object"
       },
       "GoogleRefreshRequest": {
@@ -1705,7 +2268,73 @@
             "type": "string"
           }
         },
-        "required": ["refreshToken"],
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object"
+      },
+      "GoogleWatch": {
+        "properties": {
+          "account_email": {
+            "type": "string"
+          },
+          "channel_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "history_id": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "renew_claimed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "kind",
+          "account_email",
+          "expires_at",
+          "user"
+        ],
         "type": "object"
       },
       "GraphQLRequest": {
@@ -1728,7 +2357,9 @@
             "type": "object"
           }
         },
-        "required": ["query"],
+        "required": [
+          "query"
+        ],
         "type": "object"
       },
       "GraphQLResponse": {
@@ -1756,12 +2387,49 @@
         "properties": {
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["ok"],
+            "enum": [
+              "ok"
+            ],
             "example": "active",
             "type": "string"
           }
         },
-        "required": ["status"],
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "InternalCloudEventIngestRequest": {
+        "description": "Server-to-server cloud event ingestion: the caller names the event owner explicitly.",
+        "properties": {
+          "dedupeKey": {
+            "description": "Required idempotency anchor.",
+            "example": "internal:job:42",
+            "type": "string"
+          },
+          "source": {
+            "description": "Event source.",
+            "enum": [
+              "gmail",
+              "google_calendar",
+              "slack",
+              "webhook",
+              "internal"
+            ],
+            "example": "internal",
+            "type": "string"
+          },
+          "userId": {
+            "description": "Rowboat user id (UUID) owning the event.",
+            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "source",
+          "dedupeKey"
+        ],
         "type": "object"
       },
       "InternalInvalidateRequest": {
@@ -1778,7 +2446,10 @@
             "type": "string"
           }
         },
-        "required": ["workos_user_id", "connector"],
+        "required": [
+          "workos_user_id",
+          "connector"
+        ],
         "type": "object"
       },
       "InternalInvalidateResponse": {
@@ -1795,7 +2466,9 @@
             "type": "boolean"
           }
         },
-        "required": ["invalidated"],
+        "required": [
+          "invalidated"
+        ],
         "type": "object"
       },
       "LLMChatCompletionsRequest": {
@@ -1848,7 +2521,10 @@
             "type": "array"
           }
         },
-        "required": ["model", "messages"],
+        "required": [
+          "model",
+          "messages"
+        ],
         "type": "object"
       },
       "LLMChatMessage": {
@@ -1866,12 +2542,20 @@
           },
           "role": {
             "description": "Message role.",
-            "enum": ["system", "user", "assistant", "tool"],
+            "enum": [
+              "system",
+              "user",
+              "assistant",
+              "tool"
+            ],
             "example": "user",
             "type": "string"
           }
         },
-        "required": ["role", "content"],
+        "required": [
+          "role",
+          "content"
+        ],
         "type": "object"
       },
       "LLMCompletionsRequest": {
@@ -1903,7 +2587,10 @@
             "type": "number"
           }
         },
-        "required": ["model", "prompt"],
+        "required": [
+          "model",
+          "prompt"
+        ],
         "type": "object"
       },
       "LLMEmbeddingsRequest": {
@@ -1923,7 +2610,10 @@
           },
           "input": {
             "description": "Input string or array of strings.",
-            "example": ["customer invoice", "payment risk"]
+            "example": [
+              "customer invoice",
+              "payment risk"
+            ]
           },
           "model": {
             "description": "Desktop-facing LLM model id.",
@@ -1931,7 +2621,10 @@
             "type": "string"
           }
         },
-        "required": ["model", "input"],
+        "required": [
+          "model",
+          "input"
+        ],
         "type": "object"
       },
       "LLMGatewayResponse": {
@@ -1948,7 +2641,9 @@
             "type": "string"
           }
         },
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "type": "object"
       },
       "LLMModelsResponse": {
@@ -1962,7 +2657,9 @@
             "type": "array"
           }
         },
-        "required": ["data"],
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "LLMUsage": {
@@ -2075,7 +2772,11 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
@@ -2183,7 +2884,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "type": "string"
             },
@@ -2200,7 +2904,14 @@
             "description": "User that owns this row."
           }
         },
-        "required": ["id", "created_at", "updated_at", "connector", "audience", "user"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "connector",
+          "audience",
+          "user"
+        ],
         "type": "object"
       },
       "MCPConnectionHistory": {
@@ -2260,7 +2971,11 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
@@ -2278,7 +2993,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "type": "string"
             },
@@ -2327,7 +3045,11 @@
             "type": "string"
           }
         },
-        "required": ["access_token", "token_type", "mcpUrl"],
+        "required": [
+          "access_token",
+          "token_type",
+          "mcpUrl"
+        ],
         "type": "object"
       },
       "MeResponse": {
@@ -2341,7 +3063,10 @@
             "description": "User that owns this row."
           }
         },
-        "required": ["user", "billing"],
+        "required": [
+          "user",
+          "billing"
+        ],
         "type": "object"
       },
       "MeetingMinuteUsage": {
@@ -2398,6 +3123,9 @@
             "format": "date-time",
             "type": "string"
           },
+          "external_account_id": {
+            "type": "string"
+          },
           "id": {
             "description": "Stable UUID primary key.",
             "example": "123e4567-e89b-12d3-a456-426614174000",
@@ -2417,7 +3145,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "type": "string"
             },
@@ -2453,6 +3184,9 @@
             "format": "date-time",
             "type": "string"
           },
+          "external_account_id": {
+            "type": "string"
+          },
           "history_time": {
             "description": "Timestamp when this history record was written.",
             "example": "2026-06-04T20:40:00Z",
@@ -2467,7 +3201,11 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
@@ -2490,7 +3228,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "type": "string"
             },
@@ -2602,7 +3343,10 @@
             "type": "string"
           }
         },
-        "required": ["access_token", "expires_at"],
+        "required": [
+          "access_token",
+          "expires_at"
+        ],
         "type": "object"
       },
       "PreConsentRequest": {
@@ -2632,7 +3376,9 @@
             "type": "string"
           }
         },
-        "required": ["requested_audience"],
+        "required": [
+          "requested_audience"
+        ],
         "type": "object"
       },
       "PreConsentResponse": {
@@ -2647,7 +3393,9 @@
             "$ref": "#/components/schemas/Upsell"
           }
         },
-        "required": ["allow"],
+        "required": [
+          "allow"
+        ],
         "type": "object"
       },
       "ReadyResponse": {
@@ -2661,12 +3409,17 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["ready", "not_ready"],
+            "enum": [
+              "ready",
+              "not_ready"
+            ],
             "example": "active",
             "type": "string"
           }
         },
-        "required": ["status"],
+        "required": [
+          "status"
+        ],
         "type": "object"
       },
       "ReconnectErrorEnvelope": {
@@ -2674,7 +3427,9 @@
         "properties": {
           "code": {
             "description": "Stable machine-readable error code.",
-            "enum": ["reconnect_required"],
+            "enum": [
+              "reconnect_required"
+            ],
             "example": "reconnect_required",
             "type": "string"
           },
@@ -2716,7 +3471,13 @@
             "type": "string"
           }
         },
-        "required": ["type", "title", "status", "code", "reconnectRequired"],
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "reconnectRequired"
+        ],
         "type": "object"
       },
       "RevisionConflictEnvelope": {
@@ -2724,7 +3485,9 @@
         "properties": {
           "code": {
             "description": "Stable machine-readable conflict code.",
-            "enum": ["conflict"],
+            "enum": [
+              "conflict"
+            ],
             "example": "conflict",
             "type": "string"
           },
@@ -2735,7 +3498,9 @@
           },
           "detail": {
             "description": "Human-readable conflict detail.",
-            "enum": ["revision conflict"],
+            "enum": [
+              "revision conflict"
+            ],
             "example": "revision conflict",
             "type": "string"
           },
@@ -2767,7 +3532,65 @@
             "type": "string"
           }
         },
-        "required": ["type", "title", "status", "code", "currentRevision"],
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "currentRevision"
+        ],
+        "type": "object"
+      },
+      "SlackClaimRequest": {
+        "description": "Slack install session ticket redemption.",
+        "properties": {
+          "session": {
+            "description": "State ticket from the solomon-ai://oauth/slack/done deep link.",
+            "example": "state_abc123",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session"
+        ],
+        "type": "object"
+      },
+      "SlackClaimResponse": {
+        "description": "Connected Slack workspace metadata. The bot token is server-held and never returned.",
+        "properties": {
+          "botUserId": {
+            "description": "Bot user id in the workspace.",
+            "example": "U0BOT",
+            "nullable": true,
+            "type": "string"
+          },
+          "connected": {
+            "description": "Whether the workspace connection was stored.",
+            "example": true,
+            "type": "boolean"
+          },
+          "scope": {
+            "description": "Granted bot scopes, comma-separated.",
+            "example": "channels:history,channels:read",
+            "nullable": true,
+            "type": "string"
+          },
+          "teamId": {
+            "description": "Slack workspace (team) id — the key Events API deliveries resolve against.",
+            "example": "T0EXAMPLE",
+            "type": "string"
+          },
+          "teamName": {
+            "description": "Workspace display name.",
+            "example": "Acme",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "connected",
+          "teamId"
+        ],
         "type": "object"
       },
       "Subscription": {
@@ -2787,7 +3610,11 @@
           },
           "plan": {
             "description": "Billing plan slug.",
-            "enum": ["free", "starter", "pro"],
+            "enum": [
+              "free",
+              "starter",
+              "pro"
+            ],
             "example": "free",
             "type": "string"
           },
@@ -2863,13 +3690,21 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
           "plan": {
             "description": "Billing plan slug.",
-            "enum": ["free", "starter", "pro"],
+            "enum": [
+              "free",
+              "starter",
+              "pro"
+            ],
             "example": "free",
             "type": "string"
           },
@@ -2935,12 +3770,18 @@
           },
           "requiredPlan": {
             "description": "Minimum plan required.",
-            "enum": ["starter", "pro"],
+            "enum": [
+              "starter",
+              "pro"
+            ],
             "example": "pro",
             "type": "string"
           }
         },
-        "required": ["requiredPlan", "message"],
+        "required": [
+          "requiredPlan",
+          "message"
+        ],
         "type": "object"
       },
       "User": {
@@ -2967,10 +3808,22 @@
             },
             "type": "array"
           },
+          "background_task_schedule_states": {
+            "items": {
+              "$ref": "#/components/schemas/BackgroundTaskScheduleState"
+            },
+            "type": "array"
+          },
           "background_tasks": {
             "description": "Background task mirrors owned by the user.",
             "items": {
               "$ref": "#/components/schemas/BackgroundTask"
+            },
+            "type": "array"
+          },
+          "cloud_events": {
+            "items": {
+              "$ref": "#/components/schemas/CloudEvent"
             },
             "type": "array"
           },
@@ -2984,6 +3837,12 @@
             "description": "Best-known WorkOS primary email for the user.",
             "example": "user@example.com",
             "type": "string"
+          },
+          "google_watches": {
+            "items": {
+              "$ref": "#/components/schemas/GoogleWatch"
+            },
+            "type": "array"
           },
           "id": {
             "description": "Stable UUID primary key.",
@@ -3046,7 +3905,12 @@
             "type": "string"
           }
         },
-        "required": ["id", "created_at", "updated_at", "workos_user_id"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "workos_user_id"
+        ],
         "type": "object"
       },
       "UserHistory": {
@@ -3077,7 +3941,11 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
@@ -3155,7 +4023,9 @@
             "type": "object"
           }
         },
-        "required": ["text"],
+        "required": [
+          "text"
+        ],
         "type": "object"
       },
       "WorkOSExchangeRequest": {
@@ -3173,7 +4043,9 @@
             "type": "string"
           }
         },
-        "required": ["code"],
+        "required": [
+          "code"
+        ],
         "type": "object"
       },
       "WorkOSLoginURLResponse": {
@@ -3185,7 +4057,9 @@
             "type": "string"
           }
         },
-        "required": ["url"],
+        "required": [
+          "url"
+        ],
         "type": "object"
       },
       "WorkOSRefreshRequest": {
@@ -3197,7 +4071,9 @@
             "type": "string"
           }
         },
-        "required": ["refreshToken"],
+        "required": [
+          "refreshToken"
+        ],
         "type": "object"
       },
       "WorkOSTokenBundle": {
@@ -3228,7 +4104,9 @@
           },
           "token_type": {
             "description": "Token type.",
-            "enum": ["Bearer"],
+            "enum": [
+              "Bearer"
+            ],
             "example": "Bearer",
             "type": "string"
           },
@@ -3239,7 +4117,11 @@
             "type": "string"
           }
         },
-        "required": ["access_token", "expires_at", "token_type"],
+        "required": [
+          "access_token",
+          "expires_at",
+          "token_type"
+        ],
         "type": "object"
       }
     },
@@ -3324,7 +4206,9 @@
           }
         ],
         "summary": "Admin GraphQL",
-        "tags": ["GraphQL"]
+        "tags": [
+          "GraphQL"
+        ]
       }
     },
     "/healthz": {
@@ -3347,7 +4231,9 @@
           }
         },
         "summary": "Liveness probe",
-        "tags": ["System"]
+        "tags": [
+          "System"
+        ]
       }
     },
     "/oauth-hooks/pre-consent": {
@@ -3404,7 +4290,9 @@
           }
         ],
         "summary": "Evaluate connector pre-consent entitlement",
-        "tags": ["Webhooks"]
+        "tags": [
+          "Webhooks"
+        ]
       }
     },
     "/oauth/google/callback": {
@@ -3469,7 +4357,9 @@
           }
         },
         "summary": "Handle Google OAuth callback",
-        "tags": ["Google OAuth"]
+        "tags": [
+          "Google OAuth"
+        ]
       }
     },
     "/oauth/google/start": {
@@ -3511,7 +4401,120 @@
           }
         },
         "summary": "Start Google OAuth consent",
-        "tags": ["Google OAuth"]
+        "tags": [
+          "Google OAuth"
+        ]
+      }
+    },
+    "/oauth/slack/callback": {
+      "get": {
+        "description": "Slack redirect target. Exchanges the authorization code server-side, parks the sealed workspace bundle under the state ticket, and returns an HTML page that deep-links back to the desktop.",
+        "operationId": "handleSlackOAuthCallback",
+        "parameters": [
+          {
+            "description": "Opaque state ticket minted by /oauth/slack/start.",
+            "in": "query",
+            "name": "state",
+            "required": true,
+            "schema": {
+              "description": "State ticket.",
+              "example": "state_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Authorization code returned by Slack.",
+            "in": "query",
+            "name": "code",
+            "required": false,
+            "schema": {
+              "description": "Authorization code.",
+              "example": "1234.5678.abcd",
+              "type": "string"
+            }
+          },
+          {
+            "description": "OAuth error returned by Slack when the user cancels the install.",
+            "in": "query",
+            "name": "error",
+            "required": false,
+            "schema": {
+              "description": "OAuth error.",
+              "example": "access_denied",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "HTML page that redirects to solomon-ai://oauth/slack/done."
+          },
+          "400": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "HTML error page for missing or expired state/code."
+          }
+        },
+        "summary": "Handle Slack OAuth callback",
+        "tags": [
+          "Slack OAuth"
+        ]
+      }
+    },
+    "/oauth/slack/start": {
+      "get": {
+        "description": "Browser-facing endpoint opened by the desktop. It creates a one-time state ticket, then redirects the browser to Slack's OAuth v2 authorize screen with the configured bot scopes.",
+        "operationId": "startSlackOAuth",
+        "responses": {
+          "302": {
+            "description": "Redirect to Slack OAuth consent.",
+            "headers": {
+              "Location": {
+                "description": "Redirect target.",
+                "schema": {
+                  "format": "uri",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "HTML error page when the flow cannot be started."
+          },
+          "502": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "HTML error page when Slack OAuth is not configured."
+          }
+        },
+        "summary": "Start Slack workspace install",
+        "tags": [
+          "Slack OAuth"
+        ]
       }
     },
     "/openapi.json": {
@@ -3533,7 +4536,9 @@
           }
         },
         "summary": "Download OpenAPI document",
-        "tags": ["System"]
+        "tags": [
+          "System"
+        ]
       }
     },
     "/readyz": {
@@ -3559,7 +4564,9 @@
           }
         },
         "summary": "Readiness probe",
-        "tags": ["System"]
+        "tags": [
+          "System"
+        ]
       }
     },
     "/v1/auth/workos/exchange": {
@@ -3611,7 +4618,9 @@
           }
         },
         "summary": "Exchange WorkOS authorization code",
-        "tags": ["Auth"]
+        "tags": [
+          "Auth"
+        ]
       }
     },
     "/v1/auth/workos/login-url": {
@@ -3675,7 +4684,9 @@
           }
         },
         "summary": "Create WorkOS AuthKit login URL",
-        "tags": ["Auth"]
+        "tags": [
+          "Auth"
+        ]
       }
     },
     "/v1/auth/workos/refresh": {
@@ -3726,7 +4737,9 @@
           }
         },
         "summary": "Refresh WorkOS token bundle",
-        "tags": ["Auth"]
+        "tags": [
+          "Auth"
+        ]
       }
     },
     "/v1/background-task-runs": {
@@ -3741,7 +4754,13 @@
             "required": false,
             "schema": {
               "description": "Run status.",
-              "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+              "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "failed",
+                "stopped"
+              ],
               "example": "queued",
               "type": "string"
             }
@@ -3753,7 +4772,10 @@
             "required": false,
             "schema": {
               "description": "Run executor.",
-              "enum": ["desktop", "api"],
+              "enum": [
+                "desktop",
+                "api"
+              ],
               "example": "api",
               "type": "string"
             }
@@ -3847,7 +4869,9 @@
           }
         ],
         "summary": "List account background task runs",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks": {
@@ -3904,7 +4928,9 @@
           }
         ],
         "summary": "List background tasks",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "post": {
         "description": "Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, Solomon AI API derives one from name. Slugs are unique per authenticated user.",
@@ -4000,7 +5026,9 @@
           }
         ],
         "summary": "Create background task mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}": {
@@ -4073,7 +5101,9 @@
           }
         ],
         "summary": "Delete background task mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "get": {
         "description": "Fetches one task mirror by slug for the authenticated user. Tenant scoping ensures the same slug can exist for different users without leaking data.",
@@ -4140,7 +5170,9 @@
           }
         ],
         "summary": "Get background task mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "patch": {
         "description": "Applies a partial task update using optimistic locking. The desktop should send the current revision from its last read; stale writes return currentRevision for merge/retry.",
@@ -4247,7 +5279,9 @@
           }
         ],
         "summary": "Patch background task mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/artifact": {
@@ -4300,7 +5334,9 @@
           }
         ],
         "summary": "Get task artifact",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "put": {
         "description": "Creates or updates the markdown artifact mirror. Updates require the current artifact revision; creation can omit revision or send revision 0.",
@@ -4388,7 +5424,9 @@
           }
         ],
         "summary": "Put task artifact",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs": {
@@ -4414,7 +5452,13 @@
             "required": false,
             "schema": {
               "description": "Run status.",
-              "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+              "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "failed",
+                "stopped"
+              ],
               "example": "queued",
               "type": "string"
             }
@@ -4426,7 +5470,10 @@
             "required": false,
             "schema": {
               "description": "Run executor.",
-              "enum": ["desktop", "api"],
+              "enum": [
+                "desktop",
+                "api"
+              ],
               "example": "api",
               "type": "string"
             }
@@ -4512,7 +5559,9 @@
           }
         ],
         "summary": "List task runs",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "post": {
         "description": "Creates a run mirror for a desktop execution. Use this for local scheduler/manual runs; use /trigger when a remote user action should queue a new local execution.",
@@ -4622,7 +5671,9 @@
           }
         ],
         "summary": "Create task run mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}": {
@@ -4703,7 +5754,9 @@
           }
         ],
         "summary": "Get task run",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "patch": {
         "description": "Updates run state with optimistic locking. Desktop should patch queued remote-trigger runs to running/succeeded/failed as it claims and completes them locally.",
@@ -4822,7 +5875,9 @@
           }
         ],
         "summary": "Patch task run mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/cancel": {
@@ -4910,7 +5965,9 @@
           }
         ],
         "summary": "Cancel API-worker run",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/events": {
@@ -4993,7 +6050,9 @@
           }
         ],
         "summary": "List task run events",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "post": {
         "description": "Appends a batch of JSONL run events. The unique (run, seq) key makes retries idempotent: duplicate seq values are counted as skipped.",
@@ -5085,7 +6144,9 @@
           }
         ],
         "summary": "Append task run events",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/retry": {
@@ -5175,7 +6236,9 @@
           }
         ],
         "summary": "Retry API-worker run",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/signal": {
@@ -5282,7 +6345,9 @@
           }
         ],
         "summary": "Signal API-worker run",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/status": {
@@ -5356,7 +6421,9 @@
           }
         ],
         "summary": "Poll task run status",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/trigger": {
@@ -5451,7 +6518,9 @@
           }
         ],
         "summary": "Queue or start task trigger",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/composio/{path}": {
@@ -5501,7 +6570,9 @@
           }
         ],
         "summary": "Proxy Composio v3 Delete",
-        "tags": ["Composio"]
+        "tags": [
+          "Composio"
+        ]
       },
       "get": {
         "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
@@ -5549,7 +6620,9 @@
           }
         ],
         "summary": "Proxy Composio v3 Get",
-        "tags": ["Composio"]
+        "tags": [
+          "Composio"
+        ]
       },
       "patch": {
         "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
@@ -5597,7 +6670,9 @@
           }
         ],
         "summary": "Proxy Composio v3 Patch",
-        "tags": ["Composio"]
+        "tags": [
+          "Composio"
+        ]
       },
       "post": {
         "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
@@ -5645,7 +6720,9 @@
           }
         ],
         "summary": "Proxy Composio v3 Post",
-        "tags": ["Composio"]
+        "tags": [
+          "Composio"
+        ]
       },
       "put": {
         "description": "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.",
@@ -5693,7 +6770,9 @@
           }
         ],
         "summary": "Proxy Composio v3 Put",
-        "tags": ["Composio"]
+        "tags": [
+          "Composio"
+        ]
       }
     },
     "/v1/config": {
@@ -5720,7 +6799,9 @@
           }
         },
         "summary": "Fetch desktop bootstrap config",
-        "tags": ["System"]
+        "tags": [
+          "System"
+        ]
       }
     },
     "/v1/connections/{name}": {
@@ -5760,7 +6841,9 @@
           }
         ],
         "summary": "Disconnect connector",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connections/{name}/callback": {
@@ -5834,7 +6917,9 @@
           }
         },
         "summary": "Handle connector OAuth callback",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connections/{name}/mcp-token": {
@@ -5893,7 +6978,9 @@
           }
         ],
         "summary": "Mint connector MCP token",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connections/{name}/start": {
@@ -5949,7 +7036,9 @@
           }
         ],
         "summary": "Start connector OAuth flow",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connectors": {
@@ -5970,7 +7059,9 @@
                       "displayName": "Canvas",
                       "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
                       "name": "canvas",
-                      "scopes": ["invoices:read"]
+                      "scopes": [
+                        "invoices:read"
+                      ]
                     }
                   ]
                 },
@@ -5997,7 +7088,330 @@
           }
         ],
         "summary": "List connectors",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
+    "/v1/events": {
+      "get": {
+        "description": "Lists the authenticated user's ingested events ordered by receivedAt descending. Payload is omitted from list responses; fetch the detail endpoint for it.",
+        "operationId": "listCloudEvents",
+        "parameters": [
+          {
+            "description": "Filter by event source.",
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "description": "Source.",
+              "example": "gmail",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by routing status.",
+            "in": "query",
+            "name": "routingStatus",
+            "required": false,
+            "schema": {
+              "description": "Routing status.",
+              "example": "routed",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only events received at or after this RFC3339 time.",
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "description": "RFC3339 lower bound.",
+              "example": "2026-06-06T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only events received at or before this RFC3339 time.",
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "description": "RFC3339 upper bound.",
+              "example": "2026-06-07T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size (1-500, default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "description": "Page size.",
+              "example": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor from a prior page's nextCursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "description": "Pagination cursor.",
+              "example": "",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "events": [],
+                  "nextCursor": ""
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventListResponse"
+                }
+              }
+            },
+            "description": "Event page."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List cloud events",
+        "tags": [
+          "Cloud Events"
+        ]
+      },
+      "post": {
+        "description": "Stores one normalized event idempotently on (user, source, dedupeKey) and enqueues async routing to matching API-target background tasks. Returns 202 for a fresh event and 200 with deduped=true for a replay.",
+        "operationId": "ingestCloudEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "dedupeKey": "gmail:msg:msg_123",
+                "eventType": "email.received",
+                "payload": {
+                  "messageId": "msg_123",
+                  "provider": "gmail"
+                },
+                "source": "internal",
+                "subject": "Invoice #4821 dispute",
+                "text": "Acme disputed invoice #4821 for $18,000 due to a pricing mismatch."
+              },
+              "schema": {
+                "$ref": "#/components/schemas/CloudEventIngestRequest"
+              }
+            }
+          },
+          "description": "Normalized event envelope.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": true,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "matchedTaskCount": 1,
+                  "routingStatus": "routed"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Duplicate dedupeKey: existing event returned, routing not re-run."
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": false,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "pending"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Event stored, routing enqueued."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "payload_too_large",
+                  "detail": "payload exceeds 262144 bytes",
+                  "requestId": "req-abc123",
+                  "status": 413,
+                  "title": "Request Entity Too Large",
+                  "type": "https://api.rowboat.dev/problems/payload_too_large"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Payload exceeds the configured size cap."
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Ingest a cloud event",
+        "tags": [
+          "Cloud Events"
+        ]
+      }
+    },
+    "/v1/events/{eventId}": {
+      "get": {
+        "description": "Returns one event including the decrypted payload and the routing decision summary.",
+        "operationId": "getCloudEvent",
+        "parameters": [
+          {
+            "description": "Cloud event id.",
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "description": "Event id.",
+              "example": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "dedupeKey": "gmail:msg:msg_123",
+                  "id": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "matchedTaskCount": 1,
+                  "receivedAt": "2026-06-06T14:00:02Z",
+                  "routingStatus": "routed",
+                  "source": "internal"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEvent"
+                }
+              }
+            },
+            "description": "Event detail."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get a cloud event",
+        "tags": [
+          "Cloud Events"
+        ]
+      }
+    },
+    "/v1/events/{eventId}/runs": {
+      "get": {
+        "description": "Returns the trigger=event runs this event fired — the event-to-run audit link.",
+        "operationId": "listCloudEventRuns",
+        "parameters": [
+          {
+            "description": "Cloud event id.",
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "description": "Event id.",
+              "example": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "runs": [
+                    {
+                      "createdAt": "2026-06-06T14:00:10Z",
+                      "executor": "api",
+                      "runId": "event-7e0a1f2b",
+                      "status": "succeeded",
+                      "taskSlug": "acme-ar-watch",
+                      "trigger": "event"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventRunsResponse"
+                }
+              }
+            },
+            "description": "Linked runs."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List runs triggered by a cloud event",
+        "tags": [
+          "Cloud Events"
+        ]
       }
     },
     "/v1/google-oauth/claim": {
@@ -6064,7 +7478,9 @@
           }
         ],
         "summary": "Claim Google OAuth token bundle",
-        "tags": ["Google OAuth"]
+        "tags": [
+          "Google OAuth"
+        ]
       }
     },
     "/v1/google-oauth/refresh": {
@@ -6124,7 +7540,9 @@
           }
         ],
         "summary": "Refresh Google access token",
-        "tags": ["Google OAuth"]
+        "tags": [
+          "Google OAuth"
+        ]
       }
     },
     "/v1/internal/connections/invalidate": {
@@ -6177,7 +7595,82 @@
           }
         ],
         "summary": "Force-disconnect a connector",
-        "tags": ["Internal"]
+        "tags": [
+          "Internal"
+        ]
+      }
+    },
+    "/v1/internal/events": {
+      "post": {
+        "description": "Internal-secret ingestion used by backend services and test fixtures. Identical to /v1/events except the caller names the owning userId explicitly.",
+        "operationId": "ingestInternalCloudEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "dedupeKey": "internal:test:1",
+                "source": "internal",
+                "subject": "Synthetic event",
+                "userId": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/InternalCloudEventIngestRequest"
+              }
+            }
+          },
+          "description": "Normalized event envelope with explicit owner.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": true,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "routed"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Duplicate dedupeKey: existing event returned."
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": false,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "pending"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Event stored, routing enqueued."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "InternalSecret": []
+          }
+        ],
+        "summary": "Ingest a cloud event (server-to-server)",
+        "tags": [
+          "Internal"
+        ]
       }
     },
     "/v1/llm/chat/completions": {
@@ -6286,7 +7779,9 @@
           }
         ],
         "summary": "Proxy OpenAI-compatible chat completion",
-        "tags": ["LLM"]
+        "tags": [
+          "LLM"
+        ]
       }
     },
     "/v1/llm/completions": {
@@ -6390,7 +7885,9 @@
           }
         ],
         "summary": "Proxy OpenAI-compatible legacy completion",
-        "tags": ["LLM"]
+        "tags": [
+          "LLM"
+        ]
       }
     },
     "/v1/llm/embeddings": {
@@ -6439,7 +7936,10 @@
           "content": {
             "application/json": {
               "example": {
-                "input": ["invoice", "payment"],
+                "input": [
+                  "invoice",
+                  "payment"
+                ],
                 "model": "openai/text-embedding-3-small"
               },
               "schema": {
@@ -6487,7 +7987,9 @@
           }
         ],
         "summary": "Proxy OpenAI-compatible embeddings",
-        "tags": ["LLM"]
+        "tags": [
+          "LLM"
+        ]
       }
     },
     "/v1/llm/models": {
@@ -6528,7 +8030,9 @@
           }
         ],
         "summary": "List routable LLM models",
-        "tags": ["LLM"]
+        "tags": [
+          "LLM"
+        ]
       }
     },
     "/v1/me": {
@@ -6589,7 +8093,9 @@
           }
         ],
         "summary": "Get current user and billing state",
-        "tags": ["Billing"]
+        "tags": [
+          "Billing"
+        ]
       }
     },
     "/v1/search/exa": {
@@ -6664,7 +8170,90 @@
           }
         ],
         "summary": "Run Exa search",
-        "tags": ["Search"]
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/v1/slack-oauth/claim": {
+      "post": {
+        "description": "Atomically consumes a one-time Slack install ticket and persists the workspace connection (the team_id-to-user mapping the Slack events webhook resolves against). The bot token stays server-held; the response carries workspace metadata only.",
+        "operationId": "claimSlackOAuth",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "session": "state_abc123"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/SlackClaimRequest"
+              }
+            }
+          },
+          "description": "Slack install session ticket.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "botUserId": "U0BOT",
+                  "connected": true,
+                  "scope": "channels:history,channels:read",
+                  "teamId": "T0EXAMPLE",
+                  "teamName": "Acme"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/SlackClaimResponse"
+                }
+              }
+            },
+            "description": "Connected workspace metadata."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "install_incomplete",
+                  "detail": "slack install not completed yet",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/install_incomplete"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "The browser install has not completed yet; retry after the deep link returns."
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Claim Slack workspace connection",
+        "tags": [
+          "Slack OAuth"
+        ]
       }
     },
     "/v1/voice/text-to-speech/{voiceId}": {
@@ -6742,7 +8331,141 @@
           }
         ],
         "summary": "Generate speech audio",
-        "tags": ["Voice"]
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/v1/webhooks/google": {
+      "post": {
+        "description": "Receives Gmail Pub/Sub pushes and Google Calendar channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for Calendar). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.",
+        "operationId": "googleWebhook",
+        "parameters": [
+          {
+            "description": "Shared webhook token configured on the Pub/Sub push subscription URL.",
+            "in": "query",
+            "name": "token",
+            "required": false,
+            "schema": {
+              "description": "Webhook token.",
+              "example": "",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "message": {
+                  "data": "eyJlbWFpbEFkZHJlc3MiOiJtZUBnbWFpbC5jb20iLCJoaXN0b3J5SWQiOjk5ODg3N30=",
+                  "messageId": "m1"
+                }
+              },
+              "schema": {
+                "additionalProperties": true,
+                "description": "Pub/Sub push envelope.",
+                "type": "object"
+              }
+            }
+          },
+          "description": "Pub/Sub push envelope (Gmail). Calendar notifications carry no body.",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged: sync handshake, duplicate, or unresolved account (dropped)."
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": false,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "pending"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Event ingested."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "summary": "Google push webhook",
+        "tags": [
+          "Cloud Events"
+        ]
+      }
+    },
+    "/v1/webhooks/slack": {
+      "post": {
+        "description": "Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Rowboat user are ingested, others are acknowledged and dropped.",
+        "operationId": "slackWebhook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "event": {
+                  "text": "hello",
+                  "type": "message"
+                },
+                "event_id": "Ev001",
+                "team_id": "T0EXAMPLE",
+                "type": "event_callback"
+              },
+              "schema": {
+                "additionalProperties": true,
+                "description": "Slack event envelope.",
+                "type": "object"
+              }
+            }
+          },
+          "description": "Slack Events API envelope.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Handshake challenge echoed, duplicate, or unmapped workspace (dropped)."
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": false,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "pending"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Event ingested."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "summary": "Slack Events API webhook",
+        "tags": [
+          "Cloud Events"
+        ]
       }
     }
   },

@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 )
@@ -70,6 +71,9 @@ func (BackgroundTaskRun) Fields() []ent.Field {
 		field.Time("last_heartbeat_at").Optional().Nillable(),
 		field.Time("started_at").Optional().Nillable(),
 		field.Time("completed_at").Optional().Nillable(),
+		// cloud_event_id links an event-triggered run back to the CloudEvent that
+		// fired it (RFC 003). Nullable: manual/cron/window/retry runs have none.
+		field.UUID("cloud_event_id", uuid.UUID{}).Optional().Nillable(),
 		field.Int("revision").Default(1).Positive(),
 	}
 }
@@ -79,6 +83,10 @@ func (BackgroundTaskRun) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).Ref("background_task_runs").Unique().Required(),
 		edge.From("task", BackgroundTask.Type).Ref("runs").Unique().Required(),
+		edge.From("cloud_event", CloudEvent.Type).
+			Ref("runs").
+			Unique().
+			Field("cloud_event_id"),
 		edge.To("events", BackgroundTaskRunEvent.Type).
 			StorageKey(edge.Column("background_task_run_id")),
 	}

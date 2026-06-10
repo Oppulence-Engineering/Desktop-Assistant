@@ -1,8 +1,8 @@
-# RFC 019: Native Third-Party Tool & Connector Engine (Composio Replacement)
+# RFC 020: Native Third-Party Tool & Connector Engine (Composio Replacement)
 
 |                  |                                                                                                                                                             |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 019                                                                                                                                                         |
+| **RFC**          | 020                                                                                                                                                         |
 | **Status**       | Draft                                                                                                                                                       |
 | **Track**        | Third-party tool execution / agent capability plane                                                                                                         |
 | **Owners**       | `apps/rowboat-api`, `apps/x` (core + main), connector maintainers                                                                                           |

@@ -7,6 +7,7 @@ require (
 	entgo.io/contrib v0.7.0
 	entgo.io/ent v0.14.6
 	github.com/99designs/gqlgen v0.17.90
+	github.com/adhocore/gronx v1.20.0
 	github.com/flume/enthistory v0.17.4
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/go-redis/redis/v8 v8.11.3
@@ -54,6 +55,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/jhump/protoreflect v1.18.0 // indirect
 	github.com/jhump/protoreflect/v2 v2.0.0-beta.2 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mitchellh/hashstructure v1.1.0 // indirect
 	github.com/nexus-rpc/sdk-go v0.6.0 // indirect

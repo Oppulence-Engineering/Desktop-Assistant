@@ -5,3 +5,12 @@
 .env.local
 coverage.txt
 /tmp/
+
+# Stray cmd binaries built at the module root (e.g. `go build ./cmd/scheduler`
+# emits ./scheduler). The Makefile builds into /bin; these are accidents.
+/devstack
+/migrate
+/openapi-enrich
+/scheduler
+/server
+/worker

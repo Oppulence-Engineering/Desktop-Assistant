@@ -42,8 +42,13 @@ for (const outputPath of outputPaths) {
   console.log(`Packaged app: ${path.relative(repoRoot, outputPath)}`);
 }
 
-const binaryName = platform === 'win32' ? `${executableName}.exe` : executableName;
-const binaryPath = path.join(appDir, 'out', `${appName}-${platform}-${arch}`, binaryName);
+if (outputPaths.length === 0) {
+  throw new Error('Packager did not return any output paths');
+}
+
+const binaryPath = platform === 'darwin'
+  ? path.join(outputPaths[0], `${appName}.app`, 'Contents', 'MacOS', executableName)
+  : path.join(outputPaths[0], platform === 'win32' ? `${executableName}.exe` : executableName);
 
 await access(binaryPath);
 console.log(`Packaged smoke binary: ${path.relative(repoRoot, binaryPath)}`);

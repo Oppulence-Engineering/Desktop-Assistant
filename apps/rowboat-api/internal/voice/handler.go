@@ -111,18 +111,29 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cost := h.prices.VoiceCost(utf8.RuneCountInString(parsed.Text))
-	if err := h.gate.CheckSpendLimits(r.Context(), cost, h.limits); err != nil {
-		writeQuotaError(w, err)
+	requestID := httpx.IdempotencyKeyUUID(r, u.ID.String(), raw)
+	charge, err := h.gate.Reserve(r.Context(), "voice_tts", cost, requestID, h.limits)
+	if err != nil {
+		switch err {
+		case quota.ErrInsufficientCredits:
+			httpx.Error(w, http.StatusPaymentRequired, "insufficient_credits", "insufficient_credits")
+		case quota.ErrDailyLimitExceeded, quota.ErrMonthlyLimitExceeded, quota.ErrNoUser:
+			writeQuotaError(w, err)
+		default:
+			httpx.Error(w, http.StatusInternalServerError, "could not reserve credits", "internal_error")
+		}
 		return
 	}
-	requestID := httpx.IdempotencyKeyUUID(r, u.ID.String())
-	charge, err := h.gate.Reserve(r.Context(), "voice_tts", cost, requestID)
-	if err != nil {
-		if err == quota.ErrInsufficientCredits {
-			httpx.Error(w, http.StatusPaymentRequired, "insufficient_credits", "insufficient_credits")
-			return
-		}
-		httpx.Error(w, http.StatusInternalServerError, "could not reserve credits", "internal_error")
+	if charge.Finalized() {
+		// Already settled for this Idempotency-Key: re-calling ElevenLabs would
+		// synthesize (and vendor-bill) again while every accounting write no-ops.
+		httpx.Error(w, http.StatusConflict, "a request with this Idempotency-Key was already completed", "request_already_completed")
+		return
+	}
+	if charge.InProgress() {
+		// Concurrent duplicate (same Idempotency-Key) still in flight; don't
+		// double-call ElevenLabs (it bills per synthesis).
+		httpx.Error(w, http.StatusConflict, "a request with this Idempotency-Key is already in progress", "request_in_progress")
 		return
 	}
 
@@ -163,10 +174,13 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", proxyutil.ContentTypeOr(resp, "audio/mpeg"))
 	w.WriteHeader(resp.StatusCode)
-	if _, err := io.Copy(w, resp.Body); err != nil {
-		refund(charge, h.log)
-		h.log.Warn("voice upstream response copy failed", zap.Error(err))
-		return
+	_, copyErr := io.Copy(w, resp.Body)
+	if copyErr != nil {
+		// The client disconnected (or the write failed) AFTER ElevenLabs already
+		// generated and billed us for the audio. Charge for it rather than
+		// refunding the full reservation — refunding here would let a client
+		// abort the download mid-stream to get free, vendor-billed synthesis.
+		h.log.Warn("voice upstream response copy failed", zap.Error(copyErr))
 	}
 
 	// Flat per-character charge: actual == reserved, so settle is a no-op, but

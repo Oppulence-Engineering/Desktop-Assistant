@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
@@ -439,6 +440,20 @@ func (_c *BackgroundTaskRunCreate) SetNillableCompletedAt(v *time.Time) *Backgro
 	return _c
 }
 
+// SetCloudEventID sets the "cloud_event_id" field.
+func (_c *BackgroundTaskRunCreate) SetCloudEventID(v uuid.UUID) *BackgroundTaskRunCreate {
+	_c.mutation.SetCloudEventID(v)
+	return _c
+}
+
+// SetNillableCloudEventID sets the "cloud_event_id" field if the given value is not nil.
+func (_c *BackgroundTaskRunCreate) SetNillableCloudEventID(v *uuid.UUID) *BackgroundTaskRunCreate {
+	if v != nil {
+		_c.SetCloudEventID(*v)
+	}
+	return _c
+}
+
 // SetRevision sets the "revision" field.
 func (_c *BackgroundTaskRunCreate) SetRevision(v int) *BackgroundTaskRunCreate {
 	_c.mutation.SetRevision(v)
@@ -487,6 +502,11 @@ func (_c *BackgroundTaskRunCreate) SetTaskID(id uuid.UUID) *BackgroundTaskRunCre
 // SetTask sets the "task" edge to the BackgroundTask entity.
 func (_c *BackgroundTaskRunCreate) SetTask(v *BackgroundTask) *BackgroundTaskRunCreate {
 	return _c.SetTaskID(v.ID)
+}
+
+// SetCloudEvent sets the "cloud_event" edge to the CloudEvent entity.
+func (_c *BackgroundTaskRunCreate) SetCloudEvent(v *CloudEvent) *BackgroundTaskRunCreate {
+	return _c.SetCloudEventID(v.ID)
 }
 
 // AddEventIDs adds the "events" edge to the BackgroundTaskRunEvent entity by IDs.
@@ -832,6 +852,23 @@ func (_c *BackgroundTaskRunCreate) createSpec() (*BackgroundTaskRun, *sqlgraph.C
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.background_task_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CloudEventIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   backgroundtaskrun.CloudEventTable,
+			Columns: []string{backgroundtaskrun.CloudEventColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cloudevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.CloudEventID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.EventsIDs(); len(nodes) > 0 {
@@ -1397,6 +1434,24 @@ func (u *BackgroundTaskRunUpsert) UpdateCompletedAt() *BackgroundTaskRunUpsert {
 // ClearCompletedAt clears the value of the "completed_at" field.
 func (u *BackgroundTaskRunUpsert) ClearCompletedAt() *BackgroundTaskRunUpsert {
 	u.SetNull(backgroundtaskrun.FieldCompletedAt)
+	return u
+}
+
+// SetCloudEventID sets the "cloud_event_id" field.
+func (u *BackgroundTaskRunUpsert) SetCloudEventID(v uuid.UUID) *BackgroundTaskRunUpsert {
+	u.Set(backgroundtaskrun.FieldCloudEventID, v)
+	return u
+}
+
+// UpdateCloudEventID sets the "cloud_event_id" field to the value that was provided on create.
+func (u *BackgroundTaskRunUpsert) UpdateCloudEventID() *BackgroundTaskRunUpsert {
+	u.SetExcluded(backgroundtaskrun.FieldCloudEventID)
+	return u
+}
+
+// ClearCloudEventID clears the value of the "cloud_event_id" field.
+func (u *BackgroundTaskRunUpsert) ClearCloudEventID() *BackgroundTaskRunUpsert {
+	u.SetNull(backgroundtaskrun.FieldCloudEventID)
 	return u
 }
 
@@ -2047,6 +2102,27 @@ func (u *BackgroundTaskRunUpsertOne) UpdateCompletedAt() *BackgroundTaskRunUpser
 func (u *BackgroundTaskRunUpsertOne) ClearCompletedAt() *BackgroundTaskRunUpsertOne {
 	return u.Update(func(s *BackgroundTaskRunUpsert) {
 		s.ClearCompletedAt()
+	})
+}
+
+// SetCloudEventID sets the "cloud_event_id" field.
+func (u *BackgroundTaskRunUpsertOne) SetCloudEventID(v uuid.UUID) *BackgroundTaskRunUpsertOne {
+	return u.Update(func(s *BackgroundTaskRunUpsert) {
+		s.SetCloudEventID(v)
+	})
+}
+
+// UpdateCloudEventID sets the "cloud_event_id" field to the value that was provided on create.
+func (u *BackgroundTaskRunUpsertOne) UpdateCloudEventID() *BackgroundTaskRunUpsertOne {
+	return u.Update(func(s *BackgroundTaskRunUpsert) {
+		s.UpdateCloudEventID()
+	})
+}
+
+// ClearCloudEventID clears the value of the "cloud_event_id" field.
+func (u *BackgroundTaskRunUpsertOne) ClearCloudEventID() *BackgroundTaskRunUpsertOne {
+	return u.Update(func(s *BackgroundTaskRunUpsert) {
+		s.ClearCloudEventID()
 	})
 }
 
@@ -2867,6 +2943,27 @@ func (u *BackgroundTaskRunUpsertBulk) UpdateCompletedAt() *BackgroundTaskRunUpse
 func (u *BackgroundTaskRunUpsertBulk) ClearCompletedAt() *BackgroundTaskRunUpsertBulk {
 	return u.Update(func(s *BackgroundTaskRunUpsert) {
 		s.ClearCompletedAt()
+	})
+}
+
+// SetCloudEventID sets the "cloud_event_id" field.
+func (u *BackgroundTaskRunUpsertBulk) SetCloudEventID(v uuid.UUID) *BackgroundTaskRunUpsertBulk {
+	return u.Update(func(s *BackgroundTaskRunUpsert) {
+		s.SetCloudEventID(v)
+	})
+}
+
+// UpdateCloudEventID sets the "cloud_event_id" field to the value that was provided on create.
+func (u *BackgroundTaskRunUpsertBulk) UpdateCloudEventID() *BackgroundTaskRunUpsertBulk {
+	return u.Update(func(s *BackgroundTaskRunUpsert) {
+		s.UpdateCloudEventID()
+	})
+}
+
+// ClearCloudEventID clears the value of the "cloud_event_id" field.
+func (u *BackgroundTaskRunUpsertBulk) ClearCloudEventID() *BackgroundTaskRunUpsertBulk {
+	return u.Update(func(s *BackgroundTaskRunUpsert) {
+		s.ClearCloudEventID()
 	})
 }
 

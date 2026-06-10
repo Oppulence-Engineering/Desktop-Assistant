@@ -241,6 +241,11 @@ func (_c *LLMUsageCreate) check() error {
 	if _, ok := _c.mutation.CostUnits(); !ok {
 		return &ValidationError{Name: "cost_units", err: errors.New(`ent: missing required field "LLMUsage.cost_units"`)}
 	}
+	if v, ok := _c.mutation.CostUnits(); ok {
+		if err := llmusage.CostUnitsValidator(v); err != nil {
+			return &ValidationError{Name: "cost_units", err: fmt.Errorf(`ent: validator failed for field "LLMUsage.cost_units": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.RequestID(); !ok {
 		return &ValidationError{Name: "request_id", err: errors.New(`ent: missing required field "LLMUsage.request_id"`)}
 	}

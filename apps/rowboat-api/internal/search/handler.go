@@ -97,18 +97,29 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cost := h.prices.ExaCost()
-	if err := h.gate.CheckSpendLimits(r.Context(), cost, h.limits); err != nil {
-		writeQuotaError(w, err)
+	requestID := httpx.IdempotencyKeyUUID(r, u.ID.String(), raw)
+	charge, err := h.gate.Reserve(r.Context(), "exa_search", cost, requestID, h.limits)
+	if err != nil {
+		switch err {
+		case quota.ErrInsufficientCredits:
+			httpx.Error(w, http.StatusPaymentRequired, "insufficient_credits", "insufficient_credits")
+		case quota.ErrDailyLimitExceeded, quota.ErrMonthlyLimitExceeded, quota.ErrNoUser:
+			writeQuotaError(w, err)
+		default:
+			httpx.Error(w, http.StatusInternalServerError, "could not reserve credits", "internal_error")
+		}
 		return
 	}
-	requestID := httpx.IdempotencyKeyUUID(r, u.ID.String())
-	charge, err := h.gate.Reserve(r.Context(), "exa_search", cost, requestID)
-	if err != nil {
-		if err == quota.ErrInsufficientCredits {
-			httpx.Error(w, http.StatusPaymentRequired, "insufficient_credits", "insufficient_credits")
-			return
-		}
-		httpx.Error(w, http.StatusInternalServerError, "could not reserve credits", "internal_error")
+	if charge.Finalized() {
+		// Already settled for this Idempotency-Key: re-calling Exa would run (and
+		// vendor-bill) the search again while every accounting write no-ops.
+		httpx.Error(w, http.StatusConflict, "a request with this Idempotency-Key was already completed", "request_already_completed")
+		return
+	}
+	if charge.InProgress() {
+		// Concurrent duplicate (same Idempotency-Key) still in flight; don't
+		// double-call Exa (it bills per search).
+		httpx.Error(w, http.StatusConflict, "a request with this Idempotency-Key is already in progress", "request_in_progress")
 		return
 	}
 
@@ -149,9 +160,10 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", proxyutil.ContentTypeOr(resp, "application/json"))
 	w.WriteHeader(resp.StatusCode)
 	if _, err := io.Copy(w, resp.Body); err != nil {
-		refund(charge, h.log)
+		// Upstream already ran and billed us; a client disconnect mid-copy must
+		// still settle the charge, not refund it (refunding would hand out free,
+		// vendor-billed searches to anyone who aborts the download).
 		h.log.Warn("exa upstream response copy failed", zap.Error(err))
-		return
 	}
 
 	sctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)

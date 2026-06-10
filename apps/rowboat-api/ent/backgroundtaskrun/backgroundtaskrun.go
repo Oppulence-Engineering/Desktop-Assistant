@@ -75,12 +75,16 @@ const (
 	FieldStartedAt = "started_at"
 	// FieldCompletedAt holds the string denoting the completed_at field in the database.
 	FieldCompletedAt = "completed_at"
+	// FieldCloudEventID holds the string denoting the cloud_event_id field in the database.
+	FieldCloudEventID = "cloud_event_id"
 	// FieldRevision holds the string denoting the revision field in the database.
 	FieldRevision = "revision"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// EdgeTask holds the string denoting the task edge name in mutations.
 	EdgeTask = "task"
+	// EdgeCloudEvent holds the string denoting the cloud_event edge name in mutations.
+	EdgeCloudEvent = "cloud_event"
 	// EdgeEvents holds the string denoting the events edge name in mutations.
 	EdgeEvents = "events"
 	// Table holds the table name of the backgroundtaskrun in the database.
@@ -99,6 +103,13 @@ const (
 	TaskInverseTable = "background_tasks"
 	// TaskColumn is the table column denoting the task relation/edge.
 	TaskColumn = "background_task_id"
+	// CloudEventTable is the table that holds the cloud_event relation/edge.
+	CloudEventTable = "background_task_runs"
+	// CloudEventInverseTable is the table name for the CloudEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "cloudevent" package.
+	CloudEventInverseTable = "cloud_events"
+	// CloudEventColumn is the table column denoting the cloud_event relation/edge.
+	CloudEventColumn = "cloud_event_id"
 	// EventsTable is the table that holds the events relation/edge.
 	EventsTable = "background_task_run_events"
 	// EventsInverseTable is the table name for the BackgroundTaskRunEvent entity.
@@ -141,6 +152,7 @@ var Columns = []string{
 	FieldLastHeartbeatAt,
 	FieldStartedAt,
 	FieldCompletedAt,
+	FieldCloudEventID,
 	FieldRevision,
 }
 
@@ -359,6 +371,11 @@ func ByCompletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCompletedAt, opts...).ToFunc()
 }
 
+// ByCloudEventID orders the results by the cloud_event_id field.
+func ByCloudEventID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCloudEventID, opts...).ToFunc()
+}
+
 // ByRevision orders the results by the revision field.
 func ByRevision(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRevision, opts...).ToFunc()
@@ -375,6 +392,13 @@ func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 func ByTaskField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newTaskStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByCloudEventField orders the results by cloud_event field.
+func ByCloudEventField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCloudEventStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -403,6 +427,13 @@ func newTaskStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(TaskInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, TaskTable, TaskColumn),
+	)
+}
+func newCloudEventStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CloudEventInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, CloudEventTable, CloudEventColumn),
 	)
 }
 func newEventsStep() *sqlgraph.Step {

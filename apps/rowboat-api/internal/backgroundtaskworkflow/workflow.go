@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -166,7 +167,33 @@ func BackgroundTaskWorkflow(ctx workflow.Context, in StartInput) error {
 		},
 	})
 
+	// Drain SignalControl so control signals (pause/resume/update_context) are
+	// actually received from workflow history instead of buffering unboundedly.
+	// This linear workflow does not yet act on them — but the HTTP SignalRun path
+	// returns 202 ("delivered"), and without this drain the signal was never read
+	// at all. The coroutine blocks on Receive for the life of the run and is
+	// reclaimed when the workflow completes.
+	workflow.Go(ctx, func(gctx workflow.Context) {
+		ch := workflow.GetSignalChannel(gctx, SignalControl)
+		for {
+			var msg map[string]any
+			if !ch.Receive(gctx, &msg) {
+				return
+			}
+			workflow.GetLogger(gctx).Info("background task control signal received (not yet honored)",
+				"signal", msg["signal"], "runId", in.RunID)
+		}
+	})
+
 	if err := workflow.ExecuteActivity(ctx, ActivityMarkRunRunning, in).Get(ctx, nil); err != nil {
+		// Best-effort terminal write: without it the run row stays "queued"
+		// forever when the claim exhausts its retry budget (the scheduler's
+		// stale-heartbeat sweep is the backstop when this write fails too).
+		// MarkRunFailed's status guard makes this a no-op for runs that are
+		// already terminal (e.g. RunNotClaimable on a stopped run).
+		code, details := ClassifyRunError(err)
+		fail := CompleteInput{StartInput: in, Error: err.Error(), ErrorCode: code, ErrorDetails: details}
+		_ = workflow.ExecuteActivity(ctx, ActivityMarkRunFailed, fail).Get(ctx, nil)
 		return err
 	}
 
@@ -200,7 +227,18 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		return err
 	}
 	n, err := a.Client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+		// Refuse to claim a run the user cancelled (stopped) or one already
+		// succeeded. A "failed" row is deliberately still claimable: this
+		// activity only ever runs for a LIVE workflow, so a failed row here
+		// means the scheduler's orphan reaper prematurely failed a run whose
+		// workflow is in fact running — claiming it lets the run self-heal and
+		// complete rather than being stuck failed. Re-claiming a still-"running"
+		// run (activity retry) stays idempotent.
+		Where(
+			backgroundtaskrun.RunIDEQ(in.RunID),
+			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
+			backgroundtaskrun.StatusNotIn("succeeded", "stopped"),
+		).
 		SetExecutor("api").
 		SetStatus("running").
 		SetTemporalStatus("Running").
@@ -209,13 +247,26 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		SetLastHeartbeatAt(now).
 		SetProgressPercent(5).
 		SetProgressMessage("API worker claimed the run.").
+		// Clear any terminal residue: if the orphan reaper prematurely failed
+		// this run (then it self-heals here), the stale completed_at/closed_at
+		// and error fields would otherwise contradict status=running and leak
+		// onto the eventual succeeded row. No-op for a normal queued run.
+		ClearError().
+		ClearErrorCode().
+		ClearErrorDetails().
+		ClearCompletedAt().
+		ClearTemporalClosedAt().
 		AddRevision(1).
 		Save(ctx)
 	if err != nil {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("background task run %s not found", in.RunID)
+		// Cancelled/succeeded/missing run: it will never become claimable, so
+		// fail the workflow fast instead of burning the activity retry budget.
+		return temporal.NewNonRetryableApplicationError(
+			fmt.Sprintf("background task run %s not claimable (cancelled, completed, or missing)", in.RunID),
+			"RunNotClaimable", nil)
 	}
 	if err := a.Client.BackgroundTask.UpdateOneID(taskID).
 		SetLastAttemptAt(now).
@@ -310,7 +361,16 @@ func (a *Activities) MarkRunDone(ctx context.Context, in CompleteInput) error {
 		return err
 	}
 	n, err := a.Client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+		// Guard the terminal transition: never overwrite a run the user already
+		// stopped, and skip a run already marked succeeded. This makes the
+		// activity idempotent under Temporal retry (a retry finds n==0 and does
+		// NOT re-increment metrics or re-emit the completed event) and prevents a
+		// late MarkRunDone from resurrecting a `stopped` run.
+		Where(
+			backgroundtaskrun.RunIDEQ(in.RunID),
+			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
+			backgroundtaskrun.StatusNotIn("succeeded", "stopped"),
+		).
 		SetStatus("succeeded").
 		SetTemporalStatus("Completed").
 		SetTemporalClosedAt(now).
@@ -320,13 +380,37 @@ func (a *Activities) MarkRunDone(ctx context.Context, in CompleteInput) error {
 		SetProgressMessage("Completed.").
 		SetSummary(in.Summary).
 		ClearError().
+		ClearErrorCode().
+		ClearErrorDetails().
 		AddRevision(1).
 		Save(ctx)
 	if err != nil {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("background task run %s not found", in.RunID)
+		// Already terminal (idempotent retry) or stopped (user cancel) → succeed
+		// without double-counting; only a genuinely missing run is an error.
+		run, qerr := a.Client.BackgroundTaskRun.Query().
+			Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+			Only(ctx)
+		if qerr != nil {
+			if ent.IsNotFound(qerr) {
+				return fmt.Errorf("background task run %s not found", in.RunID)
+			}
+			return qerr
+		}
+		// If the FIRST attempt updated the status but failed on the event append,
+		// this retry must still deliver the terminal event (skip for stopped runs,
+		// which never completed).
+		if run.Status == "succeeded" {
+			return a.appendEventIfMissing(ctx, in.StartInput, EventCompleted, map[string]any{
+				"type":     EventCompleted,
+				"message":  "Completed.",
+				"progress": 100,
+				"summary":  in.Summary,
+			})
+		}
+		return nil
 	}
 	if err := a.Client.BackgroundTask.UpdateOneID(taskID).
 		SetLastRunID(in.RunID).
@@ -360,7 +444,9 @@ func (a *Activities) MarkRunFailed(ctx context.Context, in CompleteInput) error 
 		return err
 	}
 	code := in.ErrorCode
-	if code == "" {
+	if !IsKnownErrorCode(code) {
+		// Guard the Prometheus label below: an unknown/empty code would otherwise
+		// add unbounded cardinality to cloud_runs_failed_total.
 		code = ErrCodeActivityFailed
 	}
 	details := in.ErrorDetails
@@ -368,7 +454,17 @@ func (a *Activities) MarkRunFailed(ctx context.Context, in CompleteInput) error 
 		details = in.Error
 	}
 	n, err := a.Client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+		// Guard the terminal transition: don't override a succeeded/stopped run,
+		// and don't re-fail an already-failed run. This makes the activity
+		// idempotent under retry (n==0 → no double Failed metric / duplicate
+		// failed event). A failed run that the worker later self-heals is set
+		// back to "running" by MarkRunRunning first, so a genuine re-failure still
+		// passes this guard.
+		Where(
+			backgroundtaskrun.RunIDEQ(in.RunID),
+			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
+			backgroundtaskrun.StatusNotIn("succeeded", "stopped", "failed"),
+		).
 		SetStatus("failed").
 		SetTemporalStatus("Failed").
 		SetTemporalClosedAt(now).
@@ -384,7 +480,28 @@ func (a *Activities) MarkRunFailed(ctx context.Context, in CompleteInput) error 
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("background task run %s not found", in.RunID)
+		// Already terminal (idempotent retry) or stopped → succeed without
+		// double-counting; only a genuinely missing run is an error.
+		run, qerr := a.Client.BackgroundTaskRun.Query().
+			Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+			Only(ctx)
+		if qerr != nil {
+			if ent.IsNotFound(qerr) {
+				return fmt.Errorf("background task run %s not found", in.RunID)
+			}
+			return qerr
+		}
+		// Deliver the terminal event the first attempt may have failed to append
+		// (see MarkRunDone's retry path for rationale).
+		if run.Status == "failed" {
+			return a.appendEventIfMissing(ctx, in.StartInput, EventFailed, map[string]any{
+				"type":      EventFailed,
+				"message":   "Failed.",
+				"error":     in.Error,
+				"errorCode": code,
+			})
+		}
+		return nil
 	}
 	if err := a.Client.BackgroundTask.UpdateOneID(taskID).
 		SetLastRunID(in.RunID).
@@ -458,28 +575,66 @@ func (a *Activities) appendEvent(ctx context.Context, in StartInput, eventType s
 	if err != nil {
 		return err
 	}
-	last, err := a.Client.BackgroundTaskRunEvent.Query().
-		Where(backgroundtaskrunevent.HasRunWith(backgroundtaskrun.IDEQ(run.ID))).
-		Order(backgroundtaskrunevent.BySeq(entsql.OrderDesc())).
-		First(ctx)
-	seq := 0
-	if err == nil {
-		seq = last.Seq + 1
-	} else if !ent.IsNotFound(err) {
-		return err
-	}
 	raw, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
-	return a.Client.BackgroundTaskRunEvent.Create().
-		SetUserID(userID).
-		SetTask(task).
-		SetRun(run).
-		SetSeq(seq).
-		SetEventType(eventType).
-		SetEventJSON(string(raw)).
-		Exec(ctx)
+	// Seq assignment is a non-transactional read-max-then-insert against the
+	// unique (run, seq) index, so a concurrent writer (HTTP system event, a
+	// peer activity) can claim the same seq. Re-read and retry on the
+	// constraint collision instead of dropping the event.
+	for attempt := 0; ; attempt++ {
+		last, err := a.Client.BackgroundTaskRunEvent.Query().
+			Where(backgroundtaskrunevent.HasRunWith(backgroundtaskrun.IDEQ(run.ID))).
+			Order(backgroundtaskrunevent.BySeq(entsql.OrderDesc())).
+			First(ctx)
+		seq := 0
+		if err == nil {
+			seq = last.Seq + 1
+		} else if !ent.IsNotFound(err) {
+			return err
+		}
+		err = a.Client.BackgroundTaskRunEvent.Create().
+			SetUserID(userID).
+			SetTask(task).
+			SetRun(run).
+			SetSeq(seq).
+			SetEventType(eventType).
+			SetEventJSON(string(raw)).
+			Exec(ctx)
+		if err == nil || !ent.IsConstraintError(err) || attempt >= 3 {
+			return err
+		}
+	}
+}
+
+// appendEventIfMissing appends a terminal lifecycle event only when no event of
+// that type exists for the run yet. Used on the idempotent-retry path of
+// MarkRunDone/MarkRunFailed: when the FIRST attempt updated the status but
+// failed appending the event, the retry takes the n==0 early-return and would
+// otherwise never re-attempt it, leaving the terminal event permanently missing
+// from the stream the desktop polls.
+func (a *Activities) appendEventIfMissing(ctx context.Context, in StartInput, eventType string, event map[string]any) error {
+	taskID, err := uuid.Parse(in.TaskID)
+	if err != nil {
+		return err
+	}
+	exists, err := a.Client.BackgroundTaskRunEvent.Query().
+		Where(
+			backgroundtaskrunevent.EventTypeEQ(eventType),
+			backgroundtaskrunevent.HasRunWith(
+				backgroundtaskrun.RunIDEQ(in.RunID),
+				backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
+			),
+		).
+		Exist(ctx)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+	return a.appendEvent(ctx, in, eventType, event)
 }
 
 func buildSummary(task *ent.BackgroundTask, in StartInput) string {
@@ -519,5 +674,11 @@ func truncate(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
 	}
-	return s[:maxLen] + "..."
+	// Back the cut up to the nearest rune boundary so we never split a multi-byte
+	// UTF-8 sequence into invalid bytes (which JSON-encoding would mangle to U+FFFD).
+	end := maxLen
+	for end > 0 && !utf8.RuneStart(s[end]) {
+		end--
+	}
+	return s[:end] + "..."
 }

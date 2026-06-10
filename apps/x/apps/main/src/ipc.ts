@@ -11,7 +11,13 @@ import {
 import { ipc } from "@x/shared";
 import path from "node:path";
 import os from "node:os";
-import { connectProvider, disconnectProvider, listProviders } from "./oauth-handler.js";
+import {
+  connectProvider,
+  connectConnector,
+  connectSlackWorkspace,
+  disconnectProvider,
+  listProviders,
+} from "./oauth-handler.js";
 import { watcher as watcherCore, workspace } from "@x/core";
 import { WorkDir } from "@x/core/dist/config/config.js";
 import { workspace as workspaceShared } from "@x/shared";
@@ -843,6 +849,17 @@ export function setupIpcHandlers() {
     },
     "oauth:disconnect": async (_event, args) => {
       return await disconnectProvider(args.provider);
+    },
+    "connectors:connect": async (_event, args) => {
+      // Starts the connector OAuth flow + opens the browser. The browser
+      // completes at the api callback, which deep-links back and main redeems
+      // the grant via the connector /claim endpoint (see deeplink.ts).
+      return await connectConnector(args.connector);
+    },
+    "slack:connectWorkspace": async () => {
+      // Opens the api's Slack install front door; the deep-link dispatcher
+      // redeems the parked bundle via /v1/slack-oauth/claim (see deeplink.ts).
+      return await connectSlackWorkspace();
     },
     "oauth:list-providers": async () => {
       return listProviders();

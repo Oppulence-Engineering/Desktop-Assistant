@@ -51,11 +51,21 @@ func IsKnownErrorCode(code string) bool {
 }
 
 // taggedError wraps an activity failure with a granular code so the workflow can
-// recover it from the (otherwise opaque) Temporal error chain.
+// recover it from the (otherwise opaque) Temporal error chain. The "type" of the
+// ApplicationError carries our code across the workflow boundary in both cases.
+//
+// Only PERMANENT failures are marked non-retryable: retrying an unparseable id or
+// a vanished task cannot change the outcome. Transient classes (db_error,
+// artifact_write_failed) are returned RETRYABLE so a momentary DB blip or write
+// contention is absorbed by the activity's retry budget instead of failing the
+// run on the first attempt.
 func taggedError(code, message string, cause error) error {
-	// The ApplicationError "type" carries our code across the workflow boundary;
-	// these failures are non-retryable because retrying won't change the outcome.
-	return temporal.NewNonRetryableApplicationError(message, code, cause)
+	switch code {
+	case ErrCodeTaskNotFound, ErrCodeTaskInvalid:
+		return temporal.NewNonRetryableApplicationError(message, code, cause)
+	default:
+		return temporal.NewApplicationError(message, code, cause)
+	}
 }
 
 // ClassifyRunError maps an error returned from a workflow activity into a stable

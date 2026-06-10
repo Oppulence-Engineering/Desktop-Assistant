@@ -44,8 +44,34 @@ func (r *queryResolver) BackgroundTaskRunEvents(ctx context.Context, after *entg
 	panic(fmt.Errorf("not implemented: BackgroundTaskRunEvents - backgroundTaskRunEvents"))
 }
 
+// BackgroundTaskScheduleStates is the resolver for the backgroundTaskScheduleStates field.
+func (r *queryResolver) BackgroundTaskScheduleStates(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BackgroundTaskScheduleStateWhereInput) (*ent.BackgroundTaskScheduleStateConnection, error) {
+	panic(fmt.Errorf("not implemented: BackgroundTaskScheduleStates - backgroundTaskScheduleStates"))
+}
+
+// CloudEvents is the resolver for the cloudEvents field.
+func (r *queryResolver) CloudEvents(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.CloudEventWhereInput) (*ent.CloudEventConnection, error) {
+	first, last = clampPage(first, last)
+	var opts []ent.CloudEventPaginateOption
+	if where != nil {
+		opts = append(opts, ent.WithCloudEventFilter(where.Filter))
+	}
+	return r.client.CloudEvent.Query().Paginate(ctx, after, first, before, last, opts...)
+}
+
+// GoogleWatches is the resolver for the googleWatches field.
+func (r *queryResolver) GoogleWatches(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.GoogleWatchWhereInput) (*ent.GoogleWatchConnection, error) {
+	first, last = clampPage(first, last)
+	var opts []ent.GoogleWatchPaginateOption
+	if where != nil {
+		opts = append(opts, ent.WithGoogleWatchFilter(where.Filter))
+	}
+	return r.client.GoogleWatch.Query().Paginate(ctx, after, first, before, last, opts...)
+}
+
 // LlmUsages is the resolver for the llmUsages field.
 func (r *queryResolver) LlmUsages(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.LLMUsageWhereInput) (*ent.LLMUsageConnection, error) {
+	first, last = clampPage(first, last)
 	var opts []ent.LLMUsagePaginateOption
 	if where != nil {
 		opts = append(opts, ent.WithLLMUsageFilter(where.Filter))
@@ -55,6 +81,7 @@ func (r *queryResolver) LlmUsages(ctx context.Context, after *entgql.Cursor[uuid
 
 // McpConnections is the resolver for the mcpConnections field.
 func (r *queryResolver) McpConnections(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.MCPConnectionWhereInput) (*ent.MCPConnectionConnection, error) {
+	first, last = clampPage(first, last)
 	var opts []ent.MCPConnectionPaginateOption
 	if where != nil {
 		opts = append(opts, ent.WithMCPConnectionFilter(where.Filter))
@@ -64,6 +91,7 @@ func (r *queryResolver) McpConnections(ctx context.Context, after *entgql.Cursor
 
 // BillingSubscriptions is the resolver for the billingSubscriptions field.
 func (r *queryResolver) BillingSubscriptions(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.BillingSubscriptionWhereInput) (*ent.BillingSubscriptionConnection, error) {
+	first, last = clampPage(first, last)
 	var opts []ent.BillingSubscriptionPaginateOption
 	if where != nil {
 		opts = append(opts, ent.WithBillingSubscriptionFilter(where.Filter))
@@ -73,6 +101,7 @@ func (r *queryResolver) BillingSubscriptions(ctx context.Context, after *entgql.
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context, after *entgql.Cursor[uuid.UUID], first *int, before *entgql.Cursor[uuid.UUID], last *int, where *ent.UserWhereInput) (*ent.UserConnection, error) {
+	first, last = clampPage(first, last)
 	var opts []ent.UserPaginateOption
 	if where != nil {
 		opts = append(opts, ent.WithUserFilter(where.Filter))

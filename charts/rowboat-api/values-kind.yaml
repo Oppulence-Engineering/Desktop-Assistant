@@ -99,5 +99,18 @@ worker:
       cpu: "1"
       memory: 512Mi
 
+# RFC 001 first E2E: enable the scheduler in kind (single replica) so a
+# desktop-closed cron/window task fires from the cluster.
+scheduler:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: "500m"
+      memory: 256Mi
+
 existingSecret: rowboat-api-secrets
 secretValues: {}

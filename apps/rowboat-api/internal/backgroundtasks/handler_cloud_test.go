@@ -193,6 +193,19 @@ func TestCloudRunFilters(t *testing.T) {
 	}
 }
 
+// TestTriggerAPITaskWithoutTemporalReturns503 guards the refactor: a handler
+// built via New() with no Temporal configured must answer 503 (not panic on a
+// nil run starter) when an api-target task is triggered.
+func TestTriggerAPITaskWithoutTemporalReturns503(t *testing.T) {
+	_, u, router := setupTest(t) // no SetTemporal
+	createAPITask(t, router, u, "api-task")
+
+	rec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/trigger", map[string]any{"trigger": "manual"})
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("trigger without temporal: want 503, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
 func hasEventType(events []eventView, want string) bool {
 	for _, e := range events {
 		if e.Type == want {

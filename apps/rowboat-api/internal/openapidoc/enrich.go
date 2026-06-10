@@ -161,6 +161,8 @@ func addRuntimeSchemas(schemas obj) {
 	addVendorProxySchemas(schemas)
 	addOAuthSchemas(schemas)
 	addConnectorSchemas(schemas)
+	addSlackOAuthSchemas(schemas)
+	addCloudEventSchemas(schemas)
 	addInternalSchemas(schemas)
 }
 
@@ -525,6 +527,77 @@ func addConnectorSchemas(schemas obj) {
 	}, "access_token", "token_type", "mcpUrl")
 }
 
+func addSlackOAuthSchemas(schemas obj) {
+	schemas["SlackClaimRequest"] = objectSchema("Slack install session ticket redemption.", obj{
+		"session": stringSchema("State ticket from the solomon-ai://oauth/slack/done deep link.", "state_abc123"),
+	}, "session")
+	schemas["SlackClaimResponse"] = objectSchema("Connected Slack workspace metadata. The bot token is server-held and never returned.", obj{
+		"connected": boolSchema("Whether the workspace connection was stored.", true),
+		"teamId":    stringSchema("Slack workspace (team) id — the key Events API deliveries resolve against.", "T0EXAMPLE"),
+		"teamName":  stringSchema("Workspace display name.", "Acme", nullable()),
+		"scope":     stringSchema("Granted bot scopes, comma-separated.", "channels:history,channels:read", nullable()),
+		"botUserId": stringSchema("Bot user id in the workspace.", "U0BOT", nullable()),
+	}, "connected", "teamId")
+}
+
+func addCloudEventSchemas(schemas obj) {
+	schemas["CloudEventIngestRequest"] = objectSchema("Normalized cloud event envelope posted by internal services, tests, or the desktop (RFC 003).", obj{
+		"source":          stringEnum("Event source.", "internal", "gmail", "google_calendar", "slack", "webhook", "internal"),
+		"sourceEventId":   stringSchema("Provider-side event id.", "evt_123", nullable()),
+		"sourceAccountId": stringSchema("Connected-account key the event belongs to.", "acct_google_primary", nullable()),
+		"eventType":       stringSchema("Provider-specific event type.", "email.received", nullable()),
+		"subject":         stringSchema("Short title used in UI and routing prompts.", "Invoice #4821 dispute", nullable()),
+		"text":            stringSchema("Human-readable gist used in routing prompts.", "Acme disputed invoice #4821 for $18,000.", nullable()),
+		"payload":         freeFormSchema("Full normalized provider object. Sealed at rest; returned only by the event detail endpoint."),
+		"dedupeKey":       stringSchema("Required idempotency anchor, unique per (user, source).", "gmail:msg:msg_123"),
+		"occurredAt":      stringSchema("RFC3339 provider event time.", "2026-06-06T14:00:00Z", nullable()),
+	}, "source", "dedupeKey")
+	schemas["CloudEventIngestResponse"] = objectSchema("Ingestion result. 202 for a fresh event; 200 with deduped=true for an idempotent replay.", obj{
+		"eventId":          stringSchema("Cloud event id.", "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111"),
+		"routingStatus":    stringEnum("Routing status at response time.", "pending", "pending", "routed", "skipped", "failed"),
+		"deduped":          boolSchema("Whether this post matched an existing (user, source, dedupeKey) event.", false),
+		"matchedTaskCount": intSchema("Tasks the router matched (populated once routed).", 0),
+	}, "eventId", "routingStatus", "deduped")
+	schemas["CloudEvent"] = objectSchema("Stored cloud event. payload and routing appear only on the detail endpoint.", obj{
+		"id":               stringSchema("Cloud event id.", "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111"),
+		"source":           stringEnum("Event source.", "gmail", "gmail", "google_calendar", "slack", "webhook", "internal"),
+		"sourceEventId":    stringSchema("Provider-side event id.", "evt_123", nullable()),
+		"sourceAccountId":  stringSchema("Connected-account key.", "acct_google_primary", nullable()),
+		"eventType":        stringSchema("Provider-specific event type.", "email.received", nullable()),
+		"subject":          stringSchema("Short title.", "Invoice #4821 dispute", nullable()),
+		"text":             stringSchema("Human-readable gist.", "Acme disputed invoice #4821.", nullable()),
+		"dedupeKey":        stringSchema("Idempotency anchor.", "gmail:msg:msg_123"),
+		"routingStatus":    stringEnum("Routing status.", "routed", "pending", "routed", "skipped", "failed"),
+		"matchedTaskCount": intSchema("Tasks the router matched.", 1),
+		"occurredAt":       stringSchema("RFC3339 provider event time.", "2026-06-06T14:00:00Z", nullable()),
+		"receivedAt":       stringSchema("RFC3339 API receipt time.", "2026-06-06T14:00:02Z"),
+		"routedAt":         stringSchema("RFC3339 router completion time.", "2026-06-06T14:00:09Z", nullable()),
+		"routing":          freeFormSchema("Routing decision summary (threshold, prompt versions, per-task decisions). Detail endpoint only."),
+		"payload":          freeFormSchema("Decrypted normalized provider payload. Detail endpoint only."),
+	}, "id", "source", "dedupeKey", "routingStatus", "receivedAt")
+	schemas["CloudEventListResponse"] = objectSchema("Cloud event page ordered by receivedAt descending.", obj{
+		"events":     arraySchema("Events in this page (payload omitted).", ref("CloudEvent")),
+		"nextCursor": stringSchema("Opaque cursor for the next page; empty when exhausted.", "2026-06-06T14:00:02.123456Z|0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", nullable()),
+	}, "events")
+	schemas["CloudEventRun"] = objectSchema("Run triggered by a cloud event.", obj{
+		"runId":       stringSchema("Run id.", "event-7e0a1f2b"),
+		"status":      stringSchema("Run status.", "succeeded"),
+		"trigger":     stringEnum("Run trigger.", "event", "event"),
+		"executor":    stringEnum("Run executor.", "api", "api"),
+		"taskSlug":    stringSchema("Slug of the task the run executed.", "acme-ar-watch", nullable()),
+		"createdAt":   stringSchema("RFC3339 run creation time.", "2026-06-06T14:00:10Z"),
+		"completedAt": stringSchema("RFC3339 run completion time.", "2026-06-06T14:02:31Z", nullable()),
+	}, "runId", "status", "trigger", "executor", "createdAt")
+	schemas["CloudEventRunsResponse"] = objectSchema("Runs triggered by one cloud event.", obj{
+		"runs": arraySchema("Linked runs.", ref("CloudEventRun")),
+	}, "runs")
+	schemas["InternalCloudEventIngestRequest"] = objectSchema("Server-to-server cloud event ingestion: the caller names the event owner explicitly.", obj{
+		"userId":    stringSchema("Rowboat user id (UUID) owning the event.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+		"source":    stringEnum("Event source.", "internal", "gmail", "google_calendar", "slack", "webhook", "internal"),
+		"dedupeKey": stringSchema("Required idempotency anchor.", "internal:job:42"),
+	}, "userId", "source", "dedupeKey")
+}
+
 func addInternalSchemas(schemas obj) {
 	schemas["PreConsentRequest"] = objectSchema("Ory pre-consent webhook payload mapped by ops.", obj{
 		"workos_user_id":     stringSchema("WorkOS user id. If absent, subject is used.", "user_01HABCDEF"),
@@ -594,8 +667,92 @@ func addRuntimePaths(paths obj) {
 	addLLMPaths(paths)
 	addVendorProxyPaths(paths)
 	addGoogleOAuthPaths(paths)
+	addSlackOAuthPaths(paths)
 	addConnectorPaths(paths)
+	addCloudEventPaths(paths)
 	addInternalPaths(paths)
+}
+
+func addCloudEventPaths(paths obj) {
+	paths["/v1/events"] = obj{
+		"post": operation("Cloud Events", "Ingest a cloud event", "Stores one normalized event idempotently on (user, source, dedupeKey) and enqueues async routing to matching API-target background tasks. Returns 202 for a fresh event and 200 with deduped=true for a replay.", "ingestCloudEvent", bearer(), nil, jsonRequest("Normalized event envelope.", ref("CloudEventIngestRequest"), obj{
+			"source":    "internal",
+			"eventType": "email.received",
+			"subject":   "Invoice #4821 dispute",
+			"text":      "Acme disputed invoice #4821 for $18,000 due to a pricing mismatch.",
+			"payload":   obj{"provider": "gmail", "messageId": "msg_123"},
+			"dedupeKey": "gmail:msg:msg_123",
+		}), obj{
+			"202": jsonResponse("Event stored, routing enqueued.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "pending", "deduped": false}),
+			"200": jsonResponse("Duplicate dedupeKey: existing event returned, routing not re-run.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "routed", "deduped": true, "matchedTaskCount": 1}),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"413": problemResponse("Payload exceeds the configured size cap.", ref("ErrorEnvelope"), problemExample(413, "Request Entity Too Large", "payload exceeds 262144 bytes", "payload_too_large")),
+			"500": responseRef("500"),
+		}),
+		"get": operation("Cloud Events", "List cloud events", "Lists the authenticated user's ingested events ordered by receivedAt descending. Payload is omitted from list responses; fetch the detail endpoint for it.", "listCloudEvents", bearer(), []any{
+			queryParam("source", "Filter by event source.", false, stringSchema("Source.", "gmail")),
+			queryParam("routingStatus", "Filter by routing status.", false, stringSchema("Routing status.", "routed")),
+			queryParam("since", "Only events received at or after this RFC3339 time.", false, stringSchema("RFC3339 lower bound.", "2026-06-06T00:00:00Z")),
+			queryParam("until", "Only events received at or before this RFC3339 time.", false, stringSchema("RFC3339 upper bound.", "2026-06-07T00:00:00Z")),
+			queryParam("limit", "Page size (1-500, default 100).", false, intSchema("Page size.", 100)),
+			queryParam("cursor", "Opaque cursor from a prior page's nextCursor.", false, stringSchema("Pagination cursor.", "")),
+		}, nil, obj{
+			"200": jsonResponse("Event page.", ref("CloudEventListResponse"), obj{"events": []any{}, "nextCursor": ""}),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/events/{eventId}"] = obj{"get": operation("Cloud Events", "Get a cloud event", "Returns one event including the decrypted payload and the routing decision summary.", "getCloudEvent", bearer(), []any{
+		pathParam("eventId", "Cloud event id.", stringSchema("Event id.", "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111")),
+	}, nil, obj{
+		"200": jsonResponse("Event detail.", ref("CloudEvent"), obj{"id": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "source": "internal", "dedupeKey": "gmail:msg:msg_123", "routingStatus": "routed", "matchedTaskCount": 1, "receivedAt": "2026-06-06T14:00:02Z"}),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/events/{eventId}/runs"] = obj{"get": operation("Cloud Events", "List runs triggered by a cloud event", "Returns the trigger=event runs this event fired — the event-to-run audit link.", "listCloudEventRuns", bearer(), []any{
+		pathParam("eventId", "Cloud event id.", stringSchema("Event id.", "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111")),
+	}, nil, obj{
+		"200": jsonResponse("Linked runs.", ref("CloudEventRunsResponse"), obj{"runs": []any{obj{"runId": "event-7e0a1f2b", "status": "succeeded", "trigger": "event", "executor": "api", "taskSlug": "acme-ar-watch", "createdAt": "2026-06-06T14:00:10Z"}}}),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/webhooks/google"] = obj{"post": operation("Cloud Events", "Google push webhook", "Receives Gmail Pub/Sub pushes and Google Calendar channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for Calendar). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.", "googleWebhook", nil, []any{
+		queryParam("token", "Shared webhook token configured on the Pub/Sub push subscription URL.", false, stringSchema("Webhook token.", "")),
+	}, jsonRequestOptional("Pub/Sub push envelope (Gmail). Calendar notifications carry no body.", freeFormSchema("Pub/Sub push envelope."), obj{
+		"message": obj{"data": "eyJlbWFpbEFkZHJlc3MiOiJtZUBnbWFpbC5jb20iLCJoaXN0b3J5SWQiOjk5ODg3N30=", "messageId": "m1"},
+	}), obj{
+		"200": obj{"description": "Acknowledged: sync handshake, duplicate, or unresolved account (dropped)."},
+		"202": jsonResponse("Event ingested.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "pending", "deduped": false}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/webhooks/slack"] = obj{"post": operation("Cloud Events", "Slack Events API webhook", "Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Rowboat user are ingested, others are acknowledged and dropped.", "slackWebhook", nil, nil, jsonRequest("Slack Events API envelope.", freeFormSchema("Slack event envelope."), obj{
+		"type": "event_callback", "team_id": "T0EXAMPLE", "event_id": "Ev001",
+		"event": obj{"type": "message", "text": "hello"},
+	}), obj{
+		"200": obj{"description": "Handshake challenge echoed, duplicate, or unmapped workspace (dropped)."},
+		"202": jsonResponse("Event ingested.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "pending", "deduped": false}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/internal/events"] = obj{"post": operation("Internal", "Ingest a cloud event (server-to-server)", "Internal-secret ingestion used by backend services and test fixtures. Identical to /v1/events except the caller names the owning userId explicitly.", "ingestInternalCloudEvent", internalSecret(), nil, jsonRequest("Normalized event envelope with explicit owner.", ref("InternalCloudEventIngestRequest"), obj{
+		"userId":    "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+		"source":    "internal",
+		"subject":   "Synthetic event",
+		"dedupeKey": "internal:test:1",
+	}), obj{
+		"202": jsonResponse("Event stored, routing enqueued.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "pending", "deduped": false}),
+		"200": jsonResponse("Duplicate dedupeKey: existing event returned.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "routed", "deduped": true}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
 }
 
 func addAuthPaths(paths obj) {
@@ -903,6 +1060,31 @@ func addGoogleOAuthPaths(paths obj) {
 		"409": responseRef("409"),
 		"502": responseRef("502"),
 		"503": responseRef("503"),
+	})}
+}
+
+func addSlackOAuthPaths(paths obj) {
+	paths["/oauth/slack/start"] = obj{"get": operation("Slack OAuth", "Start Slack workspace install", "Browser-facing endpoint opened by the desktop. It creates a one-time state ticket, then redirects the browser to Slack's OAuth v2 authorize screen with the configured bot scopes.", "startSlackOAuth", nil, nil, nil, obj{
+		"302": redirectResponse("Redirect to Slack OAuth consent."),
+		"500": htmlResponse("HTML error page when the flow cannot be started."),
+		"502": htmlResponse("HTML error page when Slack OAuth is not configured."),
+	})}
+	paths["/oauth/slack/callback"] = obj{"get": operation("Slack OAuth", "Handle Slack OAuth callback", "Slack redirect target. Exchanges the authorization code server-side, parks the sealed workspace bundle under the state ticket, and returns an HTML page that deep-links back to the desktop.", "handleSlackOAuthCallback", nil, []any{
+		queryParam("state", "Opaque state ticket minted by /oauth/slack/start.", true, stringSchema("State ticket.", "state_abc123")),
+		queryParam("code", "Authorization code returned by Slack.", false, stringSchema("Authorization code.", "1234.5678.abcd")),
+		queryParam("error", "OAuth error returned by Slack when the user cancels the install.", false, stringSchema("OAuth error.", "access_denied")),
+	}, nil, obj{
+		"200": htmlResponse("HTML page that redirects to solomon-ai://oauth/slack/done."),
+		"400": htmlResponse("HTML error page for missing or expired state/code."),
+	})}
+	paths["/v1/slack-oauth/claim"] = obj{"post": operation("Slack OAuth", "Claim Slack workspace connection", "Atomically consumes a one-time Slack install ticket and persists the workspace connection (the team_id-to-user mapping the Slack events webhook resolves against). The bot token stays server-held; the response carries workspace metadata only.", "claimSlackOAuth", bearer(), nil, jsonRequest("Slack install session ticket.", ref("SlackClaimRequest"), obj{"session": "state_abc123"}), obj{
+		"200": jsonResponse("Connected workspace metadata.", ref("SlackClaimResponse"), obj{"connected": true, "teamId": "T0EXAMPLE", "teamName": "Acme", "scope": "channels:history,channels:read", "botUserId": "U0BOT"}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"409": problemResponse("The browser install has not completed yet; retry after the deep link returns.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "slack install not completed yet", "install_incomplete")),
+		"410": responseRef("410"),
+		"500": responseRef("500"),
 	})}
 }
 

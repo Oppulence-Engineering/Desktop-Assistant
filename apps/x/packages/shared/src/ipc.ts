@@ -403,6 +403,33 @@ const ipcSchemas = {
       success: z.boolean(),
     }),
   },
+  // Begins a rowboat-api connector OAuth connect: main asks the api for the
+  // provider authorize_url and opens it in the system browser. The browser
+  // completes at the api callback, which deep-links back to
+  // solomon-ai://connection-complete?...&session=<state>, where main redeems it
+  // via the connector /claim endpoint (see deeplink.ts / oauth-handler.ts).
+  "connectors:connect": {
+    req: z.object({
+      connector: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
+  // Begins a Slack workspace install (RFC 003 cloud events): main opens the
+  // api's /oauth/slack/start in the system browser; the api callback parks the
+  // sealed bundle and deep-links back to
+  // solomon-ai://oauth/slack/done?session=<state>&status=success, where main
+  // redeems it via /v1/slack-oauth/claim (see deeplink.ts / oauth-handler.ts).
+  // Completion is surfaced on oauth:didConnect with provider "slack".
+  "slack:connectWorkspace": {
+    req: z.null(),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
   "oauth:list-providers": {
     req: z.null(),
     res: z.object({

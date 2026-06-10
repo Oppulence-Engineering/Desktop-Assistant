@@ -1,0 +1,14 @@
+{
+  "source": "slack",
+  "sourceEventId": "Ev0NOISE001",
+  "sourceAccountId": "T0EXAMPLE",
+  "eventType": "message",
+  "text": "anyone want coffee?",
+  "payload": {
+    "provider": "slack",
+    "channel": "C0RANDOM",
+    "user": "U0SOMEONE"
+  },
+  "dedupeKey": "slack:T0EXAMPLE:Ev0NOISE001",
+  "occurredAt": "2026-06-06T10:15:00Z"
+}

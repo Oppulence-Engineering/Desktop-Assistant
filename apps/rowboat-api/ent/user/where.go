@@ -606,6 +606,75 @@ func HasBackgroundTaskRunEventsWith(preds ...predicate.BackgroundTaskRunEvent) p
 	})
 }
 
+// HasBackgroundTaskScheduleStates applies the HasEdge predicate on the "background_task_schedule_states" edge.
+func HasBackgroundTaskScheduleStates() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, BackgroundTaskScheduleStatesTable, BackgroundTaskScheduleStatesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBackgroundTaskScheduleStatesWith applies the HasEdge predicate on the "background_task_schedule_states" edge with a given conditions (other predicates).
+func HasBackgroundTaskScheduleStatesWith(preds ...predicate.BackgroundTaskScheduleState) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newBackgroundTaskScheduleStatesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCloudEvents applies the HasEdge predicate on the "cloud_events" edge.
+func HasCloudEvents() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CloudEventsTable, CloudEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCloudEventsWith applies the HasEdge predicate on the "cloud_events" edge with a given conditions (other predicates).
+func HasCloudEventsWith(preds ...predicate.CloudEvent) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCloudEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGoogleWatches applies the HasEdge predicate on the "google_watches" edge.
+func HasGoogleWatches() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GoogleWatchesTable, GoogleWatchesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGoogleWatchesWith applies the HasEdge predicate on the "google_watches" edge with a given conditions (other predicates).
+func HasGoogleWatchesWith(preds ...predicate.GoogleWatch) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newGoogleWatchesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

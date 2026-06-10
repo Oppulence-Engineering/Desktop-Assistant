@@ -9,7 +9,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -30,7 +33,14 @@ var ErrNoViewer = errors.New("db: query on per-user entity without a viewer in c
 // registerInterceptors installs read-side middleware:
 //   - query metrics (count by entity type)
 //   - per-user tenant scoping (the privacy policy from the plan, enforced at
-//     the client so it cannot be bypassed by forgetting a WHERE clause)
+//     the client so a READ cannot be bypassed by forgetting a WHERE clause)
+//
+// IMPORTANT: ent interceptors run only on QUERY execution. Mutations
+// (Update/UpdateOne/Delete/DeleteOne and OnConflict upserts) are NOT scoped here
+// — they must operate on an id/slug obtained from a prior tenant-scoped read
+// (the convention every handler follows: lookupTask/lookupRun/scoped Query →
+// mutate by verified id). A mutation that builds its predicate directly from
+// request input would bypass tenant isolation; keep the scoped-read-first rule.
 func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 	client.Intercept(intercept.Func(func(_ context.Context, q intercept.Query) error {
 		entQueriesTotal.WithLabelValues(q.Type()).Inc()
@@ -76,6 +86,27 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.BackgroundTaskRunEventQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(backgroundtaskrunevent.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.BackgroundTaskScheduleState.Intercept(intercept.TraverseBackgroundTaskScheduleState(
+		func(ctx context.Context, q *ent.BackgroundTaskScheduleStateQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(backgroundtaskschedulestate.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.CloudEvent.Intercept(intercept.TraverseCloudEvent(
+		func(ctx context.Context, q *ent.CloudEventQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(cloudevent.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.GoogleWatch.Intercept(intercept.TraverseGoogleWatch(
+		func(ctx context.Context, q *ent.GoogleWatchQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(googlewatch.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

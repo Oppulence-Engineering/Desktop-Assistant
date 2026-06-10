@@ -63,8 +63,16 @@ func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
 }
 
 // Proxy handles all /v1/composio/* methods.
+//
+// SECURITY NOTE: requests are forwarded under the shared full-access server
+// key with no per-user scoping beyond the X-Solomon-User header — any
+// authenticated user can currently reach Composio resources (e.g.
+// connected_accounts) belonging to other users. Until the Composio tenancy
+// model is decided (plan Open Question §6) and enforced, every call is
+// audit-logged with the caller so cross-tenant access is at least traceable.
 func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
-	if _, ok := auth.UserFromCtx(r.Context()); !ok {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
 		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
 		return
 	}
@@ -72,6 +80,10 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadGateway, "composio not configured", "provider_unconfigured")
 		return
 	}
+	h.log.Info("composio proxy request",
+		zap.String("userId", u.ID.String()),
+		zap.String("method", r.Method),
+		zap.String("path", strings.TrimPrefix(r.URL.Path, routePrefix)))
 	h.proxy.ServeHTTP(w, r)
 }
 
