@@ -222,10 +222,11 @@ func runScheduler(ctx context.Context, cfg appconfig.Config, log *zap.Logger, da
 	// multiple replicas.
 	leases := backgroundscheduler.NewEntLeases(database.Client, log)
 	scheduler := backgroundscheduler.New(database.Client, starter, leases, backgroundscheduler.Config{
-		Interval: cfg.CloudSchedulerInterval,
-		LeaseTTL: cfg.CloudSchedulerLeaseTTL,
-		Owner:    cfg.CloudSchedulerOwner,
-		Location: location,
+		Interval:         cfg.CloudSchedulerInterval,
+		LeaseTTL:         cfg.CloudSchedulerLeaseTTL,
+		Owner:            cfg.CloudSchedulerOwner,
+		Location:         location,
+		SchedulesEnabled: cfg.TemporalSchedulesEnabled,
 	}, log)
 
 	return scheduler.Run(ctx)
