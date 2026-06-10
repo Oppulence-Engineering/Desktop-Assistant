@@ -14,6 +14,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
@@ -127,8 +128,9 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 
 		w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{})
 		backgroundtaskworkflow.Register(w, &backgroundtaskworkflow.Activities{
-			Client: client,
-			Log:    log,
+			Client:  client,
+			Log:     log,
+			Runtime: backgroundtaskruntime.NewNoop(), // full wiring lands with the deps builder
 		})
 		if cfg.CloudEventsRoutingEnabled {
 			router, err := buildEventRouter(ctx, cfg, log, client, temporalClient)

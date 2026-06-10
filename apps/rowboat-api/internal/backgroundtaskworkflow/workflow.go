@@ -7,9 +7,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
-	"unicode/utf8"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -21,6 +19,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/google/uuid"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/activity"
@@ -216,6 +219,21 @@ func BackgroundTaskWorkflow(ctx workflow.Context, in StartInput) error {
 type Activities struct {
 	Client *ent.Client
 	Log    *zap.Logger
+
+	// Runtime executes the run body (RFC 004). Always non-nil: the worker
+	// wires backgroundtaskruntime.NewNoop() (today's deterministic artifact)
+	// when CLOUD_RUNTIME_ENABLED=false, NewDefault() otherwise.
+	Runtime       backgroundtaskruntime.Runtime
+	RuntimeLimits backgroundtaskruntime.Limits
+
+	// DefaultRuntime dependencies (nil/zero on the Noop path): the LLM
+	// gateway, payload sealer, vendor secrets, Google API client, and the
+	// model used when the task carries none.
+	LLM          *llm.Handler
+	Sealer       *crypto.Sealer
+	Secrets      *secrets.Store
+	Google       *googleapi.Client
+	DefaultModel string
 }
 
 // MarkRunRunning claims a queued API run for execution.
@@ -288,11 +306,13 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 	})
 }
 
-// ExecuteAPITask runs the v1 server-side job. It deliberately avoids desktop
-// filesystem/tool execution; that remains on the desktop path.
+// ExecuteAPITask is the thin durable adapter around the cloud agent runtime
+// (RFC 004): it binds the run's artifact store, event sink, scoped tool
+// registry, and gateway LLM client, then delegates the body to
+// Activities.Runtime (DefaultRuntime when CLOUD_RUNTIME_ENABLED, NoopRuntime
+// — today's deterministic artifact — as the rollback).
 func (a *Activities) ExecuteAPITask(ctx context.Context, in StartInput) (RunOutput, error) {
 	ctx = auth.WithInternal(ctx)
-	now := time.Now().UTC()
 	taskID, err := uuid.Parse(in.TaskID)
 	if err != nil {
 		return RunOutput{}, taggedError(ErrCodeTaskInvalid, "invalid task id", err)
@@ -307,49 +327,44 @@ func (a *Activities) ExecuteAPITask(ctx context.Context, in StartInput) (RunOutp
 		}
 		return RunOutput{}, taggedError(ErrCodeDBError, "load background task", err)
 	}
-
-	if _, err := a.Client.BackgroundTaskRun.Update().
+	run, err := a.Client.BackgroundTaskRun.Query().
 		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
-		SetLastHeartbeatAt(now).
-		SetProgressPercent(50).
-		SetProgressMessage("Building API-native task artifact.").
-		AddRevision(1).
-		Save(ctx); err != nil {
-		return RunOutput{}, taggedError(ErrCodeDBError, "update run progress", err)
-	}
-	if err := a.appendEvent(ctx, in, EventProgress, map[string]any{
-		"type":     EventProgress,
-		"message":  "Building API-native task artifact.",
-		"progress": 50,
-	}); err != nil {
-		return RunOutput{}, taggedError(ErrCodeDBError, "append progress event", err)
+		Only(ctx)
+	if err != nil {
+		return RunOutput{}, taggedError(ErrCodeDBError, "load background task run", err)
 	}
 
-	summary := buildSummary(task, in)
-	artifact := buildArtifact(task, in, summary, now)
-	if err := a.upsertArtifact(ctx, task, in.RunID, artifact); err != nil {
-		backgroundtaskmetrics.ArtifactSyncFailures.Inc()
-		return RunOutput{}, taggedError(ErrCodeArtifactWriteFailed, "write artifact", err)
+	limits := a.RuntimeLimits
+	if limits.MaxLLMCalls == 0 {
+		limits = backgroundtaskruntime.DefaultLimits()
+	}
+	model := task.Model
+	if model == "" {
+		model = a.DefaultModel
+	}
+	var llmClient backgroundtaskruntime.LLMClient
+	if a.LLM != nil && task.Edges.User != nil {
+		llmClient = backgroundtaskruntime.NewGatewayLLM(a.LLM, task.Edges.User, model, in.Slug, in.RunID)
 	}
 
-	if _, err := a.Client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
-		SetLastHeartbeatAt(time.Now().UTC()).
-		SetProgressPercent(90).
-		SetProgressMessage("Artifact updated.").
-		AddRevision(1).
-		Save(ctx); err != nil {
-		return RunOutput{}, taggedError(ErrCodeDBError, "update run progress", err)
+	out, err := a.Runtime.Execute(ctx, backgroundtaskruntime.RunInput{
+		UserID: in.UserID, TaskID: in.TaskID, Slug: in.Slug, RunID: in.RunID,
+		TaskName:         task.Name,
+		Trigger:          in.Trigger,
+		RequestedContext: in.RequestedContext,
+		Instructions:     task.Instructions,
+		Model:            model,
+		Provider:         task.Provider,
+		Artifacts:        &artifactStore{a: a, task: task, runID: in.RunID},
+		Events:           &eventSink{a: a, in: in, taskID: taskID},
+		Tools:            a.toolRegistry(ctx, task, run),
+		LLM:              llmClient,
+		Limits:           limits,
+	})
+	if err != nil {
+		return RunOutput{}, mapRuntimeError(err)
 	}
-	if err := a.appendEvent(ctx, in, EventArtifactUpdated, map[string]any{
-		"type":     EventArtifactUpdated,
-		"message":  "Artifact updated.",
-		"progress": 90,
-	}); err != nil {
-		return RunOutput{}, taggedError(ErrCodeDBError, "append artifact event", err)
-	}
-
-	return RunOutput{Summary: summary}, nil
+	return RunOutput{Summary: out.Summary}, nil
 }
 
 // MarkRunDone marks an API run terminal-success.
@@ -524,7 +539,7 @@ func (a *Activities) MarkRunFailed(ctx context.Context, in CompleteInput) error 
 	})
 }
 
-func (a *Activities) upsertArtifact(ctx context.Context, task *ent.BackgroundTask, runID, body string) error {
+func (a *Activities) upsertArtifact(ctx context.Context, task *ent.BackgroundTask, runID, body, contentType string) error {
 	artifact, err := a.Client.BackgroundTaskArtifact.Query().
 		Where(backgroundtaskartifact.HasTaskWith(backgroundtask.IDEQ(task.ID))).
 		Only(ctx)
@@ -545,13 +560,13 @@ func (a *Activities) upsertArtifact(ctx context.Context, task *ent.BackgroundTas
 			SetTask(task).
 			SetBody(body).
 			SetUpdatedByRunID(runID).
-			SetContentType("text/markdown").
+			SetContentType(contentType).
 			Exec(ctx)
 	}
 	return a.Client.BackgroundTaskArtifact.UpdateOneID(artifact.ID).
 		SetBody(body).
 		SetUpdatedByRunID(runID).
-		SetContentType("text/markdown").
+		SetContentType(contentType).
 		AddRevision(1).
 		Exec(ctx)
 }
@@ -637,48 +652,5 @@ func (a *Activities) appendEventIfMissing(ctx context.Context, in StartInput, ev
 	return a.appendEvent(ctx, in, eventType, event)
 }
 
-func buildSummary(task *ent.BackgroundTask, in StartInput) string {
-	base := fmt.Sprintf("API worker completed %s via %s trigger.", task.Name, in.Trigger)
-	if in.RequestedContext != "" {
-		return base + " Context: " + truncate(in.RequestedContext, 180)
-	}
-	return base
-}
-
-func buildArtifact(task *ent.BackgroundTask, in StartInput, summary string, ts time.Time) string {
-	var b strings.Builder
-	b.WriteString("# ")
-	b.WriteString(task.Name)
-	b.WriteString("\n\n")
-	b.WriteString(summary)
-	b.WriteString("\n\n")
-	b.WriteString("## Execution\n\n")
-	b.WriteString("- Executor: api\n")
-	b.WriteString("- Trigger: ")
-	b.WriteString(in.Trigger)
-	b.WriteString("\n- Completed at: ")
-	b.WriteString(ts.UTC().Format(time.RFC3339))
-	b.WriteString("\n\n")
-	b.WriteString("## Instructions\n\n")
-	b.WriteString(task.Instructions)
-	if in.RequestedContext != "" {
-		b.WriteString("\n\n## Requested Context\n\n")
-		b.WriteString(in.RequestedContext)
-	}
-	b.WriteString("\n")
-	return b.String()
-}
-
-func truncate(s string, maxLen int) string {
-	s = strings.TrimSpace(s)
-	if len(s) <= maxLen {
-		return s
-	}
-	// Back the cut up to the nearest rune boundary so we never split a multi-byte
-	// UTF-8 sequence into invalid bytes (which JSON-encoding would mangle to U+FFFD).
-	end := maxLen
-	for end > 0 && !utf8.RuneStart(s[end]) {
-		end--
-	}
-	return s[:end] + "..."
-}
+// buildSummary/buildArtifact/truncate moved verbatim to
+// backgroundtaskruntime.NoopRuntime (the deterministic rollback path).
