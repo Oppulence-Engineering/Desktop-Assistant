@@ -107,6 +107,13 @@ func New(client *ent.Client, starter RunStarter, leases Leases, cfg Config, log 
 	if clock == nil {
 		clock = time.Now
 	}
+	// Normalize to UTC at the source: row timestamps default to UTC
+	// (mixin.UTCNow), and SQLite compares time as TEXT — a local-zone `now`
+	// in cutoff predicates (reapStuck*, lease expiry) would silently miss
+	// rows around the local/UTC date boundary. Cron/window math is
+	// unaffected: it converts into cfg.Location explicitly.
+	inner := clock
+	clock = func() time.Time { return inner().UTC() }
 	return &Scheduler{client: client, starter: starter, leases: leases, cfg: cfg, log: log, now: clock}
 }
 
@@ -403,7 +410,7 @@ func (s *Scheduler) stampAttempt(ctx context.Context, task *ent.BackgroundTask, 
 // that died between inserting the run and confirming the Temporal start. Cleans
 // up rows that would otherwise sit "queued" forever with no workflow behind them.
 func (s *Scheduler) reapStuckStartingRuns(ctx context.Context, now time.Time) {
-	cutoff := now.Add(-orphanGrace)
+	cutoff := now.UTC().Add(-orphanGrace) // UTC: rows are UTC text on SQLite
 	n, err := s.client.BackgroundTaskRun.Update().
 		Where(
 			backgroundtaskrun.ExecutorEQ("api"),
@@ -440,7 +447,7 @@ func (s *Scheduler) reapStuckStartingRuns(ctx context.Context, now time.Time) {
 // positive self-heals: MarkRunRunning re-claims failed rows, and
 // MarkRunDone/MarkRunFailed overwrite a swept row's terminal state.
 func (s *Scheduler) reapStaleRuns(ctx context.Context, now time.Time) {
-	cutoff := now.Add(-staleRunGrace)
+	cutoff := now.UTC().Add(-staleRunGrace) // UTC: rows are UTC text on SQLite
 	n, err := s.client.BackgroundTaskRun.Update().
 		Where(
 			backgroundtaskrun.ExecutorEQ("api"),
