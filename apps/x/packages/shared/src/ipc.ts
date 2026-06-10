@@ -1347,6 +1347,18 @@ const ipcSchemas = {
     req: z.null(),
     res: BillingInfoSchema,
   },
+  // Feedback (relayed to Plain via the backend; signed-in only)
+  "feedback:submit": {
+    req: z.object({
+      category: z.enum(["bug", "feature", "question", "other"]),
+      message: z.string().min(1).max(5000),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      errorCode: z.enum(["not_signed_in", "server"]).optional(),
+      error: z.string().optional(),
+    }),
+  },
 } as const;
 
 // ============================================================================

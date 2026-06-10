@@ -74,6 +74,7 @@ import {
   processSolomonInstruction,
 } from "@x/core/dist/knowledge/inline_tasks.js";
 import { getBillingInfo } from "@x/core/dist/billing/billing.js";
+import { submitFeedback } from "@x/core/dist/feedback/feedback.js";
 import { summarizeMeeting } from "@x/core/dist/knowledge/summarize_meeting.js";
 import { getAccessToken } from "@x/core/dist/auth/tokens.js";
 import { getSolomonConfig } from "@x/core/dist/config/solomon.js";
@@ -1536,6 +1537,27 @@ export function setupIpcHandlers() {
     // Billing handler
     "billing:getInfo": async () => {
       return await getBillingInfo();
+    },
+    // Feedback handler (relayed to Plain via the backend)
+    "feedback:submit": async (_event, args) => {
+      try {
+        await submitFeedback({
+          category: args.category,
+          message: args.message,
+          appVersion: app.getVersion(),
+          platform: `${process.platform}/${process.arch}`,
+        });
+        return { success: true };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          success: false,
+          errorCode: message.includes("Not signed into")
+            ? ("not_signed_in" as const)
+            : ("server" as const),
+          error: message,
+        };
+      }
     },
     // Embedded browser handlers (WebContentsView + navigation)
     ...browserIpcHandlers,
