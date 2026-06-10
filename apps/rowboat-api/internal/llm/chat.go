@@ -62,6 +62,7 @@ type ChatRequest struct {
 type ChatResult struct {
 	Message      ChatMessage
 	FinishReason string
+	Provider     string // the routed upstream ("openai"/"openrouter"), for metrics labels
 	InputTokens  int
 	OutputTokens int
 }
@@ -188,13 +189,19 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 	return ChatResult{
 		Message:      msg,
 		FinishReason: choice.FinishReason,
+		Provider:     up.provider,
 		InputTokens:  inTok,
 		OutputTokens: outTok,
 	}, nil
 }
 
 // marshalChatBody builds the OpenAI-compatible request body and reports the
-// serialized message bytes (the reservation's input estimate).
+// reservation's input-estimate bytes. Messages and tools are each encoded
+// exactly once (embedded as RawMessage) and BOTH count toward the estimate:
+// tool schemas are part of the billed prompt — skipping them would let a
+// tiny-messages + huge-tools request reserve almost nothing and have Settle
+// (which performs no balance check) drive the ledger negative (see
+// estimateInputTokens in estimate.go, the proxy-path twin of this rule).
 func marshalChatBody(upstreamModel string, req ChatRequest) (body []byte, inputBytes int, err error) {
 	messages := make([]wireMessage, 0, len(req.Messages))
 	for _, m := range req.Messages {
@@ -209,9 +216,15 @@ func marshalChatBody(upstreamModel string, req ChatRequest) (body []byte, inputB
 		}
 		messages = append(messages, wm)
 	}
+	rawMessages, err := json.Marshal(messages)
+	if err != nil {
+		return nil, 0, err
+	}
+	inputBytes = len(rawMessages)
+
 	payload := map[string]any{
 		"model":    upstreamModel,
-		"messages": messages,
+		"messages": json.RawMessage(rawMessages),
 	}
 	if req.MaxTokens > 0 {
 		payload["max_tokens"] = req.MaxTokens
@@ -232,16 +245,17 @@ func marshalChatBody(upstreamModel string, req ChatRequest) (body []byte, inputB
 				},
 			})
 		}
-		payload["tools"] = tools
+		rawTools, terr := json.Marshal(tools)
+		if terr != nil {
+			return nil, 0, terr
+		}
+		payload["tools"] = json.RawMessage(rawTools)
 		payload["tool_choice"] = "auto"
+		inputBytes += len(rawTools)
 	}
 	body, err = json.Marshal(payload)
 	if err != nil {
 		return nil, 0, err
 	}
-	msgBytes, err := json.Marshal(messages)
-	if err != nil {
-		return nil, 0, err
-	}
-	return body, len(msgBytes), nil
+	return body, inputBytes, nil
 }

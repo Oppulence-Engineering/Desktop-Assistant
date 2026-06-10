@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/credits"
@@ -115,7 +116,7 @@ func TestChatCompleteToolCallRoundTrip(t *testing.T) {
 	}
 	wireStr := string(captured)
 	for _, needle := range []string{`"tool_calls"`, `"call_1"`, `"tool_call_id":"call_1"`, `"role":"tool"`} {
-		if !contains(wireStr, needle) {
+		if !strings.Contains(wireStr, needle) {
 			t.Fatalf("second request missing %s: %s", needle, wireStr)
 		}
 	}
@@ -171,16 +172,4 @@ func TestChatCompleteReplayIsRejected(t *testing.T) {
 	if !errors.Is(err, llm.ErrAlreadyCompleted) {
 		t.Fatalf("replay err = %v, want ErrAlreadyCompleted", err)
 	}
-}
-
-func contains(haystack, needle string) bool {
-	return len(needle) > 0 && len(haystack) >= len(needle) &&
-		func() bool {
-			for i := 0; i+len(needle) <= len(haystack); i++ {
-				if haystack[i:i+len(needle)] == needle {
-					return true
-				}
-			}
-			return false
-		}()
 }
