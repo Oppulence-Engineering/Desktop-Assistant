@@ -20,6 +20,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
@@ -410,6 +411,33 @@ func (f TraverseMCPConnectionHistory) Traverse(ctx context.Context, q ent.Query)
 	return fmt.Errorf("unexpected query type %T. expect *ent.MCPConnectionHistoryQuery", q)
 }
 
+// The MeetingMinuteUsageFunc type is an adapter to allow the use of ordinary function as a Querier.
+type MeetingMinuteUsageFunc func(context.Context, *ent.MeetingMinuteUsageQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f MeetingMinuteUsageFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.MeetingMinuteUsageQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.MeetingMinuteUsageQuery", q)
+}
+
+// The TraverseMeetingMinuteUsage type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseMeetingMinuteUsage func(context.Context, *ent.MeetingMinuteUsageQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseMeetingMinuteUsage) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseMeetingMinuteUsage) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.MeetingMinuteUsageQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.MeetingMinuteUsageQuery", q)
+}
+
 // The OAuthConnectionFunc type is an adapter to allow the use of ordinary function as a Querier.
 type OAuthConnectionFunc func(context.Context, *ent.OAuthConnectionQuery) (ent.Value, error)
 
@@ -626,6 +654,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.MCPConnectionQuery, predicate.MCPConnection, mcpconnection.OrderOption]{typ: ent.TypeMCPConnection, tq: q}, nil
 	case *ent.MCPConnectionHistoryQuery:
 		return &query[*ent.MCPConnectionHistoryQuery, predicate.MCPConnectionHistory, mcpconnectionhistory.OrderOption]{typ: ent.TypeMCPConnectionHistory, tq: q}, nil
+	case *ent.MeetingMinuteUsageQuery:
+		return &query[*ent.MeetingMinuteUsageQuery, predicate.MeetingMinuteUsage, meetingminuteusage.OrderOption]{typ: ent.TypeMeetingMinuteUsage, tq: q}, nil
 	case *ent.OAuthConnectionQuery:
 		return &query[*ent.OAuthConnectionQuery, predicate.OAuthConnection, oauthconnection.OrderOption]{typ: ent.TypeOAuthConnection, tq: q}, nil
 	case *ent.OAuthConnectionHistoryQuery:

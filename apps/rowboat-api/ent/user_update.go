@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
@@ -133,6 +134,21 @@ func (_u *UserUpdate) AddLedgerEntries(v ...*CreditLedger) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddLedgerEntryIDs(ids...)
+}
+
+// AddMeetingMinuteUsageIDs adds the "meeting_minute_usages" edge to the MeetingMinuteUsage entity by IDs.
+func (_u *UserUpdate) AddMeetingMinuteUsageIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddMeetingMinuteUsageIDs(ids...)
+	return _u
+}
+
+// AddMeetingMinuteUsages adds the "meeting_minute_usages" edges to the MeetingMinuteUsage entity.
+func (_u *UserUpdate) AddMeetingMinuteUsages(v ...*MeetingMinuteUsage) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMeetingMinuteUsageIDs(ids...)
 }
 
 // AddLlmUsageIDs adds the "llm_usages" edge to the LLMUsage entity by IDs.
@@ -315,6 +331,27 @@ func (_u *UserUpdate) RemoveLedgerEntries(v ...*CreditLedger) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveLedgerEntryIDs(ids...)
+}
+
+// ClearMeetingMinuteUsages clears all "meeting_minute_usages" edges to the MeetingMinuteUsage entity.
+func (_u *UserUpdate) ClearMeetingMinuteUsages() *UserUpdate {
+	_u.mutation.ClearMeetingMinuteUsages()
+	return _u
+}
+
+// RemoveMeetingMinuteUsageIDs removes the "meeting_minute_usages" edge to MeetingMinuteUsage entities by IDs.
+func (_u *UserUpdate) RemoveMeetingMinuteUsageIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveMeetingMinuteUsageIDs(ids...)
+	return _u
+}
+
+// RemoveMeetingMinuteUsages removes "meeting_minute_usages" edges to MeetingMinuteUsage entities.
+func (_u *UserUpdate) RemoveMeetingMinuteUsages(v ...*MeetingMinuteUsage) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMeetingMinuteUsageIDs(ids...)
 }
 
 // ClearLlmUsages clears all "llm_usages" edges to the LLMUsage entity.
@@ -670,6 +707,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(creditledger.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MeetingMinuteUsagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MeetingMinuteUsagesTable,
+			Columns: []string{user.MeetingMinuteUsagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(meetingminuteusage.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMeetingMinuteUsagesIDs(); len(nodes) > 0 && !_u.mutation.MeetingMinuteUsagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MeetingMinuteUsagesTable,
+			Columns: []string{user.MeetingMinuteUsagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(meetingminuteusage.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MeetingMinuteUsagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MeetingMinuteUsagesTable,
+			Columns: []string{user.MeetingMinuteUsagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(meetingminuteusage.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1241,6 +1323,21 @@ func (_u *UserUpdateOne) AddLedgerEntries(v ...*CreditLedger) *UserUpdateOne {
 	return _u.AddLedgerEntryIDs(ids...)
 }
 
+// AddMeetingMinuteUsageIDs adds the "meeting_minute_usages" edge to the MeetingMinuteUsage entity by IDs.
+func (_u *UserUpdateOne) AddMeetingMinuteUsageIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddMeetingMinuteUsageIDs(ids...)
+	return _u
+}
+
+// AddMeetingMinuteUsages adds the "meeting_minute_usages" edges to the MeetingMinuteUsage entity.
+func (_u *UserUpdateOne) AddMeetingMinuteUsages(v ...*MeetingMinuteUsage) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMeetingMinuteUsageIDs(ids...)
+}
+
 // AddLlmUsageIDs adds the "llm_usages" edge to the LLMUsage entity by IDs.
 func (_u *UserUpdateOne) AddLlmUsageIDs(ids ...uuid.UUID) *UserUpdateOne {
 	_u.mutation.AddLlmUsageIDs(ids...)
@@ -1421,6 +1518,27 @@ func (_u *UserUpdateOne) RemoveLedgerEntries(v ...*CreditLedger) *UserUpdateOne 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveLedgerEntryIDs(ids...)
+}
+
+// ClearMeetingMinuteUsages clears all "meeting_minute_usages" edges to the MeetingMinuteUsage entity.
+func (_u *UserUpdateOne) ClearMeetingMinuteUsages() *UserUpdateOne {
+	_u.mutation.ClearMeetingMinuteUsages()
+	return _u
+}
+
+// RemoveMeetingMinuteUsageIDs removes the "meeting_minute_usages" edge to MeetingMinuteUsage entities by IDs.
+func (_u *UserUpdateOne) RemoveMeetingMinuteUsageIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveMeetingMinuteUsageIDs(ids...)
+	return _u
+}
+
+// RemoveMeetingMinuteUsages removes "meeting_minute_usages" edges to MeetingMinuteUsage entities.
+func (_u *UserUpdateOne) RemoveMeetingMinuteUsages(v ...*MeetingMinuteUsage) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMeetingMinuteUsageIDs(ids...)
 }
 
 // ClearLlmUsages clears all "llm_usages" edges to the LLMUsage entity.
@@ -1806,6 +1924,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(creditledger.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MeetingMinuteUsagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MeetingMinuteUsagesTable,
+			Columns: []string{user.MeetingMinuteUsagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(meetingminuteusage.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMeetingMinuteUsagesIDs(); len(nodes) > 0 && !_u.mutation.MeetingMinuteUsagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MeetingMinuteUsagesTable,
+			Columns: []string{user.MeetingMinuteUsagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(meetingminuteusage.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MeetingMinuteUsagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MeetingMinuteUsagesTable,
+			Columns: []string{user.MeetingMinuteUsagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(meetingminuteusage.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

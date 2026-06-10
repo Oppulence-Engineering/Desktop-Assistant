@@ -22,6 +22,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
@@ -38,6 +39,7 @@ type UserQuery struct {
 	predicates                            []predicate.User
 	withSubscription                      *SubscriptionQuery
 	withLedgerEntries                     *CreditLedgerQuery
+	withMeetingMinuteUsages               *MeetingMinuteUsageQuery
 	withLlmUsages                         *LLMUsageQuery
 	withOauthConnections                  *OAuthConnectionQuery
 	withMcpConnections                    *MCPConnectionQuery
@@ -51,6 +53,7 @@ type UserQuery struct {
 	modifiers                             []func(*sql.Selector)
 	loadTotal                             []func(context.Context, []*User) error
 	withNamedLedgerEntries                map[string]*CreditLedgerQuery
+	withNamedMeetingMinuteUsages          map[string]*MeetingMinuteUsageQuery
 	withNamedLlmUsages                    map[string]*LLMUsageQuery
 	withNamedOauthConnections             map[string]*OAuthConnectionQuery
 	withNamedMcpConnections               map[string]*MCPConnectionQuery
@@ -134,6 +137,28 @@ func (_q *UserQuery) QueryLedgerEntries() *CreditLedgerQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(creditledger.Table, creditledger.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.LedgerEntriesTable, user.LedgerEntriesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMeetingMinuteUsages chains the current query on the "meeting_minute_usages" edge.
+func (_q *UserQuery) QueryMeetingMinuteUsages() *MeetingMinuteUsageQuery {
+	query := (&MeetingMinuteUsageClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(meetingminuteusage.Table, meetingminuteusage.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MeetingMinuteUsagesTable, user.MeetingMinuteUsagesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -555,6 +580,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		predicates:                       append([]predicate.User{}, _q.predicates...),
 		withSubscription:                 _q.withSubscription.Clone(),
 		withLedgerEntries:                _q.withLedgerEntries.Clone(),
+		withMeetingMinuteUsages:          _q.withMeetingMinuteUsages.Clone(),
 		withLlmUsages:                    _q.withLlmUsages.Clone(),
 		withOauthConnections:             _q.withOauthConnections.Clone(),
 		withMcpConnections:               _q.withMcpConnections.Clone(),
@@ -590,6 +616,17 @@ func (_q *UserQuery) WithLedgerEntries(opts ...func(*CreditLedgerQuery)) *UserQu
 		opt(query)
 	}
 	_q.withLedgerEntries = query
+	return _q
+}
+
+// WithMeetingMinuteUsages tells the query-builder to eager-load the nodes that are connected to
+// the "meeting_minute_usages" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithMeetingMinuteUsages(opts ...func(*MeetingMinuteUsageQuery)) *UserQuery {
+	query := (&MeetingMinuteUsageClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withMeetingMinuteUsages = query
 	return _q
 }
 
@@ -781,9 +818,10 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [12]bool{
+		loadedTypes = [13]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
+			_q.withMeetingMinuteUsages != nil,
 			_q.withLlmUsages != nil,
 			_q.withOauthConnections != nil,
 			_q.withMcpConnections != nil,
@@ -827,6 +865,15 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.Edges.LedgerEntries = []*CreditLedger{} },
 			func(n *User, e *CreditLedger) { n.Edges.LedgerEntries = append(n.Edges.LedgerEntries, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withMeetingMinuteUsages; query != nil {
+		if err := _q.loadMeetingMinuteUsages(ctx, query, nodes,
+			func(n *User) { n.Edges.MeetingMinuteUsages = []*MeetingMinuteUsage{} },
+			func(n *User, e *MeetingMinuteUsage) {
+				n.Edges.MeetingMinuteUsages = append(n.Edges.MeetingMinuteUsages, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -912,6 +959,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
 			func(n *User, e *CreditLedger) { n.appendNamedLedgerEntries(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedMeetingMinuteUsages {
+		if err := _q.loadMeetingMinuteUsages(ctx, query, nodes,
+			func(n *User) { n.appendNamedMeetingMinuteUsages(name) },
+			func(n *User, e *MeetingMinuteUsage) { n.appendNamedMeetingMinuteUsages(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1047,6 +1101,37 @@ func (_q *UserQuery) loadLedgerEntries(ctx context.Context, query *CreditLedgerQ
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_ledger_entries" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadMeetingMinuteUsages(ctx context.Context, query *MeetingMinuteUsageQuery, nodes []*User, init func(*User), assign func(*User, *MeetingMinuteUsage)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.MeetingMinuteUsage(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.MeetingMinuteUsagesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_meeting_minute_usages
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_meeting_minute_usages" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_meeting_minute_usages" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -1458,6 +1543,20 @@ func (_q *UserQuery) WithNamedLedgerEntries(name string, opts ...func(*CreditLed
 		_q.withNamedLedgerEntries = make(map[string]*CreditLedgerQuery)
 	}
 	_q.withNamedLedgerEntries[name] = query
+	return _q
+}
+
+// WithNamedMeetingMinuteUsages tells the query-builder to eager-load the nodes that are connected to the "meeting_minute_usages"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedMeetingMinuteUsages(name string, opts ...func(*MeetingMinuteUsageQuery)) *UserQuery {
+	query := (&MeetingMinuteUsageClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedMeetingMinuteUsages == nil {
+		_q.withNamedMeetingMinuteUsages = make(map[string]*MeetingMinuteUsageQuery)
+	}
+	_q.withNamedMeetingMinuteUsages[name] = query
 	return _q
 }
 

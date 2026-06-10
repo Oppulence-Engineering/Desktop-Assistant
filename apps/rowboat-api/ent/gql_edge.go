@@ -204,6 +204,14 @@ func (_m *MCPConnection) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (_m *MeetingMinuteUsage) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *OAuthConnection) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -236,6 +244,18 @@ func (_m *User) LedgerEntries(ctx context.Context) (result []*CreditLedger, err 
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryLedgerEntries().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) MeetingMinuteUsages(ctx context.Context) (result []*MeetingMinuteUsage, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedMeetingMinuteUsages(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.MeetingMinuteUsagesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryMeetingMinuteUsages().All(ctx)
 	}
 	return result, err
 }
