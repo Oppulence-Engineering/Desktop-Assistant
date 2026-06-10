@@ -116,6 +116,39 @@ var (
 		Help:    "Latency of cloud runtime LLM calls, by provider.",
 		Buckets: prometheus.ExponentialBuckets(0.25, 2, 10), // 0.25s .. ~2m
 	}, []string{"provider"})
+
+	// Temporal Schedule series (RFC 005). Labels are small fixed enums
+	// (action/op/kind) — never schedule ids or task slugs.
+
+	// ScheduleUpserts counts Temporal Schedule creates/updates.
+	ScheduleUpserts = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "temporal_schedules_upserted_total",
+		Help: "Temporal Schedules upserted for cron tasks, by action (create|update).",
+	}, []string{"action"})
+
+	// ScheduleDeletes counts Temporal Schedule deletions.
+	ScheduleDeletes = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "temporal_schedules_deleted_total",
+		Help: "Temporal Schedules deleted for cron tasks.",
+	})
+
+	// ScheduleSyncFailures counts failed schedule operations, by operation.
+	ScheduleSyncFailures = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "temporal_schedule_sync_failures_total",
+		Help: "Failed Temporal Schedule operations, by op (upsert|pause|delete|describe|list|state_write).",
+	}, []string{"op"})
+
+	// ScheduleDrift counts reconciler corrections, by drift kind.
+	ScheduleDrift = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "temporal_schedule_drift_total",
+		Help: "Temporal Schedule drift corrections by the reconciler, by kind (missing|stale|orphan|pause).",
+	}, []string{"kind"})
+
+	// ScheduleFires counts scheduler-workflow fires (CreateScheduledRun starts).
+	ScheduleFires = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "temporal_schedule_fires_total",
+		Help: "Temporal Schedule fires handled by the scheduler workflow.",
+	})
 )
 
 // ObserveDurationSince records a run duration if the start time is known and sane.
