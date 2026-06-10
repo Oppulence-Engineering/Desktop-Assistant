@@ -158,12 +158,12 @@ func TestAfterWritePauseFailureRecordsError(t *testing.T) {
 	}
 }
 
-func TestBeforeDelete(t *testing.T) {
+func TestAfterDelete(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	task = s.AfterWrite(context.Background(), u.ID.String(), task) // schedule exists
-	s.BeforeDelete(context.Background(), u.ID.String(), task)
+	s.AfterDelete(context.Background(), u.ID.String(), task)
 	if _, ok := mgr.Schedule(u.ID.String(), "daily-digest"); ok {
-		t.Fatal("BeforeDelete must delete the schedule")
+		t.Fatal("AfterDelete must delete the schedule")
 	}
 
 	// Never-scheduled task: no Temporal call.
@@ -172,7 +172,7 @@ func TestBeforeDelete(t *testing.T) {
 		SetUser(u).SetSlug("plain").SetName("Plain").
 		SetInstructions("x").SetExecutionTarget("desktop").
 		SaveX(context.Background())
-	s.BeforeDelete(context.Background(), u.ID.String(), fresh)
+	s.AfterDelete(context.Background(), u.ID.String(), fresh)
 	if len(mgr.Calls) != calls {
 		t.Fatalf("never-scheduled delete must not call Temporal: %v", mgr.Calls[calls:])
 	}

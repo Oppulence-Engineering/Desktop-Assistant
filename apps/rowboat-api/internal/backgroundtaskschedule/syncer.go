@@ -87,10 +87,12 @@ func (s *Syncer) AfterWrite(ctx context.Context, userID string, task *ent.Backgr
 	return s.reload(ctx, task)
 }
 
-// BeforeDelete best-effort removes the schedule ahead of the task delete. It
-// never blocks the delete: an orphaned schedule is repaired by the
-// reconciler's sweep, and its fires skip safely once the task row is gone.
-func (s *Syncer) BeforeDelete(ctx context.Context, userID string, task *ent.BackgroundTask) {
+// AfterDelete best-effort removes the schedule once the task delete has
+// committed. Running after the commit (not before) means a stale-revision 409
+// can never strand a live task without its schedule; a failed delete here is
+// just an orphan for the reconciler's sweep, and fires in the gap skip safely
+// because the task row is gone.
+func (s *Syncer) AfterDelete(ctx context.Context, userID string, task *ent.BackgroundTask) {
 	if !s.Cfg.TemporalSchedulesEnabled {
 		return
 	}
