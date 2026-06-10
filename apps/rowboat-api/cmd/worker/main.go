@@ -28,7 +28,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	temporalsdk "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
 )
@@ -117,6 +116,28 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 	)
 
 	retryAfter := 5 * time.Second
+
+	// Shared vendor-facing dependencies, built ONCE before the redial loop
+	// (rebuilding per dial leaked one Infisical-refresh goroutine per failed
+	// w.Start). Static config errors (pricing, sealer) stay fatal; a transient
+	// Infisical outage retries instead of crash-looping the whole worker.
+	var deps *workerDeps
+	if cfg.CloudEventsRoutingEnabled || cfg.CloudRuntimeEnabled {
+		var err error
+		for {
+			deps, err = buildWorkerDeps(ctx, cfg, log, client)
+			if err == nil {
+				break
+			}
+			if !errors.Is(err, errInfisicalUnavailable) {
+				return err // static config error: crash-loop is the right signal
+			}
+			if waitForRetry(ctx, log, "load infisical secrets", err, retryAfter) != nil {
+				return nil
+			}
+		}
+	}
+
 	for {
 		dialCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 		temporalClient, err := backgroundtaskworkflow.Dial(dialCtx, cfg)
@@ -129,17 +150,6 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		}
 
 		w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{})
-
-		// Shared vendor-facing dependencies, built once when either consumer
-		// (event router, cloud runtime) is enabled.
-		var deps *workerDeps
-		if cfg.CloudEventsRoutingEnabled || cfg.CloudRuntimeEnabled {
-			deps, err = buildWorkerDeps(ctx, cfg, log, client, temporalClient)
-			if err != nil {
-				temporalClient.Close()
-				return err
-			}
-		}
 
 		activities := &backgroundtaskworkflow.Activities{Client: client, Log: log}
 		if cfg.CloudRuntimeEnabled && deps != nil {
@@ -164,10 +174,13 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		backgroundtaskworkflow.Register(w, activities)
 
 		if cfg.CloudEventsRoutingEnabled && deps != nil {
+			// The Starter is the one temporalClient-bound dependency, so it is
+			// built per successful dial rather than carried in deps.
+			starter := backgroundtaskruns.New(client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log)
 			cloudevents.Register(w, &cloudevents.Activities{Router: &cloudevents.Router{
 				Client:    client,
 				LLM:       deps.LLM,
-				Starter:   deps.Starter,
+				Starter:   starter,
 				Threshold: cfg.CloudEventsMatchThreshold,
 				Model:     cfg.CloudEventsRouterModel,
 				Log:       log,
@@ -194,30 +207,24 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 	}
 }
 
+// errInfisicalUnavailable marks a transient secret-load failure the caller
+// should retry, as opposed to a static config error worth crash-looping on.
+var errInfisicalUnavailable = errors.New("infisical unavailable")
+
 // workerDeps are the vendor-facing dependencies shared by the RFC 003 event
 // router and the RFC 004 cloud runtime: the in-process LLM gateway (vendor
-// secrets + pricing + the owner-billing quota gate), the shared run Starter,
-// the payload sealer, and the Google API client.
+// secrets + pricing + the owner-billing quota gate), the payload sealer, and
+// the Google API client. Built once per process — StartRefresh spawns a
+// process-lifetime goroutine, so this must NOT run inside the redial loop.
 type workerDeps struct {
 	Secrets *secrets.Store
-	Prices  *pricing.Table
-	Gate    *quota.Gate
 	LLM     *llm.Handler
-	Starter *backgroundtaskruns.Starter
 	Sealer  *crypto.Sealer
 	Google  *googleapi.Client
 }
 
-func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger, client *ent.Client, temporalClient temporalsdk.Client) (*workerDeps, error) {
-	sec := secrets.NewFromConfig(cfg)
-	if err := sec.LoadInfisical(ctx, cfg); err != nil {
-		if cfg.InfisicalEnabled && cfg.IsProduction() {
-			return nil, fmt.Errorf("infisical secret load failed in production: %w", err)
-		}
-		log.Warn("infisical load failed; using env vendor keys", zap.Error(err))
-	}
-	sec.StartRefresh(ctx, cfg, 5*time.Minute, log)
-
+func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger, client *ent.Client) (*workerDeps, error) {
+	// Static config first: failures here can't be retried away.
 	prices, err := pricing.LoadJSON([]byte(cfg.PricingJSON))
 	if err != nil {
 		return nil, err
@@ -226,6 +233,15 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 	if err != nil {
 		return nil, err
 	}
+
+	sec := secrets.NewFromConfig(cfg)
+	if err := sec.LoadInfisical(ctx, cfg); err != nil {
+		if cfg.InfisicalEnabled && cfg.IsProduction() {
+			return nil, fmt.Errorf("%w: %w", errInfisicalUnavailable, err)
+		}
+		log.Warn("infisical load failed; using env vendor keys", zap.Error(err))
+	}
+	sec.StartRefresh(ctx, cfg, 5*time.Minute, log)
 
 	gate := quota.New(client, log)
 	llmH := llm.New(prices, gate, sec, client, log)
@@ -243,10 +259,7 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 
 	return &workerDeps{
 		Secrets: sec,
-		Prices:  prices,
-		Gate:    gate,
 		LLM:     llmH,
-		Starter: backgroundtaskruns.New(client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log),
 		Sealer:  sealer,
 		Google: googleapi.New(googleapi.Config{
 			TokenURL:        cfg.GoogleTokenURL,

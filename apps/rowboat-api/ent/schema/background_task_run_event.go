@@ -1,8 +1,6 @@
 package schema
 
 import (
-	"time"
-
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
@@ -33,7 +31,7 @@ func (BackgroundTaskRunEvent) Fields() []ent.Field {
 		field.Int("seq").NonNegative(),
 		field.String("event_type").Optional(),
 		field.Text("event_json").NotEmpty().Validate(validJSON),
-		field.Time("received_at").Default(time.Now).Immutable(),
+		field.Time("received_at").Default(mixin.UTCNow).Immutable(),
 	}
 }
 

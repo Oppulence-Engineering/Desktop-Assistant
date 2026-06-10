@@ -1,8 +1,6 @@
 package schema
 
 import (
-	"time"
-
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
@@ -57,7 +55,7 @@ func (CloudEvent) Fields() []ent.Field {
 				"pending", "routed", "skipped", "failed")),
 		field.Int("matched_task_count").Default(0),
 		field.Time("occurred_at").Optional().Nillable(), // provider event time
-		field.Time("received_at").Default(time.Now).Immutable(),
+		field.Time("received_at").Default(mixin.UTCNow).Immutable(),
 		field.Time("routed_at").Optional().Nillable(),
 	}
 }

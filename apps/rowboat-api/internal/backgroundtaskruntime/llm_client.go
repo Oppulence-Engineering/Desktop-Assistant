@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -26,18 +25,27 @@ type GatewayLLM struct {
 	model   string
 	slug    string
 	runID   string
+	attempt int
 }
 
 // NewGatewayLLM builds the per-run gateway adapter. model is the resolved
-// model id (task override or runtime default).
-func NewGatewayLLM(handler *llm.Handler, user *ent.User, model, slug, runID string) *GatewayLLM {
-	return &GatewayLLM{handler: handler, user: user, model: model, slug: slug, runID: runID}
+// model id (task override or runtime default); attempt is the Temporal
+// activity attempt (1-based) seeding the idempotency anchor — each retry
+// reserves fresh because an LLM transcript cannot resume across attempts
+// (re-billing the retried attempt's calls is the accepted cost of keeping
+// the activity retry budget usable).
+func NewGatewayLLM(handler *llm.Handler, user *ent.User, model, slug, runID string, attempt int) *GatewayLLM {
+	if attempt < 1 {
+		attempt = 1
+	}
+	return &GatewayLLM{handler: handler, user: user, model: model, slug: slug, runID: runID, attempt: attempt}
 }
 
-// Complete advances the conversation one turn. The deterministic per-call
-// request id makes a Temporal activity retry replay the original quota
-// reservation instead of double-billing; the replay itself is terminal (the
-// prior attempt's transcript is gone), surfaced as llm_call_failed.
+// Complete advances the conversation one turn. The deterministic
+// per-(attempt, call) request id makes a duplicate submission WITHIN one
+// attempt replay the original reservation instead of double-billing; a
+// replay surfacing here is terminal (the transcript is gone), but with
+// attempt-seeded ids that never happens on a normal Temporal retry.
 func (g *GatewayLLM) Complete(ctx context.Context, callIndex int, messages []Message, tools []ToolDef) (Turn, error) {
 	ctx = auth.WithUser(ctx, g.user)
 
@@ -64,25 +72,24 @@ func (g *GatewayLLM) Complete(ctx context.Context, callIndex int, messages []Mes
 		UseCase:    "background_task_agent",
 		SubUseCase: "runtime",
 		AgentName:  g.slug,
-		RequestID:  runtimeRequestID(g.runID, callIndex),
+		RequestID:  runtimeRequestID(g.runID, g.attempt, callIndex),
 	})
 	latency := time.Since(start)
-	provider := providerOf(g.model)
 	if err != nil {
 		if errors.Is(err, llm.ErrAlreadyCompleted) || errors.Is(err, llm.ErrInProgress) {
 			return Turn{}, &RuntimeError{
 				Code:    CodeLLMCallFailed,
-				Message: "deterministic llm request-id replayed after an activity retry; the prior attempt's transcript is lost and the loop cannot resume",
+				Message: "deterministic llm request-id replayed within the same attempt; the transcript cannot be resumed",
 				Cause:   err,
 			}
 		}
 		return Turn{}, &RuntimeError{Code: CodeLLMCallFailed, Message: "llm gateway call failed", Cause: err}
 	}
-	backgroundtaskmetrics.RuntimeLLMCalls.WithLabelValues(provider).Inc()
-	backgroundtaskmetrics.RuntimeLLMLatency.WithLabelValues(provider).Observe(latency.Seconds())
+	backgroundtaskmetrics.RuntimeLLMCalls.WithLabelValues(res.Provider).Inc()
+	backgroundtaskmetrics.RuntimeLLMLatency.WithLabelValues(res.Provider).Observe(latency.Seconds())
 
 	turn := Turn{
-		Provider:     provider,
+		Provider:     res.Provider,
 		Model:        g.model,
 		InputTokens:  res.InputTokens,
 		OutputTokens: res.OutputTokens,
@@ -95,16 +102,11 @@ func (g *GatewayLLM) Complete(ctx context.Context, callIndex int, messages []Mes
 	return turn, nil
 }
 
-// runtimeRequestID derives the deterministic per-(run, call) idempotency
-// anchor — the same pattern as the event router's routeRequestID.
-func runtimeRequestID(runID string, callIndex int) uuid.UUID {
-	return uuid.NewSHA1(uuid.NameSpaceOID, []byte("cloud-runtime/"+runID+"/llm/"+strconv.Itoa(callIndex)))
-}
-
-// providerOf mirrors the gateway's routing split for the metrics label.
-func providerOf(model string) string {
-	if strings.HasPrefix(model, "openai/") {
-		return "openai"
-	}
-	return "openrouter"
+// runtimeRequestID derives the deterministic per-(run, attempt, call)
+// idempotency anchor — the event router's routeRequestID pattern, plus the
+// activity attempt so Temporal retries reserve fresh instead of dying on
+// replay of a prior attempt's settled charge.
+func runtimeRequestID(runID string, attempt, callIndex int) uuid.UUID {
+	return uuid.NewSHA1(uuid.NameSpaceOID,
+		[]byte("cloud-runtime/"+runID+"/attempt/"+strconv.Itoa(attempt)+"/llm/"+strconv.Itoa(callIndex)))
 }

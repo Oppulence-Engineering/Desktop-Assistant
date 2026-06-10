@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -48,7 +49,7 @@ func (d connectorDeps) accessToken(ctx context.Context, requiredScope string) (s
 		}
 		return "", fmt.Errorf("load google connection: %w", err)
 	}
-	if !hasScope(conn.Scopes, requiredScope) {
+	if !slices.Contains(conn.Scopes, requiredScope) {
 		return "", &RuntimeError{Code: CodeConnectorUnavailable, Message: "google connection lacks the required scope: " + requiredScope}
 	}
 	token, err := d.google.AccessTokenForConnection(ctx, d.sealer, d.secrets, conn)
@@ -59,15 +60,6 @@ func (d connectorDeps) accessToken(ctx context.Context, requiredScope string) (s
 		return "", &RuntimeError{Code: CodeConnectorUnavailable, Message: "could not obtain a google access token", Cause: err}
 	}
 	return token, nil
-}
-
-func hasScope(scopes []string, want string) bool {
-	for _, s := range scopes {
-		if s == want {
-			return true
-		}
-	}
-	return false
 }
 
 // NewGmailReadTool builds connector.read.gmail (read-only message search).

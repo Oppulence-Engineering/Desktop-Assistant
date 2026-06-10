@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"time"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
@@ -32,13 +32,13 @@ func (LLMUsage) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).Default(uuid.New),
 		field.String("model"),
 		field.String("use_case").Optional(),     // x-rowboat-use-case
-		field.String("sub_use_case").Optional(),  // x-rowboat-sub-use-case
-		field.String("agent_name").Optional(),     // x-rowboat-agent-name
+		field.String("sub_use_case").Optional(), // x-rowboat-sub-use-case
+		field.String("agent_name").Optional(),   // x-rowboat-agent-name
 		field.Int("input_tokens").Default(0).NonNegative(),
 		field.Int("output_tokens").Default(0).NonNegative(),
 		field.Int("cost_units").Default(0).NonNegative(), // credits decremented for this call
 		field.UUID("request_id", uuid.UUID{}),
-		field.Time("ts").Default(time.Now).Immutable(),
+		field.Time("ts").Default(mixin.UTCNow).Immutable(),
 	}
 }
 

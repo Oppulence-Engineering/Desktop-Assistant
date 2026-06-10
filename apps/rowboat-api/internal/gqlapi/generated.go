@@ -343,6 +343,16 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	MeetingMinuteUsage struct {
+		CreatedAt       func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Period          func(childComplexity int) int
+		ReservedSeconds func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
+		UsedSeconds     func(childComplexity int) int
+		User            func(childComplexity int) int
+	}
+
 	OAuthConnection struct {
 		CreatedAt         func(childComplexity int) int
 		ExternalAccountID func(childComplexity int) int
@@ -399,6 +409,7 @@ type ComplexityRoot struct {
 		LedgerEntries                func(childComplexity int) int
 		LlmUsages                    func(childComplexity int) int
 		McpConnections               func(childComplexity int) int
+		MeetingMinuteUsages          func(childComplexity int) int
 		OauthConnections             func(childComplexity int) int
 		Subscription                 func(childComplexity int) int
 		UpdatedAt                    func(childComplexity int) int
@@ -1739,6 +1750,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.MCPConnectionEdge.Node(childComplexity), true
 
+	case "MeetingMinuteUsage.createdAt":
+		if e.ComplexityRoot.MeetingMinuteUsage.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MeetingMinuteUsage.CreatedAt(childComplexity), true
+	case "MeetingMinuteUsage.id":
+		if e.ComplexityRoot.MeetingMinuteUsage.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MeetingMinuteUsage.ID(childComplexity), true
+	case "MeetingMinuteUsage.period":
+		if e.ComplexityRoot.MeetingMinuteUsage.Period == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MeetingMinuteUsage.Period(childComplexity), true
+	case "MeetingMinuteUsage.reservedSeconds":
+		if e.ComplexityRoot.MeetingMinuteUsage.ReservedSeconds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MeetingMinuteUsage.ReservedSeconds(childComplexity), true
+	case "MeetingMinuteUsage.updatedAt":
+		if e.ComplexityRoot.MeetingMinuteUsage.UpdatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MeetingMinuteUsage.UpdatedAt(childComplexity), true
+	case "MeetingMinuteUsage.usedSeconds":
+		if e.ComplexityRoot.MeetingMinuteUsage.UsedSeconds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MeetingMinuteUsage.UsedSeconds(childComplexity), true
+	case "MeetingMinuteUsage.user":
+		if e.ComplexityRoot.MeetingMinuteUsage.User == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MeetingMinuteUsage.User(childComplexity), true
+
 	case "OAuthConnection.createdAt":
 		if e.ComplexityRoot.OAuthConnection.CreatedAt == nil {
 			break
@@ -2067,6 +2121,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.User.McpConnections(childComplexity), true
+	case "User.meetingMinuteUsages":
+		if e.ComplexityRoot.User.MeetingMinuteUsages == nil {
+			break
+		}
+
+		return e.ComplexityRoot.User.MeetingMinuteUsages(childComplexity), true
 	case "User.oauthConnections":
 		if e.ComplexityRoot.User.OauthConnections == nil {
 			break
@@ -2149,6 +2209,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputGoogleWatchWhereInput,
 		ec.unmarshalInputLLMUsageWhereInput,
 		ec.unmarshalInputMCPConnectionWhereInput,
+		ec.unmarshalInputMeetingMinuteUsageWhereInput,
 		ec.unmarshalInputOAuthConnectionWhereInput,
 		ec.unmarshalInputOAuthPendingWhereInput,
 		ec.unmarshalInputUserWhereInput,
@@ -2838,6 +2899,26 @@ func (ec *executionContext) childFields_MCPConnectionEdge(ctx context.Context, f
 	return nil, fmt.Errorf("no field named %q was found under type MCPConnectionEdge", field.Name)
 }
 
+func (ec *executionContext) childFields_MeetingMinuteUsage(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_MeetingMinuteUsage_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_MeetingMinuteUsage_createdAt(ctx, field)
+	case "updatedAt":
+		return ec.fieldContext_MeetingMinuteUsage_updatedAt(ctx, field)
+	case "period":
+		return ec.fieldContext_MeetingMinuteUsage_period(ctx, field)
+	case "usedSeconds":
+		return ec.fieldContext_MeetingMinuteUsage_usedSeconds(ctx, field)
+	case "reservedSeconds":
+		return ec.fieldContext_MeetingMinuteUsage_reservedSeconds(ctx, field)
+	case "user":
+		return ec.fieldContext_MeetingMinuteUsage_user(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type MeetingMinuteUsage", field.Name)
+}
+
 func (ec *executionContext) childFields_OAuthConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -2890,6 +2971,8 @@ func (ec *executionContext) childFields_User(ctx context.Context, field graphql.
 		return ec.fieldContext_User_subscription(ctx, field)
 	case "ledgerEntries":
 		return ec.fieldContext_User_ledgerEntries(ctx, field)
+	case "meetingMinuteUsages":
+		return ec.fieldContext_User_meetingMinuteUsages(ctx, field)
 	case "llmUsages":
 		return ec.fieldContext_User_llmUsages(ctx, field)
 	case "oauthConnections":
@@ -8971,6 +9054,176 @@ func (ec *executionContext) fieldContext_MCPConnectionEdge_cursor(_ context.Cont
 	return graphql.NewScalarFieldContext("MCPConnectionEdge", field, false, false, errors.New("field of type Cursor does not have child fields"))
 }
 
+func (ec *executionContext) _MeetingMinuteUsage_id(ctx context.Context, field graphql.CollectedField, obj *ent.MeetingMinuteUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MeetingMinuteUsage_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v uuid.UUID) graphql.Marshaler {
+			return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MeetingMinuteUsage_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MeetingMinuteUsage", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _MeetingMinuteUsage_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.MeetingMinuteUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MeetingMinuteUsage_createdAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MeetingMinuteUsage_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MeetingMinuteUsage", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _MeetingMinuteUsage_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.MeetingMinuteUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MeetingMinuteUsage_updatedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MeetingMinuteUsage_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MeetingMinuteUsage", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _MeetingMinuteUsage_period(ctx context.Context, field graphql.CollectedField, obj *ent.MeetingMinuteUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MeetingMinuteUsage_period(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Period, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MeetingMinuteUsage_period(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MeetingMinuteUsage", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MeetingMinuteUsage_usedSeconds(ctx context.Context, field graphql.CollectedField, obj *ent.MeetingMinuteUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MeetingMinuteUsage_usedSeconds(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UsedSeconds, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MeetingMinuteUsage_usedSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MeetingMinuteUsage", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _MeetingMinuteUsage_reservedSeconds(ctx context.Context, field graphql.CollectedField, obj *ent.MeetingMinuteUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MeetingMinuteUsage_reservedSeconds(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ReservedSeconds, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MeetingMinuteUsage_reservedSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MeetingMinuteUsage", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _MeetingMinuteUsage_user(ctx context.Context, field graphql.CollectedField, obj *ent.MeetingMinuteUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MeetingMinuteUsage_user(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.User(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.User) graphql.Marshaler {
+			return ec.marshalNUser2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐUser(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MeetingMinuteUsage_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MeetingMinuteUsage",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_User(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OAuthConnection_id(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -10216,6 +10469,38 @@ func (ec *executionContext) fieldContext_User_ledgerEntries(_ context.Context, f
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_CreditLedger(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_meetingMinuteUsages(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_User_meetingMinuteUsages(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.MeetingMinuteUsages(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*ent.MeetingMinuteUsage) graphql.Marshaler {
+			return ec.marshalOMeetingMinuteUsage2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsageᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_User_meetingMinuteUsages(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_MeetingMinuteUsage(ctx, field)
 		},
 	}
 	return fc, nil
@@ -23223,6 +23508,435 @@ func (ec *executionContext) unmarshalInputMCPConnectionWhereInput(ctx context.Co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputMeetingMinuteUsageWhereInput(ctx context.Context, obj any) (ent.MeetingMinuteUsageWhereInput, error) {
+	var it ent.MeetingMinuteUsageWhereInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "period", "periodNEQ", "periodIn", "periodNotIn", "periodGT", "periodGTE", "periodLT", "periodLTE", "periodContains", "periodHasPrefix", "periodHasSuffix", "periodEqualFold", "periodContainsFold", "usedSeconds", "usedSecondsNEQ", "usedSecondsIn", "usedSecondsNotIn", "usedSecondsGT", "usedSecondsGTE", "usedSecondsLT", "usedSecondsLTE", "reservedSeconds", "reservedSecondsNEQ", "reservedSecondsIn", "reservedSecondsNotIn", "reservedSecondsGT", "reservedSecondsGTE", "reservedSecondsLT", "reservedSecondsLTE", "hasUser", "hasUserWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalOMeetingMinuteUsageWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsageWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalOMeetingMinuteUsageWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsageWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalOMeetingMinuteUsageWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsageWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNEQ = data
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDIn = data
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNotIn = data
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGT = data
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGTE = data
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLT = data
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLTE = data
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "updatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNEQ = data
+		case "updatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtIn = data
+		case "updatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNotIn = data
+		case "updatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGT = data
+		case "updatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGTE = data
+		case "updatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLT = data
+		case "updatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLTE = data
+		case "period":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("period"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Period = data
+		case "periodNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodNEQ = data
+		case "periodIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodIn = data
+		case "periodNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodNotIn = data
+		case "periodGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodGT = data
+		case "periodGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodGTE = data
+		case "periodLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodLT = data
+		case "periodLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodLTE = data
+		case "periodContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodContains = data
+		case "periodHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodHasPrefix = data
+		case "periodHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodHasSuffix = data
+		case "periodEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodEqualFold = data
+		case "periodContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("periodContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PeriodContainsFold = data
+		case "usedSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usedSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsedSeconds = data
+		case "usedSecondsNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usedSecondsNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsedSecondsNEQ = data
+		case "usedSecondsIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usedSecondsIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsedSecondsIn = data
+		case "usedSecondsNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usedSecondsNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsedSecondsNotIn = data
+		case "usedSecondsGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usedSecondsGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsedSecondsGT = data
+		case "usedSecondsGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usedSecondsGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsedSecondsGTE = data
+		case "usedSecondsLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usedSecondsLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsedSecondsLT = data
+		case "usedSecondsLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usedSecondsLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsedSecondsLTE = data
+		case "reservedSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reservedSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReservedSeconds = data
+		case "reservedSecondsNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reservedSecondsNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReservedSecondsNEQ = data
+		case "reservedSecondsIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reservedSecondsIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReservedSecondsIn = data
+		case "reservedSecondsNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reservedSecondsNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReservedSecondsNotIn = data
+		case "reservedSecondsGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reservedSecondsGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReservedSecondsGT = data
+		case "reservedSecondsGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reservedSecondsGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReservedSecondsGTE = data
+		case "reservedSecondsLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reservedSecondsLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReservedSecondsLT = data
+		case "reservedSecondsLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reservedSecondsLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReservedSecondsLTE = data
+		case "hasUser":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUser"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasUser = data
+		case "hasUserWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUserWith"))
+			data, err := ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasUserWith = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputOAuthConnectionWhereInput(ctx context.Context, obj any) (ent.OAuthConnectionWhereInput, error) {
 	var it ent.OAuthConnectionWhereInput
 	if obj == nil {
@@ -24106,7 +24820,7 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailIsNil", "emailNotNil", "emailEqualFold", "emailContainsFold", "workosUserID", "workosUserIDNEQ", "workosUserIDIn", "workosUserIDNotIn", "workosUserIDGT", "workosUserIDGTE", "workosUserIDLT", "workosUserIDLTE", "workosUserIDContains", "workosUserIDHasPrefix", "workosUserIDHasSuffix", "workosUserIDEqualFold", "workosUserIDContainsFold", "workosOrgID", "workosOrgIDNEQ", "workosOrgIDIn", "workosOrgIDNotIn", "workosOrgIDGT", "workosOrgIDGTE", "workosOrgIDLT", "workosOrgIDLTE", "workosOrgIDContains", "workosOrgIDHasPrefix", "workosOrgIDHasSuffix", "workosOrgIDIsNil", "workosOrgIDNotNil", "workosOrgIDEqualFold", "workosOrgIDContainsFold", "hasSubscription", "hasSubscriptionWith", "hasLedgerEntries", "hasLedgerEntriesWith", "hasLlmUsages", "hasLlmUsagesWith", "hasOauthConnections", "hasOauthConnectionsWith", "hasMcpConnections", "hasMcpConnectionsWith", "hasBackgroundTasks", "hasBackgroundTasksWith", "hasBackgroundTaskArtifacts", "hasBackgroundTaskArtifactsWith", "hasBackgroundTaskRuns", "hasBackgroundTaskRunsWith", "hasBackgroundTaskRunEvents", "hasBackgroundTaskRunEventsWith", "hasBackgroundTaskScheduleStates", "hasBackgroundTaskScheduleStatesWith", "hasCloudEvents", "hasCloudEventsWith", "hasGoogleWatches", "hasGoogleWatchesWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailIsNil", "emailNotNil", "emailEqualFold", "emailContainsFold", "workosUserID", "workosUserIDNEQ", "workosUserIDIn", "workosUserIDNotIn", "workosUserIDGT", "workosUserIDGTE", "workosUserIDLT", "workosUserIDLTE", "workosUserIDContains", "workosUserIDHasPrefix", "workosUserIDHasSuffix", "workosUserIDEqualFold", "workosUserIDContainsFold", "workosOrgID", "workosOrgIDNEQ", "workosOrgIDIn", "workosOrgIDNotIn", "workosOrgIDGT", "workosOrgIDGTE", "workosOrgIDLT", "workosOrgIDLTE", "workosOrgIDContains", "workosOrgIDHasPrefix", "workosOrgIDHasSuffix", "workosOrgIDIsNil", "workosOrgIDNotNil", "workosOrgIDEqualFold", "workosOrgIDContainsFold", "hasSubscription", "hasSubscriptionWith", "hasLedgerEntries", "hasLedgerEntriesWith", "hasMeetingMinuteUsages", "hasMeetingMinuteUsagesWith", "hasLlmUsages", "hasLlmUsagesWith", "hasOauthConnections", "hasOauthConnectionsWith", "hasMcpConnections", "hasMcpConnectionsWith", "hasBackgroundTasks", "hasBackgroundTasksWith", "hasBackgroundTaskArtifacts", "hasBackgroundTaskArtifactsWith", "hasBackgroundTaskRuns", "hasBackgroundTaskRunsWith", "hasBackgroundTaskRunEvents", "hasBackgroundTaskRunEventsWith", "hasBackgroundTaskScheduleStates", "hasBackgroundTaskScheduleStatesWith", "hasCloudEvents", "hasCloudEventsWith", "hasGoogleWatches", "hasGoogleWatchesWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -24631,6 +25345,20 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.HasLedgerEntriesWith = data
+		case "hasMeetingMinuteUsages":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasMeetingMinuteUsages"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasMeetingMinuteUsages = data
+		case "hasMeetingMinuteUsagesWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasMeetingMinuteUsagesWith"))
+			data, err := ec.unmarshalOMeetingMinuteUsageWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsageWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasMeetingMinuteUsagesWith = data
 		case "hasLlmUsages":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLlmUsages"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -24799,6 +25527,11 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._OAuthConnection(ctx, sel, obj)
+	case *ent.MeetingMinuteUsage:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._MeetingMinuteUsage(ctx, sel, obj)
 	case *ent.MCPConnection:
 		if obj == nil {
 			return graphql.Null
@@ -27417,6 +28150,106 @@ func (ec *executionContext) _MCPConnectionEdge(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var meetingMinuteUsageImplementors = []string{"MeetingMinuteUsage", "Node"}
+
+func (ec *executionContext) _MeetingMinuteUsage(ctx context.Context, sel ast.SelectionSet, obj *ent.MeetingMinuteUsage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, meetingMinuteUsageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MeetingMinuteUsage")
+		case "id":
+			out.Values[i] = ec._MeetingMinuteUsage_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._MeetingMinuteUsage_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._MeetingMinuteUsage_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "period":
+			out.Values[i] = ec._MeetingMinuteUsage_period(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "usedSeconds":
+			out.Values[i] = ec._MeetingMinuteUsage_usedSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "reservedSeconds":
+			out.Values[i] = ec._MeetingMinuteUsage_reservedSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MeetingMinuteUsage_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var oAuthConnectionImplementors = []string{"OAuthConnection", "Node"}
 
 func (ec *executionContext) _OAuthConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.OAuthConnection) graphql.Marshaler {
@@ -28034,6 +28867,39 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_ledgerEntries(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "meetingMinuteUsages":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_meetingMinuteUsages(ctx, field, obj)
 				return res
 			}
 
@@ -29215,6 +30081,21 @@ func (ec *executionContext) unmarshalNMCPConnectionWhereInput2ᚖgithubᚗcomᚋ
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNMeetingMinuteUsage2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsage(ctx context.Context, sel ast.SelectionSet, v *ent.MeetingMinuteUsage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MeetingMinuteUsage(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNMeetingMinuteUsageWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsageWhereInput(ctx context.Context, v any) (*ent.MeetingMinuteUsageWhereInput, error) {
+	res, err := ec.unmarshalInputMeetingMinuteUsageWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNNode2ᚕgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐNoder(ctx context.Context, sel ast.SelectionSet, v []ent.Noder) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -30364,6 +31245,51 @@ func (ec *executionContext) unmarshalOMCPConnectionWhereInput2ᚖgithubᚗcomᚋ
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputMCPConnectionWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMeetingMinuteUsage2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsageᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.MeetingMinuteUsage) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNMeetingMinuteUsage2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsage(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOMeetingMinuteUsageWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsageWhereInputᚄ(ctx context.Context, v any) ([]*ent.MeetingMinuteUsageWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.MeetingMinuteUsageWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNMeetingMinuteUsageWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsageWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOMeetingMinuteUsageWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMeetingMinuteUsageWhereInput(ctx context.Context, v any) (*ent.MeetingMinuteUsageWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputMeetingMinuteUsageWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

@@ -344,7 +344,14 @@ func (a *Activities) ExecuteAPITask(ctx context.Context, in StartInput) (RunOutp
 	}
 	var llmClient backgroundtaskruntime.LLMClient
 	if a.LLM != nil && task.Edges.User != nil {
-		llmClient = backgroundtaskruntime.NewGatewayLLM(a.LLM, task.Edges.User, model, in.Slug, in.RunID)
+		// Seed the LLM idempotency anchor with the activity attempt so a
+		// Temporal retry reserves fresh instead of dying on replay of the
+		// prior attempt's settled charges.
+		attempt := 1
+		if activity.IsActivity(ctx) {
+			attempt = int(activity.GetInfo(ctx).Attempt)
+		}
+		llmClient = backgroundtaskruntime.NewGatewayLLM(a.LLM, task.Edges.User, model, in.Slug, in.RunID, attempt)
 	}
 
 	out, err := a.Runtime.Execute(ctx, backgroundtaskruntime.RunInput{

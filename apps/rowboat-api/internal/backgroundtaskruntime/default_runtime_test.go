@@ -3,6 +3,7 @@ package backgroundtaskruntime
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -228,4 +229,112 @@ func containsStr(haystack []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+// TestLoopEmptyFinalPreservesArtifact: a run that ends with no tool calls and
+// empty content must NOT overwrite the prior artifact — and still succeeds.
+func TestLoopEmptyFinalPreservesArtifact(t *testing.T) {
+	store := &fakeArtifactStore{body: "# Prior artifact\n\nValuable content."}
+	sink := &fakeEventSink{}
+	llm := newFakeLLM(assistantTurn(""))
+	out, err := NewDefault().Execute(context.Background(), baseInput(llm, store, sink))
+	if err != nil {
+		t.Fatalf("empty final must not fail the run: %v", err)
+	}
+	if len(store.writes) != 0 {
+		t.Fatalf("writes = %v, want none (prior artifact preserved)", store.writes)
+	}
+	if store.body != "# Prior artifact\n\nValuable content." {
+		t.Fatalf("prior artifact mutated: %q", store.body)
+	}
+	if out.Summary == "" {
+		t.Fatal("summary fallback missing")
+	}
+	if containsStr(sink.types(), eventArtifactUpdated) {
+		t.Fatal("must not emit artifact_updated when the artifact is untouched")
+	}
+}
+
+// TestLoopDeadlineDuringToolClassified: a tool that dies on the runtime
+// deadline must classify as runtime_deadline_exceeded, not surface as a
+// tool/db error (whose retry would then die on request-id replay).
+func TestLoopDeadlineDuringToolClassified(t *testing.T) {
+	slowTool := &ctxBoundTool{name: "run_history.read"}
+	llm := newFakeLLM(toolCallTurn("c1", "run_history.read", `{}`), assistantTurn("unreached"))
+	in := baseInput(llm, &fakeArtifactStore{}, &fakeEventSink{}, slowTool)
+	in.Limits.MaxDuration = 80 * time.Millisecond
+	_, err := NewDefault().Execute(context.Background(), in)
+	re, ok := AsRuntimeError(err)
+	if !ok || re.Code != CodeRuntimeDeadlineExceeded {
+		t.Fatalf("err = %v, want %s", err, CodeRuntimeDeadlineExceeded)
+	}
+}
+
+// ctxBoundTool blocks until the invocation ctx dies, then returns its error
+// wrapped — like a real connector tool's HTTP call would.
+type ctxBoundTool struct{ name string }
+
+func (c *ctxBoundTool) Name() string                { return c.name }
+func (c *ctxBoundTool) Description() string         { return "blocks until ctx death" }
+func (c *ctxBoundTool) JSONSchema() json.RawMessage { return json.RawMessage(`{"type":"object"}`) }
+func (c *ctxBoundTool) Invoke(ctx context.Context, _ ToolScope, _ json.RawMessage) (json.RawMessage, error) {
+	<-ctx.Done()
+	return nil, fmt.Errorf("gmail search: %w", ctx.Err())
+}
+
+// TestTruncateToolResultEnvelope: oversize results become a VALID JSON
+// envelope with an explicit truncation marker, never a silent mid-JSON cut.
+func TestTruncateToolResultEnvelope(t *testing.T) {
+	small := []byte(`{"ok":true}`)
+	if got := truncateToolResult(small, 100); got != `{"ok":true}` {
+		t.Fatalf("small result altered: %s", got)
+	}
+
+	big := []byte(`{"messages":["` + strings.Repeat("x", 5000) + `"]}`)
+	got := truncateToolResult(big, 1024)
+	if !json.Valid([]byte(got)) {
+		t.Fatalf("envelope is not valid JSON: %s", got[:120])
+	}
+	var env struct {
+		Truncated  bool   `json:"truncated"`
+		TotalBytes int    `json:"totalBytes"`
+		Prefix     string `json:"prefix"`
+	}
+	if err := json.Unmarshal([]byte(got), &env); err != nil || !env.Truncated || env.TotalBytes != len(big) || env.Prefix == "" {
+		t.Fatalf("envelope = %+v err = %v", env, err)
+	}
+}
+
+// TestArtifactReadGetsLargerBudget: artifact.read results are capped at the
+// dedicated artifact budget, not the generic 16 KiB tool cap.
+func TestArtifactReadGetsLargerBudget(t *testing.T) {
+	if resultCap("artifact.read") != artifactResultCap || resultCap("connector.read.gmail") != toolResultCap {
+		t.Fatalf("resultCap mapping wrong: %d/%d", resultCap("artifact.read"), resultCap("connector.read.gmail"))
+	}
+	body := strings.Repeat("y", 100<<10)
+	raw, _ := json.Marshal(map[string]string{"body": body, "contentType": "text/markdown"})
+	if got := truncateToolResult(raw, resultCap("artifact.read")); got != string(raw) {
+		t.Fatal("100KiB artifact.read result must not be truncated")
+	}
+}
+
+// TestLoopArtifactTooLargeReportsRealSize: the limit_exceeded event carries
+// the actual staged size, not flush()'s zero return.
+func TestLoopArtifactTooLargeReportsRealSize(t *testing.T) {
+	sink := &fakeEventSink{}
+	in := baseInput(newFakeLLM(assistantTurn(strings.Repeat("x", 2048))), &fakeArtifactStore{}, sink)
+	in.Limits.MaxArtifactBytes = 1024
+	_, err := NewDefault().Execute(context.Background(), in)
+	if re, ok := AsRuntimeError(err); !ok || re.Code != CodeRuntimeArtifactTooLarge {
+		t.Fatalf("err = %v", err)
+	}
+	for _, rec := range sink.records {
+		if rec.EventType == eventLimitExceeded {
+			if v, ok := rec.Payload["value"].(int); !ok || v != 2048 {
+				t.Fatalf("limit event value = %v, want 2048", rec.Payload["value"])
+			}
+			return
+		}
+	}
+	t.Fatal("limit_exceeded event missing")
 }
