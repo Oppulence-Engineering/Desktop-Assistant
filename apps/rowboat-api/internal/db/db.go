@@ -54,6 +54,15 @@ func Open(ctx context.Context, cfg appconfig.Config, log *zap.Logger) (*DB, erro
 	if dlct == dialect.SQLite {
 		// SQLite is single-writer; a connection pool causes "database is locked".
 		sqlDB.SetMaxOpenConns(1)
+	} else {
+		// Postgres (pgx) over database/sql defaults to MaxOpenConns=0 (unlimited)
+		// and ConnMaxLifetime=0 (connections never recycled), which can exhaust
+		// the server's connection slots and pin stale connections. Bound the pool
+		// and recycle connections so usage stays predictable.
+		sqlDB.SetMaxOpenConns(20)
+		sqlDB.SetMaxIdleConns(10)
+		sqlDB.SetConnMaxLifetime(30 * time.Minute)
+		sqlDB.SetConnMaxIdleTime(5 * time.Minute)
 	}
 
 	base := entsql.OpenDB(dlct, sqlDB)

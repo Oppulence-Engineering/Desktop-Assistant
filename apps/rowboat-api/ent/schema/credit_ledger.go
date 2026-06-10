@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"time"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
@@ -22,7 +22,7 @@ func (CreditLedger) Fields() []ent.Field {
 		// llm_call | llm_call_reserve | llm_settle | voice_tts | exa_search | grant | refund
 		field.String("reason"),
 		field.UUID("request_id", uuid.UUID{}), // idempotency anchor
-		field.Time("ts").Default(time.Now).Immutable(),
+		field.Time("ts").Default(mixin.UTCNow).Immutable(),
 	}
 }
 
@@ -42,5 +42,12 @@ func (CreditLedger) Indexes() []ent.Index {
 		// must be on (request_id, reason): each phase is independently
 		// idempotent and retry-safe, while still preventing double-writes.
 		index.Fields("request_id", "reason").Unique(),
+		// Per-user balance index on the user FK. credits.LedgerSum runs
+		// SUM(delta) scoped to one user on EVERY metered call; without this the
+		// query sequentially scans the append-only ledger, whose size grows
+		// without bound. (ent orders fields before edges, so this is a single
+		// user_id-leading index — exactly what the per-user scan needs; the
+		// ts-range period queries reuse it for the user equality.)
+		index.Edges("user"),
 	}
 }

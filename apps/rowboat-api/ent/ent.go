@@ -16,11 +16,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
@@ -88,22 +92,26 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			backgroundtask.Table:         backgroundtask.ValidColumn,
-			backgroundtaskartifact.Table: backgroundtaskartifact.ValidColumn,
-			backgroundtaskrun.Table:      backgroundtaskrun.ValidColumn,
-			backgroundtaskrunevent.Table: backgroundtaskrunevent.ValidColumn,
-			creditledger.Table:           creditledger.ValidColumn,
-			llmusage.Table:               llmusage.ValidColumn,
-			llmusagehistory.Table:        llmusagehistory.ValidColumn,
-			mcpconnection.Table:          mcpconnection.ValidColumn,
-			mcpconnectionhistory.Table:   mcpconnectionhistory.ValidColumn,
-			oauthconnection.Table:        oauthconnection.ValidColumn,
-			oauthconnectionhistory.Table: oauthconnectionhistory.ValidColumn,
-			oauthpending.Table:           oauthpending.ValidColumn,
-			subscription.Table:           subscription.ValidColumn,
-			subscriptionhistory.Table:    subscriptionhistory.ValidColumn,
-			user.Table:                   user.ValidColumn,
-			userhistory.Table:            userhistory.ValidColumn,
+			backgroundtask.Table:              backgroundtask.ValidColumn,
+			backgroundtaskartifact.Table:      backgroundtaskartifact.ValidColumn,
+			backgroundtaskrun.Table:           backgroundtaskrun.ValidColumn,
+			backgroundtaskrunevent.Table:      backgroundtaskrunevent.ValidColumn,
+			backgroundtaskschedulestate.Table: backgroundtaskschedulestate.ValidColumn,
+			cloudevent.Table:                  cloudevent.ValidColumn,
+			creditledger.Table:                creditledger.ValidColumn,
+			googlewatch.Table:                 googlewatch.ValidColumn,
+			llmusage.Table:                    llmusage.ValidColumn,
+			llmusagehistory.Table:             llmusagehistory.ValidColumn,
+			mcpconnection.Table:               mcpconnection.ValidColumn,
+			mcpconnectionhistory.Table:        mcpconnectionhistory.ValidColumn,
+			meetingminuteusage.Table:          meetingminuteusage.ValidColumn,
+			oauthconnection.Table:             oauthconnection.ValidColumn,
+			oauthconnectionhistory.Table:      oauthconnectionhistory.ValidColumn,
+			oauthpending.Table:                oauthpending.ValidColumn,
+			subscription.Table:                subscription.ValidColumn,
+			subscriptionhistory.Table:         subscriptionhistory.ValidColumn,
+			user.Table:                        user.ValidColumn,
+			userhistory.Table:                 userhistory.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

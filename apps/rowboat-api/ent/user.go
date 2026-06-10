@@ -41,6 +41,8 @@ type UserEdges struct {
 	Subscription *Subscription `json:"subscription,omitempty"`
 	// LedgerEntries holds the value of the ledger_entries edge.
 	LedgerEntries []*CreditLedger `json:"ledger_entries,omitempty"`
+	// MeetingMinuteUsages holds the value of the meeting_minute_usages edge.
+	MeetingMinuteUsages []*MeetingMinuteUsage `json:"meeting_minute_usages,omitempty"`
 	// LlmUsages holds the value of the llm_usages edge.
 	LlmUsages []*LLMUsage `json:"llm_usages,omitempty"`
 	// OauthConnections holds the value of the oauth_connections edge.
@@ -55,20 +57,30 @@ type UserEdges struct {
 	BackgroundTaskRuns []*BackgroundTaskRun `json:"background_task_runs,omitempty"`
 	// BackgroundTaskRunEvents holds the value of the background_task_run_events edge.
 	BackgroundTaskRunEvents []*BackgroundTaskRunEvent `json:"background_task_run_events,omitempty"`
+	// BackgroundTaskScheduleStates holds the value of the background_task_schedule_states edge.
+	BackgroundTaskScheduleStates []*BackgroundTaskScheduleState `json:"background_task_schedule_states,omitempty"`
+	// CloudEvents holds the value of the cloud_events edge.
+	CloudEvents []*CloudEvent `json:"cloud_events,omitempty"`
+	// GoogleWatches holds the value of the google_watches edge.
+	GoogleWatches []*GoogleWatch `json:"google_watches,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [9]bool
+	loadedTypes [13]bool
 	// totalCount holds the count of the edges above.
-	totalCount [9]map[string]int
+	totalCount [13]map[string]int
 
-	namedLedgerEntries           map[string][]*CreditLedger
-	namedLlmUsages               map[string][]*LLMUsage
-	namedOauthConnections        map[string][]*OAuthConnection
-	namedMcpConnections          map[string][]*MCPConnection
-	namedBackgroundTasks         map[string][]*BackgroundTask
-	namedBackgroundTaskArtifacts map[string][]*BackgroundTaskArtifact
-	namedBackgroundTaskRuns      map[string][]*BackgroundTaskRun
-	namedBackgroundTaskRunEvents map[string][]*BackgroundTaskRunEvent
+	namedLedgerEntries                map[string][]*CreditLedger
+	namedMeetingMinuteUsages          map[string][]*MeetingMinuteUsage
+	namedLlmUsages                    map[string][]*LLMUsage
+	namedOauthConnections             map[string][]*OAuthConnection
+	namedMcpConnections               map[string][]*MCPConnection
+	namedBackgroundTasks              map[string][]*BackgroundTask
+	namedBackgroundTaskArtifacts      map[string][]*BackgroundTaskArtifact
+	namedBackgroundTaskRuns           map[string][]*BackgroundTaskRun
+	namedBackgroundTaskRunEvents      map[string][]*BackgroundTaskRunEvent
+	namedBackgroundTaskScheduleStates map[string][]*BackgroundTaskScheduleState
+	namedCloudEvents                  map[string][]*CloudEvent
+	namedGoogleWatches                map[string][]*GoogleWatch
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -91,10 +103,19 @@ func (e UserEdges) LedgerEntriesOrErr() ([]*CreditLedger, error) {
 	return nil, &NotLoadedError{edge: "ledger_entries"}
 }
 
+// MeetingMinuteUsagesOrErr returns the MeetingMinuteUsages value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) MeetingMinuteUsagesOrErr() ([]*MeetingMinuteUsage, error) {
+	if e.loadedTypes[2] {
+		return e.MeetingMinuteUsages, nil
+	}
+	return nil, &NotLoadedError{edge: "meeting_minute_usages"}
+}
+
 // LlmUsagesOrErr returns the LlmUsages value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) LlmUsagesOrErr() ([]*LLMUsage, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.LlmUsages, nil
 	}
 	return nil, &NotLoadedError{edge: "llm_usages"}
@@ -103,7 +124,7 @@ func (e UserEdges) LlmUsagesOrErr() ([]*LLMUsage, error) {
 // OauthConnectionsOrErr returns the OauthConnections value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) OauthConnectionsOrErr() ([]*OAuthConnection, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.OauthConnections, nil
 	}
 	return nil, &NotLoadedError{edge: "oauth_connections"}
@@ -112,7 +133,7 @@ func (e UserEdges) OauthConnectionsOrErr() ([]*OAuthConnection, error) {
 // McpConnectionsOrErr returns the McpConnections value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) McpConnectionsOrErr() ([]*MCPConnection, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.McpConnections, nil
 	}
 	return nil, &NotLoadedError{edge: "mcp_connections"}
@@ -121,7 +142,7 @@ func (e UserEdges) McpConnectionsOrErr() ([]*MCPConnection, error) {
 // BackgroundTasksOrErr returns the BackgroundTasks value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTasksOrErr() ([]*BackgroundTask, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.BackgroundTasks, nil
 	}
 	return nil, &NotLoadedError{edge: "background_tasks"}
@@ -130,7 +151,7 @@ func (e UserEdges) BackgroundTasksOrErr() ([]*BackgroundTask, error) {
 // BackgroundTaskArtifactsOrErr returns the BackgroundTaskArtifacts value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskArtifactsOrErr() ([]*BackgroundTaskArtifact, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.BackgroundTaskArtifacts, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_artifacts"}
@@ -139,7 +160,7 @@ func (e UserEdges) BackgroundTaskArtifactsOrErr() ([]*BackgroundTaskArtifact, er
 // BackgroundTaskRunsOrErr returns the BackgroundTaskRuns value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskRunsOrErr() ([]*BackgroundTaskRun, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[8] {
 		return e.BackgroundTaskRuns, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_runs"}
@@ -148,10 +169,37 @@ func (e UserEdges) BackgroundTaskRunsOrErr() ([]*BackgroundTaskRun, error) {
 // BackgroundTaskRunEventsOrErr returns the BackgroundTaskRunEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskRunEventsOrErr() ([]*BackgroundTaskRunEvent, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[9] {
 		return e.BackgroundTaskRunEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_run_events"}
+}
+
+// BackgroundTaskScheduleStatesOrErr returns the BackgroundTaskScheduleStates value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) BackgroundTaskScheduleStatesOrErr() ([]*BackgroundTaskScheduleState, error) {
+	if e.loadedTypes[10] {
+		return e.BackgroundTaskScheduleStates, nil
+	}
+	return nil, &NotLoadedError{edge: "background_task_schedule_states"}
+}
+
+// CloudEventsOrErr returns the CloudEvents value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CloudEventsOrErr() ([]*CloudEvent, error) {
+	if e.loadedTypes[11] {
+		return e.CloudEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "cloud_events"}
+}
+
+// GoogleWatchesOrErr returns the GoogleWatches value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GoogleWatchesOrErr() ([]*GoogleWatch, error) {
+	if e.loadedTypes[12] {
+		return e.GoogleWatches, nil
+	}
+	return nil, &NotLoadedError{edge: "google_watches"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -239,6 +287,11 @@ func (_m *User) QueryLedgerEntries() *CreditLedgerQuery {
 	return NewUserClient(_m.config).QueryLedgerEntries(_m)
 }
 
+// QueryMeetingMinuteUsages queries the "meeting_minute_usages" edge of the User entity.
+func (_m *User) QueryMeetingMinuteUsages() *MeetingMinuteUsageQuery {
+	return NewUserClient(_m.config).QueryMeetingMinuteUsages(_m)
+}
+
 // QueryLlmUsages queries the "llm_usages" edge of the User entity.
 func (_m *User) QueryLlmUsages() *LLMUsageQuery {
 	return NewUserClient(_m.config).QueryLlmUsages(_m)
@@ -272,6 +325,21 @@ func (_m *User) QueryBackgroundTaskRuns() *BackgroundTaskRunQuery {
 // QueryBackgroundTaskRunEvents queries the "background_task_run_events" edge of the User entity.
 func (_m *User) QueryBackgroundTaskRunEvents() *BackgroundTaskRunEventQuery {
 	return NewUserClient(_m.config).QueryBackgroundTaskRunEvents(_m)
+}
+
+// QueryBackgroundTaskScheduleStates queries the "background_task_schedule_states" edge of the User entity.
+func (_m *User) QueryBackgroundTaskScheduleStates() *BackgroundTaskScheduleStateQuery {
+	return NewUserClient(_m.config).QueryBackgroundTaskScheduleStates(_m)
+}
+
+// QueryCloudEvents queries the "cloud_events" edge of the User entity.
+func (_m *User) QueryCloudEvents() *CloudEventQuery {
+	return NewUserClient(_m.config).QueryCloudEvents(_m)
+}
+
+// QueryGoogleWatches queries the "google_watches" edge of the User entity.
+func (_m *User) QueryGoogleWatches() *GoogleWatchQuery {
+	return NewUserClient(_m.config).QueryGoogleWatches(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -336,6 +404,30 @@ func (_m *User) appendNamedLedgerEntries(name string, edges ...*CreditLedger) {
 		_m.Edges.namedLedgerEntries[name] = []*CreditLedger{}
 	} else {
 		_m.Edges.namedLedgerEntries[name] = append(_m.Edges.namedLedgerEntries[name], edges...)
+	}
+}
+
+// NamedMeetingMinuteUsages returns the MeetingMinuteUsages named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedMeetingMinuteUsages(name string) ([]*MeetingMinuteUsage, error) {
+	if _m.Edges.namedMeetingMinuteUsages == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedMeetingMinuteUsages[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedMeetingMinuteUsages(name string, edges ...*MeetingMinuteUsage) {
+	if _m.Edges.namedMeetingMinuteUsages == nil {
+		_m.Edges.namedMeetingMinuteUsages = make(map[string][]*MeetingMinuteUsage)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedMeetingMinuteUsages[name] = []*MeetingMinuteUsage{}
+	} else {
+		_m.Edges.namedMeetingMinuteUsages[name] = append(_m.Edges.namedMeetingMinuteUsages[name], edges...)
 	}
 }
 
@@ -504,6 +596,78 @@ func (_m *User) appendNamedBackgroundTaskRunEvents(name string, edges ...*Backgr
 		_m.Edges.namedBackgroundTaskRunEvents[name] = []*BackgroundTaskRunEvent{}
 	} else {
 		_m.Edges.namedBackgroundTaskRunEvents[name] = append(_m.Edges.namedBackgroundTaskRunEvents[name], edges...)
+	}
+}
+
+// NamedBackgroundTaskScheduleStates returns the BackgroundTaskScheduleStates named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedBackgroundTaskScheduleStates(name string) ([]*BackgroundTaskScheduleState, error) {
+	if _m.Edges.namedBackgroundTaskScheduleStates == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedBackgroundTaskScheduleStates[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedBackgroundTaskScheduleStates(name string, edges ...*BackgroundTaskScheduleState) {
+	if _m.Edges.namedBackgroundTaskScheduleStates == nil {
+		_m.Edges.namedBackgroundTaskScheduleStates = make(map[string][]*BackgroundTaskScheduleState)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedBackgroundTaskScheduleStates[name] = []*BackgroundTaskScheduleState{}
+	} else {
+		_m.Edges.namedBackgroundTaskScheduleStates[name] = append(_m.Edges.namedBackgroundTaskScheduleStates[name], edges...)
+	}
+}
+
+// NamedCloudEvents returns the CloudEvents named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedCloudEvents(name string) ([]*CloudEvent, error) {
+	if _m.Edges.namedCloudEvents == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCloudEvents[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedCloudEvents(name string, edges ...*CloudEvent) {
+	if _m.Edges.namedCloudEvents == nil {
+		_m.Edges.namedCloudEvents = make(map[string][]*CloudEvent)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCloudEvents[name] = []*CloudEvent{}
+	} else {
+		_m.Edges.namedCloudEvents[name] = append(_m.Edges.namedCloudEvents[name], edges...)
+	}
+}
+
+// NamedGoogleWatches returns the GoogleWatches named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedGoogleWatches(name string) ([]*GoogleWatch, error) {
+	if _m.Edges.namedGoogleWatches == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedGoogleWatches[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedGoogleWatches(name string, edges ...*GoogleWatch) {
+	if _m.Edges.namedGoogleWatches == nil {
+		_m.Edges.namedGoogleWatches = make(map[string][]*GoogleWatch)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedGoogleWatches[name] = []*GoogleWatch{}
+	} else {
+		_m.Edges.namedGoogleWatches[name] = append(_m.Edges.namedGoogleWatches[name], edges...)
 	}
 }
 

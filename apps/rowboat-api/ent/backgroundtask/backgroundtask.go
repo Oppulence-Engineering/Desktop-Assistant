@@ -57,6 +57,8 @@ const (
 	EdgeRuns = "runs"
 	// EdgeRunEvents holds the string denoting the run_events edge name in mutations.
 	EdgeRunEvents = "run_events"
+	// EdgeScheduleStates holds the string denoting the schedule_states edge name in mutations.
+	EdgeScheduleStates = "schedule_states"
 	// Table holds the table name of the backgroundtask in the database.
 	Table = "background_tasks"
 	// UserTable is the table that holds the user relation/edge.
@@ -87,6 +89,13 @@ const (
 	RunEventsInverseTable = "background_task_run_events"
 	// RunEventsColumn is the table column denoting the run_events relation/edge.
 	RunEventsColumn = "background_task_id"
+	// ScheduleStatesTable is the table that holds the schedule_states relation/edge.
+	ScheduleStatesTable = "background_task_schedule_states"
+	// ScheduleStatesInverseTable is the table name for the BackgroundTaskScheduleState entity.
+	// It exists in this package in order to avoid circular dependency with the "backgroundtaskschedulestate" package.
+	ScheduleStatesInverseTable = "background_task_schedule_states"
+	// ScheduleStatesColumn is the table column denoting the schedule_states relation/edge.
+	ScheduleStatesColumn = "background_task_id"
 )
 
 // Columns holds all SQL columns for backgroundtask fields.
@@ -295,6 +304,20 @@ func ByRunEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newRunEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByScheduleStatesCount orders the results by schedule_states count.
+func ByScheduleStatesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newScheduleStatesStep(), opts...)
+	}
+}
+
+// ByScheduleStates orders the results by schedule_states terms.
+func ByScheduleStates(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newScheduleStatesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -321,5 +344,12 @@ func newRunEventsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RunEventsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RunEventsTable, RunEventsColumn),
+	)
+}
+func newScheduleStatesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ScheduleStatesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ScheduleStatesTable, ScheduleStatesColumn),
 	)
 }

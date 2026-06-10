@@ -54,6 +54,7 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("subscription", Subscription.Type).Unique().Annotations(entproto.Skip()),
 		edge.To("ledger_entries", CreditLedger.Type).Annotations(entproto.Skip()),
+		edge.To("meeting_minute_usages", MeetingMinuteUsage.Type).Annotations(entproto.Skip()),
 		edge.To("llm_usages", LLMUsage.Type).Annotations(entproto.Skip()),
 		edge.To("oauth_connections", OAuthConnection.Type).Annotations(entproto.Skip()),
 		edge.To("mcp_connections", MCPConnection.Type).Annotations(entproto.Skip()),
@@ -61,5 +62,8 @@ func (User) Edges() []ent.Edge {
 		edge.To("background_task_artifacts", BackgroundTaskArtifact.Type).Annotations(entproto.Skip()),
 		edge.To("background_task_runs", BackgroundTaskRun.Type).Annotations(entproto.Skip()),
 		edge.To("background_task_run_events", BackgroundTaskRunEvent.Type).Annotations(entproto.Skip()),
+		edge.To("background_task_schedule_states", BackgroundTaskScheduleState.Type).Annotations(entproto.Skip()),
+		edge.To("cloud_events", CloudEvent.Type).Annotations(entproto.Skip()),
+		edge.To("google_watches", GoogleWatch.Type).Annotations(entproto.Skip()),
 	}
 }

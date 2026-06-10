@@ -1,0 +1,9 @@
+# Built whisper-cli binaries are CI artifacts, not committed to git.
+# The whisper-build workflow produces them and the release job stages the
+# matching arch into vendor/whisper/<platform>-<arch>/ before packaging.
+out/
+darwin-arm64/
+darwin-x64/
+win32-x64/
+linux-x64/
+linux-arm64/

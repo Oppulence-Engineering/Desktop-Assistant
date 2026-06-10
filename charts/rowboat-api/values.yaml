@@ -14,6 +14,20 @@ worker:
       cpu: "1"
       memory: 512Mi
 
+# API-owned scheduler (RFC 001). Disabled by default; enable per-environment.
+# replicaCount > 1 is safe: the RFC 002 durable schedule-state lease gives
+# cross-replica at-most-once firing. Default 1 is sufficient for current scale.
+scheduler:
+  enabled: false
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: "500m"
+      memory: 256Mi
+
 image:
   repository: ghcr.io/oppulence-engineering/rowboat-api
   pullPolicy: IfNotPresent
@@ -186,11 +200,54 @@ config:
   GRAPHQL_INTROSPECTION_ENABLED: "false"
   GRAPHQL_MAX_COMPLEXITY: "250"
   GRAPHQL_MAX_DEPTH: "12"
+  # Plain (plain.com) feedback relay. Label type ids are workspace data; these
+  # are the "Solomon AI" Plain workspace's label types mapped per category
+  # (bug→Bug, feature→Feature Request, question→Support, other→General). There
+  # is a single Plain workspace, so staging/prod share these ids. Unmapped
+  # categories submit unlabelled. PLAIN_API_KEY comes from Infisical.
+  PLAIN_API_URL: https://core-api.uk.plain.com/graphql/v1
+  PLAIN_LABEL_TYPE_IDS: '{"bug":"lt_01JN2Y0T823VHEYPD9KX3YA3XZ","feature":"lt_01HXTDSYX6SG3V7YB8CNB0YZB5","question":"lt_01JN2Y1BFY6FXD90REETNPWFJA","other":"lt_01JN2Y280HG5F8BH33Q1CDN7E7"}'
+  PLAIN_TITLE_PREFIX: ""
   TEMPORAL_ENABLED: "false"
   TEMPORAL_ADDRESS: temporal-frontend.temporal:7233
   TEMPORAL_NAMESPACE: default
   TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
   TEMPORAL_WORKER_ENABLED: "false"
+  # Cloud scheduler (RFC 001). CLOUD_SCHEDULER_ENABLED stays false in the shared
+  # configmap so only the scheduler Deployment (which sets it true on its own
+  # pod) runs the loop; the rest are tunable defaults.
+  CLOUD_SCHEDULER_ENABLED: "false"
+  CLOUD_SCHEDULER_INTERVAL: 15s
+  CLOUD_SCHEDULER_LEASE_TTL: 150s
+  CLOUD_SCHEDULER_TIMEZONE: UTC
+  # Cloud event ingestion + routing (RFC 003). Ingestion endpoints are always
+  # mounted; routing (the Temporal workflow matching events to tasks) is gated
+  # and requires TEMPORAL_ENABLED=true.
+  CLOUD_EVENTS_ROUTING_ENABLED: "false"
+  CLOUD_EVENTS_MATCH_THRESHOLD: "0.7"
+  CLOUD_EVENTS_ROUTER_MODEL: anthropic/claude-haiku-4-5
+  CLOUD_EVENTS_MAX_PAYLOAD_BYTES: "262144"
+  # Google watch manager (RFC 003): registers/renews Gmail + Calendar push
+  # subscriptions in the scheduler pod. Requires GOOGLE_WEBHOOK_TOKEN and (for
+  # Gmail) GMAIL_PUBSUB_TOPIC, whose push subscription must target
+  # /v1/webhooks/google?token=<GOOGLE_WEBHOOK_TOKEN>. GCP-side provisioning:
+  # apps/rfc/019-google-push-infrastructure.md.
+  GOOGLE_WATCH_ENABLED: "false"
+  GMAIL_PUBSUB_TOPIC: ""
+  GOOGLE_WATCH_INTERVAL: 15m
+  GOOGLE_WATCH_RENEW_MARGIN: 24h
+  # Cloud agent runtime (RFC 004): the LLM-backed, tool-scoped agent loop the
+  # Temporal worker's ExecuteAPITask delegates to. Enabled by default;
+  # flipping CLOUD_RUNTIME_ENABLED to "false" is the rollback to the
+  # deterministic-artifact NoopRuntime. MAX_DURATION must stay strictly under
+  # the 5m Temporal activity timeout (boot validation enforces it).
+  CLOUD_RUNTIME_ENABLED: "true"
+  CLOUD_RUNTIME_MODEL: anthropic/claude-sonnet-4-5
+  CLOUD_RUNTIME_MAX_DURATION: 4m
+  CLOUD_RUNTIME_MAX_LLM_CALLS: "12"
+  CLOUD_RUNTIME_MAX_TOOL_CALLS: "24"
+  CLOUD_RUNTIME_MAX_ARTIFACT_BYTES: "1048576"
+  CLOUD_RUNTIME_MAX_EVENT_BYTES: "65536"
 
 # Secret env. In production these are projected from an existing Secret
 # (existingSecret) rather than templated into the chart. When existingSecret is
@@ -203,7 +260,12 @@ secretValues: {}
   # WORKOS_API_KEY: ""
   # HOOK_HMAC_SECRET: ""
   # INTERNAL_API_SECRET: ""
+  # SLACK_SIGNING_SECRET: ""
+  # GOOGLE_WEBHOOK_TOKEN: ""
+  # SLACK_CLIENT_ID: ""
+  # SLACK_CLIENT_SECRET: ""
   # ORY_BROKER_CLIENT_ID: ""
   # ORY_BROKER_CLIENT_SECRET: ""
   # INFISICAL_TOKEN: ""
   # INFISICAL_PROJECT_ID: ""
+  # PLAIN_API_KEY: ""

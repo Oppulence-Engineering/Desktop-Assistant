@@ -35,7 +35,13 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := randomState()
+	state, err := randomState()
+	if err != nil {
+		// crypto/rand failed: fail closed rather than emit a predictable state.
+		h.log.Error("google start: generate state", zap.Error(err))
+		h.errorPage(w, http.StatusInternalServerError, "Could not start sign-in.")
+		return
+	}
 	// Park the issued state (empty payload) so the callback can validate it and
 	// so an abandoned flow is swept by the row's TTL.
 	sealed, err := h.sealer.Seal([]byte("{}"))
@@ -93,7 +99,11 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if time.Now().After(pending.ExpiresAt) {
-		_ = h.client.OAuthPending.DeleteOne(pending).Exec(context.WithoutCancel(ctx))
+		// Detached from the request context but bounded so a stalled DB can't
+		// block the handler forever.
+		dctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		_ = h.client.OAuthPending.DeleteOne(pending).Exec(dctx)
+		cancel()
 		h.errorPage(w, http.StatusBadRequest, "Sign-in session expired. Please try again.")
 		return
 	}
@@ -137,19 +147,26 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		ExpiresIn    int64  `json:"expires_in"`
 		Scope        string `json:"scope"`
 		TokenType    string `json:"token_type"`
+		IDToken      string `json:"id_token"` // present: scopes include openid email
 	}
 	if err := json.Unmarshal(body, &gtok); err != nil || gtok.AccessToken == "" {
 		h.deepLink(w, state, "error")
 		return
 	}
 
-	payload := parkedPayload{tokenBundle: tokenBundle{
-		AccessToken:  gtok.AccessToken,
-		RefreshToken: gtok.RefreshToken,
-		ExpiresAt:    time.Now().Add(time.Duration(gtok.ExpiresIn) * time.Second).Unix(),
-		Scope:        gtok.Scope,
-		TokenType:    defaultStr(gtok.TokenType, "Bearer"),
-	}}
+	payload := parkedPayload{
+		tokenBundle: tokenBundle{
+			AccessToken:  gtok.AccessToken,
+			RefreshToken: gtok.RefreshToken,
+			ExpiresAt:    time.Now().Add(time.Duration(gtok.ExpiresIn) * time.Second).Unix(),
+			Scope:        gtok.Scope,
+			TokenType:    defaultStr(gtok.TokenType, "Bearer"),
+		},
+		// The Google account email keys webhook user resolution (RFC 003).
+		// Decoding without signature verification is fine here: the id_token
+		// came straight from Google's token endpoint over TLS.
+		AccountEmail: emailFromIDToken(gtok.IDToken),
+	}
 	raw, _ := json.Marshal(payload)
 	sealed, err := h.sealer.Seal(raw)
 	if err != nil {
@@ -184,10 +201,36 @@ func (h *Handler) errorPage(w http.ResponseWriter, code int, msg string) {
 		"<p style=\"font:14px system-ui;margin:3rem\">"+htmlEscape(msg)+"</p>")
 }
 
-func randomState() string {
+func randomState() (string, error) {
 	b := make([]byte, 24)
-	_, _ = rand.Read(b)
-	return base64.RawURLEncoding.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		// Propagate so the caller fails the request instead of returning a
+		// predictable (all-zero) state on the rare crypto/rand failure.
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+// emailFromIDToken extracts the email claim from a Google id_token by
+// decoding its payload segment. No signature check: callers only pass tokens
+// received directly from Google's TLS token endpoint, and the value is used
+// as an account label, not as proof of authentication.
+func emailFromIDToken(idToken string) string {
+	parts := strings.Split(idToken, ".")
+	if len(parts) != 3 {
+		return ""
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return ""
+	}
+	var claims struct {
+		Email string `json:"email"`
+	}
+	if err := json.Unmarshal(raw, &claims); err != nil {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(claims.Email))
 }
 
 func jsString(s string) string { b, _ := json.Marshal(s); return string(b) }

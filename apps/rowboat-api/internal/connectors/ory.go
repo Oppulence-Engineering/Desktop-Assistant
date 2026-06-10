@@ -99,13 +99,31 @@ func (c *oryClient) tokenRequest(ctx context.Context, form url.Values) (*oryToke
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ory token endpoint returned %d: %s", resp.StatusCode, string(body))
+		// Extract only the structured OAuth error fields rather than folding the
+		// raw upstream body into an error that callers log: a credential-exchange
+		// endpoint's response must not be echoed verbatim into logs.
+		var oerr struct {
+			Error       string `json:"error"`
+			Description string `json:"error_description"`
+		}
+		_ = json.Unmarshal(body, &oerr)
+		if oerr.Error != "" {
+			return nil, fmt.Errorf("ory token endpoint returned %d: %s (%s)", resp.StatusCode, oerr.Error, truncateForLog(oerr.Description, 200))
+		}
+		return nil, fmt.Errorf("ory token endpoint returned %d", resp.StatusCode)
 	}
 	var tok oryToken
 	if err := json.Unmarshal(body, &tok); err != nil {
 		return nil, err
 	}
 	return &tok, nil
+}
+
+func truncateForLog(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return s[:maxLen] + "…"
+	}
+	return s
 }
 
 func (c *oryClient) revoke(ctx context.Context, token string) error {

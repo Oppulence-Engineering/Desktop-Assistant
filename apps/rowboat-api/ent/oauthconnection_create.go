@@ -71,6 +71,20 @@ func (_c *OAuthConnectionCreate) SetScopes(v []string) *OAuthConnectionCreate {
 	return _c
 }
 
+// SetExternalAccountID sets the "external_account_id" field.
+func (_c *OAuthConnectionCreate) SetExternalAccountID(v string) *OAuthConnectionCreate {
+	_c.mutation.SetExternalAccountID(v)
+	return _c
+}
+
+// SetNillableExternalAccountID sets the "external_account_id" field if the given value is not nil.
+func (_c *OAuthConnectionCreate) SetNillableExternalAccountID(v *string) *OAuthConnectionCreate {
+	if v != nil {
+		_c.SetExternalAccountID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *OAuthConnectionCreate) SetID(v uuid.UUID) *OAuthConnectionCreate {
 	_c.mutation.SetID(v)
@@ -218,6 +232,10 @@ func (_c *OAuthConnectionCreate) createSpec() (*OAuthConnection, *sqlgraph.Creat
 		_spec.SetField(oauthconnection.FieldScopes, field.TypeJSON, value)
 		_node.Scopes = value
 	}
+	if value, ok := _c.mutation.ExternalAccountID(); ok {
+		_spec.SetField(oauthconnection.FieldExternalAccountID, field.TypeString, value)
+		_node.ExternalAccountID = value
+	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -341,6 +359,24 @@ func (u *OAuthConnectionUpsert) ClearScopes() *OAuthConnectionUpsert {
 	return u
 }
 
+// SetExternalAccountID sets the "external_account_id" field.
+func (u *OAuthConnectionUpsert) SetExternalAccountID(v string) *OAuthConnectionUpsert {
+	u.Set(oauthconnection.FieldExternalAccountID, v)
+	return u
+}
+
+// UpdateExternalAccountID sets the "external_account_id" field to the value that was provided on create.
+func (u *OAuthConnectionUpsert) UpdateExternalAccountID() *OAuthConnectionUpsert {
+	u.SetExcluded(oauthconnection.FieldExternalAccountID)
+	return u
+}
+
+// ClearExternalAccountID clears the value of the "external_account_id" field.
+func (u *OAuthConnectionUpsert) ClearExternalAccountID() *OAuthConnectionUpsert {
+	u.SetNull(oauthconnection.FieldExternalAccountID)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -452,6 +488,27 @@ func (u *OAuthConnectionUpsertOne) UpdateScopes() *OAuthConnectionUpsertOne {
 func (u *OAuthConnectionUpsertOne) ClearScopes() *OAuthConnectionUpsertOne {
 	return u.Update(func(s *OAuthConnectionUpsert) {
 		s.ClearScopes()
+	})
+}
+
+// SetExternalAccountID sets the "external_account_id" field.
+func (u *OAuthConnectionUpsertOne) SetExternalAccountID(v string) *OAuthConnectionUpsertOne {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.SetExternalAccountID(v)
+	})
+}
+
+// UpdateExternalAccountID sets the "external_account_id" field to the value that was provided on create.
+func (u *OAuthConnectionUpsertOne) UpdateExternalAccountID() *OAuthConnectionUpsertOne {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.UpdateExternalAccountID()
+	})
+}
+
+// ClearExternalAccountID clears the value of the "external_account_id" field.
+func (u *OAuthConnectionUpsertOne) ClearExternalAccountID() *OAuthConnectionUpsertOne {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.ClearExternalAccountID()
 	})
 }
 
@@ -733,6 +790,27 @@ func (u *OAuthConnectionUpsertBulk) UpdateScopes() *OAuthConnectionUpsertBulk {
 func (u *OAuthConnectionUpsertBulk) ClearScopes() *OAuthConnectionUpsertBulk {
 	return u.Update(func(s *OAuthConnectionUpsert) {
 		s.ClearScopes()
+	})
+}
+
+// SetExternalAccountID sets the "external_account_id" field.
+func (u *OAuthConnectionUpsertBulk) SetExternalAccountID(v string) *OAuthConnectionUpsertBulk {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.SetExternalAccountID(v)
+	})
+}
+
+// UpdateExternalAccountID sets the "external_account_id" field to the value that was provided on create.
+func (u *OAuthConnectionUpsertBulk) UpdateExternalAccountID() *OAuthConnectionUpsertBulk {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.UpdateExternalAccountID()
+	})
+}
+
+// ClearExternalAccountID clears the value of the "external_account_id" field.
+func (u *OAuthConnectionUpsertBulk) ClearExternalAccountID() *OAuthConnectionUpsertBulk {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.ClearExternalAccountID()
 	})
 }
 

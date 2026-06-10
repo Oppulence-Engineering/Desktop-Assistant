@@ -92,6 +92,8 @@ var (
 	OutputTokensValidator func(int) error
 	// DefaultCostUnits holds the default value on creation for the "cost_units" field.
 	DefaultCostUnits int
+	// CostUnitsValidator is a validator for the "cost_units" field. It is called by the builders before save.
+	CostUnitsValidator func(int) error
 	// DefaultTs holds the default value on creation for the "ts" field.
 	DefaultTs func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.

@@ -7,6 +7,8 @@ package appconfig
 
 import (
 	"fmt"
+	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -32,6 +34,10 @@ type Config struct {
 	RequestTimeout   time.Duration
 	MaxRequestBody   int64
 	CORSOrigins      []string
+	// TrustedProxyCIDRs lists proxies (ingress) whose X-Forwarded-For may be
+	// trusted to recover the real client IP for pre-auth rate limiting. Empty →
+	// X-Forwarded-For is ignored and RemoteAddr is used as-is.
+	TrustedProxyCIDRs []string
 
 	// Observability.
 	LogLevel     string // debug | info | warn | error
@@ -110,6 +116,15 @@ type Config struct {
 	ComposioAPIKey          string
 	GoogleOAuthClientID     string
 	GoogleOAuthClientSecret string
+	// PlainAPIKey is optional: when unset, POST /v1/feedback returns
+	// provider_unconfigured instead of relaying to Plain.
+	PlainAPIKey string
+
+	// Plain (plain.com) feedback relay. Label type ids are workspace data and
+	// differ per environment; the raw JSON maps category -> lt_… id.
+	PlainAPIURL       string
+	PlainLabelTypeIDs string
+	PlainTitlePrefix  string
 
 	// Outbound vendor-call policy.
 	VendorTimeout               time.Duration
@@ -135,6 +150,15 @@ type Config struct {
 
 	// Free-tier credit grant minted on first sign-in.
 	FreeTierCredits int
+
+	// Free cloud meeting-transcription seconds per UTC month for non-paid plans
+	// (RFC 009 §16). Exhausted → the desktop falls back to on-device transcription.
+	FreeMeetingSecondsPerMonth int
+
+	// Remote, A/B-able transcription defaults the desktop reads (RFC 009 §25). The
+	// voice default doubles as the local kill switch (flip back to a cloud value).
+	TranscriptionVoiceDefault   string
+	TranscriptionMeetingDefault string
 
 	// PricingJSON optionally overrides the default pricing table (raw JSON).
 	PricingJSON string
@@ -170,6 +194,66 @@ type Config struct {
 	// Cloud with an API key over TLS. TemporalAPIKey implies TLS.
 	TemporalAPIKey     string
 	TemporalTLSEnabled bool
+
+	// Cloud scheduler (RFC 001). Evaluates cron/window triggers for
+	// executionTarget=api tasks inside the deployment so scheduled cloud runs
+	// fire while the desktop is offline. Disabled by default; the scheduler
+	// binary exits cleanly when disabled. Enabling it requires Temporal, since
+	// it only creates executor=api runs.
+	CloudSchedulerEnabled  bool
+	CloudSchedulerInterval time.Duration
+	CloudSchedulerLeaseTTL time.Duration
+	CloudSchedulerTimezone string // IANA name; v1 is "UTC"
+	CloudSchedulerOwner    string // lease owner identity; defaults to hostname
+
+	// Cloud event ingestion + routing (RFC 003). Ingestion (/v1/events and
+	// provider webhooks) is always mounted; ROUTING — the Temporal workflow that
+	// matches events to tasks via LLM and fires trigger=event runs — is gated.
+	// Routing requires Temporal, exactly like the run path.
+	CloudEventsRoutingEnabled  bool
+	CloudEventsMatchThreshold  float64 // pass-2 confidence gate; fixed in v1
+	CloudEventsRouterModel     string  // model for pass-1/pass-2 routing calls
+	CloudEventsMaxPayloadBytes int     // reject larger payloads before sealing
+	SlackSigningSecret         string  // verifies /v1/webhooks/slack signatures
+	GoogleWebhookToken         string  // shared token for /v1/webhooks/google
+
+	// Slack workspace connect flow (OAuth v2). The connection maps team_id →
+	// user, which is what /v1/webhooks/slack resolves events against.
+	SlackClientID     string
+	SlackClientSecret string
+	// SlackOAuthScopes are the bot scopes requested at install; they bound
+	// which Events API deliveries the workspace can produce.
+	SlackOAuthScopes string
+	// SlackRedirectURI is the /oauth/slack/callback URL registered on the
+	// Slack app. Empty → derived from AppURL. Must match Slack exactly.
+	SlackRedirectURI string
+	// SlackAuthorizeURL / SlackTokenURL override Slack's endpoints (dev mocks).
+	SlackAuthorizeURL string
+	SlackTokenURL     string
+
+	// Google watch manager (RFC 003): registers and renews the Gmail
+	// users.watch + Calendar events channel per connected Google account so
+	// Google actually delivers pushes to /v1/webhooks/google. Runs in the
+	// scheduler process.
+	GoogleWatchEnabled     bool
+	GmailPubSubTopic       string        // projects/{p}/topics/{t}; empty → Gmail watches skipped
+	GoogleWatchInterval    time.Duration // renewal scan cadence
+	GoogleWatchRenewMargin time.Duration // renew registrations expiring within this window
+	// GmailAPIBaseURL / CalendarAPIBaseURL override Google's API hosts (dev mocks).
+	GmailAPIBaseURL    string
+	CalendarAPIBaseURL string
+
+	// Cloud agent runtime (RFC 004): the LLM-backed, tool-scoped agent loop
+	// that the Temporal worker's ExecuteAPITask delegates to. Enabled by
+	// default; CLOUD_RUNTIME_ENABLED=false is the rollback kill-switch
+	// selecting the deterministic NoopRuntime artifact path.
+	CloudRuntimeEnabled          bool
+	CloudRuntimeModel            string        // model used when the task carries none
+	CloudRuntimeMaxDuration      time.Duration // wall clock per run; MUST stay < the 5m activity timeout
+	CloudRuntimeMaxLLMCalls      int
+	CloudRuntimeMaxToolCalls     int
+	CloudRuntimeMaxArtifactBytes int
+	CloudRuntimeMaxEventBytes    int
 }
 
 // Load reads configuration from the environment, applying defaults.
@@ -184,9 +268,12 @@ func Load() Config {
 		ServiceName: getenv("SERVICE_NAME", "rowboat-api"),
 		Environment: environment,
 
-		HTTPAddr:         getenv("HTTP_ADDR", ":8080"),
-		MetricsAddr:      getenv("METRICS_ADDR", ":9090"),
-		GRPCAddr:         getenv("GRPC_ADDR", ":8081"),
+		HTTPAddr:    getenv("HTTP_ADDR", ":8080"),
+		MetricsAddr: getenv("METRICS_ADDR", ":9090"),
+		// allowEmpty: GRPC_ADDR="" deliberately disables the gRPC listener
+		// (Server.Run skips it when blank); plain getenv would coalesce the
+		// explicit empty back to the default and make it impossible to turn off.
+		GRPCAddr:         getenvAllowEmpty("GRPC_ADDR", ":8081"),
 		ReadTimeout:      getdur("READ_TIMEOUT", 30*time.Second),
 		WriteTimeout:     getdur("WRITE_TIMEOUT", 5*time.Minute),
 		IdleTimeout:      getdur("IDLE_TIMEOUT", 120*time.Second),
@@ -195,6 +282,12 @@ func Load() Config {
 		RequestTimeout:   getdur("REQUEST_TIMEOUT", 2*time.Minute),
 		MaxRequestBody:   getint64("MAX_REQUEST_BODY_BYTES", 32<<20),
 		CORSOrigins:      getcsv("CORS_ALLOWED_ORIGINS", corsDefault),
+		// Default to the RFC1918 + loopback ranges: in the k8s deployment the
+		// direct peer is always the cluster-internal ingress, and these ranges
+		// are not internet-routable, so a direct external client can never match
+		// them and spoof X-Forwarded-For. Operators terminating TLS elsewhere
+		// can narrow or blank this.
+		TrustedProxyCIDRs: getcsv("TRUSTED_PROXY_CIDRS", "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,::1/128"),
 
 		LogLevel:     getenv("LOG_LEVEL", "info"),
 		OTLPEndpoint: getenv("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
@@ -251,6 +344,10 @@ func Load() Config {
 		ComposioAPIKey:              getenv("COMPOSIO_API_KEY", ""),
 		GoogleOAuthClientID:         getenv("GOOGLE_OAUTH_CLIENT_ID", ""),
 		GoogleOAuthClientSecret:     getenv("GOOGLE_OAUTH_CLIENT_SECRET", ""),
+		PlainAPIKey:                 getenv("PLAIN_API_KEY", ""),
+		PlainAPIURL:                 getenv("PLAIN_API_URL", "https://core-api.uk.plain.com/graphql/v1"),
+		PlainLabelTypeIDs:           getenv("PLAIN_LABEL_TYPE_IDS", ""),
+		PlainTitlePrefix:            getenv("PLAIN_TITLE_PREFIX", ""),
 		VendorTimeout:               getdur("VENDOR_TIMEOUT", 30*time.Second),
 		VendorResponseHeaderTimeout: getdur("VENDOR_RESPONSE_HEADER_TIMEOUT", 15*time.Second),
 		VendorMaxConcurrent:         getint("VENDOR_MAX_CONCURRENT", 64),
@@ -261,8 +358,13 @@ func Load() Config {
 		GoogleAuthorizeURL:          getenv("GOOGLE_AUTHORIZE_URL", ""),
 		GoogleRedirectURI:           getenv("GOOGLE_REDIRECT_URI", ""),
 
-		DesktopDeepLinkScheme:  getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
-		FreeTierCredits:        getint("FREE_TIER_CREDITS", 10000),
+		DesktopDeepLinkScheme: getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
+		FreeTierCredits:       getint("FREE_TIER_CREDITS", 10000),
+
+		FreeMeetingSecondsPerMonth:  getint("FREE_MEETING_SECONDS_PER_MONTH", 10800), // 180 min
+		TranscriptionVoiceDefault:   getenv("TRANSCRIPTION_VOICE_DEFAULT", "whisper-local"),
+		TranscriptionMeetingDefault: getenv("TRANSCRIPTION_MEETING_DEFAULT", "deepgram"),
+
 		PricingJSON:            getenv("PRICING_JSON", ""),
 		DailyCreditLimit:       getint("DAILY_CREDIT_LIMIT", 100000),
 		MonthlyCreditLimit:     getint("MONTHLY_CREDIT_LIMIT", 2000000),
@@ -283,12 +385,81 @@ func Load() Config {
 		TemporalWorkerEnabled: getbool("TEMPORAL_WORKER_ENABLED", false),
 		TemporalAPIKey:        getenv("TEMPORAL_API_KEY", ""),
 		TemporalTLSEnabled:    getbool("TEMPORAL_TLS_ENABLED", false),
+
+		CloudSchedulerEnabled:  getbool("CLOUD_SCHEDULER_ENABLED", false),
+		CloudSchedulerInterval: getdur("CLOUD_SCHEDULER_INTERVAL", 15*time.Second),
+		// MUST exceed the scheduler's cron grace window (2m, due.go cronGrace):
+		// a lease that expires while a crashed owner's occurrence is still inside
+		// grace lets another replica steal it and double-fire. Validate enforces
+		// this; the 150s default matches backgroundscheduler.defaultLeaseTTL.
+		CloudSchedulerLeaseTTL: getdur("CLOUD_SCHEDULER_LEASE_TTL", 150*time.Second),
+		CloudSchedulerTimezone: getenv("CLOUD_SCHEDULER_TIMEZONE", "UTC"),
+		CloudSchedulerOwner:    getenv("CLOUD_SCHEDULER_OWNER", defaultHostname()),
+
+		CloudEventsRoutingEnabled: getbool("CLOUD_EVENTS_ROUTING_ENABLED", false),
+		CloudEventsMatchThreshold: getfloat("CLOUD_EVENTS_MATCH_THRESHOLD", 0.7),
+		// Routing is two cheap bounded calls per event; default to the cheapest
+		// priced model (see internal/pricing DefaultTable).
+		CloudEventsRouterModel:     getenv("CLOUD_EVENTS_ROUTER_MODEL", "anthropic/claude-haiku-4-5"),
+		CloudEventsMaxPayloadBytes: getint("CLOUD_EVENTS_MAX_PAYLOAD_BYTES", 256<<10),
+		SlackSigningSecret:         getenv("SLACK_SIGNING_SECRET", ""),
+		GoogleWebhookToken:         getenv("GOOGLE_WEBHOOK_TOKEN", ""),
+
+		SlackClientID:     getenv("SLACK_CLIENT_ID", ""),
+		SlackClientSecret: getenv("SLACK_CLIENT_SECRET", ""),
+		SlackOAuthScopes:  getenv("SLACK_OAUTH_SCOPES", "channels:history,channels:read,users:read"),
+		SlackRedirectURI:  getenv("SLACK_REDIRECT_URI", ""),
+		SlackAuthorizeURL: getenv("SLACK_AUTHORIZE_URL", ""),
+		SlackTokenURL:     getenv("SLACK_TOKEN_URL", ""),
+
+		GoogleWatchEnabled:     getbool("GOOGLE_WATCH_ENABLED", false),
+		GmailPubSubTopic:       getenv("GMAIL_PUBSUB_TOPIC", ""),
+		GoogleWatchInterval:    getdur("GOOGLE_WATCH_INTERVAL", 15*time.Minute),
+		GoogleWatchRenewMargin: getdur("GOOGLE_WATCH_RENEW_MARGIN", 24*time.Hour),
+		GmailAPIBaseURL:        getenv("GMAIL_API_BASE_URL", ""),
+		CalendarAPIBaseURL:     getenv("CALENDAR_API_BASE_URL", ""),
+
+		CloudRuntimeEnabled:          getbool("CLOUD_RUNTIME_ENABLED", true),
+		CloudRuntimeModel:            getenv("CLOUD_RUNTIME_MODEL", "anthropic/claude-sonnet-4-5"),
+		CloudRuntimeMaxDuration:      getdur("CLOUD_RUNTIME_MAX_DURATION", 4*time.Minute),
+		CloudRuntimeMaxLLMCalls:      getint("CLOUD_RUNTIME_MAX_LLM_CALLS", 12),
+		CloudRuntimeMaxToolCalls:     getint("CLOUD_RUNTIME_MAX_TOOL_CALLS", 24),
+		CloudRuntimeMaxArtifactBytes: getint("CLOUD_RUNTIME_MAX_ARTIFACT_BYTES", 1<<20),
+		CloudRuntimeMaxEventBytes:    getint("CLOUD_RUNTIME_MAX_EVENT_BYTES", 64<<10),
 	}
+}
+
+// defaultHostname returns the process hostname for the scheduler's lease owner
+// identity, falling back to a stable name when the OS cannot report one.
+func defaultHostname() string {
+	if h, err := os.Hostname(); err == nil && h != "" {
+		return h
+	}
+	return "rowboat-api-scheduler"
+}
+
+// SchedulerLocation resolves the cloud scheduler timezone (v1: UTC). It accepts
+// the same trimmed, case-insensitive "UTC" (and empty) that Validate accepts, so
+// a value that passes validation never fails to load here; any other value is
+// loaded as an IANA name (but Validate rejects non-UTC in v1).
+func (c Config) SchedulerLocation() (*time.Location, error) {
+	tz := strings.TrimSpace(c.CloudSchedulerTimezone)
+	if tz == "" || strings.EqualFold(tz, "UTC") {
+		return time.UTC, nil
+	}
+	return time.LoadLocation(tz)
 }
 
 // IsProduction reports whether the service runs in a production-like env.
 func (c Config) IsProduction() bool {
 	return strings.EqualFold(c.Environment, "production")
+}
+
+// IsDevelopment reports whether the service runs in local development. Used to
+// gate convenience behaviors (e.g. an unauthenticated gRPC port) that must
+// fail closed in every deployed environment, including staging.
+func (c Config) IsDevelopment() bool {
+	return strings.EqualFold(c.Environment, "development")
 }
 
 // TemporalUseTLS reports whether the Temporal client should dial over TLS.
@@ -340,6 +511,77 @@ func (c Config) Validate() error {
 			return fmt.Errorf("TEMPORAL_TASK_QUEUE is required when TEMPORAL_ENABLED=true")
 		}
 	}
+	if c.CloudSchedulerEnabled {
+		// The scheduler only creates executor=api runs, which need Temporal to
+		// launch the workflow. Fail fast at boot rather than silently scanning
+		// tasks it cannot start.
+		if !c.TemporalEnabled {
+			return fmt.Errorf("TEMPORAL_ENABLED must be true when CLOUD_SCHEDULER_ENABLED=true")
+		}
+		if c.CloudSchedulerInterval <= 0 {
+			return fmt.Errorf("CLOUD_SCHEDULER_INTERVAL must be > 0")
+		}
+		// The lease must outlive a tick (plus start latency + clock skew) or a
+		// slow tick could let the lease expire mid-cycle and double-fire.
+		if c.CloudSchedulerLeaseTTL <= c.CloudSchedulerInterval {
+			return fmt.Errorf("CLOUD_SCHEDULER_LEASE_TTL must exceed CLOUD_SCHEDULER_INTERVAL")
+		}
+		// The lease must also exceed the cron grace window (2m, due.go cronGrace):
+		// if an owner crashes between starting a run and completing the cycle, the
+		// lease must not expire while the occurrence is still due, or another
+		// replica steals it and fires a duplicate run for the same occurrence.
+		if c.CloudSchedulerLeaseTTL <= 2*time.Minute {
+			return fmt.Errorf("CLOUD_SCHEDULER_LEASE_TTL must exceed the 2m cron grace window (got %s); use >= 150s", c.CloudSchedulerLeaseTTL)
+		}
+		// v1 evaluates in UTC only. The window/cron math runs in the configured
+		// location, and a DST zone would mishandle the spring-forward gap and the
+		// fall-back ambiguous hour; per-task timezone is the committed
+		// fast-follow. Reject anything but UTC rather than silently mis-evaluate.
+		if tz := strings.TrimSpace(c.CloudSchedulerTimezone); tz != "" && !strings.EqualFold(tz, "UTC") {
+			return fmt.Errorf("CLOUD_SCHEDULER_TIMEZONE must be UTC in v1 (per-task timezone is a committed fast-follow); got %q", c.CloudSchedulerTimezone)
+		}
+	}
+	if c.CloudEventsRoutingEnabled {
+		// The router runs as a Temporal workflow; without Temporal events would
+		// pile up pending forever. Fail fast at boot.
+		if !c.TemporalEnabled {
+			return fmt.Errorf("TEMPORAL_ENABLED must be true when CLOUD_EVENTS_ROUTING_ENABLED=true")
+		}
+	}
+	if c.GoogleWatchEnabled {
+		// Calendar channels are registered with PUBLIC_BASE_URL as the push
+		// address and GOOGLE_WEBHOOK_TOKEN as the channel token; without them
+		// the registrations would either point nowhere or be unverifiable.
+		if strings.TrimSpace(c.PublicBaseURL) == "" {
+			return fmt.Errorf("PUBLIC_BASE_URL is required when GOOGLE_WATCH_ENABLED=true")
+		}
+		if strings.TrimSpace(c.GoogleWebhookToken) == "" {
+			return fmt.Errorf("GOOGLE_WEBHOOK_TOKEN is required when GOOGLE_WATCH_ENABLED=true")
+		}
+		if c.GoogleWatchInterval <= 0 || c.GoogleWatchRenewMargin <= 0 {
+			return fmt.Errorf("GOOGLE_WATCH_INTERVAL and GOOGLE_WATCH_RENEW_MARGIN must be > 0")
+		}
+	}
+	// The runtime's own deadline must fire BEFORE Temporal's activity
+	// StartToCloseTimeout (5m, backgroundtaskworkflow activity options), or
+	// runs would fail as activity_timeout and hide the real
+	// runtime_deadline_exceeded cause. Raising this ceiling requires raising
+	// the activity timeout in the same change (RFC 004 duration coupling).
+	if c.CloudRuntimeMaxDuration <= 0 || c.CloudRuntimeMaxDuration >= 5*time.Minute {
+		return fmt.Errorf("CLOUD_RUNTIME_MAX_DURATION must be in (0, 5m); got %s", c.CloudRuntimeMaxDuration)
+	}
+	if c.CloudRuntimeMaxLLMCalls <= 0 || c.CloudRuntimeMaxToolCalls <= 0 {
+		return fmt.Errorf("CLOUD_RUNTIME_MAX_LLM_CALLS and CLOUD_RUNTIME_MAX_TOOL_CALLS must be > 0")
+	}
+	if c.CloudRuntimeMaxArtifactBytes <= 0 || c.CloudRuntimeMaxEventBytes <= 0 {
+		return fmt.Errorf("cloud runtime byte limits must be > 0")
+	}
+	if c.CloudEventsMatchThreshold <= 0 || c.CloudEventsMatchThreshold > 1 {
+		return fmt.Errorf("CLOUD_EVENTS_MATCH_THRESHOLD must be in (0, 1]; got %v", c.CloudEventsMatchThreshold)
+	}
+	if c.CloudEventsMaxPayloadBytes <= 0 {
+		return fmt.Errorf("CLOUD_EVENTS_MAX_PAYLOAD_BYTES must be > 0")
+	}
 	if c.IsProduction() {
 		return c.validateProduction()
 	}
@@ -374,8 +616,17 @@ func (c Config) validateProduction() error {
 		return fmt.Errorf("CORS_ALLOWED_ORIGINS is required in production")
 	}
 	for _, origin := range c.CORSOrigins {
-		if origin == "*" || strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
+		if origin == "*" {
 			return fmt.Errorf("CORS_ALLOWED_ORIGINS contains non-production origin %q", origin)
+		}
+		// Match on the parsed HOST, not a substring: a legitimate production
+		// origin like https://localhost-tools.example.com contains "localhost"
+		// but is not a dev origin and must not be rejected.
+		if u, perr := url.Parse(origin); perr == nil {
+			switch u.Hostname() {
+			case "localhost", "127.0.0.1", "::1":
+				return fmt.Errorf("CORS_ALLOWED_ORIGINS contains non-production origin %q", origin)
+			}
 		}
 	}
 	if c.GraphQLIntrospection {
@@ -431,29 +682,52 @@ func getenvAllowEmpty(key, def string) string {
 	return def
 }
 
+// Load runs before the structured logger exists, so the get* helpers below
+// surface malformed env values via the standard library log package. A
+// non-empty value that fails to parse logs a warning and falls back to the
+// default (rather than silently swallowing the typo); unset/empty values fall
+// back to the default silently.
+
 func getint(key string, def int) int {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
+		n, err := strconv.Atoi(v)
+		if err == nil {
 			return n
 		}
+		log.Printf("appconfig: invalid %s=%q (%v); using default %d", key, v, err, def)
 	}
 	return def
 }
 
 func getint64(key string, def int64) int64 {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
-		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err == nil {
 			return n
 		}
+		log.Printf("appconfig: invalid %s=%q (%v); using default %d", key, v, err, def)
+	}
+	return def
+}
+
+func getfloat(key string, def float64) float64 {
+	if v, ok := os.LookupEnv(key); ok && v != "" {
+		f, err := strconv.ParseFloat(v, 64)
+		if err == nil {
+			return f
+		}
+		log.Printf("appconfig: invalid %s=%q (%v); using default %v", key, v, err, def)
 	}
 	return def
 }
 
 func getbool(key string, def bool) bool {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
-		if b, err := strconv.ParseBool(v); err == nil {
+		b, err := strconv.ParseBool(v)
+		if err == nil {
 			return b
 		}
+		log.Printf("appconfig: invalid %s=%q (%v); using default %t", key, v, err, def)
 	}
 	return def
 }
@@ -476,9 +750,11 @@ func getcsv(key string, def string) []string {
 
 func getdur(key string, def time.Duration) time.Duration {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
+		d, err := time.ParseDuration(v)
+		if err == nil {
 			return d
 		}
+		log.Printf("appconfig: invalid %s=%q (%v); using default %s", key, v, err, def)
 	}
 	return def
 }

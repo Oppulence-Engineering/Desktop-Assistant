@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -24,19 +25,21 @@ import (
 // BackgroundTaskQuery is the builder for querying BackgroundTask entities.
 type BackgroundTaskQuery struct {
 	config
-	ctx                *QueryContext
-	order              []backgroundtask.OrderOption
-	inters             []Interceptor
-	predicates         []predicate.BackgroundTask
-	withUser           *UserQuery
-	withArtifact       *BackgroundTaskArtifactQuery
-	withRuns           *BackgroundTaskRunQuery
-	withRunEvents      *BackgroundTaskRunEventQuery
-	withFKs            bool
-	modifiers          []func(*sql.Selector)
-	loadTotal          []func(context.Context, []*BackgroundTask) error
-	withNamedRuns      map[string]*BackgroundTaskRunQuery
-	withNamedRunEvents map[string]*BackgroundTaskRunEventQuery
+	ctx                     *QueryContext
+	order                   []backgroundtask.OrderOption
+	inters                  []Interceptor
+	predicates              []predicate.BackgroundTask
+	withUser                *UserQuery
+	withArtifact            *BackgroundTaskArtifactQuery
+	withRuns                *BackgroundTaskRunQuery
+	withRunEvents           *BackgroundTaskRunEventQuery
+	withScheduleStates      *BackgroundTaskScheduleStateQuery
+	withFKs                 bool
+	modifiers               []func(*sql.Selector)
+	loadTotal               []func(context.Context, []*BackgroundTask) error
+	withNamedRuns           map[string]*BackgroundTaskRunQuery
+	withNamedRunEvents      map[string]*BackgroundTaskRunEventQuery
+	withNamedScheduleStates map[string]*BackgroundTaskScheduleStateQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -154,6 +157,28 @@ func (_q *BackgroundTaskQuery) QueryRunEvents() *BackgroundTaskRunEventQuery {
 			sqlgraph.From(backgroundtask.Table, backgroundtask.FieldID, selector),
 			sqlgraph.To(backgroundtaskrunevent.Table, backgroundtaskrunevent.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, backgroundtask.RunEventsTable, backgroundtask.RunEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryScheduleStates chains the current query on the "schedule_states" edge.
+func (_q *BackgroundTaskQuery) QueryScheduleStates() *BackgroundTaskScheduleStateQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backgroundtask.Table, backgroundtask.FieldID, selector),
+			sqlgraph.To(backgroundtaskschedulestate.Table, backgroundtaskschedulestate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, backgroundtask.ScheduleStatesTable, backgroundtask.ScheduleStatesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -348,15 +373,16 @@ func (_q *BackgroundTaskQuery) Clone() *BackgroundTaskQuery {
 		return nil
 	}
 	return &BackgroundTaskQuery{
-		config:        _q.config,
-		ctx:           _q.ctx.Clone(),
-		order:         append([]backgroundtask.OrderOption{}, _q.order...),
-		inters:        append([]Interceptor{}, _q.inters...),
-		predicates:    append([]predicate.BackgroundTask{}, _q.predicates...),
-		withUser:      _q.withUser.Clone(),
-		withArtifact:  _q.withArtifact.Clone(),
-		withRuns:      _q.withRuns.Clone(),
-		withRunEvents: _q.withRunEvents.Clone(),
+		config:             _q.config,
+		ctx:                _q.ctx.Clone(),
+		order:              append([]backgroundtask.OrderOption{}, _q.order...),
+		inters:             append([]Interceptor{}, _q.inters...),
+		predicates:         append([]predicate.BackgroundTask{}, _q.predicates...),
+		withUser:           _q.withUser.Clone(),
+		withArtifact:       _q.withArtifact.Clone(),
+		withRuns:           _q.withRuns.Clone(),
+		withRunEvents:      _q.withRunEvents.Clone(),
+		withScheduleStates: _q.withScheduleStates.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -404,6 +430,17 @@ func (_q *BackgroundTaskQuery) WithRunEvents(opts ...func(*BackgroundTaskRunEven
 		opt(query)
 	}
 	_q.withRunEvents = query
+	return _q
+}
+
+// WithScheduleStates tells the query-builder to eager-load the nodes that are connected to
+// the "schedule_states" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *BackgroundTaskQuery) WithScheduleStates(opts ...func(*BackgroundTaskScheduleStateQuery)) *BackgroundTaskQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withScheduleStates = query
 	return _q
 }
 
@@ -486,11 +523,12 @@ func (_q *BackgroundTaskQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 		nodes       = []*BackgroundTask{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			_q.withUser != nil,
 			_q.withArtifact != nil,
 			_q.withRuns != nil,
 			_q.withRunEvents != nil,
+			_q.withScheduleStates != nil,
 		}
 	)
 	if _q.withUser != nil {
@@ -546,6 +584,15 @@ func (_q *BackgroundTaskQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 			return nil, err
 		}
 	}
+	if query := _q.withScheduleStates; query != nil {
+		if err := _q.loadScheduleStates(ctx, query, nodes,
+			func(n *BackgroundTask) { n.Edges.ScheduleStates = []*BackgroundTaskScheduleState{} },
+			func(n *BackgroundTask, e *BackgroundTaskScheduleState) {
+				n.Edges.ScheduleStates = append(n.Edges.ScheduleStates, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedRuns {
 		if err := _q.loadRuns(ctx, query, nodes,
 			func(n *BackgroundTask) { n.appendNamedRuns(name) },
@@ -557,6 +604,13 @@ func (_q *BackgroundTaskQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 		if err := _q.loadRunEvents(ctx, query, nodes,
 			func(n *BackgroundTask) { n.appendNamedRunEvents(name) },
 			func(n *BackgroundTask, e *BackgroundTaskRunEvent) { n.appendNamedRunEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedScheduleStates {
+		if err := _q.loadScheduleStates(ctx, query, nodes,
+			func(n *BackgroundTask) { n.appendNamedScheduleStates(name) },
+			func(n *BackgroundTask, e *BackgroundTaskScheduleState) { n.appendNamedScheduleStates(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -690,6 +744,37 @@ func (_q *BackgroundTaskQuery) loadRunEvents(ctx context.Context, query *Backgro
 	}
 	return nil
 }
+func (_q *BackgroundTaskQuery) loadScheduleStates(ctx context.Context, query *BackgroundTaskScheduleStateQuery, nodes []*BackgroundTask, init func(*BackgroundTask), assign func(*BackgroundTask, *BackgroundTaskScheduleState)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*BackgroundTask)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.BackgroundTaskScheduleState(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(backgroundtask.ScheduleStatesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.background_task_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "background_task_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "background_task_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *BackgroundTaskQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -800,6 +885,20 @@ func (_q *BackgroundTaskQuery) WithNamedRunEvents(name string, opts ...func(*Bac
 		_q.withNamedRunEvents = make(map[string]*BackgroundTaskRunEventQuery)
 	}
 	_q.withNamedRunEvents[name] = query
+	return _q
+}
+
+// WithNamedScheduleStates tells the query-builder to eager-load the nodes that are connected to the "schedule_states"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *BackgroundTaskQuery) WithNamedScheduleStates(name string, opts ...func(*BackgroundTaskScheduleStateQuery)) *BackgroundTaskQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedScheduleStates == nil {
+		_q.withNamedScheduleStates = make(map[string]*BackgroundTaskScheduleStateQuery)
+	}
+	_q.withNamedScheduleStates[name] = query
 	return _q
 }
 

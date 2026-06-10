@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
@@ -20,6 +19,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/google/uuid"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/activity"
@@ -166,7 +170,33 @@ func BackgroundTaskWorkflow(ctx workflow.Context, in StartInput) error {
 		},
 	})
 
+	// Drain SignalControl so control signals (pause/resume/update_context) are
+	// actually received from workflow history instead of buffering unboundedly.
+	// This linear workflow does not yet act on them — but the HTTP SignalRun path
+	// returns 202 ("delivered"), and without this drain the signal was never read
+	// at all. The coroutine blocks on Receive for the life of the run and is
+	// reclaimed when the workflow completes.
+	workflow.Go(ctx, func(gctx workflow.Context) {
+		ch := workflow.GetSignalChannel(gctx, SignalControl)
+		for {
+			var msg map[string]any
+			if !ch.Receive(gctx, &msg) {
+				return
+			}
+			workflow.GetLogger(gctx).Info("background task control signal received (not yet honored)",
+				"signal", msg["signal"], "runId", in.RunID)
+		}
+	})
+
 	if err := workflow.ExecuteActivity(ctx, ActivityMarkRunRunning, in).Get(ctx, nil); err != nil {
+		// Best-effort terminal write: without it the run row stays "queued"
+		// forever when the claim exhausts its retry budget (the scheduler's
+		// stale-heartbeat sweep is the backstop when this write fails too).
+		// MarkRunFailed's status guard makes this a no-op for runs that are
+		// already terminal (e.g. RunNotClaimable on a stopped run).
+		code, details := ClassifyRunError(err)
+		fail := CompleteInput{StartInput: in, Error: err.Error(), ErrorCode: code, ErrorDetails: details}
+		_ = workflow.ExecuteActivity(ctx, ActivityMarkRunFailed, fail).Get(ctx, nil)
 		return err
 	}
 
@@ -189,6 +219,21 @@ func BackgroundTaskWorkflow(ctx workflow.Context, in StartInput) error {
 type Activities struct {
 	Client *ent.Client
 	Log    *zap.Logger
+
+	// Runtime executes the run body (RFC 004). Always non-nil: the worker
+	// wires backgroundtaskruntime.NewNoop() (today's deterministic artifact)
+	// when CLOUD_RUNTIME_ENABLED=false, NewDefault() otherwise.
+	Runtime       backgroundtaskruntime.Runtime
+	RuntimeLimits backgroundtaskruntime.Limits
+
+	// DefaultRuntime dependencies (nil/zero on the Noop path): the LLM
+	// gateway, payload sealer, vendor secrets, Google API client, and the
+	// model used when the task carries none.
+	LLM          *llm.Handler
+	Sealer       *crypto.Sealer
+	Secrets      *secrets.Store
+	Google       *googleapi.Client
+	DefaultModel string
 }
 
 // MarkRunRunning claims a queued API run for execution.
@@ -200,7 +245,18 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		return err
 	}
 	n, err := a.Client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+		// Refuse to claim a run the user cancelled (stopped) or one already
+		// succeeded. A "failed" row is deliberately still claimable: this
+		// activity only ever runs for a LIVE workflow, so a failed row here
+		// means the scheduler's orphan reaper prematurely failed a run whose
+		// workflow is in fact running — claiming it lets the run self-heal and
+		// complete rather than being stuck failed. Re-claiming a still-"running"
+		// run (activity retry) stays idempotent.
+		Where(
+			backgroundtaskrun.RunIDEQ(in.RunID),
+			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
+			backgroundtaskrun.StatusNotIn("succeeded", "stopped"),
+		).
 		SetExecutor("api").
 		SetStatus("running").
 		SetTemporalStatus("Running").
@@ -209,13 +265,26 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		SetLastHeartbeatAt(now).
 		SetProgressPercent(5).
 		SetProgressMessage("API worker claimed the run.").
+		// Clear any terminal residue: if the orphan reaper prematurely failed
+		// this run (then it self-heals here), the stale completed_at/closed_at
+		// and error fields would otherwise contradict status=running and leak
+		// onto the eventual succeeded row. No-op for a normal queued run.
+		ClearError().
+		ClearErrorCode().
+		ClearErrorDetails().
+		ClearCompletedAt().
+		ClearTemporalClosedAt().
 		AddRevision(1).
 		Save(ctx)
 	if err != nil {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("background task run %s not found", in.RunID)
+		// Cancelled/succeeded/missing run: it will never become claimable, so
+		// fail the workflow fast instead of burning the activity retry budget.
+		return temporal.NewNonRetryableApplicationError(
+			fmt.Sprintf("background task run %s not claimable (cancelled, completed, or missing)", in.RunID),
+			"RunNotClaimable", nil)
 	}
 	if err := a.Client.BackgroundTask.UpdateOneID(taskID).
 		SetLastAttemptAt(now).
@@ -237,11 +306,13 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 	})
 }
 
-// ExecuteAPITask runs the v1 server-side job. It deliberately avoids desktop
-// filesystem/tool execution; that remains on the desktop path.
+// ExecuteAPITask is the thin durable adapter around the cloud agent runtime
+// (RFC 004): it binds the run's artifact store, event sink, scoped tool
+// registry, and gateway LLM client, then delegates the body to
+// Activities.Runtime (DefaultRuntime when CLOUD_RUNTIME_ENABLED, NoopRuntime
+// — today's deterministic artifact — as the rollback).
 func (a *Activities) ExecuteAPITask(ctx context.Context, in StartInput) (RunOutput, error) {
 	ctx = auth.WithInternal(ctx)
-	now := time.Now().UTC()
 	taskID, err := uuid.Parse(in.TaskID)
 	if err != nil {
 		return RunOutput{}, taggedError(ErrCodeTaskInvalid, "invalid task id", err)
@@ -256,49 +327,51 @@ func (a *Activities) ExecuteAPITask(ctx context.Context, in StartInput) (RunOutp
 		}
 		return RunOutput{}, taggedError(ErrCodeDBError, "load background task", err)
 	}
-
-	if _, err := a.Client.BackgroundTaskRun.Update().
+	run, err := a.Client.BackgroundTaskRun.Query().
 		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
-		SetLastHeartbeatAt(now).
-		SetProgressPercent(50).
-		SetProgressMessage("Building API-native task artifact.").
-		AddRevision(1).
-		Save(ctx); err != nil {
-		return RunOutput{}, taggedError(ErrCodeDBError, "update run progress", err)
-	}
-	if err := a.appendEvent(ctx, in, EventProgress, map[string]any{
-		"type":     EventProgress,
-		"message":  "Building API-native task artifact.",
-		"progress": 50,
-	}); err != nil {
-		return RunOutput{}, taggedError(ErrCodeDBError, "append progress event", err)
+		Only(ctx)
+	if err != nil {
+		return RunOutput{}, taggedError(ErrCodeDBError, "load background task run", err)
 	}
 
-	summary := buildSummary(task, in)
-	artifact := buildArtifact(task, in, summary, now)
-	if err := a.upsertArtifact(ctx, task, in.RunID, artifact); err != nil {
-		backgroundtaskmetrics.ArtifactSyncFailures.Inc()
-		return RunOutput{}, taggedError(ErrCodeArtifactWriteFailed, "write artifact", err)
+	limits := a.RuntimeLimits
+	if limits.MaxLLMCalls == 0 {
+		limits = backgroundtaskruntime.DefaultLimits()
+	}
+	model := task.Model
+	if model == "" {
+		model = a.DefaultModel
+	}
+	var llmClient backgroundtaskruntime.LLMClient
+	if a.LLM != nil && task.Edges.User != nil {
+		// Seed the LLM idempotency anchor with the activity attempt so a
+		// Temporal retry reserves fresh instead of dying on replay of the
+		// prior attempt's settled charges.
+		attempt := 1
+		if activity.IsActivity(ctx) {
+			attempt = int(activity.GetInfo(ctx).Attempt)
+		}
+		llmClient = backgroundtaskruntime.NewGatewayLLM(a.LLM, task.Edges.User, model, in.Slug, in.RunID, attempt)
 	}
 
-	if _, err := a.Client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
-		SetLastHeartbeatAt(time.Now().UTC()).
-		SetProgressPercent(90).
-		SetProgressMessage("Artifact updated.").
-		AddRevision(1).
-		Save(ctx); err != nil {
-		return RunOutput{}, taggedError(ErrCodeDBError, "update run progress", err)
+	out, err := a.Runtime.Execute(ctx, backgroundtaskruntime.RunInput{
+		UserID: in.UserID, TaskID: in.TaskID, Slug: in.Slug, RunID: in.RunID,
+		TaskName:         task.Name,
+		Trigger:          in.Trigger,
+		RequestedContext: in.RequestedContext,
+		Instructions:     task.Instructions,
+		Model:            model,
+		Provider:         task.Provider,
+		Artifacts:        &artifactStore{a: a, task: task, runID: in.RunID},
+		Events:           &eventSink{a: a, in: in, taskID: taskID},
+		Tools:            a.toolRegistry(ctx, task, run),
+		LLM:              llmClient,
+		Limits:           limits,
+	})
+	if err != nil {
+		return RunOutput{}, mapRuntimeError(err)
 	}
-	if err := a.appendEvent(ctx, in, EventArtifactUpdated, map[string]any{
-		"type":     EventArtifactUpdated,
-		"message":  "Artifact updated.",
-		"progress": 90,
-	}); err != nil {
-		return RunOutput{}, taggedError(ErrCodeDBError, "append artifact event", err)
-	}
-
-	return RunOutput{Summary: summary}, nil
+	return RunOutput{Summary: out.Summary}, nil
 }
 
 // MarkRunDone marks an API run terminal-success.
@@ -310,7 +383,16 @@ func (a *Activities) MarkRunDone(ctx context.Context, in CompleteInput) error {
 		return err
 	}
 	n, err := a.Client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+		// Guard the terminal transition: never overwrite a run the user already
+		// stopped, and skip a run already marked succeeded. This makes the
+		// activity idempotent under Temporal retry (a retry finds n==0 and does
+		// NOT re-increment metrics or re-emit the completed event) and prevents a
+		// late MarkRunDone from resurrecting a `stopped` run.
+		Where(
+			backgroundtaskrun.RunIDEQ(in.RunID),
+			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
+			backgroundtaskrun.StatusNotIn("succeeded", "stopped"),
+		).
 		SetStatus("succeeded").
 		SetTemporalStatus("Completed").
 		SetTemporalClosedAt(now).
@@ -320,13 +402,37 @@ func (a *Activities) MarkRunDone(ctx context.Context, in CompleteInput) error {
 		SetProgressMessage("Completed.").
 		SetSummary(in.Summary).
 		ClearError().
+		ClearErrorCode().
+		ClearErrorDetails().
 		AddRevision(1).
 		Save(ctx)
 	if err != nil {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("background task run %s not found", in.RunID)
+		// Already terminal (idempotent retry) or stopped (user cancel) → succeed
+		// without double-counting; only a genuinely missing run is an error.
+		run, qerr := a.Client.BackgroundTaskRun.Query().
+			Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+			Only(ctx)
+		if qerr != nil {
+			if ent.IsNotFound(qerr) {
+				return fmt.Errorf("background task run %s not found", in.RunID)
+			}
+			return qerr
+		}
+		// If the FIRST attempt updated the status but failed on the event append,
+		// this retry must still deliver the terminal event (skip for stopped runs,
+		// which never completed).
+		if run.Status == "succeeded" {
+			return a.appendEventIfMissing(ctx, in.StartInput, EventCompleted, map[string]any{
+				"type":     EventCompleted,
+				"message":  "Completed.",
+				"progress": 100,
+				"summary":  in.Summary,
+			})
+		}
+		return nil
 	}
 	if err := a.Client.BackgroundTask.UpdateOneID(taskID).
 		SetLastRunID(in.RunID).
@@ -360,7 +466,9 @@ func (a *Activities) MarkRunFailed(ctx context.Context, in CompleteInput) error 
 		return err
 	}
 	code := in.ErrorCode
-	if code == "" {
+	if !IsKnownErrorCode(code) {
+		// Guard the Prometheus label below: an unknown/empty code would otherwise
+		// add unbounded cardinality to cloud_runs_failed_total.
 		code = ErrCodeActivityFailed
 	}
 	details := in.ErrorDetails
@@ -368,7 +476,17 @@ func (a *Activities) MarkRunFailed(ctx context.Context, in CompleteInput) error 
 		details = in.Error
 	}
 	n, err := a.Client.BackgroundTaskRun.Update().
-		Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+		// Guard the terminal transition: don't override a succeeded/stopped run,
+		// and don't re-fail an already-failed run. This makes the activity
+		// idempotent under retry (n==0 → no double Failed metric / duplicate
+		// failed event). A failed run that the worker later self-heals is set
+		// back to "running" by MarkRunRunning first, so a genuine re-failure still
+		// passes this guard.
+		Where(
+			backgroundtaskrun.RunIDEQ(in.RunID),
+			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
+			backgroundtaskrun.StatusNotIn("succeeded", "stopped", "failed"),
+		).
 		SetStatus("failed").
 		SetTemporalStatus("Failed").
 		SetTemporalClosedAt(now).
@@ -384,7 +502,28 @@ func (a *Activities) MarkRunFailed(ctx context.Context, in CompleteInput) error 
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("background task run %s not found", in.RunID)
+		// Already terminal (idempotent retry) or stopped → succeed without
+		// double-counting; only a genuinely missing run is an error.
+		run, qerr := a.Client.BackgroundTaskRun.Query().
+			Where(backgroundtaskrun.RunIDEQ(in.RunID), backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID))).
+			Only(ctx)
+		if qerr != nil {
+			if ent.IsNotFound(qerr) {
+				return fmt.Errorf("background task run %s not found", in.RunID)
+			}
+			return qerr
+		}
+		// Deliver the terminal event the first attempt may have failed to append
+		// (see MarkRunDone's retry path for rationale).
+		if run.Status == "failed" {
+			return a.appendEventIfMissing(ctx, in.StartInput, EventFailed, map[string]any{
+				"type":      EventFailed,
+				"message":   "Failed.",
+				"error":     in.Error,
+				"errorCode": code,
+			})
+		}
+		return nil
 	}
 	if err := a.Client.BackgroundTask.UpdateOneID(taskID).
 		SetLastRunID(in.RunID).
@@ -407,7 +546,7 @@ func (a *Activities) MarkRunFailed(ctx context.Context, in CompleteInput) error 
 	})
 }
 
-func (a *Activities) upsertArtifact(ctx context.Context, task *ent.BackgroundTask, runID, body string) error {
+func (a *Activities) upsertArtifact(ctx context.Context, task *ent.BackgroundTask, runID, body, contentType string) error {
 	artifact, err := a.Client.BackgroundTaskArtifact.Query().
 		Where(backgroundtaskartifact.HasTaskWith(backgroundtask.IDEQ(task.ID))).
 		Only(ctx)
@@ -428,13 +567,13 @@ func (a *Activities) upsertArtifact(ctx context.Context, task *ent.BackgroundTas
 			SetTask(task).
 			SetBody(body).
 			SetUpdatedByRunID(runID).
-			SetContentType("text/markdown").
+			SetContentType(contentType).
 			Exec(ctx)
 	}
 	return a.Client.BackgroundTaskArtifact.UpdateOneID(artifact.ID).
 		SetBody(body).
 		SetUpdatedByRunID(runID).
-		SetContentType("text/markdown").
+		SetContentType(contentType).
 		AddRevision(1).
 		Exec(ctx)
 }
@@ -458,66 +597,67 @@ func (a *Activities) appendEvent(ctx context.Context, in StartInput, eventType s
 	if err != nil {
 		return err
 	}
-	last, err := a.Client.BackgroundTaskRunEvent.Query().
-		Where(backgroundtaskrunevent.HasRunWith(backgroundtaskrun.IDEQ(run.ID))).
-		Order(backgroundtaskrunevent.BySeq(entsql.OrderDesc())).
-		First(ctx)
-	seq := 0
-	if err == nil {
-		seq = last.Seq + 1
-	} else if !ent.IsNotFound(err) {
-		return err
-	}
 	raw, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
-	return a.Client.BackgroundTaskRunEvent.Create().
-		SetUserID(userID).
-		SetTask(task).
-		SetRun(run).
-		SetSeq(seq).
-		SetEventType(eventType).
-		SetEventJSON(string(raw)).
-		Exec(ctx)
+	// Seq assignment is a non-transactional read-max-then-insert against the
+	// unique (run, seq) index, so a concurrent writer (HTTP system event, a
+	// peer activity) can claim the same seq. Re-read and retry on the
+	// constraint collision instead of dropping the event.
+	for attempt := 0; ; attempt++ {
+		last, err := a.Client.BackgroundTaskRunEvent.Query().
+			Where(backgroundtaskrunevent.HasRunWith(backgroundtaskrun.IDEQ(run.ID))).
+			Order(backgroundtaskrunevent.BySeq(entsql.OrderDesc())).
+			First(ctx)
+		seq := 0
+		if err == nil {
+			seq = last.Seq + 1
+		} else if !ent.IsNotFound(err) {
+			return err
+		}
+		err = a.Client.BackgroundTaskRunEvent.Create().
+			SetUserID(userID).
+			SetTask(task).
+			SetRun(run).
+			SetSeq(seq).
+			SetEventType(eventType).
+			SetEventJSON(string(raw)).
+			Exec(ctx)
+		if err == nil || !ent.IsConstraintError(err) || attempt >= 3 {
+			return err
+		}
+	}
 }
 
-func buildSummary(task *ent.BackgroundTask, in StartInput) string {
-	base := fmt.Sprintf("API worker completed %s via %s trigger.", task.Name, in.Trigger)
-	if in.RequestedContext != "" {
-		return base + " Context: " + truncate(in.RequestedContext, 180)
+// appendEventIfMissing appends a terminal lifecycle event only when no event of
+// that type exists for the run yet. Used on the idempotent-retry path of
+// MarkRunDone/MarkRunFailed: when the FIRST attempt updated the status but
+// failed appending the event, the retry takes the n==0 early-return and would
+// otherwise never re-attempt it, leaving the terminal event permanently missing
+// from the stream the desktop polls.
+func (a *Activities) appendEventIfMissing(ctx context.Context, in StartInput, eventType string, event map[string]any) error {
+	taskID, err := uuid.Parse(in.TaskID)
+	if err != nil {
+		return err
 	}
-	return base
+	exists, err := a.Client.BackgroundTaskRunEvent.Query().
+		Where(
+			backgroundtaskrunevent.EventTypeEQ(eventType),
+			backgroundtaskrunevent.HasRunWith(
+				backgroundtaskrun.RunIDEQ(in.RunID),
+				backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
+			),
+		).
+		Exist(ctx)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+	return a.appendEvent(ctx, in, eventType, event)
 }
 
-func buildArtifact(task *ent.BackgroundTask, in StartInput, summary string, ts time.Time) string {
-	var b strings.Builder
-	b.WriteString("# ")
-	b.WriteString(task.Name)
-	b.WriteString("\n\n")
-	b.WriteString(summary)
-	b.WriteString("\n\n")
-	b.WriteString("## Execution\n\n")
-	b.WriteString("- Executor: api\n")
-	b.WriteString("- Trigger: ")
-	b.WriteString(in.Trigger)
-	b.WriteString("\n- Completed at: ")
-	b.WriteString(ts.UTC().Format(time.RFC3339))
-	b.WriteString("\n\n")
-	b.WriteString("## Instructions\n\n")
-	b.WriteString(task.Instructions)
-	if in.RequestedContext != "" {
-		b.WriteString("\n\n## Requested Context\n\n")
-		b.WriteString(in.RequestedContext)
-	}
-	b.WriteString("\n")
-	return b.String()
-}
-
-func truncate(s string, maxLen int) string {
-	s = strings.TrimSpace(s)
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
-}
+// buildSummary/buildArtifact/truncate moved verbatim to
+// backgroundtaskruntime.NoopRuntime (the deterministic rollback path).

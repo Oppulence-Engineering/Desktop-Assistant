@@ -15,9 +15,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
@@ -1102,6 +1106,504 @@ func (_m *BackgroundTaskRunEvent) ToEdge(order *BackgroundTaskRunEventOrder) *Ba
 	}
 }
 
+// BackgroundTaskScheduleStateEdge is the edge representation of BackgroundTaskScheduleState.
+type BackgroundTaskScheduleStateEdge struct {
+	Node   *BackgroundTaskScheduleState `json:"node"`
+	Cursor Cursor                       `json:"cursor"`
+}
+
+// BackgroundTaskScheduleStateConnection is the connection containing edges to BackgroundTaskScheduleState.
+type BackgroundTaskScheduleStateConnection struct {
+	Edges      []*BackgroundTaskScheduleStateEdge `json:"edges"`
+	PageInfo   PageInfo                           `json:"pageInfo"`
+	TotalCount int                                `json:"totalCount"`
+}
+
+func (c *BackgroundTaskScheduleStateConnection) build(nodes []*BackgroundTaskScheduleState, pager *backgroundtaskschedulestatePager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *BackgroundTaskScheduleState
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *BackgroundTaskScheduleState {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *BackgroundTaskScheduleState {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*BackgroundTaskScheduleStateEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &BackgroundTaskScheduleStateEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// BackgroundTaskScheduleStatePaginateOption enables pagination customization.
+type BackgroundTaskScheduleStatePaginateOption func(*backgroundtaskschedulestatePager) error
+
+// WithBackgroundTaskScheduleStateOrder configures pagination ordering.
+func WithBackgroundTaskScheduleStateOrder(order *BackgroundTaskScheduleStateOrder) BackgroundTaskScheduleStatePaginateOption {
+	if order == nil {
+		order = DefaultBackgroundTaskScheduleStateOrder
+	}
+	o := *order
+	return func(pager *backgroundtaskschedulestatePager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultBackgroundTaskScheduleStateOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithBackgroundTaskScheduleStateFilter configures pagination filter.
+func WithBackgroundTaskScheduleStateFilter(filter func(*BackgroundTaskScheduleStateQuery) (*BackgroundTaskScheduleStateQuery, error)) BackgroundTaskScheduleStatePaginateOption {
+	return func(pager *backgroundtaskschedulestatePager) error {
+		if filter == nil {
+			return errors.New("BackgroundTaskScheduleStateQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type backgroundtaskschedulestatePager struct {
+	reverse bool
+	order   *BackgroundTaskScheduleStateOrder
+	filter  func(*BackgroundTaskScheduleStateQuery) (*BackgroundTaskScheduleStateQuery, error)
+}
+
+func newBackgroundTaskScheduleStatePager(opts []BackgroundTaskScheduleStatePaginateOption, reverse bool) (*backgroundtaskschedulestatePager, error) {
+	pager := &backgroundtaskschedulestatePager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultBackgroundTaskScheduleStateOrder
+	}
+	return pager, nil
+}
+
+func (p *backgroundtaskschedulestatePager) applyFilter(query *BackgroundTaskScheduleStateQuery) (*BackgroundTaskScheduleStateQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskschedulestatePager) toCursor(_m *BackgroundTaskScheduleState) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *backgroundtaskschedulestatePager) applyCursors(query *BackgroundTaskScheduleStateQuery, after, before *Cursor) (*BackgroundTaskScheduleStateQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultBackgroundTaskScheduleStateOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *backgroundtaskschedulestatePager) applyOrder(query *BackgroundTaskScheduleStateQuery) *BackgroundTaskScheduleStateQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultBackgroundTaskScheduleStateOrder.Field {
+		query = query.Order(DefaultBackgroundTaskScheduleStateOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *backgroundtaskschedulestatePager) orderExpr(query *BackgroundTaskScheduleStateQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultBackgroundTaskScheduleStateOrder.Field {
+			b.Comma().Ident(DefaultBackgroundTaskScheduleStateOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to BackgroundTaskScheduleState.
+func (_m *BackgroundTaskScheduleStateQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...BackgroundTaskScheduleStatePaginateOption,
+) (*BackgroundTaskScheduleStateConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newBackgroundTaskScheduleStatePager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &BackgroundTaskScheduleStateConnection{Edges: []*BackgroundTaskScheduleStateEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// BackgroundTaskScheduleStateOrderField defines the ordering field of BackgroundTaskScheduleState.
+type BackgroundTaskScheduleStateOrderField struct {
+	// Value extracts the ordering value from the given BackgroundTaskScheduleState.
+	Value    func(*BackgroundTaskScheduleState) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) backgroundtaskschedulestate.OrderOption
+	toCursor func(*BackgroundTaskScheduleState) Cursor
+}
+
+// BackgroundTaskScheduleStateOrder defines the ordering of BackgroundTaskScheduleState.
+type BackgroundTaskScheduleStateOrder struct {
+	Direction OrderDirection                         `json:"direction"`
+	Field     *BackgroundTaskScheduleStateOrderField `json:"field"`
+}
+
+// DefaultBackgroundTaskScheduleStateOrder is the default ordering of BackgroundTaskScheduleState.
+var DefaultBackgroundTaskScheduleStateOrder = &BackgroundTaskScheduleStateOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &BackgroundTaskScheduleStateOrderField{
+		Value: func(_m *BackgroundTaskScheduleState) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: backgroundtaskschedulestate.FieldID,
+		toTerm: backgroundtaskschedulestate.ByID,
+		toCursor: func(_m *BackgroundTaskScheduleState) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts BackgroundTaskScheduleState into BackgroundTaskScheduleStateEdge.
+func (_m *BackgroundTaskScheduleState) ToEdge(order *BackgroundTaskScheduleStateOrder) *BackgroundTaskScheduleStateEdge {
+	if order == nil {
+		order = DefaultBackgroundTaskScheduleStateOrder
+	}
+	return &BackgroundTaskScheduleStateEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// CloudEventEdge is the edge representation of CloudEvent.
+type CloudEventEdge struct {
+	Node   *CloudEvent `json:"node"`
+	Cursor Cursor      `json:"cursor"`
+}
+
+// CloudEventConnection is the connection containing edges to CloudEvent.
+type CloudEventConnection struct {
+	Edges      []*CloudEventEdge `json:"edges"`
+	PageInfo   PageInfo          `json:"pageInfo"`
+	TotalCount int               `json:"totalCount"`
+}
+
+func (c *CloudEventConnection) build(nodes []*CloudEvent, pager *cloudeventPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *CloudEvent
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *CloudEvent {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *CloudEvent {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*CloudEventEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &CloudEventEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// CloudEventPaginateOption enables pagination customization.
+type CloudEventPaginateOption func(*cloudeventPager) error
+
+// WithCloudEventOrder configures pagination ordering.
+func WithCloudEventOrder(order *CloudEventOrder) CloudEventPaginateOption {
+	if order == nil {
+		order = DefaultCloudEventOrder
+	}
+	o := *order
+	return func(pager *cloudeventPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultCloudEventOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithCloudEventFilter configures pagination filter.
+func WithCloudEventFilter(filter func(*CloudEventQuery) (*CloudEventQuery, error)) CloudEventPaginateOption {
+	return func(pager *cloudeventPager) error {
+		if filter == nil {
+			return errors.New("CloudEventQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type cloudeventPager struct {
+	reverse bool
+	order   *CloudEventOrder
+	filter  func(*CloudEventQuery) (*CloudEventQuery, error)
+}
+
+func newCloudEventPager(opts []CloudEventPaginateOption, reverse bool) (*cloudeventPager, error) {
+	pager := &cloudeventPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultCloudEventOrder
+	}
+	return pager, nil
+}
+
+func (p *cloudeventPager) applyFilter(query *CloudEventQuery) (*CloudEventQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *cloudeventPager) toCursor(_m *CloudEvent) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *cloudeventPager) applyCursors(query *CloudEventQuery, after, before *Cursor) (*CloudEventQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultCloudEventOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *cloudeventPager) applyOrder(query *CloudEventQuery) *CloudEventQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultCloudEventOrder.Field {
+		query = query.Order(DefaultCloudEventOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *cloudeventPager) orderExpr(query *CloudEventQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultCloudEventOrder.Field {
+			b.Comma().Ident(DefaultCloudEventOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to CloudEvent.
+func (_m *CloudEventQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...CloudEventPaginateOption,
+) (*CloudEventConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newCloudEventPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &CloudEventConnection{Edges: []*CloudEventEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// CloudEventOrderField defines the ordering field of CloudEvent.
+type CloudEventOrderField struct {
+	// Value extracts the ordering value from the given CloudEvent.
+	Value    func(*CloudEvent) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) cloudevent.OrderOption
+	toCursor func(*CloudEvent) Cursor
+}
+
+// CloudEventOrder defines the ordering of CloudEvent.
+type CloudEventOrder struct {
+	Direction OrderDirection        `json:"direction"`
+	Field     *CloudEventOrderField `json:"field"`
+}
+
+// DefaultCloudEventOrder is the default ordering of CloudEvent.
+var DefaultCloudEventOrder = &CloudEventOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &CloudEventOrderField{
+		Value: func(_m *CloudEvent) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: cloudevent.FieldID,
+		toTerm: cloudevent.ByID,
+		toCursor: func(_m *CloudEvent) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts CloudEvent into CloudEventEdge.
+func (_m *CloudEvent) ToEdge(order *CloudEventOrder) *CloudEventEdge {
+	if order == nil {
+		order = DefaultCloudEventOrder
+	}
+	return &CloudEventEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
 // CreditLedgerEdge is the edge representation of CreditLedger.
 type CreditLedgerEdge struct {
 	Node   *CreditLedger `json:"node"`
@@ -1346,6 +1848,255 @@ func (_m *CreditLedger) ToEdge(order *CreditLedgerOrder) *CreditLedgerEdge {
 		order = DefaultCreditLedgerOrder
 	}
 	return &CreditLedgerEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// GoogleWatchEdge is the edge representation of GoogleWatch.
+type GoogleWatchEdge struct {
+	Node   *GoogleWatch `json:"node"`
+	Cursor Cursor       `json:"cursor"`
+}
+
+// GoogleWatchConnection is the connection containing edges to GoogleWatch.
+type GoogleWatchConnection struct {
+	Edges      []*GoogleWatchEdge `json:"edges"`
+	PageInfo   PageInfo           `json:"pageInfo"`
+	TotalCount int                `json:"totalCount"`
+}
+
+func (c *GoogleWatchConnection) build(nodes []*GoogleWatch, pager *googlewatchPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *GoogleWatch
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *GoogleWatch {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *GoogleWatch {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*GoogleWatchEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &GoogleWatchEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// GoogleWatchPaginateOption enables pagination customization.
+type GoogleWatchPaginateOption func(*googlewatchPager) error
+
+// WithGoogleWatchOrder configures pagination ordering.
+func WithGoogleWatchOrder(order *GoogleWatchOrder) GoogleWatchPaginateOption {
+	if order == nil {
+		order = DefaultGoogleWatchOrder
+	}
+	o := *order
+	return func(pager *googlewatchPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultGoogleWatchOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithGoogleWatchFilter configures pagination filter.
+func WithGoogleWatchFilter(filter func(*GoogleWatchQuery) (*GoogleWatchQuery, error)) GoogleWatchPaginateOption {
+	return func(pager *googlewatchPager) error {
+		if filter == nil {
+			return errors.New("GoogleWatchQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type googlewatchPager struct {
+	reverse bool
+	order   *GoogleWatchOrder
+	filter  func(*GoogleWatchQuery) (*GoogleWatchQuery, error)
+}
+
+func newGoogleWatchPager(opts []GoogleWatchPaginateOption, reverse bool) (*googlewatchPager, error) {
+	pager := &googlewatchPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultGoogleWatchOrder
+	}
+	return pager, nil
+}
+
+func (p *googlewatchPager) applyFilter(query *GoogleWatchQuery) (*GoogleWatchQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *googlewatchPager) toCursor(_m *GoogleWatch) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *googlewatchPager) applyCursors(query *GoogleWatchQuery, after, before *Cursor) (*GoogleWatchQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultGoogleWatchOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *googlewatchPager) applyOrder(query *GoogleWatchQuery) *GoogleWatchQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultGoogleWatchOrder.Field {
+		query = query.Order(DefaultGoogleWatchOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *googlewatchPager) orderExpr(query *GoogleWatchQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultGoogleWatchOrder.Field {
+			b.Comma().Ident(DefaultGoogleWatchOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to GoogleWatch.
+func (_m *GoogleWatchQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...GoogleWatchPaginateOption,
+) (*GoogleWatchConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newGoogleWatchPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &GoogleWatchConnection{Edges: []*GoogleWatchEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// GoogleWatchOrderField defines the ordering field of GoogleWatch.
+type GoogleWatchOrderField struct {
+	// Value extracts the ordering value from the given GoogleWatch.
+	Value    func(*GoogleWatch) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) googlewatch.OrderOption
+	toCursor func(*GoogleWatch) Cursor
+}
+
+// GoogleWatchOrder defines the ordering of GoogleWatch.
+type GoogleWatchOrder struct {
+	Direction OrderDirection         `json:"direction"`
+	Field     *GoogleWatchOrderField `json:"field"`
+}
+
+// DefaultGoogleWatchOrder is the default ordering of GoogleWatch.
+var DefaultGoogleWatchOrder = &GoogleWatchOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &GoogleWatchOrderField{
+		Value: func(_m *GoogleWatch) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: googlewatch.FieldID,
+		toTerm: googlewatch.ByID,
+		toCursor: func(_m *GoogleWatch) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts GoogleWatch into GoogleWatchEdge.
+func (_m *GoogleWatch) ToEdge(order *GoogleWatchOrder) *GoogleWatchEdge {
+	if order == nil {
+		order = DefaultGoogleWatchOrder
+	}
+	return &GoogleWatchEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}
@@ -1844,6 +2595,255 @@ func (_m *MCPConnection) ToEdge(order *MCPConnectionOrder) *MCPConnectionEdge {
 		order = DefaultMCPConnectionOrder
 	}
 	return &MCPConnectionEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// MeetingMinuteUsageEdge is the edge representation of MeetingMinuteUsage.
+type MeetingMinuteUsageEdge struct {
+	Node   *MeetingMinuteUsage `json:"node"`
+	Cursor Cursor              `json:"cursor"`
+}
+
+// MeetingMinuteUsageConnection is the connection containing edges to MeetingMinuteUsage.
+type MeetingMinuteUsageConnection struct {
+	Edges      []*MeetingMinuteUsageEdge `json:"edges"`
+	PageInfo   PageInfo                  `json:"pageInfo"`
+	TotalCount int                       `json:"totalCount"`
+}
+
+func (c *MeetingMinuteUsageConnection) build(nodes []*MeetingMinuteUsage, pager *meetingminuteusagePager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *MeetingMinuteUsage
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *MeetingMinuteUsage {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *MeetingMinuteUsage {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*MeetingMinuteUsageEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &MeetingMinuteUsageEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// MeetingMinuteUsagePaginateOption enables pagination customization.
+type MeetingMinuteUsagePaginateOption func(*meetingminuteusagePager) error
+
+// WithMeetingMinuteUsageOrder configures pagination ordering.
+func WithMeetingMinuteUsageOrder(order *MeetingMinuteUsageOrder) MeetingMinuteUsagePaginateOption {
+	if order == nil {
+		order = DefaultMeetingMinuteUsageOrder
+	}
+	o := *order
+	return func(pager *meetingminuteusagePager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultMeetingMinuteUsageOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithMeetingMinuteUsageFilter configures pagination filter.
+func WithMeetingMinuteUsageFilter(filter func(*MeetingMinuteUsageQuery) (*MeetingMinuteUsageQuery, error)) MeetingMinuteUsagePaginateOption {
+	return func(pager *meetingminuteusagePager) error {
+		if filter == nil {
+			return errors.New("MeetingMinuteUsageQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type meetingminuteusagePager struct {
+	reverse bool
+	order   *MeetingMinuteUsageOrder
+	filter  func(*MeetingMinuteUsageQuery) (*MeetingMinuteUsageQuery, error)
+}
+
+func newMeetingMinuteUsagePager(opts []MeetingMinuteUsagePaginateOption, reverse bool) (*meetingminuteusagePager, error) {
+	pager := &meetingminuteusagePager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultMeetingMinuteUsageOrder
+	}
+	return pager, nil
+}
+
+func (p *meetingminuteusagePager) applyFilter(query *MeetingMinuteUsageQuery) (*MeetingMinuteUsageQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *meetingminuteusagePager) toCursor(_m *MeetingMinuteUsage) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *meetingminuteusagePager) applyCursors(query *MeetingMinuteUsageQuery, after, before *Cursor) (*MeetingMinuteUsageQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultMeetingMinuteUsageOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *meetingminuteusagePager) applyOrder(query *MeetingMinuteUsageQuery) *MeetingMinuteUsageQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultMeetingMinuteUsageOrder.Field {
+		query = query.Order(DefaultMeetingMinuteUsageOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *meetingminuteusagePager) orderExpr(query *MeetingMinuteUsageQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultMeetingMinuteUsageOrder.Field {
+			b.Comma().Ident(DefaultMeetingMinuteUsageOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to MeetingMinuteUsage.
+func (_m *MeetingMinuteUsageQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...MeetingMinuteUsagePaginateOption,
+) (*MeetingMinuteUsageConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newMeetingMinuteUsagePager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &MeetingMinuteUsageConnection{Edges: []*MeetingMinuteUsageEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// MeetingMinuteUsageOrderField defines the ordering field of MeetingMinuteUsage.
+type MeetingMinuteUsageOrderField struct {
+	// Value extracts the ordering value from the given MeetingMinuteUsage.
+	Value    func(*MeetingMinuteUsage) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) meetingminuteusage.OrderOption
+	toCursor func(*MeetingMinuteUsage) Cursor
+}
+
+// MeetingMinuteUsageOrder defines the ordering of MeetingMinuteUsage.
+type MeetingMinuteUsageOrder struct {
+	Direction OrderDirection                `json:"direction"`
+	Field     *MeetingMinuteUsageOrderField `json:"field"`
+}
+
+// DefaultMeetingMinuteUsageOrder is the default ordering of MeetingMinuteUsage.
+var DefaultMeetingMinuteUsageOrder = &MeetingMinuteUsageOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &MeetingMinuteUsageOrderField{
+		Value: func(_m *MeetingMinuteUsage) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: meetingminuteusage.FieldID,
+		toTerm: meetingminuteusage.ByID,
+		toCursor: func(_m *MeetingMinuteUsage) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts MeetingMinuteUsage into MeetingMinuteUsageEdge.
+func (_m *MeetingMinuteUsage) ToEdge(order *MeetingMinuteUsageOrder) *MeetingMinuteUsageEdge {
+	if order == nil {
+		order = DefaultMeetingMinuteUsageOrder
+	}
+	return &MeetingMinuteUsageEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

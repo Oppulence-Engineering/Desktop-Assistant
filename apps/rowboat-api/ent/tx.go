@@ -20,8 +20,14 @@ type Tx struct {
 	BackgroundTaskRun *BackgroundTaskRunClient
 	// BackgroundTaskRunEvent is the client for interacting with the BackgroundTaskRunEvent builders.
 	BackgroundTaskRunEvent *BackgroundTaskRunEventClient
+	// BackgroundTaskScheduleState is the client for interacting with the BackgroundTaskScheduleState builders.
+	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
+	// CloudEvent is the client for interacting with the CloudEvent builders.
+	CloudEvent *CloudEventClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
+	// GoogleWatch is the client for interacting with the GoogleWatch builders.
+	GoogleWatch *GoogleWatchClient
 	// LLMUsage is the client for interacting with the LLMUsage builders.
 	LLMUsage *LLMUsageClient
 	// LLMUsageHistory is the client for interacting with the LLMUsageHistory builders.
@@ -30,6 +36,8 @@ type Tx struct {
 	MCPConnection *MCPConnectionClient
 	// MCPConnectionHistory is the client for interacting with the MCPConnectionHistory builders.
 	MCPConnectionHistory *MCPConnectionHistoryClient
+	// MeetingMinuteUsage is the client for interacting with the MeetingMinuteUsage builders.
+	MeetingMinuteUsage *MeetingMinuteUsageClient
 	// OAuthConnection is the client for interacting with the OAuthConnection builders.
 	OAuthConnection *OAuthConnectionClient
 	// OAuthConnectionHistory is the client for interacting with the OAuthConnectionHistory builders.
@@ -179,11 +187,15 @@ func (tx *Tx) init() {
 	tx.BackgroundTaskArtifact = NewBackgroundTaskArtifactClient(tx.config)
 	tx.BackgroundTaskRun = NewBackgroundTaskRunClient(tx.config)
 	tx.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(tx.config)
+	tx.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(tx.config)
+	tx.CloudEvent = NewCloudEventClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
+	tx.GoogleWatch = NewGoogleWatchClient(tx.config)
 	tx.LLMUsage = NewLLMUsageClient(tx.config)
 	tx.LLMUsageHistory = NewLLMUsageHistoryClient(tx.config)
 	tx.MCPConnection = NewMCPConnectionClient(tx.config)
 	tx.MCPConnectionHistory = NewMCPConnectionHistoryClient(tx.config)
+	tx.MeetingMinuteUsage = NewMeetingMinuteUsageClient(tx.config)
 	tx.OAuthConnection = NewOAuthConnectionClient(tx.config)
 	tx.OAuthConnectionHistory = NewOAuthConnectionHistoryClient(tx.config)
 	tx.OAuthPending = NewOAuthPendingClient(tx.config)

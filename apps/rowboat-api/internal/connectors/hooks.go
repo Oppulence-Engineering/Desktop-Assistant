@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
@@ -59,7 +60,14 @@ func (h *Handler) PreConsent(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	sub, err := h.client.Subscription.Query().Only(auth.WithUser(ctx, u))
+	// Scope explicitly by user: this hook runs under RequireHookHMAC, which marks
+	// the context internal, so the tenant interceptor's WithUser scoping is
+	// bypassed. Without an explicit predicate, .Only() runs over ALL
+	// subscriptions and returns NotSingularError whenever more than one user
+	// exists, silently downgrading every caller to "free" (paid users blocked).
+	sub, err := h.client.Subscription.Query().
+		Where(subscription.HasUserWith(user.IDEQ(u.ID))).
+		Only(ctx)
 	plan := "free"
 	if err == nil {
 		plan = string(sub.Plan)

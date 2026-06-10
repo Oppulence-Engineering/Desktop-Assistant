@@ -44,15 +44,21 @@ identifiers into the cluster Secrets below.
 5. **DNS** — `api.x.solomon-ai.co` (rowboat-api). The issuer `auth.solomon-ai.co`
    is WorkOS's custom domain (they serve it). cert-manager issues TLS for the api.
    (`oauth.solomon-ai.co` + `consent.solomon-ai.co` are needed only in Hydra mode.)
-6. **Kubernetes Secrets** (namespace `rowboat`):
+6. **Google push infrastructure** (RFC 003 cloud events) — Pub/Sub topic +
+   push subscription for Gmail, domain verification for Calendar channels.
+   Provisioning playbook:
+   [RFC 019](../apps/rfc/019-google-push-infrastructure.md).
+7. **Kubernetes Secrets** (namespace `rowboat`):
    - `rowboat-api-secrets`: `DATABASE_URL`, `REDIS_URL`, `DB_ENCRYPTION_KEY`,
      `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `HOOK_HMAC_SECRET`,
-     `INTERNAL_API_SECRET`, `INFISICAL_TOKEN`, `INFISICAL_PROJECT_ID`.
+     `INTERNAL_API_SECRET`, `INFISICAL_TOKEN`, `INFISICAL_PROJECT_ID`, and —
+     for cloud events — `GOOGLE_WEBHOOK_TOKEN`, `SLACK_SIGNING_SECRET`,
+     `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET`.
      (`ORY_BROKER_CLIENT_ID/SECRET` are used only by the connector broker once
      Hydra is reintroduced.)
 
-`DB_ENCRYPTION_KEY`, `HOOK_HMAC_SECRET`, and `INTERNAL_API_SECRET` are generated
-secrets (e.g. `openssl rand -hex 32`).
+`DB_ENCRYPTION_KEY`, `HOOK_HMAC_SECRET`, `INTERNAL_API_SECRET`, and
+`GOOGLE_WEBHOOK_TOKEN` are generated secrets (e.g. `openssl rand -hex 32`).
 
 ## Deploy order (WorkOS-direct)
 

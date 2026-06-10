@@ -93,7 +93,8 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	pending := client.OAuthPending.Query().FirstX(context.Background())
 	state := pending.State
 
-	// 2. Callback (browser redirect — no user in context).
+	// 2. Callback (browser redirect — no user in context). It parks the grant and
+	// deep-links back with the session; it must NOT persist the connection itself.
 	cbReq := httptest.NewRequest(http.MethodGet, "/v1/connections/canvas/callback?code=abc&state="+state, nil).
 		WithContext(withParam(context.Background(), "name", "canvas"))
 	cbRec := httptest.NewRecorder()
@@ -101,12 +102,37 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	if cbRec.Code != http.StatusFound {
 		t.Fatalf("callback: want 302, got %d: %s", cbRec.Code, cbRec.Body.String())
 	}
-	if loc := cbRec.Header().Get("Location"); !strings.Contains(loc, "solomon-ai://connection-complete") || !strings.Contains(loc, "status=success") {
+	loc := cbRec.Header().Get("Location")
+	if !strings.Contains(loc, "solomon-ai://connection-complete") || !strings.Contains(loc, "status=success") || !strings.Contains(loc, "session=") {
 		t.Fatalf("callback redirect = %q", loc)
 	}
-	// Connection persisted.
+	// Not persisted yet — persistence happens only at the authenticated Claim.
+	if n := client.MCPConnection.Query().CountX(authed); n != 0 {
+		t.Fatalf("expected 0 mcp connections before claim, got %d", n)
+	}
+
+	// 2b. A DIFFERENT user must not be able to claim this ticket (the core
+	// authorization-code-injection guard).
+	otherU := client.User.Create().SetEmail("b@x.co").SetWorkosUserID("user_2").SaveX(context.Background())
+	badClaim := httptest.NewRecorder()
+	h.Claim(badClaim, httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/claim", strings.NewReader(`{"state":"`+state+`"}`)).
+		WithContext(withParam(auth.WithUser(context.Background(), otherU), "name", "canvas")))
+	if badClaim.Code != http.StatusForbidden {
+		t.Fatalf("claim by wrong user: want 403, got %d: %s", badClaim.Code, badClaim.Body.String())
+	}
+	if n := client.MCPConnection.Query().CountX(authed); n != 0 {
+		t.Fatalf("wrong-user claim must not persist, got %d", n)
+	}
+
+	// 2c. The initiating user claims it → connection persisted.
+	claimRec := httptest.NewRecorder()
+	h.Claim(claimRec, httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/claim", strings.NewReader(`{"state":"`+state+`"}`)).
+		WithContext(withParam(authed, "name", "canvas")))
+	if claimRec.Code != http.StatusOK {
+		t.Fatalf("claim: want 200, got %d: %s", claimRec.Code, claimRec.Body.String())
+	}
 	if n := client.MCPConnection.Query().CountX(authed); n != 1 {
-		t.Fatalf("expected 1 mcp connection, got %d", n)
+		t.Fatalf("expected 1 mcp connection after claim, got %d", n)
 	}
 
 	// 3. List shows connected.

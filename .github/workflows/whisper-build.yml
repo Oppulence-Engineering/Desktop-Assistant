@@ -1,0 +1,105 @@
+# Builds the per-arch, statically-linked whisper-cli from the pinned whisper.cpp
+# tag (RFC 009 §20, Appendix I). Artifacts are consumed by the release pipeline,
+# which stages the matching arch into apps/x/vendor/whisper/<plat>-<arch>/ before
+# `electron-forge make` (where the app's existing osxNotarize notarizes the whole
+# bundle, including this signed helper).
+#
+# Re-runs on a PIN bump (the single source of truth for the version) or on demand.
+name: whisper-build
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "apps/x/vendor/whisper/PIN"
+      - "apps/x/vendor/whisper/build.sh"
+      - ".github/workflows/whisper-build.yml"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {
+              os: macos-14,
+              plat: darwin,
+              arch: arm64,
+              flags: "-DCMAKE_OSX_ARCHITECTURES=arm64 -DGGML_METAL=ON -DWHISPER_COREML=ON -DWHISPER_COREML_ALLOW_FALLBACK=ON",
+            }
+          - {
+              os: macos-13,
+              plat: darwin,
+              arch: x64,
+              flags: "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DGGML_METAL=ON",
+            }
+          - {
+              os: windows-2022,
+              plat: win32,
+              arch: x64,
+              flags: '-G "Visual Studio 17 2022" -A x64 -DGGML_VULKAN=ON',
+            }
+          - { os: ubuntu-22.04, plat: linux, arch: x64, flags: "-DGGML_VULKAN=ON" }
+    runs-on: ${{ matrix.os }}
+    env:
+      # LunarG Vulkan SDK pin for the Windows installer (Linux uses the apt repo,
+      # which always serves the current SDK). Bump alongside the whisper PIN.
+      VULKAN_VERSION: 1.4.313.2
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Vulkan legs (Linux/Windows) need the Vulkan SDK — loader, headers and
+      # the glslc shader compiler — which the GitHub runners don't ship. macOS uses
+      # Metal and needs nothing here. Without this, cmake's find_package(Vulkan)
+      # fails at configure ("missing: Vulkan_LIBRARY Vulkan_INCLUDE_DIR glslc").
+      - name: Install Vulkan SDK (Linux)
+        if: matrix.plat == 'linux'
+        shell: bash
+        run: |
+          wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc \
+            | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc >/dev/null
+          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list \
+            https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
+          sudo apt-get update
+          sudo apt-get install -y vulkan-sdk
+
+      - name: Install Vulkan SDK (Windows)
+        if: matrix.plat == 'win32'
+        shell: pwsh
+        run: |
+          curl.exe -L -o "$env:RUNNER_TEMP\VulkanSDK-Installer.exe" `
+            "https://sdk.lunarg.com/sdk/download/${env:VULKAN_VERSION}/windows/vulkansdk-windows-X64-${env:VULKAN_VERSION}.exe"
+          & "$env:RUNNER_TEMP\VulkanSDK-Installer.exe" --accept-licenses --default-answer --confirm-command install
+          Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
+          Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
+
+      - name: Build whisper-cli (pinned tag)
+        shell: bash
+        working-directory: apps/x/vendor/whisper
+        # Pass flags via env, not inline ${{ }} interpolation: the Windows flags
+        # contain quotes (-G "Visual Studio 17 2022") that would be re-parsed and
+        # mangled if substituted into the run-script text. As an env value the
+        # string stays intact; build.sh re-tokenizes it (honoring the quotes).
+        env:
+          WHISPER_CMAKE_FLAGS: ${{ matrix.flags }}
+        run: ./build.sh "$WHISPER_CMAKE_FLAGS"
+
+      - name: Sign + verify (macOS, hardened runtime)
+        if: matrix.plat == 'darwin'
+        env:
+          DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+        run: |
+          if [ -z "$DEVELOPER_ID" ]; then
+            echo "APPLE_DEVELOPER_ID not set — skipping signing (notarized later with the app)"
+            exit 0
+          fi
+          codesign --force --options runtime --timestamp \
+            --entitlements apps/x/apps/main/entitlements.plist \
+            --sign "$DEVELOPER_ID" apps/x/vendor/whisper/out/whisper-cli
+          codesign --verify --strict --deep apps/x/vendor/whisper/out/whisper-cli
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whisper-${{ matrix.plat }}-${{ matrix.arch }}
+          path: apps/x/vendor/whisper/out/
+          if-no-files-found: error

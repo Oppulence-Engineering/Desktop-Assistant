@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 	"github.com/flume/enthistory"
 	"github.com/google/uuid"
 )
@@ -55,7 +56,7 @@ func (LLMUsageHistory) Fields() []ent.Field {
 			Immutable(),
 		field.Time("ts").
 			Immutable().
-			Default(time.Now)}
+			Default(mixin.UTCNow)}
 }
 func (LLMUsageHistory) Edges() []ent.Edge {
 	return nil

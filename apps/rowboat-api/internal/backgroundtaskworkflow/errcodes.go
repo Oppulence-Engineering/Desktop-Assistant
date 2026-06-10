@@ -26,6 +26,21 @@ const (
 	ErrCodeArtifactWriteFailed = "artifact_write_failed" // Persisting the artifact failed.
 	ErrCodeDBError             = "db_error"              // A database read/write failed.
 	ErrCodeInternal            = "internal"              // Fallback for anything unclassified.
+
+	// Cloud runtime failures (RFC 004), set on the failed run row. All are
+	// NON-retryable: budgets/validation don't change on retry, and an LLM
+	// transcript cannot be resumed across activity attempts. They are mapped
+	// via mapRuntimeError (NewNonRetryableApplicationError), NOT taggedError,
+	// whose retryable-default policy covers only the transient classes above.
+	ErrCodeRuntimeDeadlineExceeded   = "runtime_deadline_exceeded"    // Run hit CLOUD_RUNTIME_MAX_DURATION.
+	ErrCodeRuntimeLLMBudgetExceeded  = "runtime_llm_budget_exceeded"  // Run hit CLOUD_RUNTIME_MAX_LLM_CALLS.
+	ErrCodeRuntimeToolBudgetExceeded = "runtime_tool_budget_exceeded" // Run hit CLOUD_RUNTIME_MAX_TOOL_CALLS.
+	ErrCodeRuntimeArtifactTooLarge   = "runtime_artifact_too_large"   // Final artifact over CLOUD_RUNTIME_MAX_ARTIFACT_BYTES.
+	ErrCodeRuntimeEventTooLarge      = "runtime_event_too_large"      // Emitted event over CLOUD_RUNTIME_MAX_EVENT_BYTES.
+	ErrCodeLLMCallFailed             = "llm_call_failed"              // Gateway/upstream/quota failure during a runtime LLM call.
+	ErrCodeToolNotAllowed            = "tool_not_allowed"             // Registry denied a tool (terminal escalation only).
+	ErrCodeToolInvokeFailed          = "tool_invoke_failed"           // A permitted tool's implementation failed terminally.
+	ErrCodeConnectorUnavailable      = "connector_unavailable"        // Connector token missing/expired/unscoped.
 )
 
 // knownErrorCodes lets the handler and tests assert a code is part of the taxonomy.
@@ -42,6 +57,16 @@ var knownErrorCodes = map[string]struct{}{
 	ErrCodeArtifactWriteFailed:  {},
 	ErrCodeDBError:              {},
 	ErrCodeInternal:             {},
+
+	ErrCodeRuntimeDeadlineExceeded:   {},
+	ErrCodeRuntimeLLMBudgetExceeded:  {},
+	ErrCodeRuntimeToolBudgetExceeded: {},
+	ErrCodeRuntimeArtifactTooLarge:   {},
+	ErrCodeRuntimeEventTooLarge:      {},
+	ErrCodeLLMCallFailed:             {},
+	ErrCodeToolNotAllowed:            {},
+	ErrCodeToolInvokeFailed:          {},
+	ErrCodeConnectorUnavailable:      {},
 }
 
 // IsKnownErrorCode reports whether code belongs to the taxonomy.
@@ -51,11 +76,21 @@ func IsKnownErrorCode(code string) bool {
 }
 
 // taggedError wraps an activity failure with a granular code so the workflow can
-// recover it from the (otherwise opaque) Temporal error chain.
+// recover it from the (otherwise opaque) Temporal error chain. The "type" of the
+// ApplicationError carries our code across the workflow boundary in both cases.
+//
+// Only PERMANENT failures are marked non-retryable: retrying an unparseable id or
+// a vanished task cannot change the outcome. Transient classes (db_error,
+// artifact_write_failed) are returned RETRYABLE so a momentary DB blip or write
+// contention is absorbed by the activity's retry budget instead of failing the
+// run on the first attempt.
 func taggedError(code, message string, cause error) error {
-	// The ApplicationError "type" carries our code across the workflow boundary;
-	// these failures are non-retryable because retrying won't change the outcome.
-	return temporal.NewNonRetryableApplicationError(message, code, cause)
+	switch code {
+	case ErrCodeTaskNotFound, ErrCodeTaskInvalid:
+		return temporal.NewNonRetryableApplicationError(message, code, cause)
+	default:
+		return temporal.NewApplicationError(message, code, cause)
+	}
 }
 
 // ClassifyRunError maps an error returned from a workflow activity into a stable

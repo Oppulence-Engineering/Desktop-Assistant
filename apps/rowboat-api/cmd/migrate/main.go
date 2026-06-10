@@ -36,7 +36,10 @@ func run() error {
 		return fmt.Errorf("usage: migrate <apply|dump> [name]")
 	}
 	cfg := appconfig.Load()
-	log, _ := telemetry.NewLogger(cfg)
+	log, err := telemetry.NewLogger(cfg)
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 
 	switch os.Args[1] {

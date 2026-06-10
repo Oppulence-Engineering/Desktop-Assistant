@@ -1,69 +1,107 @@
-import { ipcMain, BrowserWindow, shell, dialog, systemPreferences, desktopCapturer, app } from 'electron';
-import { ipc } from '@x/shared';
-import path from 'node:path';
-import os from 'node:os';
+import {
+  ipcMain,
+  BrowserWindow,
+  shell,
+  dialog,
+  systemPreferences,
+  desktopCapturer,
+  app,
+  MessageChannelMain,
+} from "electron";
+import { ipc } from "@x/shared";
+import path from "node:path";
+import os from "node:os";
 import {
   connectProvider,
+  connectConnector,
+  connectSlackWorkspace,
   disconnectProvider,
   listProviders,
-} from './oauth-handler.js';
-import { watcher as watcherCore, workspace } from '@x/core';
-import { WorkDir } from '@x/core/dist/config/config.js';
-import { workspace as workspaceShared } from '@x/shared';
-import * as mcpCore from '@x/core/dist/mcp/mcp.js';
-import * as runsCore from '@x/core/dist/runs/runs.js';
-import { bus } from '@x/core/dist/runs/bus.js';
-import { serviceBus } from '@x/core/dist/services/service_bus.js';
-import type { FSWatcher } from 'chokidar';
-import fs from 'node:fs/promises';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
-import z from 'zod';
+} from "./oauth-handler.js";
+import { watcher as watcherCore, workspace } from "@x/core";
+import { WorkDir } from "@x/core/dist/config/config.js";
+import { workspace as workspaceShared } from "@x/shared";
+import * as mcpCore from "@x/core/dist/mcp/mcp.js";
+import * as runsCore from "@x/core/dist/runs/runs.js";
+import { bus } from "@x/core/dist/runs/bus.js";
+import { serviceBus } from "@x/core/dist/services/service_bus.js";
+import type { FSWatcher } from "chokidar";
+import fs from "node:fs/promises";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+import z from "zod";
 
 const execAsync = promisify(exec);
-import { RunEvent } from '@x/shared/dist/runs.js';
-import { ServiceEvent } from '@x/shared/dist/service-events.js';
-import container from '@x/core/dist/di/container.js';
-import { listOnboardingModels } from '@x/core/dist/models/models-dev.js';
-import { testModelConnection } from '@x/core/dist/models/models.js';
-import { isSignedIn } from '@x/core/dist/account/account.js';
-import { listGatewayModels } from '@x/core/dist/models/gateway.js';
-import type { IModelConfigRepo } from '@x/core/dist/models/repo.js';
-import type { IOAuthRepo } from '@x/core/dist/auth/repo.js';
-import { IGranolaConfigRepo } from '@x/core/dist/knowledge/granola/repo.js';
-import { ICodeModeConfigRepo } from '@x/core/dist/code-mode/repo.js';
-import { CodePermissionRegistry } from '@x/core/dist/code-mode/acp/permission-registry.js';
-import { checkCodeModeAgentStatus } from '@x/core/dist/code-mode/status.js';
-import { invalidateCopilotInstructionsCache } from '@x/core/dist/application/assistant/instructions.js';
-import { triggerSync as triggerGranolaSync } from '@x/core/dist/knowledge/granola/sync.js';
-import { ISlackConfigRepo } from '@x/core/dist/slack/repo.js';
-import { isOnboardingComplete, markOnboardingComplete } from '@x/core/dist/config/note_creation_config.js';
-import * as composioHandler from './composio-handler.js';
-import { consumePendingDeepLink } from './deeplink.js';
-import { qualifyAndDisconnectComposioGoogle } from '@x/core/dist/migrations/composio-google-migration.js';
-import { IAgentScheduleRepo } from '@x/core/dist/agent-schedule/repo.js';
-import { IAgentScheduleStateRepo } from '@x/core/dist/agent-schedule/state-repo.js';
-import { triggerRun as triggerAgentScheduleRun } from '@x/core/dist/agent-schedule/runner.js';
-import { search } from '@x/core/dist/search/search.js';
-import { versionHistory, voice } from '@x/core';
-import { classifySchedule, processSolomonInstruction } from '@x/core/dist/knowledge/inline_tasks.js';
-import { getBillingInfo } from '@x/core/dist/billing/billing.js';
-import { summarizeMeeting } from '@x/core/dist/knowledge/summarize_meeting.js';
-import { getAccessToken } from '@x/core/dist/auth/tokens.js';
-import { getSolomonConfig } from '@x/core/dist/config/solomon.js';
-import { runLiveNoteAgent } from '@x/core/dist/knowledge/live-note/runner.js';
-import { listImportantThreads, listEverythingElseThreads, saveMessageBodyHeight, triggerSync as triggerGmailSync, sendThreadReply, archiveThread, trashThread, markThreadRead, getAccountEmail, getConnectionStatus as getGmailConnectionStatus } from '@x/core/dist/knowledge/sync_gmail.js';
-import { liveNoteBus } from '@x/core/dist/knowledge/live-note/bus.js';
-import { getInstallationId } from '@x/core/dist/analytics/installation.js';
-import { API_URL } from '@x/core/dist/config/env.js';
+import { RunEvent } from "@x/shared/dist/runs.js";
+import { ServiceEvent } from "@x/shared/dist/service-events.js";
+import container from "@x/core/dist/di/container.js";
+import { listOnboardingModels } from "@x/core/dist/models/models-dev.js";
+import { testModelConnection } from "@x/core/dist/models/models.js";
+import { isSignedIn } from "@x/core/dist/account/account.js";
+import { listGatewayModels } from "@x/core/dist/models/gateway.js";
+import type { IModelConfigRepo } from "@x/core/dist/models/repo.js";
+import type { IOAuthRepo } from "@x/core/dist/auth/repo.js";
+import { IGranolaConfigRepo } from "@x/core/dist/knowledge/granola/repo.js";
+import { ICodeModeConfigRepo } from "@x/core/dist/code-mode/repo.js";
+import { CodePermissionRegistry } from "@x/core/dist/code-mode/acp/permission-registry.js";
+import { checkCodeModeAgentStatus } from "@x/core/dist/code-mode/status.js";
+import { invalidateCopilotInstructionsCache } from "@x/core/dist/application/assistant/instructions.js";
+import { triggerSync as triggerGranolaSync } from "@x/core/dist/knowledge/granola/sync.js";
+import { ISlackConfigRepo } from "@x/core/dist/slack/repo.js";
+import {
+  isOnboardingComplete,
+  markOnboardingComplete,
+} from "@x/core/dist/config/note_creation_config.js";
+import * as composioHandler from "./composio-handler.js";
+import { consumePendingDeepLink } from "./deeplink.js";
+import { qualifyAndDisconnectComposioGoogle } from "@x/core/dist/migrations/composio-google-migration.js";
+import { IAgentScheduleRepo } from "@x/core/dist/agent-schedule/repo.js";
+import { IAgentScheduleStateRepo } from "@x/core/dist/agent-schedule/state-repo.js";
+import { triggerRun as triggerAgentScheduleRun } from "@x/core/dist/agent-schedule/runner.js";
+import { search } from "@x/core/dist/search/search.js";
+import { versionHistory, voice } from "@x/core";
+import {
+  WhisperService,
+  configureWhisperBinary,
+  binaryAvailable,
+  probeCapability,
+  codeOf as whisperCodeOf,
+  type StreamPort,
+} from "@x/core/dist/voice/whisper/index.js";
+import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
+import {
+  classifySchedule,
+  processSolomonInstruction,
+} from "@x/core/dist/knowledge/inline_tasks.js";
+import { getBillingInfo } from "@x/core/dist/billing/billing.js";
+import { submitFeedback } from "@x/core/dist/feedback/feedback.js";
+import { summarizeMeeting } from "@x/core/dist/knowledge/summarize_meeting.js";
+import { getAccessToken } from "@x/core/dist/auth/tokens.js";
+import { getSolomonConfig } from "@x/core/dist/config/solomon.js";
+import { runLiveNoteAgent } from "@x/core/dist/knowledge/live-note/runner.js";
+import {
+  listImportantThreads,
+  listEverythingElseThreads,
+  saveMessageBodyHeight,
+  triggerSync as triggerGmailSync,
+  sendThreadReply,
+  archiveThread,
+  trashThread,
+  markThreadRead,
+  getAccountEmail,
+  getConnectionStatus as getGmailConnectionStatus,
+} from "@x/core/dist/knowledge/sync_gmail.js";
+import { liveNoteBus } from "@x/core/dist/knowledge/live-note/bus.js";
+import { getInstallationId } from "@x/core/dist/analytics/installation.js";
+import { API_URL } from "@x/core/dist/config/env.js";
 import {
   fetchLiveNote,
   setLiveNote,
   setLiveNoteActive,
   deleteLiveNote,
   listLiveNotes,
-} from '@x/core/dist/knowledge/live-note/fileops.js';
-import { runBackgroundTask } from '@x/core/dist/background-tasks/runner.js';
+} from "@x/core/dist/knowledge/live-note/fileops.js";
+import { runBackgroundTask } from "@x/core/dist/background-tasks/runner.js";
 import {
   cancelCloudRun,
   getArtifactSyncState,
@@ -76,8 +114,8 @@ import {
   signalCloudRun,
   syncArtifactFromCloud,
   triggerCloudRun,
-} from '@x/core/dist/background-tasks/cloud-sync.js';
-import { backgroundTaskBus } from '@x/core/dist/background-tasks/bus.js';
+} from "@x/core/dist/background-tasks/cloud-sync.js";
+import { backgroundTaskBus } from "@x/core/dist/background-tasks/bus.js";
 import {
   fetchTask,
   patchTask,
@@ -85,9 +123,9 @@ import {
   deleteTask,
   listTasks,
   readRunIds as readTaskRunIds,
-} from '@x/core/dist/background-tasks/fileops.js';
-import { browserIpcHandlers } from './browser/ipc.js';
-import { ensureAgentSlackAvailable } from './agent-slack.js';
+} from "@x/core/dist/background-tasks/fileops.js";
+import { browserIpcHandlers } from "./browser/ipc.js";
+import { ensureAgentSlackAvailable } from "./agent-slack.js";
 
 /**
  * Convert markdown to a styled HTML document for PDF/DOCX export.
@@ -99,47 +137,47 @@ function markdownToHtml(markdown: string, title: string): string {
     .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_match, _path, display) => display.trim())
     .replace(/\[\[([^\]]+)\]\]/g, (_match, linkPath: string) => {
       // Use the last segment (filename) as the display name
-      const segments = linkPath.trim().split('/')
-      return segments[segments.length - 1]
+      const segments = linkPath.trim().split("/");
+      return segments[segments.length - 1];
     })
     // Escape HTML entities (but preserve markdown syntax)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 
   // Headings (must come before other processing)
-  html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>')
-  html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>')
-  html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>')
-  html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
-  html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
-  html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>')
+  html = html.replace(/^######\s+(.+)$/gm, "<h6>$1</h6>");
+  html = html.replace(/^#####\s+(.+)$/gm, "<h5>$1</h5>");
+  html = html.replace(/^####\s+(.+)$/gm, "<h4>$1</h4>");
+  html = html.replace(/^###\s+(.+)$/gm, "<h3>$1</h3>");
+  html = html.replace(/^##\s+(.+)$/gm, "<h2>$1</h2>");
+  html = html.replace(/^#\s+(.+)$/gm, "<h1>$1</h1>");
 
   // Bold and italic
-  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
+  html = html.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
 
   // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
 
   // Horizontal rules
-  html = html.replace(/^---$/gm, '<hr>')
+  html = html.replace(/^---$/gm, "<hr>");
 
   // Unordered lists
-  html = html.replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
+  html = html.replace(/^[-*]\s+(.+)$/gm, "<li>$1</li>");
 
   // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
   // Blockquotes
-  html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>')
+  html = html.replace(/^&gt;\s+(.+)$/gm, "<blockquote>$1</blockquote>");
 
   // Paragraphs: wrap remaining lines that aren't already wrapped in HTML tags
-  html = html.replace(/^(?!<[a-z/])((?!^\s*$).+)$/gm, '<p>$1</p>')
+  html = html.replace(/^(?!<[a-z/])((?!^\s*$).+)$/gm, "<p>$1</p>");
 
   // Clean up consecutive list items into lists
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`)
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
 
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>${title}</title>
@@ -151,11 +189,11 @@ function markdownToHtml(markdown: string, title: string): string {
   hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
   ul { padding-left: 1.5em; }
   a { color: #0066cc; }
-</style></head><body>${html}</body></html>`
+</style></head><body>${html}</body></html>`;
 }
 
 function resolveShellPath(filePath: string): string {
-  if (filePath.startsWith('~')) {
+  if (filePath.startsWith("~")) {
     return path.join(os.homedir(), filePath.slice(1));
   }
 
@@ -174,8 +212,8 @@ type IPCChannels = ipc.IPCChannels;
  */
 type InvokeHandler<K extends InvokeChannels> = (
   event: Electron.IpcMainInvokeEvent,
-  args: IPCChannels[K]['req']
-) => IPCChannels[K]['res'] | Promise<IPCChannels[K]['res']>;
+  args: IPCChannels[K]["req"],
+) => IPCChannels[K]["res"] | Promise<IPCChannels[K]["res"]>;
 
 /**
  * Type-safe handler registration map
@@ -187,7 +225,7 @@ type InvokeHandlers = {
 
 /**
  * Register all IPC handlers with type safety and runtime validation
- * 
+ *
  * This function ensures:
  * 1. All invoke channels have handlers (exhaustiveness checking)
  * 2. Handler signatures match channel definitions
@@ -197,7 +235,7 @@ export function registerIpcHandlers(handlers: InvokeHandlers) {
   // Register each handler with runtime validation
   for (const [channel, handler] of Object.entries(handlers) as [
     InvokeChannels,
-    InvokeHandler<InvokeChannels>
+    InvokeHandler<InvokeChannels>,
   ][]) {
     ipcMain.handle(channel, async (event, rawArgs) => {
       // Validate request payload
@@ -246,7 +284,7 @@ function emitKnowledgeCommitEvent(): void {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
     if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('knowledge:didCommit', {});
+      win.webContents.send("knowledge:didCommit", {});
     }
   }
 }
@@ -254,11 +292,13 @@ function emitKnowledgeCommitEvent(): void {
 /**
  * Emit workspace change event to all renderer windows
  */
-function emitWorkspaceChangeEvent(event: z.infer<typeof workspaceShared.WorkspaceChangeEvent>): void {
+function emitWorkspaceChangeEvent(
+  event: z.infer<typeof workspaceShared.WorkspaceChangeEvent>,
+): void {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
     if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('workspace:didChange', event);
+      win.webContents.send("workspace:didChange", event);
     }
   }
 }
@@ -281,19 +321,19 @@ function processChangeQueue(): void {
       const absPath = workspace.resolveWorkspacePath(relPath);
       fs.lstat(absPath)
         .then((stats) => {
-          const kind = stats.isDirectory() ? 'dir' : 'file';
-          emitWorkspaceChangeEvent({ type: 'changed', path: relPath, kind });
+          const kind = stats.isDirectory() ? "dir" : "file";
+          emitWorkspaceChangeEvent({ type: "changed", path: relPath, kind });
         })
         .catch(() => {
           // File no longer exists (edge case), emit without kind
-          emitWorkspaceChangeEvent({ type: 'changed', path: relPath });
+          emitWorkspaceChangeEvent({ type: "changed", path: relPath });
         });
     } catch {
       // Invalid path, ignore
     }
   } else {
     // Emit bulkChanged for multiple paths
-    emitWorkspaceChangeEvent({ type: 'bulkChanged', paths });
+    emitWorkspaceChangeEvent({ type: "bulkChanged", paths });
   }
 }
 
@@ -318,7 +358,7 @@ function queueChange(relPath: string): void {
  */
 function handleWorkspaceChange(event: z.infer<typeof workspaceShared.WorkspaceChangeEvent>): void {
   // Debounce 'changed' events, emit others immediately
-  if (event.type === 'changed' && event.path) {
+  if (event.type === "changed" && event.path) {
     queueChange(event.path);
   } else {
     emitWorkspaceChangeEvent(event);
@@ -328,11 +368,11 @@ function handleWorkspaceChange(event: z.infer<typeof workspaceShared.WorkspaceCh
 /**
  * Start workspace watcher
  * Watches the configured workspace root recursively and emits change events to renderer
- * 
+ *
  * This should be called once when the app starts (from main.ts).
  * The watcher runs as a main-process service and catches ALL filesystem changes
  * (both from IPC handlers and external changes like terminal/git).
- * 
+ *
  * Safe to call multiple times - guards against duplicate watchers.
  */
 export async function startWorkspaceWatcher(): Promise<void> {
@@ -363,7 +403,7 @@ function emitRunEvent(event: z.infer<typeof RunEvent>): void {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
     if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('runs:events', event);
+      win.webContents.send("runs:events", event);
     }
   }
 }
@@ -372,16 +412,21 @@ function emitServiceEvent(event: z.infer<typeof ServiceEvent>): void {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
     if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('services:events', event);
+      win.webContents.send("services:events", event);
     }
   }
 }
 
-export function emitOAuthEvent(event: { provider: string; success: boolean; error?: string; userId?: string }): void {
+export function emitOAuthEvent(event: {
+  provider: string;
+  success: boolean;
+  error?: string;
+  userId?: string;
+}): void {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
     if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('oauth:didConnect', event);
+      win.webContents.send("oauth:didConnect", event);
     }
   }
 }
@@ -391,7 +436,7 @@ export async function startRunsWatcher(): Promise<void> {
   if (runsWatcher) {
     return;
   }
-  runsWatcher = await bus.subscribe('*', async (event) => {
+  runsWatcher = await bus.subscribe("*", async (event) => {
     emitRunEvent(event);
   });
 }
@@ -413,7 +458,7 @@ export function startLiveNoteAgentWatcher(): void {
     const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
       if (!win.isDestroyed() && win.webContents) {
-        win.webContents.send('live-note-agent:events', event);
+        win.webContents.send("live-note-agent:events", event);
       }
     }
   });
@@ -426,7 +471,7 @@ export function startBackgroundTaskAgentWatcher(): void {
     const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
       if (!win.isDestroyed() && win.webContents) {
-        win.webContents.send('bg-task-agent:events', event);
+        win.webContents.send("bg-task-agent:events", event);
       }
     }
   });
@@ -470,140 +515,303 @@ async function getSolomonAccountState() {
   }
 }
 
+// ============================================================================
+// Local on-device transcription (whisper.cpp) — RFC 009
+// ============================================================================
+
+let whisperService: WhisperService | null = null;
+
+/** Absolute path to the per-arch `whisper-cli` (packaged extraResource, or dev vendor). */
+function whisperBinaryPath(): string {
+  const exe = process.platform === "win32" ? "whisper-cli.exe" : "whisper-cli";
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "whisper", exe); // extraResource → Resources/whisper/
+  }
+  // Dev: apps/x/vendor/whisper/<platform>-<arch>/whisper-cli (absent until built → cloud fallback).
+  return path.join(
+    app.getAppPath(),
+    "..",
+    "..",
+    "vendor",
+    "whisper",
+    `${process.platform}-${process.arch}`,
+    exe,
+  );
+}
+
+/** Lazily construct the singleton WhisperService and wire its progress events. */
+function getWhisper(): WhisperService {
+  if (whisperService) return whisperService;
+  configureWhisperBinary(whisperBinaryPath());
+  whisperService = new WhisperService(WorkDir, (progress) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed() && win.webContents) {
+        win.webContents.send("whisper:modelProgress", progress);
+      }
+    }
+  });
+  return whisperService;
+}
+
+/** On-device transcription is viable only when the binary exists AND the device is capable (§13). */
+async function localTranscriptionSupported(): Promise<boolean> {
+  if (!binaryAvailable()) return false;
+  try {
+    return (await probeCapability()).supported;
+  } catch {
+    return false;
+  }
+}
+
+type RemoteTranscriptionState = {
+  voiceProvider?: TranscriptionProvider;
+  meetingProvider?: TranscriptionProvider;
+  meetingMinutesRemaining?: number | null;
+};
+
+function asProvider(value: unknown): TranscriptionProvider | undefined {
+  return value === "whisper-local" || value === "deepgram" || value === "solomon"
+    ? value
+    : undefined;
+}
+
+// Provider resolution runs on hot paths (mic warmup, every OAuth connect, meeting
+// start), so cache the remote payload briefly and never let a slow endpoint stall
+// resolution. Fleet defaults + quota change rarely; a 60s TTL is plenty.
+const REMOTE_TRANSCRIPTION_TTL_MS = 60_000;
+const REMOTE_TRANSCRIPTION_FETCH_TIMEOUT_MS = 4_000;
+let remoteTranscriptionCache: { at: number; value: RemoteTranscriptionState | null } | null = null;
+
+/**
+ * Per-user quota + A/B-able fleet defaults from the authenticated endpoint (RFC 009
+ * Appendix O.6). Signed-out / failure → null, so the resolver falls back to the user
+ * override → hardcoded default. Cached with a short TTL and a hard fetch timeout.
+ */
+async function remoteTranscriptionState(): Promise<RemoteTranscriptionState | null> {
+  if (!(await isSignedIn())) {
+    remoteTranscriptionCache = null;
+    return null;
+  }
+  const cached = remoteTranscriptionCache;
+  if (cached && Date.now() - cached.at < REMOTE_TRANSCRIPTION_TTL_MS) return cached.value;
+
+  let value: RemoteTranscriptionState | null = null;
+  try {
+    const token = await getAccessToken();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REMOTE_TRANSCRIPTION_FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${API_URL}/v1/transcription/quota`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+      });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          meetingMinutesRemaining?: number;
+          unlimited?: boolean;
+          transcriptionDefaults?: { voiceProvider?: string; meetingProvider?: string };
+        };
+        value = {
+          voiceProvider: asProvider(data.transcriptionDefaults?.voiceProvider),
+          meetingProvider: asProvider(data.transcriptionDefaults?.meetingProvider),
+          // Unlimited (paid) → null so the quota gate never trips.
+          meetingMinutesRemaining: data.unlimited
+            ? null
+            : typeof data.meetingMinutesRemaining === "number"
+              ? data.meetingMinutesRemaining
+              : null,
+        };
+      }
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    value = null; // network error / timeout → fall back, and brief-cache the null below
+  }
+  remoteTranscriptionCache = { at: Date.now(), value };
+  return value;
+}
+
+async function resolveVoiceProviderMain(): Promise<TranscriptionProvider> {
+  const [cfg, signedIn, remote, localSupported] = await Promise.all([
+    voice.readTranscriptionConfig(),
+    isSignedIn(),
+    remoteTranscriptionState(),
+    localTranscriptionSupported(),
+  ]);
+  return voice.resolveVoiceProvider({
+    userOverride: cfg?.voiceProvider,
+    remoteDefault: remote?.voiceProvider,
+    signedIn,
+    localSupported,
+  });
+}
+
+async function resolveMeetingProviderMain(): Promise<{
+  provider: TranscriptionProvider;
+  reason: voice.ProviderReason;
+}> {
+  const [cfg, signedIn, remote, localSupported, voiceCfg] = await Promise.all([
+    voice.readTranscriptionConfig(),
+    isSignedIn(),
+    remoteTranscriptionState(),
+    localTranscriptionSupported(),
+    voice.getVoiceConfig(),
+  ]);
+  return voice.resolveMeetingProvider({
+    userOverride: cfg?.meetingProvider,
+    remoteDefault: remote?.meetingProvider,
+    signedIn,
+    localSupported,
+    hasOwnDeepgramKey: !!voiceCfg.deepgram,
+    meetingMinutesRemaining: remote?.meetingMinutesRemaining ?? null,
+  });
+}
+
 export function setupIpcHandlers() {
   // Forward knowledge commit events to renderer for panel refresh
   versionHistory.onCommit(() => emitKnowledgeCommitEvent());
 
   registerIpcHandlers({
-    'app:getVersions': async () => {
+    "app:getVersions": async () => {
       // args is null for this channel (no request payload)
       return getVersions();
     },
-    'app:consumePendingDeepLink': async () => {
+    "app:consumePendingDeepLink": async () => {
       return { url: consumePendingDeepLink() };
     },
-    'analytics:bootstrap': async () => {
+    "analytics:bootstrap": async () => {
       return {
         installationId: getInstallationId(),
         apiUrl: API_URL,
         appVersion: app.getVersion(),
       };
     },
-    'workspace:getRoot': async () => {
+    "workspace:getRoot": async () => {
       return workspace.getRoot();
     },
-    'workspace:exists': async (_, args) => {
+    "workspace:exists": async (_, args) => {
       return workspace.exists(args.path);
     },
-    'workspace:stat': async (_event, args) => {
+    "workspace:stat": async (_event, args) => {
       return workspace.stat(args.path);
     },
-    'workspace:readdir': async (_event, args) => {
+    "workspace:readdir": async (_event, args) => {
       return workspace.readdir(args.path, args.opts);
     },
-    'workspace:readFile': async (_event, args) => {
+    "workspace:readFile": async (_event, args) => {
       return workspace.readFile(args.path, args.encoding);
     },
-    'workspace:writeFile': async (_event, args) => {
+    "workspace:writeFile": async (_event, args) => {
       return workspace.writeFile(args.path, args.data, args.opts);
     },
-    'workspace:mkdir': async (_event, args) => {
+    "workspace:mkdir": async (_event, args) => {
       return workspace.mkdir(args.path, args.recursive);
     },
-    'workspace:rename': async (_event, args) => {
+    "workspace:rename": async (_event, args) => {
       return workspace.rename(args.from, args.to, args.overwrite);
     },
-    'workspace:copy': async (_event, args) => {
+    "workspace:copy": async (_event, args) => {
       return workspace.copy(args.from, args.to, args.overwrite);
     },
-    'workspace:remove': async (_event, args) => {
+    "workspace:remove": async (_event, args) => {
       return workspace.remove(args.path, args.opts);
     },
-    'gmail:getImportant': async (_event, args) => {
+    "gmail:getImportant": async (_event, args) => {
       return listImportantThreads({ cursor: args.cursor, limit: args.limit });
     },
-    'gmail:getEverythingElse': async (_event, args) => {
+    "gmail:getEverythingElse": async (_event, args) => {
       return listEverythingElseThreads({ cursor: args.cursor, limit: args.limit });
     },
-    'gmail:triggerSync': async () => {
+    "gmail:triggerSync": async () => {
       triggerGmailSync();
       return {};
     },
-    'gmail:sendReply': async (_event, args) => {
+    "gmail:sendReply": async (_event, args) => {
       return sendThreadReply(args);
     },
-    'gmail:getConnectionStatus': async () => {
+    "gmail:getConnectionStatus": async () => {
       return getGmailConnectionStatus();
     },
-    'gmail:getAccountEmail': async () => {
+    "gmail:getAccountEmail": async () => {
       return { email: await getAccountEmail() };
     },
-    'gmail:archiveThread': async (_event, args) => {
+    "gmail:archiveThread": async (_event, args) => {
       return archiveThread(args.threadId);
     },
-    'gmail:trashThread': async (_event, args) => {
+    "gmail:trashThread": async (_event, args) => {
       return trashThread(args.threadId);
     },
-    'gmail:markThreadRead': async (_event, args) => {
+    "gmail:markThreadRead": async (_event, args) => {
       return markThreadRead(args.threadId);
     },
-    'gmail:saveMessageHeight': async (_event, args) => {
+    "gmail:saveMessageHeight": async (_event, args) => {
       saveMessageBodyHeight(args.threadId, args.messageId, args.height);
       return {};
     },
-    'mcp:listTools': async (_event, args) => {
+    "mcp:listTools": async (_event, args) => {
       return mcpCore.listTools(args.serverName, args.cursor);
     },
-    'mcp:executeTool': async (_event, args) => {
+    "mcp:executeTool": async (_event, args) => {
       return { result: await mcpCore.executeTool(args.serverName, args.toolName, args.input) };
     },
-    'runs:create': async (_event, args) => {
+    "runs:create": async (_event, args) => {
       return runsCore.createRun(args);
     },
-    'runs:createMessage': async (_event, args) => {
-      return { messageId: await runsCore.createMessage(args.runId, args.message, args.voiceInput, args.voiceOutput, args.searchEnabled, args.middlePaneContext, args.codeMode) };
+    "runs:createMessage": async (_event, args) => {
+      return {
+        messageId: await runsCore.createMessage(
+          args.runId,
+          args.message,
+          args.voiceInput,
+          args.voiceOutput,
+          args.searchEnabled,
+          args.middlePaneContext,
+          args.codeMode,
+        ),
+      };
     },
-    'runs:authorizePermission': async (_event, args) => {
+    "runs:authorizePermission": async (_event, args) => {
       await runsCore.authorizePermission(args.runId, args.authorization);
       return { success: true };
     },
-    'codeRun:resolvePermission': async (_event, args) => {
-      const registry = container.resolve<CodePermissionRegistry>('codePermissionRegistry');
+    "codeRun:resolvePermission": async (_event, args) => {
+      const registry = container.resolve<CodePermissionRegistry>("codePermissionRegistry");
       registry.resolve(args.requestId, args.decision);
       return { success: true };
     },
-    'runs:provideHumanInput': async (_event, args) => {
+    "runs:provideHumanInput": async (_event, args) => {
       await runsCore.replyToHumanInputRequest(args.runId, args.reply);
       return { success: true };
     },
-    'runs:stop': async (_event, args) => {
+    "runs:stop": async (_event, args) => {
       await runsCore.stop(args.runId, args.force);
       return { success: true };
     },
-    'runs:fetch': async (_event, args) => {
+    "runs:fetch": async (_event, args) => {
       return runsCore.fetchRun(args.runId);
     },
-    'runs:list': async (_event, args) => {
+    "runs:list": async (_event, args) => {
       return runsCore.listRuns(args);
     },
-    'runs:delete': async (_event, args) => {
+    "runs:delete": async (_event, args) => {
       await runsCore.deleteRun(args.runId);
       return { success: true };
     },
-    'runs:downloadLog': async (event, args) => {
+    "runs:downloadLog": async (event, args) => {
       const runFileName = `${args.runId}.jsonl`;
       if (path.basename(runFileName) !== runFileName) {
-        return { success: false, error: 'Invalid run id' };
+        return { success: false, error: "Invalid run id" };
       }
 
-      const sourcePath = path.join(WorkDir, 'runs', runFileName);
+      const sourcePath = path.join(WorkDir, "runs", runFileName);
       const win = BrowserWindow.fromWebContents(event.sender);
       const result = await dialog.showSaveDialog(win!, {
         defaultPath: `${runFileName}.log`,
         filters: [
-          { name: 'Chat Log', extensions: ['log'] },
-          { name: 'JSONL', extensions: ['jsonl'] },
-          { name: 'All Files', extensions: ['*'] },
+          { name: "Chat Log", extensions: ["log"] },
+          { name: "JSONL", extensions: ["jsonl"] },
+          { name: "All Files", extensions: ["*"] },
         ],
       });
 
@@ -615,66 +823,78 @@ export function setupIpcHandlers() {
         await fs.copyFile(sourcePath, result.filePath);
         return { success: true };
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to download chat log';
+        const message = err instanceof Error ? err.message : "Failed to download chat log";
         return { success: false, error: message };
       }
     },
-    'models:list': async () => {
+    "models:list": async () => {
       if (await isSignedIn()) {
         return await listGatewayModels();
       }
       return await listOnboardingModels();
     },
-    'models:test': async (_event, args) => {
+    "models:test": async (_event, args) => {
       return await testModelConnection(args.provider, args.model);
     },
-    'models:saveConfig': async (_event, args) => {
-      const repo = container.resolve<IModelConfigRepo>('modelConfigRepo');
+    "models:saveConfig": async (_event, args) => {
+      const repo = container.resolve<IModelConfigRepo>("modelConfigRepo");
       await repo.setConfig(args);
       return { success: true };
     },
-    'oauth:connect': async (_event, args) => {
-      const credentials = args.clientId && args.clientSecret
-        ? { clientId: args.clientId.trim(), clientSecret: args.clientSecret.trim() }
-        : undefined;
+    "oauth:connect": async (_event, args) => {
+      const credentials =
+        args.clientId && args.clientSecret
+          ? { clientId: args.clientId.trim(), clientSecret: args.clientSecret.trim() }
+          : undefined;
       return await connectProvider(args.provider, credentials);
     },
-    'oauth:disconnect': async (_event, args) => {
+    "oauth:disconnect": async (_event, args) => {
       return await disconnectProvider(args.provider);
     },
-    'oauth:list-providers': async () => {
+    "connectors:connect": async (_event, args) => {
+      // Starts the connector OAuth flow + opens the browser. The browser
+      // completes at the api callback, which deep-links back and main redeems
+      // the grant via the connector /claim endpoint (see deeplink.ts).
+      return await connectConnector(args.connector);
+    },
+    "slack:connectWorkspace": async () => {
+      // Opens the api's Slack install front door; the deep-link dispatcher
+      // redeems the parked bundle via /v1/slack-oauth/claim (see deeplink.ts).
+      return await connectSlackWorkspace();
+    },
+    "oauth:list-providers": async () => {
       return listProviders();
     },
-    'oauth:getState': async () => {
-      const repo = container.resolve<IOAuthRepo>('oauthRepo');
+    "oauth:getState": async () => {
+      const repo = container.resolve<IOAuthRepo>("oauthRepo");
       const config = await repo.getClientFacingConfig();
       return { config };
     },
-    'account:getSolomon': async () => getSolomonAccountState(),
-    'account:getRowboat': async () => {
+    "account:getSolomon": async () => getSolomonAccountState(),
+    "account:getRowboat": async () => {
       return getSolomonAccountState();
     },
-    'granola:getConfig': async () => {
-      const repo = container.resolve<IGranolaConfigRepo>('granolaConfigRepo');
+    "granola:getConfig": async () => {
+      const repo = container.resolve<IGranolaConfigRepo>("granolaConfigRepo");
       const config = await repo.getConfig();
       return { enabled: config.enabled };
     },
-    'codeMode:getConfig': async () => {
-      const repo = container.resolve<ICodeModeConfigRepo>('codeModeConfigRepo');
+    "codeMode:getConfig": async () => {
+      const repo = container.resolve<ICodeModeConfigRepo>("codeModeConfigRepo");
       const config = await repo.getConfig();
       return { enabled: config.enabled, approvalPolicy: config.approvalPolicy };
     },
-    'codeMode:setConfig': async (_event, args) => {
-      const repo = container.resolve<ICodeModeConfigRepo>('codeModeConfigRepo');
+    "codeMode:setConfig": async (_event, args) => {
+      const repo = container.resolve<ICodeModeConfigRepo>("codeModeConfigRepo");
       await repo.setConfig({ enabled: args.enabled, approvalPolicy: args.approvalPolicy });
       invalidateCopilotInstructionsCache();
       return { success: true };
     },
-    'codeMode:checkAgentStatus': async () => {
+    "codeMode:checkAgentStatus": async () => {
       return await checkCodeModeAgentStatus();
     },
-    'granola:setConfig': async (_event, args) => {
-      const repo = container.resolve<IGranolaConfigRepo>('granolaConfigRepo');
+    "granola:setConfig": async (_event, args) => {
+      const repo = container.resolve<IGranolaConfigRepo>("granolaConfigRepo");
       await repo.setConfig({ enabled: args.enabled });
 
       // Trigger sync immediately when enabled
@@ -684,72 +904,74 @@ export function setupIpcHandlers() {
 
       return { success: true };
     },
-    'slack:getConfig': async () => {
-      const repo = container.resolve<ISlackConfigRepo>('slackConfigRepo');
+    "slack:getConfig": async () => {
+      const repo = container.resolve<ISlackConfigRepo>("slackConfigRepo");
       const config = await repo.getConfig();
       return { enabled: config.enabled, workspaces: config.workspaces };
     },
-    'slack:setConfig': async (_event, args) => {
-      const repo = container.resolve<ISlackConfigRepo>('slackConfigRepo');
+    "slack:setConfig": async (_event, args) => {
+      const repo = container.resolve<ISlackConfigRepo>("slackConfigRepo");
       await repo.setConfig({ enabled: args.enabled, workspaces: args.workspaces });
       return { success: true };
     },
-    'slack:listWorkspaces': async () => {
+    "slack:listWorkspaces": async () => {
       try {
         await ensureAgentSlackAvailable();
-        const { stdout } = await execAsync('agent-slack auth whoami', { timeout: 10000 });
+        const { stdout } = await execAsync("agent-slack auth whoami", { timeout: 10000 });
         const parsed = JSON.parse(stdout);
-        const workspaces = (parsed.workspaces || []).map((w: { workspace_url?: string; workspace_name?: string }) => ({
-          url: w.workspace_url || '',
-          name: w.workspace_name || '',
-        }));
+        const workspaces = (parsed.workspaces || []).map(
+          (w: { workspace_url?: string; workspace_name?: string }) => ({
+            url: w.workspace_url || "",
+            name: w.workspace_name || "",
+          }),
+        );
         return { workspaces };
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to list Slack workspaces';
+        const message = err instanceof Error ? err.message : "Failed to list Slack workspaces";
         return { workspaces: [], error: message };
       }
     },
-    'onboarding:getStatus': async () => {
+    "onboarding:getStatus": async () => {
       // Show onboarding if it hasn't been completed yet
       const complete = isOnboardingComplete();
       return { showOnboarding: !complete };
     },
-    'onboarding:markComplete': async () => {
+    "onboarding:markComplete": async () => {
       markOnboardingComplete();
       return { success: true };
     },
     // Composio integration handlers
-    'composio:is-configured': async () => {
+    "composio:is-configured": async () => {
       return composioHandler.isConfigured();
     },
-    'composio:set-api-key': async (_event, args) => {
+    "composio:set-api-key": async (_event, args) => {
       return composioHandler.setApiKey(args.apiKey);
     },
-    'composio:initiate-connection': async (_event, args) => {
+    "composio:initiate-connection": async (_event, args) => {
       return composioHandler.initiateConnection(args.toolkitSlug);
     },
-    'composio:get-connection-status': async (_event, args) => {
+    "composio:get-connection-status": async (_event, args) => {
       return composioHandler.getConnectionStatus(args.toolkitSlug);
     },
-    'composio:sync-connection': async (_event, args) => {
+    "composio:sync-connection": async (_event, args) => {
       return composioHandler.syncConnection(args.toolkitSlug, args.connectedAccountId);
     },
-    'composio:disconnect': async (_event, args) => {
+    "composio:disconnect": async (_event, args) => {
       return composioHandler.disconnect(args.toolkitSlug);
     },
-    'composio:list-connected': async () => {
+    "composio:list-connected": async () => {
       return composioHandler.listConnected();
     },
     // Composio Tools Library handlers
-    'composio:list-toolkits': async () => {
+    "composio:list-toolkits": async () => {
       return composioHandler.listToolkits();
     },
-    'migration:check-composio-google': async () => {
+    "migration:check-composio-google": async () => {
       return qualifyAndDisconnectComposioGoogle();
     },
     // Agent schedule handlers
-    'agent-schedule:getConfig': async () => {
-      const repo = container.resolve<IAgentScheduleRepo>('agentScheduleRepo');
+    "agent-schedule:getConfig": async () => {
+      const repo = container.resolve<IAgentScheduleRepo>("agentScheduleRepo");
       try {
         return await repo.getConfig();
       } catch {
@@ -757,8 +979,8 @@ export function setupIpcHandlers() {
         return { agents: {} };
       }
     },
-    'agent-schedule:getState': async () => {
-      const repo = container.resolve<IAgentScheduleStateRepo>('agentScheduleStateRepo');
+    "agent-schedule:getState": async () => {
+      const repo = container.resolve<IAgentScheduleStateRepo>("agentScheduleStateRepo");
       try {
         return await repo.getState();
       } catch {
@@ -766,58 +988,69 @@ export function setupIpcHandlers() {
         return { agents: {} };
       }
     },
-    'agent-schedule:updateAgent': async (_event, args) => {
-      const repo = container.resolve<IAgentScheduleRepo>('agentScheduleRepo');
+    "agent-schedule:updateAgent": async (_event, args) => {
+      const repo = container.resolve<IAgentScheduleRepo>("agentScheduleRepo");
       await repo.upsert(args.agentName, args.entry);
       // Trigger the runner to pick up the change immediately
       triggerAgentScheduleRun();
       return { success: true };
     },
-    'agent-schedule:deleteAgent': async (_event, args) => {
-      const repo = container.resolve<IAgentScheduleRepo>('agentScheduleRepo');
-      const stateRepo = container.resolve<IAgentScheduleStateRepo>('agentScheduleStateRepo');
+    "agent-schedule:deleteAgent": async (_event, args) => {
+      const repo = container.resolve<IAgentScheduleRepo>("agentScheduleRepo");
+      const stateRepo = container.resolve<IAgentScheduleStateRepo>("agentScheduleStateRepo");
       await repo.delete(args.agentName);
       await stateRepo.deleteAgentState(args.agentName);
       return { success: true };
     },
     // Shell integration handlers
-    'shell:openPath': async (_event, args) => {
+    "shell:openPath": async (_event, args) => {
       const filePath = resolveShellPath(args.path);
       const error = await shell.openPath(filePath);
       return { error: error || undefined };
     },
-    'shell:showItemInFolder': async (_event, args) => {
+    "shell:showItemInFolder": async (_event, args) => {
       const filePath = resolveShellPath(args.path);
       shell.showItemInFolder(filePath);
       return { success: true };
     },
-    'shell:readFileBase64': async (_event, args) => {
+    "shell:readFileBase64": async (_event, args) => {
       const filePath = resolveShellPath(args.path);
       const stat = await fs.stat(filePath);
       if (stat.size > 10 * 1024 * 1024) {
-        throw new Error('File too large (>10MB)');
+        throw new Error("File too large (>10MB)");
       }
       const buffer = await fs.readFile(filePath);
       const ext = path.extname(filePath).toLowerCase();
       const mimeMap: Record<string, string> = {
-        '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml',
-        '.bmp': 'image/bmp', '.ico': 'image/x-icon',
-        '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4',
-        '.ogg': 'audio/ogg', '.flac': 'audio/flac', '.aac': 'audio/aac',
-        '.pdf': 'application/pdf', '.json': 'application/json',
-        '.txt': 'text/plain', '.md': 'text/markdown',
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".svg": "image/svg+xml",
+        ".bmp": "image/bmp",
+        ".ico": "image/x-icon",
+        ".wav": "audio/wav",
+        ".mp3": "audio/mpeg",
+        ".m4a": "audio/mp4",
+        ".ogg": "audio/ogg",
+        ".flac": "audio/flac",
+        ".aac": "audio/aac",
+        ".pdf": "application/pdf",
+        ".json": "application/json",
+        ".txt": "text/plain",
+        ".md": "text/markdown",
       };
-      const mimeType = mimeMap[ext] || 'application/octet-stream';
-      return { data: buffer.toString('base64'), mimeType, size: stat.size };
+      const mimeType = mimeMap[ext] || "application/octet-stream";
+      return { data: buffer.toString("base64"), mimeType, size: stat.size };
     },
-    'dialog:openDirectory': async (event, args) => {
+    "dialog:openDirectory": async (event, args) => {
       const win = BrowserWindow.fromWebContents(event.sender);
       const defaultPath = args.defaultPath ? resolveShellPath(args.defaultPath) : os.homedir();
       const result = await dialog.showOpenDialog(win!, {
-        title: args.title ?? 'Choose work directory',
+        title: args.title ?? "Choose work directory",
         defaultPath,
-        properties: ['openDirectory', 'createDirectory'],
+        properties: ["openDirectory", "createDirectory"],
       });
       if (result.canceled || result.filePaths.length === 0) {
         return { path: null };
@@ -825,31 +1058,31 @@ export function setupIpcHandlers() {
       return { path: result.filePaths[0] ?? null };
     },
     // Knowledge version history handlers
-    'knowledge:history': async (_event, args) => {
+    "knowledge:history": async (_event, args) => {
       const commits = await versionHistory.getFileHistory(args.path);
       return { commits };
     },
-    'knowledge:fileAtCommit': async (_event, args) => {
+    "knowledge:fileAtCommit": async (_event, args) => {
       const content = await versionHistory.getFileAtCommit(args.path, args.oid);
       return { content };
     },
-    'knowledge:restore': async (_event, args) => {
+    "knowledge:restore": async (_event, args) => {
       await versionHistory.restoreFile(args.path, args.oid);
       return { ok: true };
     },
     // Search handler
-    'search:query': async (_event, args) => {
+    "search:query": async (_event, args) => {
       return search(args.query, args.limit, args.types);
     },
     // Inline task schedule classification
-    'export:note': async (event, args) => {
+    "export:note": async (event, args) => {
       const { markdown, format, title } = args;
-      const sanitizedTitle = title.replace(/[/\\?%*:|"<>]/g, '-').trim() || 'Untitled';
+      const sanitizedTitle = title.replace(/[/\\?%*:|"<>]/g, "-").trim() || "Untitled";
 
       const filterMap: Record<string, Electron.FileFilter[]> = {
-        md: [{ name: 'Markdown', extensions: ['md'] }],
-        pdf: [{ name: 'PDF', extensions: ['pdf'] }],
-        docx: [{ name: 'Word Document', extensions: ['docx'] }],
+        md: [{ name: "Markdown", extensions: ["md"] }],
+        pdf: [{ name: "PDF", extensions: ["pdf"] }],
+        docx: [{ name: "Word Document", extensions: ["docx"] }],
       };
 
       const win = BrowserWindow.fromWebContents(event.sender);
@@ -864,12 +1097,12 @@ export function setupIpcHandlers() {
 
       const filePath = result.filePath;
 
-      if (format === 'md') {
-        await fs.writeFile(filePath, markdown, 'utf8');
+      if (format === "md") {
+        await fs.writeFile(filePath, markdown, "utf8");
         return { success: true };
       }
 
-      if (format === 'pdf') {
+      if (format === "pdf") {
         // Render markdown as HTML in a hidden window, then print to PDF
         const htmlContent = markdownToHtml(markdown, sanitizedTitle);
         const hiddenWin = new BrowserWindow({
@@ -885,19 +1118,19 @@ export function setupIpcHandlers() {
         });
         await hiddenWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
         // Small delay to ensure CSS/fonts render
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
         const pdfBuffer = await hiddenWin.webContents.printToPDF({
           printBackground: true,
-          pageSize: 'A4',
+          pageSize: "A4",
         });
         hiddenWin.destroy();
         await fs.writeFile(filePath, pdfBuffer);
         return { success: true };
       }
 
-      if (format === 'docx') {
+      if (format === "docx") {
         const htmlContent = markdownToHtml(markdown, sanitizedTitle);
-        const { default: htmlToDocx } = await import('html-to-docx');
+        const { default: htmlToDocx } = await import("html-to-docx");
         const docxBuffer = await htmlToDocx(htmlContent, undefined, {
           table: { row: { cantSplit: true } },
           footer: false,
@@ -907,46 +1140,137 @@ export function setupIpcHandlers() {
         return { success: true };
       }
 
-      return { success: false, error: 'Unknown format' };
+      return { success: false, error: "Unknown format" };
     },
-    'meeting:checkScreenPermission': async () => {
-      if (process.platform !== 'darwin') return { granted: true };
-      const status = systemPreferences.getMediaAccessStatus('screen');
-      console.log('[meeting] Screen recording permission status:', status);
-      if (status === 'granted') return { granted: true };
+    "meeting:checkScreenPermission": async () => {
+      if (process.platform !== "darwin") return { granted: true };
+      const status = systemPreferences.getMediaAccessStatus("screen");
+      console.log("[meeting] Screen recording permission status:", status);
+      if (status === "granted") return { granted: true };
       // Not granted — call desktopCapturer.getSources() to register the app
       // in the macOS Screen Recording list. On first call this shows the
       // native permission prompt (signed apps are remembered across restarts).
-      try { await desktopCapturer.getSources({ types: ['screen'] }); } catch { /* ignore */ }
+      try {
+        await desktopCapturer.getSources({ types: ["screen"] });
+      } catch {
+        /* ignore */
+      }
       // Re-check after the native prompt was dismissed
-      const statusAfter = systemPreferences.getMediaAccessStatus('screen');
-      console.log('[meeting] Screen recording permission status after prompt:', statusAfter);
-      return { granted: statusAfter === 'granted' };
+      const statusAfter = systemPreferences.getMediaAccessStatus("screen");
+      console.log("[meeting] Screen recording permission status after prompt:", statusAfter);
+      return { granted: statusAfter === "granted" };
     },
-    'meeting:openScreenRecordingSettings': async () => {
-      await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
+    "meeting:openScreenRecordingSettings": async () => {
+      await shell.openExternal(
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+      );
       return { success: true };
     },
-    'meeting:summarize': async (_event, args) => {
-      const notes = await summarizeMeeting(args.transcript, args.meetingStartTime, args.calendarEventJson);
+    "meeting:summarize": async (_event, args) => {
+      const notes = await summarizeMeeting(
+        args.transcript,
+        args.meetingStartTime,
+        args.calendarEventJson,
+      );
       return { notes };
     },
-    'inline-task:classifySchedule': async (_event, args) => {
+    "inline-task:classifySchedule": async (_event, args) => {
       const schedule = await classifySchedule(args.instruction);
       return { schedule };
     },
-    'inline-task:process': async (_event, args) => {
+    "inline-task:process": async (_event, args) => {
       return await processSolomonInstruction(args.instruction, args.noteContent, args.notePath);
     },
-    'voice:getConfig': async () => {
+    "voice:getConfig": async () => {
       return voice.getVoiceConfig();
     },
-    'voice:synthesize': async (_event, args) => {
+    "voice:synthesize": async (_event, args) => {
       return voice.synthesizeSpeech(args.text);
     },
+    // ---- Local on-device transcription (whisper.cpp) — RFC 009 ----
+    "whisper:capability": async () => {
+      return getWhisper().capability();
+    },
+    "whisper:listModels": async () => {
+      return { models: await getWhisper().listModels() };
+    },
+    "whisper:ensureModel": async (_event, { id }) => {
+      try {
+        await getWhisper().ensureModel(id);
+        return { success: true };
+      } catch (err) {
+        return { success: false, code: whisperCodeOf(err, "download_failed") };
+      }
+    },
+    "whisper:removeModel": async (_event, { id }) => {
+      await getWhisper().removeModel(id);
+      return { success: true };
+    },
+    "whisper:transcribe": async (_event, req) => {
+      try {
+        // Honor the persisted model/language when the renderer didn't specify one
+        // (the settings model picker writes whisper.model; callers send neither).
+        const cfg = await voice.getTranscriptionConfig();
+        const result = await getWhisper().transcribe(new Int16Array(req.pcm16), {
+          channels: req.channels,
+          model: req.model ?? cfg.whisper.model,
+          lang: req.lang ?? cfg.whisper.language,
+        });
+        return {
+          success: true,
+          text: result.text,
+          segments: result.segments,
+          rtf: result.rtf,
+          durationMs: result.durationMs,
+        };
+      } catch (err) {
+        return { success: false, code: whisperCodeOf(err), message: (err as Error)?.message };
+      }
+    },
+    "whisper:openStream": async (event, { model, channels }) => {
+      // Resolve the model (honoring the persisted choice when the meeting hook sends none)
+      // BEFORE allocating the channel — if the config read ever threw, allocating first would
+      // leak the two native MessagePorts that only the catch below knows how to close.
+      const resolvedModel = model ?? (await voice.getTranscriptionConfig()).whisper.model;
+      // Open a MessageChannel; the Session owns port1, the renderer gets port2 (transferred).
+      const { port1, port2 } = new MessageChannelMain();
+      let streamId: string;
+      try {
+        streamId = getWhisper().openStream(port1 as unknown as StreamPort, {
+          model: resolvedModel,
+          channels,
+        });
+      } catch (err) {
+        port1.close();
+        return { streamId: "", code: whisperCodeOf(err) };
+      }
+      // Transfer the renderer-side port out-of-band (can't ride the zod invoke result).
+      event.senderFrame?.postMessage("whisper:streamPort", { streamId }, [port2]);
+      return { streamId };
+    },
+    "whisper:closeStream": async (_event, { streamId }) => {
+      getWhisper().closeStream(streamId);
+      return { success: true };
+    },
+    "transcription:getVoiceProvider": async () => {
+      return { provider: await resolveVoiceProviderMain() };
+    },
+    "transcription:getMeetingProvider": async () => {
+      return resolveMeetingProviderMain();
+    },
+    "transcription:getConfig": async () => {
+      return voice.getTranscriptionConfig();
+    },
+    "transcription:setConfig": async (_event, patch) => {
+      return voice.setTranscriptionConfig({
+        voiceProvider: patch.voiceProvider,
+        meetingProvider: patch.meetingProvider,
+        ...(patch.model ? { whisper: { model: patch.model } } : {}),
+      });
+    },
     // Live-note handlers
-    'live-note:run': async (_event, args) => {
-      const result = await runLiveNoteAgent(args.filePath, 'manual', args.context);
+    "live-note:run": async (_event, args) => {
+      const result = await runLiveNoteAgent(args.filePath, "manual", args.context);
       return {
         success: !result.error,
         runId: result.runId,
@@ -956,7 +1280,7 @@ export function setupIpcHandlers() {
         error: result.error,
       };
     },
-    'live-note:get': async (_event, args) => {
+    "live-note:get": async (_event, args) => {
       try {
         const live = await fetchLiveNote(args.filePath);
         return { success: true, live };
@@ -964,7 +1288,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'live-note:set': async (_event, args) => {
+    "live-note:set": async (_event, args) => {
       try {
         await setLiveNote(args.filePath, args.live);
         const live = await fetchLiveNote(args.filePath);
@@ -973,7 +1297,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'live-note:setActive': async (_event, args) => {
+    "live-note:setActive": async (_event, args) => {
       try {
         await setLiveNoteActive(args.filePath, args.active);
         const live = await fetchLiveNote(args.filePath);
@@ -982,7 +1306,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'live-note:delete': async (_event, args) => {
+    "live-note:delete": async (_event, args) => {
       try {
         await deleteLiveNote(args.filePath);
         return { success: true };
@@ -990,11 +1314,11 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'live-note:stop': async (_event, args) => {
+    "live-note:stop": async (_event, args) => {
       try {
         const live = await fetchLiveNote(args.filePath);
         if (!live?.lastRunId) {
-          return { success: false, error: 'No active run for this note' };
+          return { success: false, error: "No active run for this note" };
         }
         await runsCore.stop(live.lastRunId, false);
         return { success: true };
@@ -1002,16 +1326,16 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'live-note:listNotes': async () => {
+    "live-note:listNotes": async () => {
       const notes = await listLiveNotes();
       return { notes };
     },
     // Bg-task handlers
-    'bg-task:run': async (_event, args) => {
+    "bg-task:run": async (_event, args) => {
       try {
         const task = await fetchTask(args.slug);
-        if ((task?.executionTarget ?? 'desktop') === 'api') {
-          const run = await triggerCloudRun(args.slug, 'manual', args.context);
+        if ((task?.executionTarget ?? "desktop") === "api") {
+          const run = await triggerCloudRun(args.slug, "manual", args.context);
           return {
             success: true,
             runId: run.runId,
@@ -1019,7 +1343,7 @@ export function setupIpcHandlers() {
             run,
           };
         }
-        const result = await runBackgroundTask(args.slug, 'manual', args.context);
+        const result = await runBackgroundTask(args.slug, "manual", args.context);
         return {
           success: !result.error,
           runId: result.runId,
@@ -1030,7 +1354,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:get': async (_event, args) => {
+    "bg-task:get": async (_event, args) => {
       try {
         const task = await fetchTask(args.slug);
         return { success: true, task };
@@ -1038,7 +1362,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:patch': async (_event, args) => {
+    "bg-task:patch": async (_event, args) => {
       try {
         const task = await patchTask(args.slug, args.partial);
         return { success: true, task };
@@ -1046,7 +1370,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:create': async (_event, args) => {
+    "bg-task:create": async (_event, args) => {
       try {
         const { slug } = await createTask({
           name: args.name,
@@ -1061,7 +1385,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:delete': async (_event, args) => {
+    "bg-task:delete": async (_event, args) => {
       try {
         await deleteTask(args.slug);
         return { success: true };
@@ -1069,11 +1393,11 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:stop': async (_event, args) => {
+    "bg-task:stop": async (_event, args) => {
       try {
         const task = await fetchTask(args.slug);
         if (!task?.lastRunId) {
-          return { success: false, error: 'No active run for this task' };
+          return { success: false, error: "No active run for this task" };
         }
         await runsCore.stop(task.lastRunId, false);
         return { success: true };
@@ -1081,22 +1405,22 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:list': async (_event, args) => {
+    "bg-task:list": async (_event, args) => {
       return listTasks(args);
     },
-    'bg-task:listRunIds': async (_event, args) => {
+    "bg-task:listRunIds": async (_event, args) => {
       const runIds = await readTaskRunIds(args.slug, args.limit);
       return { runIds };
     },
-    'bg-task:triggerCloudRun': async (_event, args) => {
+    "bg-task:triggerCloudRun": async (_event, args) => {
       try {
-        const run = await triggerCloudRun(args.slug, args.trigger ?? 'manual', args.context);
+        const run = await triggerCloudRun(args.slug, args.trigger ?? "manual", args.context);
         return { success: true, run };
       } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:getCloudRunStatus': async (_event, args) => {
+    "bg-task:getCloudRunStatus": async (_event, args) => {
       try {
         const status = await getCloudRunStatus(args.slug, args.runId);
         return { success: true, status };
@@ -1104,7 +1428,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:listCloudRuns': async (_event, args) => {
+    "bg-task:listCloudRuns": async (_event, args) => {
       try {
         const result = await listCloudRuns(args.slug, {
           ...(args.status ? { status: args.status } : {}),
@@ -1112,20 +1436,32 @@ export function setupIpcHandlers() {
           ...(args.limit ? { limit: args.limit } : {}),
           ...(args.cursor ? { cursor: args.cursor } : {}),
         });
-        return { success: true, runs: result.runs, ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}) };
+        return {
+          success: true,
+          runs: result.runs,
+          ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
+        };
       } catch (err) {
-        return { success: false, runs: [], error: err instanceof Error ? err.message : String(err) };
+        return {
+          success: false,
+          runs: [],
+          error: err instanceof Error ? err.message : String(err),
+        };
       }
     },
-    'bg-task:listCloudRunEvents': async (_event, args) => {
+    "bg-task:listCloudRunEvents": async (_event, args) => {
       try {
         const events = await listCloudRunEvents(args.slug, args.runId, args.afterSeq);
         return { success: true, events };
       } catch (err) {
-        return { success: false, events: [], error: err instanceof Error ? err.message : String(err) };
+        return {
+          success: false,
+          events: [],
+          error: err instanceof Error ? err.message : String(err),
+        };
       }
     },
-    'bg-task:cancelCloudRun': async (_event, args) => {
+    "bg-task:cancelCloudRun": async (_event, args) => {
       try {
         const run = await cancelCloudRun(args.slug, args.runId);
         return { success: true, run };
@@ -1133,7 +1469,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:retryCloudRun': async (_event, args) => {
+    "bg-task:retryCloudRun": async (_event, args) => {
       try {
         const run = await retryCloudRun(args.slug, args.runId);
         return { success: true, run };
@@ -1141,7 +1477,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:signalCloudRun': async (_event, args) => {
+    "bg-task:signalCloudRun": async (_event, args) => {
       try {
         const run = await signalCloudRun(args.slug, args.runId, args.signal, args.payload);
         return { success: true, run };
@@ -1149,7 +1485,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:pullCloudArtifact': async (_event, args) => {
+    "bg-task:pullCloudArtifact": async (_event, args) => {
       try {
         await syncArtifactFromCloud(args.slug);
         return { success: true };
@@ -1157,7 +1493,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:listAllCloudRuns': async (_event, args) => {
+    "bg-task:listAllCloudRuns": async (_event, args) => {
       try {
         const result = await listAllCloudRuns({
           ...(args.status ? { status: args.status } : {}),
@@ -1169,12 +1505,20 @@ export function setupIpcHandlers() {
           ...(args.limit ? { limit: args.limit } : {}),
           ...(args.cursor ? { cursor: args.cursor } : {}),
         });
-        return { success: true, runs: result.runs, ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}) };
+        return {
+          success: true,
+          runs: result.runs,
+          ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
+        };
       } catch (err) {
-        return { success: false, runs: [], error: err instanceof Error ? err.message : String(err) };
+        return {
+          success: false,
+          runs: [],
+          error: err instanceof Error ? err.message : String(err),
+        };
       }
     },
-    'bg-task:rerunCloudRun': async (_event, args) => {
+    "bg-task:rerunCloudRun": async (_event, args) => {
       try {
         const run = await rerunCloudRun(args.slug, args.runId);
         return { success: true, run };
@@ -1182,7 +1526,7 @@ export function setupIpcHandlers() {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    'bg-task:getArtifactSyncState': async (_event, args) => {
+    "bg-task:getArtifactSyncState": async (_event, args) => {
       try {
         const sync = await getArtifactSyncState(args.slug);
         return { success: true, sync };
@@ -1191,8 +1535,29 @@ export function setupIpcHandlers() {
       }
     },
     // Billing handler
-    'billing:getInfo': async () => {
+    "billing:getInfo": async () => {
       return await getBillingInfo();
+    },
+    // Feedback handler (relayed to Plain via the backend)
+    "feedback:submit": async (_event, args) => {
+      try {
+        await submitFeedback({
+          category: args.category,
+          message: args.message,
+          appVersion: app.getVersion(),
+          platform: `${process.platform}/${process.arch}`,
+        });
+        return { success: true };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          success: false,
+          errorCode: message.includes("Not signed into")
+            ? ("not_signed_in" as const)
+            : ("server" as const),
+          error: message,
+        };
+      }
     },
     // Embedded browser handlers (WebContentsView + navigation)
     ...browserIpcHandlers,

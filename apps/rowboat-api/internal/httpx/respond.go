@@ -6,6 +6,8 @@ package httpx
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -140,6 +142,12 @@ func (w *contextWriter) RequestContext() context.Context {
 	return w.ctx
 }
 
+// Unwrap exposes the underlying writer so http.ResponseController operations
+// (SetWriteDeadline, etc.) can traverse this wrapper.
+func (w *contextWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
 // Flush preserves http.Flusher for streaming handlers.
 func (w *contextWriter) Flush() {
 	_ = http.NewResponseController(w.ResponseWriter).Flush()
@@ -221,7 +229,14 @@ func JSONContentType(value string) bool {
 
 // IdempotencyKeyUUID returns a stable UUID for a metered POST when the caller
 // supplies Idempotency-Key. Missing keys intentionally get a fresh UUID.
-func IdempotencyKeyUUID(r *http.Request, subject string) uuid.UUID {
+//
+// body is hashed into the identifier so that reusing one Idempotency-Key with a
+// different request body yields a DIFFERENT request_id. Without this, a caller
+// could replay a key against a larger/smaller payload and collide with a prior
+// charge's ledger phases (enabling credit minting / mismetering); binding the
+// body also makes a key legitimately reused with a changed payload a distinct
+// operation rather than a silent dedup against the first.
+func IdempotencyKeyUUID(r *http.Request, subject string, body []byte) uuid.UUID {
 	key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
 	if key == "" {
 		return uuid.New()
@@ -229,7 +244,9 @@ func IdempotencyKeyUUID(r *http.Request, subject string) uuid.UUID {
 	if len(key) > 256 {
 		key = key[:256]
 	}
-	name := subject + "\x00" + r.Method + "\x00" + r.URL.Path + "\x00" + key
+	bodyHash := sha256.Sum256(body)
+	name := subject + "\x00" + r.Method + "\x00" + r.URL.Path + "\x00" + key +
+		"\x00" + hex.EncodeToString(bodyHash[:])
 	return uuid.NewSHA1(uuid.NameSpaceURL, []byte(name))
 }
 

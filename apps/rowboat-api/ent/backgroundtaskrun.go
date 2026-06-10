@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
@@ -80,6 +81,8 @@ type BackgroundTaskRun struct {
 	StartedAt *time.Time `json:"started_at,omitempty"`
 	// CompletedAt holds the value of the "completed_at" field.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	// CloudEventID holds the value of the "cloud_event_id" field.
+	CloudEventID *uuid.UUID `json:"cloud_event_id,omitempty"`
 	// Revision holds the value of the "revision" field.
 	Revision int `json:"revision,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -96,13 +99,15 @@ type BackgroundTaskRunEdges struct {
 	User *User `json:"user,omitempty"`
 	// Task holds the value of the task edge.
 	Task *BackgroundTask `json:"task,omitempty"`
+	// CloudEvent holds the value of the cloud_event edge.
+	CloudEvent *CloudEvent `json:"cloud_event,omitempty"`
 	// Events holds the value of the events edge.
 	Events []*BackgroundTaskRunEvent `json:"events,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [4]map[string]int
 
 	namedEvents map[string][]*BackgroundTaskRunEvent
 }
@@ -129,10 +134,21 @@ func (e BackgroundTaskRunEdges) TaskOrErr() (*BackgroundTask, error) {
 	return nil, &NotLoadedError{edge: "task"}
 }
 
+// CloudEventOrErr returns the CloudEvent value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e BackgroundTaskRunEdges) CloudEventOrErr() (*CloudEvent, error) {
+	if e.CloudEvent != nil {
+		return e.CloudEvent, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: cloudevent.Label}
+	}
+	return nil, &NotLoadedError{edge: "cloud_event"}
+}
+
 // EventsOrErr returns the Events value or an error if the edge
 // was not loaded in eager-loading.
 func (e BackgroundTaskRunEdges) EventsOrErr() ([]*BackgroundTaskRunEvent, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.Events, nil
 	}
 	return nil, &NotLoadedError{edge: "events"}
@@ -143,6 +159,8 @@ func (*BackgroundTaskRun) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case backgroundtaskrun.FieldCloudEventID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case backgroundtaskrun.FieldAttempt, backgroundtaskrun.FieldProgressPercent, backgroundtaskrun.FieldRevision:
 			values[i] = new(sql.NullInt64)
 		case backgroundtaskrun.FieldRunID, backgroundtaskrun.FieldTrigger, backgroundtaskrun.FieldStatus, backgroundtaskrun.FieldExecutor, backgroundtaskrun.FieldModel, backgroundtaskrun.FieldProvider, backgroundtaskrun.FieldUseCase, backgroundtaskrun.FieldSubUseCase, backgroundtaskrun.FieldPreviousRunID, backgroundtaskrun.FieldRetryOfRunID, backgroundtaskrun.FieldLocalRunID, backgroundtaskrun.FieldRequestedContext, backgroundtaskrun.FieldSummary, backgroundtaskrun.FieldError, backgroundtaskrun.FieldErrorCode, backgroundtaskrun.FieldErrorDetails, backgroundtaskrun.FieldTemporalWorkflowID, backgroundtaskrun.FieldTemporalRunID, backgroundtaskrun.FieldTemporalStatus, backgroundtaskrun.FieldProgressMessage:
@@ -363,6 +381,13 @@ func (_m *BackgroundTaskRun) assignValues(columns []string, values []any) error 
 				_m.CompletedAt = new(time.Time)
 				*_m.CompletedAt = value.Time
 			}
+		case backgroundtaskrun.FieldCloudEventID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field cloud_event_id", values[i])
+			} else if value.Valid {
+				_m.CloudEventID = new(uuid.UUID)
+				*_m.CloudEventID = *value.S.(*uuid.UUID)
+			}
 		case backgroundtaskrun.FieldRevision:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field revision", values[i])
@@ -404,6 +429,11 @@ func (_m *BackgroundTaskRun) QueryUser() *UserQuery {
 // QueryTask queries the "task" edge of the BackgroundTaskRun entity.
 func (_m *BackgroundTaskRun) QueryTask() *BackgroundTaskQuery {
 	return NewBackgroundTaskRunClient(_m.config).QueryTask(_m)
+}
+
+// QueryCloudEvent queries the "cloud_event" edge of the BackgroundTaskRun entity.
+func (_m *BackgroundTaskRun) QueryCloudEvent() *CloudEventQuery {
+	return NewBackgroundTaskRunClient(_m.config).QueryCloudEvent(_m)
 }
 
 // QueryEvents queries the "events" edge of the BackgroundTaskRun entity.
@@ -536,6 +566,11 @@ func (_m *BackgroundTaskRun) String() string {
 	if v := _m.CompletedAt; v != nil {
 		builder.WriteString("completed_at=")
 		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.CloudEventID; v != nil {
+		builder.WriteString("cloud_event_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("revision=")

@@ -16,9 +16,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
@@ -29,29 +33,37 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx                              *QueryContext
-	order                            []user.OrderOption
-	inters                           []Interceptor
-	predicates                       []predicate.User
-	withSubscription                 *SubscriptionQuery
-	withLedgerEntries                *CreditLedgerQuery
-	withLlmUsages                    *LLMUsageQuery
-	withOauthConnections             *OAuthConnectionQuery
-	withMcpConnections               *MCPConnectionQuery
-	withBackgroundTasks              *BackgroundTaskQuery
-	withBackgroundTaskArtifacts      *BackgroundTaskArtifactQuery
-	withBackgroundTaskRuns           *BackgroundTaskRunQuery
-	withBackgroundTaskRunEvents      *BackgroundTaskRunEventQuery
-	modifiers                        []func(*sql.Selector)
-	loadTotal                        []func(context.Context, []*User) error
-	withNamedLedgerEntries           map[string]*CreditLedgerQuery
-	withNamedLlmUsages               map[string]*LLMUsageQuery
-	withNamedOauthConnections        map[string]*OAuthConnectionQuery
-	withNamedMcpConnections          map[string]*MCPConnectionQuery
-	withNamedBackgroundTasks         map[string]*BackgroundTaskQuery
-	withNamedBackgroundTaskArtifacts map[string]*BackgroundTaskArtifactQuery
-	withNamedBackgroundTaskRuns      map[string]*BackgroundTaskRunQuery
-	withNamedBackgroundTaskRunEvents map[string]*BackgroundTaskRunEventQuery
+	ctx                                   *QueryContext
+	order                                 []user.OrderOption
+	inters                                []Interceptor
+	predicates                            []predicate.User
+	withSubscription                      *SubscriptionQuery
+	withLedgerEntries                     *CreditLedgerQuery
+	withMeetingMinuteUsages               *MeetingMinuteUsageQuery
+	withLlmUsages                         *LLMUsageQuery
+	withOauthConnections                  *OAuthConnectionQuery
+	withMcpConnections                    *MCPConnectionQuery
+	withBackgroundTasks                   *BackgroundTaskQuery
+	withBackgroundTaskArtifacts           *BackgroundTaskArtifactQuery
+	withBackgroundTaskRuns                *BackgroundTaskRunQuery
+	withBackgroundTaskRunEvents           *BackgroundTaskRunEventQuery
+	withBackgroundTaskScheduleStates      *BackgroundTaskScheduleStateQuery
+	withCloudEvents                       *CloudEventQuery
+	withGoogleWatches                     *GoogleWatchQuery
+	modifiers                             []func(*sql.Selector)
+	loadTotal                             []func(context.Context, []*User) error
+	withNamedLedgerEntries                map[string]*CreditLedgerQuery
+	withNamedMeetingMinuteUsages          map[string]*MeetingMinuteUsageQuery
+	withNamedLlmUsages                    map[string]*LLMUsageQuery
+	withNamedOauthConnections             map[string]*OAuthConnectionQuery
+	withNamedMcpConnections               map[string]*MCPConnectionQuery
+	withNamedBackgroundTasks              map[string]*BackgroundTaskQuery
+	withNamedBackgroundTaskArtifacts      map[string]*BackgroundTaskArtifactQuery
+	withNamedBackgroundTaskRuns           map[string]*BackgroundTaskRunQuery
+	withNamedBackgroundTaskRunEvents      map[string]*BackgroundTaskRunEventQuery
+	withNamedBackgroundTaskScheduleStates map[string]*BackgroundTaskScheduleStateQuery
+	withNamedCloudEvents                  map[string]*CloudEventQuery
+	withNamedGoogleWatches                map[string]*GoogleWatchQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -125,6 +137,28 @@ func (_q *UserQuery) QueryLedgerEntries() *CreditLedgerQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(creditledger.Table, creditledger.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.LedgerEntriesTable, user.LedgerEntriesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMeetingMinuteUsages chains the current query on the "meeting_minute_usages" edge.
+func (_q *UserQuery) QueryMeetingMinuteUsages() *MeetingMinuteUsageQuery {
+	query := (&MeetingMinuteUsageClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(meetingminuteusage.Table, meetingminuteusage.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MeetingMinuteUsagesTable, user.MeetingMinuteUsagesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -279,6 +313,72 @@ func (_q *UserQuery) QueryBackgroundTaskRunEvents() *BackgroundTaskRunEventQuery
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(backgroundtaskrunevent.Table, backgroundtaskrunevent.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTaskRunEventsTable, user.BackgroundTaskRunEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBackgroundTaskScheduleStates chains the current query on the "background_task_schedule_states" edge.
+func (_q *UserQuery) QueryBackgroundTaskScheduleStates() *BackgroundTaskScheduleStateQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(backgroundtaskschedulestate.Table, backgroundtaskschedulestate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BackgroundTaskScheduleStatesTable, user.BackgroundTaskScheduleStatesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCloudEvents chains the current query on the "cloud_events" edge.
+func (_q *UserQuery) QueryCloudEvents() *CloudEventQuery {
+	query := (&CloudEventClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(cloudevent.Table, cloudevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CloudEventsTable, user.CloudEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGoogleWatches chains the current query on the "google_watches" edge.
+func (_q *UserQuery) QueryGoogleWatches() *GoogleWatchQuery {
+	query := (&GoogleWatchClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(googlewatch.Table, googlewatch.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GoogleWatchesTable, user.GoogleWatchesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -473,20 +573,24 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:                      _q.config,
-		ctx:                         _q.ctx.Clone(),
-		order:                       append([]user.OrderOption{}, _q.order...),
-		inters:                      append([]Interceptor{}, _q.inters...),
-		predicates:                  append([]predicate.User{}, _q.predicates...),
-		withSubscription:            _q.withSubscription.Clone(),
-		withLedgerEntries:           _q.withLedgerEntries.Clone(),
-		withLlmUsages:               _q.withLlmUsages.Clone(),
-		withOauthConnections:        _q.withOauthConnections.Clone(),
-		withMcpConnections:          _q.withMcpConnections.Clone(),
-		withBackgroundTasks:         _q.withBackgroundTasks.Clone(),
-		withBackgroundTaskArtifacts: _q.withBackgroundTaskArtifacts.Clone(),
-		withBackgroundTaskRuns:      _q.withBackgroundTaskRuns.Clone(),
-		withBackgroundTaskRunEvents: _q.withBackgroundTaskRunEvents.Clone(),
+		config:                           _q.config,
+		ctx:                              _q.ctx.Clone(),
+		order:                            append([]user.OrderOption{}, _q.order...),
+		inters:                           append([]Interceptor{}, _q.inters...),
+		predicates:                       append([]predicate.User{}, _q.predicates...),
+		withSubscription:                 _q.withSubscription.Clone(),
+		withLedgerEntries:                _q.withLedgerEntries.Clone(),
+		withMeetingMinuteUsages:          _q.withMeetingMinuteUsages.Clone(),
+		withLlmUsages:                    _q.withLlmUsages.Clone(),
+		withOauthConnections:             _q.withOauthConnections.Clone(),
+		withMcpConnections:               _q.withMcpConnections.Clone(),
+		withBackgroundTasks:              _q.withBackgroundTasks.Clone(),
+		withBackgroundTaskArtifacts:      _q.withBackgroundTaskArtifacts.Clone(),
+		withBackgroundTaskRuns:           _q.withBackgroundTaskRuns.Clone(),
+		withBackgroundTaskRunEvents:      _q.withBackgroundTaskRunEvents.Clone(),
+		withBackgroundTaskScheduleStates: _q.withBackgroundTaskScheduleStates.Clone(),
+		withCloudEvents:                  _q.withCloudEvents.Clone(),
+		withGoogleWatches:                _q.withGoogleWatches.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -512,6 +616,17 @@ func (_q *UserQuery) WithLedgerEntries(opts ...func(*CreditLedgerQuery)) *UserQu
 		opt(query)
 	}
 	_q.withLedgerEntries = query
+	return _q
+}
+
+// WithMeetingMinuteUsages tells the query-builder to eager-load the nodes that are connected to
+// the "meeting_minute_usages" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithMeetingMinuteUsages(opts ...func(*MeetingMinuteUsageQuery)) *UserQuery {
+	query := (&MeetingMinuteUsageClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withMeetingMinuteUsages = query
 	return _q
 }
 
@@ -589,6 +704,39 @@ func (_q *UserQuery) WithBackgroundTaskRunEvents(opts ...func(*BackgroundTaskRun
 		opt(query)
 	}
 	_q.withBackgroundTaskRunEvents = query
+	return _q
+}
+
+// WithBackgroundTaskScheduleStates tells the query-builder to eager-load the nodes that are connected to
+// the "background_task_schedule_states" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithBackgroundTaskScheduleStates(opts ...func(*BackgroundTaskScheduleStateQuery)) *UserQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withBackgroundTaskScheduleStates = query
+	return _q
+}
+
+// WithCloudEvents tells the query-builder to eager-load the nodes that are connected to
+// the "cloud_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithCloudEvents(opts ...func(*CloudEventQuery)) *UserQuery {
+	query := (&CloudEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCloudEvents = query
+	return _q
+}
+
+// WithGoogleWatches tells the query-builder to eager-load the nodes that are connected to
+// the "google_watches" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithGoogleWatches(opts ...func(*GoogleWatchQuery)) *UserQuery {
+	query := (&GoogleWatchClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGoogleWatches = query
 	return _q
 }
 
@@ -670,9 +818,10 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [9]bool{
+		loadedTypes = [13]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
+			_q.withMeetingMinuteUsages != nil,
 			_q.withLlmUsages != nil,
 			_q.withOauthConnections != nil,
 			_q.withMcpConnections != nil,
@@ -680,6 +829,9 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withBackgroundTaskArtifacts != nil,
 			_q.withBackgroundTaskRuns != nil,
 			_q.withBackgroundTaskRunEvents != nil,
+			_q.withBackgroundTaskScheduleStates != nil,
+			_q.withCloudEvents != nil,
+			_q.withGoogleWatches != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -713,6 +865,15 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.Edges.LedgerEntries = []*CreditLedger{} },
 			func(n *User, e *CreditLedger) { n.Edges.LedgerEntries = append(n.Edges.LedgerEntries, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withMeetingMinuteUsages; query != nil {
+		if err := _q.loadMeetingMinuteUsages(ctx, query, nodes,
+			func(n *User) { n.Edges.MeetingMinuteUsages = []*MeetingMinuteUsage{} },
+			func(n *User, e *MeetingMinuteUsage) {
+				n.Edges.MeetingMinuteUsages = append(n.Edges.MeetingMinuteUsages, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -771,10 +932,40 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withBackgroundTaskScheduleStates; query != nil {
+		if err := _q.loadBackgroundTaskScheduleStates(ctx, query, nodes,
+			func(n *User) { n.Edges.BackgroundTaskScheduleStates = []*BackgroundTaskScheduleState{} },
+			func(n *User, e *BackgroundTaskScheduleState) {
+				n.Edges.BackgroundTaskScheduleStates = append(n.Edges.BackgroundTaskScheduleStates, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCloudEvents; query != nil {
+		if err := _q.loadCloudEvents(ctx, query, nodes,
+			func(n *User) { n.Edges.CloudEvents = []*CloudEvent{} },
+			func(n *User, e *CloudEvent) { n.Edges.CloudEvents = append(n.Edges.CloudEvents, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGoogleWatches; query != nil {
+		if err := _q.loadGoogleWatches(ctx, query, nodes,
+			func(n *User) { n.Edges.GoogleWatches = []*GoogleWatch{} },
+			func(n *User, e *GoogleWatch) { n.Edges.GoogleWatches = append(n.Edges.GoogleWatches, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
 			func(n *User, e *CreditLedger) { n.appendNamedLedgerEntries(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedMeetingMinuteUsages {
+		if err := _q.loadMeetingMinuteUsages(ctx, query, nodes,
+			func(n *User) { n.appendNamedMeetingMinuteUsages(name) },
+			func(n *User, e *MeetingMinuteUsage) { n.appendNamedMeetingMinuteUsages(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -824,6 +1015,27 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadBackgroundTaskRunEvents(ctx, query, nodes,
 			func(n *User) { n.appendNamedBackgroundTaskRunEvents(name) },
 			func(n *User, e *BackgroundTaskRunEvent) { n.appendNamedBackgroundTaskRunEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedBackgroundTaskScheduleStates {
+		if err := _q.loadBackgroundTaskScheduleStates(ctx, query, nodes,
+			func(n *User) { n.appendNamedBackgroundTaskScheduleStates(name) },
+			func(n *User, e *BackgroundTaskScheduleState) { n.appendNamedBackgroundTaskScheduleStates(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCloudEvents {
+		if err := _q.loadCloudEvents(ctx, query, nodes,
+			func(n *User) { n.appendNamedCloudEvents(name) },
+			func(n *User, e *CloudEvent) { n.appendNamedCloudEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedGoogleWatches {
+		if err := _q.loadGoogleWatches(ctx, query, nodes,
+			func(n *User) { n.appendNamedGoogleWatches(name) },
+			func(n *User, e *GoogleWatch) { n.appendNamedGoogleWatches(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -889,6 +1101,37 @@ func (_q *UserQuery) loadLedgerEntries(ctx context.Context, query *CreditLedgerQ
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_ledger_entries" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadMeetingMinuteUsages(ctx context.Context, query *MeetingMinuteUsageQuery, nodes []*User, init func(*User), assign func(*User, *MeetingMinuteUsage)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.MeetingMinuteUsage(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.MeetingMinuteUsagesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_meeting_minute_usages
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_meeting_minute_usages" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_meeting_minute_usages" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -1111,6 +1354,99 @@ func (_q *UserQuery) loadBackgroundTaskRunEvents(ctx context.Context, query *Bac
 	}
 	return nil
 }
+func (_q *UserQuery) loadBackgroundTaskScheduleStates(ctx context.Context, query *BackgroundTaskScheduleStateQuery, nodes []*User, init func(*User), assign func(*User, *BackgroundTaskScheduleState)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.BackgroundTaskScheduleState(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.BackgroundTaskScheduleStatesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_background_task_schedule_states
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_background_task_schedule_states" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_background_task_schedule_states" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadCloudEvents(ctx context.Context, query *CloudEventQuery, nodes []*User, init func(*User), assign func(*User, *CloudEvent)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CloudEvent(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CloudEventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_cloud_events
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_cloud_events" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_cloud_events" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadGoogleWatches(ctx context.Context, query *GoogleWatchQuery, nodes []*User, init func(*User), assign func(*User, *GoogleWatch)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.GoogleWatch(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GoogleWatchesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_google_watches
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_google_watches" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_google_watches" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -1210,6 +1546,20 @@ func (_q *UserQuery) WithNamedLedgerEntries(name string, opts ...func(*CreditLed
 	return _q
 }
 
+// WithNamedMeetingMinuteUsages tells the query-builder to eager-load the nodes that are connected to the "meeting_minute_usages"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedMeetingMinuteUsages(name string, opts ...func(*MeetingMinuteUsageQuery)) *UserQuery {
+	query := (&MeetingMinuteUsageClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedMeetingMinuteUsages == nil {
+		_q.withNamedMeetingMinuteUsages = make(map[string]*MeetingMinuteUsageQuery)
+	}
+	_q.withNamedMeetingMinuteUsages[name] = query
+	return _q
+}
+
 // WithNamedLlmUsages tells the query-builder to eager-load the nodes that are connected to the "llm_usages"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithNamedLlmUsages(name string, opts ...func(*LLMUsageQuery)) *UserQuery {
@@ -1305,6 +1655,48 @@ func (_q *UserQuery) WithNamedBackgroundTaskRunEvents(name string, opts ...func(
 		_q.withNamedBackgroundTaskRunEvents = make(map[string]*BackgroundTaskRunEventQuery)
 	}
 	_q.withNamedBackgroundTaskRunEvents[name] = query
+	return _q
+}
+
+// WithNamedBackgroundTaskScheduleStates tells the query-builder to eager-load the nodes that are connected to the "background_task_schedule_states"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedBackgroundTaskScheduleStates(name string, opts ...func(*BackgroundTaskScheduleStateQuery)) *UserQuery {
+	query := (&BackgroundTaskScheduleStateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedBackgroundTaskScheduleStates == nil {
+		_q.withNamedBackgroundTaskScheduleStates = make(map[string]*BackgroundTaskScheduleStateQuery)
+	}
+	_q.withNamedBackgroundTaskScheduleStates[name] = query
+	return _q
+}
+
+// WithNamedCloudEvents tells the query-builder to eager-load the nodes that are connected to the "cloud_events"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedCloudEvents(name string, opts ...func(*CloudEventQuery)) *UserQuery {
+	query := (&CloudEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCloudEvents == nil {
+		_q.withNamedCloudEvents = make(map[string]*CloudEventQuery)
+	}
+	_q.withNamedCloudEvents[name] = query
+	return _q
+}
+
+// WithNamedGoogleWatches tells the query-builder to eager-load the nodes that are connected to the "google_watches"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedGoogleWatches(name string, opts ...func(*GoogleWatchQuery)) *UserQuery {
+	query := (&GoogleWatchClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedGoogleWatches == nil {
+		_q.withNamedGoogleWatches = make(map[string]*GoogleWatchQuery)
+	}
+	_q.withNamedGoogleWatches[name] = query
 	return _q
 }
 

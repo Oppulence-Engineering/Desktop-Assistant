@@ -18,8 +18,17 @@ type BackgroundTaskRun func(*sql.Selector)
 // BackgroundTaskRunEvent is the predicate function for backgroundtaskrunevent builders.
 type BackgroundTaskRunEvent func(*sql.Selector)
 
+// BackgroundTaskScheduleState is the predicate function for backgroundtaskschedulestate builders.
+type BackgroundTaskScheduleState func(*sql.Selector)
+
+// CloudEvent is the predicate function for cloudevent builders.
+type CloudEvent func(*sql.Selector)
+
 // CreditLedger is the predicate function for creditledger builders.
 type CreditLedger func(*sql.Selector)
+
+// GoogleWatch is the predicate function for googlewatch builders.
+type GoogleWatch func(*sql.Selector)
 
 // LLMUsage is the predicate function for llmusage builders.
 type LLMUsage func(*sql.Selector)
@@ -32,6 +41,9 @@ type MCPConnection func(*sql.Selector)
 
 // MCPConnectionHistory is the predicate function for mcpconnectionhistory builders.
 type MCPConnectionHistory func(*sql.Selector)
+
+// MeetingMinuteUsage is the predicate function for meetingminuteusage builders.
+type MeetingMinuteUsage func(*sql.Selector)
 
 // OAuthConnection is the predicate function for oauthconnection builders.
 type OAuthConnection func(*sql.Selector)

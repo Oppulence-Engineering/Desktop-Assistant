@@ -33,6 +33,8 @@ const (
 	FieldRefreshTokenEncrypted = "refresh_token_encrypted"
 	// FieldScopes holds the string denoting the scopes field in the database.
 	FieldScopes = "scopes"
+	// FieldExternalAccountID holds the string denoting the external_account_id field in the database.
+	FieldExternalAccountID = "external_account_id"
 	// Table holds the table name of the oauthconnectionhistory in the database.
 	Table = "oauth_connection_histories"
 )
@@ -48,6 +50,7 @@ var Columns = []string{
 	FieldProvider,
 	FieldRefreshTokenEncrypted,
 	FieldScopes,
+	FieldExternalAccountID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -119,6 +122,11 @@ func ByRef(opts ...sql.OrderTermOption) OrderOption {
 // ByProvider orders the results by the provider field.
 func ByProvider(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProvider, opts...).ToFunc()
+}
+
+// ByExternalAccountID orders the results by the external_account_id field.
+func ByExternalAccountID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExternalAccountID, opts...).ToFunc()
 }
 
 var (

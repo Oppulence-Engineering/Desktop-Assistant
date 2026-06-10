@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Run release-please
         id: release
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .release-please-config.json
@@ -104,8 +104,8 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'pnpm'
-          cache-dependency-path: 'apps/x/pnpm-lock.yaml'
+          cache: "pnpm"
+          cache-dependency-path: "apps/x/pnpm-lock.yaml"
 
       - name: Cache Electron binaries
         uses: actions/cache@v4
@@ -248,8 +248,8 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'pnpm'
-          cache-dependency-path: 'apps/x/pnpm-lock.yaml'
+          cache: "pnpm"
+          cache-dependency-path: "apps/x/pnpm-lock.yaml"
 
       - name: Cache Electron binaries
         uses: actions/cache@v4
@@ -369,8 +369,8 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'pnpm'
-          cache-dependency-path: 'apps/x/pnpm-lock.yaml'
+          cache: "pnpm"
+          cache-dependency-path: "apps/x/pnpm-lock.yaml"
 
       - name: Cache Electron binaries
         uses: actions/cache@v4

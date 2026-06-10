@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // ErrCiphertextTooShort is returned when sealed input is malformed.
@@ -28,9 +29,19 @@ type Sealer struct {
 }
 
 // NewSealer derives a 256-bit key from the passphrase (SHA-256) and builds a
-// GCM AEAD. A passphrase is required.
+// GCM AEAD. A non-empty passphrase is required.
+//
+// SECURITY: the key is a bare SHA-256 of DB_ENCRYPTION_KEY (no salt/stretching),
+// and the derivation cannot change without making already-sealed data (OAuth
+// refresh tokens, parked payloads, vendor API keys) undecryptable. DB_ENCRYPTION_KEY
+// MUST therefore be a high-entropy, randomly generated 32-byte secret (e.g.
+// `openssl rand -base64 32`) — never a human-chosen passphrase, which a single
+// unsalted SHA-256 pass does nothing to protect against brute force.
 func NewSealer(passphrase string) (*Sealer, error) {
-	if passphrase == "" {
+	// Reject empty or whitespace-only keys so a misconfigured/blank
+	// DB_ENCRYPTION_KEY fails loudly at startup instead of sealing data under a
+	// trivially guessable key.
+	if strings.TrimSpace(passphrase) == "" {
 		return nil, errors.New("crypto: empty passphrase")
 	}
 	key := sha256.Sum256([]byte(passphrase))

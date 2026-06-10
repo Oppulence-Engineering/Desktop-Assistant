@@ -10,6 +10,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"go.uber.org/zap"
 )
 
 // chunk is the minimal slice of an OpenAI streaming/JSON response we read to
@@ -56,8 +57,19 @@ func (h *Handler) streamThrough(w http.ResponseWriter, resp *http.Response) (inT
 			}
 		}
 		if err != nil {
-			if errors.Is(err, outbound.ErrResponseTooLarge) {
+			switch {
+			case errors.Is(err, outbound.ErrResponseTooLarge):
 				h.log.Warn("llm upstream stream exceeded response cap")
+				relayErr = err
+			case errors.Is(err, io.EOF):
+				// Clean end of stream — normal completion.
+			default:
+				// The upstream dropped/errored mid-stream (not a clean EOF). Surface
+				// it as a relay failure so the caller refunds, instead of billing
+				// the input estimate for a call that didn't complete. (A CLIENT
+				// disconnect manifests as a write error above and is intentionally
+				// still charged via the normal settle path.)
+				h.log.Warn("llm upstream stream read error", zap.Error(err))
 				relayErr = err
 			}
 			break
@@ -103,10 +115,32 @@ func (h *Handler) bufferThrough(w http.ResponseWriter, resp *http.Response) (inT
 	}
 
 	var parsed struct {
-		Usage *usage `json:"usage"`
+		Usage   *usage `json:"usage"`
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
 	}
-	if json.Unmarshal(body, &parsed) == nil && parsed.Usage != nil {
-		inTok, outTok = parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens
+	if json.Unmarshal(body, &parsed) == nil {
+		if parsed.Usage != nil {
+			inTok, outTok = parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens
+		} else {
+			// Upstream omitted usage: estimate output from the message content
+			// length so output isn't billed as free (mirrors streamThrough's
+			// contentChars/4 fallback). Input is recovered via the inputEst
+			// fallback in proxy().
+			chars := 0
+			for _, ch := range parsed.Choices {
+				chars += len(ch.Message.Content)
+			}
+			outTok = chars / 4
+		}
+	} else {
+		// A 200 whose body the minimal struct can't parse at all (non-JSON or an
+		// unrecognized provider variant) would otherwise bill output as free.
+		// Charge a conservative length-based estimate instead.
+		outTok = len(body) / 4
 	}
 
 	w.Header().Set("Content-Type", contentTypeOr(resp, "application/json"))

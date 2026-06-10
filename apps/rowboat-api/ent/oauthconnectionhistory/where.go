@@ -86,6 +86,11 @@ func RefreshTokenEncrypted(v []byte) predicate.OAuthConnectionHistory {
 	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldRefreshTokenEncrypted, v))
 }
 
+// ExternalAccountID applies equality check predicate on the "external_account_id" field. It's identical to ExternalAccountIDEQ.
+func ExternalAccountID(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldExternalAccountID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.OAuthConnectionHistory {
 	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldCreatedAt, v))
@@ -389,6 +394,81 @@ func ScopesIsNil() predicate.OAuthConnectionHistory {
 // ScopesNotNil applies the NotNil predicate on the "scopes" field.
 func ScopesNotNil() predicate.OAuthConnectionHistory {
 	return predicate.OAuthConnectionHistory(sql.FieldNotNull(FieldScopes))
+}
+
+// ExternalAccountIDEQ applies the EQ predicate on the "external_account_id" field.
+func ExternalAccountIDEQ(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldExternalAccountID, v))
+}
+
+// ExternalAccountIDNEQ applies the NEQ predicate on the "external_account_id" field.
+func ExternalAccountIDNEQ(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldNEQ(FieldExternalAccountID, v))
+}
+
+// ExternalAccountIDIn applies the In predicate on the "external_account_id" field.
+func ExternalAccountIDIn(vs ...string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldIn(FieldExternalAccountID, vs...))
+}
+
+// ExternalAccountIDNotIn applies the NotIn predicate on the "external_account_id" field.
+func ExternalAccountIDNotIn(vs ...string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldNotIn(FieldExternalAccountID, vs...))
+}
+
+// ExternalAccountIDGT applies the GT predicate on the "external_account_id" field.
+func ExternalAccountIDGT(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldGT(FieldExternalAccountID, v))
+}
+
+// ExternalAccountIDGTE applies the GTE predicate on the "external_account_id" field.
+func ExternalAccountIDGTE(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldGTE(FieldExternalAccountID, v))
+}
+
+// ExternalAccountIDLT applies the LT predicate on the "external_account_id" field.
+func ExternalAccountIDLT(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldLT(FieldExternalAccountID, v))
+}
+
+// ExternalAccountIDLTE applies the LTE predicate on the "external_account_id" field.
+func ExternalAccountIDLTE(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldLTE(FieldExternalAccountID, v))
+}
+
+// ExternalAccountIDContains applies the Contains predicate on the "external_account_id" field.
+func ExternalAccountIDContains(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldContains(FieldExternalAccountID, v))
+}
+
+// ExternalAccountIDHasPrefix applies the HasPrefix predicate on the "external_account_id" field.
+func ExternalAccountIDHasPrefix(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldHasPrefix(FieldExternalAccountID, v))
+}
+
+// ExternalAccountIDHasSuffix applies the HasSuffix predicate on the "external_account_id" field.
+func ExternalAccountIDHasSuffix(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldHasSuffix(FieldExternalAccountID, v))
+}
+
+// ExternalAccountIDIsNil applies the IsNil predicate on the "external_account_id" field.
+func ExternalAccountIDIsNil() predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldIsNull(FieldExternalAccountID))
+}
+
+// ExternalAccountIDNotNil applies the NotNil predicate on the "external_account_id" field.
+func ExternalAccountIDNotNil() predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldNotNull(FieldExternalAccountID))
+}
+
+// ExternalAccountIDEqualFold applies the EqualFold predicate on the "external_account_id" field.
+func ExternalAccountIDEqualFold(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldEqualFold(FieldExternalAccountID, v))
+}
+
+// ExternalAccountIDContainsFold applies the ContainsFold predicate on the "external_account_id" field.
+func ExternalAccountIDContainsFold(v string) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldContainsFold(FieldExternalAccountID, v))
 }
 
 // And groups predicates with the AND operator between them.

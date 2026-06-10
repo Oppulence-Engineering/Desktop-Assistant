@@ -122,7 +122,10 @@ func (h *Handler) Exchange(w http.ResponseWriter, r *http.Request) {
 		Code         string `json:"code"`
 		CodeVerifier string `json:"codeVerifier"`
 	}
-	if !httpx.DecodeJSON(w, r, 1<<16, &req) || req.Code == "" {
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
+		return // DecodeJSON already wrote the error response
+	}
+	if req.Code == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing code", "bad_request")
 		return
 	}
@@ -147,7 +150,10 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RefreshToken string `json:"refreshToken"`
 	}
-	if !httpx.DecodeJSON(w, r, 1<<16, &req) || req.RefreshToken == "" {
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
+		return // DecodeJSON already wrote the error response
+	}
+	if req.RefreshToken == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing refreshToken", "bad_request")
 		return
 	}
