@@ -3030,6 +3030,31 @@ export interface components {
       /** @description User that owns this row. */
       user: components["schemas"]["CurrentUser"];
     };
+    MeetingMinuteUsage: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      period: string;
+      reserved_seconds: number;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      used_seconds: number;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
     /** @description Long-lived third-party OAuth connection such as Google. Refresh tokens are sealed before storage. */
     OAuthConnection: {
       /**
@@ -3548,6 +3573,7 @@ export interface components {
       llm_usages?: components["schemas"]["LLMUsage"][];
       /** @description MCP connector connections for the user. */
       mcp_connections?: components["schemas"]["MCPConnection"][];
+      meeting_minute_usages?: components["schemas"]["MeetingMinuteUsage"][];
       /** @description Third-party OAuth connections for the user. */
       oauth_connections?: components["schemas"]["OAuthConnection"][];
       /** @description The user's billing subscription. */
