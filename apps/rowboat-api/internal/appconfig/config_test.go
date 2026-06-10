@@ -193,6 +193,82 @@ func TestLoadCloudSchedulerOverrides(t *testing.T) {
 	}
 }
 
+func TestValidateTemporalSchedules(t *testing.T) {
+	enable := func(c *Config) {
+		c.TemporalSchedulesEnabled = true
+		c.TemporalEnabled = true
+		c.CloudSchedulerEnabled = true
+		c.CloudSchedulerInterval = 15 * time.Second
+		c.CloudSchedulerLeaseTTL = 150 * time.Second
+		c.CloudSchedulerTimezone = "UTC"
+	}
+	cases := []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr bool
+	}{
+		{
+			name:   "disabled needs nothing",
+			mutate: func(c *Config) { c.TemporalSchedulesEnabled = false },
+		},
+		{
+			name:   "enabled with temporal and loop",
+			mutate: enable,
+		},
+		{
+			name:    "enabled requires temporal",
+			mutate:  func(c *Config) { enable(c); c.TemporalEnabled = false; c.CloudSchedulerEnabled = false },
+			wantErr: true,
+		},
+		{
+			// The loop is the fallback for non-current syncs and hosts the
+			// reconciler; Schedules without it would strand failed syncs.
+			name:    "enabled requires scheduler loop",
+			mutate:  func(c *Config) { enable(c); c.CloudSchedulerEnabled = false },
+			wantErr: true,
+		},
+		{
+			name:    "catchup must be positive",
+			mutate:  func(c *Config) { enable(c); c.TemporalScheduleCatchup = 0 },
+			wantErr: true,
+		},
+		{
+			name:    "reconcile interval must be positive",
+			mutate:  func(c *Config) { enable(c); c.TemporalScheduleReconcileInterval = -time.Second },
+			wantErr: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := baseConfig()
+			tc.mutate(&c)
+			err := c.Validate()
+			if tc.wantErr && err == nil {
+				t.Fatalf("expected error, got nil")
+			}
+			if !tc.wantErr && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestLoadTemporalScheduleDefaults(t *testing.T) {
+	for _, k := range []string{"TEMPORAL_SCHEDULES_ENABLED", "TEMPORAL_SCHEDULE_CATCHUP", "TEMPORAL_SCHEDULE_RECONCILE_INTERVAL"} {
+		t.Setenv(k, "")
+	}
+	c := Load()
+	if c.TemporalSchedulesEnabled {
+		t.Fatalf("default enabled should be false")
+	}
+	if c.TemporalScheduleCatchup != time.Minute {
+		t.Fatalf("default catchup = %v, want 1m", c.TemporalScheduleCatchup)
+	}
+	if c.TemporalScheduleReconcileInterval != 5*time.Minute {
+		t.Fatalf("default reconcile interval = %v, want 5m", c.TemporalScheduleReconcileInterval)
+	}
+}
+
 func TestDefaultHostname(t *testing.T) {
 	if defaultHostname() == "" {
 		t.Fatalf("defaultHostname should never be empty")

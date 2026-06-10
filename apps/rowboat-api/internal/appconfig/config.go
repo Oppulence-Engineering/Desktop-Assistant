@@ -195,6 +195,14 @@ type Config struct {
 	TemporalAPIKey     string
 	TemporalTLSEnabled bool
 
+	// Temporal Schedules for exact-cron api-target tasks (RFC 005). When
+	// disabled, cron stays on the RFC 001 scheduler loop; the loop remains the
+	// fallback for any task whose schedule sync is not "current" even when
+	// enabled.
+	TemporalSchedulesEnabled          bool
+	TemporalScheduleCatchup           time.Duration // Schedule CatchupWindow
+	TemporalScheduleReconcileInterval time.Duration // reconciler cadence
+
 	// Cloud scheduler (RFC 001). Evaluates cron/window triggers for
 	// executionTarget=api tasks inside the deployment so scheduled cloud runs
 	// fire while the desktop is offline. Disabled by default; the scheduler
@@ -386,6 +394,10 @@ func Load() Config {
 		TemporalAPIKey:        getenv("TEMPORAL_API_KEY", ""),
 		TemporalTLSEnabled:    getbool("TEMPORAL_TLS_ENABLED", false),
 
+		TemporalSchedulesEnabled:          getbool("TEMPORAL_SCHEDULES_ENABLED", false),
+		TemporalScheduleCatchup:           getdur("TEMPORAL_SCHEDULE_CATCHUP", time.Minute),
+		TemporalScheduleReconcileInterval: getdur("TEMPORAL_SCHEDULE_RECONCILE_INTERVAL", 5*time.Minute),
+
 		CloudSchedulerEnabled:  getbool("CLOUD_SCHEDULER_ENABLED", false),
 		CloudSchedulerInterval: getdur("CLOUD_SCHEDULER_INTERVAL", 15*time.Second),
 		// MUST exceed the scheduler's cron grace window (2m, due.go cronGrace):
@@ -539,6 +551,23 @@ func (c Config) Validate() error {
 		// fast-follow. Reject anything but UTC rather than silently mis-evaluate.
 		if tz := strings.TrimSpace(c.CloudSchedulerTimezone); tz != "" && !strings.EqualFold(tz, "UTC") {
 			return fmt.Errorf("CLOUD_SCHEDULER_TIMEZONE must be UTC in v1 (per-task timezone is a committed fast-follow); got %q", c.CloudSchedulerTimezone)
+		}
+	}
+	if c.TemporalSchedulesEnabled {
+		if !c.TemporalEnabled {
+			return fmt.Errorf("TEMPORAL_ENABLED must be true when TEMPORAL_SCHEDULES_ENABLED=true")
+		}
+		// The RFC 001 loop is the mandated fallback for any cron whose schedule
+		// sync is not "current", and the scheduler binary hosts the reconciler.
+		// Schedules without the loop would leave failed syncs silently unfired.
+		if !c.CloudSchedulerEnabled {
+			return fmt.Errorf("CLOUD_SCHEDULER_ENABLED must be true when TEMPORAL_SCHEDULES_ENABLED=true (the loop is the fallback and hosts the reconciler)")
+		}
+		if c.TemporalScheduleCatchup <= 0 {
+			return fmt.Errorf("TEMPORAL_SCHEDULE_CATCHUP must be > 0")
+		}
+		if c.TemporalScheduleReconcileInterval <= 0 {
+			return fmt.Errorf("TEMPORAL_SCHEDULE_RECONCILE_INTERVAL must be > 0")
 		}
 	}
 	if c.CloudEventsRoutingEnabled {
