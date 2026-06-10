@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, Trash2, CodeIcon, Loader2 } from "@/lib/icons";
+import { Plus, Trash2, ShieldCheck, CodeIcon, Loader2 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -123,6 +123,13 @@ export function SecuritySettings({ dialogOpen }: { dialogOpen: boolean }) {
     <div className="space-y-6">
       {!jsonOpen && (
         <>
+          <div className="flex items-start gap-2.5 rounded-none border bg-muted/40 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+            <p>
+              These rules let the assistant act without asking each time. Grant the minimum it needs
+              — anything not listed here still prompts for your approval.
+            </p>
+          </div>
           <SettingsSection
             title="Allowed commands"
             description="Shell commands the assistant may run without asking each time."

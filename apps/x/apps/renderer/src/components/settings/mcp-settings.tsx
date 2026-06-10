@@ -1,11 +1,11 @@
 import * as React from "react";
-import { Plus, Trash2, Server, CodeIcon, Loader2 } from "@/lib/icons";
+import { Plus, Trash2, Server, Terminal, Globe, CodeIcon, Loader2 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { McpServerConfig } from "@x/shared/dist/mcp.js";
-import { SettingsField, KeyValueRows, StringListRows } from "./settings-ui";
+import { SettingsSection, SettingsField, KeyValueRows, StringListRows } from "./settings-ui";
 
 /**
  * MCP Servers settings — a real form over `config/mcp.json` (was a raw JSON
@@ -163,7 +163,21 @@ export function McpSettings({ dialogOpen }: { dialogOpen: boolean }) {
   return (
     <div className="space-y-4">
       {!jsonOpen && (
-        <div className="space-y-3">
+        <SettingsSection
+          title="Servers"
+          description="Connect Model Context Protocol servers to give the assistant more tools."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setServers((prev) => [...prev, blankServer()])}
+            >
+              <Plus className="size-3.5" />
+              Add server
+            </Button>
+          }
+        >
           {servers.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 rounded-none border border-dashed py-10 text-center">
               <Server className="size-6 text-muted-foreground" />
@@ -174,6 +188,16 @@ export function McpSettings({ dialogOpen }: { dialogOpen: boolean }) {
           {servers.map((s) => (
             <div key={s.id} className="space-y-3 rounded-none border bg-card p-3.5">
               <div className="flex items-center gap-2">
+                <span
+                  className="flex size-8 shrink-0 items-center justify-center rounded-none border bg-muted/40 text-muted-foreground"
+                  title={s.kind === "stdio" ? "Local command" : "Remote URL"}
+                >
+                  {s.kind === "stdio" ? (
+                    <Terminal className="size-4" />
+                  ) : (
+                    <Globe className="size-4" />
+                  )}
+                </span>
                 <Input
                   value={s.name}
                   placeholder="server-name"
@@ -181,7 +205,7 @@ export function McpSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   onChange={(e) => update(s.id, { name: e.target.value })}
                 />
                 {/* stdio | http segmented toggle */}
-                <div className="flex rounded-none border p-0.5">
+                <div className="flex rounded-none border bg-muted/40 p-0.5">
                   {(["stdio", "http"] as const).map((k) => (
                     <button
                       key={k}
@@ -190,7 +214,7 @@ export function McpSettings({ dialogOpen }: { dialogOpen: boolean }) {
                       className={cn(
                         "rounded-none px-2.5 py-1 text-xs font-medium transition-colors",
                         s.kind === k
-                          ? "bg-primary text-primary-foreground"
+                          ? "bg-background text-foreground shadow-[0_1px_2px_rgb(16_24_40_/_0.06)] ring-1 ring-border"
                           : "text-muted-foreground hover:text-foreground",
                       )}
                     >
@@ -258,17 +282,7 @@ export function McpSettings({ dialogOpen }: { dialogOpen: boolean }) {
               )}
             </div>
           ))}
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => setServers((prev) => [...prev, blankServer()])}
-          >
-            <Plus className="size-3.5" />
-            Add server
-          </Button>
-        </div>
+        </SettingsSection>
       )}
 
       {/* Raw JSON escape hatch */}

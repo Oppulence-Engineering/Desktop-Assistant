@@ -27,6 +27,7 @@ import {
   Terminal,
   AlertTriangle,
   RefreshCw,
+  ExternalLink,
   AudioLines,
 } from "@/lib/icons";
 
@@ -34,13 +35,6 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -183,73 +177,79 @@ interface SettingsDialogProps {
 // --- Help & Support tab ---
 
 function HelpSettings() {
+  const links = [
+    {
+      icon: Bug,
+      wrap: "bg-destructive/10 text-destructive",
+      title: "Report a bug",
+      subtitle: `Send feedback to the ${PRODUCT_NAME} team`,
+      href: "https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/new",
+    },
+    {
+      icon: MessageCircle,
+      wrap: "bg-[#5865F2] text-white",
+      title: "Join our Discord",
+      subtitle: "Chat with the community",
+      href: "https://discord.com/invite/wajrgmJQ6b",
+    },
+    {
+      icon: Mail,
+      wrap: "bg-muted text-foreground",
+      title: "Contact us",
+      subtitle: "contact@solomon-ai.co",
+      href: "mailto:contact@solomon-ai.co",
+    },
+  ];
   return (
-    <div className="space-y-3">
-      <Button
-        variant="outline"
-        className="w-full justify-start gap-3 h-auto py-3"
-        onClick={() =>
-          window.open(
-            "https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/new",
-            "_blank",
-          )
-        }
-      >
-        <div className="flex size-8 items-center justify-center rounded-none bg-destructive/10">
-          <Bug className="size-4 text-destructive" />
+    <div className="space-y-6">
+      <SettingsSection title="Get help" description="Reach the team or the community.">
+        <div className="space-y-2">
+          {links.map((l) => (
+            <button
+              key={l.title}
+              type="button"
+              onClick={() => window.open(l.href, "_blank")}
+              className="group flex w-full items-center gap-3 rounded-none border bg-card px-3.5 py-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+            >
+              <span
+                className={cn(
+                  "flex size-9 shrink-0 items-center justify-center rounded-none",
+                  l.wrap,
+                )}
+              >
+                <l.icon className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-medium">{l.title}</span>
+                <span className="block text-xs text-muted-foreground">{l.subtitle}</span>
+              </span>
+              <ExternalLink className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+            </button>
+          ))}
         </div>
-        <div className="flex flex-col items-start">
-          <span className="text-sm font-medium">Report a bug</span>
-          <span className="text-xs text-muted-foreground">
-            Send feedback to the {PRODUCT_NAME} team
-          </span>
+      </SettingsSection>
+
+      <SettingsSection title="About">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <a
+            href="https://www.solomon-ai.co/terms-of-service"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-foreground"
+          >
+            Terms of Service
+          </a>
+          <span>·</span>
+          <a
+            href="https://www.solomon-ai.co/privacy-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-foreground"
+          >
+            Privacy Policy
+          </a>
         </div>
-      </Button>
-      <Button
-        variant="outline"
-        className="w-full justify-start gap-3 h-auto py-3"
-        onClick={() => window.open("https://discord.com/invite/wajrgmJQ6b", "_blank")}
-      >
-        <div className="flex size-8 items-center justify-center rounded-none bg-[#5865F2]">
-          <MessageCircle className="size-4 text-white" />
-        </div>
-        <div className="flex flex-col items-start">
-          <span className="text-sm font-medium">Join our Discord</span>
-          <span className="text-xs text-muted-foreground">Chat with the community</span>
-        </div>
-      </Button>
-      <Button
-        variant="outline"
-        className="w-full justify-start gap-3 h-auto py-3"
-        onClick={() => window.open("mailto:contact@solomon-ai.co", "_blank")}
-      >
-        <div className="flex size-8 items-center justify-center rounded-none bg-muted">
-          <Mail className="size-4" />
-        </div>
-        <div className="flex flex-col items-start">
-          <span className="text-sm font-medium">Contact us</span>
-          <span className="text-xs text-muted-foreground">contact@solomon-ai.co</span>
-        </div>
-      </Button>
-      <div className="flex gap-3 text-xs text-muted-foreground">
-        <a
-          href="https://www.solomon-ai.co/terms-of-service"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-foreground transition-colors"
-        >
-          Terms of Service
-        </a>
-        <span>·</span>
-        <a
-          href="https://www.solomon-ai.co/privacy-policy"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-foreground transition-colors"
-        >
-          Privacy Policy
-        </a>
-      </div>
+      </SettingsSection>
     </div>
   );
 }
@@ -1018,38 +1018,44 @@ function AgentStatusRow({
 }) {
   const ready = status?.installed && status?.signedIn;
   const needsSignInOnly = status?.installed && !status?.signedIn;
+  const pill = (ok: boolean, label: string) => (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+        ok
+          ? "bg-green-500/10 text-green-600 dark:text-green-400"
+          : "bg-muted text-muted-foreground",
+      )}
+    >
+      {ok ? <CheckCircle2 className="size-2.5" /> : <X className="size-2.5" />}
+      {label}
+    </span>
+  );
   return (
-    <div className="rounded-none border px-3 py-2.5 flex items-center gap-3">
-      <Terminal className="size-4 text-muted-foreground shrink-0" />
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium">{name}</div>
-        <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-3">
-          <span
-            className={cn(
-              "inline-flex items-center gap-1",
-              status?.installed ? "text-green-600" : "text-muted-foreground",
-            )}
-          >
-            {status?.installed ? <CheckCircle2 className="size-3" /> : <X className="size-3" />}
-            Installed
-          </span>
-          <span
-            className={cn(
-              "inline-flex items-center gap-1",
-              status?.signedIn ? "text-green-600" : "text-muted-foreground",
-            )}
-          >
-            {status?.signedIn ? <CheckCircle2 className="size-3" /> : <X className="size-3" />}
-            Signed in
-          </span>
+    <div className="flex items-center gap-3 rounded-none border bg-card px-3.5 py-3">
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-none border",
+          ready
+            ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
+            : "bg-muted/40 text-muted-foreground",
+        )}
+      >
+        <Terminal className="size-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px] font-medium">{name}</div>
+        <div className="mt-1 flex items-center gap-1.5">
+          {pill(!!status?.installed, "Installed")}
+          {pill(!!status?.signedIn, "Signed in")}
         </div>
       </div>
       {ready ? (
-        <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium leading-none text-green-600">
+        <span className="shrink-0 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium leading-none text-green-600 dark:text-green-400">
           Ready
         </span>
       ) : needsSignInOnly ? (
-        <span className="text-xs text-muted-foreground shrink-0">
+        <span className="shrink-0 text-xs text-muted-foreground">
           Run{" "}
           <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px] text-foreground">
             {signInCommand}
@@ -1060,9 +1066,10 @@ function AgentStatusRow({
           href={installLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-primary hover:underline shrink-0"
+          className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
         >
-          Install &amp; sign in
+          Install
+          <ExternalLink className="size-3" />
         </a>
       )}
     </div>
@@ -1168,34 +1175,45 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
     );
   }
 
-  return (
-    <div className="space-y-5">
-      <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
-        <p>
-          <strong className="text-foreground">Code mode</strong> lets the assistant delegate coding
-          tasks to <strong className="text-foreground">Claude Code</strong> or{" "}
-          <strong className="text-foreground">Codex</strong> running on your machine. Pick the agent
-          inline from the composer; the assistant runs it on-device and streams its work — tool
-          calls, file diffs, and approvals — back into chat.
-        </p>
-        <p>
-          Requires an active <strong className="text-foreground">Claude Code</strong> subscription
-          or a <strong className="text-foreground">ChatGPT/Codex</strong> subscription. You can have
-          one or both.
-        </p>
-      </div>
+  const APPROVAL_OPTIONS = [
+    {
+      value: "ask",
+      label: "Ask every time",
+      desc: "You approve every file change and command the agent wants to run.",
+    },
+    {
+      value: "auto-approve-reads",
+      label: "Auto-approve reads",
+      desc: "Reading and searching run automatically; you still approve writes, edits, and commands.",
+    },
+    {
+      value: "yolo",
+      label: "Auto-approve everything (YOLO)",
+      desc: "The agent runs everything — writes, edits, and commands — without asking. Use only in folders you trust.",
+    },
+  ] as const;
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Agent status
-          </span>
+  return (
+    <div className="space-y-6">
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        <strong className="text-foreground">Code mode</strong> lets the assistant delegate coding
+        tasks to <strong className="text-foreground">Claude Code</strong> or{" "}
+        <strong className="text-foreground">Codex</strong> running on your machine. Pick the agent
+        inline from the composer; the assistant runs it on-device and streams its work — tool calls,
+        file diffs, and approvals — back into chat. Requires an active Claude Code or ChatGPT/Codex
+        subscription; you can have one or both.
+      </p>
+
+      <SettingsSection
+        title="Agents"
+        description="At least one must be installed and signed in to use code mode."
+        action={
           <button
             onClick={() => {
               void loadStatus();
             }}
             disabled={statusLoading}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
             {statusLoading ? (
               <Loader2 className="size-3 animate-spin" />
@@ -1204,7 +1222,8 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
             )}
             Re-check
           </button>
-        </div>
+        }
+      >
         <div className="space-y-2">
           <AgentStatusRow
             name="Claude Code"
@@ -1219,54 +1238,66 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
             status={status?.codex ?? null}
           />
         </div>
-      </div>
+      </SettingsSection>
 
-      <div className="rounded-none border px-3 py-3 flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium">Enable code mode</div>
-          <div className="text-xs text-muted-foreground mt-0.5">
-            Shows the code mode chip in the composer and lets the assistant delegate to your
-            installed agents.
+      <SettingsSection title="Code mode">
+        <div className="flex items-start gap-3 rounded-none border bg-card px-3.5 py-3">
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-medium">Enable code mode</div>
+            <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+              Shows the code mode chip in the composer and lets the assistant delegate to your
+              installed agents.
+            </div>
           </div>
+          <Switch checked={enabled} onCheckedChange={handleToggle} disabled={saving} />
         </div>
-        <Switch checked={enabled} onCheckedChange={handleToggle} disabled={saving} />
-      </div>
+      </SettingsSection>
 
       {enabled && (
-        <div className="rounded-md border px-3 py-3 space-y-2">
-          <div className="text-sm font-medium">Approvals</div>
-          <div className="text-xs text-muted-foreground">
-            How the coding agent checks in before changing files or running commands. You always see
-            everything it does in the timeline — this only controls the prompts.
+        <SettingsSection
+          title="Approvals"
+          description="How the coding agent checks in before changing files or running commands. You always see everything it does in the timeline — this only controls the prompts."
+        >
+          <div className="space-y-2">
+            {APPROVAL_OPTIONS.map((opt) => {
+              const active = approvalPolicy === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={saving}
+                  onClick={() => handlePolicyChange(opt.value as ApprovalPolicy)}
+                  className={cn(
+                    "flex w-full items-start gap-3 rounded-none border px-3.5 py-3 text-left transition-all",
+                    active
+                      ? "border-primary bg-primary/[0.03] ring-2 ring-primary/20"
+                      : "border-border hover:border-primary/40 hover:bg-muted/40",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
+                      active ? "border-primary" : "border-muted-foreground/40",
+                    )}
+                  >
+                    {active && <span className="size-1.5 rounded-full bg-primary" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-medium">{opt.label}</span>
+                    <span className="block text-xs leading-relaxed text-muted-foreground">
+                      {opt.desc}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <Select
-            value={approvalPolicy}
-            onValueChange={(v) => handlePolicyChange(v as ApprovalPolicy)}
-            disabled={saving}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ask">Ask every time</SelectItem>
-              <SelectItem value="auto-approve-reads">Auto-approve reads</SelectItem>
-              <SelectItem value="yolo">Auto-approve everything (YOLO)</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="text-xs text-muted-foreground">
-            {approvalPolicy === "ask" &&
-              "You approve every file change and command the agent wants to run."}
-            {approvalPolicy === "auto-approve-reads" &&
-              "Reading and searching run automatically; you still approve writes, edits, and commands."}
-            {approvalPolicy === "yolo" &&
-              "The agent runs everything — writes, edits, and commands — without asking. Use only in folders you trust."}
-          </div>
-        </div>
+        </SettingsSection>
       )}
 
       {enabled && status && !anyReady && (
-        <div className="rounded-none border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 px-3 py-2.5 flex items-start gap-2 text-xs">
-          <AlertTriangle className="size-4 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 rounded-none border border-amber-500/40 bg-amber-50/60 px-3 py-2.5 text-xs dark:bg-amber-950/20">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-500" />
           <div className="text-amber-900 dark:text-amber-200">
             Neither Claude Code nor Codex is ready. Install at least one and sign in with a
             subscription account, then click Re-check.
