@@ -39,6 +39,22 @@ pre-commit:
       glob: "*.go"
       run: gofmt -w {staged_files}
       stage_fixed: true
+    # rowboat-api codegen: when ent schemas or gqlgen inputs are staged, run
+    # the generators and stage their output, so CI's generate-drift check
+    # can't fail on a forgotten regen (the PR #50 → #56 incident: a new ent
+    # entity landed without its openapi/gqlgen/SDK artifacts). Exception to
+    # the fast-hook rule above, deliberately: it only fires on schema-input
+    # commits, which are rare and already expensive to get wrong. proto
+    # regen is CI-only (needs protoc + plugins via `make install-tools`).
+    rowboat-api-codegen:
+      root: "apps/rowboat-api/"
+      glob:
+        - "apps/rowboat-api/ent/schema/*.go"
+        - "apps/rowboat-api/ent/schema/mixin/*.go"
+        - "apps/rowboat-api/internal/gqlapi/gqlgen.yml"
+        - "apps/rowboat-api/internal/gqlapi/extra.graphql"
+      run: make ent-generate gql-generate sdk-generate
+      stage_fixed: true
     perf-tool-vet:
       glob: "tools/desktop-perf/**/*.go"
       root: "tools/desktop-perf/"
