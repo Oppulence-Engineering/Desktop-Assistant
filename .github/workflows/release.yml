@@ -197,6 +197,41 @@ jobs:
           npx electron-forge make --skip-package --arch=x64 --platform=darwin --targets "@electron-forge/maker-dmg,@electron-forge/maker-zip"
         working-directory: apps/x/apps/main
 
+      # maker-dmg produces an unsigned .dmg (the app inside is already signed +
+      # notarized). Sign, notarize, and staple the disk image too so the download
+      # itself passes Gatekeeper on first open — not just the app after install.
+      # Must run before "Cleanup keychain" (needs the Developer ID identity).
+      - name: Sign + notarize + staple DMGs
+        working-directory: apps/x/apps/main
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+        run: |
+          set -euo pipefail
+          # Skip cleanly on unsigned builds (no cert → app wasn't signed either).
+          if [ -z "${APPLE_CERTIFICATE:-}" ]; then
+            echo "APPLE_CERTIFICATE not set — skipping DMG notarization (unsigned build)"
+            exit 0
+          fi
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+            | awk '/Developer ID Application/ { print $2; exit }')
+          if [ -z "$IDENTITY" ]; then
+            echo "No Developer ID Application identity in keychain" >&2
+            exit 1
+          fi
+          find out/make -name '*.dmg' -print0 | while IFS= read -r -d '' dmg; do
+            echo "::group::Notarizing $dmg"
+            codesign --force --timestamp --keychain "$KEYCHAIN_PATH" --sign "$IDENTITY" "$dmg"
+            xcrun notarytool submit "$dmg" \
+              --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+            xcrun stapler staple "$dmg"
+            spctl -a -t open --context context:primary-signature -vv "$dmg"
+            echo "::endgroup::"
+          done
+
       - name: Cleanup keychain
         if: always()
         run: |
