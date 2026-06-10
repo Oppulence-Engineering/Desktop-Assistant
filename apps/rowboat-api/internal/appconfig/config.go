@@ -224,6 +224,18 @@ type Config struct {
 	// GmailAPIBaseURL / CalendarAPIBaseURL override Google's API hosts (dev mocks).
 	GmailAPIBaseURL    string
 	CalendarAPIBaseURL string
+
+	// Cloud agent runtime (RFC 004): the LLM-backed, tool-scoped agent loop
+	// that the Temporal worker's ExecuteAPITask delegates to. Enabled by
+	// default; CLOUD_RUNTIME_ENABLED=false is the rollback kill-switch
+	// selecting the deterministic NoopRuntime artifact path.
+	CloudRuntimeEnabled          bool
+	CloudRuntimeModel            string        // model used when the task carries none
+	CloudRuntimeMaxDuration      time.Duration // wall clock per run; MUST stay < the 5m activity timeout
+	CloudRuntimeMaxLLMCalls      int
+	CloudRuntimeMaxToolCalls     int
+	CloudRuntimeMaxArtifactBytes int
+	CloudRuntimeMaxEventBytes    int
 }
 
 // Load reads configuration from the environment, applying defaults.
@@ -379,6 +391,14 @@ func Load() Config {
 		GoogleWatchRenewMargin: getdur("GOOGLE_WATCH_RENEW_MARGIN", 24*time.Hour),
 		GmailAPIBaseURL:        getenv("GMAIL_API_BASE_URL", ""),
 		CalendarAPIBaseURL:     getenv("CALENDAR_API_BASE_URL", ""),
+
+		CloudRuntimeEnabled:          getbool("CLOUD_RUNTIME_ENABLED", true),
+		CloudRuntimeModel:            getenv("CLOUD_RUNTIME_MODEL", "anthropic/claude-sonnet-4-5"),
+		CloudRuntimeMaxDuration:      getdur("CLOUD_RUNTIME_MAX_DURATION", 4*time.Minute),
+		CloudRuntimeMaxLLMCalls:      getint("CLOUD_RUNTIME_MAX_LLM_CALLS", 12),
+		CloudRuntimeMaxToolCalls:     getint("CLOUD_RUNTIME_MAX_TOOL_CALLS", 24),
+		CloudRuntimeMaxArtifactBytes: getint("CLOUD_RUNTIME_MAX_ARTIFACT_BYTES", 1<<20),
+		CloudRuntimeMaxEventBytes:    getint("CLOUD_RUNTIME_MAX_EVENT_BYTES", 64<<10),
 	}
 }
 
@@ -514,6 +534,20 @@ func (c Config) Validate() error {
 		if c.GoogleWatchInterval <= 0 || c.GoogleWatchRenewMargin <= 0 {
 			return fmt.Errorf("GOOGLE_WATCH_INTERVAL and GOOGLE_WATCH_RENEW_MARGIN must be > 0")
 		}
+	}
+	// The runtime's own deadline must fire BEFORE Temporal's activity
+	// StartToCloseTimeout (5m, backgroundtaskworkflow activity options), or
+	// runs would fail as activity_timeout and hide the real
+	// runtime_deadline_exceeded cause. Raising this ceiling requires raising
+	// the activity timeout in the same change (RFC 004 duration coupling).
+	if c.CloudRuntimeMaxDuration <= 0 || c.CloudRuntimeMaxDuration >= 5*time.Minute {
+		return fmt.Errorf("CLOUD_RUNTIME_MAX_DURATION must be in (0, 5m); got %s", c.CloudRuntimeMaxDuration)
+	}
+	if c.CloudRuntimeMaxLLMCalls <= 0 || c.CloudRuntimeMaxToolCalls <= 0 {
+		return fmt.Errorf("CLOUD_RUNTIME_MAX_LLM_CALLS and CLOUD_RUNTIME_MAX_TOOL_CALLS must be > 0")
+	}
+	if c.CloudRuntimeMaxArtifactBytes <= 0 || c.CloudRuntimeMaxEventBytes <= 0 {
+		return fmt.Errorf("cloud runtime byte limits must be > 0")
 	}
 	if c.CloudEventsMatchThreshold <= 0 || c.CloudEventsMatchThreshold > 1 {
 		return fmt.Errorf("CLOUD_EVENTS_MATCH_THRESHOLD must be in (0, 1]; got %v", c.CloudEventsMatchThreshold)
