@@ -32,10 +32,10 @@ var ErrToolNotAllowed = &RuntimeError{
 
 // limitError builds the breach error for one limit, named for the
 // cloud_runtime_limit_exceeded_total{limit} label.
-func limitError(code, limit string, value, max any) *RuntimeError {
+func limitError(code, limit string, value, maxVal any) *RuntimeError {
 	return &RuntimeError{
 		Code:    code,
-		Message: fmt.Sprintf("%s limit exceeded (%v > %v)", limit, value, max),
+		Message: fmt.Sprintf("%s limit exceeded (%v > %v)", limit, value, maxVal),
 	}
 }
 
