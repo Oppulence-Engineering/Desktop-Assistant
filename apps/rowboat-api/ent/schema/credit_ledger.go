@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"time"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
@@ -22,7 +22,7 @@ func (CreditLedger) Fields() []ent.Field {
 		// llm_call | llm_call_reserve | llm_settle | voice_tts | exa_search | grant | refund
 		field.String("reason"),
 		field.UUID("request_id", uuid.UUID{}), // idempotency anchor
-		field.Time("ts").Default(time.Now).Immutable(),
+		field.Time("ts").Default(mixin.UTCNow).Immutable(),
 	}
 }
 

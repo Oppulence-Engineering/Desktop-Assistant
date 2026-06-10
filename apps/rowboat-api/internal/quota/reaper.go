@@ -101,7 +101,6 @@ func ReapOrphanedReservations(ctx context.Context, client *ent.Client, log *zap.
 			SetDelta(-orphan.Delta). // reserve deltas are negative; refund the full estimate
 			SetReason(terminalReason).
 			SetRequestID(orphan.RequestID).
-			SetTs(time.Now().UTC()).
 			Exec(ctx)
 		if err != nil {
 			if ent.IsConstraintError(err) {

@@ -141,10 +141,6 @@ func (g *Gate) Reserve(ctx context.Context, op string, estimated int, requestID 
 		SetDelta(-estimated).
 		SetReason(op + reserveReasonSuffix).
 		SetRequestID(requestID).
-		// Explicit UTC: the schema default is local time.Now, and SQLite's TEXT
-		// timestamp comparison makes consumedSince's UTC-midnight window miss
-		// local-zone rows (daily caps silently unenforced in dev evenings).
-		SetTs(time.Now().UTC()).
 		Exec(ctx)
 	if err != nil {
 		_ = tx.Rollback()
@@ -280,7 +276,6 @@ func (g *Gate) write(ctx context.Context, u *ent.User, delta int, reason string,
 		SetDelta(delta).
 		SetReason(reason).
 		SetRequestID(requestID).
-		SetTs(time.Now().UTC()). // see Reserve: UTC keeps SQLite ts-window queries correct
 		Exec(ctx)
 	if err != nil && ent.IsConstraintError(err) {
 		return nil
