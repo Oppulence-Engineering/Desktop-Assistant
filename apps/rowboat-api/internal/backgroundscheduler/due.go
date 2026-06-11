@@ -164,3 +164,39 @@ func backoffRemaining(lastAttemptAt *time.Time, now time.Time) time.Duration {
 	}
 	return retryBackoff - since
 }
+
+// NextWindowStart predicts when the loop would next fire any of the task's
+// daily windows, using the same cycle semantics as isWindowDue (RFC 006
+// schedule-state display). Returns nil when no window is valid. A window that
+// is due right now reports `now`; one already fired today (lastRunAt after
+// today's cycle start) reports tomorrow's start.
+func NextWindowStart(tr Triggers, lastRunAt *time.Time, now time.Time) *time.Time {
+	var next *time.Time
+	for _, w := range tr.Windows {
+		startHour, startMin, ok := parseHHMM(w.StartTime)
+		if !ok {
+			continue
+		}
+		endHour, endMin, ok := parseHHMM(w.EndTime)
+		if !ok {
+			continue
+		}
+		cycleStart := time.Date(now.Year(), now.Month(), now.Day(), startHour, startMin, 0, 0, now.Location())
+		cycleEnd := time.Date(now.Year(), now.Month(), now.Day(), endHour, endMin, 0, 0, now.Location())
+		firedToday := lastRunAt != nil && lastRunAt.After(cycleStart)
+		var candidate time.Time
+		switch {
+		case firedToday || now.After(cycleEnd):
+			candidate = cycleStart.AddDate(0, 0, 1)
+		case now.Before(cycleStart):
+			candidate = cycleStart
+		default:
+			candidate = now // inside the band and unfired — due immediately
+		}
+		if next == nil || candidate.Before(*next) {
+			c := candidate
+			next = &c
+		}
+	}
+	return next
+}
