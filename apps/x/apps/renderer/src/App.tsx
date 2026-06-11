@@ -1019,6 +1019,26 @@ function App() {
     return cleanup;
   }, [refreshVoiceAvailability]);
 
+  // RFC 006 offline-return: main pushes bg-task:offlineRuns ONCE shortly
+  // after boot, so the listener must live here at the app root — a view-level
+  // listener (e.g. inside BgTasksView) would not be mounted yet and the
+  // notification would be lost.
+  useEffect(() => {
+    return window.ipc.on("bg-task:offlineRuns", (payload) => {
+      if (!payload || payload.count === 0) return;
+      const failed = payload.runs.filter((r) => r.status === "failed").length;
+      const summary =
+        payload.count === 1
+          ? "1 cloud run completed while you were away"
+          : `${payload.count} cloud runs completed while you were away`;
+      if (failed > 0) {
+        toast.error(`${summary} (${failed} failed)`);
+      } else {
+        toast.success(summary);
+      }
+    });
+  }, []);
+
   // One-time Composio→native Google migration check. Runs on mount and again
   // after the user signs in to Solomon AI (so we catch users who weren't signed
   // in at startup). The IPC is idempotent — once `dismissed_at` is set on the
