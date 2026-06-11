@@ -74,6 +74,13 @@ export type RemoteRun = {
   createdAt: string;
   updatedAt: string;
   revision: number;
+  sourceEvent?: {
+    id: string;
+    source: string;
+    eventType?: string;
+    subject?: string;
+    occurredAt?: string | null;
+  };
 };
 
 export type RemoteRunStatusView = {

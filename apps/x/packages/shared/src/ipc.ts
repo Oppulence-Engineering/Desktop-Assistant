@@ -41,6 +41,7 @@ import {
   BackgroundTaskTrigger,
   TriggersSchema,
 } from "./background-task.js";
+import { NotificationsConfigSchema } from "./notifications.js";
 import { UserMessageContent } from "./message.js";
 import { SolomonApiConfig } from "./solomon-account.js";
 import { ZListToolkitsResponse } from "./composio.js";
@@ -849,6 +850,17 @@ const ipcSchemas = {
     req: z.null(),
     res: TranscriptionConfig,
   },
+  "notifications:getConfig": {
+    req: z.null(),
+    res: NotificationsConfigSchema,
+  },
+  "notifications:setConfig": {
+    req: z.object({
+      cloudRunsOfflineNotify: z.boolean().optional(),
+      suppressDesktopScheduleQuitReminder: z.boolean().optional(),
+    }),
+    res: NotificationsConfigSchema,
+  },
   "transcription:setConfig": {
     req: z.object({
       voiceProvider: TranscriptionProvider.optional(),
@@ -1126,6 +1138,17 @@ const ipcSchemas = {
       slug: z.string(),
       trigger: BackgroundTaskTrigger.optional(),
       context: z.string().optional(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      run: BackgroundTaskCloudRunSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  "bg-task:getCloudRun": {
+    req: z.object({
+      slug: z.string(),
+      runId: z.string(),
     }),
     res: z.object({
       success: z.boolean(),
