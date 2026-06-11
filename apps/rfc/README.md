@@ -35,7 +35,7 @@ to avoid parallel sources of truth.
 RFCs 001–007 build the execution plane; **008** is the first _faculty_ RFC that proves the
 fabric extends to new portfolio planes. **001–006** are **Complete** (003 with its GCP
 provisioning companion [019](./019-google-push-infrastructure.md); 004 is the cloud agent
-runtime; 005 ships dark behind `TEMPORAL_SCHEDULES_ENABLED`; 006 is the desktop control
+runtime; 005 is enabled by default (`TEMPORAL_SCHEDULES_ENABLED=false` is the rollback); 006 is the desktop control
 plane over all of them); **007** remains **Draft**. Each carries a metadata block, grounded `file:line` references into the current
 codebase, mermaid diagrams, a **Decisions** section (resolved forks), and a test plan.
 

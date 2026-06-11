@@ -220,11 +220,11 @@ config:
   CLOUD_SCHEDULER_INTERVAL: 15s
   CLOUD_SCHEDULER_LEASE_TTL: 150s
   CLOUD_SCHEDULER_TIMEZONE: UTC
-  # Temporal Schedules for exact-cron api-target tasks (RFC 005). Lives in the
-  # SHARED configmap (the server's task handlers run the schedule syncer, the
-  # worker executes fires, the scheduler hosts the reconciler + loop fallback).
-  # Enabling it requires TEMPORAL_ENABLED=true here in the shared block — the
-  # scheduler pod's own override is not enough for the server/worker.
+  # Temporal Schedules for exact-cron api-target tasks (RFC 005). ENABLED BY
+  # DEFAULT in the binary; setting TEMPORAL_SCHEDULES_ENABLED: "false" here is
+  # the instant rollback (the RFC 001 loop resumes every cron). Inert unless
+  # TEMPORAL_ENABLED is true. The flag lives in the SHARED configmap when set
+  # (server syncer + worker fires + scheduler reconciler must agree).
   #
   # Operational invariants:
   # - Change TEMPORAL_SCHEDULE_CATCHUP / TEMPORAL_TASK_QUEUE only in this
@@ -236,7 +236,6 @@ config:
   #   update; during the rollout skew window occurrences may be skipped (a
   #   disabled worker skips fires while a not-yet-rolled scheduler still
   #   gates the loop) — keep the window short.
-  TEMPORAL_SCHEDULES_ENABLED: "false"
   TEMPORAL_SCHEDULE_CATCHUP: 1m
   TEMPORAL_SCHEDULE_RECONCILE_INTERVAL: 5m
   # Cloud event ingestion + routing (RFC 003). Ingestion endpoints are always

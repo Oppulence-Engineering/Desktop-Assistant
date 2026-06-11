@@ -216,9 +216,11 @@ func TestValidateTemporalSchedules(t *testing.T) {
 			mutate: enable,
 		},
 		{
-			name:    "enabled requires temporal",
-			mutate:  func(c *Config) { enable(c); c.TemporalEnabled = false; c.CloudSchedulerEnabled = false },
-			wantErr: true,
+			// Default-on flag must be inert (not fatal) without Temporal:
+			// requiring TEMPORAL_ENABLED here would crash-loop every
+			// Temporal-less deployment under the new default.
+			name:   "enabled without temporal boots (inert)",
+			mutate: func(c *Config) { enable(c); c.TemporalEnabled = false; c.CloudSchedulerEnabled = false },
 		},
 		{
 			// CLOUD_SCHEDULER_ENABLED is a per-pod flag (only the scheduler
@@ -260,8 +262,8 @@ func TestLoadTemporalScheduleDefaults(t *testing.T) {
 		t.Setenv(k, "")
 	}
 	c := Load()
-	if c.TemporalSchedulesEnabled {
-		t.Fatalf("default enabled should be false")
+	if !c.TemporalSchedulesEnabled {
+		t.Fatalf("schedules must default ON (TEMPORAL_SCHEDULES_ENABLED=false is the rollback)")
 	}
 	if c.TemporalScheduleCatchup != time.Minute {
 		t.Fatalf("default catchup = %v, want 1m", c.TemporalScheduleCatchup)
