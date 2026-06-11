@@ -6,11 +6,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 let tmpDir: string;
 let workDir: string;
 
+// Importing the config module pulls in WorkDir initialization, whose knowledge
+// side effects (git init) can race the temp-dir cleanup — mock them out like
+// every other core test that touches WorkDir.
+function mockConfigSideEffects(): void {
+  vi.doMock("../knowledge/version_history.js", () => ({
+    commitAll: vi.fn(async () => undefined),
+    initRepo: vi.fn(async () => undefined),
+  }));
+  vi.doMock("../knowledge/deprecate_today_note.js", () => ({
+    deprecateTodayNote: vi.fn(async () => undefined),
+  }));
+}
+
 beforeEach(async () => {
   tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "solomon-notifications-test-"));
   workDir = path.join(tmpDir, "workspace");
   process.env.SOLOMON_WORKDIR = workDir;
   vi.resetModules();
+  mockConfigSideEffects();
 });
 
 afterEach(async () => {
