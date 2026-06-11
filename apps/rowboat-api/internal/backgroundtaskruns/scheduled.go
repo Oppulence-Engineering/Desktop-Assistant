@@ -10,6 +10,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/adhocore/gronx"
@@ -75,10 +76,17 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 	// dual-authority interleaving double-fires the occurrence. The 30s skew
 	// allowance keeps a fire delivered fractionally before its scheduled
 	// minute (worker clock behind the Temporal server) from resolving to the
-	// PREVIOUS occurrence and skipping itself as covered.
+	// PREVIOUS occurrence and skipping itself as covered — but it must never
+	// produce a FUTURE occurrence (a fire or retry processed ≥30s past the
+	// minute would otherwise compute the NEXT tick, which no last_run_at can
+	// cover, disabling the dedup); clamp back to now in that case.
 	now := time.Now().UTC()
 	if occurrence, err := gronx.PrevTickBefore(cronExpr, now.Add(30*time.Second).Truncate(time.Minute), true); err == nil {
-		if task.LastRunAt != nil && !task.LastRunAt.Before(occurrence) {
+		if occurrence.After(now) {
+			occ, clampErr := gronx.PrevTickBefore(cronExpr, now.Truncate(time.Minute), true)
+			occurrence, err = occ, clampErr
+		}
+		if err == nil && task.LastRunAt != nil && !task.LastRunAt.Before(occurrence) {
 			return skipResult("occurrence already covered"), nil
 		}
 	}
@@ -88,11 +96,14 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 	// backoff window means a prior run never completed — don't stack another.
 	// Temporal's SCHEDULE_OVERLAP_POLICY_SKIP cannot provide this: it only
 	// spans the scheduler workflow, not the actual run. Retry attempts of
-	// THIS fire bypass the guard: a failed start stamps last_attempt_at
-	// (below) to put the loop into backoff, and that same stamp must not
-	// suppress our own bounded retry of the occurrence.
-	if !in.RetryAttempt && scheduledInFlight(task) && scheduledBackoffRemaining(task.LastAttemptAt, now) > 0 {
-		return skipResult("prior run still in flight"), nil
+	// THIS fire bypass the guard — but only when the in-flight marker really
+	// came from our own failed start (verified against the latest run row),
+	// not from another authority's genuinely executing run that happens to
+	// overlap a retry of an unrelated transient failure.
+	if scheduledInFlight(task) && scheduledBackoffRemaining(task.LastAttemptAt, now) > 0 {
+		if !in.RetryAttempt || !s.latestRunIsFailedStart(ctx, task) {
+			return skipResult("prior run still in flight"), nil
+		}
 	}
 
 	run, err := s.Start(ctx, Params{
@@ -153,6 +164,20 @@ func (s *Starter) stampScheduledFire(ctx context.Context, task *ent.BackgroundTa
 		s.Log.Error("stamp scheduled fire failed",
 			zap.String("taskSlug", task.Slug), zap.String("runId", runID), zap.Error(err))
 	}
+}
+
+// latestRunIsFailedStart reports whether the task's most recent run is a
+// Temporal start failure — the only prior state a retry attempt is licensed
+// to barge past the in-flight guard for. Queried only on retry attempts.
+func (s *Starter) latestRunIsFailedStart(ctx context.Context, task *ent.BackgroundTask) bool {
+	latest, err := s.Client.BackgroundTaskRun.Query().
+		Where(backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(task.ID))).
+		Order(ent.Desc(backgroundtaskrun.FieldCreatedAt)).
+		First(ctx)
+	if err != nil {
+		return false
+	}
+	return latest.Status == "failed" && latest.TemporalStatus == "StartFailed"
 }
 
 // stampScheduledAttempt mirrors the loop's stampAttempt: record only

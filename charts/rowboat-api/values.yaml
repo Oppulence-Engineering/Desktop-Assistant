@@ -225,6 +225,17 @@ config:
   # worker executes fires, the scheduler hosts the reconciler + loop fallback).
   # Enabling it requires TEMPORAL_ENABLED=true here in the shared block — the
   # scheduler pod's own override is not enough for the server/worker.
+  #
+  # Operational invariants:
+  # - Change TEMPORAL_SCHEDULE_CATCHUP / TEMPORAL_TASK_QUEUE only in this
+  #   shared block: they are baked into each schedule's memo and diffed by
+  #   both the server's syncer and the scheduler's reconciler, so deployments
+  #   disagreeing on these values recreate each other's schedules on every
+  #   task write until aligned.
+  # - Flag flips (on OR off) apply to all three deployments in one configmap
+  #   update; during the rollout skew window occurrences may be skipped (a
+  #   disabled worker skips fires while a not-yet-rolled scheduler still
+  #   gates the loop) — keep the window short.
   TEMPORAL_SCHEDULES_ENABLED: "false"
   TEMPORAL_SCHEDULE_CATCHUP: 1m
   TEMPORAL_SCHEDULE_RECONCILE_INTERVAL: 5m

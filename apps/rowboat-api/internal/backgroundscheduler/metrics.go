@@ -56,7 +56,7 @@ var metrics = struct {
 	}),
 	CronHandedOff: promauto.NewCounter(prometheus.CounterOpts{
 		Name: "cloud_scheduler_cron_handed_off_total",
-		Help: "Cron sub-triggers skipped because their Temporal Schedule sync is current (RFC 005).",
+		Help: "Per-tick cron evaluations skipped because the task's Temporal Schedule sync is current (RFC 005). Counts every tick for every handed-off task, NOT handoff events — steady growth is normal.",
 	}),
 	OrphansReaped: promauto.NewCounter(prometheus.CounterOpts{
 		Name: "cloud_scheduler_orphans_reaped_total",

@@ -256,6 +256,32 @@ func TestStartScheduledRunSkipsWhileInFlight(t *testing.T) {
 	}
 }
 
+// TestStartScheduledRunCoversEveryMinuteCron: with a just-stamped last_run_at
+// an every-minute cron must read as covered at ANY wall-clock second — when
+// this test runs ≥30s past the minute it exercises the future-occurrence
+// clamp (the raw +30s skew allowance would resolve to the NEXT minute, which
+// no last_run_at can cover, silently disabling the dedup).
+func TestStartScheduledRunCoversEveryMinuteCron(t *testing.T) {
+	client, u, task := setup(t)
+	task = task.Update().SetTriggersJSON(`{"cronExpr":"* * * * *"}`).SaveX(context.Background())
+	ctrl := &fakeController{}
+	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+
+	now := time.Now().UTC()
+	task = task.Update().SetLastRunAt(now).SetLastAttemptAt(now).SaveX(context.Background())
+
+	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if err != nil {
+		t.Fatalf("StartScheduledRun: %v", err)
+	}
+	if !out.Skipped || out.SkipReason != "occurrence already covered" {
+		t.Fatalf("result = %+v, want covered-occurrence skip (clamp case)", out)
+	}
+	if len(ctrl.starts) != 0 {
+		t.Fatal("covered occurrence must not start a run")
+	}
+}
+
 // TestStartScheduledRunSkipsInvalidCron: an expression broken by an edit must
 // never start runs on the stale schedule cadence.
 func TestStartScheduledRunSkipsInvalidCron(t *testing.T) {

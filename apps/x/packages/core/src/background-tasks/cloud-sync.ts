@@ -336,34 +336,28 @@ export async function getArtifactSyncState(slug: string): Promise<BackgroundTask
 }
 
 export async function deleteTaskFromCloud(slug: string): Promise<void> {
-  const remote = await getRemoteTask(slug);
-  if (!remote) return;
-  try {
-    await cloudFetch<void>(
-      `/v1/background-tasks/${encodeURIComponent(slug)}?revision=${remote.revision}`,
-      {
-        method: "DELETE",
-      },
-    );
-  } catch (err) {
-    if (isHTTPStatus(err, 404)) return;
-    if (!isHTTPStatus(err, 409)) throw err;
-    // Revision raced a server-side writer (the RFC 005 schedule syncer and
-    // reconciler bump task revisions in the background). Refetch and retry
-    // once, mirroring patchRemoteTask — silently swallowing the 409 would
-    // leave the task (and any live Temporal Schedule) firing in the cloud
-    // after the local files are already gone.
-    const latest = await getRemoteTask(slug);
-    if (!latest) return;
+  // Up to 3 attempts, refetching the revision between tries: server-side
+  // writers (the RFC 005 schedule syncer and reconciler) bump task revisions
+  // in the background — sometimes twice back-to-back (syncing → current) —
+  // so a single retry can lose the race twice. Silently swallowing the 409
+  // would leave the task (and any live Temporal Schedule) firing in the
+  // cloud after the local files are already gone; after 3 losses we throw so
+  // the caller knows the delete is still owed.
+  const attempts = 3;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const remote = await getRemoteTask(slug);
+    if (!remote) return;
     try {
       await cloudFetch<void>(
-        `/v1/background-tasks/${encodeURIComponent(slug)}?revision=${latest.revision}`,
+        `/v1/background-tasks/${encodeURIComponent(slug)}?revision=${remote.revision}`,
         {
           method: "DELETE",
         },
       );
-    } catch (retryErr) {
-      if (!isHTTPStatus(retryErr, 404)) throw retryErr;
+      return;
+    } catch (err) {
+      if (isHTTPStatus(err, 404)) return;
+      if (!isHTTPStatus(err, 409) || attempt === attempts) throw err;
     }
   }
 }
