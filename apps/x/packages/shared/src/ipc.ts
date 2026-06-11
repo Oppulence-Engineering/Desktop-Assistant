@@ -1145,6 +1145,17 @@ const ipcSchemas = {
       error: z.string().optional(),
     }),
   },
+  "bg-task:getCloudRun": {
+    req: z.object({
+      slug: z.string(),
+      runId: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      run: BackgroundTaskCloudRunSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
   "bg-task:getCloudRunStatus": {
     req: z.object({
       slug: z.string(),

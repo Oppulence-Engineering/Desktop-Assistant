@@ -298,6 +298,17 @@ export const BackgroundTaskCloudRunSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   revision: z.number().int(),
+  // Originating cloud event (RFC 003 linkage) — present only on the
+  // single-run GET; list/status responses stay slim.
+  sourceEvent: z
+    .object({
+      id: z.string(),
+      source: z.string(),
+      eventType: z.string().optional(),
+      subject: z.string().optional(),
+      occurredAt: NullableString,
+    })
+    .optional(),
 });
 export type BackgroundTaskCloudRunType = z.infer<typeof BackgroundTaskCloudRunSchema>;
 

@@ -137,6 +137,27 @@ function scheduleOwnershipLabel(target: ExecutionTarget, triggers: Triggers | un
   return timed || evented ? "Runs when desktop is open" : "Manual only";
 }
 
+// triggeredByLabel renders the run's provenance (RFC 006 event→run line):
+// the originating cloud event when linked, otherwise the plain trigger.
+function triggeredByLabel(run: BackgroundTaskCloudRunType): string {
+  if (run.sourceEvent) {
+    const what = run.sourceEvent.eventType ?? run.sourceEvent.source;
+    return run.sourceEvent.subject ? `${what} — ${run.sourceEvent.subject}` : what;
+  }
+  switch (run.trigger) {
+    case "cron":
+      return "cron schedule";
+    case "window":
+      return "time window";
+    case "event":
+      return "cloud event";
+    case "retry":
+      return run.retryOfRunId ? `retry of ${run.retryOfRunId}` : "retry of an earlier run";
+    default:
+      return "manual trigger";
+  }
+}
+
 const SCHEDULE_HEALTH_META: Record<string, { label: string; dot: string; tone: string }> = {
   current: {
     label: "current",
@@ -1619,9 +1640,24 @@ function CloudRunTranscriptView({
 }) {
   const [status, setStatus] = useState<BackgroundTaskCloudRunStatusType | null>(null);
   const [events, setEvents] = useState<BackgroundTaskCloudRunEventType[]>([]);
+  const [run, setRun] = useState<BackgroundTaskCloudRunType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
+
+  // One-shot run detail (trigger + originating cloud event): immutable data,
+  // deliberately outside the 2s status poll. Best-effort — a failure just
+  // omits the "Triggered by" line.
+  useEffect(() => {
+    let cancelled = false;
+    setRun(null);
+    void window.ipc.invoke("bg-task:getCloudRun", { slug, runId }).then((result) => {
+      if (!cancelled && result.success && result.run) setRun(result.run);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, runId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1872,6 +1908,12 @@ function CloudRunTranscriptView({
         {status?.progressMessage && (
           <div className="rounded-none border border-border bg-background px-3 py-2 text-xs text-foreground/80">
             {status.progressMessage}
+          </div>
+        )}
+
+        {run && (
+          <div className="rounded-none border border-border bg-background px-3 py-2 text-[10.5px] text-muted-foreground">
+            <span className="truncate">Triggered by: {triggeredByLabel(run)}</span>
           </div>
         )}
 

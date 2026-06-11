@@ -109,6 +109,7 @@ import { runBackgroundTask } from "@x/core/dist/background-tasks/runner.js";
 import {
   cancelCloudRun,
   getArtifactSyncState,
+  getCloudRun,
   getCloudScheduleState,
   getCloudRunStatus,
   listAllCloudRuns,
@@ -1541,6 +1542,14 @@ export function setupIpcHandlers() {
       try {
         const sync = await getArtifactSyncState(args.slug);
         return { success: true, sync };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    "bg-task:getCloudRun": async (_event, args) => {
+      try {
+        const run = await getCloudRun(args.slug, args.runId);
+        return { success: true, run };
       } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
