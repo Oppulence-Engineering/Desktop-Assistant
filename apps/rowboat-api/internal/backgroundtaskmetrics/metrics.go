@@ -116,6 +116,44 @@ var (
 		Help:    "Latency of cloud runtime LLM calls, by provider.",
 		Buckets: prometheus.ExponentialBuckets(0.25, 2, 10), // 0.25s .. ~2m
 	}, []string{"provider"})
+
+	// Temporal Schedule series (RFC 005). Labels are small fixed enums
+	// (action/op/kind) — never schedule ids or task slugs.
+
+	// ScheduleUpserts counts Temporal Schedule creates/updates.
+	ScheduleUpserts = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "temporal_schedules_upserted_total",
+		Help: "Temporal Schedules upserted for cron tasks, by action (create|update).",
+	}, []string{"action"})
+
+	// ScheduleDeletes counts Temporal Schedule deletions.
+	ScheduleDeletes = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "temporal_schedules_deleted_total",
+		Help: "Temporal Schedules deleted for cron tasks.",
+	})
+
+	// ScheduleSyncFailures counts failed schedule operations, by operation.
+	ScheduleSyncFailures = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "temporal_schedule_sync_failures_total",
+		Help: "Failed Temporal Schedule operations, by op (upsert|pause|delete|describe|list|state_write).",
+	}, []string{"op"})
+
+	// ScheduleDrift counts reconciler corrections, by drift kind.
+	ScheduleDrift = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "temporal_schedule_drift_total",
+		Help: "Temporal Schedule drift corrections by the reconciler, by kind (missing|stale|orphan|pause).",
+	}, []string{"kind"})
+
+	// ScheduleFires counts scheduler-workflow fire ATTEMPTS by outcome:
+	// started (a run was created — comparable 1:1 with
+	// cloud_runs_triggered_total{trigger=cron}), skipped (stale fire,
+	// occurrence covered, in-flight, or backout), failed (start error; one
+	// per failing attempt, matching the failed run rows left behind). A
+	// retried fire can contribute to more than one label.
+	ScheduleFires = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "temporal_schedule_fires_total",
+		Help: "Temporal Schedule fire attempts handled by the scheduler workflow, by outcome (started|skipped|failed).",
+	}, []string{"result"})
 )
 
 // ObserveDurationSince records a run duration if the start time is known and sane.

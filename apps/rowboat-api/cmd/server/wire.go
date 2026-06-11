@@ -11,6 +11,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtasks"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskschedule"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
@@ -139,6 +140,16 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			return err
 		}
 		backgroundTasksH.SetTemporal(backgroundtaskworkflow.NewStarter(temporalClient, cfg))
+		if cfg.TemporalSchedulesEnabled {
+			// RFC 005: task create/patch/delete converge a Temporal Schedule
+			// for exact-cron api-target tasks.
+			backgroundTasksH.SetSchedules(&backgroundtaskschedule.Syncer{
+				Client:  client,
+				Manager: backgroundtaskschedule.NewTemporalManager(temporalClient, cfg, log),
+				Cfg:     cfg,
+				Log:     log,
+			})
+		}
 		srv.AddReadyCheck("temporal", func(ctx context.Context) error {
 			_, err := temporalClient.CheckHealth(ctx, nil)
 			return err

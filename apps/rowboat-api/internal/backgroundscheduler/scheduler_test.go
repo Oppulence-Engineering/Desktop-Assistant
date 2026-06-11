@@ -155,6 +155,7 @@ type taskSpec struct {
 	active      bool
 	lastRun     *time.Time
 	lastAttempt *time.Time
+	syncState   string // schedule_sync_state; "" → schema default ("paused")
 }
 
 func seed(t *testing.T, client *ent.Client, u *ent.User, specs []taskSpec) {
@@ -173,6 +174,9 @@ func seed(t *testing.T, client *ent.Client, u *ent.User, specs []taskSpec) {
 		}
 		if s.lastAttempt != nil {
 			c = c.SetLastAttemptAt(*s.lastAttempt)
+		}
+		if s.syncState != "" {
+			c = c.SetScheduleSyncState(s.syncState)
 		}
 		c.SaveX(ctx)
 	}

@@ -173,10 +173,21 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		}
 		backgroundtaskworkflow.Register(w, activities)
 
+		// The Starter is the one temporalClient-bound dependency, so it is
+		// built per successful dial rather than carried in deps.
+		starter := backgroundtaskruns.New(client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log)
+
+		// RFC 005: register the Temporal Schedule action workflow
+		// unconditionally — registration is inert with zero schedules, and
+		// during a TEMPORAL_SCHEDULES_ENABLED=false backout in-flight fires
+		// from still-existing schedules must execute rather than time out.
+		backgroundtaskworkflow.RegisterScheduler(w, &backgroundtaskworkflow.ScheduleActivities{
+			Runs:    starter,
+			Log:     log,
+			Enabled: cfg.TemporalSchedulesEnabled,
+		})
+
 		if cfg.CloudEventsRoutingEnabled && deps != nil {
-			// The Starter is the one temporalClient-bound dependency, so it is
-			// built per successful dial rather than carried in deps.
-			starter := backgroundtaskruns.New(client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log)
 			cloudevents.Register(w, &cloudevents.Activities{Router: &cloudevents.Router{
 				Client:    client,
 				LLM:       deps.LLM,

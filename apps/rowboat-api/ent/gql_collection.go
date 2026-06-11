@@ -185,6 +185,21 @@ func (_q *BackgroundTaskQuery) collectField(ctx context.Context, oneNode bool, o
 				selectedFields = append(selectedFields, backgroundtask.FieldLastRunError)
 				fieldSeen[backgroundtask.FieldLastRunError] = struct{}{}
 			}
+		case "scheduleSyncState":
+			if _, ok := fieldSeen[backgroundtask.FieldScheduleSyncState]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldScheduleSyncState)
+				fieldSeen[backgroundtask.FieldScheduleSyncState] = struct{}{}
+			}
+		case "scheduleSyncError":
+			if _, ok := fieldSeen[backgroundtask.FieldScheduleSyncError]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldScheduleSyncError)
+				fieldSeen[backgroundtask.FieldScheduleSyncError] = struct{}{}
+			}
+		case "scheduleSyncedAt":
+			if _, ok := fieldSeen[backgroundtask.FieldScheduleSyncedAt]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldScheduleSyncedAt)
+				fieldSeen[backgroundtask.FieldScheduleSyncedAt] = struct{}{}
+			}
 		case "revision":
 			if _, ok := fieldSeen[backgroundtask.FieldRevision]; !ok {
 				selectedFields = append(selectedFields, backgroundtask.FieldRevision)

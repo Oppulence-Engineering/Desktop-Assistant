@@ -136,6 +136,21 @@ func LastRunError(v string) predicate.BackgroundTask {
 	return predicate.BackgroundTask(sql.FieldEQ(FieldLastRunError, v))
 }
 
+// ScheduleSyncState applies equality check predicate on the "schedule_sync_state" field. It's identical to ScheduleSyncStateEQ.
+func ScheduleSyncState(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncError applies equality check predicate on the "schedule_sync_error" field. It's identical to ScheduleSyncErrorEQ.
+func ScheduleSyncError(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncedAt applies equality check predicate on the "schedule_synced_at" field. It's identical to ScheduleSyncedAtEQ.
+func ScheduleSyncedAt(v time.Time) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldScheduleSyncedAt, v))
+}
+
 // Revision applies equality check predicate on the "revision" field. It's identical to RevisionEQ.
 func Revision(v int) predicate.BackgroundTask {
 	return predicate.BackgroundTask(sql.FieldEQ(FieldRevision, v))
@@ -1089,6 +1104,196 @@ func LastRunErrorEqualFold(v string) predicate.BackgroundTask {
 // LastRunErrorContainsFold applies the ContainsFold predicate on the "last_run_error" field.
 func LastRunErrorContainsFold(v string) predicate.BackgroundTask {
 	return predicate.BackgroundTask(sql.FieldContainsFold(FieldLastRunError, v))
+}
+
+// ScheduleSyncStateEQ applies the EQ predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateEQ(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncStateNEQ applies the NEQ predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateNEQ(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNEQ(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncStateIn applies the In predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateIn(vs ...string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldIn(FieldScheduleSyncState, vs...))
+}
+
+// ScheduleSyncStateNotIn applies the NotIn predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateNotIn(vs ...string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNotIn(FieldScheduleSyncState, vs...))
+}
+
+// ScheduleSyncStateGT applies the GT predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateGT(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldGT(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncStateGTE applies the GTE predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateGTE(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldGTE(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncStateLT applies the LT predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateLT(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldLT(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncStateLTE applies the LTE predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateLTE(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldLTE(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncStateContains applies the Contains predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateContains(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldContains(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncStateHasPrefix applies the HasPrefix predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateHasPrefix(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldHasPrefix(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncStateHasSuffix applies the HasSuffix predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateHasSuffix(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldHasSuffix(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncStateEqualFold applies the EqualFold predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateEqualFold(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEqualFold(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncStateContainsFold applies the ContainsFold predicate on the "schedule_sync_state" field.
+func ScheduleSyncStateContainsFold(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldContainsFold(FieldScheduleSyncState, v))
+}
+
+// ScheduleSyncErrorEQ applies the EQ predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorEQ(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncErrorNEQ applies the NEQ predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorNEQ(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNEQ(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncErrorIn applies the In predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorIn(vs ...string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldIn(FieldScheduleSyncError, vs...))
+}
+
+// ScheduleSyncErrorNotIn applies the NotIn predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorNotIn(vs ...string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNotIn(FieldScheduleSyncError, vs...))
+}
+
+// ScheduleSyncErrorGT applies the GT predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorGT(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldGT(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncErrorGTE applies the GTE predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorGTE(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldGTE(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncErrorLT applies the LT predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorLT(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldLT(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncErrorLTE applies the LTE predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorLTE(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldLTE(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncErrorContains applies the Contains predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorContains(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldContains(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncErrorHasPrefix applies the HasPrefix predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorHasPrefix(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldHasPrefix(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncErrorHasSuffix applies the HasSuffix predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorHasSuffix(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldHasSuffix(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncErrorIsNil applies the IsNil predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorIsNil() predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldIsNull(FieldScheduleSyncError))
+}
+
+// ScheduleSyncErrorNotNil applies the NotNil predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorNotNil() predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNotNull(FieldScheduleSyncError))
+}
+
+// ScheduleSyncErrorEqualFold applies the EqualFold predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorEqualFold(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEqualFold(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncErrorContainsFold applies the ContainsFold predicate on the "schedule_sync_error" field.
+func ScheduleSyncErrorContainsFold(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldContainsFold(FieldScheduleSyncError, v))
+}
+
+// ScheduleSyncedAtEQ applies the EQ predicate on the "schedule_synced_at" field.
+func ScheduleSyncedAtEQ(v time.Time) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldScheduleSyncedAt, v))
+}
+
+// ScheduleSyncedAtNEQ applies the NEQ predicate on the "schedule_synced_at" field.
+func ScheduleSyncedAtNEQ(v time.Time) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNEQ(FieldScheduleSyncedAt, v))
+}
+
+// ScheduleSyncedAtIn applies the In predicate on the "schedule_synced_at" field.
+func ScheduleSyncedAtIn(vs ...time.Time) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldIn(FieldScheduleSyncedAt, vs...))
+}
+
+// ScheduleSyncedAtNotIn applies the NotIn predicate on the "schedule_synced_at" field.
+func ScheduleSyncedAtNotIn(vs ...time.Time) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNotIn(FieldScheduleSyncedAt, vs...))
+}
+
+// ScheduleSyncedAtGT applies the GT predicate on the "schedule_synced_at" field.
+func ScheduleSyncedAtGT(v time.Time) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldGT(FieldScheduleSyncedAt, v))
+}
+
+// ScheduleSyncedAtGTE applies the GTE predicate on the "schedule_synced_at" field.
+func ScheduleSyncedAtGTE(v time.Time) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldGTE(FieldScheduleSyncedAt, v))
+}
+
+// ScheduleSyncedAtLT applies the LT predicate on the "schedule_synced_at" field.
+func ScheduleSyncedAtLT(v time.Time) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldLT(FieldScheduleSyncedAt, v))
+}
+
+// ScheduleSyncedAtLTE applies the LTE predicate on the "schedule_synced_at" field.
+func ScheduleSyncedAtLTE(v time.Time) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldLTE(FieldScheduleSyncedAt, v))
+}
+
+// ScheduleSyncedAtIsNil applies the IsNil predicate on the "schedule_synced_at" field.
+func ScheduleSyncedAtIsNil() predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldIsNull(FieldScheduleSyncedAt))
+}
+
+// ScheduleSyncedAtNotNil applies the NotNil predicate on the "schedule_synced_at" field.
+func ScheduleSyncedAtNotNil() predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNotNull(FieldScheduleSyncedAt))
 }
 
 // RevisionEQ applies the EQ predicate on the "revision" field.

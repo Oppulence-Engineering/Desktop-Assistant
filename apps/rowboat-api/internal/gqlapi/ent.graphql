@@ -18,6 +18,9 @@ type BackgroundTask implements Node {
   lastRunAt: Time
   lastRunSummary: String
   lastRunError: String
+  scheduleSyncState: String!
+  scheduleSyncError: String
+  scheduleSyncedAt: Time
   revision: Int!
   user: User!
   artifact: BackgroundTaskArtifact
@@ -1451,6 +1454,53 @@ input BackgroundTaskWhereInput {
   lastRunErrorNotNil: Boolean
   lastRunErrorEqualFold: String
   lastRunErrorContainsFold: String
+  """
+  schedule_sync_state field predicates
+  """
+  scheduleSyncState: String
+  scheduleSyncStateNEQ: String
+  scheduleSyncStateIn: [String!]
+  scheduleSyncStateNotIn: [String!]
+  scheduleSyncStateGT: String
+  scheduleSyncStateGTE: String
+  scheduleSyncStateLT: String
+  scheduleSyncStateLTE: String
+  scheduleSyncStateContains: String
+  scheduleSyncStateHasPrefix: String
+  scheduleSyncStateHasSuffix: String
+  scheduleSyncStateEqualFold: String
+  scheduleSyncStateContainsFold: String
+  """
+  schedule_sync_error field predicates
+  """
+  scheduleSyncError: String
+  scheduleSyncErrorNEQ: String
+  scheduleSyncErrorIn: [String!]
+  scheduleSyncErrorNotIn: [String!]
+  scheduleSyncErrorGT: String
+  scheduleSyncErrorGTE: String
+  scheduleSyncErrorLT: String
+  scheduleSyncErrorLTE: String
+  scheduleSyncErrorContains: String
+  scheduleSyncErrorHasPrefix: String
+  scheduleSyncErrorHasSuffix: String
+  scheduleSyncErrorIsNil: Boolean
+  scheduleSyncErrorNotNil: Boolean
+  scheduleSyncErrorEqualFold: String
+  scheduleSyncErrorContainsFold: String
+  """
+  schedule_synced_at field predicates
+  """
+  scheduleSyncedAt: Time
+  scheduleSyncedAtNEQ: Time
+  scheduleSyncedAtIn: [Time!]
+  scheduleSyncedAtNotIn: [Time!]
+  scheduleSyncedAtGT: Time
+  scheduleSyncedAtGTE: Time
+  scheduleSyncedAtLT: Time
+  scheduleSyncedAtLTE: Time
+  scheduleSyncedAtIsNil: Boolean
+  scheduleSyncedAtNotNil: Boolean
   """
   revision field predicates
   """

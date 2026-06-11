@@ -50,6 +50,15 @@ func (BackgroundTask) Fields() []ent.Field {
 		field.Time("last_run_at").Optional().Nillable(),
 		field.Text("last_run_summary").Optional(),
 		field.Text("last_run_error").Optional(),
+		// Temporal Schedule sync health for the cron sub-trigger (RFC 005).
+		// Server-owned product summary, written only by the schedule syncer and
+		// reconciler — user patches cannot set it. Distinct from the
+		// BackgroundTaskScheduleState lease entity (RFC 002).
+		field.String("schedule_sync_state").
+			Default("paused").
+			Validate(oneOfBackgroundTask("schedule_sync_state", "current", "syncing", "failed", "paused")),
+		field.Text("schedule_sync_error").Optional(),
+		field.Time("schedule_synced_at").Optional().Nillable(),
 		field.Int("revision").Default(1).Positive(),
 	}
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskschedule"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/go-chi/chi/v5"
@@ -45,6 +46,7 @@ type Handler struct {
 	log        *zap.Logger
 	temporal   backgroundtaskworkflow.Controller
 	runStarter *backgroundtaskruns.Starter
+	schedules  *backgroundtaskschedule.Syncer // nil ⇒ Temporal Schedules disabled
 }
 
 // New builds a background task mirror handler. The run starter is created with
@@ -61,6 +63,13 @@ func New(client *ent.Client, log *zap.Logger) *Handler {
 func (h *Handler) SetTemporal(temporal backgroundtaskworkflow.Controller) {
 	h.temporal = temporal
 	h.runStarter = backgroundtaskruns.New(h.client, temporal, h.log)
+}
+
+// SetSchedules enables Temporal Schedule sync for cron tasks (RFC 005). Left
+// nil, every task write skips schedule handling and schedule_sync_state stays
+// at its schema default.
+func (h *Handler) SetSchedules(s *backgroundtaskschedule.Syncer) {
+	h.schedules = s
 }
 
 type taskView struct {
@@ -80,7 +89,12 @@ type taskView struct {
 	LastRunAt       *string         `json:"lastRunAt,omitempty"`
 	LastRunSummary  string          `json:"lastRunSummary,omitempty"`
 	LastRunError    string          `json:"lastRunError,omitempty"`
-	Revision        int             `json:"revision"`
+	// Temporal Schedule sync health (RFC 005). Server-owned: absent from the
+	// create/patch request types so user writes can never force "current".
+	ScheduleSyncState string  `json:"scheduleSyncState"`
+	ScheduleSyncError string  `json:"scheduleSyncError,omitempty"`
+	ScheduleSyncedAt  *string `json:"scheduleSyncedAt,omitempty"`
+	Revision          int     `json:"revision"`
 }
 
 type artifactView struct {
@@ -325,6 +339,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "missing slug", "bad_request")
 		return
 	}
+	if strings.Contains(slug, "/") {
+		// Slugs are path segments in the REST routes and embed verbatim into
+		// the Temporal schedule/workflow id format
+		// background-task-schedule/{userID}/{slug}/cron — a slash would make
+		// those ids unparseable for the reconciler's orphan sweep.
+		httpx.Error(w, http.StatusBadRequest, "slug must not contain '/'", "bad_request")
+		return
+	}
 	active := true
 	if req.Active != nil {
 		active = *req.Active
@@ -376,6 +398,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		h.log.Error("create background task", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not create background task", "internal_error")
 		return
+	}
+	if h.schedules != nil {
+		// Converge the Temporal Schedule (RFC 005) and respond with the
+		// post-sync state + revision. Never fails the request.
+		task = h.schedules.AfterWrite(r.Context(), u.ID.String(), nil, task)
 	}
 	httpx.WriteJSON(w, http.StatusCreated, viewTask(task))
 }
@@ -458,11 +485,21 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 		h.conflict(w, task.Revision)
 		return
 	}
+	prev := task
 	task, err = h.client.BackgroundTask.Query().Where(backgroundtask.IDEQ(task.ID)).Only(r.Context())
 	if err != nil {
 		h.log.Error("reload background task after patch", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not load updated task", "internal_error")
 		return
+	}
+	if h.schedules != nil {
+		if u, ok := auth.UserFromCtx(r.Context()); ok {
+			// Converge the Temporal Schedule (RFC 005) for whatever this patch
+			// changed (cron/active/target) and respond with the post-sync
+			// state + revision. The pre-patch row lets unrelated patches skip
+			// the Temporal round-trip entirely. Never fails the request.
+			task = h.schedules.AfterWrite(r.Context(), u.ID.String(), prev, task)
+		}
 	}
 	httpx.WriteJSON(w, http.StatusOK, viewTask(task))
 }
@@ -553,6 +590,17 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		h.log.Error("commit background task delete", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not delete background task", "internal_error")
 		return
+	}
+	if h.schedules != nil {
+		if u, ok := auth.UserFromCtx(r.Context()); ok {
+			// Remove the Temporal Schedule only AFTER the commit: deleting it
+			// earlier would strand a stale-revision (409) delete with no
+			// schedule but state=current, silencing the cron until the
+			// reconciler repairs it. Post-commit, a fire in the gap skips
+			// safely (the task row is gone) and a failed delete is just an
+			// orphan for the reconciler's sweep.
+			h.schedules.AfterDelete(r.Context(), u.ID.String(), task)
+		}
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -1481,7 +1529,12 @@ func viewTask(t *ent.BackgroundTask) taskView {
 		LastRunAt:       formatOptionalTime(t.LastRunAt),
 		LastRunSummary:  t.LastRunSummary,
 		LastRunError:    t.LastRunError,
-		Revision:        t.Revision,
+
+		ScheduleSyncState: t.ScheduleSyncState,
+		ScheduleSyncError: t.ScheduleSyncError,
+		ScheduleSyncedAt:  formatOptionalTime(t.ScheduleSyncedAt),
+
+		Revision: t.Revision,
 	}
 }
 

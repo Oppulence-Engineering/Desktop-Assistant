@@ -265,6 +265,50 @@ type BackgroundTaskWhereInput struct {
 	LastRunErrorEqualFold    *string  `json:"lastRunErrorEqualFold,omitempty"`
 	LastRunErrorContainsFold *string  `json:"lastRunErrorContainsFold,omitempty"`
 
+	// "schedule_sync_state" field predicates.
+	ScheduleSyncState             *string  `json:"scheduleSyncState,omitempty"`
+	ScheduleSyncStateNEQ          *string  `json:"scheduleSyncStateNEQ,omitempty"`
+	ScheduleSyncStateIn           []string `json:"scheduleSyncStateIn,omitempty"`
+	ScheduleSyncStateNotIn        []string `json:"scheduleSyncStateNotIn,omitempty"`
+	ScheduleSyncStateGT           *string  `json:"scheduleSyncStateGT,omitempty"`
+	ScheduleSyncStateGTE          *string  `json:"scheduleSyncStateGTE,omitempty"`
+	ScheduleSyncStateLT           *string  `json:"scheduleSyncStateLT,omitempty"`
+	ScheduleSyncStateLTE          *string  `json:"scheduleSyncStateLTE,omitempty"`
+	ScheduleSyncStateContains     *string  `json:"scheduleSyncStateContains,omitempty"`
+	ScheduleSyncStateHasPrefix    *string  `json:"scheduleSyncStateHasPrefix,omitempty"`
+	ScheduleSyncStateHasSuffix    *string  `json:"scheduleSyncStateHasSuffix,omitempty"`
+	ScheduleSyncStateEqualFold    *string  `json:"scheduleSyncStateEqualFold,omitempty"`
+	ScheduleSyncStateContainsFold *string  `json:"scheduleSyncStateContainsFold,omitempty"`
+
+	// "schedule_sync_error" field predicates.
+	ScheduleSyncError             *string  `json:"scheduleSyncError,omitempty"`
+	ScheduleSyncErrorNEQ          *string  `json:"scheduleSyncErrorNEQ,omitempty"`
+	ScheduleSyncErrorIn           []string `json:"scheduleSyncErrorIn,omitempty"`
+	ScheduleSyncErrorNotIn        []string `json:"scheduleSyncErrorNotIn,omitempty"`
+	ScheduleSyncErrorGT           *string  `json:"scheduleSyncErrorGT,omitempty"`
+	ScheduleSyncErrorGTE          *string  `json:"scheduleSyncErrorGTE,omitempty"`
+	ScheduleSyncErrorLT           *string  `json:"scheduleSyncErrorLT,omitempty"`
+	ScheduleSyncErrorLTE          *string  `json:"scheduleSyncErrorLTE,omitempty"`
+	ScheduleSyncErrorContains     *string  `json:"scheduleSyncErrorContains,omitempty"`
+	ScheduleSyncErrorHasPrefix    *string  `json:"scheduleSyncErrorHasPrefix,omitempty"`
+	ScheduleSyncErrorHasSuffix    *string  `json:"scheduleSyncErrorHasSuffix,omitempty"`
+	ScheduleSyncErrorIsNil        bool     `json:"scheduleSyncErrorIsNil,omitempty"`
+	ScheduleSyncErrorNotNil       bool     `json:"scheduleSyncErrorNotNil,omitempty"`
+	ScheduleSyncErrorEqualFold    *string  `json:"scheduleSyncErrorEqualFold,omitempty"`
+	ScheduleSyncErrorContainsFold *string  `json:"scheduleSyncErrorContainsFold,omitempty"`
+
+	// "schedule_synced_at" field predicates.
+	ScheduleSyncedAt       *time.Time  `json:"scheduleSyncedAt,omitempty"`
+	ScheduleSyncedAtNEQ    *time.Time  `json:"scheduleSyncedAtNEQ,omitempty"`
+	ScheduleSyncedAtIn     []time.Time `json:"scheduleSyncedAtIn,omitempty"`
+	ScheduleSyncedAtNotIn  []time.Time `json:"scheduleSyncedAtNotIn,omitempty"`
+	ScheduleSyncedAtGT     *time.Time  `json:"scheduleSyncedAtGT,omitempty"`
+	ScheduleSyncedAtGTE    *time.Time  `json:"scheduleSyncedAtGTE,omitempty"`
+	ScheduleSyncedAtLT     *time.Time  `json:"scheduleSyncedAtLT,omitempty"`
+	ScheduleSyncedAtLTE    *time.Time  `json:"scheduleSyncedAtLTE,omitempty"`
+	ScheduleSyncedAtIsNil  bool        `json:"scheduleSyncedAtIsNil,omitempty"`
+	ScheduleSyncedAtNotNil bool        `json:"scheduleSyncedAtNotNil,omitempty"`
+
 	// "revision" field predicates.
 	Revision      *int  `json:"revision,omitempty"`
 	RevisionNEQ   *int  `json:"revisionNEQ,omitempty"`
@@ -960,6 +1004,120 @@ func (i *BackgroundTaskWhereInput) P() (predicate.BackgroundTask, error) {
 	}
 	if i.LastRunErrorContainsFold != nil {
 		predicates = append(predicates, backgroundtask.LastRunErrorContainsFold(*i.LastRunErrorContainsFold))
+	}
+	if i.ScheduleSyncState != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateEQ(*i.ScheduleSyncState))
+	}
+	if i.ScheduleSyncStateNEQ != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateNEQ(*i.ScheduleSyncStateNEQ))
+	}
+	if len(i.ScheduleSyncStateIn) > 0 {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateIn(i.ScheduleSyncStateIn...))
+	}
+	if len(i.ScheduleSyncStateNotIn) > 0 {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateNotIn(i.ScheduleSyncStateNotIn...))
+	}
+	if i.ScheduleSyncStateGT != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateGT(*i.ScheduleSyncStateGT))
+	}
+	if i.ScheduleSyncStateGTE != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateGTE(*i.ScheduleSyncStateGTE))
+	}
+	if i.ScheduleSyncStateLT != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateLT(*i.ScheduleSyncStateLT))
+	}
+	if i.ScheduleSyncStateLTE != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateLTE(*i.ScheduleSyncStateLTE))
+	}
+	if i.ScheduleSyncStateContains != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateContains(*i.ScheduleSyncStateContains))
+	}
+	if i.ScheduleSyncStateHasPrefix != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateHasPrefix(*i.ScheduleSyncStateHasPrefix))
+	}
+	if i.ScheduleSyncStateHasSuffix != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateHasSuffix(*i.ScheduleSyncStateHasSuffix))
+	}
+	if i.ScheduleSyncStateEqualFold != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateEqualFold(*i.ScheduleSyncStateEqualFold))
+	}
+	if i.ScheduleSyncStateContainsFold != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncStateContainsFold(*i.ScheduleSyncStateContainsFold))
+	}
+	if i.ScheduleSyncError != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorEQ(*i.ScheduleSyncError))
+	}
+	if i.ScheduleSyncErrorNEQ != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorNEQ(*i.ScheduleSyncErrorNEQ))
+	}
+	if len(i.ScheduleSyncErrorIn) > 0 {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorIn(i.ScheduleSyncErrorIn...))
+	}
+	if len(i.ScheduleSyncErrorNotIn) > 0 {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorNotIn(i.ScheduleSyncErrorNotIn...))
+	}
+	if i.ScheduleSyncErrorGT != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorGT(*i.ScheduleSyncErrorGT))
+	}
+	if i.ScheduleSyncErrorGTE != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorGTE(*i.ScheduleSyncErrorGTE))
+	}
+	if i.ScheduleSyncErrorLT != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorLT(*i.ScheduleSyncErrorLT))
+	}
+	if i.ScheduleSyncErrorLTE != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorLTE(*i.ScheduleSyncErrorLTE))
+	}
+	if i.ScheduleSyncErrorContains != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorContains(*i.ScheduleSyncErrorContains))
+	}
+	if i.ScheduleSyncErrorHasPrefix != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorHasPrefix(*i.ScheduleSyncErrorHasPrefix))
+	}
+	if i.ScheduleSyncErrorHasSuffix != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorHasSuffix(*i.ScheduleSyncErrorHasSuffix))
+	}
+	if i.ScheduleSyncErrorIsNil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorIsNil())
+	}
+	if i.ScheduleSyncErrorNotNil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorNotNil())
+	}
+	if i.ScheduleSyncErrorEqualFold != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorEqualFold(*i.ScheduleSyncErrorEqualFold))
+	}
+	if i.ScheduleSyncErrorContainsFold != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncErrorContainsFold(*i.ScheduleSyncErrorContainsFold))
+	}
+	if i.ScheduleSyncedAt != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncedAtEQ(*i.ScheduleSyncedAt))
+	}
+	if i.ScheduleSyncedAtNEQ != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncedAtNEQ(*i.ScheduleSyncedAtNEQ))
+	}
+	if len(i.ScheduleSyncedAtIn) > 0 {
+		predicates = append(predicates, backgroundtask.ScheduleSyncedAtIn(i.ScheduleSyncedAtIn...))
+	}
+	if len(i.ScheduleSyncedAtNotIn) > 0 {
+		predicates = append(predicates, backgroundtask.ScheduleSyncedAtNotIn(i.ScheduleSyncedAtNotIn...))
+	}
+	if i.ScheduleSyncedAtGT != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncedAtGT(*i.ScheduleSyncedAtGT))
+	}
+	if i.ScheduleSyncedAtGTE != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncedAtGTE(*i.ScheduleSyncedAtGTE))
+	}
+	if i.ScheduleSyncedAtLT != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncedAtLT(*i.ScheduleSyncedAtLT))
+	}
+	if i.ScheduleSyncedAtLTE != nil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncedAtLTE(*i.ScheduleSyncedAtLTE))
+	}
+	if i.ScheduleSyncedAtIsNil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncedAtIsNil())
+	}
+	if i.ScheduleSyncedAtNotNil {
+		predicates = append(predicates, backgroundtask.ScheduleSyncedAtNotNil())
 	}
 	if i.Revision != nil {
 		predicates = append(predicates, backgroundtask.RevisionEQ(*i.Revision))

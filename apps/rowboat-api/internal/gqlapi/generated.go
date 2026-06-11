@@ -41,29 +41,32 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	BackgroundTask struct {
-		Active          func(childComplexity int) int
-		Artifact        func(childComplexity int) int
-		CreatedAt       func(childComplexity int) int
-		ExecutionTarget func(childComplexity int) int
-		ID              func(childComplexity int) int
-		Instructions    func(childComplexity int) int
-		LastAttemptAt   func(childComplexity int) int
-		LastRunAt       func(childComplexity int) int
-		LastRunError    func(childComplexity int) int
-		LastRunID       func(childComplexity int) int
-		LastRunSummary  func(childComplexity int) int
-		Model           func(childComplexity int) int
-		Name            func(childComplexity int) int
-		Provider        func(childComplexity int) int
-		Revision        func(childComplexity int) int
-		RunEvents       func(childComplexity int) int
-		Runs            func(childComplexity int) int
-		ScheduleStates  func(childComplexity int) int
-		Slug            func(childComplexity int) int
-		TaskCreatedAt   func(childComplexity int) int
-		TriggersJSON    func(childComplexity int) int
-		UpdatedAt       func(childComplexity int) int
-		User            func(childComplexity int) int
+		Active            func(childComplexity int) int
+		Artifact          func(childComplexity int) int
+		CreatedAt         func(childComplexity int) int
+		ExecutionTarget   func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Instructions      func(childComplexity int) int
+		LastAttemptAt     func(childComplexity int) int
+		LastRunAt         func(childComplexity int) int
+		LastRunError      func(childComplexity int) int
+		LastRunID         func(childComplexity int) int
+		LastRunSummary    func(childComplexity int) int
+		Model             func(childComplexity int) int
+		Name              func(childComplexity int) int
+		Provider          func(childComplexity int) int
+		Revision          func(childComplexity int) int
+		RunEvents         func(childComplexity int) int
+		Runs              func(childComplexity int) int
+		ScheduleStates    func(childComplexity int) int
+		ScheduleSyncError func(childComplexity int) int
+		ScheduleSyncState func(childComplexity int) int
+		ScheduleSyncedAt  func(childComplexity int) int
+		Slug              func(childComplexity int) int
+		TaskCreatedAt     func(childComplexity int) int
+		TriggersJSON      func(childComplexity int) int
+		UpdatedAt         func(childComplexity int) int
+		User              func(childComplexity int) int
 	}
 
 	BackgroundTaskArtifact struct {
@@ -567,6 +570,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.BackgroundTask.ScheduleStates(childComplexity), true
+	case "BackgroundTask.scheduleSyncError":
+		if e.ComplexityRoot.BackgroundTask.ScheduleSyncError == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTask.ScheduleSyncError(childComplexity), true
+	case "BackgroundTask.scheduleSyncState":
+		if e.ComplexityRoot.BackgroundTask.ScheduleSyncState == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTask.ScheduleSyncState(childComplexity), true
+	case "BackgroundTask.scheduleSyncedAt":
+		if e.ComplexityRoot.BackgroundTask.ScheduleSyncedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTask.ScheduleSyncedAt(childComplexity), true
 	case "BackgroundTask.slug":
 		if e.ComplexityRoot.BackgroundTask.Slug == nil {
 			break
@@ -2329,6 +2350,12 @@ func (ec *executionContext) childFields_BackgroundTask(ctx context.Context, fiel
 		return ec.fieldContext_BackgroundTask_lastRunSummary(ctx, field)
 	case "lastRunError":
 		return ec.fieldContext_BackgroundTask_lastRunError(ctx, field)
+	case "scheduleSyncState":
+		return ec.fieldContext_BackgroundTask_scheduleSyncState(ctx, field)
+	case "scheduleSyncError":
+		return ec.fieldContext_BackgroundTask_scheduleSyncError(ctx, field)
+	case "scheduleSyncedAt":
+		return ec.fieldContext_BackgroundTask_scheduleSyncedAt(ctx, field)
 	case "revision":
 		return ec.fieldContext_BackgroundTask_revision(ctx, field)
 	case "user":
@@ -4136,6 +4163,75 @@ func (ec *executionContext) _BackgroundTask_lastRunError(ctx context.Context, fi
 }
 func (ec *executionContext) fieldContext_BackgroundTask_lastRunError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("BackgroundTask", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTask_scheduleSyncState(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTask) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTask_scheduleSyncState(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ScheduleSyncState, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTask_scheduleSyncState(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTask", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTask_scheduleSyncError(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTask) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTask_scheduleSyncError(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ScheduleSyncError, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTask_scheduleSyncError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTask", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTask_scheduleSyncedAt(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTask) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTask_scheduleSyncedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ScheduleSyncedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTask_scheduleSyncedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTask", field, false, false, errors.New("field of type Time does not have child fields"))
 }
 
 func (ec *executionContext) _BackgroundTask_revision(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTask) (ret graphql.Marshaler) {
@@ -17079,7 +17175,7 @@ func (ec *executionContext) unmarshalInputBackgroundTaskWhereInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "slug", "slugNEQ", "slugIn", "slugNotIn", "slugGT", "slugGTE", "slugLT", "slugLTE", "slugContains", "slugHasPrefix", "slugHasSuffix", "slugEqualFold", "slugContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "instructions", "instructionsNEQ", "instructionsIn", "instructionsNotIn", "instructionsGT", "instructionsGTE", "instructionsLT", "instructionsLTE", "instructionsContains", "instructionsHasPrefix", "instructionsHasSuffix", "instructionsEqualFold", "instructionsContainsFold", "active", "activeNEQ", "triggersJSON", "triggersJSONNEQ", "triggersJSONIn", "triggersJSONNotIn", "triggersJSONGT", "triggersJSONGTE", "triggersJSONLT", "triggersJSONLTE", "triggersJSONContains", "triggersJSONHasPrefix", "triggersJSONHasSuffix", "triggersJSONIsNil", "triggersJSONNotNil", "triggersJSONEqualFold", "triggersJSONContainsFold", "model", "modelNEQ", "modelIn", "modelNotIn", "modelGT", "modelGTE", "modelLT", "modelLTE", "modelContains", "modelHasPrefix", "modelHasSuffix", "modelIsNil", "modelNotNil", "modelEqualFold", "modelContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerIsNil", "providerNotNil", "providerEqualFold", "providerContainsFold", "executionTarget", "executionTargetNEQ", "executionTargetIn", "executionTargetNotIn", "executionTargetGT", "executionTargetGTE", "executionTargetLT", "executionTargetLTE", "executionTargetContains", "executionTargetHasPrefix", "executionTargetHasSuffix", "executionTargetEqualFold", "executionTargetContainsFold", "taskCreatedAt", "taskCreatedAtNEQ", "taskCreatedAtIn", "taskCreatedAtNotIn", "taskCreatedAtGT", "taskCreatedAtGTE", "taskCreatedAtLT", "taskCreatedAtLTE", "taskCreatedAtIsNil", "taskCreatedAtNotNil", "lastAttemptAt", "lastAttemptAtNEQ", "lastAttemptAtIn", "lastAttemptAtNotIn", "lastAttemptAtGT", "lastAttemptAtGTE", "lastAttemptAtLT", "lastAttemptAtLTE", "lastAttemptAtIsNil", "lastAttemptAtNotNil", "lastRunID", "lastRunIDNEQ", "lastRunIDIn", "lastRunIDNotIn", "lastRunIDGT", "lastRunIDGTE", "lastRunIDLT", "lastRunIDLTE", "lastRunIDContains", "lastRunIDHasPrefix", "lastRunIDHasSuffix", "lastRunIDIsNil", "lastRunIDNotNil", "lastRunIDEqualFold", "lastRunIDContainsFold", "lastRunAt", "lastRunAtNEQ", "lastRunAtIn", "lastRunAtNotIn", "lastRunAtGT", "lastRunAtGTE", "lastRunAtLT", "lastRunAtLTE", "lastRunAtIsNil", "lastRunAtNotNil", "lastRunSummary", "lastRunSummaryNEQ", "lastRunSummaryIn", "lastRunSummaryNotIn", "lastRunSummaryGT", "lastRunSummaryGTE", "lastRunSummaryLT", "lastRunSummaryLTE", "lastRunSummaryContains", "lastRunSummaryHasPrefix", "lastRunSummaryHasSuffix", "lastRunSummaryIsNil", "lastRunSummaryNotNil", "lastRunSummaryEqualFold", "lastRunSummaryContainsFold", "lastRunError", "lastRunErrorNEQ", "lastRunErrorIn", "lastRunErrorNotIn", "lastRunErrorGT", "lastRunErrorGTE", "lastRunErrorLT", "lastRunErrorLTE", "lastRunErrorContains", "lastRunErrorHasPrefix", "lastRunErrorHasSuffix", "lastRunErrorIsNil", "lastRunErrorNotNil", "lastRunErrorEqualFold", "lastRunErrorContainsFold", "revision", "revisionNEQ", "revisionIn", "revisionNotIn", "revisionGT", "revisionGTE", "revisionLT", "revisionLTE", "hasUser", "hasUserWith", "hasArtifact", "hasArtifactWith", "hasRuns", "hasRunsWith", "hasRunEvents", "hasRunEventsWith", "hasScheduleStates", "hasScheduleStatesWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "slug", "slugNEQ", "slugIn", "slugNotIn", "slugGT", "slugGTE", "slugLT", "slugLTE", "slugContains", "slugHasPrefix", "slugHasSuffix", "slugEqualFold", "slugContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "instructions", "instructionsNEQ", "instructionsIn", "instructionsNotIn", "instructionsGT", "instructionsGTE", "instructionsLT", "instructionsLTE", "instructionsContains", "instructionsHasPrefix", "instructionsHasSuffix", "instructionsEqualFold", "instructionsContainsFold", "active", "activeNEQ", "triggersJSON", "triggersJSONNEQ", "triggersJSONIn", "triggersJSONNotIn", "triggersJSONGT", "triggersJSONGTE", "triggersJSONLT", "triggersJSONLTE", "triggersJSONContains", "triggersJSONHasPrefix", "triggersJSONHasSuffix", "triggersJSONIsNil", "triggersJSONNotNil", "triggersJSONEqualFold", "triggersJSONContainsFold", "model", "modelNEQ", "modelIn", "modelNotIn", "modelGT", "modelGTE", "modelLT", "modelLTE", "modelContains", "modelHasPrefix", "modelHasSuffix", "modelIsNil", "modelNotNil", "modelEqualFold", "modelContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerIsNil", "providerNotNil", "providerEqualFold", "providerContainsFold", "executionTarget", "executionTargetNEQ", "executionTargetIn", "executionTargetNotIn", "executionTargetGT", "executionTargetGTE", "executionTargetLT", "executionTargetLTE", "executionTargetContains", "executionTargetHasPrefix", "executionTargetHasSuffix", "executionTargetEqualFold", "executionTargetContainsFold", "taskCreatedAt", "taskCreatedAtNEQ", "taskCreatedAtIn", "taskCreatedAtNotIn", "taskCreatedAtGT", "taskCreatedAtGTE", "taskCreatedAtLT", "taskCreatedAtLTE", "taskCreatedAtIsNil", "taskCreatedAtNotNil", "lastAttemptAt", "lastAttemptAtNEQ", "lastAttemptAtIn", "lastAttemptAtNotIn", "lastAttemptAtGT", "lastAttemptAtGTE", "lastAttemptAtLT", "lastAttemptAtLTE", "lastAttemptAtIsNil", "lastAttemptAtNotNil", "lastRunID", "lastRunIDNEQ", "lastRunIDIn", "lastRunIDNotIn", "lastRunIDGT", "lastRunIDGTE", "lastRunIDLT", "lastRunIDLTE", "lastRunIDContains", "lastRunIDHasPrefix", "lastRunIDHasSuffix", "lastRunIDIsNil", "lastRunIDNotNil", "lastRunIDEqualFold", "lastRunIDContainsFold", "lastRunAt", "lastRunAtNEQ", "lastRunAtIn", "lastRunAtNotIn", "lastRunAtGT", "lastRunAtGTE", "lastRunAtLT", "lastRunAtLTE", "lastRunAtIsNil", "lastRunAtNotNil", "lastRunSummary", "lastRunSummaryNEQ", "lastRunSummaryIn", "lastRunSummaryNotIn", "lastRunSummaryGT", "lastRunSummaryGTE", "lastRunSummaryLT", "lastRunSummaryLTE", "lastRunSummaryContains", "lastRunSummaryHasPrefix", "lastRunSummaryHasSuffix", "lastRunSummaryIsNil", "lastRunSummaryNotNil", "lastRunSummaryEqualFold", "lastRunSummaryContainsFold", "lastRunError", "lastRunErrorNEQ", "lastRunErrorIn", "lastRunErrorNotIn", "lastRunErrorGT", "lastRunErrorGTE", "lastRunErrorLT", "lastRunErrorLTE", "lastRunErrorContains", "lastRunErrorHasPrefix", "lastRunErrorHasSuffix", "lastRunErrorIsNil", "lastRunErrorNotNil", "lastRunErrorEqualFold", "lastRunErrorContainsFold", "scheduleSyncState", "scheduleSyncStateNEQ", "scheduleSyncStateIn", "scheduleSyncStateNotIn", "scheduleSyncStateGT", "scheduleSyncStateGTE", "scheduleSyncStateLT", "scheduleSyncStateLTE", "scheduleSyncStateContains", "scheduleSyncStateHasPrefix", "scheduleSyncStateHasSuffix", "scheduleSyncStateEqualFold", "scheduleSyncStateContainsFold", "scheduleSyncError", "scheduleSyncErrorNEQ", "scheduleSyncErrorIn", "scheduleSyncErrorNotIn", "scheduleSyncErrorGT", "scheduleSyncErrorGTE", "scheduleSyncErrorLT", "scheduleSyncErrorLTE", "scheduleSyncErrorContains", "scheduleSyncErrorHasPrefix", "scheduleSyncErrorHasSuffix", "scheduleSyncErrorIsNil", "scheduleSyncErrorNotNil", "scheduleSyncErrorEqualFold", "scheduleSyncErrorContainsFold", "scheduleSyncedAt", "scheduleSyncedAtNEQ", "scheduleSyncedAtIn", "scheduleSyncedAtNotIn", "scheduleSyncedAtGT", "scheduleSyncedAtGTE", "scheduleSyncedAtLT", "scheduleSyncedAtLTE", "scheduleSyncedAtIsNil", "scheduleSyncedAtNotNil", "revision", "revisionNEQ", "revisionIn", "revisionNotIn", "revisionGT", "revisionGTE", "revisionLT", "revisionLTE", "hasUser", "hasUserWith", "hasArtifact", "hasArtifactWith", "hasRuns", "hasRunsWith", "hasRunEvents", "hasRunEventsWith", "hasScheduleStates", "hasScheduleStatesWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -18493,6 +18589,272 @@ func (ec *executionContext) unmarshalInputBackgroundTaskWhereInput(ctx context.C
 				return it, err
 			}
 			it.LastRunErrorContainsFold = data
+		case "scheduleSyncState":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncState"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncState = data
+		case "scheduleSyncStateNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateNEQ = data
+		case "scheduleSyncStateIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateIn = data
+		case "scheduleSyncStateNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateNotIn = data
+		case "scheduleSyncStateGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateGT = data
+		case "scheduleSyncStateGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateGTE = data
+		case "scheduleSyncStateLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateLT = data
+		case "scheduleSyncStateLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateLTE = data
+		case "scheduleSyncStateContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateContains = data
+		case "scheduleSyncStateHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateHasPrefix = data
+		case "scheduleSyncStateHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateHasSuffix = data
+		case "scheduleSyncStateEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateEqualFold = data
+		case "scheduleSyncStateContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncStateContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncStateContainsFold = data
+		case "scheduleSyncError":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncError"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncError = data
+		case "scheduleSyncErrorNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorNEQ = data
+		case "scheduleSyncErrorIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorIn = data
+		case "scheduleSyncErrorNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorNotIn = data
+		case "scheduleSyncErrorGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorGT = data
+		case "scheduleSyncErrorGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorGTE = data
+		case "scheduleSyncErrorLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorLT = data
+		case "scheduleSyncErrorLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorLTE = data
+		case "scheduleSyncErrorContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorContains = data
+		case "scheduleSyncErrorHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorHasPrefix = data
+		case "scheduleSyncErrorHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorHasSuffix = data
+		case "scheduleSyncErrorIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorIsNil = data
+		case "scheduleSyncErrorNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorNotNil = data
+		case "scheduleSyncErrorEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorEqualFold = data
+		case "scheduleSyncErrorContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncErrorContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncErrorContainsFold = data
+		case "scheduleSyncedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncedAt = data
+		case "scheduleSyncedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncedAtNEQ = data
+		case "scheduleSyncedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncedAtIn = data
+		case "scheduleSyncedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncedAtNotIn = data
+		case "scheduleSyncedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncedAtGT = data
+		case "scheduleSyncedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncedAtGTE = data
+		case "scheduleSyncedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncedAtLT = data
+		case "scheduleSyncedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncedAtLTE = data
+		case "scheduleSyncedAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncedAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncedAtIsNil = data
+		case "scheduleSyncedAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheduleSyncedAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ScheduleSyncedAtNotNil = data
 		case "revision":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revision"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -25669,6 +26031,15 @@ func (ec *executionContext) _BackgroundTask(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._BackgroundTask_lastRunSummary(ctx, field, obj)
 		case "lastRunError":
 			out.Values[i] = ec._BackgroundTask_lastRunError(ctx, field, obj)
+		case "scheduleSyncState":
+			out.Values[i] = ec._BackgroundTask_scheduleSyncState(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "scheduleSyncError":
+			out.Values[i] = ec._BackgroundTask_scheduleSyncError(ctx, field, obj)
+		case "scheduleSyncedAt":
+			out.Values[i] = ec._BackgroundTask_scheduleSyncedAt(ctx, field, obj)
 		case "revision":
 			out.Values[i] = ec._BackgroundTask_revision(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

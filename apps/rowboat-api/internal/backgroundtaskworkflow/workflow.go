@@ -149,7 +149,10 @@ func (s *Starter) SignalBackgroundTaskRun(ctx context.Context, workflowID, runID
 	return s.client.SignalWorkflow(ctx, workflowID, runID, SignalControl, body)
 }
 
-// Register installs the workflow and activities on a Temporal worker.
+// Register installs the workflow and activities on a Temporal worker. The
+// test environment is not a worker.Worker, so newWorkflowTestEnv
+// (workflow_integration_test.go) mirrors these registrations by name — keep
+// the two lists in lockstep.
 func Register(w worker.Worker, activities *Activities) {
 	w.RegisterWorkflowWithOptions(BackgroundTaskWorkflow, workflow.RegisterOptions{Name: WorkflowName})
 	w.RegisterActivityWithOptions(activities.MarkRunRunning, activity.RegisterOptions{Name: ActivityMarkRunRunning})
