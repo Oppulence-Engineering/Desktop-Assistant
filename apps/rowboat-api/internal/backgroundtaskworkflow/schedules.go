@@ -46,6 +46,12 @@ type ScheduleFireInput struct {
 	Slug         string `json:"slug"`
 	Trigger      string `json:"trigger"` // always "cron" in v1
 	TaskRevision int    `json:"taskRevision"`
+
+	// RetryAttempt is set by the activity (never by the schedule action args)
+	// when this call is a Temporal retry of the same fire: the failed first
+	// attempt stamped last_attempt_at to back the loop off, and the retry
+	// must bypass the in-flight guard that stamp would otherwise trip.
+	RetryAttempt bool `json:"-"`
 }
 
 // ScheduledRunResult reports what a scheduled fire did. Skipped fires are
@@ -82,12 +88,13 @@ type ScheduleActivities struct {
 // applies; the starter itself absorbs the started-but-ids-unpersisted case
 // (retrying that would double-start the run workflow).
 func (a *ScheduleActivities) CreateScheduledRun(ctx context.Context, in ScheduleFireInput) (ScheduledRunResult, error) {
-	// Count each fire once (first attempt), labeled by what it did.
+	// Count per-attempt outcomes: "started" then always equals real run
+	// starts (comparable to cloud_runs_triggered_total{trigger=cron}), and
+	// "failed" equals the failed rows each failing attempt leaves behind. A
+	// retried fire can contribute to more than one label; each is truthful.
 	firstAttempt := !activity.IsActivity(ctx) || activity.GetInfo(ctx).Attempt == 1
 	countFire := func(result string) {
-		if firstAttempt {
-			backgroundtaskmetrics.ScheduleFires.WithLabelValues(result).Inc()
-		}
+		backgroundtaskmetrics.ScheduleFires.WithLabelValues(result).Inc()
 	}
 	if !a.Enabled {
 		countFire("skipped")
@@ -95,6 +102,7 @@ func (a *ScheduleActivities) CreateScheduledRun(ctx context.Context, in Schedule
 			zap.String("taskSlug", in.Slug), zap.String("userId", in.UserID))
 		return ScheduledRunResult{Skipped: true, SkipReason: "temporal schedules disabled"}, nil
 	}
+	in.RetryAttempt = !firstAttempt
 	out, err := a.Runs.StartScheduledRun(ctx, in)
 	switch {
 	case err != nil:

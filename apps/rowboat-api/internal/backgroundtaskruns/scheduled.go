@@ -72,9 +72,12 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 	// authority fired it first — the loop during a failed/syncing fallback
 	// window, a prior activity attempt whose completion was lost after a
 	// worker crash, or this very schedule moments ago. Without this, every
-	// dual-authority interleaving double-fires the occurrence.
+	// dual-authority interleaving double-fires the occurrence. The 30s skew
+	// allowance keeps a fire delivered fractionally before its scheduled
+	// minute (worker clock behind the Temporal server) from resolving to the
+	// PREVIOUS occurrence and skipping itself as covered.
 	now := time.Now().UTC()
-	if occurrence, err := gronx.PrevTickBefore(cronExpr, now.Truncate(time.Minute), true); err == nil {
+	if occurrence, err := gronx.PrevTickBefore(cronExpr, now.Add(30*time.Second).Truncate(time.Minute), true); err == nil {
 		if task.LastRunAt != nil && !task.LastRunAt.Before(occurrence) {
 			return skipResult("occurrence already covered"), nil
 		}
@@ -84,8 +87,11 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 	// last attempt newer than the last success that is still inside the
 	// backoff window means a prior run never completed — don't stack another.
 	// Temporal's SCHEDULE_OVERLAP_POLICY_SKIP cannot provide this: it only
-	// spans the seconds-long scheduler workflow, not the actual run.
-	if scheduledInFlight(task) && scheduledBackoffRemaining(task.LastAttemptAt, now) > 0 {
+	// spans the scheduler workflow, not the actual run. Retry attempts of
+	// THIS fire bypass the guard: a failed start stamps last_attempt_at
+	// (below) to put the loop into backoff, and that same stamp must not
+	// suppress our own bounded retry of the occurrence.
+	if !in.RetryAttempt && scheduledInFlight(task) && scheduledBackoffRemaining(task.LastAttemptAt, now) > 0 {
 		return skipResult("prior run still in flight"), nil
 	}
 
@@ -114,12 +120,14 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 		s.stampScheduledFire(ctx, task, now, run.RunID)
 	case errors.As(err, &startErr):
 		// Start already created the run row and marked it failed
-		// (temporal_start_failed). Propagate WITHOUT stamping the task: the
-		// occurrence-coverage check above doesn't trip on an unstamped task,
-		// so Temporal's bounded activity retry genuinely re-attempts the
-		// occurrence — the schedule-path equivalent of the loop's
-		// widened-grace retry after a transient start failure. Each attempt
-		// leaves one visible failed row, exactly like the loop's re-fires.
+		// (temporal_start_failed). Stamp last_attempt_at (the loop's
+		// stampAttempt equivalent) so the loop's backoff suppresses its own
+		// fallback fires during a dual-authority window, then propagate so
+		// Temporal's bounded activity retry re-attempts the occurrence —
+		// retries bypass the in-flight guard above, and the occurrence check
+		// stays open because last_run_at is untouched. Each attempt leaves
+		// one visible failed row, like the loop's own re-fires.
+		s.stampScheduledAttempt(ctx, task, now)
 		s.Log.Error("scheduled run temporal start failed",
 			zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
 		return backgroundtaskworkflow.ScheduledRunResult{}, err
@@ -144,6 +152,18 @@ func (s *Starter) stampScheduledFire(ctx context.Context, task *ent.BackgroundTa
 		Exec(ctx); err != nil {
 		s.Log.Error("stamp scheduled fire failed",
 			zap.String("taskSlug", task.Slug), zap.String("runId", runID), zap.Error(err))
+	}
+}
+
+// stampScheduledAttempt mirrors the loop's stampAttempt: record only
+// last_attempt_at on a start failure to engage the loop's retry backoff
+// without advancing the cycle anchor.
+func (s *Starter) stampScheduledAttempt(ctx context.Context, task *ent.BackgroundTask, now time.Time) {
+	if err := s.Client.BackgroundTask.UpdateOneID(task.ID).
+		SetLastAttemptAt(now).
+		AddRevision(1).
+		Exec(ctx); err != nil {
+		s.Log.Error("stamp scheduled attempt failed", zap.String("taskSlug", task.Slug), zap.Error(err))
 	}
 }
 

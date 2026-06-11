@@ -156,17 +156,26 @@ func TestStartScheduledRunPropagatesStartFailureUnstamped(t *testing.T) {
 		t.Fatalf("run = status=%q code=%q", run.Status, run.ErrorCode)
 	}
 	got := client.BackgroundTask.GetX(ctx, task.ID)
-	if got.LastAttemptAt != nil || got.LastRunAt != nil {
-		t.Fatalf("failed start must not stamp the task (would suppress the retry): attempt=%v run=%v",
-			got.LastAttemptAt, got.LastRunAt)
+	if got.LastAttemptAt == nil {
+		t.Fatal("failed start must stamp last_attempt_at so the loop backs off")
+	}
+	if got.LastRunAt != nil {
+		t.Fatal("failed start must not advance the cycle anchor")
 	}
 
-	// The retry (Temporal re-runs the activity) is NOT suppressed by the
-	// guards and succeeds once the blip clears.
+	// A NON-retry fire is now suppressed by the in-flight guard (loop
+	// parity: backoff after a failed attempt)…
 	ctrl.startErr = nil
 	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if err != nil || !out.Skipped {
+		t.Fatalf("fresh fire inside backoff must skip: %+v err=%v", out, err)
+	}
+	// …but the activity RETRY of the same fire bypasses it and succeeds.
+	in := fireInput(task, u)
+	in.RetryAttempt = true
+	out, err = starter.StartScheduledRun(context.Background(), in)
 	if err != nil || out.Skipped {
-		t.Fatalf("retry after blip must fire: %+v err=%v", out, err)
+		t.Fatalf("retry attempt must fire once the blip clears: %+v err=%v", out, err)
 	}
 }
 
