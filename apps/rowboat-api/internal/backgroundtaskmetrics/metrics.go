@@ -144,11 +144,15 @@ var (
 		Help: "Temporal Schedule drift corrections by the reconciler, by kind (missing|stale|orphan|pause).",
 	}, []string{"kind"})
 
-	// ScheduleFires counts scheduler-workflow fires (CreateScheduledRun starts).
-	ScheduleFires = promauto.NewCounter(prometheus.CounterOpts{
+	// ScheduleFires counts scheduler-workflow fires by what they did:
+	// started (a run was created), skipped (stale fire, occurrence covered,
+	// in-flight, or backout), failed (start error). The started-vs-skipped
+	// split is what makes a fires-vs-runs_triggered dashboard gap diagnosable
+	// during migration.
+	ScheduleFires = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "temporal_schedule_fires_total",
-		Help: "Temporal Schedule fires handled by the scheduler workflow.",
-	})
+		Help: "Temporal Schedule fires handled by the scheduler workflow, by result (started|skipped|failed).",
+	}, []string{"result"})
 )
 
 // ObserveDurationSince records a run duration if the start time is known and sane.

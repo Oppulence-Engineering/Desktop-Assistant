@@ -82,24 +82,33 @@ type ScheduleActivities struct {
 // applies; the starter itself absorbs the started-but-ids-unpersisted case
 // (retrying that would double-start the run workflow).
 func (a *ScheduleActivities) CreateScheduledRun(ctx context.Context, in ScheduleFireInput) (ScheduledRunResult, error) {
-	if !activity.IsActivity(ctx) || activity.GetInfo(ctx).Attempt == 1 {
-		backgroundtaskmetrics.ScheduleFires.Inc()
+	// Count each fire once (first attempt), labeled by what it did.
+	firstAttempt := !activity.IsActivity(ctx) || activity.GetInfo(ctx).Attempt == 1
+	countFire := func(result string) {
+		if firstAttempt {
+			backgroundtaskmetrics.ScheduleFires.WithLabelValues(result).Inc()
+		}
 	}
 	if !a.Enabled {
+		countFire("skipped")
 		a.Log.Info("scheduled fire skipped: temporal schedules disabled (backout)",
 			zap.String("taskSlug", in.Slug), zap.String("userId", in.UserID))
 		return ScheduledRunResult{Skipped: true, SkipReason: "temporal schedules disabled"}, nil
 	}
 	out, err := a.Runs.StartScheduledRun(ctx, in)
-	if err != nil {
+	switch {
+	case err != nil:
+		countFire("failed")
 		a.Log.Warn("scheduled run start failed",
 			zap.String("taskSlug", in.Slug), zap.String("userId", in.UserID), zap.Error(err))
 		return ScheduledRunResult{}, err
-	}
-	if out.Skipped {
+	case out.Skipped:
+		countFire("skipped")
 		a.Log.Info("scheduled fire skipped",
 			zap.String("taskSlug", in.Slug), zap.String("userId", in.UserID),
 			zap.String("reason", out.SkipReason))
+	default:
+		countFire("started")
 	}
 	return out, nil
 }
@@ -108,10 +117,14 @@ func (a *ScheduleActivities) CreateScheduledRun(ctx context.Context, in Schedule
 func SchedulerWorkflow(ctx workflow.Context, in ScheduleFireInput) error {
 	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: time.Minute,
+		// Spread the retries over ~minutes rather than seconds: a transient
+		// Temporal-start failure leaves one visible failed run row per
+		// attempt (matching the loop's re-fire cadence), so rapid-fire
+		// retries would just stack failure rows during the same blip.
 		RetryPolicy: &temporal.RetryPolicy{
-			InitialInterval:    time.Second,
+			InitialInterval:    15 * time.Second,
 			BackoffCoefficient: 2,
-			MaximumInterval:    time.Minute,
+			MaximumInterval:    2 * time.Minute,
 			MaximumAttempts:    5,
 		},
 	})

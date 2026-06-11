@@ -134,23 +134,21 @@ func TestStartScheduledRunSkipsStaleFires(t *testing.T) {
 	}
 }
 
-// TestStartScheduledRunAbsorbsStartFailure: a Temporal start failure must NOT
-// propagate (an activity retry would mint a fresh failed run row per attempt).
-// The single failed row is the user-visible record, and last_attempt_at is
-// stamped so the loop's backoff engages — mirroring the loop's own
-// start-failure path.
-func TestStartScheduledRunAbsorbsStartFailure(t *testing.T) {
+// TestStartScheduledRunPropagatesStartFailureUnstamped: a Temporal start
+// failure propagates so the activity's bounded retry re-attempts the
+// occurrence (the schedule-path equivalent of the loop's widened-grace
+// retry), and the task is NOT stamped — a stamp would make the
+// occurrence-coverage / in-flight guards suppress the legitimate retry.
+func TestStartScheduledRunPropagatesStartFailureUnstamped(t *testing.T) {
 	client, u, task := setup(t)
 	task = setCron(t, client, task)
 	ctrl := &fakeController{startErr: errors.New("temporal unreachable")}
 	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
 
-	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
-	if err != nil {
-		t.Fatalf("start failure must be absorbed, got %v", err)
-	}
-	if out.Skipped || out.RunID == "" {
-		t.Fatalf("result = %+v, want the failed run id", out)
+	_, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	var startFailed *backgroundtaskruns.StartFailedError
+	if !errors.As(err, &startFailed) {
+		t.Fatalf("want StartFailedError to drive activity retry, got %v", err)
 	}
 	ctx := auth.WithInternal(context.Background())
 	run := client.BackgroundTaskRun.Query().OnlyX(ctx)
@@ -158,11 +156,42 @@ func TestStartScheduledRunAbsorbsStartFailure(t *testing.T) {
 		t.Fatalf("run = status=%q code=%q", run.Status, run.ErrorCode)
 	}
 	got := client.BackgroundTask.GetX(ctx, task.ID)
-	if got.LastAttemptAt == nil {
-		t.Fatal("last_attempt_at must be stamped so loop backoff engages")
+	if got.LastAttemptAt != nil || got.LastRunAt != nil {
+		t.Fatalf("failed start must not stamp the task (would suppress the retry): attempt=%v run=%v",
+			got.LastAttemptAt, got.LastRunAt)
 	}
-	if got.LastRunAt != nil {
-		t.Fatal("a failed start must not advance the cycle anchor")
+
+	// The retry (Temporal re-runs the activity) is NOT suppressed by the
+	// guards and succeeds once the blip clears.
+	ctrl.startErr = nil
+	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if err != nil || out.Skipped {
+		t.Fatalf("retry after blip must fire: %+v err=%v", out, err)
+	}
+}
+
+// TestStartScheduledRunSkipsCoveredOccurrence: when last_run_at already covers
+// the current cron occurrence (another authority fired it first — the loop
+// during a fallback window, or a prior activity attempt whose completion was
+// lost), the fire must skip rather than double-run the occurrence.
+func TestStartScheduledRunSkipsCoveredOccurrence(t *testing.T) {
+	client, u, task := setup(t)
+	task = setCron(t, client, task)
+	ctrl := &fakeController{}
+	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+
+	now := time.Now().UTC()
+	task = task.Update().SetLastRunAt(now).SetLastAttemptAt(now).SaveX(context.Background())
+
+	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if err != nil {
+		t.Fatalf("StartScheduledRun: %v", err)
+	}
+	if !out.Skipped || out.SkipReason != "occurrence already covered" {
+		t.Fatalf("result = %+v, want covered-occurrence skip", out)
+	}
+	if len(ctrl.starts) != 0 {
+		t.Fatal("covered occurrence must not start a run")
 	}
 }
 
@@ -208,12 +237,13 @@ func TestStartScheduledRunSkipsWhileInFlight(t *testing.T) {
 		t.Fatalf("in-flight fire must not start a run")
 	}
 
-	// Once the prior attempt completed (last_run_at >= last_attempt_at) the
-	// next fire proceeds.
-	task = task.Update().SetLastRunAt(attempt.Add(30 * time.Second)).SaveX(context.Background())
+	// A prior cycle that completed long ago (before the current occurrence)
+	// neither reads as in-flight nor covers the occurrence — the fire fires.
+	yesterday := time.Now().UTC().Add(-26 * time.Hour)
+	task = task.Update().SetLastAttemptAt(yesterday).SetLastRunAt(yesterday).SaveX(context.Background())
 	out, err = starter.StartScheduledRun(context.Background(), fireInput(task, u))
 	if err != nil || out.Skipped {
-		t.Fatalf("completed prior run must not suppress: %+v err=%v", out, err)
+		t.Fatalf("completed prior cycle must not suppress: %+v err=%v", out, err)
 	}
 }
 

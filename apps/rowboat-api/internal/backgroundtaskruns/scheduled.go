@@ -67,12 +67,24 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 		return skipResult("cron expression invalid"), nil
 	}
 
+	// Occurrence-coverage check, mirroring the loop's cronDueOccurrence
+	// (due.go): if last_run_at already covers the current occurrence, another
+	// authority fired it first — the loop during a failed/syncing fallback
+	// window, a prior activity attempt whose completion was lost after a
+	// worker crash, or this very schedule moments ago. Without this, every
+	// dual-authority interleaving double-fires the occurrence.
+	now := time.Now().UTC()
+	if occurrence, err := gronx.PrevTickBefore(cronExpr, now.Truncate(time.Minute), true); err == nil {
+		if task.LastRunAt != nil && !task.LastRunAt.Before(occurrence) {
+			return skipResult("occurrence already covered"), nil
+		}
+	}
+
 	// In-flight backstop, mirroring the loop (scheduler.go evaluateTask): a
 	// last attempt newer than the last success that is still inside the
 	// backoff window means a prior run never completed — don't stack another.
 	// Temporal's SCHEDULE_OVERLAP_POLICY_SKIP cannot provide this: it only
 	// spans the seconds-long scheduler workflow, not the actual run.
-	now := time.Now().UTC()
 	if scheduledInFlight(task) && scheduledBackoffRemaining(task.LastAttemptAt, now) > 0 {
 		return skipResult("prior run still in flight"), nil
 	}
@@ -99,40 +111,37 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 		// success (mirrors the loop's PersistIDsError branch).
 		s.Log.Warn("scheduled run started but temporal ids unpersisted",
 			zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
-		s.stampScheduledFire(ctx, task, now, run.RunID, true)
+		s.stampScheduledFire(ctx, task, now, run.RunID)
 	case errors.As(err, &startErr):
 		// Start already created the run row and marked it failed
-		// (temporal_start_failed) — that row is the user-visible failure
-		// record. Do NOT propagate: a Temporal activity retry would mint a
-		// fresh failed row per attempt. Stamp only last_attempt_at so the
-		// loop's backoff engages, exactly like the loop's own start-failure
-		// path (stampAttempt); the occurrence is not auto-retried, matching
-		// loop/desktop semantics.
+		// (temporal_start_failed). Propagate WITHOUT stamping the task: the
+		// occurrence-coverage check above doesn't trip on an unstamped task,
+		// so Temporal's bounded activity retry genuinely re-attempts the
+		// occurrence — the schedule-path equivalent of the loop's
+		// widened-grace retry after a transient start failure. Each attempt
+		// leaves one visible failed row, exactly like the loop's re-fires.
 		s.Log.Error("scheduled run temporal start failed",
 			zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
-		s.stampScheduledFire(ctx, task, now, run.RunID, false)
-		return backgroundtaskworkflow.ScheduledRunResult{RunID: run.RunID, WorkflowID: run.TemporalWorkflowID}, nil
+		return backgroundtaskworkflow.ScheduledRunResult{}, err
 	case err != nil:
 		return backgroundtaskworkflow.ScheduledRunResult{}, err
 	default:
-		s.stampScheduledFire(ctx, task, now, run.RunID, true)
+		s.stampScheduledFire(ctx, task, now, run.RunID)
 	}
 	return backgroundtaskworkflow.ScheduledRunResult{RunID: run.RunID, WorkflowID: run.TemporalWorkflowID}, nil
 }
 
-// stampScheduledFire mirrors the loop's stampFired/stampAttempt: a successful
-// fire advances the cycle anchor (last_run_at) + attempt/run markers so the
-// loop never re-fires the same occurrence after a handoff-back and same-day
-// window suppression behaves identically to a loop cron fire; a failed start
-// stamps only last_attempt_at to engage the loop's retry backoff.
-func (s *Starter) stampScheduledFire(ctx context.Context, task *ent.BackgroundTask, now time.Time, runID string, fired bool) {
-	update := s.Client.BackgroundTask.UpdateOneID(task.ID).
+// stampScheduledFire mirrors the loop's stampFired: a successful fire advances
+// the cycle anchor (last_run_at) + attempt/run markers so the loop (and the
+// occurrence-coverage check above) never re-fires the same occurrence and
+// same-day window suppression behaves identically to a loop cron fire.
+func (s *Starter) stampScheduledFire(ctx context.Context, task *ent.BackgroundTask, now time.Time, runID string) {
+	if err := s.Client.BackgroundTask.UpdateOneID(task.ID).
 		SetLastAttemptAt(now).
-		AddRevision(1)
-	if fired {
-		update = update.SetLastRunAt(now).SetLastRunID(runID)
-	}
-	if err := update.Exec(ctx); err != nil {
+		SetLastRunAt(now).
+		SetLastRunID(runID).
+		AddRevision(1).
+		Exec(ctx); err != nil {
 		s.Log.Error("stamp scheduled fire failed",
 			zap.String("taskSlug", task.Slug), zap.String("runId", runID), zap.Error(err))
 	}
