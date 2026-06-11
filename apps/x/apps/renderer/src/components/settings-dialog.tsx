@@ -30,6 +30,7 @@ import {
   RefreshCw,
   ExternalLink,
   AudioLines,
+  Bell,
 } from "@/lib/icons";
 
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -59,6 +60,7 @@ type ConfigTab =
   | "connections"
   | "models"
   | "transcription"
+  | "notifications"
   | "mcp"
   | "security"
   | "code-mode"
@@ -122,6 +124,13 @@ const tabs: TabConfig[] = [
     icon: Tags,
     path: "config/tags.json",
     description: "Configure tags for notes and emails",
+    group: "workspace",
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    icon: Bell,
+    description: "System notification preferences",
     group: "workspace",
   },
   {
@@ -1331,6 +1340,60 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
 
 // --- Main Settings Dialog ---
 
+function NotificationSettings() {
+  const [cloudRunsOfflineNotify, setCloudRunsOfflineNotify] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void window.ipc.invoke("notifications:getConfig", null).then((cfg) => {
+      if (cancelled) return;
+      setCloudRunsOfflineNotify(cfg.cloudRunsOfflineNotify);
+      setLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleToggle = useCallback(async (next: boolean) => {
+    setSaving(true);
+    try {
+      const cfg = await window.ipc.invoke("notifications:setConfig", {
+        cloudRunsOfflineNotify: next,
+      });
+      setCloudRunsOfflineNotify(cfg.cloudRunsOfflineNotify);
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <SettingsSection
+        title="Cloud runs"
+        description="Background tasks that run in the cloud keep working while this app is closed."
+      >
+        <div className="flex items-start gap-3 rounded-none border bg-card px-3.5 py-3">
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-medium">System notifications for missed runs</div>
+            <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+              Show a system notification when cloud runs finished while the app was closed (in
+              addition to the in-app notice).
+            </div>
+          </div>
+          <Switch
+            checked={cloudRunsOfflineNotify}
+            onCheckedChange={(next) => void handleToggle(next)}
+            disabled={!loaded || saving}
+          />
+        </div>
+      </SettingsSection>
+    </div>
+  );
+}
+
 export function SettingsDialog({
   children,
   defaultTab = "account",
@@ -1494,6 +1557,8 @@ export function SettingsDialog({
                         )
                       ) : activeTab === "transcription" ? (
                         <TranscriptionSettings dialogOpen={open} />
+                      ) : activeTab === "notifications" ? (
+                        <NotificationSettings />
                       ) : activeTab === "appearance" ? (
                         <AppearanceSettings />
                       ) : activeTab === "help" ? (

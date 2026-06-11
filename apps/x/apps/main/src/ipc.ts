@@ -20,6 +20,10 @@ import {
 } from "./oauth-handler.js";
 import { watcher as watcherCore, workspace } from "@x/core";
 import { WorkDir } from "@x/core/dist/config/config.js";
+import {
+  getNotificationsConfig,
+  setNotificationsConfig,
+} from "@x/core/dist/config/notifications.js";
 import { workspace as workspaceShared } from "@x/shared";
 import * as mcpCore from "@x/core/dist/mcp/mcp.js";
 import * as runsCore from "@x/core/dist/runs/runs.js";
@@ -1268,6 +1272,12 @@ export function setupIpcHandlers() {
         meetingProvider: patch.meetingProvider,
         ...(patch.model ? { whisper: { model: patch.model } } : {}),
       });
+    },
+    "notifications:getConfig": async () => {
+      return getNotificationsConfig();
+    },
+    "notifications:setConfig": async (_event, patch) => {
+      return setNotificationsConfig(patch);
     },
     // Live-note handlers
     "live-note:run": async (_event, args) => {
