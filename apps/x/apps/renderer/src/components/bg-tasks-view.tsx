@@ -2931,24 +2931,6 @@ export function BgTasksView({
   const agentStatus = useBackgroundTaskAgentStatus();
   const taskNameBySlug = useMemo(() => new Map(items.map((t) => [t.slug, t.name])), [items]);
 
-  // RFC 006 offline-return: a quiet toast when cloud runs completed while the
-  // app was closed (pushed once from main after boot — never a modal).
-  useEffect(() => {
-    return window.ipc.on("bg-task:offlineRuns", (payload) => {
-      if (!payload || payload.count === 0) return;
-      const failed = payload.runs.filter((r) => r.status === "failed").length;
-      const summary =
-        payload.count === 1
-          ? "1 cloud run completed while you were away"
-          : `${payload.count} cloud runs completed while you were away`;
-      if (failed > 0) {
-        toast(`${summary} (${failed} failed)`, "error");
-      } else {
-        toast(summary, "success");
-      }
-    });
-  }, []);
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
