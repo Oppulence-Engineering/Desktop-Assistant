@@ -37,10 +37,7 @@ func (f *FakeManager) UpsertTaskCron(_ context.Context, d DesiredCronSchedule) (
 	switch {
 	case !ok:
 		return "create", nil
-	case SpecMatches(MemoFields{
-		UserID: prev.UserID, TaskID: prev.TaskID, Slug: prev.Slug,
-		CronExpr: prev.CronExpr, Timezone: prev.Timezone,
-	}, d) && prev.Paused == d.Paused:
+	case SpecMatches(memoOf(prev), d) && prev.Paused == d.Paused:
 		return "noop", nil
 	default:
 		return "update", nil
@@ -126,6 +123,7 @@ func memoOf(d DesiredCronSchedule) MemoFields {
 	return MemoFields{
 		UserID: d.UserID, TaskID: d.TaskID, Slug: d.Slug,
 		TaskRevision: d.TaskRevision, CronExpr: d.CronExpr,
-		Timezone: d.Timezone, Trigger: "cron",
+		Timezone: d.Timezone, TaskQueue: d.TaskQueue,
+		Catchup: d.CatchupWindow.String(), Trigger: "cron",
 	}
 }

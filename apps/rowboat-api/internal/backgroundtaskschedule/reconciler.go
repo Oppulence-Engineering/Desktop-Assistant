@@ -102,7 +102,7 @@ func (r *Reconciler) reconcileTask(ctx context.Context, task *ent.BackgroundTask
 		if err != nil {
 			log.Warn("reconcile: describe", zap.Error(err))
 			if fresh, fo, _, ok := r.refresh(ctx, task, log); ok && fo == outcomeManaged {
-				r.Syncer.writeState(ctx, fresh, "failed", err.Error(), log)
+				r.Syncer.writeState(ctx, fresh, "failed", sanitizeSyncError(err), log)
 			}
 			return scheduleID
 		}
@@ -145,7 +145,7 @@ func (r *Reconciler) reconcileTask(ctx context.Context, task *ent.BackgroundTask
 		}
 		if _, err := r.Manager.UpsertTaskCron(ctx, freshDesired); err != nil {
 			log.Warn("reconcile: upsert", zap.String("drift", drift), zap.Error(err))
-			r.Syncer.writeState(ctx, fresh, "failed", err.Error(), log)
+			r.Syncer.writeState(ctx, fresh, "failed", sanitizeSyncError(err), log)
 			return scheduleID
 		}
 		backgroundtaskmetrics.ScheduleDrift.WithLabelValues(drift).Inc()
@@ -163,7 +163,7 @@ func (r *Reconciler) reconcileTask(ctx context.Context, task *ent.BackgroundTask
 		if err := r.Manager.DeleteTaskCron(ctx, userID, fresh.Slug); err != nil {
 			log.Warn("reconcile: delete schedule for invalid cron", zap.Error(err))
 		}
-		r.Syncer.writeState(ctx, fresh, "failed", "invalid cron expression "+fcron, log)
+		r.Syncer.writeState(ctx, fresh, "failed", invalidCronMsg(fcron), log)
 		return ""
 
 	case outcomePausedKeep:

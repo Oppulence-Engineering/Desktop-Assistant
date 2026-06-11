@@ -18,13 +18,18 @@ func desired() DesiredCronSchedule {
 	return DesiredCronSchedule{
 		UserID: "u1", TaskID: "t1", Slug: "daily-digest",
 		CronExpr: "0 9 * * *", Timezone: "UTC",
+		TaskQueue:     "rowboat-api-background-tasks",
 		CatchupWindow: time.Minute, TaskRevision: 3,
 	}
 }
 
 func TestSpecMatches(t *testing.T) {
 	d := desired()
-	base := MemoFields{UserID: "u1", TaskID: "t1", Slug: "daily-digest", CronExpr: "0 9 * * *", Timezone: "UTC"}
+	base := MemoFields{
+		UserID: "u1", TaskID: "t1", Slug: "daily-digest",
+		CronExpr: "0 9 * * *", Timezone: "UTC",
+		TaskQueue: "rowboat-api-background-tasks", Catchup: "1m0s",
+	}
 	if !SpecMatches(base, d) {
 		t.Fatal("identical spec must match")
 	}
@@ -40,7 +45,10 @@ func TestSpecMatches(t *testing.T) {
 		"user":     func(m *MemoFields) { m.UserID = "u2" },
 		"task":     func(m *MemoFields) { m.TaskID = "t2" },
 		"slug":     func(m *MemoFields) { m.Slug = "other" },
-		"empty":    func(m *MemoFields) { *m = MemoFields{} },
+		// Config-derived properties must propagate to existing schedules.
+		"queue":   func(m *MemoFields) { m.TaskQueue = "old-queue" },
+		"catchup": func(m *MemoFields) { m.Catchup = "5m0s" },
+		"empty":   func(m *MemoFields) { *m = MemoFields{} },
 	} {
 		m := base
 		mutate(&m)

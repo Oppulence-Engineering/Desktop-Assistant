@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -231,7 +232,17 @@ func runScheduler(ctx context.Context, cfg appconfig.Config, log *zap.Logger, da
 			Interval: cfg.TemporalScheduleReconcileInterval,
 			Log:      log,
 		}
-		go func() { _ = rec.Run(ctx) }()
+		var recDone sync.WaitGroup
+		recDone.Add(1)
+		go func() {
+			defer recDone.Done()
+			_ = rec.Run(ctx)
+		}()
+		// Join the reconciler before the deferred temporalClient.Close()/
+		// database.Close() run: a mid-pass reconcile racing the closes would
+		// log spurious failures and could stamp schedule_sync_state=failed on
+		// healthy tasks from cancelled-context errors on every rollout.
+		defer recDone.Wait()
 		log.Info("temporal schedule reconciler started",
 			zap.Duration("interval", cfg.TemporalScheduleReconcileInterval))
 	}

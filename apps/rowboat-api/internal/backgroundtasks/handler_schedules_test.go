@@ -82,7 +82,7 @@ func TestCreateUpsertFailureStillCreatesTask(t *testing.T) {
 		t.Fatalf("schedule failure must not fail the create: %d %s", rec.Code, rec.Body.String())
 	}
 	view := decodeBody[taskView](t, rec)
-	if view.ScheduleSyncState != "failed" || !strings.Contains(view.ScheduleSyncError, "temporal unreachable") {
+	if view.ScheduleSyncState != "failed" || !strings.Contains(view.ScheduleSyncError, "temporal schedule") {
 		t.Fatalf("view sync = %q err=%q", view.ScheduleSyncState, view.ScheduleSyncError)
 	}
 }

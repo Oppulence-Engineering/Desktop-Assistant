@@ -69,7 +69,9 @@ func TestAfterWriteUpsertFailureMarksFailed(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	mgr.UpsertErr = errors.New("temporal unreachable")
 	got := s.AfterWrite(context.Background(), u.ID.String(), nil, task)
-	if got.ScheduleSyncState != "failed" || !strings.Contains(got.ScheduleSyncError, "temporal unreachable") {
+	// The client-visible error is sanitized (raw SDK errors leak infra
+	// details); the full error goes to logs.
+	if got.ScheduleSyncState != "failed" || !strings.Contains(got.ScheduleSyncError, "temporal schedule") {
 		t.Fatalf("state=%q err=%q", got.ScheduleSyncState, got.ScheduleSyncError)
 	}
 
@@ -206,7 +208,7 @@ func TestAfterWritePauseFailureRecordsError(t *testing.T) {
 	mgr.PauseErr = errors.New("temporal unreachable")
 
 	got := s.AfterWrite(context.Background(), u.ID.String(), nil, task)
-	if got.ScheduleSyncState != "paused" || !strings.Contains(got.ScheduleSyncError, "temporal unreachable") {
+	if got.ScheduleSyncState != "paused" || !strings.Contains(got.ScheduleSyncError, "temporal schedule") {
 		t.Fatalf("state=%q err=%q", got.ScheduleSyncState, got.ScheduleSyncError)
 	}
 }

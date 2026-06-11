@@ -3,6 +3,7 @@ package backgroundtaskschedule
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -117,7 +118,7 @@ func (s *Syncer) AfterWrite(ctx context.Context, userID string, prev, task *ent.
 		action, err := s.upsert(ctx, Desired(userID, task, cronExpr, s.Cfg, false))
 		if err != nil {
 			log.Warn("schedule upsert failed; loop remains the cron fallback", zap.Error(err))
-			s.writeState(ctx, task, "failed", err.Error(), log)
+			s.writeState(ctx, task, "failed", sanitizeSyncError(err), log)
 			break
 		}
 		log.Info("schedule synced", zap.String("action", action))
@@ -130,7 +131,7 @@ func (s *Syncer) AfterWrite(ctx context.Context, userID string, prev, task *ent.
 		if err != nil {
 			log.Warn("schedule delete for invalid cron failed; reconciler will repair", zap.Error(err))
 		}
-		s.writeState(ctx, task, "failed", fmt.Sprintf("invalid cron expression %q", cronExpr), log)
+		s.writeState(ctx, task, "failed", invalidCronMsg(cronExpr), log)
 
 	case outcomePausedKeep:
 		err := s.pause(ctx, userID, task.Slug)
@@ -232,9 +233,32 @@ func (s *Syncer) writeState(ctx context.Context, task *ent.BackgroundTask, state
 func (s *Syncer) writeStateErr(ctx context.Context, task *ent.BackgroundTask, state string, opErr error, log *zap.Logger) {
 	msg := ""
 	if opErr != nil {
-		msg = opErr.Error()
+		msg = sanitizeSyncError(opErr)
 	}
 	s.writeState(ctx, task, state, msg, log)
+}
+
+// invalidCronMsg is the ONE spelling of the invalid-cron failure, shared by
+// the syncer and reconciler — two spellings would defeat writeState's no-op
+// guard and ping-pong the task revision between the two writers.
+func invalidCronMsg(expr string) string {
+	return fmt.Sprintf("invalid cron expression %q", expr)
+}
+
+// sanitizeSyncError reduces a Temporal operation error to its operation-level
+// summary before persisting it into schedule_sync_error, which is served to
+// end users via the task view. Raw SDK/gRPC errors embed internal DNS names,
+// IPs, and ports; those belong in server logs only (every call site logs the
+// full error alongside).
+func sanitizeSyncError(err error) string {
+	msg := err.Error()
+	if i := strings.Index(msg, ":"); i > 0 && strings.HasPrefix(msg, "temporal schedule ") {
+		return msg[:i] + " failed"
+	}
+	if strings.Contains(msg, "context deadline exceeded") {
+		return "temporal unreachable (timed out)"
+	}
+	return "temporal schedule operation failed"
 }
 
 // stampScheduled marks that a Temporal Schedule has existed for this task
@@ -249,12 +273,14 @@ func (s *Syncer) stampScheduled(ctx context.Context, task *ent.BackgroundTask, l
 	now := time.Now().UTC()
 	if err := s.Client.BackgroundTask.UpdateOneID(task.ID).
 		SetScheduleSyncedAt(now).
+		AddRevision(1).
 		Exec(auth.WithInternal(ctx)); err != nil {
 		backgroundtaskmetrics.ScheduleSyncFailures.WithLabelValues("state_write").Inc()
 		log.Error("schedule synced-at stamp failed", zap.Error(err))
 		return
 	}
 	task.ScheduleSyncedAt = &now
+	task.Revision++
 }
 
 func (s *Syncer) reload(ctx context.Context, task *ent.BackgroundTask) *ent.BackgroundTask {

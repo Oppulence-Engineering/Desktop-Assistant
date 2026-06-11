@@ -37,6 +37,7 @@ type DesiredCronSchedule struct {
 	UserID, TaskID, Slug string
 	CronExpr             string
 	Timezone             string
+	TaskQueue            string
 	CatchupWindow        time.Duration
 	TaskRevision         int
 	Paused               bool
@@ -56,6 +57,7 @@ func Desired(userID string, task *ent.BackgroundTask, cronExpr string, cfg appco
 		Slug:          task.Slug,
 		CronExpr:      cronExpr,
 		Timezone:      cfg.CloudSchedulerTimezone,
+		TaskQueue:     cfg.TemporalTaskQueue,
 		CatchupWindow: cfg.TemporalScheduleCatchup,
 		TaskRevision:  task.Revision,
 		Paused:        paused,
@@ -73,6 +75,8 @@ type MemoFields struct {
 	TaskRevision int    `json:"rowboatTaskRevision"`
 	CronExpr     string `json:"rowboatCronExpr"`
 	Timezone     string `json:"rowboatTimezone"`
+	TaskQueue    string `json:"rowboatTaskQueue"`
+	Catchup      string `json:"rowboatCatchup"`
 	Trigger      string `json:"rowboatTrigger"`
 }
 
@@ -85,7 +89,12 @@ func SpecMatches(memo MemoFields, d DesiredCronSchedule) bool {
 		memo.TaskID == d.TaskID &&
 		memo.Slug == d.Slug &&
 		memo.CronExpr == d.CronExpr &&
-		memo.Timezone == d.Timezone
+		memo.Timezone == d.Timezone &&
+		// Config-derived properties: a TEMPORAL_TASK_QUEUE rename or catchup
+		// tune must propagate, or existing schedules keep firing into a queue
+		// no worker listens on / with the stale catchup window.
+		memo.TaskQueue == d.TaskQueue &&
+		memo.Catchup == d.CatchupWindow.String()
 }
 
 // Description is the normalized Describe result.
@@ -145,7 +154,7 @@ func (m *TemporalManager) options(d DesiredCronSchedule) client.ScheduleOptions 
 		Action: &client.ScheduleWorkflowAction{
 			ID:        backgroundtaskworkflow.ScheduleWorkflowID(d.UserID, d.Slug),
 			Workflow:  backgroundtaskworkflow.SchedulerWorkflowName,
-			TaskQueue: m.taskQueue,
+			TaskQueue: d.TaskQueue,
 			Args: []any{backgroundtaskworkflow.ScheduleFireInput{
 				UserID: d.UserID, TaskID: d.TaskID, Slug: d.Slug,
 				Trigger: "cron", TaskRevision: d.TaskRevision,
@@ -163,6 +172,8 @@ func (m *TemporalManager) options(d DesiredCronSchedule) client.ScheduleOptions 
 			"rowboatTaskRevision": d.TaskRevision,
 			"rowboatCronExpr":     d.CronExpr,
 			"rowboatTimezone":     d.Timezone,
+			"rowboatTaskQueue":    d.TaskQueue,
+			"rowboatCatchup":      d.CatchupWindow.String(),
 			"rowboatTrigger":      "cron",
 		},
 	}
@@ -322,6 +333,8 @@ func decodeMemo(memo *commonpb.Memo) MemoFields {
 	decode("rowboatTaskRevision", &out.TaskRevision)
 	decode("rowboatCronExpr", &out.CronExpr)
 	decode("rowboatTimezone", &out.Timezone)
+	decode("rowboatTaskQueue", &out.TaskQueue)
+	decode("rowboatCatchup", &out.Catchup)
 	decode("rowboatTrigger", &out.Trigger)
 	return out
 }
