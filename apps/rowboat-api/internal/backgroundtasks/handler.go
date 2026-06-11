@@ -140,6 +140,18 @@ type runView struct {
 	CreatedAt          string  `json:"createdAt"`
 	UpdatedAt          string  `json:"updatedAt"`
 	Revision           int     `json:"revision"`
+	// SourceEvent is the originating cloud event (RFC 003 linkage), attached
+	// only on the single-run GET — safe display fields only, never the
+	// payload/routing internals.
+	SourceEvent *sourceEventView `json:"sourceEvent,omitempty"`
+}
+
+type sourceEventView struct {
+	ID         string  `json:"id"`
+	Source     string  `json:"source"`
+	EventType  string  `json:"eventType,omitempty"`
+	Subject    string  `json:"subject,omitempty"`
+	OccurredAt *string `json:"occurredAt,omitempty"`
 }
 
 type runStatusView struct {
@@ -930,9 +942,11 @@ func (h *Handler) PatchRun(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, viewRun(task, run))
 }
 
-// GetRun handles GET /v1/background-tasks/{slug}/runs/{runId}.
+// GetRun handles GET /v1/background-tasks/{slug}/runs/{runId}. The single-run
+// detail is the one place the originating cloud event (RFC 003 linkage) is
+// attached — list and status responses stay slim.
 func (h *Handler) GetRun(w http.ResponseWriter, r *http.Request) {
-	task, run, ok := h.lookupRun(w, r)
+	task, run, ok := h.lookupRun(w, r, func(q *ent.BackgroundTaskRunQuery) { q.WithCloudEvent() })
 	if !ok {
 		return
 	}
@@ -1455,18 +1469,24 @@ func (h *Handler) lookupTask(w http.ResponseWriter, r *http.Request) (*ent.Backg
 	return task, true
 }
 
-func (h *Handler) lookupRun(w http.ResponseWriter, r *http.Request) (*ent.BackgroundTask, *ent.BackgroundTaskRun, bool) {
+// lookupRun resolves the {slug}/{runId} pair. Optional query modifiers let a
+// caller opt into preloads (e.g. GetRun's WithCloudEvent) without every
+// mutation/status handler paying for — or leaking — them.
+func (h *Handler) lookupRun(w http.ResponseWriter, r *http.Request, mods ...func(*ent.BackgroundTaskRunQuery)) (*ent.BackgroundTask, *ent.BackgroundTaskRun, bool) {
 	task, ok := h.lookupTask(w, r)
 	if !ok {
 		return nil, nil, false
 	}
 	runID := chi.URLParam(r, "runId")
-	run, err := h.client.BackgroundTaskRun.Query().
+	query := h.client.BackgroundTaskRun.Query().
 		Where(
 			backgroundtaskrun.RunIDEQ(runID),
 			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(task.ID)),
-		).
-		Only(r.Context())
+		)
+	for _, mod := range mods {
+		mod(query)
+	}
+	run, err := query.Only(r.Context())
 	if err != nil {
 		if ent.IsNotFound(err) {
 			httpx.Error(w, http.StatusNotFound, "background task run not found", "not_found")
@@ -1584,6 +1604,25 @@ func viewRun(task *ent.BackgroundTask, run *ent.BackgroundTaskRun) runView {
 		CreatedAt:          run.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:          run.UpdatedAt.UTC().Format(time.RFC3339),
 		Revision:           run.Revision,
+		SourceEvent:        viewSourceEvent(run),
+	}
+}
+
+// viewSourceEvent maps the preloaded cloud-event edge. The edge is nil unless
+// the caller opted into WithCloudEvent (GetRun only), so list/status/mutation
+// responses omit sourceEvent with zero extra queries — never use
+// run.QueryCloudEvent here, which would issue a query per row.
+func viewSourceEvent(run *ent.BackgroundTaskRun) *sourceEventView {
+	ev := run.Edges.CloudEvent
+	if ev == nil {
+		return nil
+	}
+	return &sourceEventView{
+		ID:         ev.ID.String(),
+		Source:     ev.Source,
+		EventType:  ev.EventType,
+		Subject:    ev.Subject,
+		OccurredAt: formatOptionalTime(ev.OccurredAt),
 	}
 }
 

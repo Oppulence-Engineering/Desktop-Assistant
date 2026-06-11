@@ -31,6 +31,8 @@ import {
   BackgroundTaskCloudRunEventSchema,
   BackgroundTaskCloudRunSchema,
   BackgroundTaskCloudRunStatusSchema,
+  BackgroundTaskCloudScheduleStateSchema,
+  BackgroundTaskOfflineRunsEventSchema,
   BackgroundTaskRunExecutor,
   BackgroundTaskRunStatus,
   BackgroundTaskSignal,
@@ -39,6 +41,7 @@ import {
   BackgroundTaskTrigger,
   TriggersSchema,
 } from "./background-task.js";
+import { NotificationsConfigSchema } from "./notifications.js";
 import { UserMessageContent } from "./message.js";
 import { SolomonApiConfig } from "./solomon-account.js";
 import { ZListToolkitsResponse } from "./composio.js";
@@ -847,6 +850,17 @@ const ipcSchemas = {
     req: z.null(),
     res: TranscriptionConfig,
   },
+  "notifications:getConfig": {
+    req: z.null(),
+    res: NotificationsConfigSchema,
+  },
+  "notifications:setConfig": {
+    req: z.object({
+      cloudRunsOfflineNotify: z.boolean().optional(),
+      suppressDesktopScheduleQuitReminder: z.boolean().optional(),
+    }),
+    res: NotificationsConfigSchema,
+  },
   "transcription:setConfig": {
     req: z.object({
       voiceProvider: TranscriptionProvider.optional(),
@@ -1131,6 +1145,17 @@ const ipcSchemas = {
       error: z.string().optional(),
     }),
   },
+  "bg-task:getCloudRun": {
+    req: z.object({
+      slug: z.string(),
+      runId: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      run: BackgroundTaskCloudRunSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
   "bg-task:getCloudRunStatus": {
     req: z.object({
       slug: z.string(),
@@ -1253,6 +1278,22 @@ const ipcSchemas = {
       sync: BackgroundTaskArtifactSyncSchema.optional(),
       error: z.string().optional(),
     }),
+  },
+  "bg-task:getCloudScheduleState": {
+    req: z.object({
+      slug: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      state: BackgroundTaskCloudScheduleStateSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  // Pushed from main → renderer after boot when cloud runs completed while
+  // the app was closed (RFC 006 offline-return).
+  "bg-task:offlineRuns": {
+    req: BackgroundTaskOfflineRunsEventSchema,
+    res: z.null(),
   },
   // Embedded browser (WebContentsView) channels
   "browser:setBounds": {

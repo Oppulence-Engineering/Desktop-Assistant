@@ -20,6 +20,10 @@ import {
 } from "./oauth-handler.js";
 import { watcher as watcherCore, workspace } from "@x/core";
 import { WorkDir } from "@x/core/dist/config/config.js";
+import {
+  getNotificationsConfig,
+  setNotificationsConfig,
+} from "@x/core/dist/config/notifications.js";
 import { workspace as workspaceShared } from "@x/shared";
 import * as mcpCore from "@x/core/dist/mcp/mcp.js";
 import * as runsCore from "@x/core/dist/runs/runs.js";
@@ -105,6 +109,8 @@ import { runBackgroundTask } from "@x/core/dist/background-tasks/runner.js";
 import {
   cancelCloudRun,
   getArtifactSyncState,
+  getCloudRun,
+  getCloudScheduleState,
   getCloudRunStatus,
   listAllCloudRuns,
   listCloudRunEvents,
@@ -1268,6 +1274,12 @@ export function setupIpcHandlers() {
         ...(patch.model ? { whisper: { model: patch.model } } : {}),
       });
     },
+    "notifications:getConfig": async () => {
+      return getNotificationsConfig();
+    },
+    "notifications:setConfig": async (_event, patch) => {
+      return setNotificationsConfig(patch);
+    },
     // Live-note handlers
     "live-note:run": async (_event, args) => {
       const result = await runLiveNoteAgent(args.filePath, "manual", args.context);
@@ -1530,6 +1542,22 @@ export function setupIpcHandlers() {
       try {
         const sync = await getArtifactSyncState(args.slug);
         return { success: true, sync };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    "bg-task:getCloudRun": async (_event, args) => {
+      try {
+        const run = await getCloudRun(args.slug, args.runId);
+        return { success: true, run };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    "bg-task:getCloudScheduleState": async (_event, args) => {
+      try {
+        const state = await getCloudScheduleState(args.slug);
+        return { success: true, state };
       } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }

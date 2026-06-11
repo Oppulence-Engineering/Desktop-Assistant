@@ -17,6 +17,7 @@ import {
   ArrowUturnRightIcon as HiArrowUturnRightIcon,
   Bars3Icon as HiBars3Icon,
   BoldIcon as HiBoldIcon,
+  BellIcon as HiBellIcon,
   BoltIcon as HiBoltIcon,
   BookOpenIcon as HiBookOpenIcon,
   BugAntIcon as HiBugAntIcon,
@@ -225,6 +226,7 @@ export const AlertCircleIcon = styled(HiExclamationCircleIcon, "AlertCircleIcon"
 export const AlertTriangle = styled(HiExclamationTriangleIcon, "AlertTriangle");
 export const AlertTriangleIcon = styled(HiExclamationTriangleIcon, "AlertTriangleIcon");
 export const Archive = styled(HiArchiveBoxIcon, "Archive");
+export const Bell = styled(HiBellIcon, "Bell");
 export const ArrowDown = styled(HiArrowDownIcon, "ArrowDown");
 export const ArrowDownIcon = styled(HiArrowDownIcon, "ArrowDownIcon");
 export const ArrowLeft = styled(HiArrowLeftIcon, "ArrowLeft");

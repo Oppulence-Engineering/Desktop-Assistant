@@ -3,6 +3,7 @@ import type {
   BackgroundTask,
   BackgroundTaskArtifactSyncStateType,
   BackgroundTaskArtifactSyncType,
+  BackgroundTaskCloudScheduleStateType,
   BackgroundTaskRunExecutorType,
   BackgroundTaskRunStatusType,
   BackgroundTaskSignalType,
@@ -73,6 +74,13 @@ export type RemoteRun = {
   createdAt: string;
   updatedAt: string;
   revision: number;
+  sourceEvent?: {
+    id: string;
+    source: string;
+    eventType?: string;
+    subject?: string;
+    occurredAt?: string | null;
+  };
 };
 
 export type RemoteRunStatusView = {
@@ -333,6 +341,18 @@ export async function getArtifactSyncState(slug: string): Promise<BackgroundTask
     ...(artifact.contentType ? { contentType: artifact.contentType } : {}),
     ...(sidecar?.lastError ? { error: sidecar.lastError } : {}),
   };
+}
+
+// getCloudScheduleState fetches the RFC 006 normalized schedule summary for a
+// task: which mechanism owns each trigger source, its health, and the next
+// expected fire. On-demand/detail-view cadence — do not poll this with run
+// history (the list view uses the persisted scheduleSyncState on the task).
+export async function getCloudScheduleState(
+  slug: string,
+): Promise<BackgroundTaskCloudScheduleStateType> {
+  return await cloudFetch<BackgroundTaskCloudScheduleStateType>(
+    `/v1/background-tasks/${encodeURIComponent(slug)}/schedule-state`,
+  );
 }
 
 export async function deleteTaskFromCloud(slug: string): Promise<void> {

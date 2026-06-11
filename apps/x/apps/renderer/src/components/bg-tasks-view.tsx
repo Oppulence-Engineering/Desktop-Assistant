@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Streamdown } from "streamdown";
 import {
   ListChecks,
@@ -42,6 +35,7 @@ import type {
   BackgroundTaskCloudRunEventType,
   BackgroundTaskCloudRunStatusType,
   BackgroundTaskCloudRunType,
+  BackgroundTaskCloudScheduleStateType,
   BackgroundTaskExecutionTargetType,
   BackgroundTaskRunStatusType,
   BackgroundTaskTriggerType,
@@ -128,6 +122,183 @@ function relativeLabel(iso: string | undefined | null): string | null {
 
 type ExecutionTarget = BackgroundTaskExecutionTargetType;
 
+// ---------------------------------------------------------------------------
+// Cloud schedule state (RFC 006)
+// ---------------------------------------------------------------------------
+
+// scheduleOwnershipLabel makes cloud-managed vs desktop-managed explicit on
+// every task row — the core RFC 006 distinction.
+function scheduleOwnershipLabel(target: ExecutionTarget, triggers: Triggers | undefined): string {
+  const timed = !!(triggers?.cronExpr || (triggers?.windows?.length ?? 0) > 0);
+  const evented = !!triggers?.eventMatchCriteria;
+  if (target === "api") {
+    return timed || evented ? "Cloud scheduled" : "Cloud manual";
+  }
+  return timed || evented ? "Runs when desktop is open" : "Manual only";
+}
+
+// triggeredByLabel renders the run's provenance (RFC 006 event→run line):
+// the originating cloud event when linked, otherwise the plain trigger.
+function triggeredByLabel(run: BackgroundTaskCloudRunType): string {
+  if (run.sourceEvent) {
+    const what = run.sourceEvent.eventType ?? run.sourceEvent.source;
+    return run.sourceEvent.subject ? `${what} — ${run.sourceEvent.subject}` : what;
+  }
+  switch (run.trigger) {
+    case "cron":
+      return "cron schedule";
+    case "window":
+      return "time window";
+    case "event":
+      return "cloud event";
+    case "retry":
+      return run.retryOfRunId ? `retry of ${run.retryOfRunId}` : "retry of an earlier run";
+    default:
+      return "manual trigger";
+  }
+}
+
+const SCHEDULE_HEALTH_META: Record<string, { label: string; dot: string; tone: string }> = {
+  current: {
+    label: "current",
+    dot: "bg-emerald-500",
+    tone: "text-emerald-700 dark:text-emerald-400",
+  },
+  syncing: { label: "syncing", dot: "bg-sky-500", tone: "text-sky-700 dark:text-sky-400" },
+  failed: { label: "didn't sync", dot: "bg-red-500", tone: "text-red-700 dark:text-red-400" },
+  paused: { label: "paused", dot: "bg-muted-foreground/60", tone: "text-muted-foreground" },
+  unknown: { label: "unknown", dot: "bg-amber-500", tone: "text-amber-700 dark:text-amber-400" },
+};
+
+// formatNextRun renders a future fire time compactly ("Today 14:00").
+function formatNextRun(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const isTomorrow = d.toDateString() === tomorrow.toDateString();
+  const hm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (sameDay) return `Today ${hm}`;
+  if (isTomorrow) return `Tomorrow ${hm}`;
+  return `${d.toLocaleDateString([], { month: "short", day: "numeric" })} ${hm}`;
+}
+
+// useCloudScheduleState fetches the normalized schedule summary for an
+// api-target task at a slow on-demand cadence (60s) — never coupled to the
+// 2-3s run polling.
+function useCloudScheduleState(slug: string | null, target: ExecutionTarget, hasTriggers: boolean) {
+  const [state, setState] = useState<BackgroundTaskCloudScheduleStateType | null>(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    if (!slug || target !== "api" || !hasTriggers) {
+      setState(null);
+      setScheduleError(null);
+      return;
+    }
+    const taskSlug = slug;
+    let cancelled = false;
+    async function load() {
+      try {
+        const result = await window.ipc.invoke("bg-task:getCloudScheduleState", {
+          slug: taskSlug,
+        });
+        if (cancelled) return;
+        if (result.success) {
+          setState(result.state ?? null);
+          setScheduleError(null);
+        } else {
+          setScheduleError(result.error ?? "Could not load schedule state.");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setScheduleError(err instanceof Error ? err.message : "Could not load schedule state.");
+        }
+      }
+    }
+    void load();
+    const id = window.setInterval(() => void load(), 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [slug, target, hasTriggers, reloadKey]);
+
+  return {
+    scheduleState: state,
+    scheduleError,
+    reloadScheduleState: () => setReloadKey((k) => k + 1),
+  };
+}
+
+// CloudScheduleStatus is the compact per-task schedule chip (RFC 006 §1):
+// ownership, next fire, and health — operational context, never blocking.
+function CloudScheduleStatus({
+  state,
+  error,
+  onRetry,
+}: {
+  state: BackgroundTaskCloudScheduleStateType | null;
+  error: string | null;
+  onRetry: () => void;
+}) {
+  if (error) {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-none border border-sidebar-border bg-background/60 px-2.5 py-2 text-xs">
+        <AlertCircle className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+        <span className="min-w-0 truncate text-muted-foreground" title={error}>
+          Can't load cloud schedule state.
+        </span>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="ml-auto inline-flex size-6 shrink-0 items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-foreground"
+          aria-label="Retry"
+          title="Retry"
+        >
+          <RotateCcw className="size-3" />
+        </button>
+      </div>
+    );
+  }
+  if (!state) return null;
+  const health = SCHEDULE_HEALTH_META[state.health] ?? SCHEDULE_HEALTH_META.unknown;
+  const mechanismLabel =
+    state.mechanism === "temporal_schedule"
+      ? "Temporal cron"
+      : state.mechanism === "rowboat_loop"
+        ? "Cloud loop"
+        : null;
+  return (
+    <div className="mt-3 rounded-none border border-sidebar-border bg-background/60 px-2.5 py-2">
+      <div className="flex items-center gap-2 text-xs">
+        <Cloud className="size-3.5 shrink-0 text-muted-foreground" />
+        <span className="font-medium text-foreground">Cloud scheduled</span>
+        {mechanismLabel && (
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            {mechanismLabel}
+          </span>
+        )}
+        <span className="ml-auto inline-flex items-center gap-1.5">
+          <span className={`size-1.5 rounded-full ${health.dot}`} aria-hidden />
+          <span className={health.tone}>{health.label}</span>
+        </span>
+      </div>
+      <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
+        <span>
+          {state.nextDueAt ? `Next run: ${formatNextRun(state.nextDueAt)}` : "No upcoming run"}
+        </span>
+        {state.lastEvaluatedAt && (
+          <span>Last eval: {relativeLabel(state.lastEvaluatedAt) ?? "recently"}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const TERMINAL_CLOUD_STATUSES = new Set<BackgroundTaskRunStatusType>([
   "succeeded",
   "failed",
@@ -135,31 +306,23 @@ const TERMINAL_CLOUD_STATUSES = new Set<BackgroundTaskRunStatusType>([
 ]);
 
 function executionTargetOf(
-  task:
-    | Pick<BackgroundTask, "executionTarget">
-    | Pick<BackgroundTaskSummary, "executionTarget">,
+  task: Pick<BackgroundTask, "executionTarget"> | Pick<BackgroundTaskSummary, "executionTarget">,
 ): ExecutionTarget {
   return task.executionTarget ?? "desktop";
 }
 
-function isTerminalCloudStatus(
-  status: BackgroundTaskRunStatusType | undefined,
-): boolean {
+function isTerminalCloudStatus(status: BackgroundTaskRunStatusType | undefined): boolean {
   return status ? TERMINAL_CLOUD_STATUSES.has(status) : false;
 }
 
-function cloudStatusTone(
-  status: BackgroundTaskRunStatusType | undefined,
-): string {
+function cloudStatusTone(status: BackgroundTaskRunStatusType | undefined): string {
   if (status === "failed") return "text-destructive";
   if (status === "stopped") return "text-muted-foreground";
   if (status === "succeeded") return "text-emerald-600 dark:text-emerald-400";
   return "text-amber-600 dark:text-amber-400";
 }
 
-function cloudStatusDot(
-  status: BackgroundTaskRunStatusType | undefined,
-): string {
+function cloudStatusDot(status: BackgroundTaskRunStatusType | undefined): string {
   if (status === "failed") return "bg-destructive";
   if (status === "stopped") return "bg-muted-foreground";
   if (status === "succeeded") return "bg-emerald-500";
@@ -214,9 +377,7 @@ function artifactSyncPresentation(state: BackgroundTaskArtifactSyncStateType): {
   }
 }
 
-function cloudRunStatusFromRun(
-  run: BackgroundTaskCloudRunType,
-): BackgroundTaskCloudRunStatusType {
+function cloudRunStatusFromRun(run: BackgroundTaskCloudRunType): BackgroundTaskCloudRunStatusType {
   return {
     runId: run.runId,
     slug: run.slug,
@@ -235,9 +396,7 @@ function cloudRunStatusFromRun(
   };
 }
 
-function eventBodyText(
-  event: BackgroundTaskCloudRunEventType["event"],
-): string {
+function eventBodyText(event: BackgroundTaskCloudRunEventType["event"]): string {
   if (typeof event === "string") return event;
   try {
     return JSON.stringify(event, null, 2);
@@ -256,8 +415,7 @@ function TriggersEditor({
   const triggers: Triggers = value ?? {};
   const [editingEvents, setEditingEvents] = useState(false);
   const hasCron = typeof triggers.cronExpr === "string";
-  const hasWindows =
-    Array.isArray(triggers.windows) && triggers.windows.length > 0;
+  const hasWindows = Array.isArray(triggers.windows) && triggers.windows.length > 0;
   const hasEvent = typeof triggers.eventMatchCriteria === "string";
 
   const updateTriggers = (next: Partial<Triggers>) => {
@@ -341,9 +499,7 @@ function TriggersEditor({
                 <button
                   type="button"
                   onClick={() => {
-                    const next = (triggers.windows ?? []).filter(
-                      (_, i) => i !== idx,
-                    );
+                    const next = (triggers.windows ?? []).filter((_, i) => i !== idx);
                     updateTriggers({
                       windows: next.length === 0 ? undefined : next,
                     });
@@ -359,10 +515,7 @@ function TriggersEditor({
               type="button"
               onClick={() =>
                 updateTriggers({
-                  windows: [
-                    ...(triggers.windows ?? []),
-                    { startTime: "13:00", endTime: "15:00" },
-                  ],
+                  windows: [...(triggers.windows ?? []), { startTime: "13:00", endTime: "15:00" }],
                 })
               }
               className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
@@ -394,9 +547,7 @@ function TriggersEditor({
             <div className="space-y-1.5">
               <Textarea
                 value={triggers.eventMatchCriteria ?? ""}
-                onChange={(e) =>
-                  updateTriggers({ eventMatchCriteria: e.target.value })
-                }
+                onChange={(e) => updateTriggers({ eventMatchCriteria: e.target.value })}
                 rows={5}
                 autoFocus
                 placeholder="Emails or calendar events about…"
@@ -425,9 +576,7 @@ function TriggersEditor({
           ) : (
             <div className="text-xs leading-relaxed text-foreground/85">
               {triggers.eventMatchCriteria || (
-                <span className="italic text-muted-foreground">
-                  No criteria yet.
-                </span>
+                <span className="italic text-muted-foreground">No criteria yet.</span>
               )}
               <button
                 type="button"
@@ -478,15 +627,12 @@ function NewTaskDialog({
   onCreateWithCopilot?: (description: string) => void;
 }) {
   const copilotEnabled = Boolean(onCreateWithCopilot);
-  const [mode, setMode] = useState<DialogMode>(
-    copilotEnabled ? "describe" : "manual",
-  );
+  const [mode, setMode] = useState<DialogMode>(copilotEnabled ? "describe" : "manual");
   const [description, setDescription] = useState("");
   const [name, setName] = useState("");
   const [instructions, setInstructions] = useState("");
   const [triggers, setTriggers] = useState<Triggers | undefined>(undefined);
-  const [executionTarget, setExecutionTarget] =
-    useState<ExecutionTarget>("desktop");
+  const [executionTarget, setExecutionTarget] = useState<ExecutionTarget>("desktop");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -501,8 +647,7 @@ function NewTaskDialog({
   }, [open, copilotEnabled]);
 
   const canSubmitDescribe = description.trim().length > 0 && !submitting;
-  const canSubmitManual =
-    name.trim().length > 0 && instructions.trim().length > 0 && !submitting;
+  const canSubmitManual = name.trim().length > 0 && instructions.trim().length > 0 && !submitting;
 
   const submitDescribe = () => {
     if (!canSubmitDescribe || !onCreateWithCopilot) return;
@@ -574,10 +719,8 @@ Example: every morning at 7, summarize my unread Gmail into a one-paragraph brie
             />
             <p className="mt-2 text-[11px] text-muted-foreground">
               Tip: be specific about the cadence and the format you want.{" "}
-              <kbd className="rounded border bg-muted px-1 py-0.5 text-[10px] font-mono">
-                ⌘↵
-              </kbd>{" "}
-              to submit.
+              <kbd className="rounded border bg-muted px-1 py-0.5 text-[10px] font-mono">⌘↵</kbd> to
+              submit.
             </p>
 
             <div className="mt-5 flex items-center justify-between gap-2">
@@ -589,19 +732,10 @@ Example: every morning at 7, summarize my unread Gmail into a one-paragraph brie
                 Configure manually →
               </button>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onClose}
-                  disabled={submitting}
-                >
+                <Button variant="outline" size="sm" onClick={onClose} disabled={submitting}>
                   Cancel
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={submitDescribe}
-                  disabled={!canSubmitDescribe}
-                >
+                <Button size="sm" onClick={submitDescribe} disabled={!canSubmitDescribe}>
                   <Sparkles className="size-3" /> Set up with Copilot
                 </Button>
               </div>
@@ -634,8 +768,8 @@ Example: every morning at 7, summarize my unread Gmail into a one-paragraph brie
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   The agent reads the verbs each run to decide whether to update{" "}
-                  <code className="font-mono">index.md</code> (OUTPUT) or
-                  perform an action and journal it (ACTION).
+                  <code className="font-mono">index.md</code> (OUTPUT) or perform an action and
+                  journal it (ACTION).
                 </p>
               </div>
               <div>
@@ -653,9 +787,7 @@ Example: every morning at 7, summarize my unread Gmail into a one-paragraph brie
                   Triggers
                 </label>
                 <TriggersEditor value={triggers} onChange={setTriggers} />
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  No triggers = manual-only.
-                </p>
+                <p className="mt-2 text-[11px] text-muted-foreground">No triggers = manual-only.</p>
               </div>
             </div>
 
@@ -672,22 +804,11 @@ Example: every morning at 7, summarize my unread Gmail into a one-paragraph brie
                 <span />
               )}
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onClose}
-                  disabled={submitting}
-                >
+                <Button variant="outline" size="sm" onClick={onClose} disabled={submitting}>
                   Cancel
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={submitManual}
-                  disabled={!canSubmitManual}
-                >
-                  {submitting && (
-                    <Loader2 className="mr-1 size-3 animate-spin" />
-                  )}
+                <Button size="sm" onClick={submitManual} disabled={!canSubmitManual}>
+                  {submitting && <Loader2 className="mr-1 size-3 animate-spin" />}
                   Create
                 </Button>
               </div>
@@ -732,13 +853,7 @@ function TabButton({
   );
 }
 
-function SectionRegion({
-  label,
-  children,
-}: {
-  label?: string;
-  children: React.ReactNode;
-}) {
+function SectionRegion({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
     <div className="border-b border-sidebar-border px-4 py-4 last:border-b-0">
       {label && (
@@ -788,6 +903,11 @@ function ExecutionTargetControl({
       >
         <Cloud className="size-3.5" /> API worker
       </button>
+      <div className="col-span-2 border-t border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+        {value === "api"
+          ? "Scheduled runs happen in the cloud, even when this app is closed."
+          : "Scheduled runs require this app to be open."}
+      </div>
     </div>
   );
 }
@@ -843,9 +963,7 @@ function OutputPane({
           type="button"
           onClick={() => setViewSource((v) => !v)}
           className="absolute right-4 top-3 z-10 rounded-none bg-background/70 px-2 py-0.5 text-[11px] text-muted-foreground backdrop-blur hover:bg-accent hover:text-foreground"
-          aria-label={
-            viewSource ? "Show rendered output" : "Show source markdown"
-          }
+          aria-label={viewSource ? "Show rendered output" : "Show source markdown"}
         >
           {viewSource ? "Rendered" : "Source"}
         </button>
@@ -859,8 +977,7 @@ function OutputPane({
             </div>
           ) : isEmpty ? (
             <p className="text-sm italic text-muted-foreground">
-              No output yet. Click{" "}
-              <span className="font-medium text-foreground">Run now</span> in
+              No output yet. Click <span className="font-medium text-foreground">Run now</span> in
               the sidebar, or wait for a trigger to fire.
             </p>
           ) : viewSource ? (
@@ -930,19 +1047,10 @@ function InstructionsBlock({
         />
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={onSave} disabled={saving || !dirty}>
-            {saving ? (
-              <Loader2 className="size-3 animate-spin" />
-            ) : (
-              <Check className="size-3" />
-            )}{" "}
+            {saving ? <Loader2 className="size-3 animate-spin" /> : <Check className="size-3" />}{" "}
             Save
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onCancel}
-            disabled={saving}
-          >
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
             Cancel
           </Button>
         </div>
@@ -1043,11 +1151,7 @@ function SetupTab({
           className="flex w-full items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground"
           aria-expanded={showAdvanced}
         >
-          {showAdvanced ? (
-            <ChevronDown className="size-3" />
-          ) : (
-            <ChevronRight className="size-3" />
-          )}
+          {showAdvanced ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
           Advanced
         </button>
         {showAdvanced && (
@@ -1056,18 +1160,14 @@ function SetupTab({
               <span className="pt-1.5 text-muted-foreground">Model</span>
               <Input
                 value={draft.model ?? ""}
-                onChange={(e) =>
-                  setDraft({ ...draft, model: e.target.value || undefined })
-                }
+                onChange={(e) => setDraft({ ...draft, model: e.target.value || undefined })}
                 placeholder="(global default)"
                 className="h-7 font-mono text-xs"
               />
               <span className="pt-1.5 text-muted-foreground">Provider</span>
               <Input
                 value={draft.provider ?? ""}
-                onChange={(e) =>
-                  setDraft({ ...draft, provider: e.target.value || undefined })
-                }
+                onChange={(e) => setDraft({ ...draft, provider: e.target.value || undefined })}
                 placeholder="(global default)"
                 className="h-7 font-mono text-xs"
               />
@@ -1075,9 +1175,7 @@ function SetupTab({
             <div className="mt-4">
               {confirmingDelete ? (
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-none border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm">
-                  <span className="text-destructive">
-                    Delete this task and all its runs?
-                  </span>
+                  <span className="text-destructive">Delete this task and all its runs?</span>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -1087,12 +1185,7 @@ function SetupTab({
                     >
                       Cancel
                     </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={onDelete}
-                      disabled={saving}
-                    >
+                    <Button variant="destructive" size="sm" onClick={onDelete} disabled={saving}>
                       {saving ? (
                         <Loader2 className="size-3 animate-spin" />
                       ) : (
@@ -1147,10 +1240,7 @@ function summarizeRun(run: z.infer<typeof Run>): RunRowSummary {
   for (const event of run.log) {
     if (event.type === "error" && typeof event.error === "string") {
       out.error = event.error;
-    } else if (
-      event.type === "message" &&
-      event.message?.role === "assistant"
-    ) {
+    } else if (event.type === "message" && event.message?.role === "assistant") {
       const content = event.message.content;
       if (typeof content === "string") {
         out.summary = content;
@@ -1166,26 +1256,14 @@ function summarizeRun(run: z.infer<typeof Run>): RunRowSummary {
   return out;
 }
 
-function RunsHistoryTab({
-  slug,
-  task,
-}: {
-  slug: string;
-  task: BackgroundTask;
-}) {
+function RunsHistoryTab({ slug, task }: { slug: string; task: BackgroundTask }) {
   if (executionTargetOf(task) === "api") {
     return <CloudRunsHistoryTab slug={slug} />;
   }
   return <LocalRunsHistoryTab slug={slug} task={task} />;
 }
 
-function LocalRunsHistoryTab({
-  slug,
-  task,
-}: {
-  slug: string;
-  task: BackgroundTask;
-}) {
+function LocalRunsHistoryTab({ slug, task }: { slug: string; task: BackgroundTask }) {
   const [rows, setRows] = useState<RunRowSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -1235,8 +1313,7 @@ function LocalRunsHistoryTab({
   // (lastAttemptAt vs lastRunAt) are deliberately ignored — even if it means
   // the UI is briefly out of sync after a late start or a missed event.
   const liveStatus = agentStatus.get(slug);
-  const currentInFlightRunId =
-    liveStatus?.status === "running" ? (liveStatus.runId ?? null) : null;
+  const currentInFlightRunId = liveStatus?.status === "running" ? (liveStatus.runId ?? null) : null;
 
   if (selectedRunId) {
     return (
@@ -1257,8 +1334,7 @@ function LocalRunsHistoryTab({
       ) : rows.length === 0 ? (
         <div className="px-6 py-12 text-center">
           <p className="text-xs text-muted-foreground">
-            No runs yet. Click{" "}
-            <span className="font-medium text-foreground">Run now</span> below.
+            No runs yet. Click <span className="font-medium text-foreground">Run now</span> below.
           </p>
         </div>
       ) : (
@@ -1289,19 +1365,11 @@ function LocalRunsHistoryTab({
                     </span>
                     {row.trigger && (
                       <>
-                        <span className="text-[10.5px] text-muted-foreground">
-                          ·
-                        </span>
-                        <span className="text-[10.5px] text-muted-foreground">
-                          {row.trigger}
-                        </span>
+                        <span className="text-[10.5px] text-muted-foreground">·</span>
+                        <span className="text-[10.5px] text-muted-foreground">{row.trigger}</span>
                       </>
                     )}
-                    {inFlight && (
-                      <span className="text-[10.5px] text-amber-600">
-                        · running
-                      </span>
-                    )}
+                    {inFlight && <span className="text-[10.5px] text-amber-600">· running</span>}
                   </div>
                   {(row.error || row.summary) && (
                     <div
@@ -1376,9 +1444,7 @@ function RunTranscriptView({
           <div className="font-mono text-[10.5px] text-muted-foreground">
             {summary?.createdAt ? formatRunAt(summary.createdAt) : runId}
             {summary?.trigger && ` · ${summary.trigger}`}
-            {isInFlight && (
-              <span className="ml-1 text-amber-600">· running</span>
-            )}
+            {isInFlight && <span className="ml-1 text-amber-600">· running</span>}
           </div>
         </div>
       </div>
@@ -1400,9 +1466,7 @@ function RunTranscriptView({
             </Streamdown>
           )}
           {!summary?.error && !summary?.summary && !loading && (
-            <p className="text-xs italic text-muted-foreground">
-              No summary recorded.
-            </p>
+            <p className="text-xs italic text-muted-foreground">No summary recorded.</p>
           )}
         </div>
 
@@ -1428,9 +1492,7 @@ function RunTranscriptView({
               No messages or tool calls recorded.
             </p>
           )}
-          {run && !loading && items.length > 0 && (
-            <CompactConversation items={items} />
-          )}
+          {run && !loading && items.length > 0 && <CompactConversation items={items} />}
         </div>
       </div>
     </div>
@@ -1458,9 +1520,7 @@ function CloudRunsHistoryTab({ slug }: { slug: string }) {
         setError(result.error ?? "Could not load API-worker runs.");
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not load API-worker runs.",
-      );
+      setError(err instanceof Error ? err.message : "Could not load API-worker runs.");
     } finally {
       setLoading(false);
     }
@@ -1503,9 +1563,7 @@ function CloudRunsHistoryTab({ slug }: { slug: string }) {
         <div className="px-4 py-4 text-xs text-destructive">{error}</div>
       ) : rows.length === 0 ? (
         <div className="px-6 py-12 text-center">
-          <p className="text-xs text-muted-foreground">
-            No API-worker runs yet.
-          </p>
+          <p className="text-xs text-muted-foreground">No API-worker runs yet.</p>
         </div>
       ) : (
         <div className="divide-y divide-sidebar-border">
@@ -1516,35 +1574,25 @@ function CloudRunsHistoryTab({ slug }: { slug: string }) {
               onClick={() => setSelectedRunId(row.runId)}
               className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-accent/30"
             >
-              <div
-                className={`size-1.5 shrink-0 rounded-full ${cloudStatusDot(row.status)}`}
-              />
+              <div className={`size-1.5 shrink-0 rounded-full ${cloudStatusDot(row.status)}`} />
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <div className="flex items-center gap-2 text-xs">
                   <span className="font-mono text-[10.5px] text-muted-foreground">
                     {row.createdAt ? formatRunAt(row.createdAt) : row.runId}
                   </span>
                   <span className="text-[10.5px] text-muted-foreground">·</span>
-                  <span
-                    className={`text-[10.5px] ${cloudStatusTone(row.status)}`}
-                  >
+                  <span className={`text-[10.5px] ${cloudStatusTone(row.status)}`}>
                     {row.status}
                   </span>
                   {row.trigger && (
                     <>
-                      <span className="text-[10.5px] text-muted-foreground">
-                        ·
-                      </span>
-                      <span className="text-[10.5px] text-muted-foreground">
-                        {row.trigger}
-                      </span>
+                      <span className="text-[10.5px] text-muted-foreground">·</span>
+                      <span className="text-[10.5px] text-muted-foreground">{row.trigger}</span>
                     </>
                   )}
                   {typeof row.progressPercent === "number" && (
                     <>
-                      <span className="text-[10.5px] text-muted-foreground">
-                        ·
-                      </span>
+                      <span className="text-[10.5px] text-muted-foreground">·</span>
                       <span className="text-[10.5px] text-muted-foreground">
                         {row.progressPercent}%
                       </span>
@@ -1590,13 +1638,26 @@ function CloudRunTranscriptView({
   onSelectRun: (runId: string) => void;
   onChanged: () => void;
 }) {
-  const [status, setStatus] = useState<BackgroundTaskCloudRunStatusType | null>(
-    null,
-  );
+  const [status, setStatus] = useState<BackgroundTaskCloudRunStatusType | null>(null);
   const [events, setEvents] = useState<BackgroundTaskCloudRunEventType[]>([]);
+  const [run, setRun] = useState<BackgroundTaskCloudRunType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
+
+  // One-shot run detail (trigger + originating cloud event): immutable data,
+  // deliberately outside the 2s status poll. Best-effort — a failure just
+  // omits the "Triggered by" line.
+  useEffect(() => {
+    let cancelled = false;
+    setRun(null);
+    void window.ipc.invoke("bg-task:getCloudRun", { slug, runId }).then((result) => {
+      if (!cancelled && result.success && result.run) setRun(result.run);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, runId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1616,9 +1677,7 @@ function CloudRunTranscriptView({
         setError(eventsResult.error ?? "Could not load API-worker run events.");
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not load API-worker run.",
-      );
+      setError(err instanceof Error ? err.message : "Could not load API-worker run.");
     } finally {
       setLoading(false);
     }
@@ -1727,16 +1786,12 @@ function CloudRunTranscriptView({
           <ChevronLeft className="size-3.5" />
         </button>
         <div className="min-w-0 flex-1">
-          <div className="truncate font-mono text-[10.5px] text-muted-foreground">
-            {runId}
-          </div>
+          <div className="truncate font-mono text-[10.5px] text-muted-foreground">{runId}</div>
           {status && (
             <div className={`text-[10.5px] ${cloudStatusTone(status.status)}`}>
               {status.status}
               {status.temporalStatus ? ` · ${status.temporalStatus}` : ""}
-              {typeof status.progressPercent === "number"
-                ? ` · ${status.progressPercent}%`
-                : ""}
+              {typeof status.progressPercent === "number" ? ` · ${status.progressPercent}%` : ""}
             </div>
           )}
         </div>
@@ -1856,6 +1911,12 @@ function CloudRunTranscriptView({
           </div>
         )}
 
+        {run && (
+          <div className="rounded-none border border-border bg-background px-3 py-2 text-[10.5px] text-muted-foreground">
+            <span className="truncate">Triggered by: {triggeredByLabel(run)}</span>
+          </div>
+        )}
+
         {status?.temporalWorkflowId && (
           <div className="space-y-1 rounded-none border border-border bg-background px-3 py-2 font-mono text-[10.5px] text-muted-foreground">
             <div className="truncate" title={status.temporalWorkflowId}>
@@ -1886,9 +1947,7 @@ function CloudRunTranscriptView({
             </div>
           )}
           {!loading && events.length === 0 && !error && (
-            <p className="text-xs italic text-muted-foreground">
-              No mirrored events recorded.
-            </p>
+            <p className="text-xs italic text-muted-foreground">No mirrored events recorded.</p>
           )}
           {!loading && events.length > 0 && (
             <div className="space-y-2">
@@ -1900,9 +1959,7 @@ function CloudRunTranscriptView({
                   <div className="mb-1 flex items-center gap-2 text-[10.5px] text-muted-foreground">
                     <span className="font-mono">#{event.seq}</span>
                     {event.type && <span>{event.type}</span>}
-                    <span className="ml-auto">
-                      {formatRunAt(event.receivedAt)}
-                    </span>
+                    <span className="ml-auto">{formatRunAt(event.receivedAt)}</span>
                   </div>
                   <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-foreground/80">
                     {eventBodyText(event.event)}
@@ -1980,6 +2037,11 @@ function ControlSidebar({
 }) {
   const [tab, setTab] = useState<Tab>("setup");
   const mode = executionTargetOf(task);
+  const { scheduleState, scheduleError, reloadScheduleState } = useCloudScheduleState(
+    slug,
+    mode,
+    !!task.triggers,
+  );
 
   const lastRunLabel = task.lastRunAt
     ? (relativeLabel(task.lastRunAt) ?? "recently")
@@ -1996,11 +2058,7 @@ function ControlSidebar({
         />
         <span className="truncate text-sm font-semibold">{task.name}</span>
         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-          {mode === "api" ? (
-            <Cloud className="size-3" />
-          ) : (
-            <Laptop className="size-3" />
-          )}
+          {mode === "api" ? <Cloud className="size-3" /> : <Laptop className="size-3" />}
           {mode === "api" ? "API" : "Desktop"}
         </span>
         <span
@@ -2045,9 +2103,7 @@ function ControlSidebar({
               {task.lastRunAt || task.lastAttemptAt ? (
                 <>
                   {lastRunLabel}
-                  {task.lastRunError && (
-                    <span className="text-destructive"> · error</span>
-                  )}
+                  {task.lastRunError && <span className="text-destructive"> · error</span>}
                 </>
               ) : (
                 <span className="text-muted-foreground">Never</span>
@@ -2061,23 +2117,27 @@ function ControlSidebar({
             <div className="mt-0.5 truncate text-xs text-foreground">
               {summarizeSchedule(task.triggers)}
             </div>
+            <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              {scheduleOwnershipLabel(mode, task.triggers)}
+            </div>
           </div>
         </div>
+        {mode === "api" && task.triggers && (
+          <CloudScheduleStatus
+            state={scheduleState}
+            error={scheduleError}
+            onRetry={reloadScheduleState}
+          />
+        )}
         {mode === "api" && cloudRunStatus && (
           <div className="mt-3 rounded-none border border-sidebar-border bg-background/60 px-2.5 py-2">
             <div className="flex items-center gap-2 text-xs">
-              <span
-                className={`size-1.5 rounded-full ${cloudStatusDot(cloudRunStatus.status)}`}
-              />
-              <span
-                className={`font-medium ${cloudStatusTone(cloudRunStatus.status)}`}
-              >
+              <span className={`size-1.5 rounded-full ${cloudStatusDot(cloudRunStatus.status)}`} />
+              <span className={`font-medium ${cloudStatusTone(cloudRunStatus.status)}`}>
                 {cloudRunStatus.status}
               </span>
               {typeof cloudRunStatus.progressPercent === "number" && (
-                <span className="text-muted-foreground">
-                  {cloudRunStatus.progressPercent}%
-                </span>
+                <span className="text-muted-foreground">{cloudRunStatus.progressPercent}%</span>
               )}
               {cloudRunStatus.temporalStatus && (
                 <span className="truncate text-muted-foreground">
@@ -2105,13 +2165,9 @@ function ControlSidebar({
                 {artifactSync.state === "current" ? (
                   <CheckCircle2 className="size-3 shrink-0 text-emerald-500" />
                 ) : (
-                  <span
-                    className={`size-1.5 shrink-0 rounded-full ${present.dot}`}
-                  />
+                  <span className={`size-1.5 shrink-0 rounded-full ${present.dot}`} />
                 )}
-                <span className={`text-[11px] font-medium ${present.tone}`}>
-                  {present.label}
-                </span>
+                <span className={`text-[11px] font-medium ${present.tone}`}>{present.label}</span>
                 <span className="ml-auto" />
                 {present.canPull && onPullArtifact && (
                   <button
@@ -2172,34 +2228,19 @@ function ControlSidebar({
               {mode === "api" ? "API worker" : "Running"}
             </span>
             <span className="ml-auto" />
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={onStop}
-              disabled={saving}
-            >
+            <Button variant="destructive" size="sm" onClick={onStop} disabled={saving}>
               <Square className="size-3" /> Stop
             </Button>
           </>
         ) : (
           <>
             {onEditWithCopilot && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onEditWithCopilot}
-                disabled={saving}
-              >
+              <Button variant="ghost" size="sm" onClick={onEditWithCopilot} disabled={saving}>
                 <Sparkles className="size-3" /> Edit with Copilot
               </Button>
             )}
             {dirty && !editingInstructions && tab === "setup" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onSave}
-                disabled={saving}
-              >
+              <Button variant="outline" size="sm" onClick={onSave} disabled={saving}>
                 {saving ? (
                   <Loader2 className="size-3 animate-spin" />
                 ) : (
@@ -2244,10 +2285,10 @@ function TaskDetail({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [outputRefreshKey, setOutputRefreshKey] = useState(0);
   const [cloudRunId, setCloudRunId] = useState<string | null>(null);
-  const [cloudRunStatus, setCloudRunStatus] =
-    useState<BackgroundTaskCloudRunStatusType | null>(null);
-  const [artifactSync, setArtifactSync] =
-    useState<BackgroundTaskArtifactSyncType | null>(null);
+  const [cloudRunStatus, setCloudRunStatus] = useState<BackgroundTaskCloudRunStatusType | null>(
+    null,
+  );
+  const [artifactSync, setArtifactSync] = useState<BackgroundTaskArtifactSyncType | null>(null);
   const [pullingArtifact, setPullingArtifact] = useState(false);
   const sidebarInitialized = useRef(false);
 
@@ -2257,12 +2298,8 @@ function TaskDetail({
   // Bus events are the only source of truth for "is this task currently
   // running" — see RunsHistoryTab for the rationale.
   const isCloudRunning =
-    isApiTask && cloudRunStatus
-      ? !isTerminalCloudStatus(cloudRunStatus.status)
-      : false;
-  const isRunning = isApiTask
-    ? isCloudRunning
-    : liveStatus?.status === "running";
+    isApiTask && cloudRunStatus ? !isTerminalCloudStatus(cloudRunStatus.status) : false;
+  const isRunning = isApiTask ? isCloudRunning : liveStatus?.status === "running";
   const paused = task ? !task.active : false;
 
   const load = useCallback(async () => {
@@ -2288,11 +2325,7 @@ function TaskDetail({
             // No output file yet — keep the sidebar open.
           }
         }
-        if (
-          executionTargetOf(result.task) === "api" &&
-          result.task.lastRunId &&
-          !cloudRunId
-        ) {
+        if (executionTargetOf(result.task) === "api" && result.task.lastRunId && !cloudRunId) {
           setCloudRunId(result.task.lastRunId);
         }
       }
@@ -2371,10 +2404,7 @@ function TaskDetail({
         setCloudRunStatus(result.status);
         if (isTerminalCloudStatus(result.status.status)) {
           if (result.status.status === "succeeded") {
-            const pulled = await window.ipc.invoke(
-              "bg-task:pullCloudArtifact",
-              { slug },
-            );
+            const pulled = await window.ipc.invoke("bg-task:pullCloudArtifact", { slug });
             if (!cancelled && pulled.success) {
               setOutputRefreshKey((k) => k + 1);
             }
@@ -2406,8 +2436,7 @@ function TaskDetail({
     setSaving(true);
     try {
       const partial: Partial<BackgroundTask> = {};
-      if (draft.instructions !== task.instructions)
-        partial.instructions = draft.instructions;
+      if (draft.instructions !== task.instructions) partial.instructions = draft.instructions;
       if (JSON.stringify(draft.triggers) !== JSON.stringify(task.triggers))
         partial.triggers = draft.triggers;
       if (draft.model !== task.model) partial.model = draft.model;
@@ -2517,9 +2546,7 @@ function TaskDetail({
         >
           <ChevronLeft className="size-4" />
         </button>
-        <span className="truncate text-sm font-medium text-muted-foreground">
-          Background tasks
-        </span>
+        <span className="truncate text-sm font-medium text-muted-foreground">Background tasks</span>
         <span className="ml-auto" />
         {!sidebarOpen && (
           <button
@@ -2536,11 +2563,7 @@ function TaskDetail({
 
       {/* Body: main (output) + right sidebar */}
       <div className="flex flex-1 min-h-0">
-        <OutputPane
-          slug={slug}
-          taskName={task.name}
-          refreshKey={outputRefreshKey}
-        />
+        <OutputPane slug={slug} taskName={task.name} refreshKey={outputRefreshKey} />
         {sidebarOpen && (
           <ControlSidebar
             slug={slug}
@@ -2564,9 +2587,7 @@ function TaskDetail({
             onStop={stopRun}
             onDelete={deleteTask}
             onCollapse={() => setSidebarOpen(false)}
-            onEditWithCopilot={
-              onEditWithCopilot ? () => onEditWithCopilot(slug) : undefined
-            }
+            onEditWithCopilot={onEditWithCopilot ? () => onEditWithCopilot(slug) : undefined}
             cloudRunStatus={cloudRunStatus}
             artifactSync={artifactSync}
             onPullArtifact={pullArtifact}
@@ -2676,12 +2697,10 @@ function GlobalCloudRunsView({
   const [rows, setRows] = useState<BackgroundTaskCloudRunType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<
-    BackgroundTaskRunStatusType | "all"
-  >("all");
-  const [triggerFilter, setTriggerFilter] = useState<
-    BackgroundTaskTriggerType | "all"
-  >("all");
+  const [statusFilter, setStatusFilter] = useState<BackgroundTaskRunStatusType | "all">("all");
+  const [triggerFilter, setTriggerFilter] = useState<BackgroundTaskTriggerType | "all">("all");
+  const [slugFilter, setSlugFilter] = useState<string>("all");
+  const [sinceFilter, setSinceFilter] = useState<"all" | "24h" | "7d" | "30d">("all");
   const [selected, setSelected] = useState<{
     slug: string;
     runId: string;
@@ -2690,11 +2709,21 @@ function GlobalCloudRunsView({
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const sinceMs =
+        sinceFilter === "24h"
+          ? 24 * 3600_000
+          : sinceFilter === "7d"
+            ? 7 * 24 * 3600_000
+            : sinceFilter === "30d"
+              ? 30 * 24 * 3600_000
+              : null;
       const result = await window.ipc.invoke("bg-task:listAllCloudRuns", {
         executor: "api",
         limit: 200,
         ...(statusFilter !== "all" ? { status: statusFilter } : {}),
         ...(triggerFilter !== "all" ? { trigger: triggerFilter } : {}),
+        ...(slugFilter !== "all" ? { slug: slugFilter } : {}),
+        ...(sinceMs ? { since: new Date(Date.now() - sinceMs).toISOString() } : {}),
       });
       if (result.success) {
         setRows(result.runs);
@@ -2703,13 +2732,11 @@ function GlobalCloudRunsView({
         setError(result.error ?? "Could not load cloud runs.");
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not load cloud runs.",
-      );
+      setError(err instanceof Error ? err.message : "Could not load cloud runs.");
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, triggerFilter]);
+  }, [statusFilter, triggerFilter, slugFilter, sinceFilter]);
 
   useEffect(() => {
     void load();
@@ -2733,9 +2760,7 @@ function GlobalCloudRunsView({
           setSelected(null);
           void load();
         }}
-        onSelectRun={(runId) =>
-          setSelected((s) => (s ? { ...s, runId } : s))
-        }
+        onSelectRun={(runId) => setSelected((s) => (s ? { ...s, runId } : s))}
         onChanged={load}
       />
     );
@@ -2763,6 +2788,30 @@ function GlobalCloudRunsView({
             {f.label}
           </FilterChip>
         ))}
+        <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+        {(["all", "24h", "7d", "30d"] as const).map((value) => (
+          <FilterChip
+            key={value}
+            active={sinceFilter === value}
+            onClick={() => setSinceFilter(value)}
+          >
+            {value === "all" ? "Any time" : value}
+          </FilterChip>
+        ))}
+        <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+        <select
+          value={slugFilter}
+          onChange={(e) => setSlugFilter(e.target.value)}
+          className="h-6 max-w-[180px] rounded-none border border-border bg-background px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+          aria-label="Filter by task"
+        >
+          <option value="all">All tasks</option>
+          {[...taskNameBySlug.entries()].map(([slug, name]) => (
+            <option key={slug} value={slug}>
+              {name}
+            </option>
+          ))}
+        </select>
         <span className="ml-auto" />
         <button
           type="button"
@@ -2770,11 +2819,7 @@ function GlobalCloudRunsView({
           className="inline-flex items-center gap-1 rounded-none border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
           title="Refresh"
         >
-          {loading ? (
-            <Loader2 className="size-3 animate-spin" />
-          ) : (
-            <RotateCcw className="size-3" />
-          )}
+          {loading ? <Loader2 className="size-3 animate-spin" /> : <RotateCcw className="size-3" />}
           Refresh
         </button>
       </div>
@@ -2789,9 +2834,7 @@ function GlobalCloudRunsView({
         ) : rows.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
             <Cloud className="size-6 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              No cloud runs match these filters.
-            </p>
+            <p className="text-sm text-muted-foreground">No cloud runs match these filters.</p>
           </div>
         ) : (
           <div className="divide-y divide-border/60">
@@ -2800,14 +2843,10 @@ function GlobalCloudRunsView({
                 key={`${row.slug}:${row.runId}`}
                 className="flex items-center gap-3 px-6 py-2.5 transition-colors hover:bg-muted/20"
               >
-                <div
-                  className={`size-1.5 shrink-0 rounded-full ${cloudStatusDot(row.status)}`}
-                />
+                <div className={`size-1.5 shrink-0 rounded-full ${cloudStatusDot(row.status)}`} />
                 <button
                   type="button"
-                  onClick={() =>
-                    setSelected({ slug: row.slug, runId: row.runId })
-                  }
+                  onClick={() => setSelected({ slug: row.slug, runId: row.runId })}
                   className="flex min-w-0 flex-1 flex-col gap-0.5 text-left"
                 >
                   <div className="flex items-center gap-2 text-sm">
@@ -2839,24 +2878,16 @@ function GlobalCloudRunsView({
                     {row.createdAt && (
                       <>
                         <span>·</span>
-                        <span className="shrink-0">
-                          {formatRunAt(row.createdAt)}
-                        </span>
+                        <span className="shrink-0">{formatRunAt(row.createdAt)}</span>
                       </>
                     )}
                   </div>
-                  {(row.errorDetails ||
-                    row.error ||
-                    row.progressMessage ||
-                    row.summary) && (
+                  {(row.errorDetails || row.error || row.progressMessage || row.summary) && (
                     <div
                       className={`truncate text-[11px] ${row.error || row.errorCode ? "text-destructive" : "text-foreground/70"}`}
                     >
                       {row.errorCode ? `[${row.errorCode}] ` : ""}
-                      {row.errorDetails ??
-                        row.error ??
-                        row.progressMessage ??
-                        row.summary}
+                      {row.errorDetails ?? row.error ?? row.progressMessage ?? row.summary}
                     </div>
                   )}
                 </button>
@@ -2885,9 +2916,7 @@ export function BgTasksView({
   slugVersion,
 }: BgTasksViewProps = {}) {
   const [items, setItems] = useState<BackgroundTaskSummary[]>([]);
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(
-    initialSlug ?? null,
-  );
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(initialSlug ?? null);
   useEffect(() => {
     setSelectedSlug(initialSlug ?? null);
   }, [initialSlug, slugVersion]);
@@ -2900,10 +2929,7 @@ export function BgTasksView({
   const [stoppingSlugs, setStoppingSlugs] = useState<Set<string>>(new Set());
   const [listMode, setListMode] = useState<"tasks" | "runs">("tasks");
   const agentStatus = useBackgroundTaskAgentStatus();
-  const taskNameBySlug = useMemo(
-    () => new Map(items.map((t) => [t.slug, t.name])),
-    [items],
-  );
+  const taskNameBySlug = useMemo(() => new Map(items.map((t) => [t.slug, t.name])), [items]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -2929,37 +2955,29 @@ export function BgTasksView({
     }
   }, [agentStatus, load]);
 
-  const handleToggleActive = useCallback(
-    async (slug: string, active: boolean) => {
-      setUpdatingSlugs((prev) => new Set(prev).add(slug));
-      try {
-        const result = await window.ipc.invoke("bg-task:patch", {
-          slug,
-          partial: { active },
-        });
-        if (!result.success) {
-          toast(result.error ?? "Failed to update task", "error");
-          return;
-        }
-        // Optimistically reflect the new state without re-fetching the whole list.
-        setItems((prev) =>
-          prev.map((t) => (t.slug === slug ? { ...t, active } : t)),
-        );
-      } catch (err) {
-        toast(
-          err instanceof Error ? err.message : "Failed to update task",
-          "error",
-        );
-      } finally {
-        setUpdatingSlugs((prev) => {
-          const next = new Set(prev);
-          next.delete(slug);
-          return next;
-        });
+  const handleToggleActive = useCallback(async (slug: string, active: boolean) => {
+    setUpdatingSlugs((prev) => new Set(prev).add(slug));
+    try {
+      const result = await window.ipc.invoke("bg-task:patch", {
+        slug,
+        partial: { active },
+      });
+      if (!result.success) {
+        toast(result.error ?? "Failed to update task", "error");
+        return;
       }
-    },
-    [],
-  );
+      // Optimistically reflect the new state without re-fetching the whole list.
+      setItems((prev) => prev.map((t) => (t.slug === slug ? { ...t, active } : t)));
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to update task", "error");
+    } finally {
+      setUpdatingSlugs((prev) => {
+        const next = new Set(prev);
+        next.delete(slug);
+        return next;
+      });
+    }
+  }, []);
 
   const handleStop = useCallback(async (slug: string) => {
     setStoppingSlugs((prev) => new Set(prev).add(slug));
@@ -3002,9 +3020,7 @@ export function BgTasksView({
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <ListChecks className="size-5 text-primary" />
-            <h2 className="text-base font-semibold text-foreground">
-              Background tasks
-            </h2>
+            <h2 className="text-base font-semibold text-foreground">Background tasks</h2>
           </div>
           <div className="flex items-center gap-2">
             <div className="inline-flex overflow-hidden rounded-none border border-border">
@@ -3045,183 +3061,174 @@ export function BgTasksView({
         </p>
       </div>
       {listMode === "runs" ? (
-        <GlobalCloudRunsView
-          taskNameBySlug={taskNameBySlug}
-          onOpenTask={setSelectedSlug}
-        />
+        <GlobalCloudRunsView taskNameBySlug={taskNameBySlug} onOpenTask={setSelectedSlug} />
       ) : (
         <div className="flex-1 overflow-auto p-6">
           {loading ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
-          </div>
-        ) : error ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
-            <div className="rounded-full bg-muted p-3">
-              <ListChecks className="size-6 text-muted-foreground" />
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="size-5 animate-spin text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
-            <div className="rounded-full bg-muted p-3">
-              <ListChecks className="size-6 text-muted-foreground" />
+          ) : error ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
+              <div className="rounded-full bg-muted p-3">
+                <ListChecks className="size-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">{error}</p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              No background tasks yet.
-            </p>
-            <Button size="sm" onClick={() => setShowNewDialog(true)}>
-              <Plus className="size-3" /> Create your first task
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-none border border-border/60 bg-card">
-            <table className="w-full table-fixed border-collapse">
-              <colgroup>
-                <col className="w-[45%]" />
-                <col className="w-[17%]" />
-                <col className="w-[13%]" />
-                <col className="w-[25%]" />
-              </colgroup>
-              <thead>
-                <tr className="border-b border-border/60 bg-muted/30 text-left">
-                  <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Task
-                  </th>
-                  <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Schedule
-                  </th>
-                  <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Last ran
-                  </th>
-                  <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    State
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((task) => {
-                  const live = agentStatus.get(task.slug);
-                  const mode = executionTargetOf(task);
-                  const isRunning = live?.status === "running";
-                  const isUpdating = updatingSlugs.has(task.slug);
-                  const isStopping = stoppingSlugs.has(task.slug);
-                  const hasError = !isRunning && !!task.lastRunError;
-                  const instructionsPreview = task.instructions
-                    .split("\n")[0]
-                    .trim();
-                  return (
-                    <tr
-                      key={task.slug}
-                      className={`border-b border-border/50 last:border-b-0 transition-colors ${isRunning ? "bg-primary/5" : "hover:bg-muted/20"}`}
-                    >
-                      <td className="px-4 py-3 align-top">
-                        <div className="flex min-w-0 flex-col gap-1">
-                          <div className="flex items-center gap-1.5">
-                            {hasError && (
-                              <AlertCircle
-                                className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400"
-                                aria-label="Last run failed"
+          ) : items.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
+              <div className="rounded-full bg-muted p-3">
+                <ListChecks className="size-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">No background tasks yet.</p>
+              <Button size="sm" onClick={() => setShowNewDialog(true)}>
+                <Plus className="size-3" /> Create your first task
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-none border border-border/60 bg-card">
+              <table className="w-full table-fixed border-collapse">
+                <colgroup>
+                  <col className="w-[45%]" />
+                  <col className="w-[17%]" />
+                  <col className="w-[13%]" />
+                  <col className="w-[25%]" />
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-border/60 bg-muted/30 text-left">
+                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Task
+                    </th>
+                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Schedule
+                    </th>
+                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Last ran
+                    </th>
+                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      State
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((task) => {
+                    const live = agentStatus.get(task.slug);
+                    const mode = executionTargetOf(task);
+                    const isRunning = live?.status === "running";
+                    const isUpdating = updatingSlugs.has(task.slug);
+                    const isStopping = stoppingSlugs.has(task.slug);
+                    const hasError = !isRunning && !!task.lastRunError;
+                    const instructionsPreview = task.instructions.split("\n")[0].trim();
+                    return (
+                      <tr
+                        key={task.slug}
+                        className={`border-b border-border/50 last:border-b-0 transition-colors ${isRunning ? "bg-primary/5" : "hover:bg-muted/20"}`}
+                      >
+                        <td className="px-4 py-3 align-top">
+                          <div className="flex min-w-0 flex-col gap-1">
+                            <div className="flex items-center gap-1.5">
+                              {hasError && (
+                                <AlertCircle
+                                  className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400"
+                                  aria-label="Last run failed"
+                                >
+                                  <title>Last run failed: {task.lastRunError}</title>
+                                </AlertCircle>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedSlug(task.slug)}
+                                className="truncate text-left text-sm font-medium text-foreground hover:text-primary"
+                                title={task.name}
                               >
-                                <title>
-                                  Last run failed: {task.lastRunError}
-                                </title>
-                              </AlertCircle>
+                                {task.name}
+                              </button>
+                            </div>
+                            <div className="truncate font-mono text-[11px] text-muted-foreground">
+                              <span>{task.slug}</span>
+                              <span className="ml-2 inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground">
+                                {mode === "api" ? (
+                                  <Cloud className="size-3" />
+                                ) : (
+                                  <Laptop className="size-3" />
+                                )}
+                                {mode === "api" ? "API" : "Desktop"}
+                              </span>
+                            </div>
+                            {instructionsPreview && (
+                              <div
+                                className="truncate text-xs text-muted-foreground/80"
+                                title={task.instructions}
+                              >
+                                {instructionsPreview}
+                              </div>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => setSelectedSlug(task.slug)}
-                              className="truncate text-left text-sm font-medium text-foreground hover:text-primary"
-                              title={task.name}
-                            >
-                              {task.name}
-                            </button>
+                            {hasError && task.lastRunError && (
+                              <div
+                                className="truncate text-xs text-amber-600 dark:text-amber-400"
+                                title={task.lastRunError}
+                              >
+                                {task.lastRunError}
+                              </div>
+                            )}
                           </div>
-                          <div className="truncate font-mono text-[11px] text-muted-foreground">
-                            <span>{task.slug}</span>
-                            <span className="ml-2 inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground">
-                              {mode === "api" ? (
-                                <Cloud className="size-3" />
-                              ) : (
-                                <Laptop className="size-3" />
-                              )}
-                              {mode === "api" ? "API" : "Desktop"}
-                            </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground/80">
+                          <div>{summarizeSchedule(task.triggers)}</div>
+                          <div className="mt-0.5 text-[11px] text-muted-foreground">
+                            {scheduleOwnershipLabel(mode, task.triggers)}
                           </div>
-                          {instructionsPreview && (
-                            <div
-                              className="truncate text-xs text-muted-foreground/80"
-                              title={task.instructions}
-                            >
-                              {instructionsPreview}
-                            </div>
-                          )}
-                          {hasError && task.lastRunError && (
-                            <div
-                              className="truncate text-xs text-amber-600 dark:text-amber-400"
-                              title={task.lastRunError}
-                            >
-                              {task.lastRunError}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-foreground/80">
-                        {summarizeSchedule(task.triggers)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-foreground/80">
-                        {formatLastRanLabel(task.lastRunAt)}
-                      </td>
-                      <td className="px-4 py-3">
-                        {isRunning ? (
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 rounded-none bg-primary/10 px-2 py-0.5 text-xs font-medium text-foreground animate-pulse">
-                              <Loader2 className="size-3 animate-spin" />
-                              Updating…
-                            </span>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleStop(task.slug)}
-                              disabled={isStopping}
-                            >
-                              {isStopping ? (
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground/80">
+                          {formatLastRanLabel(task.lastRunAt)}
+                        </td>
+                        <td className="px-4 py-3">
+                          {isRunning ? (
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1.5 rounded-none bg-primary/10 px-2 py-0.5 text-xs font-medium text-foreground animate-pulse">
                                 <Loader2 className="size-3 animate-spin" />
+                                Updating…
+                              </span>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleStop(task.slug)}
+                                disabled={isStopping}
+                              >
+                                {isStopping ? (
+                                  <Loader2 className="size-3 animate-spin" />
+                                ) : (
+                                  <Square className="size-3" />
+                                )}
+                                Stop
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              {isUpdating ? (
+                                <Loader2 className="size-4 animate-spin text-muted-foreground" />
                               ) : (
-                                <Square className="size-3" />
+                                <span className="size-4 shrink-0" aria-hidden="true" />
                               )}
-                              Stop
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3">
-                            {isUpdating ? (
-                              <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                            ) : (
-                              <span
-                                className="size-4 shrink-0"
-                                aria-hidden="true"
+                              <Switch
+                                checked={task.active}
+                                onCheckedChange={(checked) => {
+                                  void handleToggleActive(task.slug, checked);
+                                }}
+                                disabled={isUpdating}
                               />
-                            )}
-                            <Switch
-                              checked={task.active}
-                              onCheckedChange={(checked) => {
-                                void handleToggleActive(task.slug, checked);
-                              }}
-                              disabled={isUpdating}
-                            />
-                            <span className="min-w-16 text-xs font-medium text-foreground/80">
-                              {task.active ? "Active" : "Inactive"}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                              <span className="min-w-16 text-xs font-medium text-foreground/80">
+                                {task.active ? "Active" : "Inactive"}
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

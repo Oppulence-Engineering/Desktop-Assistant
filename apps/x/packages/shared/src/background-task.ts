@@ -48,6 +48,80 @@ export type BackgroundTaskSignalType = z.infer<typeof BackgroundTaskSignal>;
 export const BackgroundTaskScheduleSyncState = z.enum(["current", "syncing", "failed", "paused"]);
 export type BackgroundTaskScheduleSyncStateType = z.infer<typeof BackgroundTaskScheduleSyncState>;
 
+// ---------------------------------------------------------------------------
+// Cloud schedule state (RFC 006)
+// ---------------------------------------------------------------------------
+//
+// The normalized schedule summary served by
+// GET /v1/background-tasks/{slug}/schedule-state and surfaced via the
+// bg-task:getCloudScheduleState IPC channel: which mechanism owns each trigger
+// source, its health, and the next expected fire. Read-only, on-demand cadence
+// (the task list uses the persisted scheduleSyncState instead).
+
+export const BackgroundTaskScheduleHealth = z.enum([
+  "current",
+  "syncing",
+  "failed",
+  "paused",
+  "unknown",
+]);
+export type BackgroundTaskScheduleHealthType = z.infer<typeof BackgroundTaskScheduleHealth>;
+
+export const BackgroundTaskScheduleMechanism = z.enum([
+  "desktop_loop",
+  "rowboat_loop",
+  "temporal_schedule",
+  "none",
+]);
+export type BackgroundTaskScheduleMechanismType = z.infer<typeof BackgroundTaskScheduleMechanism>;
+
+export const BackgroundTaskScheduleSource = z.enum(["cron", "window", "event"]);
+export type BackgroundTaskScheduleSourceType = z.infer<typeof BackgroundTaskScheduleSource>;
+
+const ScheduleSourceStateSchema = z.object({
+  mechanism: BackgroundTaskScheduleMechanism,
+  health: BackgroundTaskScheduleHealth,
+  nextDueAt: z.string().nullable().optional(),
+  lastEvaluatedAt: z.string().nullable().optional(),
+  lastTriggeredAt: z.string().nullable().optional(),
+});
+
+export const BackgroundTaskCloudScheduleStateSchema = z.object({
+  target: BackgroundTaskExecutionTarget,
+  triggerSources: z.array(BackgroundTaskScheduleSource),
+  health: BackgroundTaskScheduleHealth,
+  mechanism: BackgroundTaskScheduleMechanism,
+  nextDueAt: z.string().nullable().optional(),
+  lastEvaluatedAt: z.string().nullable().optional(),
+  lastTriggeredAt: z.string().nullable().optional(),
+  scheduleSyncState: BackgroundTaskScheduleSyncState.optional(),
+  // Per-source detail for mixed cron+window tasks; optional so a compact
+  // aggregate can render without it.
+  sources: z.record(BackgroundTaskScheduleSource, ScheduleSourceStateSchema).optional(),
+});
+export type BackgroundTaskCloudScheduleStateType = z.infer<
+  typeof BackgroundTaskCloudScheduleStateSchema
+>;
+
+// Offline-return notification payload (RFC 006): pushed from main to the
+// renderer after boot when cloud runs completed while the app was closed.
+export const BackgroundTaskOfflineRunsEventSchema = z.object({
+  count: z.number().int().nonnegative(),
+  runs: z.array(
+    z.object({
+      slug: z.string(),
+      runId: z.string(),
+      status: BackgroundTaskRunStatus,
+      trigger: z.string(),
+      completedAt: z.string().nullable().optional(),
+      summary: z.string().optional(),
+    }),
+  ),
+});
+export type BackgroundTaskOfflineRunsEventType = z.infer<
+  typeof BackgroundTaskOfflineRunsEventSchema
+>;
+
 export type BackgroundTask = {
   name: string;
   instructions: string;
@@ -224,6 +298,17 @@ export const BackgroundTaskCloudRunSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   revision: z.number().int(),
+  // Originating cloud event (RFC 003 linkage) — present only on the
+  // single-run GET; list/status responses stay slim.
+  sourceEvent: z
+    .object({
+      id: z.string(),
+      source: z.string(),
+      eventType: z.string().optional(),
+      subject: z.string().optional(),
+      occurredAt: NullableString,
+    })
+    .optional(),
 });
 export type BackgroundTaskCloudRunType = z.infer<typeof BackgroundTaskCloudRunSchema>;
 

@@ -58,6 +58,7 @@ func testRouter(h *Handler) http.Handler {
 		r.Get("/{slug}/runs/{runId}/events", h.ListRunEvents)
 		r.Post("/{slug}/runs/{runId}/events", h.AppendRunEvents)
 		r.Post("/{slug}/trigger", h.Trigger)
+		r.Get("/{slug}/schedule-state", h.GetScheduleState)
 	})
 	return r
 }
