@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.14](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.13...v0.1.14) (2026-06-11)
+
+
+### Features
+
+* RFC 005 — Temporal Schedule integration for exact-cron cloud tasks ([651d316](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/651d316ba67257b5b60e87e08c18863d24a04d8f))
+* **x:** mirror scheduleSyncState on background-task shared types ([1b819e2](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/1b819e236795df289d18c1e1ae6bfca82711dbde))
+
+
+### Bug Fixes
+
+* **rowboat-api:** clamp occurrence skew allowance and scope retry bypass ([936d490](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/936d49025fe92f4533a64b58ad7d52d6345d8c66))
+* **x:** retry cloud task delete on revision conflict ([4af0926](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/4af0926a2f87cc9e4e7782b73d2297b9731dde6b))
+
 ## [0.1.13](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.12...v0.1.13) (2026-06-10)
 
 
