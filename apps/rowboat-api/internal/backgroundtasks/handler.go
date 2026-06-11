@@ -394,7 +394,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if h.schedules != nil {
 		// Converge the Temporal Schedule (RFC 005) and respond with the
 		// post-sync state + revision. Never fails the request.
-		task = h.schedules.AfterWrite(r.Context(), u.ID.String(), task)
+		task = h.schedules.AfterWrite(r.Context(), u.ID.String(), nil, task)
 	}
 	httpx.WriteJSON(w, http.StatusCreated, viewTask(task))
 }
@@ -477,6 +477,7 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 		h.conflict(w, task.Revision)
 		return
 	}
+	prev := task
 	task, err = h.client.BackgroundTask.Query().Where(backgroundtask.IDEQ(task.ID)).Only(r.Context())
 	if err != nil {
 		h.log.Error("reload background task after patch", zap.Error(err))
@@ -487,8 +488,9 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 		if u, ok := auth.UserFromCtx(r.Context()); ok {
 			// Converge the Temporal Schedule (RFC 005) for whatever this patch
 			// changed (cron/active/target) and respond with the post-sync
-			// state + revision. Never fails the request.
-			task = h.schedules.AfterWrite(r.Context(), u.ID.String(), task)
+			// state + revision. The pre-patch row lets unrelated patches skip
+			// the Temporal round-trip entirely. Never fails the request.
+			task = h.schedules.AfterWrite(r.Context(), u.ID.String(), prev, task)
 		}
 	}
 	httpx.WriteJSON(w, http.StatusOK, viewTask(task))

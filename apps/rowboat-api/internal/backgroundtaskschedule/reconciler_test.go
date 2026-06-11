@@ -43,7 +43,7 @@ func TestReconcileCreatesMissingSchedule(t *testing.T) {
 
 func TestReconcileRepairsStaleSpec(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
-	s.AfterWrite(context.Background(), u.ID.String(), task) // current @ 0 9 * * *
+	s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current @ 0 9 * * *
 	// The schedule drifts: seed an old cron under the same id.
 	stale, _ := mgr.Schedule(u.ID.String(), "daily-digest")
 	stale.CronExpr = "0 0 * * *"
@@ -59,7 +59,7 @@ func TestReconcileRepairsStaleSpec(t *testing.T) {
 
 func TestReconcileUnpausesActiveTask(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
-	s.AfterWrite(context.Background(), u.ID.String(), task) // current
+	s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current
 	d, _ := mgr.Schedule(u.ID.String(), "daily-digest")
 	d.Paused = true
 	mgr.Seed(d) // schedule wrongly paused while task active
@@ -105,7 +105,7 @@ func TestReconcileDeletesOrphanOfDeletedTask(t *testing.T) {
 
 func TestReconcileDeletesScheduleForDesktopFlip(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
-	task = s.AfterWrite(context.Background(), u.ID.String(), task) // current + schedule
+	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current + schedule
 	// Simulate a target flip whose handler-side delete was missed.
 	task = task.Update().SetExecutionTarget("desktop").SetScheduleSyncState("current").SaveX(context.Background())
 
@@ -122,7 +122,7 @@ func TestReconcileDeletesScheduleForDesktopFlip(t *testing.T) {
 
 func TestReconcileInvalidCronMarksFailedAndDeletes(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
-	task = s.AfterWrite(context.Background(), u.ID.String(), task) // current + schedule
+	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current + schedule
 	task = task.Update().SetTriggersJSON(`{"cronExpr":"not a cron"}`).SetScheduleSyncState("current").SaveX(context.Background())
 
 	newReconciler(s).ReconcileOnce(context.Background())
@@ -138,7 +138,7 @@ func TestReconcileInvalidCronMarksFailedAndDeletes(t *testing.T) {
 
 func TestReconcileNoopWhenConverged(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
-	task = s.AfterWrite(context.Background(), u.ID.String(), task) // current
+	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current
 	before := reloadTask(t, s, task)
 
 	newReconciler(s).ReconcileOnce(context.Background())
