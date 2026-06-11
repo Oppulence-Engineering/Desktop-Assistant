@@ -256,11 +256,45 @@ func TestStartScheduledRunSkipsWhileInFlight(t *testing.T) {
 	}
 }
 
+// TestStartScheduledRunScheduledAtIsAuthoritative: when Temporal's fire time
+// is threaded through ScheduledAt, coverage is judged against IT, not the
+// worker clock — exact under clock skew (an early-delivered fire for a new
+// occurrence is not mistaken as covered by the previous one) and under late
+// retries (a covered occurrence stays covered no matter when the retry runs).
+func TestStartScheduledRunScheduledAtIsAuthoritative(t *testing.T) {
+	client, u, task := setup(t)
+	task = setCron(t, client, task) // 0 9 * * *
+	ctrl := &fakeController{}
+	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+
+	occurrence := time.Date(2026, 6, 10, 9, 0, 0, 0, time.UTC)
+
+	// Covered: a prior fire stamped at/after this occurrence → skip,
+	// regardless of what the worker clock reads now.
+	task = task.Update().SetLastRunAt(occurrence.Add(2 * time.Second)).SetLastAttemptAt(occurrence.Add(2 * time.Second)).SaveX(context.Background())
+	in := fireInput(task, u)
+	in.ScheduledAt = occurrence
+	out, err := starter.StartScheduledRun(context.Background(), in)
+	if err != nil || !out.Skipped || out.SkipReason != "occurrence already covered" {
+		t.Fatalf("covered occurrence = %+v err=%v", out, err)
+	}
+
+	// Open: the last fire predates this occurrence (yesterday's run) → fires,
+	// even in the early-clock-skew window where a wall-clock derivation would
+	// have resolved to yesterday's occurrence and wrongly skipped.
+	yesterday := occurrence.Add(-24 * time.Hour).Add(2 * time.Second)
+	task = task.Update().SetLastRunAt(yesterday).SetLastAttemptAt(yesterday).SaveX(context.Background())
+	in = fireInput(task, u)
+	in.ScheduledAt = occurrence
+	out, err = starter.StartScheduledRun(context.Background(), in)
+	if err != nil || out.Skipped {
+		t.Fatalf("open occurrence must fire: %+v err=%v", out, err)
+	}
+}
+
 // TestStartScheduledRunCoversEveryMinuteCron: with a just-stamped last_run_at
-// an every-minute cron must read as covered at ANY wall-clock second — when
-// this test runs ≥30s past the minute it exercises the future-occurrence
-// clamp (the raw +30s skew allowance would resolve to the NEXT minute, which
-// no last_run_at can cover, silently disabling the dedup).
+// an every-minute cron must read as covered at ANY wall-clock second via the
+// cron-derived fallback (no ScheduledAt on the input).
 func TestStartScheduledRunCoversEveryMinuteCron(t *testing.T) {
 	client, u, task := setup(t)
 	task = task.Update().SetTriggersJSON(`{"cronExpr":"* * * * *"}`).SaveX(context.Background())

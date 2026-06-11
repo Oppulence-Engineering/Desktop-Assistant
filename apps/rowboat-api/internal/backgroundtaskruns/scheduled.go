@@ -69,26 +69,28 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 	}
 
 	// Occurrence-coverage check, mirroring the loop's cronDueOccurrence
-	// (due.go): if last_run_at already covers the current occurrence, another
+	// (due.go): if last_run_at already covers this occurrence, another
 	// authority fired it first — the loop during a failed/syncing fallback
 	// window, a prior activity attempt whose completion was lost after a
 	// worker crash, or this very schedule moments ago. Without this, every
-	// dual-authority interleaving double-fires the occurrence. The 30s skew
-	// allowance keeps a fire delivered fractionally before its scheduled
-	// minute (worker clock behind the Temporal server) from resolving to the
-	// PREVIOUS occurrence and skipping itself as covered — but it must never
-	// produce a FUTURE occurrence (a fire or retry processed ≥30s past the
-	// minute would otherwise compute the NEXT tick, which no last_run_at can
-	// cover, disabling the dedup); clamp back to now in that case.
+	// dual-authority interleaving double-fires the occurrence.
+	//
+	// The occurrence is taken from Temporal's own fire time (the
+	// TemporalScheduledStartTime search attribute, threaded through
+	// ScheduledAt) — exact under worker clock skew and arbitrarily late
+	// activity retries, where deriving it from the worker clock is provably
+	// ambiguous (an early fire and a late retry are indistinguishable). The
+	// cron-derived fallback covers fires from schedules whose workflow
+	// predates the attribute plumbing.
 	now := time.Now().UTC()
-	if occurrence, err := gronx.PrevTickBefore(cronExpr, now.Add(30*time.Second).Truncate(time.Minute), true); err == nil {
-		if occurrence.After(now) {
-			occ, clampErr := gronx.PrevTickBefore(cronExpr, now.Truncate(time.Minute), true)
-			occurrence, err = occ, clampErr
+	occurrence := in.ScheduledAt
+	if occurrence.IsZero() {
+		if occ, err := gronx.PrevTickBefore(cronExpr, now.Truncate(time.Minute), true); err == nil {
+			occurrence = occ
 		}
-		if err == nil && task.LastRunAt != nil && !task.LastRunAt.Before(occurrence) {
-			return skipResult("occurrence already covered"), nil
-		}
+	}
+	if !occurrence.IsZero() && task.LastRunAt != nil && !task.LastRunAt.Before(occurrence) {
+		return skipResult("occurrence already covered"), nil
 	}
 
 	// In-flight backstop, mirroring the loop (scheduler.go evaluateTask): a

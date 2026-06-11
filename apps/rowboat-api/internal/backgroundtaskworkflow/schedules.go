@@ -47,12 +47,24 @@ type ScheduleFireInput struct {
 	Trigger      string `json:"trigger"` // always "cron" in v1
 	TaskRevision int    `json:"taskRevision"`
 
+	// ScheduledAt is the occurrence this fire is for, read by the workflow
+	// from the TemporalScheduledStartTime search attribute the server stamps
+	// on schedule-started workflows (never set in the schedule action args).
+	// It makes occurrence dedup exact under worker clock skew and
+	// arbitrarily late activity retries; zero means the attribute was absent
+	// and the fire path falls back to deriving the occurrence from the cron.
+	ScheduledAt time.Time `json:"scheduledAt,omitempty"`
+
 	// RetryAttempt is set by the activity (never by the schedule action args)
 	// when this call is a Temporal retry of the same fire: the failed first
 	// attempt stamped last_attempt_at to back the loop off, and the retry
 	// must bypass the in-flight guard that stamp would otherwise trip.
 	RetryAttempt bool `json:"-"`
 }
+
+// scheduledStartTimeKey is the search attribute Temporal stamps on workflows
+// started by a Schedule, carrying the nominal fire time.
+var scheduledStartTimeKey = temporal.NewSearchAttributeKeyTime("TemporalScheduledStartTime")
 
 // ScheduledRunResult reports what a scheduled fire did. Skipped fires are
 // successes: the task changed underneath the schedule (deleted, deactivated,
@@ -123,6 +135,11 @@ func (a *ScheduleActivities) CreateScheduledRun(ctx context.Context, in Schedule
 
 // SchedulerWorkflow is the thin Schedule action: one activity, no children.
 func SchedulerWorkflow(ctx workflow.Context, in ScheduleFireInput) error {
+	// Stamp the authoritative occurrence onto the input (replay-safe: search
+	// attributes are part of recorded workflow state).
+	if scheduledAt, ok := workflow.GetTypedSearchAttributes(ctx).GetTime(scheduledStartTimeKey); ok {
+		in.ScheduledAt = scheduledAt.UTC()
+	}
 	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: time.Minute,
 		// Spread the retries over ~minutes rather than seconds: a transient
