@@ -3,6 +3,7 @@ package backgroundtaskschedule
 import (
 	"context"
 	"sync"
+	"time"
 )
 
 // FakeManager is an in-memory Manager for handler, syncer, and reconciler
@@ -11,6 +12,9 @@ type FakeManager struct {
 	mu        sync.Mutex
 	schedules map[string]DesiredCronSchedule // keyed by ScheduleID()
 	Calls     []string                       // "upsert:<id>", "pause:<id>", "delete:<id>", "describe:<id>", "list"
+
+	// NextActions is returned in Describe results (RFC 006 schedule-state).
+	NextActions []time.Time
 
 	UpsertErr   error
 	PauseErr    error
@@ -86,7 +90,7 @@ func (f *FakeManager) DescribeTaskCron(_ context.Context, userID, slug string) (
 	if !ok {
 		return Description{}, nil
 	}
-	return Description{Exists: true, Paused: d.Paused, Memo: memoOf(d)}, nil
+	return Description{Exists: true, Paused: d.Paused, Memo: memoOf(d), NextActionTimes: f.NextActions}, nil
 }
 
 // ListTaskSchedules implements Manager.

@@ -31,6 +31,8 @@ import {
   BackgroundTaskCloudRunEventSchema,
   BackgroundTaskCloudRunSchema,
   BackgroundTaskCloudRunStatusSchema,
+  BackgroundTaskCloudScheduleStateSchema,
+  BackgroundTaskOfflineRunsEventSchema,
   BackgroundTaskRunExecutor,
   BackgroundTaskRunStatus,
   BackgroundTaskSignal,
@@ -1253,6 +1255,22 @@ const ipcSchemas = {
       sync: BackgroundTaskArtifactSyncSchema.optional(),
       error: z.string().optional(),
     }),
+  },
+  "bg-task:getCloudScheduleState": {
+    req: z.object({
+      slug: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      state: BackgroundTaskCloudScheduleStateSchema.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  // Pushed from main → renderer after boot when cloud runs completed while
+  // the app was closed (RFC 006 offline-return).
+  "bg-task:offlineRuns": {
+    req: BackgroundTaskOfflineRunsEventSchema,
+    res: z.null(),
   },
   // Embedded browser (WebContentsView) channels
   "browser:setBounds": {

@@ -356,6 +356,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Get("/{slug}/runs/{runId}/events", backgroundTasksH.ListRunEvents)
 			r.Post("/{slug}/runs/{runId}/events", backgroundTasksH.AppendRunEvents)
 			r.Post("/{slug}/trigger", backgroundTasksH.Trigger)
+			r.Get("/{slug}/schedule-state", backgroundTasksH.GetScheduleState)
 		})
 
 		r.Route("/v1/llm", func(r chi.Router) {
