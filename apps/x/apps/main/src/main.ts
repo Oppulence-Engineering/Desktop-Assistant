@@ -2,6 +2,7 @@ import {
   app,
   BrowserWindow,
   desktopCapturer,
+  dialog,
   protocol,
   net,
   shell,
@@ -39,7 +40,11 @@ import { init as initEventProcessor, registerConsumer } from "@x/core/dist/event
 import { liveNoteEventConsumer } from "@x/core/dist/knowledge/live-note/event-consumer.js";
 import { init as initBackgroundTaskScheduler } from "@x/core/dist/background-tasks/scheduler.js";
 import { checkOfflineReturn } from "@x/core/dist/background-tasks/cloud-runs-state.js";
-import { getNotificationsConfig } from "@x/core/dist/config/notifications.js";
+import {
+  getNotificationsConfig,
+  setNotificationsConfig,
+} from "@x/core/dist/config/notifications.js";
+import { listTasks } from "@x/core/dist/background-tasks/fileops.js";
 import { backgroundTaskEventConsumer } from "@x/core/dist/background-tasks/event-consumer.js";
 import {
   init as initLocalSites,
@@ -474,6 +479,8 @@ app.whenReady().then(async () => {
       createWindow();
     }
   });
+
+  appFullyStarted = true;
 });
 
 app.on("window-all-closed", () => {
@@ -482,7 +489,104 @@ app.on("window-all-closed", () => {
   }
 });
 
-app.on("before-quit", () => {
+// ---------------------------------------------------------------------------
+// Quit lifecycle (RFC 006 close-reminder)
+// ---------------------------------------------------------------------------
+//
+// One handler owns before-quit: preventDefault() does NOT stop sibling
+// listeners, so a separate reminder listener would let the cleanup below run
+// even when the user picks "Keep Open", leaving a gutted live app.
+
+let quitResolved = false; // this quit is allowed through → run cleanup
+let reminderInFlight = false; // the reminder dialog is already showing
+let appFullyStarted = false; // skips the early Squirrel/second-instance quits
+
+// Auto-update restarts (Squirrel.Mac quitAndInstall) must never prompt.
+// "before-quit-for-update" is a real app event but missing from the typings.
+(app as unknown as NodeJS.EventEmitter).on("before-quit-for-update", () => {
+  quitResolved = true;
+});
+
+app.on("before-quit", (event) => {
+  if (quitResolved || !appFullyStarted) {
+    runQuitCleanup();
+    return;
+  }
+  // Synchronous, before any await: hold the quit while we decide.
+  event.preventDefault();
+  if (reminderInFlight) return;
+  reminderInFlight = true;
+  void maybeRemindThenQuit();
+});
+
+function proceedQuit(): void {
+  quitResolved = true;
+  app.quit(); // re-enters before-quit; the guard routes straight to cleanup
+}
+
+// hasPendingDesktopSchedules: the reminder applies only to ACTIVE desktop-
+// target tasks with TIMED triggers — those genuinely pause when the app
+// closes. api-target tasks run in the cloud regardless, and event-only tasks
+// are out of the RFC's timed-schedule scope.
+export function hasPendingDesktopSchedules(
+  tasks: Array<{
+    active: boolean;
+    executionTarget?: string;
+    triggers?: { cronExpr?: string; windows?: Array<unknown> } | null;
+  }>,
+): boolean {
+  return tasks.some(
+    (t) =>
+      t.active &&
+      (t.executionTarget ?? "desktop") === "desktop" &&
+      !!t.triggers &&
+      (!!t.triggers.cronExpr || (t.triggers.windows?.length ?? 0) > 0),
+  );
+}
+
+async function maybeRemindThenQuit(): Promise<void> {
+  try {
+    const cfg = await getNotificationsConfig();
+    if (!cfg.suppressDesktopScheduleQuitReminder) {
+      const { items } = await listTasks({ limit: 1000 });
+      if (hasPendingDesktopSchedules(items)) {
+        const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+        const opts: Electron.MessageBoxOptions = {
+          type: "info",
+          message: "Desktop schedules pause while the app is closed",
+          detail:
+            "Some of your scheduled tasks run on this device and only fire while the app " +
+            "is open. Switch a task's execution target to API to keep it running in the cloud.",
+          buttons: ["Quit", "Keep Open"],
+          defaultId: 0,
+          cancelId: 1,
+          checkboxLabel: "Don't remind me again",
+        };
+        const result = win
+          ? await dialog.showMessageBox(win, opts)
+          : await dialog.showMessageBox(opts);
+        if (result.checkboxChecked) {
+          await setNotificationsConfig({ suppressDesktopScheduleQuitReminder: true });
+        }
+        if (result.response !== 0) {
+          reminderInFlight = false;
+          // Windows/Linux reach here via window-all-closed → quit; keeping
+          // the app open with zero windows would strand it headless.
+          if (BrowserWindow.getAllWindows().length === 0) {
+            createWindow();
+          }
+          return;
+        }
+      }
+    }
+  } catch (err) {
+    // Never block quitting on an error in the reminder path.
+    console.error("[Main] quit reminder failed:", err);
+  }
+  proceedQuit();
+}
+
+function runQuitCleanup(): void {
   // Clean up watcher on app quit
   stopWorkspaceWatcher();
   stopRunsWatcher();
@@ -499,4 +603,4 @@ app.on("before-quit", () => {
   shutdownAnalytics().catch((error) => {
     console.error("[Analytics] Failed to flush on quit:", error);
   });
-});
+}
