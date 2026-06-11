@@ -39,6 +39,7 @@ import { init as initEventProcessor, registerConsumer } from "@x/core/dist/event
 import { liveNoteEventConsumer } from "@x/core/dist/knowledge/live-note/event-consumer.js";
 import { init as initBackgroundTaskScheduler } from "@x/core/dist/background-tasks/scheduler.js";
 import { checkOfflineReturn } from "@x/core/dist/background-tasks/cloud-runs-state.js";
+import { getNotificationsConfig } from "@x/core/dist/config/notifications.js";
 import { backgroundTaskEventConsumer } from "@x/core/dist/background-tasks/event-consumer.js";
 import {
   init as initLocalSites,
@@ -60,6 +61,8 @@ import { browserViewManager, BROWSER_PARTITION } from "./browser/view.js";
 import { setupBrowserEventForwarding } from "./browser/ipc.js";
 import { ElectronBrowserControlService } from "./browser/control-service.js";
 import { ElectronNotificationService } from "./notification/electron-notification-service.js";
+
+const notificationService = new ElectronNotificationService();
 import {
   DEEP_LINK_SCHEME,
   LEGACY_DEEP_LINK_SCHEME,
@@ -346,12 +349,23 @@ async function startBackgroundServices() {
   // was closed (auto-pulls the newest successful artifact per task, gated by
   // the artifact-sync sidecar) and nudge the renderer with a quiet badge.
   checkOfflineReturn()
-    .then((payload) => {
+    .then(async (payload) => {
       if (!payload || payload.count === 0) return;
       for (const win of BrowserWindow.getAllWindows()) {
         if (!win.isDestroyed()) {
           win.webContents.send("bg-task:offlineRuns", payload);
         }
+      }
+      // Opt-in OS notification (RFC 006 decision: never default-on). Reuse
+      // the GC-safe notification service; a body click focuses the window.
+      const cfg = await getNotificationsConfig();
+      if (cfg.cloudRunsOfflineNotify && notificationService.isSupported()) {
+        notificationService.notify({
+          message:
+            payload.count === 1
+              ? "1 cloud run completed while you were away"
+              : `${payload.count} cloud runs completed while you were away`,
+        });
       }
     })
     .catch((err) => {
@@ -435,7 +449,7 @@ app.whenReady().then(async () => {
   await initConfigs();
 
   registerBrowserControlService(new ElectronBrowserControlService());
-  registerNotificationService(new ElectronNotificationService());
+  registerNotificationService(notificationService);
 
   setupIpcHandlers();
   setupBrowserEventForwarding();
