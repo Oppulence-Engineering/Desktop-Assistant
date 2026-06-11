@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundscheduler"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskschedule"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
@@ -217,15 +219,44 @@ func runScheduler(ctx context.Context, cfg appconfig.Config, log *zap.Logger, da
 
 	starter := backgroundtaskruns.New(database.Client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log)
 
+	if cfg.TemporalSchedulesEnabled {
+		// RFC 005: the reconciler repairs Temporal Schedule drift (failed
+		// upserts, orphans of deleted tasks, wrong pause state) every interval.
+		// It lives here because the loop below is the mandated cron fallback —
+		// the two ship together (appconfig.Validate enforces it).
+		mgr := backgroundtaskschedule.NewTemporalManager(temporalClient, cfg, log)
+		rec := &backgroundtaskschedule.Reconciler{
+			Client:   database.Client,
+			Manager:  mgr,
+			Syncer:   &backgroundtaskschedule.Syncer{Client: database.Client, Manager: mgr, Cfg: cfg, Log: log},
+			Interval: cfg.TemporalScheduleReconcileInterval,
+			Log:      log,
+		}
+		var recDone sync.WaitGroup
+		recDone.Add(1)
+		go func() {
+			defer recDone.Done()
+			_ = rec.Run(ctx)
+		}()
+		// Join the reconciler before the deferred temporalClient.Close()/
+		// database.Close() run: a mid-pass reconcile racing the closes would
+		// log spurious failures and could stamp schedule_sync_state=failed on
+		// healthy tasks from cancelled-context errors on every rollout.
+		defer recDone.Wait()
+		log.Info("temporal schedule reconciler started",
+			zap.Duration("interval", cfg.TemporalScheduleReconcileInterval))
+	}
+
 	// EntLeases (RFC 002) is the durable Postgres lease: the unique cycle index
 	// gives cross-replica at-most-once firing, so the scheduler is safe with
 	// multiple replicas.
 	leases := backgroundscheduler.NewEntLeases(database.Client, log)
 	scheduler := backgroundscheduler.New(database.Client, starter, leases, backgroundscheduler.Config{
-		Interval: cfg.CloudSchedulerInterval,
-		LeaseTTL: cfg.CloudSchedulerLeaseTTL,
-		Owner:    cfg.CloudSchedulerOwner,
-		Location: location,
+		Interval:         cfg.CloudSchedulerInterval,
+		LeaseTTL:         cfg.CloudSchedulerLeaseTTL,
+		Owner:            cfg.CloudSchedulerOwner,
+		Location:         location,
+		SchedulesEnabled: cfg.TemporalSchedulesEnabled,
 	}, log)
 
 	return scheduler.Run(ctx)

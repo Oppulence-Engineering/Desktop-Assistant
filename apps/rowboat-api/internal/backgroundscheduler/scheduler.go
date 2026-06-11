@@ -60,6 +60,13 @@ type Config struct {
 	Location *time.Location   // timezone for cron/window math; nil → UTC
 	PageSize int              // task page size; <= 0 → defaultPageSize
 	Clock    func() time.Time // injectable clock for tests; nil → time.Now
+
+	// SchedulesEnabled mirrors TEMPORAL_SCHEDULES_ENABLED (RFC 005). When set,
+	// the loop skips cron sub-triggers whose schedule_sync_state is "current"
+	// — Temporal owns those — while still evaluating windows on the same task
+	// and remaining the fallback for any other sync state. When false the loop
+	// evaluates every cron regardless of persisted state (migration backout).
+	SchedulesEnabled bool
 }
 
 // Scheduler evaluates cron/window triggers for executionTarget=api tasks and
@@ -240,6 +247,16 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 		s.log.Warn("scheduler skip: bad triggers_json",
 			zap.String("taskSlug", task.Slug), zap.String("userId", user.ID.String()), zap.Error(err))
 		return
+	}
+	// RFC 005 handoff: a cron whose Temporal Schedule sync is confirmed
+	// "current" is owned by Temporal — blank the expression so evaluateDue
+	// (which prefers cron over window) falls through to windows on the same
+	// tick. Any other state (syncing/failed/paused) keeps the loop as the
+	// fallback, and a disabled flag overrides persisted "current" so backout
+	// resumes loop evaluation immediately.
+	if s.cfg.SchedulesEnabled && tr.HasCron() && task.ScheduleSyncState == "current" {
+		metrics.CronHandedOff.Inc()
+		tr.CronExpr = ""
 	}
 	// Surface invalid sub-triggers but keep evaluating: a bad cron or a bad
 	// window must not suppress the task's valid sub-triggers (desktop parity).

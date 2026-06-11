@@ -229,6 +229,48 @@ func (_c *BackgroundTaskCreate) SetNillableLastRunError(v *string) *BackgroundTa
 	return _c
 }
 
+// SetScheduleSyncState sets the "schedule_sync_state" field.
+func (_c *BackgroundTaskCreate) SetScheduleSyncState(v string) *BackgroundTaskCreate {
+	_c.mutation.SetScheduleSyncState(v)
+	return _c
+}
+
+// SetNillableScheduleSyncState sets the "schedule_sync_state" field if the given value is not nil.
+func (_c *BackgroundTaskCreate) SetNillableScheduleSyncState(v *string) *BackgroundTaskCreate {
+	if v != nil {
+		_c.SetScheduleSyncState(*v)
+	}
+	return _c
+}
+
+// SetScheduleSyncError sets the "schedule_sync_error" field.
+func (_c *BackgroundTaskCreate) SetScheduleSyncError(v string) *BackgroundTaskCreate {
+	_c.mutation.SetScheduleSyncError(v)
+	return _c
+}
+
+// SetNillableScheduleSyncError sets the "schedule_sync_error" field if the given value is not nil.
+func (_c *BackgroundTaskCreate) SetNillableScheduleSyncError(v *string) *BackgroundTaskCreate {
+	if v != nil {
+		_c.SetScheduleSyncError(*v)
+	}
+	return _c
+}
+
+// SetScheduleSyncedAt sets the "schedule_synced_at" field.
+func (_c *BackgroundTaskCreate) SetScheduleSyncedAt(v time.Time) *BackgroundTaskCreate {
+	_c.mutation.SetScheduleSyncedAt(v)
+	return _c
+}
+
+// SetNillableScheduleSyncedAt sets the "schedule_synced_at" field if the given value is not nil.
+func (_c *BackgroundTaskCreate) SetNillableScheduleSyncedAt(v *time.Time) *BackgroundTaskCreate {
+	if v != nil {
+		_c.SetScheduleSyncedAt(*v)
+	}
+	return _c
+}
+
 // SetRevision sets the "revision" field.
 func (_c *BackgroundTaskCreate) SetRevision(v int) *BackgroundTaskCreate {
 	_c.mutation.SetRevision(v)
@@ -383,6 +425,10 @@ func (_c *BackgroundTaskCreate) defaults() {
 		v := backgroundtask.DefaultExecutionTarget
 		_c.mutation.SetExecutionTarget(v)
 	}
+	if _, ok := _c.mutation.ScheduleSyncState(); !ok {
+		v := backgroundtask.DefaultScheduleSyncState
+		_c.mutation.SetScheduleSyncState(v)
+	}
 	if _, ok := _c.mutation.Revision(); !ok {
 		v := backgroundtask.DefaultRevision
 		_c.mutation.SetRevision(v)
@@ -439,6 +485,14 @@ func (_c *BackgroundTaskCreate) check() error {
 	if v, ok := _c.mutation.ExecutionTarget(); ok {
 		if err := backgroundtask.ExecutionTargetValidator(v); err != nil {
 			return &ValidationError{Name: "execution_target", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.execution_target": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ScheduleSyncState(); !ok {
+		return &ValidationError{Name: "schedule_sync_state", err: errors.New(`ent: missing required field "BackgroundTask.schedule_sync_state"`)}
+	}
+	if v, ok := _c.mutation.ScheduleSyncState(); ok {
+		if err := backgroundtask.ScheduleSyncStateValidator(v); err != nil {
+			return &ValidationError{Name: "schedule_sync_state", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.schedule_sync_state": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Revision(); !ok {
@@ -551,6 +605,18 @@ func (_c *BackgroundTaskCreate) createSpec() (*BackgroundTask, *sqlgraph.CreateS
 	if value, ok := _c.mutation.LastRunError(); ok {
 		_spec.SetField(backgroundtask.FieldLastRunError, field.TypeString, value)
 		_node.LastRunError = value
+	}
+	if value, ok := _c.mutation.ScheduleSyncState(); ok {
+		_spec.SetField(backgroundtask.FieldScheduleSyncState, field.TypeString, value)
+		_node.ScheduleSyncState = value
+	}
+	if value, ok := _c.mutation.ScheduleSyncError(); ok {
+		_spec.SetField(backgroundtask.FieldScheduleSyncError, field.TypeString, value)
+		_node.ScheduleSyncError = value
+	}
+	if value, ok := _c.mutation.ScheduleSyncedAt(); ok {
+		_spec.SetField(backgroundtask.FieldScheduleSyncedAt, field.TypeTime, value)
+		_node.ScheduleSyncedAt = &value
 	}
 	if value, ok := _c.mutation.Revision(); ok {
 		_spec.SetField(backgroundtask.FieldRevision, field.TypeInt, value)
@@ -923,6 +989,54 @@ func (u *BackgroundTaskUpsert) ClearLastRunError() *BackgroundTaskUpsert {
 	return u
 }
 
+// SetScheduleSyncState sets the "schedule_sync_state" field.
+func (u *BackgroundTaskUpsert) SetScheduleSyncState(v string) *BackgroundTaskUpsert {
+	u.Set(backgroundtask.FieldScheduleSyncState, v)
+	return u
+}
+
+// UpdateScheduleSyncState sets the "schedule_sync_state" field to the value that was provided on create.
+func (u *BackgroundTaskUpsert) UpdateScheduleSyncState() *BackgroundTaskUpsert {
+	u.SetExcluded(backgroundtask.FieldScheduleSyncState)
+	return u
+}
+
+// SetScheduleSyncError sets the "schedule_sync_error" field.
+func (u *BackgroundTaskUpsert) SetScheduleSyncError(v string) *BackgroundTaskUpsert {
+	u.Set(backgroundtask.FieldScheduleSyncError, v)
+	return u
+}
+
+// UpdateScheduleSyncError sets the "schedule_sync_error" field to the value that was provided on create.
+func (u *BackgroundTaskUpsert) UpdateScheduleSyncError() *BackgroundTaskUpsert {
+	u.SetExcluded(backgroundtask.FieldScheduleSyncError)
+	return u
+}
+
+// ClearScheduleSyncError clears the value of the "schedule_sync_error" field.
+func (u *BackgroundTaskUpsert) ClearScheduleSyncError() *BackgroundTaskUpsert {
+	u.SetNull(backgroundtask.FieldScheduleSyncError)
+	return u
+}
+
+// SetScheduleSyncedAt sets the "schedule_synced_at" field.
+func (u *BackgroundTaskUpsert) SetScheduleSyncedAt(v time.Time) *BackgroundTaskUpsert {
+	u.Set(backgroundtask.FieldScheduleSyncedAt, v)
+	return u
+}
+
+// UpdateScheduleSyncedAt sets the "schedule_synced_at" field to the value that was provided on create.
+func (u *BackgroundTaskUpsert) UpdateScheduleSyncedAt() *BackgroundTaskUpsert {
+	u.SetExcluded(backgroundtask.FieldScheduleSyncedAt)
+	return u
+}
+
+// ClearScheduleSyncedAt clears the value of the "schedule_synced_at" field.
+func (u *BackgroundTaskUpsert) ClearScheduleSyncedAt() *BackgroundTaskUpsert {
+	u.SetNull(backgroundtask.FieldScheduleSyncedAt)
+	return u
+}
+
 // SetRevision sets the "revision" field.
 func (u *BackgroundTaskUpsert) SetRevision(v int) *BackgroundTaskUpsert {
 	u.Set(backgroundtask.FieldRevision, v)
@@ -1262,6 +1376,62 @@ func (u *BackgroundTaskUpsertOne) UpdateLastRunError() *BackgroundTaskUpsertOne 
 func (u *BackgroundTaskUpsertOne) ClearLastRunError() *BackgroundTaskUpsertOne {
 	return u.Update(func(s *BackgroundTaskUpsert) {
 		s.ClearLastRunError()
+	})
+}
+
+// SetScheduleSyncState sets the "schedule_sync_state" field.
+func (u *BackgroundTaskUpsertOne) SetScheduleSyncState(v string) *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetScheduleSyncState(v)
+	})
+}
+
+// UpdateScheduleSyncState sets the "schedule_sync_state" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertOne) UpdateScheduleSyncState() *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateScheduleSyncState()
+	})
+}
+
+// SetScheduleSyncError sets the "schedule_sync_error" field.
+func (u *BackgroundTaskUpsertOne) SetScheduleSyncError(v string) *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetScheduleSyncError(v)
+	})
+}
+
+// UpdateScheduleSyncError sets the "schedule_sync_error" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertOne) UpdateScheduleSyncError() *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateScheduleSyncError()
+	})
+}
+
+// ClearScheduleSyncError clears the value of the "schedule_sync_error" field.
+func (u *BackgroundTaskUpsertOne) ClearScheduleSyncError() *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.ClearScheduleSyncError()
+	})
+}
+
+// SetScheduleSyncedAt sets the "schedule_synced_at" field.
+func (u *BackgroundTaskUpsertOne) SetScheduleSyncedAt(v time.Time) *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetScheduleSyncedAt(v)
+	})
+}
+
+// UpdateScheduleSyncedAt sets the "schedule_synced_at" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertOne) UpdateScheduleSyncedAt() *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateScheduleSyncedAt()
+	})
+}
+
+// ClearScheduleSyncedAt clears the value of the "schedule_synced_at" field.
+func (u *BackgroundTaskUpsertOne) ClearScheduleSyncedAt() *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.ClearScheduleSyncedAt()
 	})
 }
 
@@ -1774,6 +1944,62 @@ func (u *BackgroundTaskUpsertBulk) UpdateLastRunError() *BackgroundTaskUpsertBul
 func (u *BackgroundTaskUpsertBulk) ClearLastRunError() *BackgroundTaskUpsertBulk {
 	return u.Update(func(s *BackgroundTaskUpsert) {
 		s.ClearLastRunError()
+	})
+}
+
+// SetScheduleSyncState sets the "schedule_sync_state" field.
+func (u *BackgroundTaskUpsertBulk) SetScheduleSyncState(v string) *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetScheduleSyncState(v)
+	})
+}
+
+// UpdateScheduleSyncState sets the "schedule_sync_state" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertBulk) UpdateScheduleSyncState() *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateScheduleSyncState()
+	})
+}
+
+// SetScheduleSyncError sets the "schedule_sync_error" field.
+func (u *BackgroundTaskUpsertBulk) SetScheduleSyncError(v string) *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetScheduleSyncError(v)
+	})
+}
+
+// UpdateScheduleSyncError sets the "schedule_sync_error" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertBulk) UpdateScheduleSyncError() *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateScheduleSyncError()
+	})
+}
+
+// ClearScheduleSyncError clears the value of the "schedule_sync_error" field.
+func (u *BackgroundTaskUpsertBulk) ClearScheduleSyncError() *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.ClearScheduleSyncError()
+	})
+}
+
+// SetScheduleSyncedAt sets the "schedule_synced_at" field.
+func (u *BackgroundTaskUpsertBulk) SetScheduleSyncedAt(v time.Time) *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetScheduleSyncedAt(v)
+	})
+}
+
+// UpdateScheduleSyncedAt sets the "schedule_synced_at" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertBulk) UpdateScheduleSyncedAt() *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateScheduleSyncedAt()
+	})
+}
+
+// ClearScheduleSyncedAt clears the value of the "schedule_synced_at" field.
+func (u *BackgroundTaskUpsertBulk) ClearScheduleSyncedAt() *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.ClearScheduleSyncedAt()
 	})
 }
 

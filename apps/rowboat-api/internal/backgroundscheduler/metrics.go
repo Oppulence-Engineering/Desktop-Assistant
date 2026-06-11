@@ -21,6 +21,7 @@ var metrics = struct {
 	DuplicateSuppressed prometheus.Counter
 	BackoffSuppressed   prometheus.Counter
 	InFlightSuppressed  prometheus.Counter
+	CronHandedOff       prometheus.Counter
 	OrphansReaped       prometheus.Counter
 	Errors              *prometheus.CounterVec
 	TickDuration        prometheus.Histogram
@@ -52,6 +53,10 @@ var metrics = struct {
 	InFlightSuppressed: promauto.NewCounter(prometheus.CounterOpts{
 		Name: "cloud_scheduler_inflight_suppressed_total",
 		Help: "Tasks skipped because a prior attempt is still in flight (last_attempt_at newer than last_run_at within backoff).",
+	}),
+	CronHandedOff: promauto.NewCounter(prometheus.CounterOpts{
+		Name: "cloud_scheduler_cron_handed_off_total",
+		Help: "Per-tick cron evaluations skipped because the task's Temporal Schedule sync is current (RFC 005). Counts every tick for every handed-off task, NOT handoff events — steady growth is normal.",
 	}),
 	OrphansReaped: promauto.NewCounter(prometheus.CounterOpts{
 		Name: "cloud_scheduler_orphans_reaped_total",

@@ -47,6 +47,12 @@ const (
 	FieldLastRunSummary = "last_run_summary"
 	// FieldLastRunError holds the string denoting the last_run_error field in the database.
 	FieldLastRunError = "last_run_error"
+	// FieldScheduleSyncState holds the string denoting the schedule_sync_state field in the database.
+	FieldScheduleSyncState = "schedule_sync_state"
+	// FieldScheduleSyncError holds the string denoting the schedule_sync_error field in the database.
+	FieldScheduleSyncError = "schedule_sync_error"
+	// FieldScheduleSyncedAt holds the string denoting the schedule_synced_at field in the database.
+	FieldScheduleSyncedAt = "schedule_synced_at"
 	// FieldRevision holds the string denoting the revision field in the database.
 	FieldRevision = "revision"
 	// EdgeUser holds the string denoting the user edge name in mutations.
@@ -117,6 +123,9 @@ var Columns = []string{
 	FieldLastRunAt,
 	FieldLastRunSummary,
 	FieldLastRunError,
+	FieldScheduleSyncState,
+	FieldScheduleSyncError,
+	FieldScheduleSyncedAt,
 	FieldRevision,
 }
 
@@ -162,6 +171,10 @@ var (
 	DefaultExecutionTarget string
 	// ExecutionTargetValidator is a validator for the "execution_target" field. It is called by the builders before save.
 	ExecutionTargetValidator func(string) error
+	// DefaultScheduleSyncState holds the default value on creation for the "schedule_sync_state" field.
+	DefaultScheduleSyncState string
+	// ScheduleSyncStateValidator is a validator for the "schedule_sync_state" field. It is called by the builders before save.
+	ScheduleSyncStateValidator func(string) error
 	// DefaultRevision holds the default value on creation for the "revision" field.
 	DefaultRevision int
 	// RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
@@ -256,6 +269,21 @@ func ByLastRunSummary(opts ...sql.OrderTermOption) OrderOption {
 // ByLastRunError orders the results by the last_run_error field.
 func ByLastRunError(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastRunError, opts...).ToFunc()
+}
+
+// ByScheduleSyncState orders the results by the schedule_sync_state field.
+func ByScheduleSyncState(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScheduleSyncState, opts...).ToFunc()
+}
+
+// ByScheduleSyncError orders the results by the schedule_sync_error field.
+func ByScheduleSyncError(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScheduleSyncError, opts...).ToFunc()
+}
+
+// ByScheduleSyncedAt orders the results by the schedule_synced_at field.
+func ByScheduleSyncedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScheduleSyncedAt, opts...).ToFunc()
 }
 
 // ByRevision orders the results by the revision field.
