@@ -43,7 +43,7 @@ func TestReconcileCreatesMissingSchedule(t *testing.T) {
 
 func TestReconcileRepairsStaleSpec(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
-	task = s.AfterWrite(context.Background(), u.ID.String(), task) // current @ 0 9 * * *
+	s.AfterWrite(context.Background(), u.ID.String(), task) // current @ 0 9 * * *
 	// The schedule drifts: seed an old cron under the same id.
 	stale, _ := mgr.Schedule(u.ID.String(), "daily-digest")
 	stale.CronExpr = "0 0 * * *"
@@ -59,7 +59,7 @@ func TestReconcileRepairsStaleSpec(t *testing.T) {
 
 func TestReconcileUnpausesActiveTask(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
-	task = s.AfterWrite(context.Background(), u.ID.String(), task) // current
+	s.AfterWrite(context.Background(), u.ID.String(), task) // current
 	d, _ := mgr.Schedule(u.ID.String(), "daily-digest")
 	d.Paused = true
 	mgr.Seed(d) // schedule wrongly paused while task active

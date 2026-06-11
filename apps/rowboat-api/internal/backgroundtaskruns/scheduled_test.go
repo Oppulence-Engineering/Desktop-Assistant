@@ -24,7 +24,7 @@ func fireInput(task *ent.BackgroundTask, u *ent.User) backgroundtaskworkflow.Sch
 	}
 }
 
-func setCron(t *testing.T, client *ent.Client, task *ent.BackgroundTask) *ent.BackgroundTask {
+func setCron(t *testing.T, _ *ent.Client, task *ent.BackgroundTask) *ent.BackgroundTask {
 	t.Helper()
 	return task.Update().SetTriggersJSON(`{"cronExpr":"0 9 * * *"}`).SaveX(context.Background())
 }
