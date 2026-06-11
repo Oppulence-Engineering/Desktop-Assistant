@@ -33,8 +33,9 @@ to avoid parallel sources of truth.
 | [008](./008-conduit-eigen-faculties.md)       | Conduit & Eigen Faculties       | cross-portfolio | Plugs the **evidence** (Conduit) and **foresight** (Eigen) planes into the event bus + runtime — the federated financial brain. |
 
 RFCs 001–007 build the execution plane; **008** is the first _faculty_ RFC that proves the
-fabric extends to new portfolio planes. **002** and **003** are **Complete** (003 with its
-GCP provisioning companion [019](./019-google-push-infrastructure.md)); the rest are
+fabric extends to new portfolio planes. **001–005** are **Complete** (003 with its GCP
+provisioning companion [019](./019-google-push-infrastructure.md); 004 is the cloud agent
+runtime; 005 ships dark behind `TEMPORAL_SCHEDULES_ENABLED`); **006** and **007** remain
 **Draft**. Each carries a metadata block, grounded `file:line` references into the current
 codebase, mermaid diagrams, a **Decisions** section (resolved forks), and a test plan.
 
