@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.15](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.14...v0.1.15) (2026-06-11)
+
+
+### Features
+
+* close RFC 006 deferred items — event provenance, OS notifications, quit reminder ([c639aac](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c639aaca95298f8ec4b4e9e22ecb8db118551f22))
+* RFC 006 — desktop as cloud workflow control plane ([cff267e](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/cff267e0edeebd256118ae3c8026ffcaac4403e4))
+* **x:** add cloud schedule-state types and IPC contracts ([30dcbc6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/30dcbc6c9d1a00621a8e099ccccd206580cdc898))
+* **x:** add getCloudScheduleState core client and IPC handler ([6733e26](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6733e269486c9d1b2d20f66667213bbf19eecd0e))
+* **x:** add notification preferences config and settings toggle ([212fa71](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/212fa718f2e7801f674098f0ccad7c8d2b99016e))
+* **x:** fire opt-in OS notification for missed cloud runs ([db6afd4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/db6afd43924c73f80b2599182fd5354b5948ba85))
+* **x:** remind about pausing desktop schedules on quit ([df55082](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/df5508234e42a7bf9d5e002cd91dcce1844eba50))
+* **x:** render cloud schedule state, ownership labels, and runs filters ([68eb741](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/68eb741496572c1350fada66822f8594d5b8878b))
+* **x:** show run provenance in the cloud transcript ([7d44535](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/7d445351d09808781d2509e07b74948d8f36173f))
+* **x:** surface cloud runs completed while the app was closed ([6cd7bef](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6cd7beffcf8d56535dc336f7ca4894958a03313e))
+
+
+### Bug Fixes
+
+* offline-runs toast listener must live at the app root ([bb43b87](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/bb43b87ce10de0109fd92860a8a4c9392c42a32f))
+* **x:** move the offline-runs toast listener to the app root ([6201e65](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6201e65e07b6210b1793a096b7048991a23d0077))
+* **x:** stop the desktop firing api-target timed triggers ([77e0922](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/77e09228054cf08cf9882ad28fc004a64a3e29ef))
+
 ## [0.1.14](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.13...v0.1.14) (2026-06-11)
 
 
