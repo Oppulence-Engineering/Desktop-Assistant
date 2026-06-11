@@ -101,10 +101,13 @@ func (s *Syncer) AfterWrite(ctx context.Context, userID string, prev, task *ent.
 		prev.TriggersJSON == task.TriggersJSON &&
 		prev.Active == task.Active &&
 		prev.ExecutionTarget == task.ExecutionTarget &&
-		task.ScheduleSyncState == o.expectedState() {
+		task.ScheduleSyncState == o.expectedState() &&
+		task.ScheduleSyncError == "" {
 		// Nothing schedule-relevant changed and the state is already
-		// converged (a non-converged state, e.g. "failed", falls through so
-		// any patch retries the sync).
+		// converged. A recorded error means the last operation failed even if
+		// the state label matches (e.g. a pause that timed out was recorded
+		// as paused-with-error) — fall through so any patch retries it; same
+		// for "failed", whose expectedState never matches a healthy outcome.
 		return task
 	}
 
@@ -135,6 +138,10 @@ func (s *Syncer) AfterWrite(ctx context.Context, userID string, prev, task *ent.
 			log.Warn("schedule pause failed", zap.Error(err))
 		}
 		s.writeStateErr(ctx, task, "paused", err, log)
+		// A schedule may exist behind this paused state (kept for fast
+		// unpause); make sure the never-had-a-schedule fast paths can't skip
+		// its eventual cleanup.
+		s.stampScheduled(ctx, task, log)
 
 	case outcomeUnmanaged:
 		// If this task never had a schedule (still at the schema-default
@@ -228,6 +235,26 @@ func (s *Syncer) writeStateErr(ctx context.Context, task *ent.BackgroundTask, st
 		msg = opErr.Error()
 	}
 	s.writeState(ctx, task, state, msg, log)
+}
+
+// stampScheduled marks that a Temporal Schedule has existed for this task
+// (schedule_synced_at non-nil). The "never had a schedule" fast paths in
+// AfterWrite/AfterDelete key off a nil schedule_synced_at to skip Temporal
+// round-trips, so any path that may leave a schedule behind a non-"current"
+// state (paused-keep) must stamp it or cleanup gets skipped forever.
+func (s *Syncer) stampScheduled(ctx context.Context, task *ent.BackgroundTask, log *zap.Logger) {
+	if task.ScheduleSyncedAt != nil {
+		return
+	}
+	now := time.Now().UTC()
+	if err := s.Client.BackgroundTask.UpdateOneID(task.ID).
+		SetScheduleSyncedAt(now).
+		Exec(auth.WithInternal(ctx)); err != nil {
+		backgroundtaskmetrics.ScheduleSyncFailures.WithLabelValues("state_write").Inc()
+		log.Error("schedule synced-at stamp failed", zap.Error(err))
+		return
+	}
+	task.ScheduleSyncedAt = &now
 }
 
 func (s *Syncer) reload(ctx context.Context, task *ent.BackgroundTask) *ent.BackgroundTask {

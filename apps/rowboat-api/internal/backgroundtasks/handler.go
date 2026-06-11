@@ -339,6 +339,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "missing slug", "bad_request")
 		return
 	}
+	if strings.Contains(slug, "/") {
+		// Slugs are path segments in the REST routes and embed verbatim into
+		// the Temporal schedule/workflow id format
+		// background-task-schedule/{userID}/{slug}/cron — a slash would make
+		// those ids unparseable for the reconciler's orphan sweep.
+		httpx.Error(w, http.StatusBadRequest, "slug must not contain '/'", "bad_request")
+		return
+	}
 	active := true
 	if req.Active != nil {
 		active = *req.Active
