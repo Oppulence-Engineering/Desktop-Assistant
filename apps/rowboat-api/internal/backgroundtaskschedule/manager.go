@@ -22,6 +22,7 @@ import (
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/converter"
+	"go.temporal.io/sdk/temporal"
 	"go.uber.org/zap"
 )
 
@@ -172,10 +173,23 @@ func (m *TemporalManager) options(d DesiredCronSchedule) client.ScheduleOptions 
 // a schedule with a stale memo would mis-diff forever. Rowboat schedules are
 // stateless (run history lives in our DB), so recreation loses nothing.
 func (m *TemporalManager) UpsertTaskCron(ctx context.Context, d DesiredCronSchedule) (string, error) {
+	return m.upsertTaskCron(ctx, d, false)
+}
+
+func (m *TemporalManager) upsertTaskCron(ctx context.Context, d DesiredCronSchedule, retried bool) (string, error) {
 	handle := m.schedules.GetHandle(ctx, d.ScheduleID())
 	desc, err := handle.Describe(ctx)
 	if isNotFound(err) {
-		if _, err := m.schedules.Create(ctx, m.options(d)); err != nil {
+		_, err := m.schedules.Create(ctx, m.options(d))
+		if errors.Is(err, temporal.ErrScheduleAlreadyRunning) && !retried {
+			// Lost a describe→create race (handler and reconciler converging
+			// the same task concurrently). The schedule exists now — re-enter
+			// once to diff against it instead of failing a healthy task,
+			// which would mark it "failed" and hand the cron back to the loop
+			// while the live schedule also fires it.
+			return m.upsertTaskCron(ctx, d, true)
+		}
+		if err != nil {
 			return "", m.fail("upsert", err)
 		}
 		backgroundtaskmetrics.ScheduleUpserts.WithLabelValues("create").Inc()
@@ -208,6 +222,11 @@ func (m *TemporalManager) UpsertTaskCron(ctx context.Context, d DesiredCronSched
 		return "", m.fail("upsert", err)
 	}
 	if _, err := m.schedules.Create(ctx, m.options(d)); err != nil {
+		if errors.Is(err, temporal.ErrScheduleAlreadyRunning) && !retried {
+			// A concurrent converger recreated it between our delete and
+			// create — re-enter once to diff against the winner.
+			return m.upsertTaskCron(ctx, d, true)
+		}
 		return "", m.fail("upsert", err)
 	}
 	backgroundtaskmetrics.ScheduleUpserts.WithLabelValues("update").Inc()

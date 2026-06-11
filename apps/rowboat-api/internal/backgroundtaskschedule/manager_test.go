@@ -10,6 +10,7 @@ import (
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/converter"
+	"go.temporal.io/sdk/temporal"
 	"go.uber.org/zap"
 )
 
@@ -118,9 +119,61 @@ func newFakeScheduleClient() *fakeScheduleClient {
 
 func (c *fakeScheduleClient) Create(_ context.Context, options client.ScheduleOptions) (client.ScheduleHandle, error) {
 	c.ops = append(c.ops, "create:"+options.ID)
+	if _, exists := c.store[options.ID]; exists {
+		return nil, temporal.ErrScheduleAlreadyRunning
+	}
 	c.store[options.ID] = options
 	c.paused[options.ID] = options.Paused
 	return &fakeHandle{id: options.ID, client: c}, nil
+}
+
+// raceScheduleClient simulates losing a describe→create race: the first
+// Describe reports not-found, but by Create time a concurrent converger has
+// already registered the schedule.
+type raceScheduleClient struct {
+	*fakeScheduleClient
+	winner    client.ScheduleOptions
+	describes int
+}
+
+func (c *raceScheduleClient) GetHandle(ctx context.Context, scheduleID string) client.ScheduleHandle {
+	return &raceHandle{c: c, inner: c.fakeScheduleClient.GetHandle(ctx, scheduleID)}
+}
+
+type raceHandle struct {
+	c     *raceScheduleClient
+	inner client.ScheduleHandle
+}
+
+func (h *raceHandle) Describe(ctx context.Context) (*client.ScheduleDescription, error) {
+	h.c.describes++
+	if h.c.describes == 1 {
+		// First look: not found — then the concurrent winner creates it.
+		h.c.store[h.c.winner.ID] = h.c.winner
+		h.c.paused[h.c.winner.ID] = h.c.winner.Paused
+		return nil, serviceerror.NewNotFound("no schedule")
+	}
+	return h.inner.Describe(ctx)
+}
+
+func (h *raceHandle) GetID() string { return h.inner.GetID() }
+func (h *raceHandle) Delete(ctx context.Context) error {
+	return h.inner.Delete(ctx)
+}
+func (h *raceHandle) Backfill(ctx context.Context, o client.ScheduleBackfillOptions) error {
+	return h.inner.Backfill(ctx, o)
+}
+func (h *raceHandle) Update(ctx context.Context, o client.ScheduleUpdateOptions) error {
+	return h.inner.Update(ctx, o)
+}
+func (h *raceHandle) Trigger(ctx context.Context, o client.ScheduleTriggerOptions) error {
+	return h.inner.Trigger(ctx, o)
+}
+func (h *raceHandle) Pause(ctx context.Context, o client.SchedulePauseOptions) error {
+	return h.inner.Pause(ctx, o)
+}
+func (h *raceHandle) Unpause(ctx context.Context, o client.ScheduleUnpauseOptions) error {
+	return h.inner.Unpause(ctx, o)
 }
 
 func (c *fakeScheduleClient) List(context.Context, client.ScheduleListOptions) (client.ScheduleListIterator, error) {
@@ -255,6 +308,24 @@ func TestDescribeMissingAndPresent(t *testing.T) {
 	}
 	if desc.Memo.CronExpr != d.CronExpr || desc.Memo.TaskRevision != d.TaskRevision || desc.Memo.Trigger != "cron" {
 		t.Fatalf("memo round-trip = %+v", desc.Memo)
+	}
+}
+
+// TestUpsertLostCreateRaceConverges: losing a describe→create race must not
+// fail the upsert (which would mark a healthy task failed and hand the cron
+// back to the loop while the live schedule also fires it).
+func TestUpsertLostCreateRaceConverges(t *testing.T) {
+	d := desired()
+	winnerOpts := newManager(newFakeScheduleClient()).options(d)
+	rc := &raceScheduleClient{fakeScheduleClient: newFakeScheduleClient(), winner: winnerOpts}
+	m := newManager(rc)
+
+	action, err := m.UpsertTaskCron(context.Background(), d)
+	if err != nil {
+		t.Fatalf("lost create race must converge, got %v", err)
+	}
+	if action != "noop" {
+		t.Fatalf("action = %q, want noop (winner already matches)", action)
 	}
 }
 
