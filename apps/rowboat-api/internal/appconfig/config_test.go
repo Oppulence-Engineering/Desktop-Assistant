@@ -221,11 +221,13 @@ func TestValidateTemporalSchedules(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			// The loop is the fallback for non-current syncs and hosts the
-			// reconciler; Schedules without it would strand failed syncs.
-			name:    "enabled requires scheduler loop",
-			mutate:  func(c *Config) { enable(c); c.CloudSchedulerEnabled = false },
-			wantErr: true,
+			// CLOUD_SCHEDULER_ENABLED is a per-pod flag (only the scheduler
+			// Deployment sets it), while TEMPORAL_SCHEDULES_ENABLED lives in
+			// the shared configmap for the server's syncer — so the server and
+			// worker must boot WITHOUT the loop flag. The loop-as-fallback
+			// requirement is a deployment-level invariant, not Validate's.
+			name:   "enabled without loop flag boots (per-pod split)",
+			mutate: func(c *Config) { enable(c); c.CloudSchedulerEnabled = false },
 		},
 		{
 			name:    "catchup must be positive",

@@ -557,12 +557,13 @@ func (c Config) Validate() error {
 		if !c.TemporalEnabled {
 			return fmt.Errorf("TEMPORAL_ENABLED must be true when TEMPORAL_SCHEDULES_ENABLED=true")
 		}
-		// The RFC 001 loop is the mandated fallback for any cron whose schedule
-		// sync is not "current", and the scheduler binary hosts the reconciler.
-		// Schedules without the loop would leave failed syncs silently unfired.
-		if !c.CloudSchedulerEnabled {
-			return fmt.Errorf("CLOUD_SCHEDULER_ENABLED must be true when TEMPORAL_SCHEDULES_ENABLED=true (the loop is the fallback and hosts the reconciler)")
-		}
+		// NOTE: the RFC 001 loop (CLOUD_SCHEDULER_ENABLED) is the mandated
+		// fallback and hosts the reconciler, but that is a DEPLOYMENT-level
+		// invariant ("a scheduler replica must exist somewhere"), not a
+		// per-process one: CLOUD_SCHEDULER_ENABLED is set per-pod (only the
+		// scheduler Deployment turns it on) while this flag must live in the
+		// shared configmap for the server's syncer — requiring both here would
+		// crash-loop the server and worker. Enforced operationally instead.
 		if c.TemporalScheduleCatchup <= 0 {
 			return fmt.Errorf("TEMPORAL_SCHEDULE_CATCHUP must be > 0")
 		}
