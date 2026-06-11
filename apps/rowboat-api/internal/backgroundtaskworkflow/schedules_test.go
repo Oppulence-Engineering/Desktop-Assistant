@@ -44,7 +44,7 @@ func newSchedulerTestEnv(t *testing.T, runs ScheduledRunStarter) *testsuite.Test
 	var ts testsuite.WorkflowTestSuite
 	env := ts.NewTestWorkflowEnvironment()
 	env.SetTestTimeout(time.Minute)
-	a := &ScheduleActivities{Runs: runs, Log: zap.NewNop()}
+	a := &ScheduleActivities{Runs: runs, Log: zap.NewNop(), Enabled: true}
 	env.RegisterWorkflowWithOptions(SchedulerWorkflow, workflow.RegisterOptions{Name: SchedulerWorkflowName})
 	env.RegisterActivityWithOptions(a.CreateScheduledRun, activity.RegisterOptions{Name: ActivityCreateScheduledRun})
 	return env
@@ -85,5 +85,26 @@ func TestSchedulerWorkflowRetriesThenFails(t *testing.T) {
 	}
 	if runs.calls != 5 {
 		t.Fatalf("starter calls = %d, want 5 (retry policy MaximumAttempts)", runs.calls)
+	}
+}
+
+// TestSchedulerWorkflowDisabledSkips: during a TEMPORAL_SCHEDULES_ENABLED=false
+// backout the loop owns every cron again, so executing fires from leftover
+// schedules would double-run each occurrence — they must skip instead.
+func TestSchedulerWorkflowDisabledSkips(t *testing.T) {
+	runs := &fakeScheduledRunStarter{}
+	var ts testsuite.WorkflowTestSuite
+	env := ts.NewTestWorkflowEnvironment()
+	env.SetTestTimeout(time.Minute)
+	a := &ScheduleActivities{Runs: runs, Log: zap.NewNop(), Enabled: false}
+	env.RegisterWorkflowWithOptions(SchedulerWorkflow, workflow.RegisterOptions{Name: SchedulerWorkflowName})
+	env.RegisterActivityWithOptions(a.CreateScheduledRun, activity.RegisterOptions{Name: ActivityCreateScheduledRun})
+
+	env.ExecuteWorkflow(SchedulerWorkflow, ScheduleFireInput{UserID: "u1", TaskID: "t1", Slug: "s", Trigger: "cron"})
+	if !env.IsWorkflowCompleted() || env.GetWorkflowError() != nil {
+		t.Fatalf("disabled fire must complete cleanly: err=%v", env.GetWorkflowError())
+	}
+	if runs.calls != 0 {
+		t.Fatalf("disabled fire must not start runs, got %d calls", runs.calls)
 	}
 }

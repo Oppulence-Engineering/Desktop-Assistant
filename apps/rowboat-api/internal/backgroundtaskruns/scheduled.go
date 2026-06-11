@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
+	"github.com/adhocore/gronx"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -18,12 +20,21 @@ import (
 // SourceTemporalSchedule is a run created by a Temporal Schedule fire (RFC 005).
 const SourceTemporalSchedule Source = "temporal-schedule"
 
+// scheduledRetryBackoff mirrors the loop's retryBackoff (backgroundscheduler
+// due.go): a fire is suppressed while a prior attempt newer than the last
+// success is inside this window. Duplicated because backgroundscheduler
+// imports this package (the reverse import would cycle); keep the values in
+// lockstep.
+const scheduledRetryBackoff = 5 * time.Minute
+
 // StartScheduledRun implements backgroundtaskworkflow.ScheduledRunStarter: it
 // is the body of the CreateScheduledRun activity, called once per Temporal
 // Schedule fire. It re-validates the task at fire time — the schedule is an
 // external copy of task state and can lag a delete/deactivate/retarget — and
 // skips stale fires rather than failing them (the reconciler repairs the
-// schedule itself).
+// schedule itself). On a real fire it mirrors the RFC 001 loop's bookkeeping
+// (in-flight suppression, fire-time task stamp, one failed row per failed
+// start) so handed-off crons behave identically to loop-fired ones.
 func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkflow.ScheduleFireInput) (backgroundtaskworkflow.ScheduledRunResult, error) {
 	ctx = auth.WithInternal(ctx)
 	taskID, err := uuid.Parse(in.TaskID)
@@ -50,6 +61,21 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 	if cronExpr == "" {
 		return skipResult("cron trigger removed"), nil
 	}
+	if !gronx.IsValid(cronExpr) {
+		// The schedule predates an edit that broke the expression; never start
+		// runs on the stale cadence. The syncer/reconciler delete the schedule.
+		return skipResult("cron expression invalid"), nil
+	}
+
+	// In-flight backstop, mirroring the loop (scheduler.go evaluateTask): a
+	// last attempt newer than the last success that is still inside the
+	// backoff window means a prior run never completed — don't stack another.
+	// Temporal's SCHEDULE_OVERLAP_POLICY_SKIP cannot provide this: it only
+	// spans the seconds-long scheduler workflow, not the actual run.
+	now := time.Now().UTC()
+	if scheduledInFlight(task) && scheduledBackoffRemaining(task.LastAttemptAt, now) > 0 {
+		return skipResult("prior run still in flight"), nil
+	}
 
 	run, err := s.Start(ctx, Params{
 		User:    task.Edges.User,
@@ -57,35 +83,90 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 		Trigger: "cron",
 		RequestedContext: fmt.Sprintf(
 			"Temporal schedule fired at %s for expression %q.",
-			time.Now().UTC().Format(time.RFC3339), cronExpr,
+			now.Format(time.RFC3339), cronExpr,
 		),
 		RunIDPrefix:   "sched-temporal-",
 		QueuedMessage: "Queued by Temporal schedule.",
 		Source:        SourceTemporalSchedule,
 	})
 	var persistErr *PersistIDsError
-	if errors.As(err, &persistErr) {
-		// The run workflow IS already running; only persisting its Temporal ids
-		// failed. Surfacing an error would make Temporal retry the activity and
-		// double-start the occurrence — report the fire as a success instead
-		// (mirrors the loop's PersistIDsError branch in evaluateTask).
+	var startErr *StartFailedError
+	switch {
+	case errors.As(err, &persistErr):
+		// The run workflow IS already running; only persisting its Temporal
+		// ids failed. Surfacing an error would make Temporal retry the
+		// activity and double-start the occurrence — report the fire as a
+		// success (mirrors the loop's PersistIDsError branch).
 		s.Log.Warn("scheduled run started but temporal ids unpersisted",
 			zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
+		s.stampScheduledFire(ctx, task, now, run.RunID, true)
+	case errors.As(err, &startErr):
+		// Start already created the run row and marked it failed
+		// (temporal_start_failed) — that row is the user-visible failure
+		// record. Do NOT propagate: a Temporal activity retry would mint a
+		// fresh failed row per attempt. Stamp only last_attempt_at so the
+		// loop's backoff engages, exactly like the loop's own start-failure
+		// path (stampAttempt); the occurrence is not auto-retried, matching
+		// loop/desktop semantics.
+		s.Log.Error("scheduled run temporal start failed",
+			zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
+		s.stampScheduledFire(ctx, task, now, run.RunID, false)
 		return backgroundtaskworkflow.ScheduledRunResult{RunID: run.RunID, WorkflowID: run.TemporalWorkflowID}, nil
-	}
-	if err != nil {
+	case err != nil:
 		return backgroundtaskworkflow.ScheduledRunResult{}, err
+	default:
+		s.stampScheduledFire(ctx, task, now, run.RunID, true)
 	}
 	return backgroundtaskworkflow.ScheduledRunResult{RunID: run.RunID, WorkflowID: run.TemporalWorkflowID}, nil
+}
+
+// stampScheduledFire mirrors the loop's stampFired/stampAttempt: a successful
+// fire advances the cycle anchor (last_run_at) + attempt/run markers so the
+// loop never re-fires the same occurrence after a handoff-back and same-day
+// window suppression behaves identically to a loop cron fire; a failed start
+// stamps only last_attempt_at to engage the loop's retry backoff.
+func (s *Starter) stampScheduledFire(ctx context.Context, task *ent.BackgroundTask, now time.Time, runID string, fired bool) {
+	update := s.Client.BackgroundTask.UpdateOneID(task.ID).
+		SetLastAttemptAt(now).
+		AddRevision(1)
+	if fired {
+		update = update.SetLastRunAt(now).SetLastRunID(runID)
+	}
+	if err := update.Exec(ctx); err != nil {
+		s.Log.Error("stamp scheduled fire failed",
+			zap.String("taskSlug", task.Slug), zap.String("runId", runID), zap.Error(err))
+	}
+}
+
+// scheduledInFlight mirrors backgroundscheduler's inFlight.
+func scheduledInFlight(task *ent.BackgroundTask) bool {
+	if task.LastAttemptAt == nil {
+		return false
+	}
+	return task.LastRunAt == nil || task.LastAttemptAt.After(*task.LastRunAt)
+}
+
+// scheduledBackoffRemaining mirrors backgroundscheduler's backoffRemaining.
+func scheduledBackoffRemaining(lastAttemptAt *time.Time, now time.Time) time.Duration {
+	if lastAttemptAt == nil {
+		return 0
+	}
+	since := now.Sub(*lastAttemptAt)
+	if since < 0 || since >= scheduledRetryBackoff {
+		return 0
+	}
+	return scheduledRetryBackoff - since
 }
 
 func skipResult(reason string) backgroundtaskworkflow.ScheduledRunResult {
 	return backgroundtaskworkflow.ScheduledRunResult{Skipped: true, SkipReason: reason}
 }
 
-// cronExprFromTriggers extracts triggers.cronExpr with a minimal decode. This
-// package stays a leaf of internal/backgroundscheduler (which owns the full
-// trigger parser), so the probe lives here.
+// cronExprFromTriggers extracts triggers.cronExpr with a minimal decode,
+// trimmed like backgroundscheduler.ParseTriggers does. This package stays a
+// leaf of internal/backgroundscheduler (which owns the full trigger parser),
+// so the probe lives here; validity is checked by the caller via gronx — the
+// same library the parser uses.
 func cronExprFromTriggers(triggersJSON string) string {
 	if triggersJSON == "" {
 		return ""
@@ -96,5 +177,5 @@ func cronExprFromTriggers(triggersJSON string) string {
 	if err := json.Unmarshal([]byte(triggersJSON), &t); err != nil {
 		return ""
 	}
-	return t.CronExpr
+	return strings.TrimSpace(t.CronExpr)
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -133,22 +134,108 @@ func TestStartScheduledRunSkipsStaleFires(t *testing.T) {
 	}
 }
 
-func TestStartScheduledRunPropagatesStartFailure(t *testing.T) {
+// TestStartScheduledRunAbsorbsStartFailure: a Temporal start failure must NOT
+// propagate (an activity retry would mint a fresh failed run row per attempt).
+// The single failed row is the user-visible record, and last_attempt_at is
+// stamped so the loop's backoff engages — mirroring the loop's own
+// start-failure path.
+func TestStartScheduledRunAbsorbsStartFailure(t *testing.T) {
 	client, u, task := setup(t)
 	task = setCron(t, client, task)
 	ctrl := &fakeController{startErr: errors.New("temporal unreachable")}
 	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
 
-	_, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
-	var startFailed *backgroundtaskruns.StartFailedError
-	if !errors.As(err, &startFailed) {
-		t.Fatalf("want StartFailedError for Temporal retry, got %v", err)
+	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if err != nil {
+		t.Fatalf("start failure must be absorbed, got %v", err)
 	}
-	// The failed run row exists (mirrors the loop's retry semantics: each
-	// activity retry leaves a visible failed row).
+	if out.Skipped || out.RunID == "" {
+		t.Fatalf("result = %+v, want the failed run id", out)
+	}
 	ctx := auth.WithInternal(context.Background())
 	run := client.BackgroundTaskRun.Query().OnlyX(ctx)
 	if run.Status != "failed" || run.ErrorCode != backgroundtaskworkflow.ErrCodeTemporalStartFailed {
 		t.Fatalf("run = status=%q code=%q", run.Status, run.ErrorCode)
+	}
+	got := client.BackgroundTask.GetX(ctx, task.ID)
+	if got.LastAttemptAt == nil {
+		t.Fatal("last_attempt_at must be stamped so loop backoff engages")
+	}
+	if got.LastRunAt != nil {
+		t.Fatal("a failed start must not advance the cycle anchor")
+	}
+}
+
+// TestStartScheduledRunStampsFire: a successful fire mirrors the loop's
+// stampFired (cycle anchor + attempt + run id) so the loop never re-fires the
+// occurrence after a handoff-back and window suppression behaves identically.
+func TestStartScheduledRunStampsFire(t *testing.T) {
+	client, u, task := setup(t)
+	task = setCron(t, client, task)
+	starter := backgroundtaskruns.New(client, &fakeController{}, zap.NewNop())
+
+	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if err != nil {
+		t.Fatalf("StartScheduledRun: %v", err)
+	}
+	got := client.BackgroundTask.GetX(auth.WithInternal(context.Background()), task.ID)
+	if got.LastRunAt == nil || got.LastAttemptAt == nil || got.LastRunID != out.RunID {
+		t.Fatalf("fire stamp missing: lastRunAt=%v lastAttemptAt=%v lastRunID=%q",
+			got.LastRunAt, got.LastAttemptAt, got.LastRunID)
+	}
+}
+
+// TestStartScheduledRunSkipsWhileInFlight: a prior attempt newer than the last
+// success inside the backoff window suppresses the fire — Temporal's overlap
+// policy can't do this (it only spans the thin scheduler workflow).
+func TestStartScheduledRunSkipsWhileInFlight(t *testing.T) {
+	client, u, task := setup(t)
+	task = setCron(t, client, task)
+	ctrl := &fakeController{}
+	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+
+	attempt := time.Now().UTC().Add(-time.Minute)
+	task = task.Update().SetLastAttemptAt(attempt).SaveX(context.Background())
+
+	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if err != nil {
+		t.Fatalf("StartScheduledRun: %v", err)
+	}
+	if !out.Skipped || out.SkipReason != "prior run still in flight" {
+		t.Fatalf("result = %+v, want in-flight skip", out)
+	}
+	if len(ctrl.starts) != 0 {
+		t.Fatalf("in-flight fire must not start a run")
+	}
+
+	// Once the prior attempt completed (last_run_at >= last_attempt_at) the
+	// next fire proceeds.
+	task = task.Update().SetLastRunAt(attempt.Add(30 * time.Second)).SaveX(context.Background())
+	out, err = starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if err != nil || out.Skipped {
+		t.Fatalf("completed prior run must not suppress: %+v err=%v", out, err)
+	}
+}
+
+// TestStartScheduledRunSkipsInvalidCron: an expression broken by an edit must
+// never start runs on the stale schedule cadence.
+func TestStartScheduledRunSkipsInvalidCron(t *testing.T) {
+	client, u, task := setup(t)
+	task = task.Update().SetTriggersJSON(`{"cronExpr":"not a cron"}`).SaveX(context.Background())
+	ctrl := &fakeController{}
+	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+
+	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if err != nil {
+		t.Fatalf("StartScheduledRun: %v", err)
+	}
+	if !out.Skipped || out.SkipReason != "cron expression invalid" {
+		t.Fatalf("result = %+v, want invalid-cron skip", out)
+	}
+	// Whitespace-only matches ParseTriggers' TrimSpace semantics (no cron).
+	task = task.Update().SetTriggersJSON(`{"cronExpr":"   "}`).SaveX(context.Background())
+	out, _ = starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if !out.Skipped || out.SkipReason != "cron trigger removed" {
+		t.Fatalf("whitespace cron = %+v, want removed skip", out)
 	}
 }

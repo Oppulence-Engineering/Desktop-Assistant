@@ -69,6 +69,12 @@ type ScheduledRunStarter interface {
 type ScheduleActivities struct {
 	Runs ScheduledRunStarter
 	Log  *zap.Logger
+	// Enabled mirrors TEMPORAL_SCHEDULES_ENABLED. The workflow itself is
+	// registered unconditionally so in-flight fires don't time out during a
+	// backout — but with the flag off the RFC 001 loop owns every cron again
+	// (its skip-gate is off too), so executing fires here would double-run
+	// each occurrence. Disabled fires skip until the schedules are cleaned up.
+	Enabled bool
 }
 
 // CreateScheduledRun creates the run row and starts the run workflow through
@@ -78,6 +84,11 @@ type ScheduleActivities struct {
 func (a *ScheduleActivities) CreateScheduledRun(ctx context.Context, in ScheduleFireInput) (ScheduledRunResult, error) {
 	if !activity.IsActivity(ctx) || activity.GetInfo(ctx).Attempt == 1 {
 		backgroundtaskmetrics.ScheduleFires.Inc()
+	}
+	if !a.Enabled {
+		a.Log.Info("scheduled fire skipped: temporal schedules disabled (backout)",
+			zap.String("taskSlug", in.Slug), zap.String("userId", in.UserID))
+		return ScheduledRunResult{Skipped: true, SkipReason: "temporal schedules disabled"}, nil
 	}
 	out, err := a.Runs.StartScheduledRun(ctx, in)
 	if err != nil {

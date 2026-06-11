@@ -181,7 +181,11 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		// unconditionally — registration is inert with zero schedules, and
 		// during a TEMPORAL_SCHEDULES_ENABLED=false backout in-flight fires
 		// from still-existing schedules must execute rather than time out.
-		backgroundtaskworkflow.RegisterScheduler(w, &backgroundtaskworkflow.ScheduleActivities{Runs: starter, Log: log})
+		backgroundtaskworkflow.RegisterScheduler(w, &backgroundtaskworkflow.ScheduleActivities{
+			Runs:    starter,
+			Log:     log,
+			Enabled: cfg.TemporalSchedulesEnabled,
+		})
 
 		if cfg.CloudEventsRoutingEnabled && deps != nil {
 			cloudevents.Register(w, &cloudevents.Activities{Router: &cloudevents.Router{
