@@ -5663,6 +5663,13 @@ function App() {
     if (notePath) {
       meetingNotePathRef.current = notePath;
       await handleVoiceNoteCreated(notePath);
+    } else {
+      // start() returned null — recording never began. Without this the
+      // button silently snaps back and the user has no idea why.
+      setRecordingMeetingSource(null);
+      toast.error(
+        "Couldn't start meeting recording. Check microphone and screen-recording permissions, then try again.",
+      );
     }
   }, [meetingTranscription, handleVoiceNoteCreated]);
 
@@ -6786,6 +6793,9 @@ function App() {
                                   preserveUntitledTitleHeading={isUntitledPlaceholderName(
                                     getBaseName(tab.path),
                                   )}
+                                  autoFocusTitle={
+                                    isActive && isUntitledPlaceholderName(getBaseName(tab.path))
+                                  }
                                   placeholder="Start writing..."
                                   wikiLinks={wikiLinkConfig}
                                   onImageUpload={handleImageUpload}
