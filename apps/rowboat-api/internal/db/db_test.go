@@ -75,6 +75,31 @@ func TestTenantScoping(t *testing.T) {
 	}
 }
 
+// TestInternalWithUserStaysScoped reproduces the API-worker LLM path: a
+// Temporal activity marks the context internal, then the gateway attaches the
+// run's owner via auth.WithUser before quota reads. The user must win over the
+// internal flag — with two tenants in the DB, an unscoped Subscription.Only()
+// would fail NotSingular (and worse, silently read the wrong tenant when only
+// one row exists).
+func TestInternalWithUserStaysScoped(t *testing.T) {
+	d := openTest(t)
+	c := d.Client
+	ctx := context.Background()
+
+	u1 := seedUser(t, c, "a@x.co", "user_1")
+	seedUser(t, c, "b@x.co", "user_2")
+
+	ctxWorker := auth.WithUser(auth.WithInternal(ctx), u1)
+	sub, err := c.Subscription.Query().Only(ctxWorker)
+	if err != nil {
+		t.Fatalf("internal+user Subscription.Only should be scoped to the user, got %v", err)
+	}
+	owner := sub.QueryUser().OnlyX(auth.WithInternal(ctx))
+	if owner.ID != u1.ID {
+		t.Fatalf("internal+user query returned another tenant's subscription (owner %s, want %s)", owner.ID, u1.ID)
+	}
+}
+
 func TestAppendOnlyLedger(t *testing.T) {
 	d := openTest(t)
 	c := d.Client
