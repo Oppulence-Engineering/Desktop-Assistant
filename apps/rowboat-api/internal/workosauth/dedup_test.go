@@ -133,7 +133,7 @@ func TestRefreshDedupConcurrent(t *testing.T) {
 
 func TestRefreshDedupInvalidGrantNegativeCache(t *testing.T) {
 	var hits atomic.Int64
-	srv := workosMock(t, func(w http.ResponseWriter, r *http.Request) {
+	srv := workosMock(t, func(w http.ResponseWriter, _ *http.Request) {
 		hits.Add(1)
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid_grant"})
