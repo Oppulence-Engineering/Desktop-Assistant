@@ -2,10 +2,14 @@ import { PrefixLogger } from "@x/shared";
 import { listTasks } from "./fileops.js";
 import { runBackgroundTask } from "./runner.js";
 import { processRemoteTriggers } from "./cloud-sync.js";
+import { getAuthState } from "../auth/tokens.js";
 import { backoffRemainingMs, dueTimedTrigger } from "../schedule/utils.js";
 
 const log = new PrefixLogger("BgTask:Scheduler");
 const POLL_INTERVAL_MS = 15_000; // 15 seconds — matches live-note scheduler
+
+// Log auth-quiesce only on state transitions, not every 15s tick.
+let lastLoggedAuthState: string | null = null;
 
 function humanMs(ms: number): string {
   const s = Math.round(ms / 1000);
@@ -84,6 +88,25 @@ export async function processScheduledTasks(): Promise<void> {
         (firedCount > 0 ? `, fired ${firedCount}` : "") +
         (backoffCount > 0 ? `, backoff ${backoffCount}` : ""),
     );
+  }
+
+  // Skip cloud work entirely while the session can't produce a bearer —
+  // hitting the API anyway is what used to hammer the broker's rate limit.
+  const auth = getAuthState();
+  if (auth.state === "reconnect_required" || auth.state === "backoff") {
+    if (lastLoggedAuthState !== auth.state) {
+      lastLoggedAuthState = auth.state;
+      log.log(
+        auth.state === "reconnect_required"
+          ? "auth requires reconnect — pausing remote trigger sync until sign-in"
+          : `auth refresh backing off — pausing remote trigger sync until ${new Date(auth.retryAt ?? Date.now()).toLocaleTimeString()}`,
+      );
+    }
+    return;
+  }
+  if (lastLoggedAuthState !== null) {
+    lastLoggedAuthState = null;
+    log.log("auth available again — resuming remote trigger sync");
   }
 
   try {

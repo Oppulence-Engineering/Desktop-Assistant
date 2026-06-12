@@ -1,44 +1,28 @@
-import container from '../di/container.js';
-import { IOAuthRepo } from './repo.js';
-import * as oauthClient from './oauth-client.js';
-import { refreshWorkosTokens } from './workos-backend.js';
-import { OAuthTokens } from './types.js';
-import { PRODUCT_NAME, PRODUCT_PROVIDER_ID } from '@x/shared/dist/branding.js';
+import container from "../di/container.js";
+import { RefreshController, AuthState } from "./refresh-controller.js";
+import { IOAuthRepo } from "./repo.js";
+import { refreshWorkosTokens } from "./workos-backend.js";
 
-let refreshInFlight: Promise<OAuthTokens> | null = null;
+// WorkOS is confidential — refresh is brokered server-side by the API (which
+// holds the API key). See workos-backend.ts / AUTH.md. All refresh policy
+// (single-flight, backoff, reconnect-required persistence) lives in the
+// controller; this module just owns the process-wide singleton.
+const controller = new RefreshController({
+  repo: () => container.resolve<IOAuthRepo>("oauthRepo"),
+  refresh: refreshWorkosTokens,
+});
 
-async function performRefresh(tokens: OAuthTokens): Promise<OAuthTokens> {
-    console.log("Refreshing Solomon AI access token");
-    if (!tokens.refresh_token) {
-        throw new Error(`${PRODUCT_NAME} token expired and no refresh token available. Please sign in again.`);
-    }
-
-    // WorkOS is confidential — refresh is brokered server-side by the API
-    // (which holds the API key). See workos-backend.ts / AUTH.md.
-    const refreshed = await refreshWorkosTokens(tokens.refresh_token);
-
-    const oauthRepo = container.resolve<IOAuthRepo>('oauthRepo');
-    await oauthRepo.upsert(PRODUCT_PROVIDER_ID, { tokens: refreshed });
-
-    return refreshed;
+/**
+ * Returns a usable bearer for the product API, refreshing if needed.
+ * Throws AuthUnavailableError (see refresh-errors.ts) when auth is down:
+ * not signed in, reconnect required, or refresh in a backoff window —
+ * callers should treat those as "quiesce", not "retry now".
+ */
+export async function getAccessToken(): Promise<string> {
+  return controller.getAccessToken();
 }
 
-export async function getAccessToken(): Promise<string> {
-    const oauthRepo = container.resolve<IOAuthRepo>('oauthRepo');
-    const { tokens } = await oauthRepo.read(PRODUCT_PROVIDER_ID);
-    if (!tokens) {
-        throw new Error(`Not signed into ${PRODUCT_NAME}`);
-    }
-
-    if (!oauthClient.isTokenExpired(tokens)) {
-        return tokens.access_token;
-    }
-
-    if (!refreshInFlight) {
-        refreshInFlight = performRefresh(tokens).finally(() => {
-            refreshInFlight = null;
-        });
-    }
-    const refreshed = await refreshInFlight;
-    return refreshed.access_token;
+/** Current refresh state — background schedulers consult this to skip ticks. */
+export function getAuthState(): AuthState {
+  return controller.getState();
 }

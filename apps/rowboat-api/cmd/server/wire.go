@@ -204,6 +204,18 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	googleH.SetOAuthFlow(cfg.GoogleAuthorizeURL, googleRedirect, cfg.DesktopDeepLinkScheme, nil)
 	workosH := workosauth.New(cfg.WorkOSClientID, cfg.WorkOSAPIKey, cfg.WorkOSBaseURL, cfg.WorkOSAuthorizeBaseURL, log)
 	workosH.SetOutboundPolicy(vendorPolicy)
+	// Idempotent refresh: WorkOS refresh tokens are rotating/single-use, so
+	// duplicate or replayed refreshes must return the cached rotated bundle
+	// instead of burning the session (see workosauth.SetRefreshDedup).
+	refreshCache := workosauth.NewMemoryRefreshCache()
+	if cfg.RedisURL != "" {
+		if rc, rcErr := workosauth.NewRedisRefreshCache(ctx, cfg.RedisURL); rcErr == nil {
+			refreshCache = rc
+		} else {
+			log.Warn("workos refresh dedup falling back to in-memory cache", zap.Error(rcErr))
+		}
+	}
+	workosH.SetRefreshDedup(refreshCache, sealer)
 	slackH := slack.New(client, sealer, sec, log)
 	slackH.SetOutboundPolicy(vendorPolicy)
 	slackRedirect := cfg.SlackRedirectURI
