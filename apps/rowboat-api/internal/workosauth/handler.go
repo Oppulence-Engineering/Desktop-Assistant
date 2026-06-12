@@ -10,16 +10,21 @@
 package workosauth
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
+	"golang.org/x/sync/singleflight"
 )
 
 // Handler serves the WorkOS sign-in broker endpoints. All endpoints are public
@@ -32,6 +37,14 @@ type Handler struct {
 	authBase string // base for the browser authorize URL; usually == baseURL
 	http     *outbound.Client
 	log      *zap.Logger
+
+	// Refresh dedup (optional, via SetRefreshDedup). WorkOS refresh tokens are
+	// rotating and single-use: without dedup, a duplicate or replayed refresh
+	// (concurrent caller, retry after a 429, lost response) consumes the
+	// rotated token upstream and permanently burns the desktop session.
+	cache  RefreshCache
+	sealer *crypto.Sealer
+	sf     singleflight.Group
 }
 
 // New builds the broker. baseURL empty → https://api.workos.com. authorizeBaseURL
@@ -64,6 +77,21 @@ func New(clientID, apiKey, baseURL, authorizeBaseURL string, log *zap.Logger) *H
 func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
 	policy.Name = "workos"
 	h.http = outbound.NewClient(policy)
+}
+
+// SetRefreshDedup enables idempotent refresh: results are cached for a short
+// TTL keyed by SHA-256 of the refresh token, concurrent refreshes of the same
+// token are collapsed (in-process singleflight + cross-replica lock), and
+// replays of a consumed token return the cached rotated bundle instead of
+// burning the session with invalid_grant.
+//
+// The sealer is mandatory for any shared (Redis) cache: cached values contain
+// live rotated tokens and are AES-GCM sealed with the same key protecting
+// OAuth tokens in Postgres. Passing a nil sealer disables result caching but
+// keeps the concurrency collapse.
+func (h *Handler) SetRefreshDedup(cache RefreshCache, sealer *crypto.Sealer) {
+	h.cache = cache
+	h.sealer = sealer
 }
 
 // configured reports whether WorkOS credentials are present.
@@ -141,6 +169,16 @@ func (h *Handler) Exchange(w http.ResponseWriter, r *http.Request) {
 	h.authenticate(w, r, payload)
 }
 
+// Refresh dedup tuning. The result TTL must cover a client retry after the
+// rate-limit window (Retry-After tops out around 60s) and an app-restart
+// replay, while bounding how long a live rotated bundle sits in the cache.
+const (
+	refreshResultTTL  = 90 * time.Second
+	refreshInvalidTTL = 30 * time.Second
+	refreshLockTTL    = 15 * time.Second
+	refreshPollWait   = 5 * time.Second
+)
+
 // Refresh handles POST /v1/auth/workos/refresh.
 func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	if !h.configured() {
@@ -157,38 +195,231 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "missing refreshToken", "bad_request")
 		return
 	}
-	h.authenticate(w, r, map[string]string{
+	payload := map[string]string{
 		"client_id":     h.clientID,
 		"client_secret": h.apiKey,
 		"grant_type":    "refresh_token",
 		"refresh_token": req.RefreshToken,
-	})
+	}
+	if h.cache == nil {
+		h.authenticate(w, r, payload)
+		return
+	}
+	h.refreshDeduped(w, r, req.RefreshToken, payload)
 }
 
-// authenticate posts to WorkOS's /user_management/authenticate and translates
-// the response into the desktop token bundle.
+type refreshResult struct {
+	bundle *tokenBundle
+	ae     *authError
+	// inProgress: another replica holds the refresh lock and its result did
+	// not appear within the poll window — caller should retry shortly.
+	inProgress bool
+}
+
+func (h *Handler) refreshDeduped(w http.ResponseWriter, r *http.Request, refreshToken string, payload map[string]string) {
+	sum := sha256.Sum256([]byte(refreshToken))
+	key := hex.EncodeToString(sum[:])
+	resultKey := "workos:refresh:result:v1:" + key
+	invalidKey := "workos:refresh:invalid:v1:" + key
+	lockKey := "workos:refresh:lock:v1:" + key
+
+	// Fast path: a completed refresh of this exact token within the TTL.
+	if b, ok := h.cachedBundle(r.Context(), resultKey); ok {
+		httpx.WriteJSON(w, http.StatusOK, *b)
+		return
+	}
+	if h.cachedInvalid(r.Context(), invalidKey) {
+		h.writeAuthError(w, &authError{kind: authErrInvalidGrant})
+		return
+	}
+
+	v, _, _ := h.sf.Do(key, func() (any, error) {
+		// Decoupled from the first caller's request context: a caller that
+		// disconnects mid-flight must not abort the WorkOS rotation for the
+		// waiters sharing this flight (a lost rotation is exactly the burn
+		// this code exists to prevent).
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		defer cancel()
+
+		locked, err := h.cache.TryLock(ctx, lockKey, refreshLockTTL)
+		if err != nil {
+			h.log.Warn("workos refresh lock unavailable; proceeding uncoordinated", zap.Error(err))
+			locked = true // fail open: dedup degrades, refresh still works
+		} else if locked {
+			defer func() { _ = h.cache.Unlock(context.Background(), lockKey) }()
+		}
+
+		if !locked {
+			// Another replica is refreshing this token: wait for its result.
+			deadline := time.Now().Add(refreshPollWait)
+			for time.Now().Before(deadline) {
+				if b, ok := h.cachedBundle(ctx, resultKey); ok {
+					return refreshResult{bundle: b}, nil
+				}
+				if h.cachedInvalid(ctx, invalidKey) {
+					return refreshResult{ae: &authError{kind: authErrInvalidGrant}}, nil
+				}
+				select {
+				case <-ctx.Done():
+					return refreshResult{inProgress: true}, nil
+				case <-time.After(100 * time.Millisecond):
+				}
+			}
+			return refreshResult{inProgress: true}, nil
+		}
+
+		// Re-check after acquiring the lock: a sibling may have completed
+		// between our cache miss and the lock grant.
+		if b, ok := h.cachedBundle(ctx, resultKey); ok {
+			return refreshResult{bundle: b}, nil
+		}
+		if h.cachedInvalid(ctx, invalidKey) {
+			return refreshResult{ae: &authError{kind: authErrInvalidGrant}}, nil
+		}
+
+		bundle, ae := h.callWorkOS(ctx, payload)
+		switch {
+		case ae == nil:
+			h.storeBundle(ctx, resultKey, bundle)
+		case ae.kind == authErrInvalidGrant:
+			// Negative marker (no secret material): replays short-circuit
+			// without another WorkOS round-trip.
+			if err := h.cache.Set(ctx, invalidKey, []byte("1"), refreshInvalidTTL); err != nil {
+				h.log.Warn("workos refresh negative-cache write failed", zap.Error(err))
+			}
+		}
+		return refreshResult{bundle: bundle, ae: ae}, nil
+	})
+
+	res, ok := v.(refreshResult)
+	if !ok {
+		httpx.Error(w, http.StatusInternalServerError, "refresh dedup failed", "internal_error")
+		return
+	}
+	switch {
+	case res.inProgress:
+		w.Header().Set("Retry-After", "2")
+		httpx.Error(w, http.StatusTooManyRequests, "refresh in progress; retry shortly", "refresh_in_progress")
+	case res.ae != nil:
+		h.writeAuthError(w, res.ae)
+	default:
+		httpx.WriteJSON(w, http.StatusOK, *res.bundle)
+	}
+}
+
+// cachedBundle returns a previously sealed+cached bundle, treating any unseal
+// or decode failure as a miss.
+func (h *Handler) cachedBundle(ctx context.Context, resultKey string) (*tokenBundle, bool) {
+	if h.sealer == nil {
+		return nil, false
+	}
+	sealed, ok, err := h.cache.Get(ctx, resultKey)
+	if err != nil || !ok {
+		return nil, false
+	}
+	raw, err := h.sealer.Open(sealed)
+	if err != nil {
+		return nil, false
+	}
+	var b tokenBundle
+	if err := json.Unmarshal(raw, &b); err != nil {
+		return nil, false
+	}
+	return &b, true
+}
+
+func (h *Handler) cachedInvalid(ctx context.Context, invalidKey string) bool {
+	_, ok, err := h.cache.Get(ctx, invalidKey)
+	return err == nil && ok
+}
+
+// storeBundle seals and caches a successful refresh result. Never written in
+// plaintext: the bundle holds a live rotated refresh token.
+func (h *Handler) storeBundle(ctx context.Context, resultKey string, b *tokenBundle) {
+	if h.sealer == nil {
+		return
+	}
+	raw, err := json.Marshal(b)
+	if err != nil {
+		return
+	}
+	sealed, err := h.sealer.Seal(raw)
+	if err != nil {
+		h.log.Warn("workos refresh result seal failed; not caching", zap.Error(err))
+		return
+	}
+	if err := h.cache.Set(ctx, resultKey, sealed, refreshResultTTL); err != nil {
+		h.log.Warn("workos refresh result cache write failed", zap.Error(err))
+	}
+}
+
+type authErrKind int
+
+const (
+	authErrUpstream authErrKind = iota
+	authErrInvalidGrant
+	authErrInternal
+)
+
+type authError struct {
+	kind authErrKind
+	msg  string
+}
+
+// authenticate posts to WorkOS and writes the bundle or the mapped error —
+// the direct (non-deduped) path used by Exchange and cache-less Refresh.
 func (h *Handler) authenticate(w http.ResponseWriter, r *http.Request, payload map[string]string) {
+	bundle, ae := h.callWorkOS(r.Context(), payload)
+	if ae != nil {
+		h.writeAuthError(w, ae)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, *bundle)
+}
+
+func (h *Handler) writeAuthError(w http.ResponseWriter, ae *authError) {
+	switch ae.kind {
+	case authErrInvalidGrant:
+		httpx.ErrorWith(w, http.StatusConflict,
+			"WorkOS reports invalid_grant; sign in again.",
+			"reconnect_required",
+			map[string]any{"reconnectRequired": true})
+	case authErrInternal:
+		msg := ae.msg
+		if msg == "" {
+			msg = "internal error"
+		}
+		httpx.Error(w, http.StatusInternalServerError, msg, "internal_error")
+	default:
+		msg := ae.msg
+		if msg == "" {
+			msg = "workos authenticate failed"
+		}
+		httpx.Error(w, http.StatusBadGateway, msg, "upstream_error")
+	}
+}
+
+// callWorkOS posts to WorkOS's /user_management/authenticate and translates
+// the response into the desktop token bundle or a classified error.
+func (h *Handler) callWorkOS(ctx context.Context, payload map[string]string) (*tokenBundle, *authError) {
 	body, _ := json.Marshal(payload)
-	upReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost,
+	upReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		h.baseURL+"/user_management/authenticate", strings.NewReader(string(body)))
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "could not build request", "internal_error")
-		return
+		return nil, &authError{kind: authErrInternal, msg: "could not build request"}
 	}
 	upReq.Header.Set("Content-Type", "application/json")
 
 	resp, err := h.http.Do(upReq)
 	if err != nil {
 		h.log.Warn("workos authenticate upstream error", zap.Error(err))
-		httpx.Error(w, http.StatusBadGateway, "workos authenticate failed", "upstream_error")
-		return
+		return nil, &authError{kind: authErrUpstream, msg: "workos authenticate failed"}
 	}
 	defer func() { _ = resp.Body.Close() }()
 	raw, err := outbound.ReadAll(resp.Body, h.http.MaxResponseBytes())
 	if err != nil {
 		h.log.Warn("workos authenticate response read failed", zap.Error(err))
-		httpx.Error(w, http.StatusBadGateway, "workos authenticate failed", "upstream_error")
-		return
+		return nil, &authError{kind: authErrUpstream, msg: "workos authenticate failed"}
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -197,15 +428,10 @@ func (h *Handler) authenticate(w http.ResponseWriter, r *http.Request, payload m
 		}
 		_ = json.Unmarshal(raw, &werr)
 		if werr.Error == "invalid_grant" {
-			httpx.ErrorWith(w, http.StatusConflict,
-				"WorkOS reports invalid_grant; sign in again.",
-				"reconnect_required",
-				map[string]any{"reconnectRequired": true})
-			return
+			return nil, &authError{kind: authErrInvalidGrant}
 		}
 		h.log.Warn("workos authenticate non-200", zap.Int("status", resp.StatusCode))
-		httpx.Error(w, http.StatusBadGateway, "workos authenticate failed", "upstream_error")
-		return
+		return nil, &authError{kind: authErrUpstream, msg: "workos authenticate failed"}
 	}
 
 	var wr struct {
@@ -217,18 +443,17 @@ func (h *Handler) authenticate(w http.ResponseWriter, r *http.Request, payload m
 		} `json:"user"`
 	}
 	if err := json.Unmarshal(raw, &wr); err != nil || wr.AccessToken == "" {
-		httpx.Error(w, http.StatusBadGateway, "malformed workos response", "upstream_error")
-		return
+		return nil, &authError{kind: authErrUpstream, msg: "malformed workos response"}
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, tokenBundle{
+	return &tokenBundle{
 		AccessToken:  wr.AccessToken,
 		RefreshToken: wr.RefreshToken,
 		ExpiresAt:    accessTokenExpiry(wr.AccessToken),
 		TokenType:    "Bearer",
 		UserID:       wr.User.ID,
 		Email:        wr.User.Email,
-	})
+	}, nil
 }
 
 // accessTokenExpiry reads the `exp` claim from a WorkOS access token (a JWT)
