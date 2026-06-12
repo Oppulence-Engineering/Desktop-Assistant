@@ -140,15 +140,18 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 }
 
 // scopeToUser applies a user predicate to the query, or returns ErrNoViewer.
-// Internal (server-to-server) callers bypass scoping with full access.
+// A user in context always wins, even when the internal-caller flag is also
+// set: internal flows (Temporal activities, cloud-event routing) attach the
+// owner via auth.WithUser precisely so quota and billing reads stay scoped to
+// that tenant. Internal callers without a user bypass scoping with full
+// access.
 func scopeToUser(ctx context.Context, apply func(uuid.UUID)) error {
+	if u, ok := auth.UserFromCtx(ctx); ok {
+		apply(u.ID)
+		return nil
+	}
 	if auth.IsInternalCaller(ctx) {
 		return nil
 	}
-	u, ok := auth.UserFromCtx(ctx)
-	if !ok {
-		return ErrNoViewer
-	}
-	apply(u.ID)
-	return nil
+	return ErrNoViewer
 }
