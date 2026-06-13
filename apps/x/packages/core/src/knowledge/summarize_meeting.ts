@@ -63,6 +63,8 @@ function loadRecentCalendarEvents(meetingTime: string): string {
     if (files.length === 0) return "";
 
     const meetingDate = new Date(meetingTime);
+    const meetingMs = meetingDate.getTime();
+    if (!Number.isFinite(meetingMs)) return "";
     // Only consider events within ±3 hours of the meeting
     const windowMs = 3 * 60 * 60 * 1000;
 
@@ -77,7 +79,9 @@ function loadRecentCalendarEvents(meetingTime: string): string {
         if (!startTime) continue;
 
         const eventStart = new Date(startTime);
-        if (Math.abs(eventStart.getTime() - meetingDate.getTime()) > windowMs) continue;
+        const eventStartMs = eventStart.getTime();
+        if (!Number.isFinite(eventStartMs)) continue;
+        if (Math.abs(eventStartMs - meetingMs) > windowMs) continue;
 
         const attendees = (event.attendees || [])
           .map((a: { displayName?: string; email?: string }) => a.displayName || a.email)
@@ -106,6 +110,18 @@ function loadRecentCalendarEvents(meetingTime: string): string {
   }
 }
 
+function resolveCalendarSource(source: unknown): string | null {
+  if (typeof source !== "string" || !source.trim()) return null;
+  if (path.extname(source) !== ".json") return null;
+
+  const calendarRoot = path.resolve(CALENDAR_SYNC_DIR);
+  const fullPath = path.resolve(WorkDir, source);
+  if (fullPath !== calendarRoot && !fullPath.startsWith(`${calendarRoot}${path.sep}`)) {
+    return null;
+  }
+  return fullPath;
+}
+
 /**
  * Load a specific calendar event from the calendar_sync directory using
  * the calendar_event JSON stored in the meeting note frontmatter.
@@ -127,9 +143,9 @@ function loadCalendarEventContext(calendarEventJson: string): string {
     // Try to load the full event from source file for attendee info
     let attendees = "";
     let organizer = "";
-    if (meta.source) {
+    const fullPath = resolveCalendarSource(meta.source);
+    if (fullPath) {
       try {
-        const fullPath = path.join(WorkDir, meta.source);
         if (fs.existsSync(fullPath)) {
           const event = JSON.parse(fs.readFileSync(fullPath, "utf-8"));
           attendees = (event.attendees || [])

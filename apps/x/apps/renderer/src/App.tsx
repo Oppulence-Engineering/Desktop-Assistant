@@ -1076,7 +1076,7 @@ function App() {
     try {
       const oauthState = await window.ipc.invoke("oauth:getState", null);
       const productState = getProductProviderState(oauthState.config);
-      return !!productState?.connected && !productState.error;
+      return !productState?.error;
     } catch {
       return false;
     }
@@ -1122,7 +1122,13 @@ function App() {
         return;
       }
       pendingVoiceInputRef.current = true;
-      handlePromptSubmitRef.current?.({ text, files: [] });
+      const submit = handlePromptSubmitRef.current;
+      if (!submit) {
+        pendingVoiceInputRef.current = false;
+        setPresetMessage(text);
+        return;
+      }
+      await submit({ text, files: [] });
     } catch (error) {
       console.error("[voice] submit recording failed", error);
       toast("Voice transcription failed.");
@@ -3049,6 +3055,8 @@ function App() {
       }
     } catch (error) {
       console.error("Failed to send message:", error);
+    } finally {
+      pendingVoiceInputRef.current = false;
     }
   };
   handlePromptSubmitRef.current = handlePromptSubmit;

@@ -160,8 +160,9 @@ interface SpawnTarget {
   cleanup?: () => void;
 }
 
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`;
+export function shellQuote(value: string): string {
+  const singleLine = value.replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+  return `'${singleLine.replace(/'/g, `'\\''`)}'`;
 }
 
 function spawnArgsForAttempt(attempt: SpawnAttempt, bin: string, args: string[]): SpawnTarget {

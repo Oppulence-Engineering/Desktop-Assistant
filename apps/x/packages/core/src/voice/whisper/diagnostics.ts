@@ -37,7 +37,7 @@ export async function runWhisperDiagnostic(
       durationMs,
       rtf: result.rtf,
       text: result.text,
-      ...(input.retainDiagnostics === false ? {} : { engineLog: result.engineLog }),
+      ...(input.retainDiagnostics === true ? { engineLog: result.engineLog } : {}),
     };
   } catch (err) {
     return {

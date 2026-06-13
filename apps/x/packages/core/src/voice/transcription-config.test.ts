@@ -97,7 +97,7 @@ describe("transcription privacy config", () => {
     expect(parsed.privacy).toEqual({
       localOnly: false,
       retainRawAudio: false,
-      retainDiagnostics: true,
+      retainDiagnostics: false,
       redactTranscriptsInLogs: true,
     });
   });
@@ -205,7 +205,7 @@ describe("resolveVoiceProvider", () => {
     ).toBe("solomon");
   });
 
-  it("forces local provider in local-only privacy mode", async () => {
+  it("refuses to route to cloud when local-only privacy mode is unsupported", async () => {
     expect(
       voice.resolveVoiceProvider({
         userOverride: "deepgram",
@@ -214,7 +214,7 @@ describe("resolveVoiceProvider", () => {
         localSupported: false,
         localOnly: true,
       }),
-    ).toBe("whisper-local");
+    ).toBe("none");
   });
 });
 
@@ -280,7 +280,7 @@ describe("resolveMeetingProvider", () => {
     expect(r.provider).toBe("deepgram"); // stays cloud; surfaced upstream
   });
 
-  it('forces local provider with reason "privacy" in local-only privacy mode', async () => {
+  it("marks local-only meeting transcription unavailable when local is unsupported", async () => {
     const r = voice.resolveMeetingProvider({
       ...base,
       userOverride: "deepgram",
@@ -289,6 +289,6 @@ describe("resolveMeetingProvider", () => {
       meetingMinutesRemaining: 0,
       localOnly: true,
     });
-    expect(r).toEqual({ provider: "whisper-local", reason: "privacy" });
+    expect(r).toEqual({ provider: "none", reason: "local_unavailable" });
   });
 });

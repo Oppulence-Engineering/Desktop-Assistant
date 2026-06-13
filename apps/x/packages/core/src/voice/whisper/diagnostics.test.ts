@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { runWhisperDiagnostic } from "./diagnostics.js";
 
 describe("runWhisperDiagnostic", () => {
-  it("returns latency, model, accel, text, and engine log", async () => {
+  it("redacts engine log by default", async () => {
     const result = await runWhisperDiagnostic({
       pcm16: new Int16Array(16000),
       sampleRate: 16000,
@@ -26,16 +26,16 @@ describe("runWhisperDiagnostic", () => {
       rtf: 2.3,
     });
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
-    expect(result.engineLog).toContain("Core ML model loaded");
+    expect(result.engineLog).toBeUndefined();
   });
 
-  it("redacts engine log when diagnostics retention is disabled", async () => {
+  it("includes engine log only when diagnostics retention is enabled", async () => {
     const result = await runWhisperDiagnostic({
       pcm16: new Int16Array(16000),
       sampleRate: 16000,
       model: "base.en-q5_1",
       accel: "metal",
-      retainDiagnostics: false,
+      retainDiagnostics: true,
       transcribe: vi.fn().mockResolvedValue({
         text: "hello",
         rtf: 1.1,
@@ -45,6 +45,6 @@ describe("runWhisperDiagnostic", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.engineLog).toBeUndefined();
+    expect(result.engineLog).toContain("sensitive path");
   });
 });

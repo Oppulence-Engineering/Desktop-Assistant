@@ -228,7 +228,14 @@ export async function writeWhisperBenchmark(profile: WhisperBenchmarkProfile): P
 }
 
 /** Why a provider was chosen — surfaced for telemetry + UX notices (§17/§19). */
-export type ProviderReason = "user" | "remote" | "capability" | "quota" | "fallback" | "privacy";
+export type ProviderReason =
+  | "user"
+  | "remote"
+  | "capability"
+  | "quota"
+  | "fallback"
+  | "privacy"
+  | "local_unavailable";
 
 export interface VoiceProviderInput {
   /** The user's explicit choice from `transcription.json` (absent → not chosen). */
@@ -251,7 +258,7 @@ export interface VoiceProviderInput {
  * Pure function of its inputs (the caller probes capability) → unit-testable.
  */
 export function resolveVoiceProvider(input: VoiceProviderInput): TranscriptionProvider {
-  if (input.localOnly) return "whisper-local";
+  if (input.localOnly) return input.localSupported ? "whisper-local" : "none";
 
   const want = input.userOverride ?? input.remoteDefault ?? "whisper-local";
   if (want === "whisper-local" && !input.localSupported) {
@@ -279,7 +286,11 @@ export function resolveMeetingProvider(input: MeetingProviderInput): {
   provider: TranscriptionProvider;
   reason: ProviderReason;
 } {
-  if (input.localOnly) return { provider: "whisper-local", reason: "privacy" };
+  if (input.localOnly) {
+    return input.localSupported
+      ? { provider: "whisper-local", reason: "privacy" }
+      : { provider: "none", reason: "local_unavailable" };
+  }
 
   const chosenReason: ProviderReason = input.userOverride
     ? "user"

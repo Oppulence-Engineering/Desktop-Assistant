@@ -10,7 +10,7 @@ import { z } from "zod";
  * These are the canonical values shared by the renderer, the main process, and
  * the persisted `transcription.json` config.
  */
-export const TranscriptionProvider = z.enum(["solomon", "deepgram", "whisper-local"]);
+export const TranscriptionProvider = z.enum(["solomon", "deepgram", "whisper-local", "none"]);
 export type TranscriptionProvider = z.infer<typeof TranscriptionProvider>;
 
 /** Cloud providers (everything that is not on-device). Used by the fallback logic. */
@@ -114,7 +114,7 @@ export type WhisperBenchmarkProfile = z.infer<typeof WhisperBenchmarkProfile>;
 export const VoicePrivacySettings = z.object({
   localOnly: z.boolean().default(false),
   retainRawAudio: z.boolean().default(false),
-  retainDiagnostics: z.boolean().default(true),
+  retainDiagnostics: z.boolean().default(false),
   redactTranscriptsInLogs: z.boolean().default(true),
 });
 export type VoicePrivacySettings = z.infer<typeof VoicePrivacySettings>;
@@ -206,7 +206,7 @@ export const TranscriptionConfig = z.object({
   privacy: VoicePrivacySettings.default({
     localOnly: false,
     retainRawAudio: false,
-    retainDiagnostics: true,
+    retainDiagnostics: false,
     redactTranscriptsInLogs: true,
   }),
 });

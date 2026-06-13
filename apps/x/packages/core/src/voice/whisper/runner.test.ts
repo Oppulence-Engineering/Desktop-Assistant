@@ -8,6 +8,7 @@ import {
   classify,
   autoThreads,
   timeoutFor,
+  shellQuote,
   spawnWhisper,
   transcribePcm,
   run,
@@ -102,6 +103,17 @@ describe("autoThreads / timeoutFor", () => {
   it("scales the timeout with audio length but never below 15s", () => {
     expect(timeoutFor(0)).toBe(15000);
     expect(timeoutFor(10)).toBe(30000);
+  });
+});
+
+describe("shellQuote", () => {
+  it("does not emit raw line breaks into fallback shell scripts", () => {
+    const quoted = shellQuote("safe'\nrm -rf nope\rvalue");
+
+    expect(quoted).not.toContain("\n");
+    expect(quoted).not.toContain("\r");
+    expect(quoted).toContain("\\n");
+    expect(quoted).toContain("\\r");
   });
 });
 

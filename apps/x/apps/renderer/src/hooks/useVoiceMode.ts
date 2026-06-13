@@ -58,16 +58,6 @@ export function useVoiceMode() {
   }, []);
 
   const resolveProvider = useCallback(async (): Promise<TranscriptionProvider> => {
-    if (await readLocalOnlyPrivacy()) {
-      providerRef.current = "whisper-local";
-      cachedAuth = null;
-      console.log("[voice] provider resolved", {
-        provider: providerRef.current,
-        reason: "localOnly",
-      });
-      return providerRef.current;
-    }
-
     // Resolve which provider to use first — the tiering + capability gate runs in main.
     try {
       const resolved = await window.ipc.invoke("transcription:getVoiceProvider", null);
@@ -76,7 +66,7 @@ export function useVoiceMode() {
       providerRef.current = "deepgram";
     }
     console.log("[voice] provider resolved", { provider: providerRef.current });
-    if (providerRef.current === "whisper-local") {
+    if (providerRef.current === "whisper-local" || providerRef.current === "none") {
       cachedAuth = null;
     }
     return providerRef.current;
@@ -84,7 +74,8 @@ export function useVoiceMode() {
 
   // Refresh cached auth details (called on warmup, not on mic click)
   const refreshAuth = useCallback(async () => {
-    if ((await resolveProvider()) === "whisper-local") return;
+    const provider = await resolveProvider();
+    if (provider === "whisper-local" || provider === "none") return;
 
     // No stale cloud credentials should survive a cloud auth refresh.
     cachedAuth = null;
@@ -117,7 +108,8 @@ export function useVoiceMode() {
   // Starts the connection and returns immediately (does not wait for open).
   const connectWs = useCallback(async () => {
     const generation = privacyGenerationRef.current;
-    if ((await resolveProvider()) === "whisper-local") return;
+    const provider = await resolveProvider();
+    if (provider === "whisper-local" || provider === "none") return;
 
     if (
       wsRef.current &&
@@ -252,6 +244,16 @@ export function useVoiceMode() {
     posthog.people.set_once({ has_used_voice: true });
 
     const provider = await resolveProvider();
+    if (provider === "none") {
+      console.warn("[voice] local-only transcription is unavailable on this device");
+      analytics.transcriptionFailed({
+        provider: "whisper-local",
+        mode: "voice",
+        code: "device_unsupported",
+      });
+      setState("idle");
+      return;
+    }
     const useLocal = provider === "whisper-local";
     console.log("[voice] starting mic capture", { provider });
     analytics.transcriptionStarted({ provider: providerRef.current, mode: "voice" });

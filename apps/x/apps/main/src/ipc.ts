@@ -597,7 +597,10 @@ type RemoteTranscriptionState = {
 };
 
 function asProvider(value: unknown): TranscriptionProvider | undefined {
-  return value === "whisper-local" || value === "deepgram" || value === "solomon"
+  return value === "whisper-local" ||
+    value === "deepgram" ||
+    value === "solomon" ||
+    value === "none"
     ? value
     : undefined;
 }
@@ -676,8 +679,6 @@ async function remoteTranscriptionState(): Promise<RemoteTranscriptionState | nu
 
 async function resolveVoiceProviderMain(): Promise<TranscriptionProvider> {
   const cfg = await voice.readTranscriptionConfig();
-  if (cfg?.privacy.localOnly ?? false) return "whisper-local";
-
   const [signedIn, remote, localSupported] = await Promise.all([
     isSignedIn(),
     remoteTranscriptionState(),
@@ -697,8 +698,6 @@ async function resolveMeetingProviderMain(): Promise<{
   reason: voice.ProviderReason;
 }> {
   const cfg = await voice.readTranscriptionConfig();
-  if (cfg?.privacy.localOnly ?? false) return { provider: "whisper-local", reason: "privacy" };
-
   const [signedIn, remote, localSupported, voiceCfg] = await Promise.all([
     isSignedIn(),
     remoteTranscriptionState(),

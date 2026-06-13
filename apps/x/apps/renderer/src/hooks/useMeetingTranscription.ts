@@ -3,6 +3,7 @@ import { buildDeepgramListenUrl } from "@/lib/deepgram-listen-url";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { openWhisperStream, type WhisperStreamHandle } from "@/lib/whisper-stream";
 import * as analytics from "@/lib/analytics";
+import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
 
 export type MeetingTranscriptionState = "idle" | "connecting" | "recording" | "stopping";
 
@@ -261,24 +262,22 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       if (state !== "idle") return null;
       setState("connecting");
 
-      let meetingProvider = "deepgram";
-      let localOnly = false;
+      let meetingProvider: TranscriptionProvider = "deepgram";
       try {
-        const cfg = await window.ipc.invoke("transcription:getConfig", null);
-        localOnly = cfg.privacy.localOnly;
+        const resolved = await window.ipc.invoke("transcription:getMeetingProvider", null);
+        meetingProvider = resolved.provider;
       } catch {
-        /* keep provider fallback when config cannot be read */
+        /* default to cloud */
       }
-      if (localOnly) {
-        meetingProvider = "whisper-local";
-      } else {
-        // Resolve the meeting provider (tiering + free-quota + capability gate, §16/Appendix O).
-        try {
-          const resolved = await window.ipc.invoke("transcription:getMeetingProvider", null);
-          meetingProvider = resolved.provider;
-        } catch {
-          /* default to cloud */
-        }
+      if (meetingProvider === "none") {
+        console.warn("[meeting] local-only meeting transcription is unavailable on this device");
+        analytics.transcriptionFailed({
+          provider: "whisper-local",
+          mode: "meeting",
+          code: "device_unsupported",
+        });
+        setState("idle");
+        return null;
       }
       useLocalRef.current = meetingProvider === "whisper-local";
       analytics.transcriptionStarted({ provider: meetingProvider, mode: "meeting" });
@@ -387,7 +386,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       const failed =
         wsResult.status === "rejected" ||
         micResult.status === "rejected" ||
-        systemResult.status === "rejected";
+        (systemResult.status === "rejected" && !useLocalRef.current);
 
       if (failed) {
         if (wsResult.status === "rejected")
@@ -409,6 +408,12 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
         cleanup();
         setState("idle");
         return null;
+      }
+      if (systemResult.status === "rejected") {
+        console.warn(
+          "[meeting] System audio unavailable; continuing local transcription with microphone audio only:",
+          systemResult.reason,
+        );
       }
 
       const usingHeadphones =
@@ -475,7 +480,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       const micStream = micResult.value;
       micStreamRef.current = micStream;
 
-      const systemStream = systemResult.value;
+      const systemStream = systemResult.status === "fulfilled" ? systemResult.value : null;
       systemStreamRef.current = systemStream;
 
       // ----- Audio pipeline -----
@@ -483,11 +488,20 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       audioCtxRef.current = audioCtx;
 
       const micSource = audioCtx.createMediaStreamSource(micStream);
-      const systemSource = audioCtx.createMediaStreamSource(systemStream);
       const merger = audioCtx.createChannelMerger(2);
 
       micSource.connect(merger, 0, 0); // mic → channel 0
-      systemSource.connect(merger, 0, 1); // system audio → channel 1
+      if (systemStream) {
+        const systemSource = audioCtx.createMediaStreamSource(systemStream);
+        systemSource.connect(merger, 0, 1); // system audio → channel 1
+      } else {
+        const silentSystemSource = audioCtx.createConstantSource();
+        const silentSystemGain = audioCtx.createGain();
+        silentSystemGain.gain.value = 0;
+        silentSystemSource.connect(silentSystemGain);
+        silentSystemGain.connect(merger, 0, 1);
+        silentSystemSource.start();
+      }
 
       const processor = audioCtx.createScriptProcessor(4096, 2, 2);
       processorRef.current = processor;

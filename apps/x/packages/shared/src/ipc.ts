@@ -875,7 +875,9 @@ const ipcSchemas = {
     req: z.null(),
     res: z.object({
       provider: TranscriptionProvider,
-      reason: z.enum(["user", "remote", "capability", "quota", "fallback", "privacy"]).optional(),
+      reason: z
+        .enum(["user", "remote", "capability", "quota", "fallback", "privacy", "local_unavailable"])
+        .optional(),
     }),
   },
   // Read/write the user's explicit transcription.json (settings UI).

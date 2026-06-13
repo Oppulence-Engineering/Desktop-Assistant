@@ -35,7 +35,7 @@ export async function executeVoiceCommand(
       await deps.emailActions.createRule(intent.description);
       return { success: true };
     }
-    return { success: true };
+    return { success: false, message: `Voice command "${intent.kind}" is not supported yet.` };
   } catch (err) {
     return {
       success: false,

@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -6,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   languageModel: vi.fn((model: string) => ({ model })),
   createProvider: vi.fn(() => ({ languageModel: mocks.languageModel })),
   withUseCase: vi.fn((_meta: unknown, fn: () => Promise<unknown>) => fn()),
+  workDir: "/tmp/rowboat-summarize-meeting-test",
+  outsideDir: "/tmp/rowboat-summarize-meeting-outside",
 }));
 
 vi.mock("ai", () => ({
@@ -31,6 +35,10 @@ vi.mock("../analytics/usage.js", () => ({
 
 vi.mock("../analytics/use_case.js", () => ({
   withUseCase: mocks.withUseCase,
+}));
+
+vi.mock("../config/config.js", () => ({
+  WorkDir: mocks.workDir,
 }));
 
 import { summarizeMeeting } from "./summarize_meeting.js";
@@ -79,5 +87,61 @@ type: meeting
     expect(notes).toContain("### Action items");
     expect(notes).toContain("Follow up with Anna tomorrow.");
     expect(mocks.captureLlmUsage).not.toHaveBeenCalled();
+  });
+
+  it("does not include calendar events when the meeting timestamp is invalid", async () => {
+    await fs.rm(mocks.workDir, { recursive: true, force: true });
+    await fs.mkdir(path.join(mocks.workDir, "calendar_sync"), { recursive: true });
+    await fs.writeFile(
+      path.join(mocks.workDir, "calendar_sync", "unrelated.json"),
+      JSON.stringify({
+        summary: "Unrelated confidential event",
+        start: { dateTime: "2026-06-13T12:00:00.000Z" },
+        end: { dateTime: "2026-06-13T13:00:00.000Z" },
+        attendees: [{ email: "private@example.com" }],
+      }),
+    );
+    mocks.generateText.mockResolvedValue({
+      text: "### Summary\n- Meeting notes.",
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+    });
+
+    await summarizeMeeting("**You:** Normal transcript.", "not-a-date");
+
+    const prompt = mocks.generateText.mock.calls[0]?.[0]?.prompt as string;
+    expect(prompt).not.toContain("Unrelated confidential event");
+    expect(prompt).not.toContain("private@example.com");
+  });
+
+  it("does not load calendar event source paths outside WorkDir", async () => {
+    await fs.rm(mocks.workDir, { recursive: true, force: true });
+    await fs.rm(mocks.outsideDir, { recursive: true, force: true });
+    await fs.mkdir(mocks.outsideDir, { recursive: true });
+    await fs.writeFile(
+      path.join(mocks.outsideDir, "secret.json"),
+      JSON.stringify({
+        summary: "Secret outside event",
+        attendees: [{ email: "secret@example.com" }],
+        organizer: { email: "owner@example.com" },
+      }),
+    );
+    mocks.generateText.mockResolvedValue({
+      text: "### Summary\n- Meeting notes.",
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+    });
+
+    await summarizeMeeting(
+      "**You:** Normal transcript.",
+      "2026-06-13T12:00:00.000Z",
+      JSON.stringify({
+        summary: "Linked meeting",
+        source: "../rowboat-summarize-meeting-outside/secret.json",
+      }),
+    );
+
+    const prompt = mocks.generateText.mock.calls[0]?.[0]?.prompt as string;
+    expect(prompt).toContain("Linked meeting");
+    expect(prompt).not.toContain("secret@example.com");
+    expect(prompt).not.toContain("owner@example.com");
   });
 });

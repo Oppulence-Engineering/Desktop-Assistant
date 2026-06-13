@@ -54,6 +54,16 @@ describe("executeVoiceCommand", () => {
     expect(result.success).toBe(false);
     expect(result.message).toContain("snooze");
   });
+
+  it("fails closed for parsed non-email intents until adapters are wired", async () => {
+    const result = await executeVoiceCommand(
+      { kind: "meeting.startRecording", title: "product sync" },
+      { confirmed: false, emailActions: fakeEmailActions() },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("meeting.startRecording");
+  });
 });
 
 function fakeEmailActions() {
