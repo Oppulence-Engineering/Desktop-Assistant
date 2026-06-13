@@ -22,14 +22,37 @@ export async function probe(force = false): Promise<Capability> {
   if (cached && !force) return cached;
 
   const cores = os.cpus()?.length || 4; // `|| 4`: an empty cpus() array (0) must fall back, not gate as <4
-  const info = await systemInfo().catch(() => "");
-  const accel = parseAccel(info);
+  let info: string;
+  try {
+    info = await systemInfo();
+    if (process.platform === "darwin" && !/\bCOREML\s*=/i.test(info)) {
+      info += await linkedFrameworkInfo();
+    }
+  } catch {
+    return cache({
+      supported: false,
+      accel: "cpu",
+      cores,
+      reason: "whisper-cli unavailable",
+    });
+  }
 
-  // Apple Silicon always has Metal + Core ML in practice, even when the probe
-  // didn't surface the backend line (binary absent in dev, or --help not emitting
-  // system_info). Short-circuit so the generic CPU gate below isn't dead code here.
-  if (process.platform === "darwin" && process.arch === "arm64") {
-    return cache({ supported: true, accel: accel === "cpu" ? "coreml" : accel, cores });
+  return cache(capabilityFromSystemInfo(info, cores));
+}
+
+export function capabilityFromSystemInfo(
+  systemInfoText: string,
+  cores: number,
+  platform = process.platform,
+  arch = process.arch,
+): Capability {
+  const accel = parseAccel(systemInfoText);
+
+  // Apple Silicon always has Metal in practice. Core ML is reported only when
+  // the probe finds explicit evidence (system_info or a linked CoreML framework).
+  // Short-circuit so the generic CPU gate below isn't dead code here.
+  if (platform === "darwin" && arch === "arm64") {
+    return { supported: true, accel: accel === "cpu" ? "metal" : accel, cores };
   }
 
   // Everyone else: a parsed GPU backend is fine; CPU-only is gated on core count.
@@ -44,7 +67,7 @@ export async function probe(force = false): Promise<Capability> {
     }
   }
 
-  return cache({ supported, accel, cores, reason });
+  return { supported, accel, cores, reason };
 }
 
 function cache(c: Capability): Capability {
@@ -59,9 +82,9 @@ export function resetCapabilityCache(): void {
 
 /** Parse the whisper.cpp `system_info` line for the active backend (Appendix F). */
 export function parseAccel(systemInfo: string): Accel {
-  const on = (k: string) => new RegExp(`${k}\\s*=\\s*1`).test(systemInfo);
-  if (on("COREML")) return "coreml";
-  if (on("METAL")) return "metal";
+  const on = (k: string) => new RegExp(`${k}\\s*=\\s*1`, "i").test(systemInfo);
+  if (on("COREML") || /CoreML\.framework/i.test(systemInfo)) return "coreml";
+  if (on("METAL") || /\bMetal\s*:/i.test(systemInfo)) return "metal";
   if (on("CUDA")) return "cuda";
   if (on("VULKAN")) return "vulkan";
   return "cpu";
@@ -96,6 +119,27 @@ function systemInfo(): Promise<string> {
         reject(err);
       }
     });
+    child.on("close", finish);
+    setTimeout(() => {
+      child.kill();
+      finish();
+    }, 3000);
+  });
+}
+
+function linkedFrameworkInfo(): Promise<string> {
+  return new Promise((resolve) => {
+    let out = "";
+    let settled = false;
+    const finish = () => {
+      if (!settled) {
+        settled = true;
+        resolve(out);
+      }
+    };
+    const child = spawn("otool", ["-L", binaryPath()], { stdio: ["ignore", "pipe", "ignore"] });
+    child.stdout?.on("data", (d) => (out += d.toString()));
+    child.on("error", finish);
     child.on("close", finish);
     setTimeout(() => {
       child.kill();

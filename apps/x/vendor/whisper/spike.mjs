@@ -9,9 +9,9 @@
 //
 // Pass a 16 kHz mono int16 .pcm (raw) or .wav. RTF > 1 means faster than realtime.
 import { readFile } from "node:fs/promises";
-import { run } from "@x/core/dist/voice/whisper/runner.js";
-import { wer } from "@x/core/dist/voice/whisper/wer.js";
-import { configureWhisperBinary } from "@x/core/dist/voice/whisper/bin.js";
+import { run } from "../../packages/core/dist/voice/whisper/runner.js";
+import { wer } from "../../packages/core/dist/voice/whisper/wer.js";
+import { configureWhisperBinary } from "../../packages/core/dist/voice/whisper/bin.js";
 
 async function main() {
   const [input, modelPath, reference] = process.argv.slice(2);

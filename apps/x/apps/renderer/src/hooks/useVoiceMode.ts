@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { buildDeepgramListenUrl } from "@/lib/deepgram-listen-url";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import posthog from "posthog-js";
@@ -22,6 +22,7 @@ const DEEPGRAM_PARAMS = new URLSearchParams({
   no_delay: "true",
 });
 const DEEPGRAM_LISTEN_URL = `wss://api.deepgram.com/v1/listen?${DEEPGRAM_PARAMS.toString()}`;
+const TRANSCRIPTION_CONFIG_CHANGED_EVENT = "transcription-config-changed";
 
 // Cache auth details so we don't need IPC round-trips on every mic click
 let cachedAuth:
@@ -30,7 +31,7 @@ let cachedAuth:
   | null = null;
 
 export function useVoiceMode() {
-  const { refresh: refreshSolomonAccount } = useSolomonAccount();
+  const { refresh: refreshSolomonAccount } = useSolomonAccount({ autoRefresh: false });
   const [state, setState] = useState<VoiceState>("idle");
   const [interimText, setInterimText] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
@@ -44,9 +45,29 @@ export function useVoiceMode() {
   // Resolved transcription provider + on-device PCM accumulation (RFC 009 §12/§14)
   const providerRef = useRef<TranscriptionProvider>("deepgram");
   const pcmChunksRef = useRef<Int16Array[]>([]);
+  const privacyGenerationRef = useRef(0);
 
-  // Refresh cached auth details (called on warmup, not on mic click)
-  const refreshAuth = useCallback(async () => {
+  const readLocalOnlyPrivacy = useCallback(async (): Promise<boolean> => {
+    try {
+      const cfg = await window.ipc.invoke("transcription:getConfig", null);
+      return cfg.privacy.localOnly;
+    } catch {
+      /* Keep the existing provider/auth path if config cannot be read. */
+    }
+    return false;
+  }, []);
+
+  const resolveProvider = useCallback(async (): Promise<TranscriptionProvider> => {
+    if (await readLocalOnlyPrivacy()) {
+      providerRef.current = "whisper-local";
+      cachedAuth = null;
+      console.log("[voice] provider resolved", {
+        provider: providerRef.current,
+        reason: "localOnly",
+      });
+      return providerRef.current;
+    }
+
     // Resolve which provider to use first — the tiering + capability gate runs in main.
     try {
       const resolved = await window.ipc.invoke("transcription:getVoiceProvider", null);
@@ -54,12 +75,25 @@ export function useVoiceMode() {
     } catch {
       providerRef.current = "deepgram";
     }
+    console.log("[voice] provider resolved", { provider: providerRef.current });
     if (providerRef.current === "whisper-local") {
-      // No cloud auth needed for on-device transcription.
+      cachedAuth = null;
+    }
+    return providerRef.current;
+  }, [readLocalOnlyPrivacy]);
+
+  // Refresh cached auth details (called on warmup, not on mic click)
+  const refreshAuth = useCallback(async () => {
+    if ((await resolveProvider()) === "whisper-local") return;
+
+    // No stale cloud credentials should survive a cloud auth refresh.
+    cachedAuth = null;
+    const account = await refreshSolomonAccount();
+    if (providerRef.current === "whisper-local" || (await readLocalOnlyPrivacy())) {
+      providerRef.current = "whisper-local";
       cachedAuth = null;
       return;
     }
-    const account = await refreshSolomonAccount();
     if (account?.signedIn && account.accessToken && account.config?.websocketApiUrl) {
       cachedAuth = {
         type: "solomon",
@@ -68,15 +102,23 @@ export function useVoiceMode() {
       };
     } else {
       const config = await window.ipc.invoke("voice:getConfig", null);
+      if (await readLocalOnlyPrivacy()) {
+        providerRef.current = "whisper-local";
+        cachedAuth = null;
+        return;
+      }
       if (config?.deepgram) {
         cachedAuth = { type: "local", apiKey: config.deepgram.apiKey };
       }
     }
-  }, [refreshSolomonAccount]);
+  }, [refreshSolomonAccount, resolveProvider, readLocalOnlyPrivacy]);
 
   // Create and connect a Deepgram WebSocket using cached auth.
   // Starts the connection and returns immediately (does not wait for open).
   const connectWs = useCallback(async () => {
+    const generation = privacyGenerationRef.current;
+    if ((await resolveProvider()) === "whisper-local") return;
+
     if (
       wsRef.current &&
       (wsRef.current.readyState === WebSocket.OPEN ||
@@ -87,6 +129,15 @@ export function useVoiceMode() {
     // Refresh auth if we don't have it cached yet
     if (!cachedAuth) {
       await refreshAuth();
+    }
+    if (
+      generation !== privacyGenerationRef.current ||
+      providerRef.current === "whisper-local" ||
+      (await readLocalOnlyPrivacy())
+    ) {
+      providerRef.current = "whisper-local";
+      cachedAuth = null;
+      return;
     }
     if (!cachedAuth) return;
 
@@ -138,7 +189,7 @@ export function useVoiceMode() {
       console.log("[voice] WebSocket closed");
       wsRef.current = null;
     };
-  }, [refreshAuth]);
+  }, [refreshAuth, resolveProvider, readLocalOnlyPrivacy]);
 
   // Stop audio capture and close WS
   const stopAudioCapture = useCallback(() => {
@@ -166,6 +217,26 @@ export function useVoiceMode() {
     setState("idle");
   }, []);
 
+  useEffect(() => {
+    const closeCloudTransportForLocalOnly = (event: Event) => {
+      if (!(event instanceof CustomEvent) || event.detail?.privacy?.localOnly !== true) return;
+      privacyGenerationRef.current += 1;
+      cachedAuth = null;
+      if (providerRef.current !== "whisper-local" || wsRef.current) {
+        providerRef.current = "whisper-local";
+        stopAudioCapture();
+      }
+    };
+
+    window.addEventListener(TRANSCRIPTION_CONFIG_CHANGED_EVENT, closeCloudTransportForLocalOnly);
+    return () => {
+      window.removeEventListener(
+        TRANSCRIPTION_CONFIG_CHANGED_EVENT,
+        closeCloudTransportForLocalOnly,
+      );
+    };
+  }, [stopAudioCapture]);
+
   const start = useCallback(async () => {
     if (state !== "idle") return;
 
@@ -180,7 +251,9 @@ export function useVoiceMode() {
     analytics.voiceInputStarted();
     posthog.people.set_once({ has_used_voice: true });
 
-    const useLocal = providerRef.current === "whisper-local";
+    const provider = await resolveProvider();
+    const useLocal = provider === "whisper-local";
+    console.log("[voice] starting mic capture", { provider });
     analytics.transcriptionStarted({ provider: providerRef.current, mode: "voice" });
 
     // Kick off mic + (cloud only) WebSocket in parallel, don't await WebSocket
@@ -193,15 +266,25 @@ export function useVoiceMode() {
     ]);
 
     if (!stream) {
+      console.warn("[voice] mic capture did not start");
       setState("idle");
       return;
     }
 
     mediaStreamRef.current = stream;
+    console.log("[voice] mic capture started", {
+      audioTracks: stream.getAudioTracks().length,
+      provider,
+    });
 
     // Start audio capture immediately — buffer if WS isn't open yet
     const audioCtx = new AudioContext({ sampleRate: 16000 });
     audioCtxRef.current = audioCtx;
+    if (audioCtx.state === "suspended") {
+      await audioCtx.resume().catch((error) => {
+        console.warn("[voice] audio context resume failed", error);
+      });
+    }
     const source = audioCtx.createMediaStreamSource(stream);
     const processor = audioCtx.createScriptProcessor(2048, 1, 1);
     processorRef.current = processor;
@@ -226,7 +309,7 @@ export function useVoiceMode() {
 
     source.connect(processor);
     processor.connect(audioCtx.destination);
-  }, [state, connectWs]);
+  }, [state, connectWs, resolveProvider]);
 
   /** Concatenate buffered on-device PCM, transcribe via IPC, return the text. */
   const submitLocal = useCallback(async (): Promise<string> => {
@@ -235,6 +318,11 @@ export function useVoiceMode() {
     stopAudioCapture();
 
     const total = chunks.reduce((n, c) => n + c.length, 0);
+    console.log("[voice] local submit captured samples", {
+      chunks: chunks.length,
+      samples: total,
+      audioMs: (total / 16000) * 1000,
+    });
     if (total === 0) return "";
     const merged = new Int16Array(total);
     let offset = 0;
@@ -250,6 +338,12 @@ export function useVoiceMode() {
         pcm16: merged.buffer as ArrayBuffer,
         sampleRate: 16000,
         channels: 1,
+      });
+      console.log("[voice] whisper transcribe completed", {
+        success: res.success,
+        code: res.success ? undefined : res.code,
+        textLength: res.success ? (res.text ?? "").length : 0,
+        rtf: res.success ? res.rtf : undefined,
       });
       if (!res.success) {
         analytics.transcriptionFailed({
@@ -267,7 +361,8 @@ export function useVoiceMode() {
         rtf: res.rtf,
       });
       return (res.text ?? "").trim();
-    } catch {
+    } catch (error) {
+      console.error("[voice] whisper transcribe failed", error);
       analytics.transcriptionFailed({
         provider: "whisper-local",
         mode: "voice",

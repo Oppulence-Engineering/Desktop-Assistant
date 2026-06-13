@@ -56,6 +56,11 @@ import {
   WhisperSegment,
   WhisperModelSummary,
   WhisperModelProgress,
+  WhisperModelHealth,
+  WhisperBenchmarkProfile,
+  VoiceCommandIntent,
+  WhisperDiagnosticResult,
+  VoicePrivacySettings,
 } from "./transcription.js";
 
 // ============================================================================
@@ -770,6 +775,14 @@ const ipcSchemas = {
       mimeType: z.string(),
     }),
   },
+  "voice:parseCommand": {
+    req: z.object({ text: z.string(), surface: z.enum(["global", "chat", "email", "meeting"]) }),
+    res: z.object({ intent: VoiceCommandIntent, requiresConfirmation: z.boolean() }),
+  },
+  "voice:executeCommand": {
+    req: z.object({ intent: VoiceCommandIntent, confirmed: z.boolean().default(false) }),
+    res: z.object({ success: z.boolean(), message: z.string().optional() }),
+  },
   // ---- Local on-device transcription (whisper.cpp) — RFC 009 §11 ----
   // Capability probe: which accel backend is compiled in + whether local is viable here.
   "whisper:capability": {
@@ -781,19 +794,39 @@ const ipcSchemas = {
       reason: z.string().optional(),
     }),
   },
+  "whisper:diagnose": {
+    req: z.object({
+      pcm16: z.instanceof(ArrayBuffer),
+      sampleRate: z.literal(16000),
+      expectedText: z.string().optional(),
+    }),
+    res: WhisperDiagnosticResult,
+  },
   // Model catalog with per-model install state for the settings picker.
   "whisper:listModels": {
     req: z.null(),
     res: z.object({ models: z.array(WhisperModelSummary) }),
+  },
+  "whisper:verifyModel": {
+    req: z.object({ id: z.string() }),
+    res: WhisperModelHealth,
   },
   // Download (+ verify) a model; resolves once present. `code` carries the failure taxonomy.
   "whisper:ensureModel": {
     req: z.object({ id: z.string() }),
     res: z.object({ success: z.boolean(), code: z.string().optional() }),
   },
+  "whisper:repairModel": {
+    req: z.object({ id: z.string() }),
+    res: WhisperModelHealth,
+  },
   "whisper:removeModel": {
     req: z.object({ id: z.string() }),
     res: z.object({ success: z.boolean() }),
+  },
+  "whisper:benchmark": {
+    req: z.object({ model: z.string().optional(), sampleSeconds: z.number().default(10) }),
+    res: WhisperBenchmarkProfile,
   },
   // Batch transcription (voice mode): one structured-clone of the PCM on submit().
   "whisper:transcribe": {
@@ -842,7 +875,7 @@ const ipcSchemas = {
     req: z.null(),
     res: z.object({
       provider: TranscriptionProvider,
-      reason: z.enum(["user", "remote", "capability", "quota", "fallback"]).optional(),
+      reason: z.enum(["user", "remote", "capability", "quota", "fallback", "privacy"]).optional(),
     }),
   },
   // Read/write the user's explicit transcription.json (settings UI).
@@ -866,6 +899,7 @@ const ipcSchemas = {
       voiceProvider: TranscriptionProvider.optional(),
       meetingProvider: TranscriptionProvider.optional(),
       model: z.string().optional(),
+      privacy: VoicePrivacySettings.partial().optional(),
     }),
     res: TranscriptionConfig,
   },

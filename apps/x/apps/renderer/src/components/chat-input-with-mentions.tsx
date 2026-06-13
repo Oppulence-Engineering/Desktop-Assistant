@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ArrowUp,
   AudioLines,
@@ -168,6 +164,10 @@ function normalizeRecentWorkDir(value: unknown): RecentWorkDir | null {
 
 async function readRecentWorkDirs(): Promise<RecentWorkDir[]> {
   try {
+    const exists = await window.ipc.invoke("workspace:exists", {
+      path: RECENT_WORK_DIRS_CONFIG_PATH,
+    });
+    if (!exists.exists) return [];
     const result = await window.ipc.invoke("workspace:readFile", {
       path: RECENT_WORK_DIRS_CONFIG_PATH,
     });
@@ -299,15 +299,30 @@ function ChatInputInner({
 }: ChatInputInnerProps) {
   const controller = usePromptInputController();
   const message = controller.textInput.value;
+  const recordingBarRef = useRef<HTMLDivElement>(null);
+  const handleRecordingKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        onSubmitRecording?.();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        onCancelRecording?.();
+      }
+    },
+    [onCancelRecording, onSubmitRecording],
+  );
+
+  useEffect(() => {
+    if (!isRecording) return;
+    recordingBarRef.current?.focus({ preventScroll: true });
+  }, [isRecording]);
   const [attachments, setAttachments] = useState<StagedAttachment[]>([]);
   const [focusNonce, setFocusNonce] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canSubmit =
-    (Boolean(message.trim()) || attachments.length > 0) && !isProcessing;
+  const canSubmit = (Boolean(message.trim()) || attachments.length > 0) && !isProcessing;
 
-  const [configuredModels, setConfiguredModels] = useState<ConfiguredModel[]>(
-    [],
-  );
+  const [configuredModels, setConfiguredModels] = useState<ConfiguredModel[]>([]);
   const [activeModelKey, setActiveModelKey] = useState("");
   const [lockedModel, setLockedModel] = useState<SelectedModel | null>(null);
   const [searchEnabled, setSearchEnabled] = useState(false);
@@ -351,10 +366,7 @@ function ChatInputInner({
     syncRecentWorkDirs();
     window.addEventListener(RECENT_WORK_DIRS_CHANGED_EVENT, syncRecentWorkDirs);
     return () => {
-      window.removeEventListener(
-        RECENT_WORK_DIRS_CHANGED_EVENT,
-        syncRecentWorkDirs,
-      );
+      window.removeEventListener(RECENT_WORK_DIRS_CHANGED_EVENT, syncRecentWorkDirs);
     };
   }, []);
 
@@ -363,9 +375,7 @@ function ChatInputInner({
     window.ipc
       .invoke("oauth:getState", null)
       .then((result) => {
-        setIsRowboatConnected(
-          getProductProviderState(result.config)?.connected ?? false,
-        );
+        setIsRowboatConnected(getProductProviderState(result.config)?.connected ?? false);
       })
       .catch(() => setIsRowboatConnected(false));
   }, [isActive]);
@@ -376,9 +386,7 @@ function ChatInputInner({
       window.ipc
         .invoke("oauth:getState", null)
         .then((result) => {
-          setIsRowboatConnected(
-            getProductProviderState(result.config)?.connected ?? false,
-          );
+          setIsRowboatConnected(getProductProviderState(result.config)?.connected ?? false);
         })
         .catch(() => setIsRowboatConnected(false));
     });
@@ -410,16 +418,9 @@ function ChatInputInner({
         if (parsed?.providers) {
           for (const [flavor, entry] of Object.entries(parsed.providers)) {
             const e = entry as Record<string, unknown>;
-            const modelList: string[] = Array.isArray(e.models)
-              ? (e.models as string[])
-              : [];
+            const modelList: string[] = Array.isArray(e.models) ? (e.models as string[]) : [];
             const singleModel = typeof e.model === "string" ? e.model : "";
-            const allModels =
-              modelList.length > 0
-                ? modelList
-                : singleModel
-                  ? [singleModel]
-                  : [];
+            const allModels = modelList.length > 0 ? modelList : singleModel ? [singleModel] : [];
             for (const model of allModels) {
               if (model) {
                 models.push({ provider: flavor as ProviderName, model });
@@ -505,28 +506,25 @@ function ChatInputInner({
     [],
   );
 
-  const persistCodingAgent = useCallback(
-    async (dir: string, agent: "claude" | "codex") => {
-      const existing: Record<string, "claude" | "codex"> = {};
-      try {
-        const result = await window.ipc.invoke("workspace:readFile", {
-          path: "config/coding-agents.json",
-        });
-        const parsed = JSON.parse(result.data) as Record<string, unknown>;
-        for (const [k, v] of Object.entries(parsed ?? {})) {
-          if (v === "claude" || v === "codex") existing[k] = v;
-        }
-      } catch {
-        /* start fresh */
-      }
-      existing[dir] = agent;
-      await window.ipc.invoke("workspace:writeFile", {
+  const persistCodingAgent = useCallback(async (dir: string, agent: "claude" | "codex") => {
+    const existing: Record<string, "claude" | "codex"> = {};
+    try {
+      const result = await window.ipc.invoke("workspace:readFile", {
         path: "config/coding-agents.json",
-        data: JSON.stringify(existing, null, 2),
       });
-    },
-    [],
-  );
+      const parsed = JSON.parse(result.data) as Record<string, unknown>;
+      for (const [k, v] of Object.entries(parsed ?? {})) {
+        if (v === "claude" || v === "codex") existing[k] = v;
+      }
+    } catch {
+      /* start fresh */
+    }
+    existing[dir] = agent;
+    await window.ipc.invoke("workspace:writeFile", {
+      path: "config/coding-agents.json",
+      data: JSON.stringify(existing, null, 2),
+    });
+  }, []);
 
   // Work directory is owned per-chat by the parent (App). This component only
   // drives the picker dialog and reports changes up via onWorkDirChange. Whenever
@@ -562,10 +560,7 @@ function ChatInputInner({
         }
         defaultPath = `${root.replace(/\/$/, "")}/${workspaceRel}`;
       } catch (err) {
-        console.error(
-          "Failed to resolve Workspace path; falling back to current workDir",
-          err,
-        );
+        console.error("Failed to resolve Workspace path; falling back to current workDir", err);
       }
       const { path: chosen } = await window.ipc.invoke("dialog:openDirectory", {
         title: "Choose work directory",
@@ -599,8 +594,7 @@ function ChatInputInner({
   }, [onWorkDirChange]);
 
   const handleToggleCodingAgent = useCallback(async () => {
-    const next: "claude" | "codex" =
-      codingAgent === "claude" ? "codex" : "claude";
+    const next: "claude" | "codex" = codingAgent === "claude" ? "codex" : "claude";
     setCodingAgent(next);
     // Persist only when scoped to a workdir; without one there's nothing to key on.
     if (!workDir) return;
@@ -623,6 +617,13 @@ function ChatInputInner({
       }
       let available = false;
       try {
+        const exists = await window.ipc.invoke("workspace:exists", {
+          path: "config/exa-search.json",
+        });
+        if (!exists.exists) {
+          setSearchAvailable(false);
+          return;
+        }
         const raw = await window.ipc.invoke("workspace:readFile", {
           path: "config/exa-search.json",
         });
@@ -641,9 +642,7 @@ function ChatInputInner({
   const handleModelChange = useCallback(
     (key: string) => {
       if (lockedModel) return;
-      const entry = configuredModels.find(
-        (m) => `${m.provider}/${m.model}` === key,
-      );
+      const entry = configuredModels.find((m) => `${m.provider}/${m.model}` === key);
       if (!entry) return;
       setActiveModelKey(key);
       onSelectedModelChange?.({ provider: entry.provider, model: entry.model });
@@ -678,13 +677,10 @@ function ChatInputInner({
           path: filePath,
         });
         if (result.size > MAX_ATTACHMENT_SIZE) {
-          toast.error(
-            `File too large: ${getFileDisplayName(filePath)} (max 10MB)`,
-          );
+          toast.error(`File too large: ${getFileDisplayName(filePath)} (max 10MB)`);
           continue;
         }
-        const mime =
-          result.mimeType || getMimeFromExtension(getExtension(filePath));
+        const mime = result.mimeType || getMimeFromExtension(getExtension(filePath));
         const image = isImageMime(mime);
         newAttachments.push({
           id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -693,9 +689,7 @@ function ChatInputInner({
           mimeType: mime,
           isImage: image,
           size: result.size,
-          thumbnailUrl: image
-            ? `data:${mime};base64,${result.data}`
-            : undefined,
+          thumbnailUrl: image ? `data:${mime};base64,${result.data}` : undefined,
         });
       } catch (err) {
         console.error("Failed to read file:", filePath, err);
@@ -785,9 +779,7 @@ function ChatInputInner({
   const visibleRecentWorkDirs = recentWorkDirs
     .filter((entry) => entry.path !== workDir)
     .slice(0, MAX_VISIBLE_RECENT_WORK_DIRS);
-  const currentWorkDirLabel = workDir
-    ? basename(workDir) || workDir
-    : "Not set";
+  const currentWorkDirLabel = workDir ? basename(workDir) || workDir : "Not set";
   const currentWorkDirPath = workDir ? compactWorkDirPath(workDir) : "";
 
   return (
@@ -813,11 +805,7 @@ function ChatInputInner({
                   )}
                 >
                   {attachment.isImage && attachment.thumbnailUrl ? (
-                    <img
-                      src={attachment.thumbnailUrl}
-                      alt=""
-                      className="size-full object-cover"
-                    />
+                    <img src={attachment.thumbnailUrl} alt="" className="size-full object-cover" />
                   ) : (
                     <Icon className="size-5" />
                   )}
@@ -861,7 +849,12 @@ function ChatInputInner({
       />
       {isRecording ? (
         /* ── Recording bar ── */
-        <div className="flex items-center gap-3 px-4 py-3">
+        <div
+          ref={recordingBarRef}
+          className="flex items-center gap-3 px-4 py-3"
+          onKeyDown={handleRecordingKeyDown}
+          tabIndex={0}
+        >
           <button
             type="button"
             onClick={onCancelRecording}
@@ -873,18 +866,17 @@ function ChatInputInner({
           <div className="flex flex-1 items-center gap-2 overflow-hidden">
             <VoiceWaveform />
             <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-              {recordingState === "connecting"
-                ? "Connecting..."
-                : recordingText || "Listening..."}
+              {recordingState === "connecting" ? "Connecting..." : recordingText || "Listening..."}
             </span>
           </div>
           <Button
             size="icon"
             onClick={onSubmitRecording}
-            disabled={!recordingText?.trim()}
+            disabled={!onSubmitRecording}
+            aria-label="Transcribe recording"
             className={cn(
               "h-7 w-7 shrink-0 rounded-none transition-all",
-              recordingText?.trim()
+              onSubmitRecording
                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
                 : "bg-muted text-muted-foreground",
             )}
@@ -900,9 +892,7 @@ function ChatInputInner({
               placeholder="Type your message..."
               onKeyDown={handleKeyDown}
               autoFocus={isActive}
-              focusTrigger={
-                isActive ? `${runId ?? "new"}:${focusNonce}` : undefined
-              }
+              focusTrigger={isActive ? `${runId ?? "new"}:${focusNonce}` : undefined}
               className="min-h-6 rounded-none border-0 py-0 shadow-none focus-visible:ring-0"
             />
           </div>
@@ -926,10 +916,7 @@ function ChatInputInner({
                     : "Add files or set work directory"}
                 </TooltipContent>
               </Tooltip>
-              <DropdownMenuContent
-                align="start"
-                className="w-72 max-w-[calc(100vw-2rem)] p-2"
-              >
+              <DropdownMenuContent align="start" className="w-72 max-w-[calc(100vw-2rem)] p-2">
                 <div className="rounded-[14px] border border-border/80 bg-background p-1">
                   <DropdownMenuItem
                     onSelect={() => fileInputRef.current?.click()}
@@ -978,9 +965,7 @@ function ChatInputInner({
                         className="h-9 rounded-[9px] px-2.5"
                       >
                         <FolderOpen className="size-4" />
-                        <span>
-                          {workDir ? "Change folder…" : "Choose a folder…"}
-                        </span>
+                        <span>{workDir ? "Change folder…" : "Choose a folder…"}</span>
                       </DropdownMenuItem>
 
                       {visibleRecentWorkDirs.length > 0 && (
@@ -990,9 +975,7 @@ function ChatInputInner({
                           </div>
                           {visibleRecentWorkDirs.map((entry) => {
                             const name = basename(entry.path) || entry.path;
-                            const when = formatRecentWorkDirTime(
-                              entry.lastUsedAt,
-                            );
+                            const when = formatRecentWorkDirTime(entry.lastUsedAt);
                             return (
                               <DropdownMenuItem
                                 key={entry.path}
@@ -1003,9 +986,7 @@ function ChatInputInner({
                                 className="h-8 rounded-[9px] px-2.5"
                               >
                                 <FolderClock className="size-4" />
-                                <span className="min-w-0 flex-1 truncate">
-                                  {name}
-                                </span>
+                                <span className="min-w-0 flex-1 truncate">{name}</span>
                                 {when && (
                                   <span className="shrink-0 text-xs text-muted-foreground">
                                     {when}
@@ -1045,9 +1026,7 @@ function ChatInputInner({
                       className="flex min-w-0 items-center gap-1.5"
                     >
                       <FolderCog className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">
-                        {basename(workDir) || workDir}
-                      </span>
+                      <span className="truncate">{basename(workDir) || workDir}</span>
                     </button>
                     <button
                       type="button"
@@ -1059,9 +1038,7 @@ function ChatInputInner({
                     </button>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="top">
-                  Work directory: {workDir}
-                </TooltipContent>
+                <TooltipContent side="top">Work directory: {workDir}</TooltipContent>
               </Tooltip>
             )}
             {searchAvailable && (
@@ -1081,9 +1058,7 @@ function ChatInputInner({
                 <span
                   className={cn(
                     "overflow-hidden whitespace-nowrap text-xs font-medium transition-all duration-150 ease-out",
-                    searchEnabled
-                      ? "ml-1.5 max-w-[60px] opacity-100"
-                      : "max-w-0 opacity-0",
+                    searchEnabled ? "ml-1.5 max-w-[60px] opacity-100" : "max-w-0 opacity-0",
                   )}
                 >
                   Search
@@ -1096,9 +1071,7 @@ function ChatInputInner({
                   type="button"
                   onClick={() => {
                     if (runId) return;
-                    setPermissionMode((mode) =>
-                      mode === "auto" ? "manual" : "auto",
-                    );
+                    setPermissionMode((mode) => (mode === "auto" ? "manual" : "auto"));
                   }}
                   disabled={Boolean(runId)}
                   className={cn(
@@ -1136,9 +1109,7 @@ function ChatInputInner({
                         <span>Code</span>
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top">
-                      Code mode on — click to disable
-                    </TooltipContent>
+                    <TooltipContent side="top">Code mode on — click to disable</TooltipContent>
                   </Tooltip>
                   <span className="text-foreground/30">·</span>
                   <Tooltip>
@@ -1148,15 +1119,12 @@ function ChatInputInner({
                         onClick={handleToggleCodingAgent}
                         className="flex h-full items-center rounded-r-lg pl-2 pr-2.5 transition-colors hover:bg-secondary/70"
                       >
-                        <span>
-                          {codingAgent === "claude" ? "Claude" : "Codex"}
-                        </span>
+                        <span>{codingAgent === "claude" ? "Claude" : "Codex"}</span>
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      Coding agent:{" "}
-                      {codingAgent === "claude" ? "Claude Code" : "Codex"} —
-                      click to swap
+                      Coding agent: {codingAgent === "claude" ? "Claude Code" : "Codex"} — click to
+                      swap
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -1196,9 +1164,8 @@ function ChatInputInner({
                   >
                     <span className="max-w-[150px] truncate">
                       {getSelectedModelDisplayName(
-                        configuredModels.find(
-                          (m) => `${m.provider}/${m.model}` === activeModelKey,
-                        )?.model ||
+                        configuredModels.find((m) => `${m.provider}/${m.model}` === activeModelKey)
+                          ?.model ||
                           configuredModels[0]?.model ||
                           "Model",
                       )}
@@ -1207,10 +1174,7 @@ function ChatInputInner({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuRadioGroup
-                    value={activeModelKey}
-                    onValueChange={handleModelChange}
-                  >
+                  <DropdownMenuRadioGroup value={activeModelKey} onValueChange={handleModelChange}>
                     {configuredModels.map((m) => {
                       const key = `${m.provider}/${m.model}`;
                       return (
@@ -1239,11 +1203,7 @@ function ChatInputInner({
                           ? "text-foreground hover:bg-muted"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       )}
-                      aria-label={
-                        ttsEnabled
-                          ? "Disable voice output"
-                          : "Enable voice output"
-                      }
+                      aria-label={ttsEnabled ? "Disable voice output" : "Enable voice output"}
                     >
                       <Headphones className="h-4 w-4" />
                       {!ttsEnabled && (
@@ -1270,13 +1230,9 @@ function ChatInputInner({
                     <DropdownMenuContent align="end">
                       <DropdownMenuRadioGroup
                         value={ttsMode ?? "summary"}
-                        onValueChange={(v) =>
-                          onTtsModeChange(v as "summary" | "full")
-                        }
+                        onValueChange={(v) => onTtsModeChange(v as "summary" | "full")}
                       >
-                        <DropdownMenuRadioItem value="summary">
-                          Speak summary
-                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="summary">Speak summary</DropdownMenuRadioItem>
                         <DropdownMenuRadioItem value="full">
                           Speak full response
                         </DropdownMenuRadioItem>
@@ -1300,9 +1256,7 @@ function ChatInputInner({
               <Button
                 size="icon"
                 onClick={onStop}
-                title={
-                  isStopping ? "Click again to force stop" : "Stop generation"
-                }
+                title={isStopping ? "Click again to force stop" : "Stop generation"}
                 className={cn(
                   "h-7 w-7 shrink-0 rounded-none transition-all",
                   isStopping

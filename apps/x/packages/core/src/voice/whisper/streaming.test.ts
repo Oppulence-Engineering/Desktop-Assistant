@@ -69,6 +69,13 @@ class FakePort implements StreamPort {
 describe("Session", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('posts "ready" with initial credits once the session is accepting audio', () => {
+    const port = new FakePort();
+    new Session(port, { modelPath: "/m.bin", vadModelPath: "/vad.bin", channels: 1 });
+
+    expect(port.posted[0]).toMatchObject({ type: "ready", credits: expect.any(Number) });
+  });
+
   it('transcribes the flushed tail on close, then posts "done" and closes the port', async () => {
     const port = new FakePort();
     new Session(port, { modelPath: "/m.bin", vadModelPath: "/vad.bin", channels: 1 });
@@ -88,6 +95,35 @@ describe("Session", () => {
     expect(port.closed).toBe(true);
   });
 
+  it("uses the injected PCM runner for streaming segments", async () => {
+    const port = new FakePort();
+    const run = vi.fn(async () => ({
+      text: "injected stream text",
+      segments: [],
+      rtf: 5,
+      durationMs: 10,
+    }));
+    new Session(port, {
+      modelPath: "/m.bin",
+      vadModelPath: "/vad.bin",
+      channels: 1,
+      transcribePcm: run,
+    });
+
+    port.emit({ type: "audio", seq: 1, pcm16: buildPcm(5, 10, 30) });
+    port.emit({ type: "close" });
+
+    await new Promise((r) => setTimeout(r, 30));
+
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(port.posted).toContainEqual(
+      expect.objectContaining({
+        type: "final",
+        segment: expect.objectContaining({ text: "injected stream text" }),
+      }),
+    );
+  });
+
   it("shrinks the credit window as the queue grows (backpressure is live)", async () => {
     const port = new FakePort();
     new Session(port, { modelPath: "/m.bin", vadModelPath: "/vad.bin", channels: 1 });
@@ -98,5 +134,28 @@ describe("Session", () => {
     expect(ack?.credits).toBeDefined();
     expect(ack!.credits!).toBeLessThanOrEqual(6);
     expect(ack!.credits!).toBeGreaterThanOrEqual(0);
+  });
+
+  it("replenishes credits after a zero-credit backlog drains", async () => {
+    const port = new FakePort();
+    new Session(port, { modelPath: "/m.bin", vadModelPath: "/vad.bin", channels: 1 });
+
+    for (let seq = 1; seq <= 8; seq++) {
+      port.emit({ type: "audio", seq, pcm16: buildPcm(5, 10, 30) });
+    }
+
+    const beforeDrain = port.posted.filter((m) => m.type === "ack") as Array<{
+      credits?: number;
+    }>;
+    expect(beforeDrain.some((m) => m.credits === 0)).toBe(true);
+
+    await new Promise((r) => setTimeout(r, 120));
+
+    const afterDrain = port.posted.filter((m) => m.type === "ack") as Array<{
+      credits?: number;
+    }>;
+    const firstZero = afterDrain.findIndex((m) => m.credits === 0);
+    expect(firstZero).toBeGreaterThanOrEqual(0);
+    expect(afterDrain.slice(firstZero + 1).some((m) => (m.credits ?? 0) > 0)).toBe(true);
   });
 });

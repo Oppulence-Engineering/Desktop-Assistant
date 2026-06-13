@@ -1,4 +1,4 @@
-import { transcribePcm } from "./runner.js";
+import { transcribePcm, type RunOpts, type RunResult } from "./runner.js";
 import { deinterleaveStereoI16, concatI16 } from "./wav.js";
 import { autoThreads, timeoutFor } from "./runner.js";
 import { codeOf } from "./errors.js";
@@ -170,6 +170,7 @@ export interface SessionOpts {
   modelPath: string;
   vadModelPath: string;
   channels: 1 | 2;
+  transcribePcm?: (pcm: Int16Array, opts: RunOpts) => Promise<RunResult>;
 }
 
 /**
@@ -199,6 +200,7 @@ export class Session {
     this.chans = { you: make("you"), other: make("other") };
     this.port.on("message", (e) => this.onMessage(e.data));
     this.port.start();
+    this.port.postMessage({ v: 1, type: "ready", credits: MAX_CREDITS });
   }
 
   private onMessage(message: unknown): void {
@@ -213,8 +215,7 @@ export class Session {
       if (this.opts.channels === 2) this.feed("other", sys);
       // Credit reflects queue depth: as the backlog grows the renderer's window
       // shrinks to 0 and it drops frames, rather than buffering without bound.
-      const credits = Math.max(0, MAX_CREDITS - this.queue.length);
-      this.port.postMessage({ v: 1, type: "ack", seq: m.seq ?? 0, credits });
+      this.postCredits(m.seq ?? 0);
     } else if (m?.type === "flush") {
       this.chans.you.flush();
       this.chans.other.flush();
@@ -242,13 +243,29 @@ export class Session {
     this.pump = this.pump.then(() => this.transcribeNext());
   }
 
+  private postCredits(seq?: number): void {
+    if (this.closed) return;
+    const message: { v: 1; type: "ack"; credits: number; seq?: number } = {
+      v: 1,
+      type: "ack",
+      credits: Math.max(0, MAX_CREDITS - this.queue.length),
+    };
+    if (seq !== undefined) message.seq = seq;
+    try {
+      this.port.postMessage(message);
+    } catch {
+      /* port already gone */
+    }
+  }
+
   /** Transcribe one queued segment (single-flight via the pump chain). */
   private async transcribeNext(): Promise<void> {
     const seg = this.queue.shift();
     if (!seg || this.closed) return;
     const audioSeconds = seg.endSec - seg.startSec;
     try {
-      const r = await transcribePcm(seg.pcm, {
+      const run = this.opts.transcribePcm ?? transcribePcm;
+      const r = await run(seg.pcm, {
         modelPath: this.opts.modelPath,
         vadModelPath: this.opts.vadModelPath,
         lang: "en",
@@ -266,6 +283,10 @@ export class Session {
     } catch (err) {
       if (!this.closed)
         this.port.postMessage({ v: 1, type: "error", code: codeOf(err) as WhisperErrorCode });
+    } finally {
+      // If backlog drove credits to 0, the renderer is paused and cannot trigger
+      // another ack by sending audio. Proactively replenish as the queue drains.
+      this.postCredits();
     }
   }
 

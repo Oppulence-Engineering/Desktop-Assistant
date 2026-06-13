@@ -994,10 +994,12 @@ function App() {
     Promise.all([
       window.ipc.invoke("voice:getConfig", null),
       window.ipc.invoke("oauth:getState", null),
+      window.ipc.invoke("transcription:getVoiceProvider", null).catch(() => null),
     ])
-      .then(([config, oauthState]) => {
+      .then(([config, oauthState, voiceProvider]) => {
         const solomonConnected = getProductProviderState(oauthState.config)?.connected ?? false;
-        const hasVoice = !!config.deepgram || solomonConnected;
+        const hasLocalVoice = voiceProvider?.provider === "whisper-local";
+        const hasVoice = hasLocalVoice || !!config.deepgram || solomonConnected;
         setVoiceAvailable(hasVoice);
         setTtsAvailable(!!config.elevenlabs || solomonConnected);
         // Pre-cache auth details so mic click skips IPC round-trips
@@ -1064,10 +1066,21 @@ function App() {
   }, []);
 
   const handleStartRecording = useCallback(() => {
+    console.log("[voice] start recording requested");
     setIsRecording(true);
     isRecordingRef.current = true;
     voice.start();
   }, [voice]);
+
+  const canAutoSubmitVoiceTranscript = useCallback(async () => {
+    try {
+      const oauthState = await window.ipc.invoke("oauth:getState", null);
+      const productState = getProductProviderState(oauthState.config);
+      return !!productState?.connected && !productState.error;
+    } catch {
+      return false;
+    }
+  }, []);
 
   const handlePromptSubmitRef = useRef<
     | ((
@@ -1091,16 +1104,30 @@ function App() {
   } | null>(null);
 
   const handleSubmitRecording = useCallback(async () => {
+    console.log("[voice] submit recording requested");
     // Release the mic immediately; on-device transcription (whisper-local) then runs
     // asynchronously and the composer fills when the promise resolves (§14).
     setIsRecording(false);
     isRecordingRef.current = false;
-    const text = await voice.submit();
-    if (text) {
+    try {
+      const text = await voice.submit();
+      console.log("[voice] submit recording completed", { textLength: text.length });
+      if (!text) {
+        toast("No speech captured.");
+        return;
+      }
+      if (!(await canAutoSubmitVoiceTranscript())) {
+        setPresetMessage(text);
+        toast("Voice transcript added. Sign in to send it.");
+        return;
+      }
       pendingVoiceInputRef.current = true;
       handlePromptSubmitRef.current?.({ text, files: [] });
+    } catch (error) {
+      console.error("[voice] submit recording failed", error);
+      toast("Voice transcription failed.");
     }
-  }, [voice]);
+  }, [canAutoSubmitVoiceTranscript, voice]);
 
   const handleToggleTts = useCallback(() => {
     setTtsEnabled((prev) => {

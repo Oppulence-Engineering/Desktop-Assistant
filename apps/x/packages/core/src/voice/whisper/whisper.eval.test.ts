@@ -49,7 +49,10 @@ describe.skipIf(!canRun)("whisper WER eval", () => {
   });
 
   it("stays within the per-bucket WER budget", async () => {
-    if (manifest.length === 0) return; // empty corpus → nothing to assert
+    expect(
+      manifest.length,
+      "ROWBOAT_WHISPER_EVAL_MODEL was set, but the ASR fixture manifest is empty/missing",
+    ).toBeGreaterThan(0);
 
     const byBucket: Record<string, number[]> = {};
     for (const clip of manifest) {

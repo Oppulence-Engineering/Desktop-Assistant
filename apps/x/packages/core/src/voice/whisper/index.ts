@@ -6,7 +6,14 @@
  * else is internal to the engine.
  */
 export { WhisperService } from "./service.js";
-export type { TranscribeOpts, TranscribeResult, ModelProgress } from "./service.js";
+export { pcmStats, transcribePcm } from "./runner.js";
+export type {
+  TranscribeOpts,
+  TranscribeResult,
+  ModelProgress,
+  WhisperPcmRunner,
+} from "./service.js";
+export type { PcmStats, RunOpts, RunResult, Segment } from "./runner.js";
 export { configureWhisperBinary, binaryAvailable, binaryPath, vadModelPath } from "./bin.js";
 export { probe as probeCapability, resetCapabilityCache } from "./capability.js";
 export { CATALOG, defaultModelId, findModel, VAD_MODEL_ID } from "./catalog.js";

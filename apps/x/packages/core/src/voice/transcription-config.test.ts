@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import { TranscriptionConfig } from "@x/shared/dist/transcription.js";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -31,6 +32,9 @@ afterAll(async () => {
 beforeEach(async () => {
   // Each config I/O test starts from a clean slate (no transcription.json).
   await fs.rm(path.join(tmpDir, "config", "transcription.json"), { force: true }).catch(() => {});
+  await fs
+    .rm(path.join(tmpDir, "config", "whisper-benchmarks.json"), { force: true })
+    .catch(() => {});
 });
 
 describe("transcription config I/O", () => {
@@ -86,6 +90,85 @@ describe("transcription config I/O", () => {
   });
 });
 
+describe("transcription privacy config", () => {
+  it("defaults to local Whisper with cloud fallback allowed", () => {
+    const parsed = TranscriptionConfig.parse({});
+    expect(parsed.voiceProvider).toBe("whisper-local");
+    expect(parsed.privacy).toEqual({
+      localOnly: false,
+      retainRawAudio: false,
+      retainDiagnostics: true,
+      redactTranscriptsInLogs: true,
+    });
+  });
+
+  it("accepts local-only privacy mode", () => {
+    const parsed = TranscriptionConfig.parse({
+      privacy: { localOnly: true, retainRawAudio: false },
+    });
+    expect(parsed.privacy.localOnly).toBe(true);
+    expect(parsed.privacy.retainRawAudio).toBe(false);
+  });
+});
+
+describe("whisper benchmark profile I/O", () => {
+  const validProfile = {
+    deviceId: "darwin-arm64-test",
+    model: "base.en-q5_1",
+    accel: "coreml" as const,
+    sampleSeconds: 10,
+    durationMs: 1250,
+    rtf: 8,
+    measuredAt: "2026-06-12T12:00:00.000Z",
+  };
+
+  it("reads versioned envelopes and filters invalid profile entries", async () => {
+    const file = path.join(tmpDir, "config", "whisper-benchmarks.json");
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(
+      file,
+      JSON.stringify({
+        $schemaVersion: 1,
+        profiles: [validProfile, { ...validProfile, model: 42 }],
+      }),
+    );
+
+    expect(await voice.readWhisperBenchmarks()).toEqual([validProfile]);
+  });
+
+  it("reads legacy bare arrays while filtering invalid profile entries", async () => {
+    const file = path.join(tmpDir, "config", "whisper-benchmarks.json");
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, JSON.stringify([validProfile, { ...validProfile, rtf: "fast" }]));
+
+    expect(await voice.readWhisperBenchmarks()).toEqual([validProfile]);
+  });
+
+  it("writes a versioned envelope and replaces prior measurements for the same device/model/accel", async () => {
+    await voice.writeWhisperBenchmark(validProfile);
+    await voice.writeWhisperBenchmark({
+      ...validProfile,
+      durationMs: 2000,
+      rtf: 5,
+      measuredAt: "2026-06-12T12:01:00.000Z",
+    });
+
+    const file = path.join(tmpDir, "config", "whisper-benchmarks.json");
+    const persisted = JSON.parse(await fs.readFile(file, "utf8"));
+    expect(persisted).toEqual({
+      $schemaVersion: 1,
+      profiles: [
+        {
+          ...validProfile,
+          durationMs: 2000,
+          rtf: 5,
+          measuredAt: "2026-06-12T12:01:00.000Z",
+        },
+      ],
+    });
+  });
+});
+
 describe("resolveVoiceProvider", () => {
   it("defaults to local when supported and no override", async () => {
     expect(voice.resolveVoiceProvider({ signedIn: true, localSupported: true })).toBe(
@@ -121,6 +204,18 @@ describe("resolveVoiceProvider", () => {
       }),
     ).toBe("solomon");
   });
+
+  it("forces local provider in local-only privacy mode", async () => {
+    expect(
+      voice.resolveVoiceProvider({
+        userOverride: "deepgram",
+        remoteDefault: "solomon",
+        signedIn: true,
+        localSupported: false,
+        localOnly: true,
+      }),
+    ).toBe("whisper-local");
+  });
 });
 
 describe("resolveMeetingProvider", () => {
@@ -150,6 +245,23 @@ describe("resolveMeetingProvider", () => {
     );
   });
 
+  it("falls back to local when cloud transport is unavailable", async () => {
+    const r = voice.resolveMeetingProvider({
+      ...base,
+      cloudAvailable: false,
+    });
+    expect(r).toEqual({ provider: "whisper-local", reason: "fallback" });
+  });
+
+  it("stays cloud when no transport is available but local is unsupported", async () => {
+    const r = voice.resolveMeetingProvider({
+      ...base,
+      localSupported: false,
+      cloudAvailable: false,
+    });
+    expect(r.provider).toBe("deepgram");
+  });
+
   it("downgrades an explicit local choice to cloud when local is unsupported", async () => {
     const r = voice.resolveMeetingProvider({
       ...base,
@@ -166,5 +278,17 @@ describe("resolveMeetingProvider", () => {
       meetingMinutesRemaining: 0,
     });
     expect(r.provider).toBe("deepgram"); // stays cloud; surfaced upstream
+  });
+
+  it('forces local provider with reason "privacy" in local-only privacy mode', async () => {
+    const r = voice.resolveMeetingProvider({
+      ...base,
+      userOverride: "deepgram",
+      remoteDefault: "solomon",
+      localSupported: false,
+      meetingMinutesRemaining: 0,
+      localOnly: true,
+    });
+    expect(r).toEqual({ provider: "whisper-local", reason: "privacy" });
   });
 });

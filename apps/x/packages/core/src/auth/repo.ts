@@ -72,18 +72,6 @@ export interface IOAuthRepo {
 export class FSOAuthRepo implements IOAuthRepo {
   private readonly configPath = path.join(WorkDir, "config", "oauth.json");
 
-  constructor() {
-    this.ensureConfigFile();
-  }
-
-  private async ensureConfigFile(): Promise<void> {
-    try {
-      await fs.access(this.configPath);
-    } catch {
-      await fs.writeFile(this.configPath, JSON.stringify(DEFAULT_CONFIG, null, 2));
-    }
-  }
-
   private normalizeConfig(payload: unknown): {
     config: z.infer<typeof OAuthConfigSchema>;
     migrated: boolean;
@@ -138,6 +126,7 @@ export class FSOAuthRepo implements IOAuthRepo {
     // Crash-atomic: a write interrupted mid-flight must never leave a torn
     // oauth.json (it holds the only copy of rotating refresh tokens).
     const tempPath = `${this.configPath}.tmp.${Date.now()}${Math.random().toString(36).slice(2)}`;
+    await fs.mkdir(path.dirname(this.configPath), { recursive: true });
     await fs.writeFile(tempPath, JSON.stringify(config, null, 2));
     await fs.rename(tempPath, this.configPath);
   }

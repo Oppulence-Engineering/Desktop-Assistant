@@ -9,6 +9,7 @@ import {
   autoThreads,
   timeoutFor,
   spawnWhisper,
+  transcribePcm,
   run,
 } from "./runner.js";
 import { configureWhisperBinary } from "./bin.js";
@@ -115,6 +116,16 @@ describe("spawnWhisper", () => {
       code: "engine_unavailable",
     });
   });
+
+  it("drains stdout while collecting stderr", async () => {
+    const result = await spawnWhisper(
+      process.execPath,
+      ["-e", "process.stdout.write('stdout ok'); process.stderr.write('stderr ok')"],
+      1000,
+    );
+    expect(result.code).toBe(0);
+    expect(result.stderr).toContain("stderr ok");
+  });
 });
 
 // Integration of run() against a fake whisper-cli shell script (POSIX only).
@@ -141,6 +152,7 @@ describe.runIf(posix)("run (fake binary)", () => {
       "ok.sh",
       `prev=""; prefix=""
 for a in "$@"; do if [ "$prev" = "-of" ]; then prefix="$a"; fi; prev="$a"; done
+echo "Core ML model loaded" >&2
 printf '%s' '{"transcription":[{"offsets":{"from":0,"to":1200},"text":" Hello there."}]}' > "$prefix.json"`,
     );
     configureWhisperBinary(bin);
@@ -150,6 +162,21 @@ printf '%s' '{"transcription":[{"offsets":{"from":0,"to":1200},"text":" Hello th
     expect(r.text).toBe("Hello there.");
     expect(r.segments[0]).toMatchObject({ start: 0, end: 1.2, text: "Hello there." });
     expect(r.rtf).toBeGreaterThan(0);
+    expect(r.engineLog).toContain("Core ML model loaded");
+  });
+
+  it("does not leave whisper-cli output beside the input WAV", async () => {
+    const bin = await fakeBin(
+      "ok-clean.sh",
+      `prev=""; prefix=""
+for a in "$@"; do if [ "$prev" = "-of" ]; then prefix="$a"; fi; prev="$a"; done
+printf '%s' '{"transcription":[{"offsets":{"from":0,"to":500},"text":" Clean."}]}' > "$prefix.json"`,
+    );
+    configureWhisperBinary(bin);
+    const wav = path.join(dir, "clean.wav");
+    await fs.writeFile(wav, Buffer.alloc(44));
+    await run(wav, { modelPath: "/m.bin", audioSeconds: 0.5 });
+    await expect(fs.access(path.join(path.dirname(wav), "out.json"))).rejects.toBeTruthy();
   });
 
   it("maps a SIGKILL timeout to engine_timeout", async () => {
@@ -172,5 +199,67 @@ printf '%s' '{"transcription":[{"offsets":{"from":0,"to":1200},"text":" Hello th
     const err = await run(wav, { modelPath: "/m.bin", audioSeconds: 1 }).catch((e) => e);
     expect(err).toBeInstanceOf(WhisperError);
     expect(err.code).toBe("engine_unavailable");
+  });
+
+  it("retries without VAD when non-silent audio returns an empty VAD transcript", async () => {
+    const argsLog = path.join(dir, "vad-retry-args.log");
+    await fs.rm(argsLog, { force: true });
+    const bin = await fakeBin(
+      "vad-empty-retry.sh",
+      `prev=""; prefix=""
+has_vad=0
+for a in "$@"; do
+  if [ "$prev" = "-of" ]; then prefix="$a"; fi
+  if [ "$a" = "--vad" ]; then has_vad=1; fi
+  prev="$a"
+done
+printf '%s\\n' "$*" >> ${JSON.stringify(argsLog)}
+if [ "$has_vad" = "1" ]; then
+  printf '%s' '{"transcription":[]}' > "$prefix.json"
+else
+  printf '%s' '{"transcription":[{"offsets":{"from":0,"to":900},"text":" Fallback transcript."}]}' > "$prefix.json"
+fi`,
+    );
+    configureWhisperBinary(bin);
+    const pcm = new Int16Array(16000);
+    for (let i = 0; i < pcm.length; i++) {
+      pcm[i] = Math.round(Math.sin((2 * Math.PI * 220 * i) / 16000) * 2000);
+    }
+
+    const result = await transcribePcm(pcm, {
+      modelPath: "/m.bin",
+      vadModelPath: "/vad.bin",
+      audioSeconds: 1,
+    });
+
+    expect(result.text).toBe("Fallback transcript.");
+    const invocations = (await fs.readFile(argsLog, "utf8")).trim().split("\n");
+    expect(invocations).toHaveLength(2);
+    expect(invocations[0]).toContain("--vad");
+    expect(invocations[1]).not.toContain("--vad");
+  });
+
+  it("does not retry without VAD when silent audio returns an empty transcript", async () => {
+    const argsLog = path.join(dir, "vad-silent-args.log");
+    await fs.rm(argsLog, { force: true });
+    const bin = await fakeBin(
+      "vad-empty-silent.sh",
+      `prev=""; prefix=""
+for a in "$@"; do if [ "$prev" = "-of" ]; then prefix="$a"; fi; prev="$a"; done
+printf '%s\\n' "$*" >> ${JSON.stringify(argsLog)}
+printf '%s' '{"transcription":[]}' > "$prefix.json"`,
+    );
+    configureWhisperBinary(bin);
+
+    const result = await transcribePcm(new Int16Array(16000), {
+      modelPath: "/m.bin",
+      vadModelPath: "/vad.bin",
+      audioSeconds: 1,
+    });
+
+    expect(result.text).toBe("");
+    const invocations = (await fs.readFile(argsLog, "utf8")).trim().split("\n");
+    expect(invocations).toHaveLength(1);
+    expect(invocations[0]).toContain("--vad");
   });
 });

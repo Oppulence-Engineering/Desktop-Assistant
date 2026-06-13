@@ -76,8 +76,13 @@ config:
   INFISICAL_ENABLED: "false"
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
 
-  OPENAI_BASE_URL: http://rowboat-api-devstack:8090/v1
-  OPENROUTER_BASE_URL: http://rowboat-api-devstack:8090/v1
+  # Empty → real provider endpoints (api.openai.com / openrouter.ai) using the
+  # API keys synced from Infisical. Point back at the devstack for free
+  # deterministic mock replies:
+  #   OPENAI_BASE_URL: http://rowboat-api-devstack:8090/v1
+  #   OPENROUTER_BASE_URL: http://rowboat-api-devstack:8090/v1
+  OPENAI_BASE_URL: ""
+  OPENROUTER_BASE_URL: ""
   GOOGLE_AUTHORIZE_URL: http://localhost:18090/o/oauth2/v2/auth
   GOOGLE_TOKEN_URL: http://rowboat-api-devstack:8090/v1/google-oauth-mock/token
   GOOGLE_REDIRECT_URI: http://localhost:18080/oauth/google/callback

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { buildDeepgramListenUrl } from "@/lib/deepgram-listen-url";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { openWhisperStream, type WhisperStreamHandle } from "@/lib/whisper-stream";
@@ -19,6 +19,7 @@ const DEEPGRAM_PARAMS = new URLSearchParams({
   language: "en",
 });
 const DEEPGRAM_LISTEN_URL = `wss://api.deepgram.com/v1/listen?${DEEPGRAM_PARAMS.toString()}`;
+const TRANSCRIPTION_CONFIG_CHANGED_EVENT = "transcription-config-changed";
 
 // RMS threshold: system audio above this = "active" (speakers playing)
 const SYSTEM_AUDIO_GATE_THRESHOLD = 0.005;
@@ -121,7 +122,7 @@ function formatTranscript(
 // Hook
 // ---------------------------------------------------------------------------
 export function useMeetingTranscription(onAutoStop?: () => void) {
-  const { refresh: refreshSolomonAccount } = useSolomonAccount();
+  const { refresh: refreshSolomonAccount } = useSolomonAccount({ autoRefresh: false });
   const [state, setState] = useState<MeetingTranscriptionState>("idle");
   const wsRef = useRef<WebSocket | null>(null);
   // On-device streaming session (RFC 009 §15); null when using the Deepgram path.
@@ -140,6 +141,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
   onAutoStopRef.current = onAutoStop;
   const dateRef = useRef<string>("");
   const calendarEventRef = useRef<CalendarEventMeta | undefined>(undefined);
+  const privacyGenerationRef = useRef(0);
 
   const writeTranscriptToFile = useCallback(async () => {
     if (!notePathRef.current) return;
@@ -211,6 +213,26 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
     }
   }, []);
 
+  useEffect(() => {
+    const closeCloudTransportForLocalOnly = (event: Event) => {
+      if (!(event instanceof CustomEvent) || event.detail?.privacy?.localOnly !== true) return;
+      privacyGenerationRef.current += 1;
+      if (!useLocalRef.current || wsRef.current) {
+        useLocalRef.current = true;
+        cleanup();
+        setState("idle");
+      }
+    };
+
+    window.addEventListener(TRANSCRIPTION_CONFIG_CHANGED_EVENT, closeCloudTransportForLocalOnly);
+    return () => {
+      window.removeEventListener(
+        TRANSCRIPTION_CONFIG_CHANGED_EVENT,
+        closeCloudTransportForLocalOnly,
+      );
+    };
+  }, [cleanup]);
+
   // Append a final on-device segment to the transcript ("You"/"Other"), reusing the
   // same entry-coalescing + debounced-write + silence-timer machinery as Deepgram.
   const appendLocalFinal = useCallback(
@@ -239,16 +261,42 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       if (state !== "idle") return null;
       setState("connecting");
 
-      // Resolve the meeting provider (tiering + free-quota + capability gate, §16/Appendix O).
       let meetingProvider = "deepgram";
+      let localOnly = false;
       try {
-        const resolved = await window.ipc.invoke("transcription:getMeetingProvider", null);
-        meetingProvider = resolved.provider;
+        const cfg = await window.ipc.invoke("transcription:getConfig", null);
+        localOnly = cfg.privacy.localOnly;
       } catch {
-        /* default to cloud */
+        /* keep provider fallback when config cannot be read */
+      }
+      if (localOnly) {
+        meetingProvider = "whisper-local";
+      } else {
+        // Resolve the meeting provider (tiering + free-quota + capability gate, §16/Appendix O).
+        try {
+          const resolved = await window.ipc.invoke("transcription:getMeetingProvider", null);
+          meetingProvider = resolved.provider;
+        } catch {
+          /* default to cloud */
+        }
       }
       useLocalRef.current = meetingProvider === "whisper-local";
       analytics.transcriptionStarted({ provider: meetingProvider, mode: "meeting" });
+      const privacyGeneration = privacyGenerationRef.current;
+      const localOnlyEnabled = async () => {
+        try {
+          const cfg = await window.ipc.invoke("transcription:getConfig", null);
+          return cfg.privacy.localOnly;
+        } catch {
+          return false;
+        }
+      };
+      const assertCloudAllowed = async () => {
+        if (privacyGeneration !== privacyGenerationRef.current || (await localOnlyEnabled())) {
+          useLocalRef.current = true;
+          throw new Error("local-only privacy enabled");
+        }
+      };
 
       // Run independent setup steps in parallel for faster startup
       const [headphoneResult, wsResult, micResult, systemResult] = await Promise.allSettled([
@@ -271,7 +319,9 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
             console.log("[meeting] On-device streaming session opened");
             return handle;
           }
+          await assertCloudAllowed();
           const account = await refreshSolomonAccount();
+          await assertCloudAllowed();
           let ws: WebSocket;
           if (account?.signedIn && account.accessToken && account.config?.websocketApiUrl) {
             const listenUrl = buildDeepgramListenUrl(
@@ -282,18 +332,33 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
             ws = new WebSocket(listenUrl, ["bearer", account.accessToken]);
           } else {
             const config = await window.ipc.invoke("voice:getConfig", null);
+            await assertCloudAllowed();
             if (!config?.deepgram) {
               throw new Error("No Deepgram config available");
             }
             console.log("[meeting] Using Deepgram API key");
             ws = new WebSocket(DEEPGRAM_LISTEN_URL, ["token", config.deepgram.apiKey]);
           }
+          // Track the socket immediately so a local-only toggle during the connect
+          // window can close it before any audio pipeline starts.
+          wsRef.current = ws;
           const ok = await new Promise<boolean>((resolve) => {
             ws.onopen = () => resolve(true);
             ws.onerror = () => resolve(false);
             setTimeout(() => resolve(false), 5000);
           });
-          if (!ok) throw new Error("WebSocket failed to connect");
+          try {
+            await assertCloudAllowed();
+          } catch (err) {
+            if (wsRef.current === ws) wsRef.current = null;
+            ws.close();
+            throw err;
+          }
+          if (!ok) {
+            if (wsRef.current === ws) wsRef.current = null;
+            ws.close();
+            throw new Error("WebSocket failed to connect");
+          }
           console.log("[meeting] WebSocket connected");
           return ws;
         })(),
