@@ -726,7 +726,14 @@ Example: every morning at 7, summarize my unread Gmail into a one-paragraph brie
             <div className="mt-5 flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => setMode("manual")}
+                onClick={() => {
+                  // Don't drop what the user already typed — seed the manual
+                  // instructions with it (unless they've edited those already).
+                  if (description.trim() && !instructions.trim()) {
+                    setInstructions(description.trim());
+                  }
+                  setMode("manual");
+                }}
                 className="text-[11px] text-muted-foreground hover:text-foreground"
               >
                 Configure manually →

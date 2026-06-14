@@ -7,7 +7,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { CATALOG, VAD_MODEL_ID, type ModelEntry } from "./catalog.js";
 import { WhisperError } from "./errors.js";
-import type { WhisperModelProgress } from "@x/shared/dist/transcription.js";
+import type { WhisperModelHealth, WhisperModelProgress } from "@x/shared/dist/transcription.js";
 
 /**
  * Model catalog manager (RFC 009 §9, Appendix P): resumable + checksum-verified
@@ -25,6 +25,7 @@ export type ModelProgress = WhisperModelProgress;
 const VERIFY_TTL_MS = 30 * 24 * 3600 * 1000; // re-hash the active model at most monthly
 const MAX_RETRIES = 4;
 const LEDGER_FILE = ".catalog-state.json";
+const COREML_MARKER_FILE = ".rowboat-coreml.json";
 const PROGRESS_EVERY_MB = 2;
 
 interface LedgerEntry {
@@ -34,10 +35,22 @@ interface LedgerEntry {
   installedAt: string;
   lastVerifiedAt: string;
   coreml?: boolean;
+  coremlSha256?: string;
 }
 interface Ledger {
   schemaVersion: 1;
   installed: Record<string, LedgerEntry>;
+}
+interface ArtifactHealth {
+  ok: boolean;
+  sizeBytes: number;
+  actualChecksum?: string;
+  expectedChecksum: string;
+  reason?: string;
+}
+interface CoreMLMarker {
+  sha256: string;
+  installedAt: string;
 }
 
 /** Injectable dependencies (defaults are the real runtime; overridden in tests). */
@@ -48,6 +61,8 @@ export interface ModelManagerDeps {
   freeBytes?: (dir: string) => Promise<number>;
   /** Clock, for the verify TTL (default: Date.now). */
   now?: () => number;
+  /** Runtime platform; injectable so Core ML behavior is testable cross-platform. */
+  platform?: NodeJS.Platform;
 }
 
 export class ModelManager {
@@ -57,6 +72,7 @@ export class ModelManager {
   private readonly fetchImpl: typeof fetch;
   private readonly freeBytes: (dir: string) => Promise<number>;
   private readonly now: () => number;
+  private readonly platform: NodeJS.Platform;
 
   constructor(
     private readonly dir: string /* ~/.rowboat/models */,
@@ -67,13 +83,20 @@ export class ModelManager {
     this.fetchImpl = deps.fetchImpl ?? fetch;
     this.freeBytes = deps.freeBytes ?? defaultFreeBytes;
     this.now = deps.now ?? Date.now;
+    this.platform = deps.platform ?? process.platform;
   }
 
   // ---- public API ----
 
   async list(): Promise<Array<ModelEntry & { installed: boolean }>> {
     const led = await this.loadLedger();
-    return this.catalog.map((m) => ({ ...m, installed: !!led.installed[m.id] }));
+    return Promise.all(
+      this.catalog.map(async (m) => ({
+        ...m,
+        installed:
+          !!led.installed[m.id] && (await exists(path.join(this.dir, path.basename(m.url)))),
+      })),
+    );
   }
 
   pathFor(id: string): string {
@@ -96,12 +119,131 @@ export class ModelManager {
     if (!entry) return;
     await rmQuiet(path.join(this.dir, entry.path));
     if (entry.coreml) {
-      await rmQuiet(path.join(this.dir, entry.path.replace(/\.bin$/, "-encoder.mlmodelc")), {
+      await rmQuiet(path.join(this.dir, coremlSidecarDirNameForModelFile(entry.path)), {
         recursive: true,
       });
     }
     delete led.installed[id];
     await this.saveLedger(led);
+  }
+
+  async verifyModel(id: string): Promise<WhisperModelHealth> {
+    const m = this.entry(id);
+    const led = await this.loadLedger();
+    const rec = led.installed[id];
+    let repairable = false;
+    let reason: string | undefined;
+    const markIssue = (message: string, canRepair: boolean) => {
+      reason ??= message;
+      repairable ||= canRepair;
+    };
+
+    const gguf = m.sha256
+      ? await this.verifyArtifact(this.pathFor(id), m.sha256)
+      : ({
+          ok: false,
+          sizeBytes: 0,
+          expectedChecksum: "",
+          reason: "missing_checksum",
+        } satisfies ArtifactHealth);
+    if (!m.sha256) {
+      markIssue(`No pinned checksum for ${id}.`, false);
+    } else if (!gguf.ok) {
+      markIssue(
+        gguf.reason === "missing" ? "Model file is missing." : "Model checksum mismatch.",
+        true,
+      );
+    }
+
+    let vadOk = true;
+    const vad = id === VAD_MODEL_ID ? undefined : this.findEntry(VAD_MODEL_ID);
+    if (vad) {
+      if (!vad.sha256) {
+        vadOk = false;
+        markIssue("No pinned checksum for the VAD model.", false);
+      } else {
+        const vadHealth = await this.verifyArtifact(this.pathFor(VAD_MODEL_ID), vad.sha256);
+        vadOk = vadHealth.ok;
+        if (!vadHealth.ok) {
+          markIssue(
+            vadHealth.reason === "missing" ? "VAD model is missing." : "VAD checksum mismatch.",
+            true,
+          );
+        }
+      }
+    }
+
+    let coremlOk: boolean | undefined;
+    if (m.coreml) {
+      const sidecarName = coremlSidecarDirNameForModelFile(rec?.path ?? path.basename(m.url));
+      const sidecar = path.join(this.dir, sidecarName);
+      const zip = path.join(this.dir, path.basename(m.coreml.url));
+      const [hasSidecar, hasZip] = await Promise.all([isDirectory(sidecar), exists(zip)]);
+      const shouldCheckCoreML =
+        this.platform === "darwin" || hasSidecar || hasZip || !!rec?.coreml || !!rec?.coremlSha256;
+
+      if (shouldCheckCoreML) {
+        if (!m.coreml.sha256) {
+          coremlOk = false;
+          markIssue("No pinned checksum for the Core ML sidecar.", false);
+        } else if (!hasSidecar) {
+          coremlOk = false;
+          if (hasZip) {
+            const zipHealth = await this.verifyArtifact(zip, m.coreml.sha256);
+            markIssue(
+              zipHealth.ok
+                ? "Core ML sidecar is missing or needs extraction."
+                : "Core ML sidecar is missing and cached archive checksum mismatch.",
+              true,
+            );
+          } else {
+            markIssue("Core ML sidecar is missing.", true);
+          }
+        } else {
+          const marker = await this.readCoreMLMarker(sidecar);
+          coremlOk = marker?.sha256 === m.coreml.sha256;
+          if (!coremlOk) {
+            markIssue("Core ML sidecar install marker is missing or checksum mismatch.", true);
+          }
+        }
+      }
+    }
+
+    return {
+      id,
+      installed: gguf.ok,
+      ggufOk: gguf.ok,
+      vadOk,
+      ...(coremlOk === undefined ? {} : { coremlOk }),
+      sizeMb: bytesToMb(gguf.sizeBytes),
+      expectedSizeMb: m.sizeMb,
+      ...(gguf.actualChecksum ? { checksum: gguf.actualChecksum } : {}),
+      ...(m.sha256 ? { expectedChecksum: m.sha256 } : {}),
+      repairable,
+      ...(reason ? { reason } : {}),
+    };
+  }
+
+  async repairModel(id: string): Promise<WhisperModelHealth> {
+    const health = await this.verifyModel(id);
+    if (!health.repairable) return health;
+
+    const m = this.entry(id);
+    await this.remove(id);
+    await rmQuiet(this.pathFor(id));
+    if (m.coreml) {
+      await rmQuiet(path.join(this.dir, coremlSidecarDirNameForModelFile(path.basename(m.url))), {
+        recursive: true,
+      });
+      await rmQuiet(path.join(this.dir, path.basename(m.coreml.url)));
+    }
+    const hasVad = this.hasEntry(VAD_MODEL_ID);
+    if (hasVad && id !== VAD_MODEL_ID && !health.vadOk) {
+      await this.remove(VAD_MODEL_ID);
+      await rmQuiet(this.pathFor(VAD_MODEL_ID));
+    }
+    await this.ensure(id, { withVad: hasVad });
+    return this.verifyModel(id);
   }
 
   /** Free space for everything except the active model and the VAD model. */
@@ -118,8 +260,16 @@ export class ModelManager {
 
   // ---- internals ----
 
+  private findEntry(id: string): ModelEntry | undefined {
+    return this.catalog.find((x) => x.id === id);
+  }
+
+  private hasEntry(id: string): boolean {
+    return !!this.findEntry(id);
+  }
+
   private entry(id: string): ModelEntry {
-    const m = this.catalog.find((x) => x.id === id);
+    const m = this.findEntry(id);
     if (!m) throw new WhisperError("model_not_installed", `unknown model ${id}`);
     return m;
   }
@@ -134,7 +284,10 @@ export class ModelManager {
     // download (or was removed) after the main model is recorded never self-heals, and
     // buildArgs keeps passing `--vad-model <missing>`, failing every transcription.
     const finish = async (): Promise<string> => {
-      if (opts.withVad && id !== VAD_MODEL_ID) await this.ensure(VAD_MODEL_ID); // coalesced
+      if (await this.ensureCoreMLForInstalled(m, led)) await this.saveLedger(led);
+      if (opts.withVad && id !== VAD_MODEL_ID && this.hasEntry(VAD_MODEL_ID)) {
+        await this.ensure(VAD_MODEL_ID); // coalesced
+      }
       return dest;
     };
 
@@ -181,15 +334,7 @@ export class ModelManager {
       throw new WhisperError("checksum_mismatch", `sha256 mismatch for ${id}`);
     }
 
-    let coreml = false;
-    if (process.platform === "darwin" && m.coreml) {
-      try {
-        await this.downloadCoreML(m);
-        coreml = true;
-      } catch {
-        /* best-effort: Metal/CPU still works without the Core ML sidecar */
-      }
-    }
+    const coreml = await this.tryDownloadCoreML(m);
 
     const bytes = (await fs.stat(dest)).size;
     led.installed[id] = {
@@ -199,6 +344,7 @@ export class ModelManager {
       installedAt: new Date(this.now()).toISOString(),
       lastVerifiedAt: new Date(this.now()).toISOString(),
       coreml,
+      coremlSha256: coreml ? m.coreml?.sha256 : undefined,
     };
     await this.saveLedger(led);
 
@@ -275,16 +421,68 @@ export class ModelManager {
   }
 
   /** Download + unzip the macOS Core ML encoder sidecar next to the model. */
+  private async tryDownloadCoreML(m: ModelEntry): Promise<boolean> {
+    if (this.platform !== "darwin" || !m.coreml) return false;
+    try {
+      await this.downloadCoreML(m);
+      return true;
+    } catch {
+      // Best-effort: a CoreML-capable binary built with fallback still works via
+      // Metal/CPU when the sidecar is unavailable or corrupt.
+      return false;
+    }
+  }
+
+  private async ensureCoreMLForInstalled(m: ModelEntry, led: Ledger): Promise<boolean> {
+    const rec = led.installed[m.id];
+    if (this.platform !== "darwin" || !m.coreml || !rec) return false;
+
+    const sidecar = path.join(this.dir, coremlSidecarDirNameForModelFile(path.basename(m.url)));
+    const hasSidecar = await isDirectory(sidecar);
+    const marker = hasSidecar ? await this.readCoreMLMarker(sidecar) : null;
+    const sidecarCurrent = marker?.sha256 === m.coreml.sha256;
+    if (sidecarCurrent && rec.coreml && rec.coremlSha256 === m.coreml.sha256) return false;
+    if (sidecarCurrent) {
+      rec.coreml = true;
+      rec.coremlSha256 = m.coreml.sha256;
+      return true;
+    }
+
+    const previousCoreML = rec.coreml;
+    const previousCoreMLSha256 = rec.coremlSha256;
+    rec.coreml = await this.tryDownloadCoreML(m);
+    rec.coremlSha256 = rec.coreml ? m.coreml.sha256 : undefined;
+    return previousCoreML !== rec.coreml || previousCoreMLSha256 !== rec.coremlSha256;
+  }
+
   private async downloadCoreML(m: ModelEntry): Promise<void> {
     if (!m.coreml) return;
     const zip = path.join(this.dir, path.basename(m.coreml.url));
-    await this.downloadWithResume({ ...m, url: m.coreml.url, sha256: m.coreml.sha256 }, zip);
-    if (!(await this.verify(zip, m.coreml.sha256, `${m.id}-coreml`))) {
+    const sidecar = path.join(this.dir, coremlSidecarDirNameForModelFile(path.basename(m.url)));
+    let sidecarTouched = false;
+    let installed = false;
+    try {
+      await this.assertDisk(m.coreml.sizeMb);
+      await this.downloadWithResume(
+        { ...m, url: m.coreml.url, sha256: m.coreml.sha256, sizeMb: m.coreml.sizeMb },
+        zip,
+      );
+      if (!(await this.verify(zip, m.coreml.sha256, `${m.id}-coreml`))) {
+        await rmQuiet(zip);
+        throw new WhisperError("checksum_mismatch");
+      }
+      await rmQuiet(sidecar, { recursive: true });
+      sidecarTouched = true;
+      await unzipInto(zip, this.dir);
+      if (!(await isDirectory(sidecar))) {
+        throw new WhisperError("download_failed", `Core ML sidecar did not extract to ${sidecar}`);
+      }
+      await this.writeCoreMLMarker(sidecar, m.coreml.sha256);
+      installed = true;
+    } finally {
+      if (sidecarTouched && !installed) await rmQuiet(sidecar, { recursive: true });
       await rmQuiet(zip);
-      throw new WhisperError("checksum_mismatch");
     }
-    await unzipInto(zip, this.dir);
-    await rmQuiet(zip);
   }
 
   private async verify(file: string, sha256: string, id: string): Promise<boolean> {
@@ -292,6 +490,69 @@ export class ModelManager {
     const hash = createHash("sha256");
     await pipeline(createReadStream(file), hash);
     return hash.digest("hex") === sha256;
+  }
+
+  private async verifyArtifact(filePath: string, expectedSha256: string): Promise<ArtifactHealth> {
+    let stat: Awaited<ReturnType<typeof fs.stat>>;
+    try {
+      stat = await fs.stat(filePath);
+    } catch {
+      return {
+        ok: false,
+        sizeBytes: 0,
+        expectedChecksum: expectedSha256,
+        reason: "missing",
+      };
+    }
+    if (!stat.isFile()) {
+      return {
+        ok: false,
+        sizeBytes: stat.size,
+        expectedChecksum: expectedSha256,
+        reason: "not_file",
+      };
+    }
+
+    try {
+      const hash = createHash("sha256");
+      await pipeline(createReadStream(filePath), hash);
+      const actualChecksum = hash.digest("hex");
+      return {
+        ok: actualChecksum === expectedSha256,
+        sizeBytes: stat.size,
+        actualChecksum,
+        expectedChecksum: expectedSha256,
+        ...(actualChecksum === expectedSha256 ? {} : { reason: "checksum_mismatch" }),
+      };
+    } catch {
+      return {
+        ok: false,
+        sizeBytes: stat.size,
+        expectedChecksum: expectedSha256,
+        reason: "read_failed",
+      };
+    }
+  }
+
+  private async readCoreMLMarker(sidecarDir: string): Promise<CoreMLMarker | null> {
+    try {
+      const parsed = JSON.parse(
+        await fs.readFile(path.join(sidecarDir, COREML_MARKER_FILE), "utf8"),
+      ) as Partial<CoreMLMarker>;
+      if (typeof parsed.sha256 === "string" && typeof parsed.installedAt === "string") {
+        return { sha256: parsed.sha256, installedAt: parsed.installedAt };
+      }
+    } catch {
+      /* missing or invalid marker */
+    }
+    return null;
+  }
+
+  private async writeCoreMLMarker(sidecarDir: string, sha256: string): Promise<void> {
+    await fs.writeFile(
+      path.join(sidecarDir, COREML_MARKER_FILE),
+      JSON.stringify({ sha256, installedAt: new Date(this.now()).toISOString() }, null, 2),
+    );
   }
 
   private async assertDisk(sizeMb: number): Promise<void> {
@@ -345,13 +606,18 @@ export class ModelManager {
         await rmQuiet(full); // drop corrupt
         continue;
       }
+      const coremlMarker = m.coreml
+        ? await this.readCoreMLMarker(path.join(this.dir, coremlSidecarDirNameForModelFile(base)))
+        : null;
+      const coreml = !!m.coreml && coremlMarker?.sha256 === m.coreml.sha256;
       led.installed[m.id] = {
         path: base,
         bytes: (await fs.stat(full)).size,
         sha256: m.sha256,
         installedAt: new Date(this.now()).toISOString(),
         lastVerifiedAt: new Date(this.now()).toISOString(),
-        coreml: files.includes(base.replace(/\.bin$/, "-encoder.mlmodelc")),
+        coreml,
+        coremlSha256: coreml ? m.coreml?.sha256 : undefined,
       };
     }
     return led;
@@ -362,11 +628,20 @@ export class ModelManager {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const backoff = (n: number) => Math.min(8000, 500 * 2 ** n) + Math.random() * 250;
+const bytesToMb = (bytes: number) => Math.round((bytes / (1024 * 1024)) * 10) / 10;
 
 async function exists(p: string): Promise<boolean> {
   try {
     await fs.access(p);
     return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isDirectory(p: string): Promise<boolean> {
+  try {
+    return (await fs.stat(p)).isDirectory();
   } catch {
     return false;
   }
@@ -378,6 +653,14 @@ async function rmQuiet(p: string, opts: { recursive?: boolean } = {}): Promise<v
   } catch {
     /* ignore */
   }
+}
+
+export function coremlSidecarDirNameForModelFile(fileName: string): string {
+  let stem = path.basename(fileName);
+  const dot = stem.lastIndexOf(".");
+  if (dot !== -1) stem = stem.slice(0, dot);
+  stem = stem.replace(/-q[0-9]_[0-9]$/, "");
+  return `${stem}-encoder.mlmodelc`;
 }
 
 /** Default free-space probe via statfs, walking up to the nearest existing dir. */

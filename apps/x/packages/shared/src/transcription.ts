@@ -10,7 +10,7 @@ import { z } from "zod";
  * These are the canonical values shared by the renderer, the main process, and
  * the persisted `transcription.json` config.
  */
-export const TranscriptionProvider = z.enum(["solomon", "deepgram", "whisper-local"]);
+export const TranscriptionProvider = z.enum(["solomon", "deepgram", "whisper-local", "none"]);
 export type TranscriptionProvider = z.infer<typeof TranscriptionProvider>;
 
 /** Cloud providers (everything that is not on-device). Used by the fallback logic. */
@@ -85,6 +85,91 @@ export const WhisperModelProgress = z.object({
 });
 export type WhisperModelProgress = z.infer<typeof WhisperModelProgress>;
 
+export const WhisperModelHealth = z.object({
+  id: z.string(),
+  installed: z.boolean(),
+  ggufOk: z.boolean(),
+  vadOk: z.boolean(),
+  coremlOk: z.boolean().optional(),
+  sizeMb: z.number(),
+  expectedSizeMb: z.number().optional(),
+  checksum: z.string().optional(),
+  expectedChecksum: z.string().optional(),
+  repairable: z.boolean(),
+  reason: z.string().optional(),
+});
+export type WhisperModelHealth = z.infer<typeof WhisperModelHealth>;
+
+export const WhisperBenchmarkProfile = z.object({
+  deviceId: z.string(),
+  model: z.string(),
+  accel: WhisperAccel,
+  sampleSeconds: z.number(),
+  durationMs: z.number(),
+  rtf: z.number(),
+  measuredAt: z.string(),
+});
+export type WhisperBenchmarkProfile = z.infer<typeof WhisperBenchmarkProfile>;
+
+export const VoicePrivacySettings = z.object({
+  localOnly: z.boolean().default(false),
+  retainRawAudio: z.boolean().default(false),
+  retainDiagnostics: z.boolean().default(false),
+  redactTranscriptsInLogs: z.boolean().default(true),
+});
+export type VoicePrivacySettings = z.infer<typeof VoicePrivacySettings>;
+
+export const WhisperDiagnosticResult = z.object({
+  success: z.boolean(),
+  provider: TranscriptionProvider,
+  model: z.string(),
+  accel: WhisperAccel,
+  sampleSeconds: z.number(),
+  durationMs: z.number(),
+  rtf: z.number().optional(),
+  text: z.string().optional(),
+  code: WhisperErrorCode.optional(),
+  engineLog: z.string().optional(),
+});
+export type WhisperDiagnosticResult = z.infer<typeof WhisperDiagnosticResult>;
+
+export const VoiceStreamEvent = z.discriminatedUnion("type", [
+  z.object({
+    v: z.literal(1),
+    type: z.literal("partial"),
+    text: z.string(),
+    start: z.number(),
+    end: z.number(),
+    speaker: WhisperSpeaker.optional(),
+    confidence: z.number().min(0).max(1).optional(),
+  }),
+  z.object({ v: z.literal(1), type: z.literal("final"), segment: WhisperSegment }),
+  z.object({ v: z.literal(1), type: z.literal("ack"), seq: z.number(), credits: z.number() }),
+  z.object({ v: z.literal(1), type: z.literal("error"), code: WhisperErrorCode }),
+  z.object({ v: z.literal(1), type: z.literal("done") }),
+]);
+export type VoiceStreamEvent = z.infer<typeof VoiceStreamEvent>;
+
+export const VoiceCommandIntent = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("email.composeReply"),
+    threadId: z.string().optional(),
+    body: z.string(),
+  }),
+  z.object({
+    kind: z.literal("email.triage"),
+    query: z.string().optional(),
+    action: z.enum(["archive", "label", "snooze", "mark_waiting", "unsubscribe"]),
+    label: z.string().optional(),
+  }),
+  z.object({ kind: z.literal("email.createRule"), description: z.string() }),
+  z.object({ kind: z.literal("meeting.startRecording"), title: z.string().optional() }),
+  z.object({ kind: z.literal("meeting.stopRecording") }),
+  z.object({ kind: z.literal("app.openCommand"), query: z.string() }),
+  z.object({ kind: z.literal("text.insert"), text: z.string() }),
+]);
+export type VoiceCommandIntent = z.infer<typeof VoiceCommandIntent>;
+
 /**
  * Persisted on-device engine settings (the `whisper` block of `transcription.json`).
  * `threads: null` → auto (`min(8, cores-1)`); unknown `model` falls back to the
@@ -118,6 +203,12 @@ export const TranscriptionConfig = z.object({
   voiceProvider: TranscriptionProvider.default("whisper-local"),
   meetingProvider: TranscriptionProvider.default("deepgram"),
   whisper: WhisperSettings.default(DEFAULT_WHISPER_SETTINGS),
+  privacy: VoicePrivacySettings.default({
+    localOnly: false,
+    retainRawAudio: false,
+    retainDiagnostics: false,
+    redactTranscriptsInLogs: true,
+  }),
 });
 export type TranscriptionConfig = z.infer<typeof TranscriptionConfig>;
 

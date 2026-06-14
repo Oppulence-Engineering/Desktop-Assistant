@@ -3,12 +3,7 @@ import path from "path";
 import type { BackgroundTaskOfflineRunsEventType } from "@x/shared/dist/background-task.js";
 import { PrefixLogger } from "@x/shared/dist/prefix-logger.js";
 import { WorkDir } from "../config/config.js";
-import {
-  getArtifactSyncState,
-  listAllCloudRuns,
-  syncArtifactFromCloud,
-  type RemoteRun,
-} from "./cloud-sync.js";
+import type { RemoteRun } from "./cloud-sync.js";
 
 const log = new PrefixLogger("BgTask:OfflineReturn");
 
@@ -78,6 +73,9 @@ export async function checkOfflineReturn(): Promise<BackgroundTaskOfflineRunsEve
     await writeCloudRunsSeenState({ version: 1, lastSeenCloudRunAt: now, lastNotifiedRunIds: [] });
     return null;
   }
+
+  const { getArtifactSyncState, listAllCloudRuns, syncArtifactFromCloud } =
+    await import("./cloud-sync.js");
 
   const { runs } = await listAllCloudRuns({
     since: prior.lastSeenCloudRunAt,

@@ -10,7 +10,7 @@ import type { WhisperSegment } from "@x/shared/dist/transcription.js";
 interface StreamDownMessage {
   v: 1;
   // 'done' is the terminal signal after the engine has drained + posted the tail finals.
-  type: "ack" | "partial" | "final" | "error" | "done";
+  type: "ready" | "ack" | "partial" | "final" | "error" | "done";
   seq?: number;
   credits?: number;
   segment?: WhisperSegment;
@@ -21,6 +21,8 @@ interface StreamDownMessage {
 const CLOSE_DRAIN_TIMEOUT_MS = 8000;
 /** Hard ceiling on the MessagePort hand-off after openStream resolves. */
 const PORT_HANDOFF_TIMEOUT_MS = 5000;
+/** Hard ceiling on model/VAD ensure + Session construction after the port is handed off. */
+const SESSION_READY_TIMEOUT_MS = 60_000;
 
 export interface WhisperStreamHandle {
   /** Send a chunk of interleaved int16 PCM (zero-copy transfer; respects credits). */
@@ -99,29 +101,49 @@ export async function openWhisperStream(
   let seq = 0;
   let closed = false;
   let onDone: (() => void) | null = null;
+  let ready = false;
+  let resolveReady: ((ok: boolean) => void) | null = null;
+  const readyPromise = new Promise<boolean>((resolve) => {
+    resolveReady = resolve;
+    setTimeout(() => resolve(false), SESSION_READY_TIMEOUT_MS);
+  });
 
   port.onmessage = (event: MessageEvent) => {
     const m = event.data as StreamDownMessage;
-    if (m.type === "ack" && typeof m.credits === "number") {
+    if (m.type === "ready") {
+      ready = true;
+      if (typeof m.credits === "number") credits = m.credits;
+      resolveReady?.(true);
+    } else if (m.type === "ack" && typeof m.credits === "number") {
       credits = m.credits;
     } else if (m.type === "final" && m.segment) {
       opts.onFinal(m.segment);
     } else if (m.type === "error" && m.code) {
       opts.onError?.(m.code);
+      if (!ready) resolveReady?.(false);
     } else if (m.type === "done") {
       onDone?.();
     }
   };
   port.start();
+  if (!(await readyPromise)) {
+    closed = true;
+    port.close();
+    void window.ipc.invoke("whisper:closeStream", { streamId: myStreamId }).catch(() => {});
+    opts.onError?.("engine_unavailable");
+    return null;
+  }
 
   return {
     send(pcm16: ArrayBuffer) {
       if (closed || credits <= 0) return; // backpressure / teardown: drop rather than buffer or throw
       credits--;
       try {
-        port.postMessage({ v: 1, type: "audio", seq: seq++, pcm16, channels: opts.channels }, [
-          pcm16,
-        ]);
+        // Do not transfer the nested PCM ArrayBuffer here. In Electron's DOM
+        // MessagePort -> MessagePortMain path, transferring this buffer can
+        // detach/drop the payload before the main-process session sees it. The
+        // meeting frame is small (~16 KB), so cloning is reliable and cheap.
+        port.postMessage({ v: 1, type: "audio", seq: seq++, pcm16, channels: opts.channels });
       } catch {
         /* port closed mid-teardown (a late onaudioprocess) — drop the frame */
       }

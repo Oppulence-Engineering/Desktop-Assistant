@@ -68,10 +68,17 @@ import {
   WhisperService,
   configureWhisperBinary,
   binaryAvailable,
+  pcmStats,
   probeCapability,
   codeOf as whisperCodeOf,
   type StreamPort,
 } from "@x/core/dist/voice/whisper/index.js";
+import { parseVoiceCommand } from "@x/core/dist/voice/commands/parser.js";
+import {
+  executeVoiceCommand,
+  type VoiceEmailActions,
+} from "@x/core/dist/voice/commands/executor.js";
+import { WhisperUtilityRunner } from "./whisper-utility-client.js";
 import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
 import {
   classifySchedule,
@@ -526,10 +533,13 @@ async function getSolomonAccountState() {
 // ============================================================================
 
 let whisperService: WhisperService | null = null;
+let whisperUtilityRunner: WhisperUtilityRunner | null = null;
 
 /** Absolute path to the per-arch `whisper-cli` (packaged extraResource, or dev vendor). */
 function whisperBinaryPath(): string {
   const exe = process.platform === "win32" ? "whisper-cli.exe" : "whisper-cli";
+  if (process.env.ROWBOAT_WHISPER_BIN) return process.env.ROWBOAT_WHISPER_BIN;
+  if (process.env.ROWBOAT_WHISPER_DIR) return path.join(process.env.ROWBOAT_WHISPER_DIR, exe);
   if (app.isPackaged) {
     return path.join(process.resourcesPath, "whisper", exe); // extraResource → Resources/whisper/
   }
@@ -549,18 +559,29 @@ function whisperBinaryPath(): string {
 function getWhisper(): WhisperService {
   if (whisperService) return whisperService;
   configureWhisperBinary(whisperBinaryPath());
-  whisperService = new WhisperService(WorkDir, (progress) => {
-    for (const win of BrowserWindow.getAllWindows()) {
-      if (!win.isDestroyed() && win.webContents) {
-        win.webContents.send("whisper:modelProgress", progress);
+  whisperUtilityRunner ??= new WhisperUtilityRunner(whisperBinaryPath);
+  whisperService = new WhisperService(
+    WorkDir,
+    (progress) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed() && win.webContents) {
+          win.webContents.send("whisper:modelProgress", progress);
+        }
       }
-    }
-  });
+    },
+    {},
+    {
+      read: voice.readWhisperBenchmarks,
+      write: voice.writeWhisperBenchmark,
+    },
+    whisperUtilityRunner.transcribePcm,
+  );
   return whisperService;
 }
 
 /** On-device transcription is viable only when the binary exists AND the device is capable (§13). */
 async function localTranscriptionSupported(): Promise<boolean> {
+  configureWhisperBinary(whisperBinaryPath());
   if (!binaryAvailable()) return false;
   try {
     return (await probeCapability()).supported;
@@ -576,7 +597,10 @@ type RemoteTranscriptionState = {
 };
 
 function asProvider(value: unknown): TranscriptionProvider | undefined {
-  return value === "whisper-local" || value === "deepgram" || value === "solomon"
+  return value === "whisper-local" ||
+    value === "deepgram" ||
+    value === "solomon" ||
+    value === "none"
     ? value
     : undefined;
 }
@@ -587,6 +611,21 @@ function asProvider(value: unknown): TranscriptionProvider | undefined {
 const REMOTE_TRANSCRIPTION_TTL_MS = 60_000;
 const REMOTE_TRANSCRIPTION_FETCH_TIMEOUT_MS = 4_000;
 let remoteTranscriptionCache: { at: number; value: RemoteTranscriptionState | null } | null = null;
+
+const unavailableEmailActions: VoiceEmailActions = {
+  archiveByQuery: async () => {
+    throw new Error("Voice email archive actions are wired in the email action adapter task.");
+  },
+  labelByQuery: async () => {
+    throw new Error("Voice email label actions are wired in the email action adapter task.");
+  },
+  composeReply: async () => {
+    throw new Error("Voice reply drafting is wired in the email action adapter task.");
+  },
+  createRule: async () => {
+    throw new Error("Voice rule drafting is wired in the email action adapter task.");
+  },
+};
 
 /**
  * Per-user quota + A/B-able fleet defaults from the authenticated endpoint (RFC 009
@@ -639,8 +678,8 @@ async function remoteTranscriptionState(): Promise<RemoteTranscriptionState | nu
 }
 
 async function resolveVoiceProviderMain(): Promise<TranscriptionProvider> {
-  const [cfg, signedIn, remote, localSupported] = await Promise.all([
-    voice.readTranscriptionConfig(),
+  const cfg = await voice.readTranscriptionConfig();
+  const [signedIn, remote, localSupported] = await Promise.all([
     isSignedIn(),
     remoteTranscriptionState(),
     localTranscriptionSupported(),
@@ -650,6 +689,7 @@ async function resolveVoiceProviderMain(): Promise<TranscriptionProvider> {
     remoteDefault: remote?.voiceProvider,
     signedIn,
     localSupported,
+    localOnly: cfg?.privacy.localOnly ?? false,
   });
 }
 
@@ -657,20 +697,31 @@ async function resolveMeetingProviderMain(): Promise<{
   provider: TranscriptionProvider;
   reason: voice.ProviderReason;
 }> {
-  const [cfg, signedIn, remote, localSupported, voiceCfg] = await Promise.all([
-    voice.readTranscriptionConfig(),
+  const cfg = await voice.readTranscriptionConfig();
+  const [signedIn, remote, localSupported, voiceCfg] = await Promise.all([
     isSignedIn(),
     remoteTranscriptionState(),
     localTranscriptionSupported(),
     voice.getVoiceConfig(),
   ]);
+  let hasSolomonWebsocket = false;
+  if (signedIn) {
+    try {
+      const solomonConfig = await getSolomonConfig();
+      hasSolomonWebsocket = !!solomonConfig.websocketApiUrl;
+    } catch {
+      hasSolomonWebsocket = false;
+    }
+  }
   return voice.resolveMeetingProvider({
     userOverride: cfg?.meetingProvider,
     remoteDefault: remote?.meetingProvider,
     signedIn,
     localSupported,
     hasOwnDeepgramKey: !!voiceCfg.deepgram,
+    cloudAvailable: !!voiceCfg.deepgram || hasSolomonWebsocket,
     meetingMinutesRemaining: remote?.meetingMinutesRemaining ?? null,
+    localOnly: cfg?.privacy.localOnly ?? false,
   });
 }
 
@@ -1193,12 +1244,35 @@ export function setupIpcHandlers() {
     "voice:synthesize": async (_event, args) => {
       return voice.synthesizeSpeech(args.text);
     },
+    "voice:parseCommand": async (_event, { text, surface }) => {
+      return parseVoiceCommand(text, surface);
+    },
+    "voice:executeCommand": async (_event, { intent, confirmed }) => {
+      return executeVoiceCommand(intent, {
+        confirmed,
+        emailActions: unavailableEmailActions,
+      });
+    },
     // ---- Local on-device transcription (whisper.cpp) — RFC 009 ----
     "whisper:capability": async () => {
       return getWhisper().capability();
     },
+    "whisper:diagnose": async (_event, req) => {
+      const cfg = await voice.getTranscriptionConfig();
+      return getWhisper().diagnose({
+        pcm16: new Int16Array(req.pcm16),
+        sampleRate: req.sampleRate,
+        model: cfg.whisper.model,
+        lang: cfg.whisper.language,
+        expectedText: req.expectedText,
+        retainDiagnostics: cfg.privacy.retainDiagnostics,
+      });
+    },
     "whisper:listModels": async () => {
       return { models: await getWhisper().listModels() };
+    },
+    "whisper:verifyModel": async (_event, { id }) => {
+      return getWhisper().verifyModel(id);
     },
     "whisper:ensureModel": async (_event, { id }) => {
       try {
@@ -1208,19 +1282,44 @@ export function setupIpcHandlers() {
         return { success: false, code: whisperCodeOf(err, "download_failed") };
       }
     },
+    "whisper:repairModel": async (_event, { id }) => {
+      return getWhisper().repairModel(id);
+    },
     "whisper:removeModel": async (_event, { id }) => {
       await getWhisper().removeModel(id);
       return { success: true };
     },
+    "whisper:benchmark": async (_event, req) =>
+      getWhisper().benchmark({ model: req.model, sampleSeconds: req.sampleSeconds }),
     "whisper:transcribe": async (_event, req) => {
       try {
         // Honor the persisted model/language when the renderer didn't specify one
         // (the settings model picker writes whisper.model; callers send neither).
         const cfg = await voice.getTranscriptionConfig();
-        const result = await getWhisper().transcribe(new Int16Array(req.pcm16), {
+        const pcm16 = new Int16Array(req.pcm16);
+        const sampleCount = pcm16.length;
+        const levels = pcmStats(pcm16, req.channels);
+        const model = req.model ?? cfg.whisper.model;
+        const lang = req.lang ?? cfg.whisper.language;
+        console.log("[voice] whisper:transcribe start", {
+          samples: sampleCount,
+          audioMs: (sampleCount / 16000 / (req.channels === 2 ? 2 : 1)) * 1000,
           channels: req.channels,
-          model: req.model ?? cfg.whisper.model,
-          lang: req.lang ?? cfg.whisper.language,
+          model,
+          lang,
+          peak: levels.peak,
+          rms: Number(levels.rms.toFixed(1)),
+          activePct: Number((levels.activeRatio * 100).toFixed(1)),
+        });
+        const result = await getWhisper().transcribe(pcm16, {
+          channels: req.channels,
+          model,
+          lang,
+        });
+        console.log("[voice] whisper:transcribe success", {
+          textLength: result.text.length,
+          rtf: result.rtf,
+          durationMs: result.durationMs,
         });
         return {
           success: true,
@@ -1230,6 +1329,7 @@ export function setupIpcHandlers() {
           durationMs: result.durationMs,
         };
       } catch (err) {
+        console.error("[voice] whisper:transcribe failed", err);
         return { success: false, code: whisperCodeOf(err), message: (err as Error)?.message };
       }
     },
@@ -1272,6 +1372,7 @@ export function setupIpcHandlers() {
         voiceProvider: patch.voiceProvider,
         meetingProvider: patch.meetingProvider,
         ...(patch.model ? { whisper: { model: patch.model } } : {}),
+        privacy: patch.privacy,
       });
     },
     "notifications:getConfig": async () => {

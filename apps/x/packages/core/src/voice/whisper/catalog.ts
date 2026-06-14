@@ -1,4 +1,4 @@
-import { CHECKSUMS } from "./checksums.js";
+import { CHECKSUMS, COREML_CHECKSUMS, COREML_SIZES_MB } from "./checksums.js";
 
 /**
  * Static whisper.cpp model catalog (RFC 009 §9, Appendix E).
@@ -12,14 +12,36 @@ import { CHECKSUMS } from "./checksums.js";
 
 /** Hugging Face source for the GGUF weights. */
 const HF_REPO = "ggerganov/whisper.cpp";
+/** Upstream whisper.cpp stores VAD models in a separate repository. */
+const VAD_HF_REPO = "ggml-org/whisper-vad";
 /**
  * Revision to resolve. `main` today; pin to an immutable commit for stronger
  * supply-chain guarantees (§21/§31 open question) without touching this file's shape.
  */
 const HF_REVISION = "main";
 
-function hfUrl(fileName: string): string {
-  return `https://huggingface.co/${HF_REPO}/resolve/${HF_REVISION}/${fileName}`;
+function hfUrl(fileName: string, repo = HF_REPO): string {
+  return `https://huggingface.co/${repo}/resolve/${HF_REVISION}/${fileName}`;
+}
+
+const COREML_MODEL_BY_ENTRY_ID: Record<string, string> = {
+  "tiny.en-q5_1": "tiny.en",
+  "base.en-q5_1": "base.en",
+  "base-q5_1": "base",
+  "small.en-q5_1": "small.en",
+  "small-q5_1": "small",
+  "large-v3-turbo-q5_0": "large-v3-turbo",
+  "large-v3-q5_0": "large-v3",
+};
+
+function coremlSidecarFor(entryId: string): ModelEntry["coreml"] | undefined {
+  const coremlId = COREML_MODEL_BY_ENTRY_ID[entryId];
+  if (!coremlId) return undefined;
+  return {
+    url: hfUrl(`ggml-${coremlId}-encoder.mlmodelc.zip`),
+    sha256: COREML_CHECKSUMS[coremlId] ?? "",
+    sizeMb: COREML_SIZES_MB[coremlId] ?? 0,
+  };
 }
 
 export type ModelFamily = "tiny" | "base" | "small" | "large-v3" | "large-v3-turbo" | "vad";
@@ -43,7 +65,7 @@ export interface ModelEntry {
   /** Hugging Face resolve URL for the `.bin`. */
   url: string;
   /** Optional macOS Core ML encoder sidecar. */
-  coreml?: { url: string; sha256: string };
+  coreml?: { url: string; sha256: string; sizeMb: number };
   /** The recommended default model (one per locale family). */
   recommendedDefault?: boolean;
   /** Shown in the settings picker (VAD is auto, never listed). */
@@ -134,7 +156,7 @@ const ENTRIES: Omit<ModelEntry, "sha256">[] = [
     english: false,
     quant: "none",
     sizeMb: 1,
-    url: hfUrl(VAD_FILE_NAME),
+    url: hfUrl(VAD_FILE_NAME, VAD_HF_REPO),
     downloadable: false,
   },
 ];
@@ -143,6 +165,7 @@ const ENTRIES: Omit<ModelEntry, "sha256">[] = [
 export const CATALOG: ModelEntry[] = ENTRIES.map((e) => ({
   ...e,
   sha256: CHECKSUMS[e.id] ?? "",
+  coreml: e.coreml ?? coremlSidecarFor(e.id),
 }));
 
 export function findModel(id: string): ModelEntry | undefined {

@@ -18,93 +18,69 @@ import { OAuthTokens } from "./types.js";
  * preserved in those cases (Google rarely rotates refresh tokens).
  */
 
-/** Thrown when the api signals the user must reconnect (Google `invalid_grant`). */
-export class ReconnectRequiredError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = "ReconnectRequiredError";
-    }
-}
-
-/**
- * Thrown when the api signals a transient failure (rate limit, in-flight dedup,
- * upstream 5xx) — caller should leave stored tokens untouched and retry on its
- * next tick rather than flagging the user for reconnect.
- *
- * In particular: the backend returns 429 with `Refresh in progress, retry shortly`
- * when two desktop clients race the same refresh; the proactive in-flight dedup
- * in GoogleClientFactory should make that unreachable, but this is the safety
- * net if it ever isn't.
- */
-export class TransientRefreshError extends Error {
-    readonly status: number;
-    constructor(message: string, status: number) {
-        super(message);
-        this.name = "TransientRefreshError";
-        this.status = status;
-    }
-}
+// Error classes live in refresh-errors.ts (shared with the WorkOS refresh
+// path); re-exported here so existing importers keep working.
+import { ReconnectRequiredError, TransientRefreshError } from "./refresh-errors.js";
+export { ReconnectRequiredError, TransientRefreshError };
 
 interface ApiTokenResponse {
-    access_token: string;
-    refresh_token?: string;
-    expires_at: number;
-    scope?: string;
-    token_type?: string;
+  access_token: string;
+  refresh_token?: string;
+  expires_at: number;
+  scope?: string;
+  token_type?: string;
 }
 
 function toOAuthTokens(
-    body: ApiTokenResponse,
-    fallbackRefreshToken: string | null = null,
-    fallbackScopes?: string[],
+  body: ApiTokenResponse,
+  fallbackRefreshToken: string | null = null,
+  fallbackScopes?: string[],
 ): OAuthTokens {
-    const refresh_token = body.refresh_token ?? fallbackRefreshToken;
-    const scopes = body.scope
-        ? body.scope.split(" ").filter((s) => s.length > 0)
-        : fallbackScopes;
-    return {
-        access_token: body.access_token,
-        refresh_token,
-        expires_at: body.expires_at,
-        token_type: "Bearer",
-        scopes,
-    };
+  const refresh_token = body.refresh_token ?? fallbackRefreshToken;
+  const scopes = body.scope ? body.scope.split(" ").filter((s) => s.length > 0) : fallbackScopes;
+  return {
+    access_token: body.access_token,
+    refresh_token,
+    expires_at: body.expires_at,
+    token_type: "Bearer",
+    scopes,
+  };
 }
 
 async function postWithBearer(path: string, body: unknown): Promise<Response> {
-    const bearer = await getAccessToken();
-    return fetch(`${API_URL}${path}`, {
-        method: "POST",
-        headers: {
-            "content-type": "application/json",
-            authorization: `Bearer ${bearer}`,
-        },
-        body: JSON.stringify(body),
-    });
+  const bearer = await getAccessToken();
+  return fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${bearer}`,
+    },
+    body: JSON.stringify(body),
+  });
 }
 
 interface ErrorBody {
-    error?: string;
-    reconnectRequired?: boolean;
+  error?: string;
+  reconnectRequired?: boolean;
 }
 
 async function readError(res: Response): Promise<ErrorBody> {
-    try {
-        return (await res.json()) as ErrorBody;
-    } catch {
-        return {};
-    }
+  try {
+    return (await res.json()) as ErrorBody;
+  } catch {
+    return {};
+  }
 }
 
 /** Claim the tokens parked under `state` after the webapp finished its callback. */
 export async function claimTokensViaBackend(state: string): Promise<OAuthTokens> {
-    const res = await postWithBearer("/v1/google-oauth/claim", { session: state });
-    if (!res.ok) {
-        const err = await readError(res);
-        throw new Error(`claim failed: ${res.status} ${err.error ?? ""}`.trim());
-    }
-    const body = (await res.json()) as ApiTokenResponse;
-    return toOAuthTokens(body);
+  const res = await postWithBearer("/v1/google-oauth/claim", { session: state });
+  if (!res.ok) {
+    const err = await readError(res);
+    throw new Error(`claim failed: ${res.status} ${err.error ?? ""}`.trim());
+  }
+  const body = (await res.json()) as ApiTokenResponse;
+  return toOAuthTokens(body);
 }
 
 /**
@@ -112,32 +88,32 @@ export async function claimTokensViaBackend(state: string): Promise<OAuthTokens>
  * `existingScopes` when Google omits them on the refresh response.
  */
 export async function refreshTokensViaBackend(
-    refreshToken: string,
-    existingScopes?: string[],
+  refreshToken: string,
+  existingScopes?: string[],
 ): Promise<OAuthTokens> {
-    const res = await postWithBearer("/v1/google-oauth/refresh", { refreshToken });
-    if (res.status === 409) {
-        const err = await readError(res);
-        if (err.reconnectRequired) {
-            throw new ReconnectRequiredError(err.error ?? "Reconnect required");
-        }
-        throw new Error(`refresh failed: 409 ${err.error ?? ""}`.trim());
+  const res = await postWithBearer("/v1/google-oauth/refresh", { refreshToken });
+  if (res.status === 409) {
+    const err = await readError(res);
+    if (err.reconnectRequired) {
+      throw new ReconnectRequiredError(err.error ?? "Reconnect required");
     }
-    // 429 = backend dedup said another refresh is in flight; 5xx = upstream
-    // hiccup. Either way the local tokens are still valid for the next attempt
-    // — surface as TransientRefreshError so the factory doesn't write a stuck
-    // error into oauth.json.
-    if (res.status === 429 || res.status >= 500) {
-        const err = await readError(res);
-        throw new TransientRefreshError(
-            `refresh failed: ${res.status} ${err.error ?? ""}`.trim(),
-            res.status,
-        );
-    }
-    if (!res.ok) {
-        const err = await readError(res);
-        throw new Error(`refresh failed: ${res.status} ${err.error ?? ""}`.trim());
-    }
-    const body = (await res.json()) as ApiTokenResponse;
-    return toOAuthTokens(body, refreshToken, existingScopes);
+    throw new Error(`refresh failed: 409 ${err.error ?? ""}`.trim());
+  }
+  // 429 = backend dedup said another refresh is in flight; 5xx = upstream
+  // hiccup. Either way the local tokens are still valid for the next attempt
+  // — surface as TransientRefreshError so the factory doesn't write a stuck
+  // error into oauth.json.
+  if (res.status === 429 || res.status >= 500) {
+    const err = await readError(res);
+    throw new TransientRefreshError(
+      `refresh failed: ${res.status} ${err.error ?? ""}`.trim(),
+      res.status,
+    );
+  }
+  if (!res.ok) {
+    const err = await readError(res);
+    throw new Error(`refresh failed: ${res.status} ${err.error ?? ""}`.trim());
+  }
+  const body = (await res.json()) as ApiTokenResponse;
+  return toOAuthTokens(body, refreshToken, existingScopes);
 }

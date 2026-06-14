@@ -195,10 +195,11 @@ type Config struct {
 	TemporalAPIKey     string
 	TemporalTLSEnabled bool
 
-	// Temporal Schedules for exact-cron api-target tasks (RFC 005). When
-	// disabled, cron stays on the RFC 001 scheduler loop; the loop remains the
-	// fallback for any task whose schedule sync is not "current" even when
-	// enabled.
+	// Temporal Schedules for exact-cron api-target tasks (RFC 005). Enabled
+	// by default; TEMPORAL_SCHEDULES_ENABLED=false is the instant rollback
+	// (the RFC 001 loop resumes every cron). Inert unless TEMPORAL_ENABLED is
+	// also true — every consumer (server syncer, worker fires, scheduler
+	// reconciler + loop gate) sits behind a Temporal gate.
 	TemporalSchedulesEnabled          bool
 	TemporalScheduleCatchup           time.Duration // Schedule CatchupWindow
 	TemporalScheduleReconcileInterval time.Duration // reconciler cadence
@@ -394,7 +395,7 @@ func Load() Config {
 		TemporalAPIKey:        getenv("TEMPORAL_API_KEY", ""),
 		TemporalTLSEnabled:    getbool("TEMPORAL_TLS_ENABLED", false),
 
-		TemporalSchedulesEnabled:          getbool("TEMPORAL_SCHEDULES_ENABLED", false),
+		TemporalSchedulesEnabled:          getbool("TEMPORAL_SCHEDULES_ENABLED", true),
 		TemporalScheduleCatchup:           getdur("TEMPORAL_SCHEDULE_CATCHUP", time.Minute),
 		TemporalScheduleReconcileInterval: getdur("TEMPORAL_SCHEDULE_RECONCILE_INTERVAL", 5*time.Minute),
 
@@ -554,16 +555,11 @@ func (c Config) Validate() error {
 		}
 	}
 	if c.TemporalSchedulesEnabled {
-		if !c.TemporalEnabled {
-			return fmt.Errorf("TEMPORAL_ENABLED must be true when TEMPORAL_SCHEDULES_ENABLED=true")
-		}
-		// NOTE: the RFC 001 loop (CLOUD_SCHEDULER_ENABLED) is the mandated
-		// fallback and hosts the reconciler, but that is a DEPLOYMENT-level
-		// invariant ("a scheduler replica must exist somewhere"), not a
-		// per-process one: CLOUD_SCHEDULER_ENABLED is set per-pod (only the
-		// scheduler Deployment turns it on) while this flag must live in the
-		// shared configmap for the server's syncer — requiring both here would
-		// crash-loop the server and worker. Enforced operationally instead.
+		// No TEMPORAL_ENABLED requirement: schedules default ON, but every
+		// consumer is gated behind Temporal wiring, so the flag is simply
+		// inert in Temporal-less deployments. The RFC 001 loop
+		// (CLOUD_SCHEDULER_ENABLED) being the fallback/reconciler host is a
+		// DEPLOYMENT-level invariant (per-pod env), enforced operationally.
 		if c.TemporalScheduleCatchup <= 0 {
 			return fmt.Errorf("TEMPORAL_SCHEDULE_CATCHUP must be > 0")
 		}

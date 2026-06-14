@@ -3,7 +3,9 @@
 This directory holds Rowboat architecture RFCs. It started with the cloud-native
 background workflow set and now also carries the related service plane, auth,
 connector, product-fabric, observability, app-boundary, local-model, and future
-agent-delegation tracks.
+agent-delegation tracks. Email feature RFCs use the `email-{number}-{value}`
+prefix so they can evolve as a product track without renumbering the platform
+RFC sequence.
 
 The first set takes Rowboat's background tasks from **cloud-executed but
 desktop-driven** to **fully cloud-native** — scheduled, event-driven, and useful
@@ -35,7 +37,7 @@ to avoid parallel sources of truth.
 RFCs 001–007 build the execution plane; **008** is the first _faculty_ RFC that proves the
 fabric extends to new portfolio planes. **001–006** are **Complete** (003 with its GCP
 provisioning companion [019](./019-google-push-infrastructure.md); 004 is the cloud agent
-runtime; 005 ships dark behind `TEMPORAL_SCHEDULES_ENABLED`; 006 is the desktop control
+runtime; 005 is enabled by default (`TEMPORAL_SCHEDULES_ENABLED=false` is the rollback); 006 is the desktop control
 plane over all of them); **007** remains **Draft**. Each carries a metadata block, grounded `file:line` references into the current
 codebase, mermaid diagrams, a **Decisions** section (resolved forks), and a test plan.
 
@@ -70,6 +72,41 @@ The set below (021–026) hardens the desktop's memory/runtime foundations and c
 | [024](./024-cold-primitives-ga.md)         | Finishing the Cold Primitives                                            | apps/x             | Turns on four wired-but-cold capabilities: a Slack event producer, Code Mode GA, an agent-schedule UI, and note version history.                                          |
 | [025](./025-desktop-runtime-durability.md) | Desktop Runtime Durability — Local Queue, Backpressure & Multi-Workspace | apps/x             | Replaces in-memory run guards with a crash-safe SQLite job queue (at-most-once), adds event coalescing/backpressure, and supports multiple workspaces without restart.    |
 | [026](./026-finance-command-center.md)     | The Finance Command Center                                               | product (umbrella) | Composes 021–025 + 006/008/013/020 into the operator/founder cockpit (AR inbox · AP queue · cash & exposure · agent activity); personas, killer workflows, build order.   |
+
+## Email feature RFCs
+
+This set translates the email capabilities studied from Inbox Zero into
+Rowboat's desktop-first architecture. The track starts with a source inventory
+and provider-neutral mailbox foundation, then layers the command center,
+automation rules, reply workflows, cleanup, insights, attachment/calendar/channel
+integrations, assistant chat, reliability, privacy, evals, onboarding,
+multi-account boundaries, debug tooling, implementation sequencing, and concrete
+implementation blueprints with code examples.
+
+| #                                                                           | Title                                                 | Layer                    | What it adds                                                                                                                                                |
+| --------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [email-000](./email-000-inbox-zero-agent-reference.md)                      | Inbox Zero Agent Reference Map                        | implementation reference | Exact Inbox Zero docs, schema models, utilities, routes, and tests that implementation agents should inspect for each Rowboat email RFC.                    |
+| [email-001](./email-001-mailbox-provider-foundation.md)                     | Mailbox Provider Foundation                           | apps/x + rowboat-api     | Provider-neutral mailbox accounts, capabilities, sync/watch primitives, local store, and broker API shape over Gmail first and Outlook later.               |
+| [email-002](./email-002-mailbox-command-center.md)                          | Mailbox Command Center                                | apps/x renderer          | A desktop mailbox workspace for triage, reading, composing, queues, inspector context, and provider-neutral actions.                                        |
+| [email-003](./email-003-ai-rules-and-action-engine.md)                      | AI Rules and Mail Action Engine                       | apps/x + rowboat-api     | Static/AI/learned email rules, action catalog, delayed actions, webhook/digest actions, audit trails, safety policy, and rule testing.                      |
+| [email-004](./email-004-reply-zero-and-drafting.md)                         | Reply Zero and AI Drafting                            | apps/x                   | Needs Reply/Awaiting Reply trackers, AI draft suggestions, nudge drafts, writing style memory, and outbound/inbound state transitions.                      |
+| [email-005](./email-005-newsletter-cleanup-and-cold-email-defense.md)       | Newsletter Cleanup and Cold Email Defense             | apps/x + provider rules  | Sender profiles, newsletter decisions, cold outreach detection, bulk archive jobs, safe unsubscribe, and provider filters.                                  |
+| [email-006](./email-006-digest-analytics-and-insights.md)                   | Digests, Analytics, and Mail Insights                 | apps/x + optional cloud  | Digest queues/schedules, email analytics, response-time metrics, automation impact reporting, and local-first privacy boundaries.                           |
+| [email-007](./email-007-attachments-calendar-and-channels.md)               | Attachments, Calendar Context, and Messaging Channels | apps/x + connectors      | Attachment filing, local/cloud destinations, calendar availability for drafts, booking links, and Slack/Telegram-style notification routes.                 |
+| [email-008](./email-008-email-platform-api-and-ecosystem.md)                | Email Platform API and Ecosystem                      | apps/x + rowboat-api     | Scoped API keys, local/broker API surfaces, signed webhooks, assistant chat APIs, import/export, and integration audit controls.                            |
+| [email-009](./email-009-inbox-zero-source-inventory.md)                     | Inbox Zero Source Inventory and Feature Map           | product / architecture   | Source inventory mapping Inbox Zero capabilities to Rowboat RFCs, current Rowboat anchors, ownership, decisions, and milestones.                            |
+| [email-010](./email-010-ai-mail-assistant-chat.md)                          | AI Mail Assistant Chat                                | apps/x + runtime         | Mail-aware assistant tools for search, summaries, drafts, explanations, proposed actions, rule authoring, chat memory, and channel extension.               |
+| [email-011](./email-011-smart-categories-tabs-and-labels.md)                | Smart Categories, Tabs, and Labels                    | apps/x + core            | Native desktop tabs, query views, smart categories, provider label sync, correction metadata, and reusable category assignments.                            |
+| [email-012](./email-012-mail-search-semantic-memory-and-knowledge.md)       | Mail Search, Semantic Memory, and Knowledge           | apps/x + RFC 021         | Exact search, semantic retrieval, summaries, knowledge, learned memory, retention, redaction, and mailbox-specific indexing policy.                         |
+| [email-013](./email-013-meeting-briefs-and-relationship-context.md)         | Meeting Briefs and Relationship Context               | apps/x + connectors      | Upcoming meeting briefs from calendar events, external attendees, email history, relationship context, optional web research, and delivery channels.        |
+| [email-014](./email-014-sync-reliability-rate-limits-and-repair.md)         | Sync Reliability, Rate Limits, and Repair             | apps/x + rowboat-api     | Provider backoff, cursor repair, watch renewal, durable sync jobs, provider action reconciliation, health state, and repair tools.                          |
+| [email-015](./email-015-email-privacy-security-and-governance.md)           | Email Privacy, Security, and Governance               | platform + apps/x        | Data classes, model routing, prompt-injection defense, retention, external payload policy, secrets handling, and audit requirements.                        |
+| [email-016](./email-016-email-evaluation-and-quality-gates.md)              | Email Evaluation and Quality Gates                    | AI/runtime + tests       | Eval datasets, metrics, synthetic fixtures, prompt/model tracking, rule testing, draft rubrics, and release gates for risky automation.                     |
+| [email-017](./email-017-onboarding-permissions-and-feature-adoption.md)     | Onboarding, Permissions, and Feature Adoption         | apps/x + OAuth           | Progressive account setup, least-privilege scopes, feature cards, migration from existing Gmail sync, reconnect/revocation states, and adoption telemetry.  |
+| [email-018](./email-018-email-product-roadmap-and-build-order.md)           | Email Product Roadmap and Build Order                 | product / delivery       | Milestone plan for current Gmail hardening, mailbox foundation, safe AI ops, cleanup/insights, integrations, ecosystem, multi-account, and Outlook.         |
+| [email-019](./email-019-multi-account-organizations-and-team-boundaries.md) | Multi-Account, Organizations, and Team Boundaries     | platform + apps/x        | Account-scoped data and actions, cross-account search policy, sending safety, future organization policies, team stats boundaries, and API scope.           |
+| [email-020](./email-020-email-debug-console-and-operator-tools.md)          | Email Debug Console and Operator Tools                | apps/x + core            | Account health, sync jobs, rule history, drafts, reply tracker, memory, external deliveries, redacted diagnostics, and thread "why" views.                  |
+| [email-021](./email-021-implementation-blueprints-and-code-examples.md)     | Implementation Blueprints and Code Examples           | implementation reference | Concrete TypeScript and Go sketches for provider adapters, local store, IPC, rules, actions, policy, sync backoff, assistant tools, evals, and broker APIs. |
 
 ## Dependency graph
 

@@ -11,6 +11,7 @@ import type {
 } from "@x/shared/dist/background-task.js";
 import { PrefixLogger } from "@x/shared/dist/prefix-logger.js";
 import { getAccessToken } from "../auth/tokens.js";
+import { AuthUnavailableError } from "../auth/refresh-errors.js";
 import { API_URL } from "../config/env.js";
 import { fetchRun } from "../runs/runs.js";
 import {
@@ -134,11 +135,13 @@ function isHTTPStatus(err: unknown, status: number): boolean {
   return err instanceof CloudHTTPError && err.status === status;
 }
 
-function isCloudAuthUnavailable(err: unknown): boolean {
+export function isCloudAuthUnavailable(err: unknown): boolean {
+  if (err instanceof AuthUnavailableError) return true;
+  // Legacy string matches kept for errors that don't flow through
+  // getAccessToken (e.g. messages relayed from the main-process IPC layer).
   return (
     err instanceof Error &&
-    (err.message.includes("Not signed into Rowboat") ||
-      err.message.includes("Rowboat token expired"))
+    (err.message.includes("Not signed into") || err.message.includes("token expired"))
   );
 }
 

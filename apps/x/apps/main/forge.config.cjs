@@ -24,6 +24,7 @@ const packagerConfig = {
   appCategoryType: "public.app-category.productivity",
   protocols: [{ name: PRODUCT_NAME, schemes: [PRODUCT_SLUG, LEGACY_DEEP_LINK_SCHEME] }],
   extendInfo: {
+    NSMicrophoneUsageDescription: `${PRODUCT_NAME} needs microphone access to transcribe voice input and meeting audio.`,
     NSAudioCaptureUsageDescription: `${PRODUCT_NAME} needs access to system audio to transcribe meetings from other apps (Zoom, Meet, etc.)`,
   },
   // RFC 009: ship the signed per-arch whisper-cli outside the asar (executables

@@ -45,16 +45,8 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { extractConferenceLink } from "@/lib/calendar-event";
@@ -183,14 +175,7 @@ type SidebarContentPanelProps = {
   onToggleBrowser?: () => void;
   onVoiceNoteCreated?: (path: string) => void;
   /** Which primary destination is currently active, for nav highlighting. */
-  activeNav?:
-    | "home"
-    | "email"
-    | "meetings"
-    | "knowledge"
-    | "agents"
-    | "workspaces"
-    | null;
+  activeNav?: "home" | "email" | "meetings" | "knowledge" | "agents" | "workspaces" | null;
   /** Live meeting recording state, so the recording row can show its indicator/stop. */
   meetingRecordingState?: "idle" | "connecting" | "recording" | "stopping";
   recordingMeetingSource?: string | null;
@@ -205,18 +190,12 @@ function formatEventTime(ts: string): string {
 
 function SyncStatusBar() {
   const { state } = useSidebar();
-  const [activeServices, setActiveServices] = useState<Map<string, string>>(
-    new Map(),
-  );
-  const [serviceErrors, setServiceErrors] = useState<Map<string, string>>(
-    new Map(),
-  );
+  const [activeServices, setActiveServices] = useState<Map<string, string>>(new Map());
+  const [serviceErrors, setServiceErrors] = useState<Map<string, string>>(new Map());
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [logEvents, setLogEvents] = useState<ServiceEventType[]>([]);
   const [logLoading, setLogLoading] = useState(false);
-  const runTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
-    new Map(),
-  );
+  const runTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Track active runs from real-time events
   useEffect(() => {
@@ -368,18 +347,11 @@ function SyncStatusBar() {
               <ChevronRight className="h-3 w-3 shrink-0" />
             </button>
           </PopoverTrigger>
-          <PopoverContent
-            side="right"
-            align="end"
-            sideOffset={4}
-            className="w-96 p-0"
-          >
+          <PopoverContent side="right" align="end" sideOffset={4} className="w-96 p-0">
             <div className="p-3 border-b">
               <h4 className="font-semibold text-sm">Sync Activity</h4>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {isSyncing || hasServiceErrors
-                  ? statusLabel
-                  : "All services up to date"}
+                {isSyncing || hasServiceErrors ? statusLabel : "All services up to date"}
               </p>
             </div>
             <div className="max-h-80 overflow-y-auto p-2">
@@ -412,15 +384,11 @@ function SyncStatusBar() {
                                 : "bg-muted text-muted-foreground",
                           )}
                         >
-                          {SERVICE_LABELS[event.service]
-                            ?.split(" ")
-                            .slice(-1)[0] || event.service}
+                          {SERVICE_LABELS[event.service]?.split(" ").slice(-1)[0] || event.service}
                         </span>
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="leading-4 text-foreground/80">
-                          {event.message}
-                        </p>
+                        <p className="leading-4 text-foreground/80">{event.message}</p>
                         {event.type === "error" && (
                           <p
                             className="truncate text-[11px] leading-4 text-red-600/90 dark:text-red-400/90"
@@ -466,8 +434,7 @@ export function SidebarContentPanel({
   const [hasOauthError, setHasOauthError] = useState(false);
   const [showOauthAlert, setShowOauthAlert] = useState(true);
   const [connectionsSettingsOpen, setConnectionsSettingsOpen] = useState(false);
-  const [openConnectionsAfterClose, setOpenConnectionsAfterClose] =
-    useState(false);
+  const [openConnectionsAfterClose, setOpenConnectionsAfterClose] = useState(false);
   const connectorsButtonRef = useRef<HTMLButtonElement | null>(null);
   const [isSolomonConnected, setIsSolomonConnected] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
@@ -512,10 +479,7 @@ export function SidebarContentPanel({
             : "path" in event
               ? [event.path]
               : [];
-      if (
-        paths.some((p) => typeof p === "string" && p.startsWith("gmail_sync"))
-      )
-        void loadEmail();
+      if (paths.some((p) => typeof p === "string" && p.startsWith("gmail_sync"))) void loadEmail();
     });
     return () => {
       cancelled = true;
@@ -538,9 +502,7 @@ export function SidebarContentPanel({
           path: "calendar_sync",
           opts: { recursive: false, includeHidden: false, includeStats: false },
         });
-        const jsonEntries = entries.filter(
-          (e) => e.kind === "file" && e.name.endsWith(".json"),
-        );
+        const jsonEntries = entries.filter((e) => e.kind === "file" && e.name.endsWith(".json"));
         const settled = await Promise.allSettled(
           jsonEntries.map(async (entry) => {
             const result = await window.ipc.invoke("workspace:readFile", {
@@ -554,8 +516,7 @@ export function SidebarContentPanel({
           }),
         );
         const items: UpcomingMeeting[] = [];
-        for (const r of settled)
-          if (r.status === "fulfilled" && r.value) items.push(r.value);
+        for (const r of settled) if (r.status === "fulfilled" && r.value) items.push(r.value);
         items.sort((a, b) => {
           if (a.isAllDay !== b.isAllDay) return a.isAllDay ? -1 : 1;
           return a.start.getTime() - b.start.getTime();
@@ -575,11 +536,7 @@ export function SidebarContentPanel({
             : "path" in event
               ? [event.path]
               : [];
-      if (
-        paths.some(
-          (p) => typeof p === "string" && p.startsWith("calendar_sync"),
-        )
-      )
+      if (paths.some((p) => typeof p === "string" && p.startsWith("calendar_sync")))
         void loadNext();
     });
     const tick = setInterval(() => void loadNext(), 60 * 60 * 1000);
@@ -654,9 +611,7 @@ export function SidebarContentPanel({
       const ms = new Date(r.createdAt).getTime();
       return Number.isFinite(ms) ? ms : 0;
     };
-    for (const r of [...recentRuns]
-      .sort((a, b) => chatRecency(b) - chatRecency(a))
-      .slice(0, 4)) {
+    for (const r of [...recentRuns].sort((a, b) => chatRecency(b) - chatRecency(a)).slice(0, 4)) {
       items.push({
         key: `chat:${r.id}`,
         label: r.title || "(Untitled chat)",
@@ -667,14 +622,7 @@ export function SidebarContentPanel({
     }
 
     return items.sort((a, b) => b.recency - a.recency).slice(0, 12);
-  }, [
-    recentNotes,
-    bgTaskSummaries,
-    recentRuns,
-    onSelectFile,
-    onOpenAgent,
-    onOpenRun,
-  ]);
+  }, [recentNotes, bgTaskSummaries, recentRuns, onSelectFile, onOpenAgent, onOpenRun]);
 
   // Workspace count for the Workspaces sublabel — top-level dir children of
   // knowledge/Workspace (matches WorkspaceView's root listing).
@@ -697,16 +645,13 @@ export function SidebarContentPanel({
   // modified note. Recomputed in an effect (not during render) and ticked so
   // the relative time stays fresh.
   const latestNoteMtime = recentNotes[0]?.stat?.mtimeMs ?? null;
-  const [knowledgeUpdatedLabel, setKnowledgeUpdatedLabel] = useState<
-    string | null
-  >(null);
+  const [knowledgeUpdatedLabel, setKnowledgeUpdatedLabel] = useState<string | null>(null);
   useEffect(() => {
     if (!latestNoteMtime) {
       setKnowledgeUpdatedLabel(null);
       return;
     }
-    const update = () =>
-      setKnowledgeUpdatedLabel(`Updated ${formatAgo(latestNoteMtime)}`);
+    const update = () => setKnowledgeUpdatedLabel(`Updated ${formatAgo(latestNoteMtime)}`);
     update();
     const tick = setInterval(update, 60 * 1000);
     return () => clearInterval(tick);
@@ -727,9 +672,7 @@ export function SidebarContentPanel({
         const ms = t.lastRunAt ? new Date(t.lastRunAt).getTime() : 0;
         return Number.isFinite(ms) && ms > max ? ms : max;
       }, 0);
-      const parts: string[] = [
-        active > 0 ? `${active} active` : "No active agents",
-      ];
+      const parts: string[] = [active > 0 ? `${active} active` : "No active agents"];
       if (lastRunMs > 0) parts.push(`Last run ${formatAgo(lastRunMs)}`);
       setBgAgentsLabel(parts.join(" · "));
     };
@@ -759,9 +702,7 @@ export function SidebarContentPanel({
       try {
         const result = await window.ipc.invoke("oauth:getState", null);
         const config = result.config || {};
-        const hasError = Object.values(config).some((entry) =>
-          Boolean(entry?.error),
-        );
+        const hasError = Object.values(config).some((entry) => Boolean(entry?.error));
         const connected = getProductProviderState(config)?.connected ?? false;
         if (mounted) {
           setHasOauthError(hasError);
@@ -811,8 +752,7 @@ export function SidebarContentPanel({
     meetingRecordingState === "connecting" ||
     meetingRecordingState === "stopping";
   const meetingIsBusy =
-    meetingRecordingState === "connecting" ||
-    meetingRecordingState === "stopping";
+    meetingRecordingState === "connecting" || meetingRecordingState === "stopping";
   // Title of the meeting being recorded, when it's the upcoming one we preview.
   const recordingMeeting =
     previewMeeting != null && recordingMeetingSource === previewMeeting.source
@@ -831,28 +771,15 @@ export function SidebarContentPanel({
         <div className="h-8" />
         {/* Quick actions */}
         <div className="titlebar-no-drag flex items-center gap-1.5 px-3 pb-2">
-          {onNewChat && (
-            <ActionButton
-              icon={SquarePen}
-              label="New chat"
-              onClick={onNewChat}
-            />
-          )}
+          {onNewChat && <ActionButton icon={SquarePen} label="New chat" onClick={onNewChat} />}
           <ActionButton
             icon={FilePlus}
             label="New note"
             onClick={() => knowledgeActions.createNote()}
           />
-          <VoiceNoteButton
-            onNoteCreated={onVoiceNoteCreated}
-            variant="action"
-          />
+          <VoiceNoteButton onNoteCreated={onVoiceNoteCreated} variant="action" />
           {onToggleBrowser && (
-            <ActionButton
-              icon={Globe}
-              label="Run browser task"
-              onClick={onToggleBrowser}
-            />
+            <ActionButton icon={Globe} label="Run browser task" onClick={onToggleBrowser} />
           )}
         </div>
       </SidebarHeader>
@@ -862,10 +789,7 @@ export function SidebarContentPanel({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={activeNav === "home"}
-                  onClick={onOpenHome}
-                >
+                <SidebarMenuButton isActive={activeNav === "home"} onClick={onOpenHome}>
                   <Home className="size-4 shrink-0" />
                   <span className="flex-1 truncate">Home</span>
                 </SidebarMenuButton>
@@ -881,8 +805,7 @@ export function SidebarContentPanel({
                     <span className="truncate">Email</span>
                     {previewEmail && (
                       <span className="truncate text-[11px] text-muted-foreground">
-                        {formatEmailFrom(previewEmail.from)} ·{" "}
-                        {previewEmail.subject}
+                        {formatEmailFrom(previewEmail.from)} · {previewEmail.subject}
                       </span>
                     )}
                   </div>
@@ -899,21 +822,14 @@ export function SidebarContentPanel({
                   onClick={onOpenMeetings}
                   className={meetingSublabel ? "h-auto py-1.5" : undefined}
                 >
-                  <Mic
-                    className={cn(
-                      "size-4 shrink-0",
-                      meetingIsRecording && "text-red-500",
-                    )}
-                  />
+                  <Mic className={cn("size-4 shrink-0", meetingIsRecording && "text-red-500")} />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate">Meetings</span>
                     {meetingSublabel && (
                       <span
                         className={cn(
                           "truncate text-[11px]",
-                          meetingIsRecording
-                            ? "text-red-500"
-                            : "text-muted-foreground",
+                          meetingIsRecording ? "text-red-500" : "text-muted-foreground",
                         )}
                       >
                         {meetingSublabel}
@@ -991,9 +907,7 @@ export function SidebarContentPanel({
                             <Video className="size-4" />
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          Join & take notes
-                        </TooltipContent>
+                        <TooltipContent side="bottom">Join & take notes</TooltipContent>
                       </Tooltip>
                     )}
                   </div>
@@ -1003,9 +917,7 @@ export function SidebarContentPanel({
                 <SidebarMenuButton
                   isActive={activeNav === "knowledge"}
                   onClick={() => knowledgeActions.openKnowledgeView()}
-                  className={
-                    knowledgeUpdatedLabel ? "h-auto py-1.5" : undefined
-                  }
+                  className={knowledgeUpdatedLabel ? "h-auto py-1.5" : undefined}
                 >
                   <FileText className="size-4 shrink-0" />
                   <div className="flex min-w-0 flex-1 flex-col">
@@ -1031,9 +943,7 @@ export function SidebarContentPanel({
                 >
                   <Workflow className="size-4 shrink-0 text-muted-foreground" />
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-muted-foreground">
-                      Background agents
-                    </span>
+                    <span className="truncate text-muted-foreground">Background agents</span>
                     {bgAgentsLabel && (
                       <span
                         className={cn(
@@ -1057,9 +967,7 @@ export function SidebarContentPanel({
                 >
                   <Folder className="size-4 shrink-0 text-muted-foreground" />
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-muted-foreground">
-                      Workspaces
-                    </span>
+                    <span className="truncate text-muted-foreground">Workspaces</span>
                     <span className="truncate text-[11px] text-muted-foreground">
                       {workspaceCount === 0
                         ? "No workspaces"
@@ -1083,10 +991,7 @@ export function SidebarContentPanel({
               className="flex w-full items-center gap-1.5 px-3 py-1 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground"
             >
               <ChevronRight
-                className={cn(
-                  "size-3 transition-transform",
-                  quickAccessExpanded && "rotate-90",
-                )}
+                className={cn("size-3 transition-transform", quickAccessExpanded && "rotate-90")}
               />
               <span className="flex-1 text-left">Recents</span>
             </button>
@@ -1130,8 +1035,7 @@ export function SidebarContentPanel({
                   const days = Math.max(
                     0,
                     Math.ceil(
-                      (new Date(billing.trialExpiresAt).getTime() -
-                        Date.now()) /
+                      (new Date(billing.trialExpiresAt).getTime() - Date.now()) /
                         (1000 * 60 * 60 * 24),
                     ),
                   );
@@ -1184,10 +1088,7 @@ export function SidebarContentPanel({
               <span>Connect Accounts</span>
             </button>
             {hasOauthError && (
-              <AlertDialog
-                open={showOauthAlert}
-                onOpenChange={setShowOauthAlert}
-              >
+              <AlertDialog open={showOauthAlert} onOpenChange={setShowOauthAlert}>
                 <AlertDialogTrigger asChild>
                   <button
                     type="button"
@@ -1210,9 +1111,8 @@ export function SidebarContentPanel({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Reconnect your accounts</AlertDialogTitle>
                     <AlertDialogDescription>
-                      One or more connected accounts need attention. Open
-                      Connected accounts to review the status and reconnect if
-                      needed.
+                      One or more connected accounts need attention. Open Connected accounts to
+                      review the status and reconnect if needed.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -1258,6 +1158,10 @@ export function SidebarContentPanel({
 
 async function transcribeWithDeepgram(audioBlob: Blob): Promise<string | null> {
   try {
+    const exists = await window.ipc.invoke("workspace:exists", {
+      path: "config/deepgram.json",
+    });
+    if (!exists.exists) return null;
     const configResult = await window.ipc.invoke("workspace:readFile", {
       path: "config/deepgram.json",
       encoding: "utf8",
@@ -1308,18 +1212,25 @@ export function VoiceNoteButton({
   }, [onNoteCreated]);
 
   React.useEffect(() => {
-    window.ipc
-      .invoke("workspace:readFile", {
-        path: "config/deepgram.json",
-        encoding: "utf8",
-      })
-      .then((result: { data: string }) => {
+    void (async () => {
+      try {
+        const exists = await window.ipc.invoke("workspace:exists", {
+          path: "config/deepgram.json",
+        });
+        if (!exists.exists) {
+          setHasDeepgramKey(false);
+          return;
+        }
+        const result = await window.ipc.invoke("workspace:readFile", {
+          path: "config/deepgram.json",
+          encoding: "utf8",
+        });
         const { apiKey } = JSON.parse(result.data) as { apiKey: string };
         setHasDeepgramKey(!!apiKey);
-      })
-      .catch(() => {
+      } catch {
         setHasDeepgramKey(false);
-      });
+      }
+    })();
   }, []);
 
   const startRecording = async () => {
@@ -1365,9 +1276,7 @@ path: ${relativePath}
 
       // Start actual recording
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/mp4")
-        ? "audio/mp4"
-        : "audio/webm";
+      const mimeType = MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "audio/webm";
       const recorder = new MediaRecorder(stream, { mimeType });
       chunksRef.current = [];
 
@@ -1480,10 +1389,7 @@ path: ${currentRelativePath}
   };
 
   const stopRecording = () => {
-    if (
-      mediaRecorderRef.current &&
-      mediaRecorderRef.current.state !== "inactive"
-    ) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
     }
     mediaRecorderRef.current = null;
@@ -1581,8 +1487,7 @@ function normalizeUpcomingMeeting(
   sourcePath: string,
 ): UpcomingMeeting | null {
   if (raw.status === "cancelled") return null;
-  const declined =
-    raw.attendees?.find((a) => a.self)?.responseStatus === "declined";
+  const declined = raw.attendees?.find((a) => a.self)?.responseStatus === "declined";
   if (declined) return null;
   const allDayStart = raw.start?.date;
   const timedStart = raw.start?.dateTime;
@@ -1598,11 +1503,9 @@ function normalizeUpcomingMeeting(
   }
   if (!start || Number.isNaN(start.getTime())) return null;
   const now = new Date();
-  const effectiveEnd =
-    end ?? (isAllDay ? new Date(start.getTime() + 24 * 60 * 60 * 1000) : start);
+  const effectiveEnd = end ?? (isAllDay ? new Date(start.getTime() + 24 * 60 * 60 * 1000) : start);
   if (effectiveEnd <= now) return null;
-  const conferenceLink =
-    extractConferenceLink(raw as unknown as Record<string, unknown>) ?? null;
+  const conferenceLink = extractConferenceLink(raw as unknown as Record<string, unknown>) ?? null;
   return {
     id: raw.id ?? sourcePath,
     summary: raw.summary?.trim() || "(No title)",
@@ -1642,10 +1545,7 @@ function formatMeetingTime(event: UpcomingMeeting): string {
   });
 }
 
-function triggerMeetingCapture(
-  event: UpcomingMeeting,
-  openConference: boolean,
-) {
+function triggerMeetingCapture(event: UpcomingMeeting, openConference: boolean) {
   window.__pendingCalendarEvent = {
     summary: event.summary,
     start: event.rawStart,

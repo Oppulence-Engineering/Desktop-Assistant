@@ -1,7 +1,7 @@
-import { z } from 'zod';
-import { useCallback, useEffect, useState } from 'react';
-import { SolomonApiConfig } from '@x/shared/dist/solomon-account.js';
-import { PRODUCT_PROVIDER_ID } from '@x/shared/dist/branding.js';
+import { z } from "zod";
+import { useCallback, useEffect, useState } from "react";
+import { SolomonApiConfig } from "@x/shared/dist/solomon-account.js";
+import { PRODUCT_PROVIDER_ID } from "@x/shared/dist/branding.js";
 
 interface SolomonAccountState {
   signedIn: boolean;
@@ -17,14 +17,18 @@ const DEFAULT_STATE: SolomonAccountState = {
   config: null,
 };
 
-export function useSolomonAccount() {
+interface UseSolomonAccountOptions {
+  autoRefresh?: boolean;
+}
+
+export function useSolomonAccount({ autoRefresh = true }: UseSolomonAccountOptions = {}) {
   const [state, setState] = useState<SolomonAccountState>(DEFAULT_STATE);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(autoRefresh);
 
   const refresh = useCallback(async (): Promise<SolomonAccountSnapshot | null> => {
     try {
       setIsLoading(true);
-      const result = await window.ipc.invoke('account:getSolomon', null);
+      const result = await window.ipc.invoke("account:getSolomon", null);
       const next: SolomonAccountSnapshot = {
         signedIn: result.signedIn,
         accessToken: result.accessToken,
@@ -33,7 +37,7 @@ export function useSolomonAccount() {
       setState(next);
       return next;
     } catch (error) {
-      console.error('Failed to load Solomon AI account state:', error);
+      console.error("Failed to load Solomon AI account state:", error);
       setState(DEFAULT_STATE);
       return null;
     } finally {
@@ -42,18 +46,20 @@ export function useSolomonAccount() {
   }, []);
 
   useEffect(() => {
+    if (!autoRefresh) return;
     refresh();
-  }, [refresh]);
+  }, [refresh, autoRefresh]);
 
   useEffect(() => {
-    const cleanup = window.ipc.on('oauth:didConnect', (event) => {
+    if (!autoRefresh) return;
+    const cleanup = window.ipc.on("oauth:didConnect", (event) => {
       if (event.provider !== PRODUCT_PROVIDER_ID) {
         return;
       }
       refresh();
     });
     return cleanup;
-  }, [refresh]);
+  }, [refresh, autoRefresh]);
 
   return {
     signedIn: state.signedIn,

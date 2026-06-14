@@ -25,8 +25,8 @@ build one (below) or point `ROWBOAT_WHISPER_BIN` at a `whisper-cli`.
 ## Building
 
 ```bash
-# macOS arm64 (Metal + Core ML)
-./build.sh "-DCMAKE_OSX_ARCHITECTURES=arm64 -DGGML_METAL=ON -DWHISPER_COREML=ON"
+# macOS arm64 (Metal + Core ML, with fallback when a sidecar is absent)
+./build.sh "-DCMAKE_OSX_ARCHITECTURES=arm64 -DGGML_METAL=ON -DWHISPER_COREML=ON -DWHISPER_COREML_ALLOW_FALLBACK=ON"
 mkdir -p darwin-arm64 && cp out/whisper-cli darwin-arm64/
 
 # then either:
@@ -36,6 +36,10 @@ ROWBOAT_WHISPER_BIN="$PWD/darwin-arm64/whisper-cli" node spike.mjs path/to/fixtu
 CI (`.github/workflows/whisper-build.yml`) builds the full matrix, signs the
 macOS binary under the app's hardened runtime, and uploads per-arch artifacts the
 release pipeline stages into these directories before `electron-forge make`.
+The model manager downloads the matching `*-encoder.mlmodelc.zip` Core ML
+sidecar next to each macOS model from the pinned catalog metadata; quantized
+models share the upstream unquantized sidecar name, e.g.
+`ggml-base.en-q5_1.bin` uses `ggml-base.en-encoder.mlmodelc`.
 
 ## Upgrading whisper.cpp
 

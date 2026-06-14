@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { ModelManager } from "./model-manager.js";
+import { ModelManager, coremlSidecarDirNameForModelFile } from "./model-manager.js";
 import type { ModelEntry } from "./catalog.js";
 
 const sha256 = (buf: Buffer) => createHash("sha256").update(buf).digest("hex");
@@ -156,5 +156,258 @@ describe("ModelManager", () => {
     await expect(fs.access(dest)).rejects.toBeTruthy();
     const list = await mm.list();
     expect(list.find((m) => m.id === "fake-model")?.installed).toBe(false);
+  });
+
+  it("marks a Core ML sidecar checksum mismatch repairable", async () => {
+    const payload = Buffer.from("model-with-sidecar");
+    const sidecarPayload = Buffer.from("sidecar-zip");
+    const sidecarSha = sha256(sidecarPayload);
+    const catalog = makeCatalog(payload, {
+      coreml: {
+        url: "https://example.test/ggml-fake-encoder.mlmodelc.zip",
+        sha256: sidecarSha,
+        sizeMb: 1,
+      },
+    });
+    const dest = path.join(dir, "ggml-fake.bin");
+    const sidecar = path.join(dir, coremlSidecarDirNameForModelFile("ggml-fake.bin"));
+    await fs.mkdir(sidecar, { recursive: true });
+    await fs.writeFile(dest, payload);
+    await fs.writeFile(path.join(sidecar, "Manifest.json"), "{}");
+    await fs.writeFile(
+      path.join(dir, ".catalog-state.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        installed: {
+          "fake-model": {
+            path: "ggml-fake.bin",
+            bytes: payload.length,
+            sha256: sha256(payload),
+            installedAt: new Date().toISOString(),
+            lastVerifiedAt: new Date().toISOString(),
+            coreml: true,
+            coremlSha256: sha256(Buffer.from("old-sidecar")),
+          },
+        },
+      }),
+    );
+    const mm = new ModelManager(dir, () => {}, {
+      catalog,
+      fetchImpl: makeFetch(payload),
+      freeBytes: hugeFree,
+      platform: "darwin",
+    });
+
+    const health = await mm.verifyModel("fake-model");
+
+    expect(health).toMatchObject({
+      id: "fake-model",
+      installed: true,
+      ggufOk: true,
+      vadOk: true,
+      coremlOk: false,
+      repairable: true,
+    });
+    expect(health.reason).toMatch(/Core ML/);
+
+    await fs.writeFile(
+      path.join(sidecar, ".rowboat-coreml.json"),
+      JSON.stringify({ sha256: sha256(Buffer.from("wrong-sidecar")), installedAt: new Date() }),
+    );
+    const badMarkerHealth = await mm.verifyModel("fake-model");
+    expect(badMarkerHealth).toMatchObject({
+      id: "fake-model",
+      installed: true,
+      ggufOk: true,
+      vadOk: true,
+      coremlOk: false,
+      repairable: true,
+    });
+  });
+
+  it("marks a valid Core ML zip without extracted sidecar repairable", async () => {
+    const payload = Buffer.from("model-with-valid-zip");
+    const sidecarPayload = Buffer.from("valid-sidecar-zip");
+    const sidecarSha = sha256(sidecarPayload);
+    const catalog = makeCatalog(payload, {
+      coreml: {
+        url: "https://example.test/ggml-fake-encoder.mlmodelc.zip",
+        sha256: sidecarSha,
+        sizeMb: 1,
+      },
+    });
+    await fs.writeFile(path.join(dir, "ggml-fake.bin"), payload);
+    await fs.writeFile(path.join(dir, "ggml-fake-encoder.mlmodelc.zip"), sidecarPayload);
+    await fs.writeFile(
+      path.join(dir, ".catalog-state.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        installed: {
+          "fake-model": {
+            path: "ggml-fake.bin",
+            bytes: payload.length,
+            sha256: sha256(payload),
+            installedAt: new Date().toISOString(),
+            lastVerifiedAt: new Date().toISOString(),
+            coreml: true,
+            coremlSha256: sidecarSha,
+          },
+        },
+      }),
+    );
+    const mm = new ModelManager(dir, () => {}, {
+      catalog,
+      fetchImpl: makeFetch(payload),
+      freeBytes: hugeFree,
+      platform: "darwin",
+    });
+
+    const health = await mm.verifyModel("fake-model");
+
+    expect(health).toMatchObject({
+      id: "fake-model",
+      installed: true,
+      ggufOk: true,
+      vadOk: true,
+      coremlOk: false,
+      repairable: true,
+    });
+    expect(health.reason).toMatch(/sidecar.*missing|extract/i);
+  });
+
+  it("does not trust a Core ML sidecar directory without a matching install marker", async () => {
+    const payload = Buffer.from("model-with-untrusted-sidecar");
+    const sidecarPayload = Buffer.from("trusted-sidecar-zip");
+    const sidecarSha = sha256(sidecarPayload);
+    const catalog = makeCatalog(payload, {
+      coreml: {
+        url: "https://example.test/ggml-fake-encoder.mlmodelc.zip",
+        sha256: sidecarSha,
+        sizeMb: 1,
+      },
+    });
+    const sidecar = path.join(dir, coremlSidecarDirNameForModelFile("ggml-fake.bin"));
+    await fs.mkdir(sidecar, { recursive: true });
+    await fs.writeFile(path.join(dir, "ggml-fake.bin"), payload);
+    await fs.writeFile(path.join(sidecar, "Manifest.json"), "{}");
+    await fs.writeFile(
+      path.join(dir, ".catalog-state.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        installed: {
+          "fake-model": {
+            path: "ggml-fake.bin",
+            bytes: payload.length,
+            sha256: sha256(payload),
+            installedAt: new Date().toISOString(),
+            lastVerifiedAt: new Date().toISOString(),
+            coreml: true,
+            coremlSha256: sidecarSha,
+          },
+        },
+      }),
+    );
+    const mm = new ModelManager(dir, () => {}, {
+      catalog,
+      fetchImpl: makeFetch(payload),
+      freeBytes: hugeFree,
+      platform: "darwin",
+    });
+
+    const health = await mm.verifyModel("fake-model");
+
+    expect(health).toMatchObject({
+      id: "fake-model",
+      installed: true,
+      ggufOk: true,
+      vadOk: true,
+      coremlOk: false,
+      repairable: true,
+    });
+    expect(health.reason).toMatch(/Core ML/);
+  });
+
+  it("does not report a stale ledger entry as installed when the model file is missing", async () => {
+    const payload = Buffer.from("missing-model");
+    await fs.writeFile(
+      path.join(dir, ".catalog-state.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        installed: {
+          "fake-model": {
+            path: "ggml-fake.bin",
+            bytes: payload.length,
+            sha256: sha256(payload),
+            installedAt: new Date().toISOString(),
+            lastVerifiedAt: new Date().toISOString(),
+          },
+        },
+      }),
+    );
+    const mm = new ModelManager(dir, () => {}, {
+      catalog: makeCatalog(payload),
+      fetchImpl: makeFetch(payload),
+      freeBytes: hugeFree,
+    });
+
+    const list = await mm.list();
+    expect(list.find((m) => m.id === "fake-model")?.installed).toBe(false);
+
+    const health = await mm.verifyModel("fake-model");
+
+    expect(health).toMatchObject({
+      id: "fake-model",
+      installed: false,
+      ggufOk: false,
+      vadOk: true,
+      repairable: true,
+    });
+    expect(health.reason).toMatch(/missing/i);
+  });
+
+  it("repairs a corrupted model by removing and ensuring it again", async () => {
+    const payload = Buffer.from("healthy-model-bytes");
+    const fetchCalls = vi.fn();
+    const mm = new ModelManager(dir, () => {}, {
+      catalog: makeCatalog(payload),
+      fetchImpl: makeFetch(payload, fetchCalls),
+      freeBytes: hugeFree,
+    });
+
+    const dest = await mm.ensure("fake-model");
+    await fs.writeFile(dest, Buffer.from("corrupt-model-bytes"));
+
+    const corrupted = await mm.verifyModel("fake-model");
+    expect(corrupted).toMatchObject({
+      id: "fake-model",
+      installed: false,
+      ggufOk: false,
+      vadOk: true,
+      repairable: true,
+    });
+
+    const repaired = await mm.repairModel("fake-model");
+
+    expect(repaired).toMatchObject({
+      id: "fake-model",
+      installed: true,
+      ggufOk: true,
+      vadOk: true,
+      repairable: false,
+    });
+    expect(await fs.readFile(dest)).toEqual(payload);
+    expect(fetchCalls).toHaveBeenCalledTimes(2);
+  });
+
+  it("matches whisper.cpp Core ML sidecar names for quantized models", () => {
+    expect(coremlSidecarDirNameForModelFile("ggml-tiny.en-q5_1.bin")).toBe(
+      "ggml-tiny.en-encoder.mlmodelc",
+    );
+    expect(coremlSidecarDirNameForModelFile("ggml-base-q5_1.bin")).toBe(
+      "ggml-base-encoder.mlmodelc",
+    );
+    expect(coremlSidecarDirNameForModelFile("ggml-large-v3-turbo-q5_0.bin")).toBe(
+      "ggml-large-v3-turbo-encoder.mlmodelc",
+    );
   });
 });

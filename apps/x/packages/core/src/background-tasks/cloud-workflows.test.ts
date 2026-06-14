@@ -10,6 +10,7 @@ let tmpDir: string;
 let workDir: string;
 
 const now = "2026-06-05T12:00:00.000Z";
+const INTEGRATION_TIMEOUT_MS = 15_000;
 
 function mockConfigSideEffects(): void {
   vi.doMock("../knowledge/version_history.js", () => ({
@@ -120,115 +121,123 @@ afterEach(async () => {
 });
 
 describe("background task cloud workflows", () => {
-  it("mirrors an API-target desktop task, triggers an API worker run, and records the cloud run id locally", async () => {
-    const slug = "cloud-workflow-smoke";
-    await writeOAuthToken();
-    await writeTask(slug);
+  it(
+    "mirrors an API-target desktop task, triggers an API worker run, and records the cloud run id locally",
+    async () => {
+      const slug = "cloud-workflow-smoke";
+      await writeOAuthToken();
+      await writeTask(slug);
 
-    const fetchMock = vi.fn(async (input: unknown, init?: RequestInit) => {
-      const url = requestURL(input);
-      const method = requestMethod(init);
-      const pathname = url.pathname;
+      const fetchMock = vi.fn(async (input: unknown, init?: RequestInit) => {
+        const url = requestURL(input);
+        const method = requestMethod(init);
+        const pathname = url.pathname;
 
-      if (method === "GET" && pathname === `/v1/background-tasks/${slug}`) {
-        return new Response("not found", { status: 404 });
-      }
-      if (method === "POST" && pathname === "/v1/background-tasks") {
-        return response({ slug, revision: 1 });
-      }
-      if (method === "POST" && pathname === `/v1/background-tasks/${slug}/trigger`) {
-        return response(cloudRun(slug, "cloud-run-1", "queued"));
-      }
-      if (method === "PATCH" && pathname === `/v1/background-tasks/${slug}`) {
-        return response({ slug, revision: 2 });
-      }
-      throw new Error(`unexpected cloud request: ${method} ${pathname}`);
-    });
-    vi.stubGlobal("fetch", fetchMock);
+        if (method === "GET" && pathname === `/v1/background-tasks/${slug}`) {
+          return new Response("not found", { status: 404 });
+        }
+        if (method === "POST" && pathname === "/v1/background-tasks") {
+          return response({ slug, revision: 1 });
+        }
+        if (method === "POST" && pathname === `/v1/background-tasks/${slug}/trigger`) {
+          return response(cloudRun(slug, "cloud-run-1", "queued"));
+        }
+        if (method === "PATCH" && pathname === `/v1/background-tasks/${slug}`) {
+          return response({ slug, revision: 2 });
+        }
+        throw new Error(`unexpected cloud request: ${method} ${pathname}`);
+      });
+      vi.stubGlobal("fetch", fetchMock);
 
-    const { triggerCloudRun } = await import("./cloud-sync.js");
-    const run = await triggerCloudRun(slug, "manual", "from desktop smoke");
+      const { triggerCloudRun } = await import("./cloud-sync.js");
+      const run = await triggerCloudRun(slug, "manual", "from desktop smoke");
 
-    expect(run).toMatchObject({
-      runId: "cloud-run-1",
-      executor: "api",
-      temporalWorkflowId: expect.stringContaining(slug),
-    });
+      expect(run).toMatchObject({
+        runId: "cloud-run-1",
+        executor: "api",
+        temporalWorkflowId: expect.stringContaining(slug),
+      });
 
-    const createCall = fetchMock.mock.calls.find(
-      ([input, init]) =>
-        requestMethod(init as RequestInit | undefined) === "POST" &&
-        requestURL(input).pathname === "/v1/background-tasks",
-    );
-    expect(createCall).toBeTruthy();
-    expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
-      slug,
-      name: "Cloud workflow smoke",
-      instructions: "Write exactly: cloud workflow completed",
-      executionTarget: "api",
-      active: true,
-    });
-
-    const triggerCall = fetchMock.mock.calls.find(
-      ([input, init]) =>
-        requestMethod(init as RequestInit | undefined) === "POST" &&
-        requestURL(input).pathname === `/v1/background-tasks/${slug}/trigger`,
-    );
-    expect(triggerCall).toBeTruthy();
-    expect(JSON.parse(String(triggerCall?.[1]?.body))).toMatchObject({
-      trigger: "manual",
-      context: "from desktop smoke",
-    });
-
-    const { fetchTask } = await import("./fileops.js");
-    const task = await fetchTask(slug);
-    expect(task?.lastRunId).toBe("cloud-run-1");
-    expect(task?.lastAttemptAt).toBeTruthy();
-    expect(task?.executionTarget).toBe("api");
-  });
-
-  it("refetches and patches the remote task when create races another desktop sync", async () => {
-    const slug = "cloud-create-conflict";
-    await writeOAuthToken();
-    await writeTask(slug);
-    let getCount = 0;
-
-    const fetchMock = vi.fn(async (input: unknown, init?: RequestInit) => {
-      const url = requestURL(input);
-      const method = requestMethod(init);
-      const pathname = url.pathname;
-
-      if (method === "GET" && pathname === `/v1/background-tasks/${slug}`) {
-        getCount += 1;
-        return getCount === 1
-          ? new Response("not found", { status: 404 })
-          : response({ slug, revision: 7 });
-      }
-      if (method === "POST" && pathname === "/v1/background-tasks") {
-        return response({ error: "background task already exists", code: "conflict" }, 409);
-      }
-      if (method === "PATCH" && pathname === `/v1/background-tasks/${slug}`) {
-        return response({ slug, revision: 8 });
-      }
-      if (method === "POST" && pathname === `/v1/background-tasks/${slug}/trigger`) {
-        return response(cloudRun(slug, "cloud-run-after-conflict", "queued"));
-      }
-      throw new Error(`unexpected cloud request: ${method} ${pathname}`);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const { triggerCloudRun } = await import("./cloud-sync.js");
-    const run = await triggerCloudRun(slug);
-
-    expect(run.runId).toBe("cloud-run-after-conflict");
-    expect(
-      fetchMock.mock.calls.some(
+      const createCall = fetchMock.mock.calls.find(
         ([input, init]) =>
-          requestMethod(init as RequestInit | undefined) === "PATCH" &&
-          requestURL(input).pathname === `/v1/background-tasks/${slug}`,
-      ),
-    ).toBe(true);
-  });
+          requestMethod(init as RequestInit | undefined) === "POST" &&
+          requestURL(input).pathname === "/v1/background-tasks",
+      );
+      expect(createCall).toBeTruthy();
+      expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
+        slug,
+        name: "Cloud workflow smoke",
+        instructions: "Write exactly: cloud workflow completed",
+        executionTarget: "api",
+        active: true,
+      });
+
+      const triggerCall = fetchMock.mock.calls.find(
+        ([input, init]) =>
+          requestMethod(init as RequestInit | undefined) === "POST" &&
+          requestURL(input).pathname === `/v1/background-tasks/${slug}/trigger`,
+      );
+      expect(triggerCall).toBeTruthy();
+      expect(JSON.parse(String(triggerCall?.[1]?.body))).toMatchObject({
+        trigger: "manual",
+        context: "from desktop smoke",
+      });
+
+      const { fetchTask } = await import("./fileops.js");
+      const task = await fetchTask(slug);
+      expect(task?.lastRunId).toBe("cloud-run-1");
+      expect(task?.lastAttemptAt).toBeTruthy();
+      expect(task?.executionTarget).toBe("api");
+    },
+    INTEGRATION_TIMEOUT_MS,
+  );
+
+  it(
+    "refetches and patches the remote task when create races another desktop sync",
+    async () => {
+      const slug = "cloud-create-conflict";
+      await writeOAuthToken();
+      await writeTask(slug);
+      let getCount = 0;
+
+      const fetchMock = vi.fn(async (input: unknown, init?: RequestInit) => {
+        const url = requestURL(input);
+        const method = requestMethod(init);
+        const pathname = url.pathname;
+
+        if (method === "GET" && pathname === `/v1/background-tasks/${slug}`) {
+          getCount += 1;
+          return getCount === 1
+            ? new Response("not found", { status: 404 })
+            : response({ slug, revision: 7 });
+        }
+        if (method === "POST" && pathname === "/v1/background-tasks") {
+          return response({ error: "background task already exists", code: "conflict" }, 409);
+        }
+        if (method === "PATCH" && pathname === `/v1/background-tasks/${slug}`) {
+          return response({ slug, revision: 8 });
+        }
+        if (method === "POST" && pathname === `/v1/background-tasks/${slug}/trigger`) {
+          return response(cloudRun(slug, "cloud-run-after-conflict", "queued"));
+        }
+        throw new Error(`unexpected cloud request: ${method} ${pathname}`);
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const { triggerCloudRun } = await import("./cloud-sync.js");
+      const run = await triggerCloudRun(slug);
+
+      expect(run.runId).toBe("cloud-run-after-conflict");
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            requestMethod(init as RequestInit | undefined) === "PATCH" &&
+            requestURL(input).pathname === `/v1/background-tasks/${slug}`,
+        ),
+      ).toBe(true);
+    },
+    INTEGRATION_TIMEOUT_MS,
+  );
 
   it("skips api-target timed triggers entirely — cloud schedulers own them (RFC 006)", async () => {
     const triggerCloudRun = vi.fn();

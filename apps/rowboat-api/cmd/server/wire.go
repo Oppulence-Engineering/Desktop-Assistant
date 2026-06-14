@@ -133,9 +133,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// reuses the same connection. Closed on shutdown by the goroutine.
 	var temporalClient temporalsdk.Client
 	if cfg.TemporalEnabled {
-		tctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		temporalClient, err = backgroundtaskworkflow.Dial(tctx, cfg)
-		cancel()
+		temporalClient, err = dialTemporalWithRetry(ctx, cfg, log)
 		if err != nil {
 			return err
 		}
@@ -206,6 +204,18 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	googleH.SetOAuthFlow(cfg.GoogleAuthorizeURL, googleRedirect, cfg.DesktopDeepLinkScheme, nil)
 	workosH := workosauth.New(cfg.WorkOSClientID, cfg.WorkOSAPIKey, cfg.WorkOSBaseURL, cfg.WorkOSAuthorizeBaseURL, log)
 	workosH.SetOutboundPolicy(vendorPolicy)
+	// Idempotent refresh: WorkOS refresh tokens are rotating/single-use, so
+	// duplicate or replayed refreshes must return the cached rotated bundle
+	// instead of burning the session (see workosauth.SetRefreshDedup).
+	refreshCache := workosauth.NewMemoryRefreshCache()
+	if cfg.RedisURL != "" {
+		if rc, rcErr := workosauth.NewRedisRefreshCache(ctx, cfg.RedisURL); rcErr == nil {
+			refreshCache = rc
+		} else {
+			log.Warn("workos refresh dedup falling back to in-memory cache", zap.Error(rcErr))
+		}
+	}
+	workosH.SetRefreshDedup(refreshCache, sealer)
 	slackH := slack.New(client, sealer, sec, log)
 	slackH.SetOutboundPolicy(vendorPolicy)
 	slackRedirect := cfg.SlackRedirectURI
@@ -413,4 +423,41 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	})
 
 	return nil
+}
+
+// dialTemporalWithRetry connects to Temporal, retrying for up to ~2 minutes.
+// Temporal regularly comes up after the API in fresh or restarted clusters;
+// exiting on the first failed dial turns that ordering race into a
+// CrashLoopBackOff whose growing delay outlives Temporal's own startup.
+func dialTemporalWithRetry(ctx context.Context, cfg appconfig.Config, log *zap.Logger) (temporalsdk.Client, error) {
+	const (
+		attemptTimeout = 10 * time.Second
+		retryDelay     = 5 * time.Second
+		maxAttempts    = 12
+	)
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		tctx, cancel := context.WithTimeout(ctx, attemptTimeout)
+		c, err := backgroundtaskworkflow.Dial(tctx, cfg)
+		cancel()
+		if err == nil {
+			return c, nil
+		}
+		lastErr = err
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		log.Warn("temporal dial failed; retrying",
+			zap.Int("attempt", attempt),
+			zap.Int("max_attempts", maxAttempts),
+			zap.String("address", cfg.TemporalAddress),
+			zap.Error(err),
+		)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(retryDelay):
+		}
+	}
+	return nil, fmt.Errorf("temporal unreachable after %d attempts: %w", maxAttempts, lastErr)
 }

@@ -1,5 +1,5 @@
-import { CronExpressionParser } from 'cron-parser';
-import type { Triggers } from '@x/shared/dist/live-note.js';
+import { CronExpressionParser } from "cron-parser";
+import type { Triggers } from "@x/shared/dist/live-note.js";
 
 const GRACE_MS = 2 * 60 * 1000; // 2 minutes
 export const RETRY_BACKOFF_MS = 5 * 60 * 1000; // 5 minutes
@@ -24,20 +24,20 @@ export const RETRY_BACKOFF_MS = 5 * 60 * 1000; // 5 minutes
  * Returns the source ('cron' | 'window') or null if no cycle is ready.
  */
 export function dueTimedTrigger(
-    triggers: Triggers | undefined,
-    lastRunAt: string | null,
-): 'cron' | 'window' | null {
-    if (!triggers) return null;
+  triggers: Triggers | undefined,
+  lastRunAt: string | null,
+): "cron" | "window" | null {
+  if (!triggers) return null;
 
-    if (triggers.cronExpr && isCronDue(triggers.cronExpr, lastRunAt)) return 'cron';
+  if (triggers.cronExpr && isCronDue(triggers.cronExpr, lastRunAt)) return "cron";
 
-    if (triggers.windows) {
-        for (const w of triggers.windows) {
-            if (isWindowDue(w.startTime, w.endTime, lastRunAt)) return 'window';
-        }
+  if (triggers.windows) {
+    for (const w of triggers.windows) {
+      if (isWindowDue(w.startTime, w.endTime, lastRunAt)) return "window";
     }
+  }
 
-    return null;
+  return null;
 }
 
 /**
@@ -46,47 +46,49 @@ export function dueTimedTrigger(
  * if not in backoff. Caller logs the remaining time in human form.
  */
 export function backoffRemainingMs(lastAttemptAt: string | null): number {
-    if (!lastAttemptAt) return 0;
-    const sinceAttempt = Date.now() - new Date(lastAttemptAt).getTime();
-    if (sinceAttempt < 0 || sinceAttempt >= RETRY_BACKOFF_MS) return 0;
-    return RETRY_BACKOFF_MS - sinceAttempt;
+  if (!lastAttemptAt) return 0;
+  const sinceAttempt = Date.now() - new Date(lastAttemptAt).getTime();
+  if (sinceAttempt < 0 || sinceAttempt >= RETRY_BACKOFF_MS) return 0;
+  return RETRY_BACKOFF_MS - sinceAttempt;
 }
 
 function isCronDue(expression: string, lastRunAt: string | null): boolean {
-    const now = new Date();
-    if (!lastRunAt) return true; // never ran — immediately due
+  const now = new Date();
 
-    try {
-        // Find the most recent occurrence at-or-before `now`, not the
-        // occurrence right after lastRunAt — if lastRunAt is old, that
-        // occurrence would be ancient too and always fall outside the
-        // grace window, blocking every future fire.
-        const interval = CronExpressionParser.parse(expression, { currentDate: now });
-        const prevRun = interval.prev().toDate();
+  try {
+    // Find the most recent occurrence at-or-before `now`, not the
+    // occurrence right after lastRunAt — if lastRunAt is old, that
+    // occurrence would be ancient too and always fall outside the
+    // grace window, blocking every future fire.
+    const interval = CronExpressionParser.parse(expression, { currentDate: now });
+    const prevRun = interval.prev().toDate();
 
-        // Already ran at-or-after this occurrence → skip.
-        if (new Date(lastRunAt).getTime() >= prevRun.getTime()) return false;
+    // Already ran at-or-after this occurrence → skip. A task that never
+    // ran holds no cycle anchor and simply waits for its next scheduled
+    // occurrence — creating an "8am weekdays" task at 9pm must not fire
+    // at 9pm (and, on failure, every backoff window thereafter).
+    if (lastRunAt && new Date(lastRunAt).getTime() >= prevRun.getTime()) return false;
 
-        // Within grace → fire. Outside grace → missed, skip.
-        return now.getTime() <= prevRun.getTime() + GRACE_MS;
-    } catch {
-        return false;
-    }
+    // Within grace → fire. Outside grace → missed, skip.
+    return now.getTime() <= prevRun.getTime() + GRACE_MS;
+  } catch {
+    return false;
+  }
 }
 
 function isWindowDue(startTime: string, endTime: string, lastRunAt: string | null): boolean {
-    const now = new Date();
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    const startMinutes = startHour * 60 + startMin;
-    const endMinutes = endHour * 60 + endMin;
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    if (nowMinutes < startMinutes || nowMinutes > endMinutes) return false;
+  const now = new Date();
+  const [startHour, startMin] = startTime.split(":").map(Number);
+  const [endHour, endMin] = endTime.split(":").map(Number);
+  const startMinutes = startHour * 60 + startMin;
+  const endMinutes = endHour * 60 + endMin;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  if (nowMinutes < startMinutes || nowMinutes > endMinutes) return false;
 
-    if (!lastRunAt) return true;
+  if (!lastRunAt) return true;
 
-    const cycleStart = new Date(now);
-    cycleStart.setHours(startHour, startMin, 0, 0);
-    if (new Date(lastRunAt).getTime() > cycleStart.getTime()) return false;
-    return true;
+  const cycleStart = new Date(now);
+  cycleStart.setHours(startHour, startMin, 0, 0);
+  if (new Date(lastRunAt).getTime() > cycleStart.getTime()) return false;
+  return true;
 }

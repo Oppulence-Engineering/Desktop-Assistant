@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": "quick-brown-fox",
+    "wav": "quick-brown-fox.wav",
+    "ref": "the quick brown fox jumps over the lazy dog",
+    "bucket": "clean",
+    "lang": "en"
+  }
+]
