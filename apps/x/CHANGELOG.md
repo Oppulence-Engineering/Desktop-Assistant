@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.16](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.15...v0.1.16) (2026-06-14)
+
+
+### Features
+
+* robust WorkOS token refresh (desktop state machine + idempotent broker) ([626ecf4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/626ecf44bad1e67e31b0d8af7d8bfa88d8e7e22a))
+* **x:** classify WorkOS refresh failures like the Google path ([0aa7a4c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/0aa7a4c3e88f3c826938b4cbd12b8897a97a7bcf))
+* **x:** refresh state machine for the WorkOS session ([d3029bc](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/d3029bc3816c1e4a0b7db227afec6c737c25f50a))
+
+
+### Bug Fixes
+
+* dogfooding findings — tenant scoping, cron scheduling, desktop UX ([953ed5a](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/953ed5a6829292f94dbcc6db0ae61a0c21cd091a))
+* harden transcription edge cases ([2d9eabf](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/2d9eabfb1d90aceb34be70bdc980848963859394))
+* stabilize local meeting transcription and notes ([8fd97cd](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/8fd97cda45cb07fe38ecd9d8985a003629d76833))
+* **x:** carry typed description into manual task config ([97966c0](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/97966c03fcd8f03535e5527f32afa85f67219d07))
+* **x:** don't fire never-run cron tasks outside their schedule ([297de5b](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/297de5b324804d4e9357352c0ccdb177ffba1ae7))
+* **x:** focus new untitled notes and surface recording start failures ([6fce28a](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6fce28afede14f4ced383a30d726a43ce40755d3))
+* **x:** keep atomic-write temp files out of listings and watch events ([c240cd1](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c240cd14a0ab4462df82a2663489091c5ff66beb))
+* **x:** quiesce cloud sync while the WorkOS session is unavailable ([f3f78e8](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f3f78e80e050fcaa3abc429cd00c7b521fe3d410))
+* **x:** render actionable chat errors instead of 'name: AI_RetryError' ([8db48fe](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/8db48fe9b805c8412d8b8f627d709bc734e75a70))
+* **x:** serialize and crash-harden oauth.json writes ([6c884ff](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6c884ff4c33b2407b8051758e6ce698ba01f679d))
+
 ## [0.1.15](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.14...v0.1.15) (2026-06-11)
 
 
