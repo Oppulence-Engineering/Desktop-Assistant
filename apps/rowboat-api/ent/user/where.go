@@ -514,6 +514,29 @@ func HasMcpConnectionsWith(preds ...predicate.MCPConnection) predicate.User {
 	})
 }
 
+// HasComposioAccounts applies the HasEdge predicate on the "composio_accounts" edge.
+func HasComposioAccounts() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ComposioAccountsTable, ComposioAccountsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasComposioAccountsWith applies the HasEdge predicate on the "composio_accounts" edge with a given conditions (other predicates).
+func HasComposioAccountsWith(preds ...predicate.ComposioAccount) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newComposioAccountsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasBackgroundTasks applies the HasEdge predicate on the "background_tasks" edge.
 func HasBackgroundTasks() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

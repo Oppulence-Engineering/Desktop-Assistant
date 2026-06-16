@@ -521,29 +521,29 @@ export interface paths {
     };
     /**
      * Proxy Composio v3 Get
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.
+     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
      */
     get: operations["proxyComposioGet"];
     /**
      * Proxy Composio v3 Put
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.
+     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
      */
     put: operations["proxyComposioPut"];
     /**
      * Proxy Composio v3 Post
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.
+     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
      */
     post: operations["proxyComposioPost"];
     /**
      * Proxy Composio v3 Delete
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.
+     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
      */
     delete: operations["proxyComposioDelete"];
     options?: never;
     head?: never;
     /**
      * Proxy Composio v3 Patch
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.
+     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
      */
     patch: operations["proxyComposioPatch"];
     trace?: never;
@@ -2179,7 +2179,7 @@ export interface components {
       /** @description Linked runs. */
       runs: components["schemas"]["CloudEventRun"][];
     };
-    /** @description Composio v3 response body, proxied unchanged. */
+    /** @description Composio v3 response body. Connected-account list responses are filtered to the caller's mapped accounts. */
     ComposioProxyResponse: {
       [key: string]: unknown;
     };
@@ -5588,7 +5588,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Composio response body, proxied unchanged. */
+      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5603,6 +5603,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      404: components["responses"]["404"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
@@ -5619,7 +5620,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Composio response body, proxied unchanged. */
+      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5634,6 +5635,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      404: components["responses"]["404"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
@@ -5650,7 +5652,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Composio response body, proxied unchanged. */
+      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5665,6 +5667,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      404: components["responses"]["404"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
@@ -5681,7 +5684,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Composio response body, proxied unchanged. */
+      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5696,6 +5699,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      404: components["responses"]["404"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
@@ -5712,7 +5716,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Composio response body, proxied unchanged. */
+      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5727,6 +5731,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      404: components["responses"]["404"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };

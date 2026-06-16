@@ -223,7 +223,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		slackRedirect = strings.TrimRight(cfg.AppURL, "/") + "/oauth/slack/callback"
 	}
 	slackH.SetOAuthFlow(cfg.SlackAuthorizeURL, cfg.SlackTokenURL, slackRedirect, cfg.DesktopDeepLinkScheme, cfg.SlackOAuthScopes)
-	composioH := composio.New(sec, log)
+	composioH := composio.New(client, sec, log)
 	composioPolicy := vendorPolicy
 	composioPolicy.MaxResponseBytes = cfg.ComposioResponseMaxBytes
 	composioH.SetOutboundPolicy(composioPolicy)

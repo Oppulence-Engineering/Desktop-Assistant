@@ -24,6 +24,9 @@ type BackgroundTaskScheduleState func(*sql.Selector)
 // CloudEvent is the predicate function for cloudevent builders.
 type CloudEvent func(*sql.Selector)
 
+// ComposioAccount is the predicate function for composioaccount builders.
+type ComposioAccount func(*sql.Selector)
+
 // CreditLedger is the predicate function for creditledger builders.
 type CreditLedger func(*sql.Selector)
 

@@ -11,6 +11,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/composioaccount"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
@@ -107,6 +108,13 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.GoogleWatchQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(googlewatch.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.ComposioAccount.Intercept(intercept.TraverseComposioAccount(
+		func(ctx context.Context, q *ent.ComposioAccountQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(composioaccount.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

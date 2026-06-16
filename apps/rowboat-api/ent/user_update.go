@@ -17,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/composioaccount"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -194,6 +195,21 @@ func (_u *UserUpdate) AddMcpConnections(v ...*MCPConnection) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMcpConnectionIDs(ids...)
+}
+
+// AddComposioAccountIDs adds the "composio_accounts" edge to the ComposioAccount entity by IDs.
+func (_u *UserUpdate) AddComposioAccountIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddComposioAccountIDs(ids...)
+	return _u
+}
+
+// AddComposioAccounts adds the "composio_accounts" edges to the ComposioAccount entity.
+func (_u *UserUpdate) AddComposioAccounts(v ...*ComposioAccount) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddComposioAccountIDs(ids...)
 }
 
 // AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by IDs.
@@ -415,6 +431,27 @@ func (_u *UserUpdate) RemoveMcpConnections(v ...*MCPConnection) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMcpConnectionIDs(ids...)
+}
+
+// ClearComposioAccounts clears all "composio_accounts" edges to the ComposioAccount entity.
+func (_u *UserUpdate) ClearComposioAccounts() *UserUpdate {
+	_u.mutation.ClearComposioAccounts()
+	return _u
+}
+
+// RemoveComposioAccountIDs removes the "composio_accounts" edge to ComposioAccount entities by IDs.
+func (_u *UserUpdate) RemoveComposioAccountIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveComposioAccountIDs(ids...)
+	return _u
+}
+
+// RemoveComposioAccounts removes "composio_accounts" edges to ComposioAccount entities.
+func (_u *UserUpdate) RemoveComposioAccounts(v ...*ComposioAccount) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveComposioAccountIDs(ids...)
 }
 
 // ClearBackgroundTasks clears all "background_tasks" edges to the BackgroundTask entity.
@@ -887,6 +924,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpconnection.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ComposioAccountsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ComposioAccountsTable,
+			Columns: []string{user.ComposioAccountsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(composioaccount.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedComposioAccountsIDs(); len(nodes) > 0 && !_u.mutation.ComposioAccountsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ComposioAccountsTable,
+			Columns: []string{user.ComposioAccountsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(composioaccount.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ComposioAccountsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ComposioAccountsTable,
+			Columns: []string{user.ComposioAccountsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(composioaccount.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1383,6 +1465,21 @@ func (_u *UserUpdateOne) AddMcpConnections(v ...*MCPConnection) *UserUpdateOne {
 	return _u.AddMcpConnectionIDs(ids...)
 }
 
+// AddComposioAccountIDs adds the "composio_accounts" edge to the ComposioAccount entity by IDs.
+func (_u *UserUpdateOne) AddComposioAccountIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddComposioAccountIDs(ids...)
+	return _u
+}
+
+// AddComposioAccounts adds the "composio_accounts" edges to the ComposioAccount entity.
+func (_u *UserUpdateOne) AddComposioAccounts(v ...*ComposioAccount) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddComposioAccountIDs(ids...)
+}
+
 // AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by IDs.
 func (_u *UserUpdateOne) AddBackgroundTaskIDs(ids ...uuid.UUID) *UserUpdateOne {
 	_u.mutation.AddBackgroundTaskIDs(ids...)
@@ -1602,6 +1699,27 @@ func (_u *UserUpdateOne) RemoveMcpConnections(v ...*MCPConnection) *UserUpdateOn
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMcpConnectionIDs(ids...)
+}
+
+// ClearComposioAccounts clears all "composio_accounts" edges to the ComposioAccount entity.
+func (_u *UserUpdateOne) ClearComposioAccounts() *UserUpdateOne {
+	_u.mutation.ClearComposioAccounts()
+	return _u
+}
+
+// RemoveComposioAccountIDs removes the "composio_accounts" edge to ComposioAccount entities by IDs.
+func (_u *UserUpdateOne) RemoveComposioAccountIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveComposioAccountIDs(ids...)
+	return _u
+}
+
+// RemoveComposioAccounts removes "composio_accounts" edges to ComposioAccount entities.
+func (_u *UserUpdateOne) RemoveComposioAccounts(v ...*ComposioAccount) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveComposioAccountIDs(ids...)
 }
 
 // ClearBackgroundTasks clears all "background_tasks" edges to the BackgroundTask entity.
@@ -2104,6 +2222,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpconnection.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ComposioAccountsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ComposioAccountsTable,
+			Columns: []string{user.ComposioAccountsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(composioaccount.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedComposioAccountsIDs(); len(nodes) > 0 && !_u.mutation.ComposioAccountsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ComposioAccountsTable,
+			Columns: []string{user.ComposioAccountsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(composioaccount.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ComposioAccountsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ComposioAccountsTable,
+			Columns: []string{user.ComposioAccountsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(composioaccount.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
