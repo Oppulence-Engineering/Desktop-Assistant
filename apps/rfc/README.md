@@ -23,16 +23,16 @@ to avoid parallel sources of truth.
 
 ## Cloud workflow RFCs
 
-| #                                             | Title                           | Layer           | What it adds                                                                                                                    |
-| --------------------------------------------- | ------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| #                                                      | Title                           | Layer           | What it adds                                                                                                                    |
+| ------------------------------------------------------ | ------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | [001](./complete-001-api-owned-scheduler.md)           | API-Owned Scheduler             | rowboat-api     | A scheduler process that evaluates cron/window triggers server-side and fires runs while the desktop is offline.                |
 | [002](./complete-002-durable-schedule-state.md)        | Durable Schedule State & Leases | ent / Postgres  | A `BackgroundTaskScheduleState` entity + atomic lease so N scheduler replicas fire each cycle exactly once.                     |
 | [003](./complete-003-cloud-event-ingestion.md)         | Cloud Event Ingestion           | rowboat-api     | An event envelope + ingestion/routing layer that starts `trigger=event` cloud runs from Gmail/Calendar/Slack/webhooks.          |
 | [004](./complete-004-cloud-agent-runtime.md)           | Cloud-Safe Agent Runtime        | Temporal worker | The first production runtime: LLM access, a scoped/audited tool surface, connector reads, and enforced limits.                  |
 | [005](./complete-005-temporal-schedule-integration.md) | Temporal Schedule Integration   | Temporal        | Exact-cron triggers via durable Temporal Schedules (windows/events stay in Rowboat code).                                       |
 | [006](./complete-006-desktop-cloud-control-plane.md)   | Desktop as Control Plane        | apps/x          | Makes cloud-managed schedules legible: next run, schedule health, runs-while-closed, event→run links.                           |
-| [007](./007-production-cloud-enablement.md)   | Production Enablement           | Helm / infra    | Flips Temporal Cloud on in staging→production with SLOs, PromQL alerts, and runbooks.                                           |
-| [008](./008-conduit-eigen-faculties.md)       | Conduit & Eigen Faculties       | cross-portfolio | Plugs the **evidence** (Conduit) and **foresight** (Eigen) planes into the event bus + runtime — the federated financial brain. |
+| [007](./007-production-cloud-enablement.md)            | Production Enablement           | Helm / infra    | Flips Temporal Cloud on in staging→production with SLOs, PromQL alerts, and runbooks.                                           |
+| [008](./008-conduit-eigen-faculties.md)                | Conduit & Eigen Faculties       | cross-portfolio | Plugs the **evidence** (Conduit) and **foresight** (Eigen) planes into the event bus + runtime — the federated financial brain. |
 
 RFCs 001–007 build the execution plane; **008** is the first _faculty_ RFC that proves the
 fabric extends to new portfolio planes. **001–006** are **Complete** (003 with its GCP
@@ -72,6 +72,15 @@ The set below (021–026) hardens the desktop's memory/runtime foundations and c
 | [024](./024-cold-primitives-ga.md)         | Finishing the Cold Primitives                                            | apps/x             | Turns on four wired-but-cold capabilities: a Slack event producer, Code Mode GA, an agent-schedule UI, and note version history.                                          |
 | [025](./025-desktop-runtime-durability.md) | Desktop Runtime Durability — Local Queue, Backpressure & Multi-Workspace | apps/x             | Replaces in-memory run guards with a crash-safe SQLite job queue (at-most-once), adds event coalescing/backpressure, and supports multiple workspaces without restart.    |
 | [026](./026-finance-command-center.md)     | The Finance Command Center                                               | product (umbrella) | Composes 021–025 + 006/008/013/020 into the operator/founder cockpit (AR inbox · AP queue · cash & exposure · agent activity); personas, killer workflows, build order.   |
+
+## Durable agent runtime
+
+RFC 027 generalizes the cloud runtime ([004](./complete-004-cloud-agent-runtime.md)) — whose agent loop runs entirely **inside one Temporal activity** — into a per-step durable, multi-tenant, multi-turn agent framework (a Temporal/Go analogue of Vercel's eve). It lifts the reason→act loop into workflow code so each LLM/tool call is a checkpointed activity, and adds sessions/turns, an HTTP surface, HITL approvals, subagents (child workflows), channels, and streaming observability. **027** defines the runtime + the hybrid `AgentDefinition`; **028** adds the **YAML/GitOps authoring** layer over it (one canonical shape, three front doors). Both **Draft.**
+
+| #                                             | Title                         | Layer                  | What it adds                                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------- | ----------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [027](./027-durable-agent-runtime.md)         | Durable Agent Runtime         | rowboat-api            | Lifts the RFC 004 loop into a durable `rowboat.agent.session.v1` workflow; adds declarative `AgentDefinition`s, sessions/turns over `/v1/agent-sessions`, Update-delivered turns, HITL approvals, subagents-as-child-workflows, NDJSON streaming, and per-turn/per-session budgets.                                                                                                        |
+| [028](./028-declarative-agent-definitions.md) | Declarative Agent Definitions | rowboat-api + apps/cli | Extends 027's `AgentDefinition` with a versioned **YAML** authoring format (`agent.yaml` + `instructions.md`), one shared JSON-Schema validator (tool names vs the Go registry, model allowlist, RFC 012 scopes), embedded/tenant/**GitOps** delivery, a `rowboat agent validate/push` CLI, revision-pinned sessions, and declarative OpenAPI/MCP tools (RFC 020) referenceable from YAML. |
 
 ## Email feature RFCs
 
@@ -380,6 +389,20 @@ The forks each RFC raised, resolved. (Each RFC's own **Decisions** section links
   anonymous and meeting-scoped, and cloud meetings remain the default until quality gates pass.
 - **018** — Agent delegation is user-bound, scope-bound, audience-bound, short-lived, and
   auditable; protocol adapters translate A2A/MCP messages but never own policy.
+- **027** — The reason→act loop moves **out of the single activity and into workflow code**
+  (per-step durable; RFC 004's in-activity loop becomes the legacy/`Noop` path); agents are a
+  **hybrid** (type-safe Go tool registry + declarative `AgentDefinition` ent rows + embedded
+  first-party directory); turns/approvals use Temporal **Update** (Signal kept for cancel/pause);
+  history is bounded via **ContinueAsNew** under a stable session workflow id; **sandbox/code-exec
+  is deferred**; everything ships behind `AGENT_RUNTIME_ENABLED=false`.
+- **028** — **YAML is a source format**, not a new runtime path: it compiles into RFC 027's
+  `AgentDefinition` (one canonical shape; embedded / API / GitOps front doors). **One JSON Schema**
+  (via `sigs.k8s.io/yaml`) validates YAML files, the JSON API body, and the offline CLI; tool names
+  validate against the Go registry, model against the `internal/llm` allowlist, scopes against the
+  RFC 012 catalog. YAML **configures** code-backed tools freely but **declares** new OpenAPI/MCP
+  tools only via RFC 020 manifests (trust-gated). **Secrets never in YAML** (scopes only);
+  definitions are **immutable + revision-pinned** (sessions pin `agent_revision`); GitOps uses the
+  RFC 005 reconciler pattern (`managed_by=gitops` is authoritative). Behind `AGENT_YAML_ENABLED=false`.
 
 ## Conventions
 
