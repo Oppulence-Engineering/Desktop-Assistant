@@ -1,4 +1,4 @@
-# RFC 002: Durable Schedule State and Cloud Scheduler Leases
+# [Complete] RFC 002: Durable Schedule State and Cloud Scheduler Leases
 
 |                  |                                                                                                            |
 | ---------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -8,20 +8,20 @@
 | **Owners**       | `apps/rowboat-api` (Go backend / ent schema)                                                               |
 | **Created**      | 2026-06-05                                                                                                 |
 | **Last updated** | 2026-06-08                                                                                                 |
-| **Blocks**       | [RFC 001 — API-Owned Scheduler](./001-api-owned-scheduler.md) running with >1 replica                      |
-| **Related**      | [RFC 005 — Temporal Schedules](./005-temporal-schedule-integration.md) (supersedes leasing for exact cron) |
+| **Blocks**       | [RFC 001 — API-Owned Scheduler](./complete-001-api-owned-scheduler.md) running with >1 replica                      |
+| **Related**      | [RFC 005 — Temporal Schedules](./complete-005-temporal-schedule-integration.md) (supersedes leasing for exact cron) |
 | **Supersedes**   | Former cloud workflow planning and API execution-plan schedule-state sections.                             |
 
 ## Summary
 
-The API-owned scheduler ([RFC 001](./001-api-owned-scheduler.md)) needs **durable,
+The API-owned scheduler ([RFC 001](./complete-001-api-owned-scheduler.md)) needs **durable,
 cross-replica state** to decide once-and-only-once whether a scheduled cycle is due,
 suppress duplicates across replicas, and recover after crashes. This RFC defines that
 state as a new ent entity, `BackgroundTaskScheduleState`, plus a small atomic
 lease protocol the scheduler depends on instead of ad-hoc queries.
 
 It is intentionally minimal — a per-(task, trigger, cycle) lease row — so it ships before
-[RFC 005's](./005-temporal-schedule-integration.md) Temporal Schedules, which later take
+[RFC 005's](./complete-005-temporal-schedule-integration.md) Temporal Schedules, which later take
 over exact-cron leasing.
 
 ## Background: why task runtime fields are not enough
@@ -194,7 +194,7 @@ Deterministic, collision-free per cycle (the unique-index payload):
 local date of the window's `startTime` anchor. The key embeds the cycle, so re-evaluating
 the same occurrence yields the same key → the same row → the duplicate guard.
 
-When per-task timezones land (the committed [RFC 001](./001-api-owned-scheduler.md#decisions)
+When per-task timezones land (the committed [RFC 001](./complete-001-api-owned-scheduler.md#decisions)
 fast-follow), the key gains a TZ segment to keep cycles distinct across zones:
 
 ```

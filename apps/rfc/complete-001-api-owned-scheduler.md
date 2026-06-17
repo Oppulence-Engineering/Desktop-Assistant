@@ -1,15 +1,15 @@
-# RFC 001: API-Owned Scheduler for Cloud Background Tasks
+# [Complete] RFC 001: API-Owned Scheduler for Cloud Background Tasks
 
 |                       |                                                                                                                                                                                                              |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **RFC**               | 001                                                                                                                                                                                                          |
-| **Status**            | Complete — implemented (PRs 001-A…001-F) and merged to `develop` in PR #49. Multi-replica is safe via the [RFC 002](./002-durable-schedule-state.md) durable lease (implemented).                              |
+| **Status**            | Complete — implemented (PRs 001-A…001-F) and merged to `develop` in PR #49. Multi-replica is safe via the [RFC 002](./complete-002-durable-schedule-state.md) durable lease (implemented).                              |
 | **Track**             | Cloud-native background workflows                                                                                                                                                                            |
 | **Owners**            | `apps/rowboat-api` (Go backend) · `apps/x` (desktop control plane)                                                                                                                                           |
 | **Created**           | 2026-06-05                                                                                                                                                                                                   |
 | **Last updated**      | 2026-06-08                                                                                                                                                                                                   |
-| **Depends on**        | [RFC 002 — Durable Schedule State](./002-durable-schedule-state.md) (required before >1 replica)                                                                                                             |
-| **Enables / related** | [RFC 005 — Temporal Schedules](./005-temporal-schedule-integration.md), [RFC 003 — Event Ingestion](./003-cloud-event-ingestion.md), [RFC 006 — Desktop Control Plane](./006-desktop-cloud-control-plane.md) |
+| **Depends on**        | [RFC 002 — Durable Schedule State](./complete-002-durable-schedule-state.md) (required before >1 replica)                                                                                                             |
+| **Enables / related** | [RFC 005 — Temporal Schedules](./complete-005-temporal-schedule-integration.md), [RFC 003 — Event Ingestion](./complete-003-cloud-event-ingestion.md), [RFC 006 — Desktop Control Plane](./complete-006-desktop-cloud-control-plane.md) |
 | **Supersedes**        | Former cloud workflow planning and API execution-plan docs.                                                                                                                                                  |
 
 ## RFC map
@@ -77,9 +77,9 @@ desktop-scheduled**. Closing the laptop silently pauses every scheduled cloud jo
 ## Non-Goals
 
 - Replacing the desktop scheduler for `executionTarget: desktop` tasks.
-- Event-trigger routing — owned by [RFC 003](./003-cloud-event-ingestion.md).
+- Event-trigger routing — owned by [RFC 003](./complete-003-cloud-event-ingestion.md).
 - Immediately replacing the loop with Temporal Schedules — that is the staged migration
-  in [RFC 005](./005-temporal-schedule-integration.md). This loop ships first and remains
+  in [RFC 005](./complete-005-temporal-schedule-integration.md). This loop ships first and remains
   the fallback.
 - Per-task user timezones — v1 evaluates in **UTC** (the server TZ); a task-level `timezone`
   field is a committed fast-follow (see [Decisions](#decisions)).
@@ -347,7 +347,7 @@ Structured log fields (one line per decision, via `zap`, mirroring `runLogFields
 ## Migration & code changes
 
 - **No schema change** in this RFC for single-replica (reuses existing task fields). The
-  lease table is [RFC 002](./002-durable-schedule-state.md).
+  lease table is [RFC 002](./complete-002-durable-schedule-state.md).
 - New packages: `internal/backgroundscheduler` (loop, due math, metrics),
   `internal/backgroundtaskruns` (extracted `Starter`).
 - Refactor `handler.triggerAPIRun` to call `Starter.Start` (pure refactor; covered by
@@ -698,10 +698,10 @@ Resolved forks (consolidated in [`README.md` → Decisions](./README.md#consolid
   desktop's `cron-parser.prev()` cycle math without hand-rolled stepping.
 - **Timezone → UTC for v1** (`CLOUD_SCHEDULER_TIMEZONE=UTC`). Cron prev-occurrence and window
   bands evaluate in UTC; "once per day" means the UTC day. The desktop labels cloud schedules
-  so the wall-clock shift from device-local time is visible ([RFC 006](./006-desktop-cloud-control-plane.md)).
+  so the wall-clock shift from device-local time is visible ([RFC 006](./complete-006-desktop-cloud-control-plane.md)).
 - **Per-task timezone → committed fast-follow (post-v1).** A task-level `timezone` field adds
-  a TZ segment to the [RFC 002](./002-durable-schedule-state.md) schedule key, sets Temporal
-  `TimeZoneName` ([RFC 005](./005-temporal-schedule-integration.md)), and gets a desktop TZ
+  a TZ segment to the [RFC 002](./complete-002-durable-schedule-state.md) schedule key, sets Temporal
+  `TimeZoneName` ([RFC 005](./complete-005-temporal-schedule-integration.md)), and gets a desktop TZ
   label (RFC 006). This is the single cross-cutting follow-up tracked across the set.
 - **Lease from day one.** Implementation order lands RFC 002 first, so the loop is
   lease-aware on first ship; single→multi replica is a config change.

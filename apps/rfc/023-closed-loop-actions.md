@@ -8,13 +8,13 @@
 | **Owners**            | `apps/rowboat-api` (runtime tools, approval tokens, event round-trip) · `apps/x` (cockpit approval UX)                                                                                                                                                                                                                                           |
 | **Created**           | 2026-06-10                                                                                                                                                                                                                                                                                                                                       |
 | **Last updated**      | 2026-06-10                                                                                                                                                                                                                                                                                                                                       |
-| **Depends on**        | [RFC 004 — Cloud-Safe Agent Runtime](./004-cloud-agent-runtime.md) (tool registry), [RFC 003 — Cloud Event Ingestion](./003-cloud-event-ingestion.md) (the watch leg), [RFC 012 — Connector Suite & Consent Broker](./012-connector-suite-and-consent-broker.md) (money-touching approval tokens)                                                |
+| **Depends on**        | [RFC 004 — Cloud-Safe Agent Runtime](./complete-004-cloud-agent-runtime.md) (tool registry), [RFC 003 — Cloud Event Ingestion](./complete-003-cloud-event-ingestion.md) (the watch leg), [RFC 012 — Connector Suite & Consent Broker](./012-connector-suite-and-consent-broker.md) (money-touching approval tokens)                                                |
 | **Enables / related** | [RFC 013 — Product Connector Fabric](./013-oppulence-product-connector-fabric.md) (the **Act** seam this RFC operationalises), [RFC 020 — Native Action Engine](./020-native-third-party-action-engine.md), [RFC 022 — Unified Entity Graph](./022-unified-entity-graph.md), [RFC 026 — Finance Command Center](./026-finance-command-center.md) |
 | **Supersedes**        | none                                                                                                                                                                                                                                                                                                                                             |
 
 ## Summary
 
-Today Solomon's agents **draft** — they can write an email about an overdue invoice — but they cannot **operate the object**: advance a dunning sequence, approve a vendor bill, mark a dispute. This RFC builds the closed loop: an agent **proposes** a typed finance action, the operator **approves** it in the cockpit (one click), the action **executes** against the product via its Act-seam tool using a **single-use scoped approval token**, the product's resulting state change comes **back as a `CloudEvent`** ([RFC 003](./003-cloud-event-ingestion.md)), and that event **updates** the originating live-note/thread — closing the loop. This is exactly the "Live Note objective = _keep Acme's overdue AR moving_ → run the dunning cadence, watch for the Stripe payment, update the thread, escalate" pattern, with a human in the loop and a full audit trail. Money never moves without an explicit, scoped, expiring approval.
+Today Solomon's agents **draft** — they can write an email about an overdue invoice — but they cannot **operate the object**: advance a dunning sequence, approve a vendor bill, mark a dispute. This RFC builds the closed loop: an agent **proposes** a typed finance action, the operator **approves** it in the cockpit (one click), the action **executes** against the product via its Act-seam tool using a **single-use scoped approval token**, the product's resulting state change comes **back as a `CloudEvent`** ([RFC 003](./complete-003-cloud-event-ingestion.md)), and that event **updates** the originating live-note/thread — closing the loop. This is exactly the "Live Note objective = _keep Acme's overdue AR moving_ → run the dunning cadence, watch for the Stripe payment, update the thread, escalate" pattern, with a human in the loop and a full audit trail. Money never moves without an explicit, scoped, expiring approval.
 
 ## Current state (grounded)
 
@@ -108,7 +108,7 @@ type ActionProposal = {
 ### Watch (close the loop)
 
 - The product emits its state change as a `CloudEvent` (the source enum is extended to include `conduit`, `cadence`, `eigen`, `corinthian`, `canvas` — see [Migration](#migration--code-changes)).
-- [RFC 003](./003-cloud-event-ingestion.md) routing correlates the event back to the proposal/run (via `target` resourceRef + a `correlationId` echoed in the action) and **re-triggers the originating live-note** with the result context, which updates the thread (paid / promised / escalate).
+- [RFC 003](./complete-003-cloud-event-ingestion.md) routing correlates the event back to the proposal/run (via `target` resourceRef + a `correlationId` echoed in the action) and **re-triggers the originating live-note** with the result context, which updates the thread (paid / promised / escalate).
 - The audit chain `proposal → token → execution event → resulting CloudEvent` is queryable per object.
 
 ## Data model
@@ -171,7 +171,7 @@ field.Bool("consumed").Default(false)
 - New ent schemas `action_proposal.go`, `approval_token.go`; new `internal/actions/` (broker: propose/approve/execute/watch) in `apps/rowboat-api`.
 - Runtime: add an allowlisted **`propose-action`** tool to the registry (`tool_registry.go`); **never** expose raw execute tools to the model.
 - Desktop: approval-card UI (reuse `permission-registry.ts` UX) + a cockpit "Actions" queue; live-note runner consumes return events to update threads.
-- [RFC 003](./003-cloud-event-ingestion.md) router: correlate return events to proposals via `correlation_id` + `target`.
+- [RFC 003](./complete-003-cloud-event-ingestion.md) router: correlate return events to proposals via `correlation_id` + `target`.
 
 ## Code-level implementation playbook
 
@@ -237,7 +237,7 @@ field.Bool("consumed").Default(false)
 Resolved forks (consolidated in [`README.md`](./README.md)):
 
 - **The model proposes; it never executes.** Execution is brokered behind a single-use, params-bound, expiring token.
-- **Loop closes via `CloudEvent` round-trip** ([RFC 003](./003-cloud-event-ingestion.md)), correlated by `correlation_id` + `resourceRef`; polling is fallback only.
+- **Loop closes via `CloudEvent` round-trip** ([RFC 003](./complete-003-cloud-event-ingestion.md)), correlated by `correlation_id` + `resourceRef`; polling is fallback only.
 - **`financial` actions require step-up** and money-touching tokens ([RFC 012](./012-connector-suite-and-consent-broker.md)).
 - **Audit chain is first-class** and queryable per object.
 

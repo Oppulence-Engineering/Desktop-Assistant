@@ -1,4 +1,4 @@
-# RFC 003: Cloud Event Ingestion and Event-Triggered Cloud Runs
+# [Complete] RFC 003: Cloud Event Ingestion and Event-Triggered Cloud Runs
 
 |                  |                                                                                                                                                     |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -8,8 +8,8 @@
 | **Owners**       | `apps/rowboat-api` (Go backend) · `apps/x` (desktop event consumers)                                                                                |
 | **Created**      | 2026-06-05                                                                                                                                          |
 | **Last updated** | 2026-06-06                                                                                                                                          |
-| **Depends on**   | [RFC 001](./001-api-owned-scheduler.md) (shared run-start `Starter`), [RFC 004](./004-cloud-agent-runtime.md) (runtime that consumes event context) |
-| **Related**      | [RFC 006](./006-desktop-cloud-control-plane.md) (event→run linkage in UI) · [RFC 019](./019-google-push-infrastructure.md) (GCP-side push provisioning) |
+| **Depends on**   | [RFC 001](./complete-001-api-owned-scheduler.md) (shared run-start `Starter`), [RFC 004](./complete-004-cloud-agent-runtime.md) (runtime that consumes event context) |
+| **Related**      | [RFC 006](./complete-006-desktop-cloud-control-plane.md) (event→run linkage in UI) · [RFC 019](./019-google-push-infrastructure.md) (GCP-side push provisioning) |
 | **Supersedes**   | Former cloud workflow planning event-trigger sections.                                                                                              |
 
 ## Summary
@@ -19,7 +19,7 @@ Event-triggered background tasks (`triggers.eventMatchCriteria`) currently depen
 `executionTarget: api` tasks, calls `triggerCloudRun(slug, 'event', payload)`
 (`apps/x/packages/core/src/background-tasks/event-consumer.ts:60-68`). So event-triggered
 API tasks are cloud-_executed_ but still desktop-_initiated_ — closing the laptop stops
-all event triggers, exactly as it stops timed triggers (the gap [RFC 001](./001-api-owned-scheduler.md)
+all event triggers, exactly as it stops timed triggers (the gap [RFC 001](./complete-001-api-owned-scheduler.md)
 closes for cron/windows).
 
 This RFC adds a **cloud event ingestion + routing layer** to the Rowboat API: accept
@@ -45,7 +45,7 @@ No server-side event store, ingestion endpoint, or router exists today.
 - Persist a **normalized event envelope**, idempotent on a dedupe key.
 - Route events to active API-target tasks using `eventMatchCriteria`, reusing the
   desktop's two-pass philosophy (cheap candidacy filter, then a bounded LLM decision).
-- Start `trigger=event` cloud runs via the **shared `Starter`** ([RFC 001](./001-api-owned-scheduler.md))
+- Start `trigger=event` cloud runs via the **shared `Starter`** ([RFC 001](./complete-001-api-owned-scheduler.md))
   — same provenance as every other cloud run.
 - Maintain an audit trail: inbound event → routing decision → run id.
 
@@ -729,7 +729,7 @@ Resolved forks (consolidated in [`README.md`](./README.md#consolidated-decisions
 - **Match threshold → `CLOUD_EVENTS_MATCH_THRESHOLD = 0.7`, fixed in v1** (not task-tunable).
   Tune from staging match-quality data before exposing any per-task override.
 - **`GET /v1/events` → JWT/admin-scoped only in v1.** The desktop surfaces the event→run
-  _link_ in the run transcript ([RFC 006](./006-desktop-cloud-control-plane.md)), not a full
+  _link_ in the run transcript ([RFC 006](./complete-006-desktop-cloud-control-plane.md)), not a full
   event browser yet.
 
 ### Deferred (needs data; not blocking)

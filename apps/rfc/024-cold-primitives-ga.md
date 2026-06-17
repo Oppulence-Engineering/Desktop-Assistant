@@ -8,7 +8,7 @@
 | **Owners**            | `apps/x` (core + renderer)                                                                                                                       |
 | **Created**           | 2026-06-10                                                                                                                                       |
 | **Last updated**      | 2026-06-10                                                                                                                                       |
-| **Depends on**        | [RFC 003 — Cloud Event Ingestion](./003-cloud-event-ingestion.md) (Slack event shape), local event queue                                         |
+| **Depends on**        | [RFC 003 — Cloud Event Ingestion](./complete-003-cloud-event-ingestion.md) (Slack event shape), local event queue                                         |
 | **Enables / related** | [RFC 025 — Desktop Runtime Durability](./025-desktop-runtime-durability.md), [RFC 026 — Finance Command Center](./026-finance-command-center.md) |
 | **Supersedes**        | none                                                                                                                                             |
 

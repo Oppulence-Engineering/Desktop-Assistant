@@ -8,7 +8,7 @@
 | **Owners**       | `apps/rowboat-api` (Go backend) · `apps/x` (desktop federation) · Conduit team · Eigen team                                                                                                                                                                             |
 | **Created**      | 2026-06-05                                                                                                                                                                                                                                                              |
 | **Last updated** | 2026-06-06                                                                                                                                                                                                                                                              |
-| **Depends on**   | [RFC 003](./003-cloud-event-ingestion.md) (event bus), [RFC 004](./004-cloud-agent-runtime.md) (runtime + tool registry), [RFC 001](./001-api-owned-scheduler.md)/[005](./005-temporal-schedule-integration.md) (scheduling), the cockpit's Read/Mirror/Watch/Act seams |
+| **Depends on**   | [RFC 003](./complete-003-cloud-event-ingestion.md) (event bus), [RFC 004](./complete-004-cloud-agent-runtime.md) (runtime + tool registry), [RFC 001](./complete-001-api-owned-scheduler.md)/[005](./complete-005-temporal-schedule-integration.md) (scheduling), the cockpit's Read/Mirror/Watch/Act seams |
 | **Extends**      | RFC 003 `CloudEvent.source` enum · RFC 004 tool allowlist + error codes                                                                                                                                                                                                 |
 | **Refs**         | Supersedes former cross-portfolio cockpit proposal; strategy reference: [`docs/one-pager-product.md`](../../docs/one-pager-product.md) "The platform it becomes".                                                                                                       |
 
@@ -52,8 +52,8 @@ forecast, the forecast informs the action, the action becomes new evidence.
 | Vault mirror pattern (factory + loop + `createEvent`)                      | `apps/x/packages/core/src/knowledge/sync_gmail.ts`; RFC 013 mirror seam                                          |
 | Event envelope shape `{source, type, payload, target}`                     | `apps/x/packages/shared/src/events.ts:25-65` (`RowboatEventSchema`)                                              |
 | Event consumers do Pass-1 candidacy → Pass-2 agent                         | `apps/x/packages/core/src/knowledge/live-note/event-consumer.ts`; cloud equivalent in RFC 003                    |
-| Cloud event ingestion + routing + `trigger=event` runs                     | [RFC 003](./003-cloud-event-ingestion.md) (`CloudEvent`, `/v1/events`, `rowboat.cloud_events.route.v1`)          |
-| Cloud runtime + scoped `ToolRegistry`/`ToolScope`                          | [RFC 004](./004-cloud-agent-runtime.md)                                                                          |
+| Cloud event ingestion + routing + `trigger=event` runs                     | [RFC 003](./complete-003-cloud-event-ingestion.md) (`CloudEvent`, `/v1/events`, `rowboat.cloud_events.route.v1`)          |
+| Cloud runtime + scoped `ToolRegistry`/`ToolScope`                          | [RFC 004](./complete-004-cloud-agent-runtime.md)                                                                          |
 | Dual-review Act seam (approval tokens + policy)                            | cockpit `:73-74` → Corinthian `corinthian-mcp/src/lib/approvals.ts`, `policy.ts`, `tool-packs.ts`                |
 
 The cockpit thesis (`:11`): _"no single product can produce this, because each is blind to
@@ -103,7 +103,7 @@ connector fabric in [RFC 013](./013-oppulence-product-connector-fabric.md):
 The agent immediately gains tools like `mcp:conduit:thread_for_invoice`,
 `mcp:conduit:disputes_open`, `mcp:conduit:followups_due`. Cloud runs reach the same data via
 the runtime tool below. The token is brokered by the connector OAuth path
-([RFC 003](./003-cloud-event-ingestion.md) / [RFC 012](./012-connector-suite-and-consent-broker.md)), not hand-edited, once Conduit
+([RFC 003](./complete-003-cloud-event-ingestion.md) / [RFC 012](./012-connector-suite-and-consent-broker.md)), not hand-edited, once Conduit
 joins the connector registry (`GET /v1/connectors`).
 
 ### A.2 Mirror — sync correspondence into the vault
@@ -224,8 +224,8 @@ the RFC 004 taxonomy.
 ### B.2 Eigen as a scheduled + event-triggered job — foresight made continuous
 
 **Scheduled full stress run.** A Temporal-scheduled workflow `rowboat.eigen.stress.v1`
-(via [RFC 005](./005-temporal-schedule-integration.md) Temporal Schedules, or the
-[RFC 001](./001-api-owned-scheduler.md) loop) runs nightly/weekly over the whole federated
+(via [RFC 005](./complete-005-temporal-schedule-integration.md) Temporal Schedules, or the
+[RFC 001](./complete-001-api-owned-scheduler.md) loop) runs nightly/weekly over the whole federated
 graph, writes the result into the corpus (a `Cash position` live note), and — on a threshold
 breach — emits an `eigen.breach` event:
 
@@ -292,10 +292,10 @@ impossible without both. This is the value chain no single product can assemble.
 
 | RFC                                                                                   | Change                                                                                                                                                   |
 | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [RFC 003](./003-cloud-event-ingestion.md)                                             | `CloudEvent.source` enum gains `canvas, cadence, corinthian, conduit, eigen`; new event types (`conduit.*`, `eigen.breach`); `POST /v1/webhooks/conduit` |
-| [RFC 004](./004-cloud-agent-runtime.md)                                               | tool allowlist gains `conduit.read`, `eigen.simulate` (read-only); error codes `conduit_unavailable`, `eigen_unavailable`, `eigen_invalid_scenario`      |
-| [RFC 001](./001-api-owned-scheduler.md)/[005](./005-temporal-schedule-integration.md) | register `rowboat.eigen.stress.v1` scheduled workflow                                                                                                    |
-| [RFC 006](./006-desktop-cloud-control-plane.md)                                       | surface "Triggered by: dispute on #4821" (event→run link) and the `Cash position` foresight note                                                         |
+| [RFC 003](./complete-003-cloud-event-ingestion.md)                                             | `CloudEvent.source` enum gains `canvas, cadence, corinthian, conduit, eigen`; new event types (`conduit.*`, `eigen.breach`); `POST /v1/webhooks/conduit` |
+| [RFC 004](./complete-004-cloud-agent-runtime.md)                                               | tool allowlist gains `conduit.read`, `eigen.simulate` (read-only); error codes `conduit_unavailable`, `eigen_unavailable`, `eigen_invalid_scenario`      |
+| [RFC 001](./complete-001-api-owned-scheduler.md)/[005](./complete-005-temporal-schedule-integration.md) | register `rowboat.eigen.stress.v1` scheduled workflow                                                                                                    |
+| [RFC 006](./complete-006-desktop-cloud-control-plane.md)                                       | surface "Triggered by: dispute on #4821" (event→run link) and the `Cash position` foresight note                                                         |
 | [README](./README.md)                                                                 | index row, dependency-graph node, Phase 6, conventions (new sources/tools/metrics)                                                                       |
 
 ## Observability

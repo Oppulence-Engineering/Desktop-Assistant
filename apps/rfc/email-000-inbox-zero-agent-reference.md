@@ -93,7 +93,7 @@ Implementation agents should inspect the Rowboat side before coding:
 | Google OAuth desktop path         | `apps/x/packages/core/src/auth/google-backend-oauth.ts`, `apps/x/packages/core/src/auth/google-client-factory.ts` |
 | Broker Google API                 | `apps/rowboat-api/internal/googleapi/gmail.go`, `apps/rowboat-api/internal/googleapi/calendar.go`                 |
 | Broker connector tools            | `apps/rowboat-api/internal/backgroundtaskruntime/tools_connectors.go`                                             |
-| Cloud events                      | `apps/rowboat-api/ent/schema/cloud_event.go`, `apps/rfc/003-cloud-event-ingestion.md`                             |
+| Cloud events                      | `apps/rowboat-api/ent/schema/cloud_event.go`, `apps/rfc/complete-003-cloud-event-ingestion.md`                             |
 | Google watches                    | `apps/rowboat-api/ent/schema/google_watch.go`, `apps/rfc/019-google-push-infrastructure.md`                       |
 | Connector/action architecture     | `apps/rfc/012-connector-suite-and-consent-broker.md`, `apps/rfc/020-native-third-party-action-engine.md`          |
 | Semantic memory direction         | `apps/rfc/021-semantic-memory-index.md`                                                                           |
