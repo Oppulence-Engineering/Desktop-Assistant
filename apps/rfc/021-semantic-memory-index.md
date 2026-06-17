@@ -8,7 +8,7 @@
 | **Owners**            | `apps/x` (Electron: core + renderer) · `apps/rowboat-api` (embeddings proxy, optional)                                                                                                                                                                            |
 | **Created**           | 2026-06-10                                                                                                                                                                                                                                                        |
 | **Last updated**      | 2026-06-10                                                                                                                                                                                                                                                        |
-| **Depends on**        | none (new track); reuses [RFC 010 — API Service Plane](./010-rowboat-api-service-plane.md) for the metered embeddings path                                                                                                                                        |
+| **Depends on**        | none (new track); reuses [RFC 010 — API Service Plane](./complete-010-rowboat-api-service-plane.md) for the metered embeddings path                                                                                                                               |
 | **Enables / related** | [RFC 022 — Unified Entity Graph](./022-unified-entity-graph.md) (entities become semantically recallable), [RFC 026 — Finance Command Center](./026-finance-command-center.md); cost surfaced via [RFC 014](./014-live-note-observability-cost-and-provenance.md) |
 | **Supersedes**        | none                                                                                                                                                                                                                                                              |
 
@@ -130,10 +130,10 @@ The manifest is the source of truth for "what is indexed at which content hash";
 
 Embeddings are obtained through the existing provider seam, not a new desktop dependency:
 
-| Mode              | Path                                                | Notes                                                                                                                |
-| ----------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Managed / metered | `POST {API_URL}/v1/embeddings` (thin proxy, billed) | Add to [RFC 010](./010-rowboat-api-service-plane.md) service plane next to the LLM gateway; meters tokens like chat. |
-| BYOK              | direct provider call via `models/gateway.ts`        | Uses the user's configured key; no backend round-trip.                                                               |
+| Mode              | Path                                                | Notes                                                                                                                         |
+| ----------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Managed / metered | `POST {API_URL}/v1/embeddings` (thin proxy, billed) | Add to [RFC 010](./complete-010-rowboat-api-service-plane.md) service plane next to the LLM gateway; meters tokens like chat. |
+| BYOK              | direct provider call via `models/gateway.ts`        | Uses the user's configured key; no backend round-trip.                                                                        |
 
 The desktop chooses the path the same way `gateway.ts` already does for chat completions. `POST /v1/embeddings` request `{ model, input: string[] }` → `{ data: [{ embedding: number[] }], usage }` (OpenAI-compatible).
 

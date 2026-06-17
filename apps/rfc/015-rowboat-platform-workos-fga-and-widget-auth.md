@@ -1,16 +1,16 @@
 # RFC 015: Rowboat Platform WorkOS FGA and Widget Auth
 
-|                  |                                                                                                                                                   |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 015                                                                                                                                               |
-| **Status**       | Draft                                                                                                                                             |
-| **Track**        | Hosted platform auth and authorization                                                                                                            |
-| **Owners**       | `apps/rowboat`                                                                                                                                    |
-| **Created**      | 2026-06-06                                                                                                                                        |
-| **Last updated** | 2026-06-06                                                                                                                                        |
-| **Depends on**   | WorkOS AuthKit, WorkOS Organizations, WorkOS FGA/API Keys                                                                                         |
-| **Related**      | [RFC 010](./010-rowboat-api-service-plane.md), [RFC 011](./011-identity-and-authorization-plane.md), [RFC 016](./016-app-family-consolidation.md) |
-| **Supersedes**   | Former WorkOS auth rework plan and hosted-platform portions of the former app architecture map.                                                   |
+|                  |                                                                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 015                                                                                                                                                        |
+| **Status**       | Draft                                                                                                                                                      |
+| **Track**        | Hosted platform auth and authorization                                                                                                                     |
+| **Owners**       | `apps/rowboat`                                                                                                                                             |
+| **Created**      | 2026-06-06                                                                                                                                                 |
+| **Last updated** | 2026-06-06                                                                                                                                                 |
+| **Depends on**   | WorkOS AuthKit, WorkOS Organizations, WorkOS FGA/API Keys                                                                                                  |
+| **Related**      | [RFC 010](./complete-010-rowboat-api-service-plane.md), [RFC 011](./011-identity-and-authorization-plane.md), [RFC 016](./016-app-family-consolidation.md) |
+| **Supersedes**   | Former WorkOS auth rework plan and hosted-platform portions of the former app architecture map.                                                            |
 
 ## Summary
 

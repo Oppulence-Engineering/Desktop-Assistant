@@ -33,7 +33,7 @@ fine-grained audiences, or a self-hosted sovereignty tier.
 | WorkOS-direct is the deployment posture                      | `docs/BACKEND_DEPLOYMENT.md`                                 |
 | Hydra artifacts remain in the tree but are deferred          | `apps/oauth-consent`, `charts/hydra`, `charts/oauth-consent` |
 | Connector broker design needs explicit issuer policy         | [RFC 012](./012-connector-suite-and-consent-broker.md)       |
-| Service-plane implementation inherited Ory/Hydra assumptions | [RFC 010](./010-rowboat-api-service-plane.md)                |
+| Service-plane implementation inherited Ory/Hydra assumptions | [RFC 010](./complete-010-rowboat-api-service-plane.md)       |
 
 The conflict is mostly temporal: implementation docs captured a future connector
 broker state; deployment docs captured the simpler live state. This RFC defines

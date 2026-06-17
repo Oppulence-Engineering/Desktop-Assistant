@@ -8,7 +8,7 @@
 | **Owners**       | `repo/apps`                                                                                                                                                                                                                       |
 | **Created**      | 2026-06-06                                                                                                                                                                                                                        |
 | **Last updated** | 2026-06-06                                                                                                                                                                                                                        |
-| **Depends on**   | [RFC 010](./010-rowboat-api-service-plane.md), [RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md)                                                                                                                    |
+| **Depends on**   | [RFC 010](./complete-010-rowboat-api-service-plane.md), [RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md)                                                                                                           |
 | **Related**      | [RFC 009](./complete-009-local-on-device-transcription.md), [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 013](./013-oppulence-product-connector-fabric.md), [RFC 018](./018-a2a-delegation-and-agent-identity.md) |
 | **Refs**         | Supersedes the former app architecture map and app-boundary portions of the former backend implementation plan; operational reference: [`docs/LOCAL_KIND_ROWBOAT_API.md`](../../docs/LOCAL_KIND_ROWBOAT_API.md).                  |
 
