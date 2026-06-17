@@ -1,16 +1,16 @@
-# RFC 017: On-Device Meeting Diarization
+# [Complete] RFC 017: On-Device Meeting Diarization
 
-|                  |                                                                                                                                                                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 017                                                                                                                                                                                                                    |
-| **Status**       | Draft                                                                                                                                                                                                                  |
-| **Track**        | Local audio intelligence                                                                                                                                                                                               |
-| **Owners**       | `apps/x`                                                                                                                                                                                                               |
-| **Created**      | 2026-06-06                                                                                                                                                                                                             |
-| **Last updated** | 2026-06-06                                                                                                                                                                                                             |
-| **Depends on**   | [RFC 009](./complete-009-local-on-device-transcription.md)                                                                                                                                                             |
-| **Related**      | [RFC 014](./014-live-note-observability-cost-and-provenance.md), [RFC 016](./016-app-family-consolidation.md)                                                                                                          |
-| **Refs**         | Supersedes former whisper.cpp research plan; quality references: [`docs/DESKTOP_PERFORMANCE_GATE.md`](../../docs/DESKTOP_PERFORMANCE_GATE.md), [`docs/DESKTOP_QUALITY_GATES.md`](../../docs/DESKTOP_QUALITY_GATES.md). |
+|                  |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 017                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **Status**       | Complete — diarization engine in `apps/x/packages/core/src/voice/diarization` (online clusterer, overlap-aware alignment, pluggable embedder + deterministic fixture embedder, session orchestrator with trailing refinement, DER/JER metrics, offline fixture runner) + shared types, model-manager `speaker_embedding` asset kind, `DiarizationSettings` + LOCAL*DIARIZATION*\* flags, and meeting-note provenance (frontmatter + beta settings toggle). Beta only, off by default; cloud meetings stay the default. Native ONNX embedding-model integration + on-stream wiring are the runtime follow-up the model manager/embedder interface are built for. |
+| **Track**        | Local audio intelligence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Owners**       | `apps/x`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Created**      | 2026-06-06                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **Last updated** | 2026-06-17                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **Depends on**   | [RFC 009](./complete-009-local-on-device-transcription.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **Related**      | [RFC 014](./014-live-note-observability-cost-and-provenance.md), [RFC 016](./016-app-family-consolidation.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Refs**         | Supersedes former whisper.cpp research plan; quality references: [`docs/DESKTOP_PERFORMANCE_GATE.md`](../../docs/DESKTOP_PERFORMANCE_GATE.md), [`docs/DESKTOP_QUALITY_GATES.md`](../../docs/DESKTOP_QUALITY_GATES.md).                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ## Summary
 
@@ -639,6 +639,53 @@ Feature flags:
 
 Rollback means hiding local diarization UI and keeping RFC 009 local STT or cloud
 meetings behavior intact.
+
+## Implementation
+
+The diarization layer lives in `apps/x/packages/core/src/voice/diarization` and is
+additive over the RFC 009 whisper.cpp pipeline. It is pure and unit-tested; the
+native speaker-embedding model is injected (so core carries no native dep), and
+everything ships behind the `LOCAL_DIARIZATION_*` flags, beta-only, off by
+default — RFC 009 local STT and cloud meetings are untouched.
+
+| Design element                                          | Code                                                                                                                     |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Types (state, segments, provenance, labels, model kind) | `packages/shared/src/diarization.ts` (+ `DiarizationSettings` in `transcription.ts`)                                     |
+| Online clustering (centroid, cosine, unknown, cap)      | `diarization/clustering.ts`                                                                                              |
+| Overlap-aware alignment (split / unknown / preserve)    | `diarization/alignment.ts`                                                                                               |
+| Speaker embedder interface + deterministic fixture impl | `diarization/embedder.ts` (`SpeakerEmbedder`, `EnergyProfileEmbedder`, `NativeSpeakerEmbedder`)                          |
+| Session orchestrator + trailing refinement + dispose    | `diarization/diarizer.ts`                                                                                                |
+| Quality metrics (DER/JER, split/merge, RTTM)            | `diarization/metrics.ts`                                                                                                 |
+| Offline fixture runner + WAV decode + report            | `diarization/fixtures.ts`, `scripts/diarize-fixtures.mjs`                                                                |
+| Provenance (record, frontmatter, note header, states)   | `diarization/provenance.ts`                                                                                              |
+| Feature flags + settings resolution                     | `diarization/config.ts`, `transcription.json` `diarization` block                                                        |
+| Model manager: `speaker_embedding` asset kind           | `voice/whisper/catalog.ts` (`SPEAKER_EMBEDDING_MODEL_ID`), `voice/whisper/model-manager.ts` (verify/gc gating)           |
+| Meeting-note provenance + beta toggle (UI)              | `apps/renderer/.../useMeetingTranscription.ts`, `.../settings/transcription-settings.tsx`, `transcription:setConfig` IPC |
+
+Acceptance status:
+
+- **Developer flag processes a meeting locally → speaker-labeled segments** —
+  `LOCAL_DIARIZATION_*` flags + `runDiarizerOverPcm`; the fixture runner scored a
+  synthetic two-speaker meeting at DER 0.005, exact speaker count, no false
+  split/merge.
+- **Provenance recorded** — meeting-note frontmatter carries
+  transcription/diarization provider + model + mode + `audio_uploaded` +
+  identity-persistence.
+- **Failure falls back to usable transcript text** — alignment preserves text +
+  timestamps with no attribution; too-short/overlap-heavy/low-confidence →
+  `Unknown speaker`; diarization never discards transcript text.
+- **Performance gates measured on fixtures** — the runner reports DER/JER,
+  speaker-count, split/merge, unknown rate, confusion matrix, timing (RTF), and
+  peak RSS.
+- **Beta UI distinguishes local vs cloud diarization** — provenance fields + note
+  header (`Transcription: Local` / `Diarization: Local beta`) + the settings
+  toggle.
+
+Scope notes (the runtime follow-up the interfaces are built for): wiring the
+native ONNX embedding model and feeding live meeting PCM through the diarizer
+during a session (vs. the offline fixture path) and the in-meeting rename UI are
+left to the product-integration pass; the engine, model-manager asset support,
+provenance, and flags are in place.
 
 ## Decisions
 

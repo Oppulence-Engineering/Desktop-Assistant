@@ -15,6 +15,7 @@
     "typecheck": "npm run deps && cd apps/renderer && tsc -b",
     "check:types": "npm run deps && cd apps/renderer && npm run build && cd ../main && npm run build",
     "security:electron": "node scripts/electron-security-check.mjs",
+    "diarize:fixtures": "npm run core && node scripts/diarize-fixtures.mjs",
     "quality": "npm run lint && npm test && npm run security:electron && npm run check:types",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

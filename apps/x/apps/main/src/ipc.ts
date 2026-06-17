@@ -1373,6 +1373,8 @@ export function setupIpcHandlers() {
         meetingProvider: patch.meetingProvider,
         ...(patch.model ? { whisper: { model: patch.model } } : {}),
         privacy: patch.privacy,
+        // RFC 017: persist the on-device diarization beta toggle + tunables.
+        ...(patch.diarization ? { diarization: patch.diarization } : {}),
       });
     },
     "notifications:getConfig": async () => {

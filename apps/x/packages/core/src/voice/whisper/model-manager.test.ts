@@ -15,6 +15,7 @@ function makeCatalog(payload: Buffer, overrides: Partial<ModelEntry> = {}): Mode
       id: "fake-model",
       label: "Fake",
       family: "base",
+      kind: "transcription",
       english: true,
       quant: "q5_1",
       sizeMb: 1,

@@ -80,7 +80,7 @@ One generated view across the shared graph ([022]) + recall ([021]): AR at risk 
 
 ### 4. "What did we agree with Acme?"
 
-Voice/meeting transcription ([RFC 009](./complete-009-local-on-device-transcription.md)/[017](./017-on-device-meeting-diarization.md)) tied to the Acme entity ([022]) and its invoice thread → "in Tuesday's call we agreed to net-45 on INV-456" surfaced when chasing payment — memory the verticals don't have.
+Voice/meeting transcription ([RFC 009](./complete-009-local-on-device-transcription.md)/[017](./complete-017-on-device-meeting-diarization.md)) tied to the Acme entity ([022]) and its invoice thread → "in Tuesday's call we agreed to net-45 on INV-456" surfaced when chasing payment — memory the verticals don't have.
 
 ### 5. Act where there's no API
 

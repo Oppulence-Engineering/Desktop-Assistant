@@ -79,6 +79,7 @@ function formatTranscript(
   entries: TranscriptEntry[],
   date: string,
   calendarEvent?: CalendarEventMeta,
+  provenance?: Record<string, string | boolean>,
 ): string {
   const noteTitle = calendarEvent?.summary || "Meeting Notes";
   const lines = [
@@ -88,6 +89,13 @@ function formatTranscript(
     `title: ${noteTitle}`,
     `date: "${date}"`,
   ];
+  // RFC 017 trust surface: record how this note was transcribed/diarized so the
+  // user can tell cloud diarization from local beta diarization (or none).
+  if (provenance) {
+    for (const [key, value] of Object.entries(provenance)) {
+      lines.push(`${key}: ${typeof value === "string" ? value : value ? "true" : "false"}`);
+    }
+  }
   if (calendarEvent) {
     // Serialize as a JSON string on one line — the frontmatter system
     // only supports flat key: value pairs, not nested YAML objects.
@@ -143,6 +151,9 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
   const dateRef = useRef<string>("");
   const calendarEventRef = useRef<CalendarEventMeta | undefined>(undefined);
   const privacyGenerationRef = useRef(0);
+  // RFC 017 provenance fields written into the note frontmatter (provider/model,
+  // diarization provider+mode, audio-uploaded, identity persistence).
+  const provenanceRef = useRef<Record<string, string | boolean>>({});
 
   const writeTranscriptToFile = useCallback(async () => {
     if (!notePathRef.current) return;
@@ -159,7 +170,12 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       }
     }
     if (entries.length === 0) return;
-    const content = formatTranscript(entries, dateRef.current, calendarEventRef.current);
+    const content = formatTranscript(
+      entries,
+      dateRef.current,
+      calendarEventRef.current,
+      provenanceRef.current,
+    );
     try {
       await window.ipc.invoke("workspace:writeFile", {
         path: notePathRef.current,
@@ -281,6 +297,27 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       }
       useLocalRef.current = meetingProvider === "whisper-local";
       analytics.transcriptionStarted({ provider: meetingProvider, mode: "meeting" });
+
+      // RFC 017: compute the meeting note provenance up front from the resolved
+      // provider + config. Local diarization runs only on the on-device path and
+      // only when the LOCAL_DIARIZATION beta is enabled; cloud meetings keep the
+      // provider's (Deepgram) diarization. Mirrors core voice/diarization/provenance.
+      try {
+        const cfg = await window.ipc.invoke("transcription:getConfig", null);
+        const local = meetingProvider === "whisper-local";
+        const localDiarization = local && cfg.diarization?.enabled === true;
+        provenanceRef.current = {
+          transcription_provider: local ? "whisper.cpp" : meetingProvider,
+          transcription_model: local ? cfg.whisper.model : "nova-3",
+          diarization_provider: localDiarization ? "local" : local ? "none" : "deepgram",
+          diarization_mode: localDiarization ? "beta" : local ? "off" : "default",
+          ...(localDiarization ? { diarization_model: cfg.diarization.model } : {}),
+          audio_uploaded: !local,
+          speaker_identity_persistence: localDiarization ? "meeting_only" : "none",
+        };
+      } catch {
+        provenanceRef.current = {};
+      }
       const privacyGeneration = privacyGenerationRef.current;
       const localOnlyEnabled = async () => {
         try {

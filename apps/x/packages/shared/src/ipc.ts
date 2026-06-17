@@ -61,6 +61,7 @@ import {
   VoiceCommandIntent,
   WhisperDiagnosticResult,
   VoicePrivacySettings,
+  DiarizationSettings,
 } from "./transcription.js";
 
 // ============================================================================
@@ -902,6 +903,8 @@ const ipcSchemas = {
       meetingProvider: TranscriptionProvider.optional(),
       model: z.string().optional(),
       privacy: VoicePrivacySettings.partial().optional(),
+      // RFC 017: on-device diarization settings (incl. the Local-diarization-beta toggle).
+      diarization: DiarizationSettings.partial().optional(),
     }),
     res: TranscriptionConfig,
   },
