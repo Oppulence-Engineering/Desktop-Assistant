@@ -18,6 +18,9 @@ func RequestLogger(log *zap.Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			start := time.Now()
+			// Install a mutable log-field holder so auth (downstream) can attach the
+			// resolved user id to this access log line (RFC 010).
+			r = r.WithContext(httpx.WithLogFields(r.Context()))
 
 			defer func() {
 				fields := []zap.Field{
@@ -28,6 +31,9 @@ func RequestLogger(log *zap.Logger) func(http.Handler) http.Handler {
 					zap.Duration("duration", time.Since(start)),
 					zap.String("request_id", middleware.GetReqID(r.Context())),
 					zap.String("remote", r.RemoteAddr),
+				}
+				if uid := httpx.LogUserID(r.Context()); uid != "" {
+					fields = append(fields, zap.String("user_id", uid))
 				}
 				if sc := trace.SpanContextFromContext(r.Context()); sc.HasTraceID() {
 					fields = append(fields, zap.String("trace_id", sc.TraceID().String()))
