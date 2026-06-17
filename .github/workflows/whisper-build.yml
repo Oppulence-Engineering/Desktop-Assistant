@@ -36,11 +36,14 @@ jobs:
           # host arch, and macos-14 (arm64) runners are plentiful whereas macos-13
           # (Intel) runners are scarce and can sit queued for hours. build.sh's
           # smoke test is `|| true`, so the non-native binary not running here is fine.
+          # GGML_NATIVE=OFF is required when cross-compiling: with it ON, ggml probes
+          # the *host* CPU and passes -mcpu=apple-m1, which the x86_64 backend rejects
+          # ("unknown target CPU 'apple-m1'"). OFF builds a portable x86_64 baseline.
           - {
               os: macos-14,
               plat: darwin,
               arch: x64,
-              flags: "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DGGML_METAL=ON",
+              flags: "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DGGML_METAL=ON -DGGML_NATIVE=OFF",
             }
           - {
               os: windows-2022,
