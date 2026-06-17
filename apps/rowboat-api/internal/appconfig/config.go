@@ -61,6 +61,14 @@ type Config struct {
 	TokenAudience string // expected aud claim; empty → audience check skipped
 	JWKSURL       string // JWKS endpoint; empty → discovered from TokenIssuer's OIDC metadata
 
+	// Identity & authorization plane (RFC 011). These classify a verified
+	// token's issuer into a bounded type/actor kind for audit + metrics and
+	// power step-up. ServiceTokenIssuer/BrokerTokenIssuer are dark until the
+	// deferred service-token / broker modes are promoted.
+	ServiceTokenIssuer     string        // iss of first-party signed service tokens
+	BrokerTokenIssuer      string        // iss of broker-minted connector resource tokens
+	StepUpRecentAuthWindow time.Duration // recent-auth window for RequireStepUp
+
 	// WorkOS (user-metadata enrichment on first sight + sign-in broker).
 	WorkOSAPIKey   string
 	WorkOSClientID string
@@ -320,6 +328,13 @@ func Load() Config {
 		// audience check (WorkOS access tokens carry no `aud`).
 		TokenAudience: getenvAllowEmpty("TOKEN_AUDIENCE", "rowboat-api"),
 		JWKSURL:       getenv("JWKS_URL", ""), // empty → discovered from TokenIssuer
+
+		// RFC 011 issuer classification + step-up. The service/broker issuers
+		// default to stable internal names (matching the RFC claim contracts) so
+		// classification works the moment those token modes are enabled.
+		ServiceTokenIssuer:     getenv("SERVICE_TOKEN_ISSUER", "rowboat-internal"),
+		BrokerTokenIssuer:      getenv("BROKER_TOKEN_ISSUER", "rowboat-broker"),
+		StepUpRecentAuthWindow: getdur("STEPUP_RECENT_AUTH_WINDOW", 15*time.Minute),
 
 		WorkOSAPIKey:           getenv("WORKOS_API_KEY", ""),
 		WorkOSClientID:         getenv("WORKOS_CLIENT_ID", ""),

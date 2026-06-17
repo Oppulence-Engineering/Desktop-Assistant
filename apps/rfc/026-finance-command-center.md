@@ -155,7 +155,7 @@ flowchart LR
 
 ## Security & trust
 
-- Inherits the guarantees of the foundations: **no money moves without a single-use scoped token + step-up** ([023](./023-closed-loop-actions.md)/[012](./012-connector-suite-and-consent-broker.md)/[011](./011-identity-and-authorization-plane.md)); **at-most-once** execution ([025](./025-desktop-runtime-durability.md)); **PII boundary** on the shared graph ([022](./022-unified-entity-graph.md)); **deny-by-default** tools ([004](./complete-004-cloud-agent-runtime.md)).
+- Inherits the guarantees of the foundations: **no money moves without a single-use scoped token + step-up** ([023](./023-closed-loop-actions.md)/[012](./012-connector-suite-and-consent-broker.md)/[011](./complete-011-identity-and-authorization-plane.md)); **at-most-once** execution ([025](./025-desktop-runtime-durability.md)); **PII boundary** on the shared graph ([022](./022-unified-entity-graph.md)); **deny-by-default** tools ([004](./complete-004-cloud-agent-runtime.md)).
 - **Legibility is trust**: the Agent Activity timeline ([014](./014-live-note-observability-cost-and-provenance.md)) makes every proposal/approval/execution/outcome auditable — essential for finance.
 
 ## Failure modes (product-level)

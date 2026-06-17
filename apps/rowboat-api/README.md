@@ -6,7 +6,7 @@ It owns billing/credits, the LLM gateway, vendor proxies (voice, search,
 Composio), the Google OAuth broker, and the connector OAuth handshake.
 
 See [RFC 010](../../apps/rfc/010-rowboat-api-service-plane.md) for the service-plane
-design, [RFC 011](../../apps/rfc/011-identity-and-authorization-plane.md) for auth
+design, [RFC 011](../../apps/rfc/complete-011-identity-and-authorization-plane.md) for auth
 boundaries, and [RFC 012](../../apps/rfc/012-connector-suite-and-consent-broker.md)
 for the connector broker protocol.
 

@@ -1,16 +1,16 @@
-# RFC 011: Identity and Authorization Plane
+# [Complete] RFC 011: Identity and Authorization Plane
 
-|                  |                                                                                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **RFC**          | 011                                                                                                                                                          |
-| **Status**       | Draft                                                                                                                                                        |
-| **Track**        | Identity, authorization, and token boundaries                                                                                                                |
-| **Owners**       | `apps/rowboat-api`, `apps/x`, Platform                                                                                                                       |
-| **Created**      | 2026-06-06                                                                                                                                                   |
-| **Last updated** | 2026-06-06                                                                                                                                                   |
-| **Depends on**   | WorkOS AuthKit, rowboat-api service plane                                                                                                                    |
-| **Enables**      | [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 013](./013-oppulence-product-connector-fabric.md), future self-hosted tier                      |
-| **Refs**         | Operational reference: [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md); supersedes former backend implementation and connector suite plans. |
+|                  |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 011                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Status**       | Complete — implemented in `apps/rowboat-api/internal/auth`: a single `Actor` per request (user/service/connector*resource/widget/internal), the authorization policy helpers (`RequireUser/Org/ServiceScope/ConnectorScope/Permission/Entitlement/StepUp`), bounded token-acceptance classification (issuer type + rejection reason + route group), the RFC audit events + `auth*\*` metrics (`internal/authmetrics`), org mapping (set/switched), and internal/hook actors. Purely additive over WorkOS-direct; Hydra/Ory broker mode (Mode B) remains deferred per the Decisions. |
+| **Track**        | Identity, authorization, and token boundaries                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Owners**       | `apps/rowboat-api`, `apps/x`, Platform                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Created**      | 2026-06-06                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Last updated** | 2026-06-17                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Depends on**   | WorkOS AuthKit, rowboat-api service plane                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Enables**      | [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 013](./013-oppulence-product-connector-fabric.md), future self-hosted tier                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **Refs**         | Operational reference: [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md); supersedes former backend implementation and connector suite plans.                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ## Summary
 
@@ -467,6 +467,34 @@ payload.
 - Product-scoped OAuth can be introduced without disrupting service-plane auth.
 - WorkOS remains the canonical human identity source.
 - Resource servers do not trust rowboat-api checks alone.
+
+## Implementation
+
+The plane lives in `apps/rowboat-api/internal/auth` and is additive over the
+existing WorkOS-direct middleware — every migration invariant above holds
+(desktop sign-in, `/v1/me`, and service routes are unchanged).
+
+| Design element                                                                               | Code                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Actor` + kinds, context, MFA/auth-time extraction                                           | `internal/auth/actor.go`                                                                                                                                   |
+| Token-acceptance classification (issuer/reason/route)                                        | `internal/auth/classify.go`, `IssuerPolicy` in `actor.go`                                                                                                  |
+| Authorization middleware (policy helpers)                                                    | `internal/auth/policy.go` (`RequireUser/Org/ServiceScope/ConnectorScope/Permission/Entitlement/StepUp`)                                                    |
+| Validate → build actor → emit audit, fail closed                                             | `internal/auth/middleware.go` (`RequireJWT`); internal/hook actors in `internal/auth/hmac.go`                                                              |
+| Org mapping (set/switched), user upsert audit                                                | `internal/auth/identity.go`                                                                                                                                |
+| Audit events + bounded metrics                                                               | `internal/auth/audit.go`, `internal/authmetrics/metrics.go` (`auth_token_accepted/rejected`, `auth_user_upserted`, `auth_org_mapped`, `auth_authz_denied`) |
+| Config (`SERVICE_TOKEN_ISSUER`, `BROKER_TOKEN_ISSUER`, `STEPUP_RECENT_AUTH_WINDOW`) + wiring | `internal/appconfig/config.go`, `cmd/server/wire.go`                                                                                                       |
+
+Notes on scope:
+
+- `RequireJWT` is the WorkOS-direct user surface; it always resolves a **user**
+  actor. `IssuerPolicy.Kind` and `ActorFromUser` are the primitives a future
+  broker/service surface (RFC 012) reuses to mint `service` / `connector_resource`
+  actors — those issuers are configured but **dark**.
+- The policy helpers are available and unit-tested but are mounted per-route by
+  the feature owner; no new gate was added to an existing desktop route, so the
+  rollout cannot disable service-plane auth.
+- Step-up `recent_auth`/`mfa` fail closed when the token omits `auth_time`/`amr`;
+  the money-moving per-invocation approval token stays a product-MCP concern.
 
 ## Decisions
 

@@ -123,6 +123,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 	enricher := auth.NewWorkOSEnricher(cfg.WorkOSAPIKey)
 	authMW := auth.NewMiddleware(verifier, client, enricher, cfg.FreeTierCredits, log)
+	// RFC 011: classify verified tokens by issuer for audit/metrics + actor kind,
+	// and set the step-up recent-auth window. WorkOS is the human-identity issuer;
+	// the service/broker issuers stay dark until those modes are promoted.
+	authMW.SetIssuerPolicy(auth.IssuerPolicy{
+		WorkOSIssuer:  cfg.TokenIssuer,
+		ServiceIssuer: cfg.ServiceTokenIssuer,
+		BrokerIssuer:  cfg.BrokerTokenIssuer,
+	})
+	authMW.SetStepUpWindow(cfg.StepUpRecentAuthWindow)
 	// Optional readiness signal (RFC 010): report JWKS availability without
 	// failing readiness — the service intentionally boots before the IdP is
 	// reachable and serves 503 on authed routes until then.

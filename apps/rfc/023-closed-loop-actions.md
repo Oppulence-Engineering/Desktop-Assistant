@@ -8,7 +8,7 @@
 | **Owners**            | `apps/rowboat-api` (runtime tools, approval tokens, event round-trip) · `apps/x` (cockpit approval UX)                                                                                                                                                                                                                                           |
 | **Created**           | 2026-06-10                                                                                                                                                                                                                                                                                                                                       |
 | **Last updated**      | 2026-06-10                                                                                                                                                                                                                                                                                                                                       |
-| **Depends on**        | [RFC 004 — Cloud-Safe Agent Runtime](./complete-004-cloud-agent-runtime.md) (tool registry), [RFC 003 — Cloud Event Ingestion](./complete-003-cloud-event-ingestion.md) (the watch leg), [RFC 012 — Connector Suite & Consent Broker](./012-connector-suite-and-consent-broker.md) (money-touching approval tokens)                                                |
+| **Depends on**        | [RFC 004 — Cloud-Safe Agent Runtime](./complete-004-cloud-agent-runtime.md) (tool registry), [RFC 003 — Cloud Event Ingestion](./complete-003-cloud-event-ingestion.md) (the watch leg), [RFC 012 — Connector Suite & Consent Broker](./012-connector-suite-and-consent-broker.md) (money-touching approval tokens)                              |
 | **Enables / related** | [RFC 013 — Product Connector Fabric](./013-oppulence-product-connector-fabric.md) (the **Act** seam this RFC operationalises), [RFC 020 — Native Action Engine](./020-native-third-party-action-engine.md), [RFC 022 — Unified Entity Graph](./022-unified-entity-graph.md), [RFC 026 — Finance Command Center](./026-finance-command-center.md) |
 | **Supersedes**        | none                                                                                                                                                                                                                                                                                                                                             |
 
@@ -149,12 +149,12 @@ field.Bool("consumed").Default(false)
 
 ## Configuration
 
-| Key                                  | Default                    | Meaning                                                                                             |
-| ------------------------------------ | -------------------------- | --------------------------------------------------------------------------------------------------- |
-| `approval.tokenTtl`                  | `5m`                       | Token lifetime.                                                                                     |
-| `approval.requireStepUpForFinancial` | `true`                     | Force re-auth ([RFC 011](./011-identity-and-authorization-plane.md)) before money-moving approvals. |
-| `approval.watchTimeout`              | `24h`                      | If no return event by then, mark proposal `executed_unconfirmed` + alert.                           |
-| `runtime.proposeOnlyKinds`           | all `financial:true` kinds | Kinds the model may only **propose**, never auto-execute.                                           |
+| Key                                  | Default                    | Meaning                                                                                                      |
+| ------------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `approval.tokenTtl`                  | `5m`                       | Token lifetime.                                                                                              |
+| `approval.requireStepUpForFinancial` | `true`                     | Force re-auth ([RFC 011](./complete-011-identity-and-authorization-plane.md)) before money-moving approvals. |
+| `approval.watchTimeout`              | `24h`                      | If no return event by then, mark proposal `executed_unconfirmed` + alert.                                    |
+| `runtime.proposeOnlyKinds`           | all `financial:true` kinds | Kinds the model may only **propose**, never auto-execute.                                                    |
 
 ## Observability
 
@@ -196,7 +196,7 @@ field.Bool("consumed").Default(false)
 ## Security
 
 - **No money moves without a token.** The model never holds an execute capability; execution requires a broker-issued, single-use, params-bound, expiring token. Enforced server-side (verify+consume), not by convention.
-- **Step-up auth** ([RFC 011](./011-identity-and-authorization-plane.md)) for `financial` approvals; configurable but on by default.
+- **Step-up auth** ([RFC 011](./complete-011-identity-and-authorization-plane.md)) for `financial` approvals; configurable but on by default.
 - **Params binding**: the token hashes the exact params; editing params invalidates the token — defeats approve-then-swap.
 - **Replay protection**: single-use; reuse logged + rejected (`approval_token_rejected_total{reused}`).
 - **Least privilege**: product Act tokens scope to one object + one action (Corinthian-style), not a blanket capability.
