@@ -1,16 +1,16 @@
 # RFC 020: Native Third-Party Tool & Connector Engine (Composio Replacement)
 
-|                  |                                                                                                                                                             |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 020                                                                                                                                                         |
-| **Status**       | Draft                                                                                                                                                       |
-| **Track**        | Third-party tool execution / agent capability plane                                                                                                         |
-| **Owners**       | `apps/rowboat-api`, `apps/x` (core + main), connector maintainers                                                                                           |
-| **Created**      | 2026-06-09                                                                                                                                                  |
-| **Last updated** | 2026-06-09                                                                                                                                                  |
-| **Depends on**   | [RFC 010](./010-rowboat-api-service-plane.md), [RFC 011](./011-identity-and-authorization-plane.md), [RFC 012](./012-connector-suite-and-consent-broker.md) |
-| **Enables**      | Composio decommission; cheaper unit economics on agent tool use; [RFC 008](./008-conduit-eigen-faculties.md) cloud tool surface                             |
-| **Refs**         | Generalizes the native pattern in `internal/google` + `internal/connectors`; replaces `internal/composio` proxy.                                            |
+|                  |                                                                                                                                                                      |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 020                                                                                                                                                                  |
+| **Status**       | Draft                                                                                                                                                                |
+| **Track**        | Third-party tool execution / agent capability plane                                                                                                                  |
+| **Owners**       | `apps/rowboat-api`, `apps/x` (core + main), connector maintainers                                                                                                    |
+| **Created**      | 2026-06-09                                                                                                                                                           |
+| **Last updated** | 2026-06-09                                                                                                                                                           |
+| **Depends on**   | [RFC 010](./complete-010-rowboat-api-service-plane.md), [RFC 011](./011-identity-and-authorization-plane.md), [RFC 012](./012-connector-suite-and-consent-broker.md) |
+| **Enables**      | Composio decommission; cheaper unit economics on agent tool use; [RFC 008](./008-conduit-eigen-faculties.md) cloud tool surface                                      |
+| **Refs**         | Generalizes the native pattern in `internal/google` + `internal/connectors`; replaces `internal/composio` proxy.                                                     |
 
 ## Summary
 

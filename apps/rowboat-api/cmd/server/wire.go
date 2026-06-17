@@ -123,6 +123,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 	enricher := auth.NewWorkOSEnricher(cfg.WorkOSAPIKey)
 	authMW := auth.NewMiddleware(verifier, client, enricher, cfg.FreeTierCredits, log)
+	// Optional readiness signal (RFC 010): report JWKS availability without
+	// failing readiness — the service intentionally boots before the IdP is
+	// reachable and serves 503 on authed routes until then.
+	srv.AddOptionalReadyCheck("workos_jwks", func(context.Context) error {
+		if verifier == nil {
+			return fmt.Errorf("workos jwks not loaded")
+		}
+		return nil
+	})
 
 	// --- Handlers -----------------------------------------------------------
 	configH := config.New(cfg)

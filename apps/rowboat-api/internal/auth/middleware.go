@@ -63,6 +63,7 @@ func (m *Middleware) RequireJWT(next http.Handler) http.Handler {
 
 		ctx := WithUser(r.Context(), u)
 		ctx = oauthrs.WithClaims(ctx, claims)
+		httpx.SetLogUserID(ctx, u.ID.String()) // enrich the access log (RFC 010)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

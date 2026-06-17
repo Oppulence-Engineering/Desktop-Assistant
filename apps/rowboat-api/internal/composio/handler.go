@@ -128,6 +128,12 @@ func (h *Handler) rewrite(pr *httputil.ProxyRequest) {
 	if u, ok := auth.UserFromCtx(pr.In.Context()); ok {
 		pr.Out.Header.Set("X-Solomon-User", u.ID.String())
 	}
+
+	// Forward the client idempotency key so Composio-side retries dedupe, matching
+	// the other provider proxies (RFC 010 proxy rules).
+	if k := pr.In.Header.Get("Idempotency-Key"); k != "" {
+		pr.Out.Header.Set("Idempotency-Key", k)
+	}
 }
 
 func (h *Handler) authorizeConnectedAccounts(w http.ResponseWriter, r *http.Request, u *ent.User, rest string) bool {
