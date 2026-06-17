@@ -1,15 +1,15 @@
-# RFC 009: Local On-Device Transcription (whisper.cpp)
+# [Complete] RFC 009: Local On-Device Transcription (whisper.cpp)
 
-|                  |                                                                                                                             |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 009                                                                                                                         |
-| **Status**       | Draft                                                                                                                       |
-| **Track**        | Desktop · on-device AI (cost & privacy) — _independent of the cloud-workflows set (001–008)_                                |
-| **Owners**       | `apps/x` (Electron: main + renderer + core)                                                                                 |
-| **Created**      | 2026-06-06                                                                                                                  |
-| **Last updated** | 2026-06-06                                                                                                                  |
-| **Depends on**   | none (new track)                                                                                                            |
-| **Refs**         | Supersedes former whisper.cpp research plan; related runtime reference: [`apps/x/ANALYTICS.md`](../../apps/x/ANALYTICS.md). |
+|                  |                                                                                                                                                                                                                                                                 |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 009                                                                                                                                                                                                                                                             |
+| **Status**       | Complete — implemented in `apps/x` (whisper service, model manager, runner, streaming, settings, telemetry) + Go free-minutes quota; P1 voice, P2 meetings, and P3 cross-platform parity (WP 3.x: release staging, per-arch binaries, packaged E2E) all landed. |
+| **Track**        | Desktop · on-device AI (cost & privacy) — _independent of the cloud-workflows set (001–008)_                                                                                                                                                                    |
+| **Owners**       | `apps/x` (Electron: main + renderer + core)                                                                                                                                                                                                                     |
+| **Created**      | 2026-06-06                                                                                                                                                                                                                                                      |
+| **Last updated** | 2026-06-06                                                                                                                                                                                                                                                      |
+| **Depends on**   | none (new track)                                                                                                                                                                                                                                                |
+| **Refs**         | Supersedes former whisper.cpp research plan; related runtime reference: [`apps/x/ANALYTICS.md`](../../apps/x/ANALYTICS.md).                                                                                                                                     |
 
 ## Table of contents
 

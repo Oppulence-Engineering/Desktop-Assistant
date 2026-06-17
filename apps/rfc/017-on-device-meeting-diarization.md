@@ -8,7 +8,7 @@
 | **Owners**       | `apps/x`                                                                                                                                                                                                               |
 | **Created**      | 2026-06-06                                                                                                                                                                                                             |
 | **Last updated** | 2026-06-06                                                                                                                                                                                                             |
-| **Depends on**   | [RFC 009](./009-local-on-device-transcription.md)                                                                                                                                                                      |
+| **Depends on**   | [RFC 009](./complete-009-local-on-device-transcription.md)                                                                                                                                                             |
 | **Related**      | [RFC 014](./014-live-note-observability-cost-and-provenance.md), [RFC 016](./016-app-family-consolidation.md)                                                                                                          |
 | **Refs**         | Supersedes former whisper.cpp research plan; quality references: [`docs/DESKTOP_PERFORMANCE_GATE.md`](../../docs/DESKTOP_PERFORMANCE_GATE.md), [`docs/DESKTOP_QUALITY_GATES.md`](../../docs/DESKTOP_QUALITY_GATES.md). |
 
