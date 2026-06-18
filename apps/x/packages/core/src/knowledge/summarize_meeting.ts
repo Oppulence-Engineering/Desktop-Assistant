@@ -31,6 +31,7 @@ If no calendar event matches with high confidence, or if no calendar events are 
 - Use bullet points with sub-bullets for details
 - Include a "### Action items" section at the end if any were discussed
 - Focus on decisions, key discussions, and takeaways — not verbatim quotes
+- If a "Related past notes" section is provided, use it only for context/continuity (e.g. linking back to prior decisions); do not copy it into the notes
 - Attribute statements to speakers when relevant
 - Keep it concise — the notes should be much shorter than the transcript
 - Output markdown only, no preamble or explanation`;
@@ -271,6 +272,26 @@ function buildLocalExtractiveNotes(transcript: string): string {
   ].join("\n");
 }
 
+/**
+ * Pull semantically-related prior notes for meeting context (RFC 021). Returns a
+ * formatted "Related past notes" block, or "" when memory is empty/disabled/errors
+ * — strictly best-effort so it never blocks or breaks summarization.
+ */
+export async function loadRelatedMemory(query: string): Promise<string> {
+  if (!query.trim()) return "";
+  try {
+    const { memorySearch } = await import("../memory/index.js");
+    const res = await memorySearch(query, { k: 5 });
+    if (res.results.length === 0) return "";
+    const lines = res.results.map(
+      (r) => `- ${r.backlink}: ${r.snippet.replace(/\s+/g, " ").trim().slice(0, 200)}`,
+    );
+    return `\n\n## Related past notes (context only — do not copy verbatim)\n${lines.join("\n")}`;
+  } catch {
+    return "";
+  }
+}
+
 export async function summarizeMeeting(
   transcript: string,
   meetingStartTime?: string,
@@ -290,7 +311,12 @@ export async function summarizeMeeting(
     calendarContext = meetingStartTime ? loadRecentCalendarEvents(meetingStartTime) : "";
   }
 
-  const prompt = `Meeting recording started at: ${meetingStartTime || "unknown"}\n\n${transcript}${calendarContext}`;
+  // Enrich with related past notes (RFC 021): the summarizer is a tool-less
+  // generateText, so it can't recall on its own — pull in semantically related
+  // prior notes about the same people/topics. Best-effort; never blocks the summary.
+  const relatedContext = await loadRelatedMemory(transcript.slice(0, 1200));
+
+  const prompt = `Meeting recording started at: ${meetingStartTime || "unknown"}\n\n${transcript}${calendarContext}${relatedContext}`;
 
   let result: Awaited<ReturnType<typeof generateText>>;
   try {

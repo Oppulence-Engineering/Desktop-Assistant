@@ -16,6 +16,7 @@ import composioIntegrationSkill from "./composio-integration/skill.js";
 import liveNoteSkill from "./live-note/skill.js";
 import backgroundTaskSkill from "./background-task/skill.js";
 import notifyUserSkill from "./notify-user/skill.js";
+import memorySearchSkill from "./memory-search/skill.js";
 
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const CATALOG_PREFIX = "src/application/assistant/skills";
@@ -59,6 +60,13 @@ const definitions: SkillDefinition[] = [
     title: "Meeting Prep",
     summary: "Prepare for meetings by gathering context about attendees from the knowledge base.",
     content: meetingPrepSkill,
+  },
+  {
+    id: "memory-search",
+    title: "Memory Search",
+    summary:
+      "Semantic + lexical recall over the knowledge vault. Use memory-search for conceptual queries (\"overdue AR for Acme\") instead of file-grep; returns ranked chunks with file backlinks.",
+    content: memorySearchSkill,
   },
   {
     id: "organize-files",

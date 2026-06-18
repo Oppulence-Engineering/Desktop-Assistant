@@ -63,6 +63,8 @@ import { IAgentScheduleRepo } from "@x/core/dist/agent-schedule/repo.js";
 import { IAgentScheduleStateRepo } from "@x/core/dist/agent-schedule/state-repo.js";
 import { triggerRun as triggerAgentScheduleRun } from "@x/core/dist/agent-schedule/runner.js";
 import { search } from "@x/core/dist/search/search.js";
+import { memorySearch, relatedNotes, memoryStatus } from "@x/core/dist/memory/index.js";
+import { memoryBus } from "@x/core/dist/memory/bus.js";
 import { versionHistory, voice } from "@x/core";
 import {
   WhisperService,
@@ -485,6 +487,19 @@ export function startBackgroundTaskAgentWatcher(): void {
     for (const win of windows) {
       if (!win.isDestroyed() && win.webContents) {
         win.webContents.send("bg-task-agent:events", event);
+      }
+    }
+  });
+}
+
+let memoryWatcher: (() => void) | null = null;
+export function startMemoryWatcher(): void {
+  if (memoryWatcher) return;
+  memoryWatcher = memoryBus.subscribe((event) => {
+    const windows = BrowserWindow.getAllWindows();
+    for (const win of windows) {
+      if (!win.isDestroyed() && win.webContents) {
+        win.webContents.send("memory:indexProgress", event);
       }
     }
   });
@@ -1130,6 +1145,17 @@ export function setupIpcHandlers() {
     // Search handler
     "search:query": async (_event, args) => {
       return search(args.query, args.limit, args.types);
+    },
+    // Semantic memory handlers (RFC 021)
+    "memory:search": async (_event, args) => {
+      const res = await memorySearch(args.query, { k: args.k, pathPrefix: args.pathPrefix });
+      return { mode: res.mode, results: res.results };
+    },
+    "memory:related": async (_event, args) => {
+      return { related: relatedNotes(args.path, args.k ?? 8) };
+    },
+    "memory:status": async () => {
+      return memoryStatus();
     },
     // Inline task schedule classification
     "export:note": async (event, args) => {

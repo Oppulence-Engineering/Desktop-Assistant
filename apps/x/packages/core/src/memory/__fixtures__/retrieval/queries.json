@@ -1,0 +1,23 @@
+{
+  "_comment": "Eval corpus + labeled queries for the gated retrieval eval (retrieval.eval.test.ts). Each query lists the vault-relative path(s) that should rank in the top results. Keep queries lexically grounded so the deterministic eval embedder is meaningful; add real-embedding semantics via MEMORY_EVAL_REAL.",
+  "corpus": [
+    { "path": "People/Alice.md", "text": "# Alice Johnson\n\nAlice Johnson is a senior engineer who leads the payments team and mentors new hires." },
+    { "path": "People/Bob.md", "text": "# Bob Smith\n\nBob Smith manages vendor relationships and negotiates supplier contracts for procurement." },
+    { "path": "Invoices/INV-100.md", "text": "# Invoice INV-100\n\nInvoice INV-100 for Acme Corp is overdue; the accounts receivable balance is past due by 45 days." },
+    { "path": "Invoices/INV-200.md", "text": "# Invoice INV-200\n\nInvoice INV-200 for Globex was paid in full and on time; no outstanding balance remains." },
+    { "path": "Meetings/Standup-0601.md", "text": "# Daily Standup\n\nDaily standup: discussed sprint velocity, the code review backlog, and the upcoming production deploy." },
+    { "path": "Meetings/Roadmap.md", "text": "# Quarterly Roadmap\n\nQuarterly roadmap planning: prioritized the search feature, the billing migration, and the mobile app." },
+    { "path": "Recipes/BananaBread.md", "text": "# Banana Bread\n\nBanana bread recipe: cream the butter and sugar, fold in mashed bananas and flour, then bake at 350F." },
+    { "path": "Projects/Search.md", "text": "# Semantic Search\n\nThe semantic search project adds vector retrieval and reranking over the knowledge base." }
+  ],
+  "queries": [
+    { "id": "q1", "query": "overdue invoice for Acme", "relevantPaths": ["Invoices/INV-100.md"], "bucket": "invoices" },
+    { "id": "q2", "query": "who leads the payments team", "relevantPaths": ["People/Alice.md"], "bucket": "people" },
+    { "id": "q3", "query": "vendor and supplier contracts", "relevantPaths": ["People/Bob.md"], "bucket": "people" },
+    { "id": "q4", "query": "sprint velocity and deploy schedule", "relevantPaths": ["Meetings/Standup-0601.md"], "bucket": "meetings" },
+    { "id": "q5", "query": "quarterly roadmap priorities", "relevantPaths": ["Meetings/Roadmap.md"], "bucket": "meetings" },
+    { "id": "q6", "query": "banana bread baking instructions", "relevantPaths": ["Recipes/BananaBread.md"], "bucket": "recipes" },
+    { "id": "q7", "query": "vector retrieval search project", "relevantPaths": ["Projects/Search.md"], "bucket": "projects" },
+    { "id": "q8", "query": "which invoice was paid on time", "relevantPaths": ["Invoices/INV-200.md"], "bucket": "invoices" }
+  ]
+}

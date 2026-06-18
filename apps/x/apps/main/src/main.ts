@@ -16,6 +16,7 @@ import {
   startServicesWatcher,
   startLiveNoteAgentWatcher,
   startBackgroundTaskAgentWatcher,
+  startMemoryWatcher,
   startWorkspaceWatcher,
   stopRunsWatcher,
   stopServicesWatcher,
@@ -29,6 +30,7 @@ import { init as initCalendarSync } from "@x/core/dist/knowledge/sync_calendar.j
 import { init as initFirefliesSync } from "@x/core/dist/knowledge/sync_fireflies.js";
 import { init as initGranolaSync } from "@x/core/dist/knowledge/granola/sync.js";
 import { init as initGraphBuilder } from "@x/core/dist/knowledge/build_graph.js";
+import { init as initMemoryIndexing } from "@x/core/dist/memory/sync.js";
 import { init as initEmailLabeling } from "@x/core/dist/knowledge/label_emails.js";
 import { init as initNoteTagging } from "@x/core/dist/knowledge/tag_notes.js";
 import { init as initInlineTasks } from "@x/core/dist/knowledge/inline_tasks.js";
@@ -362,6 +364,8 @@ async function startBackgroundServices() {
   // start bg-task agent event watcher (forwards bus → renderer)
   startBackgroundTaskAgentWatcher();
 
+  startMemoryWatcher();
+
   // start live-note scheduler (cron / window)
   initLiveNoteScheduler();
 
@@ -423,6 +427,10 @@ async function startBackgroundServices() {
 
   // start knowledge graph builder
   initGraphBuilder();
+
+  // start semantic memory indexing service (RFC 021): keeps the local vector
+  // index fresh so memory-search / ⌘K / related-notes have data to work with.
+  initMemoryIndexing();
 
   // start email labeling service
   initEmailLabeling();

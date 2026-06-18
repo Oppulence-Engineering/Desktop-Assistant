@@ -31,12 +31,42 @@ export async function search(query: string, limit = 20, types?: SearchType[]): P
   const searchChatsEnabled = !types || types.includes('chat');
 
   const [knowledgeResults, chatResults] = await Promise.all([
-    searchKnowledgeEnabled ? searchKnowledge(trimmed, limit) : Promise.resolve([]),
+    searchKnowledgeEnabled ? searchKnowledgeSemantic(trimmed, limit) : Promise.resolve([]),
     searchChatsEnabled ? searchChats(trimmed, limit) : Promise.resolve([]),
   ]);
 
   const results = [...knowledgeResults, ...chatResults].slice(0, limit);
   return { results };
+}
+
+/**
+ * Semantic knowledge search: route through the memory index (hybrid vector+lexical),
+ * deduped to one result per note. `memorySearch` already lexical-falls-back when the
+ * index is empty/disabled; if it still returns nothing we fall back to the grep +
+ * filename search (which `memorySearch` doesn't do) so behaviour never regresses.
+ */
+async function searchKnowledgeSemantic(query: string, limit: number): Promise<SearchResult[]> {
+  try {
+    const { memorySearch } = await import('../memory/index.js');
+    const res = await memorySearch(query, { k: Math.min(limit, 25) });
+    const seen = new Set<string>();
+    const out: SearchResult[] = [];
+    for (const r of res.results) {
+      if (seen.has(r.path)) continue; // one entry per note (best chunk)
+      seen.add(r.path);
+      out.push({
+        type: 'knowledge',
+        title: path.basename(r.path, '.md'),
+        preview: r.snippet.replace(/\s+/g, ' ').trim().substring(0, 150),
+        path: r.path,
+      });
+      if (out.length >= limit) break;
+    }
+    if (out.length > 0) return out;
+  } catch {
+    // memory subsystem unavailable — fall through to grep
+  }
+  return searchKnowledge(query, limit);
 }
 
 /**

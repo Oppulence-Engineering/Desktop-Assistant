@@ -759,6 +759,57 @@ const ipcSchemas = {
       ),
     }),
   },
+  // Semantic memory channels (RFC 021)
+  "memory:search": {
+    req: z.object({
+      query: z.string().min(1),
+      k: z.number().int().min(1).max(25).optional(),
+      pathPrefix: z.string().optional(),
+    }),
+    res: z.object({
+      mode: z.enum(["hybrid", "lexical_fallback", "vector_only"]),
+      results: z.array(
+        z.object({
+          path: z.string(),
+          headingAnchor: z.string(),
+          backlink: z.string(),
+          snippet: z.string(),
+          score: z.number(),
+          highlights: z.array(z.object({ start: z.number(), end: z.number() })).optional(),
+          scores: z.object({ vector: z.number().optional(), lexical: z.number().optional() }).optional(),
+          startLine: z.number(),
+          endLine: z.number(),
+        }),
+      ),
+    }),
+  },
+  "memory:related": {
+    req: z.object({ path: z.string(), k: z.number().int().min(1).max(25).optional() }),
+    res: z.object({
+      related: z.array(z.object({ path: z.string(), score: z.number() })),
+    }),
+  },
+  "memory:status": {
+    req: z.null(),
+    res: z.object({
+      enabled: z.boolean(),
+      model: z.string().nullable(),
+      dims: z.number(),
+      chunkCount: z.number(),
+      lastBuiltMs: z.number().nullable(),
+    }),
+  },
+  "memory:indexProgress": {
+    req: z.object({
+      chunkCount: z.number(),
+      filesProcessed: z.number(),
+      chunksNew: z.number(),
+      tokens: z.number(),
+      rebuilt: z.boolean(),
+      durationMs: z.number(),
+    }),
+    res: z.null(),
+  },
   // Voice mode channels
   "voice:getConfig": {
     req: z.null(),

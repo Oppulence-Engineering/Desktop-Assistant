@@ -3,7 +3,7 @@
 |                       |                                                                                                                                                                                                                                                                   |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **RFC**               | 021                                                                                                                                                                                                                                                               |
-| **Status**            | Draft                                                                                                                                                                                                                                                             |
+| **Status**            | Implemented — see [Implementation status](#implementation-status)                                                                                                                                                                                                 |
 | **Track**             | Desktop · memory & retrieval (foundations for the finance command center)                                                                                                                                                                                         |
 | **Owners**            | `apps/x` (Electron: core + renderer) · `apps/rowboat-api` (embeddings proxy, optional)                                                                                                                                                                            |
 | **Created**           | 2026-06-10                                                                                                                                                                                                                                                        |
@@ -211,6 +211,24 @@ PostHog desktop event `memory_index_built {chunks, durationMs}` per `apps/x/ANAL
 - Incremental re-embed verified (changed-only) and full-rebuild-on-model-change verified.
 - Lexical fallback proven when embeddings are disabled/unavailable.
 - Cost metering wired into [RFC 014](./014-live-note-observability-cost-and-provenance.md).
+
+## Implementation status
+
+Implemented in `apps/x/packages/core/src/memory/` (desktop) on top of the existing metered embeddings proxy. Verified: **`tsc` clean, eslint clean, 20 vitest tests green** across the package.
+
+| Work package | Status | Where |
+| ------------ | ------ | ----- |
+| **WP1 — Indexer + store** | ✅ | `memory/chunker.ts` (markdown + frontmatter "entity card" chunking, heading boundaries, ~512-tok cap + ~64-tok overlap, hard-capped), `memory/store.ts` (`MemoryIndex`: manifest + binary `vectors.bin` + `corpus.json`, cosine query, incremental `setFile`/`removeFile`/`existingVector`, model/dims-mismatch rebuild), `memory/indexer.ts` (mtime+hash vault diff, chunk-level re-embed reuse, monthly token budget) |
+| **WP2 — Embeddings provider** | ✅ | `memory/embed.ts` — metered `POST {API_URL}/v1/llm/embeddings` (flavor solomon/rowboat) vs BYOK `embedMany` via `createProvider`, the same seam as `gateway.ts`; `memory/config.ts` (`WorkDir/config/index.json`: enabled, model, dims, batchSize, maxMonthlyEmbedTokens) |
+| **WP3 — Retriever + tool** | ✅ | `memory/bm25.ts` (identifier-preserving tokenizer), `memory/retriever.ts` (vector top-N + BM25 + reciprocal-rank fusion, lexical fallback), `memory/index.ts` (cached index, `memorySearch`, `runMemoryIndex`, file-grep fallback); `memory-search` builtin in `application/lib/builtin-tools.ts`; skill `application/assistant/skills/memory-search/` |
+| Sync-tick hook | ✅ | `knowledge/run_pipeline.ts` gains a `memory` step (default) calling `runMemoryIndex()` after the graph build, reusing the one pass. |
+| Embeddings backend | ✅ (pre-existing) | `apps/rowboat-api` `internal/llm` `Embeddings` → metered `proxy("/embeddings")`, mounted `POST /v1/llm/embeddings` (route→reserve→upstream→settle→record). |
+
+**Store decision (deviation, documented):** the RFC recommends `sqlite-vec`. This implementation uses a **pure-TS flat store** (binary `vectors.bin` + JSON manifest/corpus, brute-force cosine) — no native dependency, satisfying "single embeddable store, no daemon" while staying bundleable and fully testable. `sqlite-vec`/`lancedb` remain the documented scale-up path (the RFC's own ">1M chunks" trigger). Hybrid retrieval, incremental re-embed, model-change rebuild, cost cap, and lexical fallback are unchanged.
+
+**Tests** (`memory/*.test.ts`): chunk boundaries + frontmatter entity card + overlong-section cap; RRF fusion ranking; BM25 identifier recall; store cosine/persist-reopen/incremental-replace/pathPrefix/rebuild-on-mismatch; **indexer** first-build, no-op-when-unchanged, **re-embed only the changed chunk on edit**, delete drops chunks, **full-rebuild on model change**, monthly-cap pause; retriever hybrid + lexical-fallback (embeddings down) + file-grep (empty index).
+
+**Deferred (per RFC):** cross-encoder reranking; per-entity summary embeddings (RFC 022); encrypted-at-rest index; the labelled 50-query Recall@5 eval set (needs eval data; the harness gates — hybrid vs file-grep — are in place).
 
 ## Alternatives considered
 
