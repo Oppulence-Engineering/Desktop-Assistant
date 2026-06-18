@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Link2,
   Tags,
+  BrainIcon,
   Mail,
   BookOpen,
   User,
@@ -49,6 +50,7 @@ import { McpSettings } from "@/components/settings/mcp-settings";
 import { SecuritySettings } from "@/components/settings/security-settings";
 import { ModelSettings, SolomonModelSettings } from "@/components/settings/model-settings";
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
+import { MemorySettings } from "@/components/settings/memory-settings";
 import { SettingsSection } from "@/components/settings/settings-ui";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
@@ -66,6 +68,7 @@ type ConfigTab =
   | "code-mode"
   | "appearance"
   | "note-tagging"
+  | "memory"
   | "help";
 
 type SettingsGroup = "account" | "workspace" | "advanced" | "help";
@@ -124,6 +127,14 @@ const tabs: TabConfig[] = [
     icon: Tags,
     path: "config/tags.json",
     description: "Configure tags for notes and emails",
+    group: "workspace",
+  },
+  {
+    id: "memory",
+    label: "Memory",
+    icon: BrainIcon,
+    path: "config/index.json",
+    description: "Semantic index over your knowledge vault",
     group: "workspace",
   },
   {
@@ -1569,6 +1580,8 @@ export function SettingsDialog({
                         <McpSettings dialogOpen={open} />
                       ) : activeTab === "security" ? (
                         <SecuritySettings dialogOpen={open} />
+                      ) : activeTab === "memory" ? (
+                        <MemorySettings dialogOpen={open} />
                       ) : null}
                     </ScrollArea>
                   )}

@@ -118,6 +118,7 @@ import {
   type SearchType,
 } from "@/components/search-dialog";
 import { LiveNoteSidebar } from "@/components/live-note-sidebar";
+import { RelatedNotesSidebar } from "@/components/related-notes-sidebar";
 import { BackgroundTaskDetail } from "@/components/background-task-detail";
 import { BrowserPane } from "@/components/browser-pane/BrowserPane";
 import { VersionHistoryPanel } from "@/components/version-history-panel";
@@ -880,6 +881,7 @@ function App() {
   // markdown editor so it shares the layout (no overlap with chat) and
   // auto-closes when the active note changes.
   const [liveNotePanelPath, setLiveNotePanelPath] = useState<string | null>(null);
+  const [relatedNotesPanelPath, setRelatedNotesPanelPath] = useState<string | null>(null);
   const [activeShortcutPane, setActiveShortcutPane] = useState<ShortcutPane>("left");
   const isMac =
     typeof navigator !== "undefined" && navigator.platform.toLowerCase().includes("mac");
@@ -3941,6 +3943,26 @@ function App() {
     }
   }, [selectedPath, liveNotePanelPath]);
 
+  // Listener for the toolbar "Related notes" button — opens the panel for a path.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<{ filePath?: string }>;
+      const filePath = ev.detail?.filePath;
+      if (!filePath) return;
+      setRelatedNotesPanelPath(filePath);
+    };
+    window.addEventListener("rowboat:open-related-notes-panel", handler as EventListener);
+    return () =>
+      window.removeEventListener("rowboat:open-related-notes-panel", handler as EventListener);
+  }, []);
+
+  // Auto-close the related-notes panel when the active note changes.
+  useEffect(() => {
+    if (relatedNotesPanelPath && relatedNotesPanelPath !== selectedPath) {
+      setRelatedNotesPanelPath(null);
+    }
+  }, [selectedPath, relatedNotesPanelPath]);
+
   // Listener for prompt-block "Run" events
   // (dispatched by apps/renderer/src/extensions/prompt-block.tsx)
   useEffect(() => {
@@ -6882,6 +6904,11 @@ function App() {
                         <LiveNoteSidebar
                           filePath={liveNotePanelPath}
                           onClose={() => setLiveNotePanelPath(null)}
+                        />
+                        <RelatedNotesSidebar
+                          filePath={relatedNotesPanelPath}
+                          onOpen={navigateToFile}
+                          onClose={() => setRelatedNotesPanelPath(null)}
                         />
                         {versionHistoryPath && (
                           <VersionHistoryPanel

@@ -56,9 +56,10 @@ async function searchKnowledgeSemantic(query: string, limit: number): Promise<Se
       seen.add(r.path);
       out.push({
         type: 'knowledge',
+        // memory paths are knowledge-relative; the UI navigates by WorkDir-relative path.
         title: path.basename(r.path, '.md'),
         preview: r.snippet.replace(/\s+/g, ' ').trim().substring(0, 150),
-        path: r.path,
+        path: r.path.startsWith('knowledge/') ? r.path : `knowledge/${r.path}`,
       });
       if (out.length >= limit) break;
     }

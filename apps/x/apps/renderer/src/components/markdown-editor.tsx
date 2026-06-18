@@ -1804,6 +1804,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 }
               : undefined
           }
+          onOpenRelated={
+            notePath
+              ? () => {
+                  window.dispatchEvent(
+                    new CustomEvent("rowboat:open-related-notes-panel", {
+                      detail: { filePath: notePath },
+                    }),
+                  );
+                }
+              : undefined
+          }
           liveState={notePath ? livePillStateForCurrentNote : undefined}
         />
         {frontmatter !== undefined && onFrontmatterChange && (

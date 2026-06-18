@@ -30,6 +30,7 @@ import {
   FileIcon,
   FileTypeIcon,
   Radio,
+  BrainIcon,
 } from "@/lib/icons";
 import {
   DropdownMenu,
@@ -44,6 +45,7 @@ interface EditorToolbarProps {
   onImageUpload?: (file: File) => Promise<void> | void;
   onExport?: (format: "md" | "pdf" | "docx") => void;
   onOpenLiveNote?: () => void;
+  onOpenRelated?: () => void;
   liveState?: LivePillState;
 }
 
@@ -409,21 +411,32 @@ export function EditorToolbar({
         </>
       )}
 
-      {/* Live Note pill — pushed to far right */}
-      {onOpenLiveNote && liveState && (
-        <button
-          type="button"
-          onClick={onOpenLiveNote}
-          title={
-            liveState.variant === "passive"
-              ? "Make this note live"
-              : "Live note"
-          }
-          className={`ml-auto inline-flex h-7 items-center gap-1.5 rounded-none px-2 text-xs font-medium transition-colors ${LIVE_PILL_VARIANT_CLASS[liveState.variant]}`}
-        >
-          <Radio className="size-3.5" />
-          <span className="truncate max-w-[160px]">{liveState.label}</span>
-        </button>
+      {/* Right-aligned note actions: Related notes + Live Note */}
+      {(onOpenRelated || (onOpenLiveNote && liveState)) && (
+        <div className="ml-auto flex items-center gap-1.5">
+          {onOpenRelated && (
+            <button
+              type="button"
+              onClick={onOpenRelated}
+              title="Related notes"
+              className="inline-flex h-7 items-center gap-1.5 rounded-none px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <BrainIcon className="size-3.5" />
+              <span>Related</span>
+            </button>
+          )}
+          {onOpenLiveNote && liveState && (
+            <button
+              type="button"
+              onClick={onOpenLiveNote}
+              title={liveState.variant === "passive" ? "Make this note live" : "Live note"}
+              className={`inline-flex h-7 items-center gap-1.5 rounded-none px-2 text-xs font-medium transition-colors ${LIVE_PILL_VARIANT_CLASS[liveState.variant]}`}
+            >
+              <Radio className="size-3.5" />
+              <span className="truncate max-w-[160px]">{liveState.label}</span>
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

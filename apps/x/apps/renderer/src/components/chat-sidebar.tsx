@@ -26,6 +26,7 @@ import {
 import { Shimmer } from '@/components/ai-elements/shimmer'
 import { Tool, ToolContent, ToolGroupComponent, ToolHeader, ToolTabbedContent } from '@/components/ai-elements/tool'
 import { WebSearchResult } from '@/components/ai-elements/web-search-result'
+import { MemorySearchSources } from '@/components/ai-elements/memory-search-result'
 import { ComposioConnectCard } from '@/components/ai-elements/composio-connect-card'
 import { PermissionRequest } from '@/components/ai-elements/permission-request'
 import { AutoPermissionDecision } from '@/components/ai-elements/auto-permission-decision'
@@ -461,6 +462,9 @@ export function ChatSidebar({
             onConnected={onComposioConnected}
           />
         )
+      }
+      if (item.name === 'memory-search') {
+        return <MemorySearchSources key={item.id} result={item.result} status={item.status} />
       }
       const toolTitle = getToolDisplayName(item)
       const errorText = item.status === 'error' ? 'Tool error' : ''
