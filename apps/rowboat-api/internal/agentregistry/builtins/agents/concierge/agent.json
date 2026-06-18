@@ -1,0 +1,8 @@
+{
+  "name": "Concierge",
+  "model": "",
+  "provider": "",
+  "subagentRefs": ["assistant"],
+  "connectorReqs": [],
+  "limits": {}
+}

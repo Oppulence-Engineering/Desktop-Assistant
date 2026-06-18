@@ -202,6 +202,585 @@
       }
     },
     "schemas": {
+      "AgentApproval": {
+        "properties": {
+          "approval_id": {
+            "type": "string"
+          },
+          "approval_token_ref": {
+            "type": "string"
+          },
+          "args_redacted_json": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "requested_by": {
+            "type": "string"
+          },
+          "resolved_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "resolved_by": {
+            "type": "string"
+          },
+          "session": {
+            "$ref": "#/components/schemas/AgentSession"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "tool_call_index": {
+            "type": "integer"
+          },
+          "tool_name": {
+            "type": "string"
+          },
+          "trust_tier": {
+            "type": "string"
+          },
+          "turn_seq": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "approval_id",
+          "turn_seq",
+          "tool_call_index",
+          "tool_name",
+          "status",
+          "requested_at",
+          "user",
+          "session"
+        ],
+        "type": "object"
+      },
+      "AgentDefinition": {
+        "properties": {
+          "channel_bindings": {
+            "type": "string"
+          },
+          "connector_reqs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "enabled_tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "forked_from": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "limits_json": {
+            "type": "string"
+          },
+          "model": {
+            "description": "Desktop-facing LLM model id.",
+            "example": "openai/gpt-4.1-mini",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "provider": {
+            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+            "example": "openai",
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSession"
+            },
+            "type": "array"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "subagent_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "slug",
+          "name",
+          "source",
+          "revision",
+          "user"
+        ],
+        "type": "object"
+      },
+      "AgentSession": {
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentDefinition"
+          },
+          "agent_slug": {
+            "type": "string"
+          },
+          "agent_source": {
+            "type": "string"
+          },
+          "approvals": {
+            "items": {
+              "$ref": "#/components/schemas/AgentApproval"
+            },
+            "type": "array"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "channel_key": {
+            "type": "string"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cost_units": {
+            "description": "Settled credit cost for the request.",
+            "example": 8,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "error_code": {
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSessionEvent"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "last_activity_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "llm_call_count": {
+            "type": "integer"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "temporal_run_id": {
+            "type": "string"
+          },
+          "temporal_workflow_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "tool_call_count": {
+            "type": "integer"
+          },
+          "turn_count": {
+            "type": "integer"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTurn"
+            },
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "session_id",
+          "agent_slug",
+          "status",
+          "channel",
+          "turn_count",
+          "llm_call_count",
+          "tool_call_count",
+          "cost_units",
+          "revision",
+          "user"
+        ],
+        "type": "object"
+      },
+      "AgentSessionEvent": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "event_json": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "received_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "seq": {
+            "type": "integer"
+          },
+          "session": {
+            "$ref": "#/components/schemas/AgentSession"
+          },
+          "turn_seq": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "seq",
+          "event_json",
+          "received_at",
+          "user",
+          "session"
+        ],
+        "type": "object"
+      },
+      "AgentToolCall": {
+        "properties": {
+          "args_json": {
+            "type": "string"
+          },
+          "call_index": {
+            "type": "integer"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "error_code": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "result_bytes": {
+            "type": "integer"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "tool_name": {
+            "type": "string"
+          },
+          "trust_tier": {
+            "type": "string"
+          },
+          "turn": {
+            "$ref": "#/components/schemas/AgentTurn"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "call_index",
+          "tool_name",
+          "result_bytes",
+          "status",
+          "user",
+          "turn"
+        ],
+        "type": "object"
+      },
+      "AgentToolResultBlob": {
+        "properties": {
+          "call_index": {
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "tool_name": {
+            "type": "string"
+          },
+          "total_bytes": {
+            "type": "integer"
+          },
+          "turn_seq": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "session_id",
+          "turn_seq",
+          "call_index",
+          "content",
+          "total_bytes",
+          "user"
+        ],
+        "type": "object"
+      },
+      "AgentTurn": {
+        "properties": {
+          "completed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cost_units": {
+            "description": "Settled credit cost for the request.",
+            "example": 8,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "finish_reason": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "llm_call_count": {
+            "type": "integer"
+          },
+          "seq": {
+            "type": "integer"
+          },
+          "session": {
+            "$ref": "#/components/schemas/AgentSession"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "tool_call_count": {
+            "type": "integer"
+          },
+          "tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/AgentToolCall"
+            },
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "seq",
+          "status",
+          "llm_call_count",
+          "tool_call_count",
+          "cost_units",
+          "user",
+          "session"
+        ],
+        "type": "object"
+      },
       "BackgroundTask": {
         "description": "Server-readable mirror of one desktop background task spec. Owned by a user and keyed by slug per user.",
         "properties": {
@@ -3417,6 +3996,48 @@
       "User": {
         "description": "Local mirror of a WorkOS identity. Upserted when a verified bearer token is first seen.",
         "properties": {
+          "agent_approvals": {
+            "items": {
+              "$ref": "#/components/schemas/AgentApproval"
+            },
+            "type": "array"
+          },
+          "agent_definitions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentDefinition"
+            },
+            "type": "array"
+          },
+          "agent_session_events": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSessionEvent"
+            },
+            "type": "array"
+          },
+          "agent_sessions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSession"
+            },
+            "type": "array"
+          },
+          "agent_tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/AgentToolCall"
+            },
+            "type": "array"
+          },
+          "agent_tool_result_blobs": {
+            "items": {
+              "$ref": "#/components/schemas/AgentToolResultBlob"
+            },
+            "type": "array"
+          },
+          "agent_turns": {
+            "items": {
+              "$ref": "#/components/schemas/AgentTurn"
+            },
+            "type": "array"
+          },
           "background_task_artifacts": {
             "description": "Background task artifact mirrors owned by the user.",
             "items": {

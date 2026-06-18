@@ -6,6 +6,27 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// AgentApproval is the predicate function for agentapproval builders.
+type AgentApproval func(*sql.Selector)
+
+// AgentDefinition is the predicate function for agentdefinition builders.
+type AgentDefinition func(*sql.Selector)
+
+// AgentSession is the predicate function for agentsession builders.
+type AgentSession func(*sql.Selector)
+
+// AgentSessionEvent is the predicate function for agentsessionevent builders.
+type AgentSessionEvent func(*sql.Selector)
+
+// AgentToolCall is the predicate function for agenttoolcall builders.
+type AgentToolCall func(*sql.Selector)
+
+// AgentToolResultBlob is the predicate function for agenttoolresultblob builders.
+type AgentToolResultBlob func(*sql.Selector)
+
+// AgentTurn is the predicate function for agentturn builders.
+type AgentTurn func(*sql.Selector)
+
 // BackgroundTask is the predicate function for backgroundtask builders.
 type BackgroundTask func(*sql.Selector)
 

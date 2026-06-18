@@ -65,11 +65,25 @@ type UserEdges struct {
 	CloudEvents []*CloudEvent `json:"cloud_events,omitempty"`
 	// GoogleWatches holds the value of the google_watches edge.
 	GoogleWatches []*GoogleWatch `json:"google_watches,omitempty"`
+	// AgentDefinitions holds the value of the agent_definitions edge.
+	AgentDefinitions []*AgentDefinition `json:"agent_definitions,omitempty"`
+	// AgentSessions holds the value of the agent_sessions edge.
+	AgentSessions []*AgentSession `json:"agent_sessions,omitempty"`
+	// AgentTurns holds the value of the agent_turns edge.
+	AgentTurns []*AgentTurn `json:"agent_turns,omitempty"`
+	// AgentSessionEvents holds the value of the agent_session_events edge.
+	AgentSessionEvents []*AgentSessionEvent `json:"agent_session_events,omitempty"`
+	// AgentToolCalls holds the value of the agent_tool_calls edge.
+	AgentToolCalls []*AgentToolCall `json:"agent_tool_calls,omitempty"`
+	// AgentApprovals holds the value of the agent_approvals edge.
+	AgentApprovals []*AgentApproval `json:"agent_approvals,omitempty"`
+	// AgentToolResultBlobs holds the value of the agent_tool_result_blobs edge.
+	AgentToolResultBlobs []*AgentToolResultBlob `json:"agent_tool_result_blobs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [14]bool
+	loadedTypes [21]bool
 	// totalCount holds the count of the edges above.
-	totalCount [13]map[string]int
+	totalCount [20]map[string]int
 
 	namedLedgerEntries                map[string][]*CreditLedger
 	namedMeetingMinuteUsages          map[string][]*MeetingMinuteUsage
@@ -84,6 +98,13 @@ type UserEdges struct {
 	namedBackgroundTaskScheduleStates map[string][]*BackgroundTaskScheduleState
 	namedCloudEvents                  map[string][]*CloudEvent
 	namedGoogleWatches                map[string][]*GoogleWatch
+	namedAgentDefinitions             map[string][]*AgentDefinition
+	namedAgentSessions                map[string][]*AgentSession
+	namedAgentTurns                   map[string][]*AgentTurn
+	namedAgentSessionEvents           map[string][]*AgentSessionEvent
+	namedAgentToolCalls               map[string][]*AgentToolCall
+	namedAgentApprovals               map[string][]*AgentApproval
+	namedAgentToolResultBlobs         map[string][]*AgentToolResultBlob
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -212,6 +233,69 @@ func (e UserEdges) GoogleWatchesOrErr() ([]*GoogleWatch, error) {
 		return e.GoogleWatches, nil
 	}
 	return nil, &NotLoadedError{edge: "google_watches"}
+}
+
+// AgentDefinitionsOrErr returns the AgentDefinitions value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) AgentDefinitionsOrErr() ([]*AgentDefinition, error) {
+	if e.loadedTypes[14] {
+		return e.AgentDefinitions, nil
+	}
+	return nil, &NotLoadedError{edge: "agent_definitions"}
+}
+
+// AgentSessionsOrErr returns the AgentSessions value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) AgentSessionsOrErr() ([]*AgentSession, error) {
+	if e.loadedTypes[15] {
+		return e.AgentSessions, nil
+	}
+	return nil, &NotLoadedError{edge: "agent_sessions"}
+}
+
+// AgentTurnsOrErr returns the AgentTurns value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) AgentTurnsOrErr() ([]*AgentTurn, error) {
+	if e.loadedTypes[16] {
+		return e.AgentTurns, nil
+	}
+	return nil, &NotLoadedError{edge: "agent_turns"}
+}
+
+// AgentSessionEventsOrErr returns the AgentSessionEvents value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) AgentSessionEventsOrErr() ([]*AgentSessionEvent, error) {
+	if e.loadedTypes[17] {
+		return e.AgentSessionEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "agent_session_events"}
+}
+
+// AgentToolCallsOrErr returns the AgentToolCalls value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) AgentToolCallsOrErr() ([]*AgentToolCall, error) {
+	if e.loadedTypes[18] {
+		return e.AgentToolCalls, nil
+	}
+	return nil, &NotLoadedError{edge: "agent_tool_calls"}
+}
+
+// AgentApprovalsOrErr returns the AgentApprovals value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) AgentApprovalsOrErr() ([]*AgentApproval, error) {
+	if e.loadedTypes[19] {
+		return e.AgentApprovals, nil
+	}
+	return nil, &NotLoadedError{edge: "agent_approvals"}
+}
+
+// AgentToolResultBlobsOrErr returns the AgentToolResultBlobs value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) AgentToolResultBlobsOrErr() ([]*AgentToolResultBlob, error) {
+	if e.loadedTypes[20] {
+		return e.AgentToolResultBlobs, nil
+	}
+	return nil, &NotLoadedError{edge: "agent_tool_result_blobs"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -357,6 +441,41 @@ func (_m *User) QueryCloudEvents() *CloudEventQuery {
 // QueryGoogleWatches queries the "google_watches" edge of the User entity.
 func (_m *User) QueryGoogleWatches() *GoogleWatchQuery {
 	return NewUserClient(_m.config).QueryGoogleWatches(_m)
+}
+
+// QueryAgentDefinitions queries the "agent_definitions" edge of the User entity.
+func (_m *User) QueryAgentDefinitions() *AgentDefinitionQuery {
+	return NewUserClient(_m.config).QueryAgentDefinitions(_m)
+}
+
+// QueryAgentSessions queries the "agent_sessions" edge of the User entity.
+func (_m *User) QueryAgentSessions() *AgentSessionQuery {
+	return NewUserClient(_m.config).QueryAgentSessions(_m)
+}
+
+// QueryAgentTurns queries the "agent_turns" edge of the User entity.
+func (_m *User) QueryAgentTurns() *AgentTurnQuery {
+	return NewUserClient(_m.config).QueryAgentTurns(_m)
+}
+
+// QueryAgentSessionEvents queries the "agent_session_events" edge of the User entity.
+func (_m *User) QueryAgentSessionEvents() *AgentSessionEventQuery {
+	return NewUserClient(_m.config).QueryAgentSessionEvents(_m)
+}
+
+// QueryAgentToolCalls queries the "agent_tool_calls" edge of the User entity.
+func (_m *User) QueryAgentToolCalls() *AgentToolCallQuery {
+	return NewUserClient(_m.config).QueryAgentToolCalls(_m)
+}
+
+// QueryAgentApprovals queries the "agent_approvals" edge of the User entity.
+func (_m *User) QueryAgentApprovals() *AgentApprovalQuery {
+	return NewUserClient(_m.config).QueryAgentApprovals(_m)
+}
+
+// QueryAgentToolResultBlobs queries the "agent_tool_result_blobs" edge of the User entity.
+func (_m *User) QueryAgentToolResultBlobs() *AgentToolResultBlobQuery {
+	return NewUserClient(_m.config).QueryAgentToolResultBlobs(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -709,6 +828,174 @@ func (_m *User) appendNamedGoogleWatches(name string, edges ...*GoogleWatch) {
 		_m.Edges.namedGoogleWatches[name] = []*GoogleWatch{}
 	} else {
 		_m.Edges.namedGoogleWatches[name] = append(_m.Edges.namedGoogleWatches[name], edges...)
+	}
+}
+
+// NamedAgentDefinitions returns the AgentDefinitions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedAgentDefinitions(name string) ([]*AgentDefinition, error) {
+	if _m.Edges.namedAgentDefinitions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAgentDefinitions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedAgentDefinitions(name string, edges ...*AgentDefinition) {
+	if _m.Edges.namedAgentDefinitions == nil {
+		_m.Edges.namedAgentDefinitions = make(map[string][]*AgentDefinition)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAgentDefinitions[name] = []*AgentDefinition{}
+	} else {
+		_m.Edges.namedAgentDefinitions[name] = append(_m.Edges.namedAgentDefinitions[name], edges...)
+	}
+}
+
+// NamedAgentSessions returns the AgentSessions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedAgentSessions(name string) ([]*AgentSession, error) {
+	if _m.Edges.namedAgentSessions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAgentSessions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedAgentSessions(name string, edges ...*AgentSession) {
+	if _m.Edges.namedAgentSessions == nil {
+		_m.Edges.namedAgentSessions = make(map[string][]*AgentSession)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAgentSessions[name] = []*AgentSession{}
+	} else {
+		_m.Edges.namedAgentSessions[name] = append(_m.Edges.namedAgentSessions[name], edges...)
+	}
+}
+
+// NamedAgentTurns returns the AgentTurns named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedAgentTurns(name string) ([]*AgentTurn, error) {
+	if _m.Edges.namedAgentTurns == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAgentTurns[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedAgentTurns(name string, edges ...*AgentTurn) {
+	if _m.Edges.namedAgentTurns == nil {
+		_m.Edges.namedAgentTurns = make(map[string][]*AgentTurn)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAgentTurns[name] = []*AgentTurn{}
+	} else {
+		_m.Edges.namedAgentTurns[name] = append(_m.Edges.namedAgentTurns[name], edges...)
+	}
+}
+
+// NamedAgentSessionEvents returns the AgentSessionEvents named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedAgentSessionEvents(name string) ([]*AgentSessionEvent, error) {
+	if _m.Edges.namedAgentSessionEvents == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAgentSessionEvents[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedAgentSessionEvents(name string, edges ...*AgentSessionEvent) {
+	if _m.Edges.namedAgentSessionEvents == nil {
+		_m.Edges.namedAgentSessionEvents = make(map[string][]*AgentSessionEvent)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAgentSessionEvents[name] = []*AgentSessionEvent{}
+	} else {
+		_m.Edges.namedAgentSessionEvents[name] = append(_m.Edges.namedAgentSessionEvents[name], edges...)
+	}
+}
+
+// NamedAgentToolCalls returns the AgentToolCalls named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedAgentToolCalls(name string) ([]*AgentToolCall, error) {
+	if _m.Edges.namedAgentToolCalls == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAgentToolCalls[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedAgentToolCalls(name string, edges ...*AgentToolCall) {
+	if _m.Edges.namedAgentToolCalls == nil {
+		_m.Edges.namedAgentToolCalls = make(map[string][]*AgentToolCall)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAgentToolCalls[name] = []*AgentToolCall{}
+	} else {
+		_m.Edges.namedAgentToolCalls[name] = append(_m.Edges.namedAgentToolCalls[name], edges...)
+	}
+}
+
+// NamedAgentApprovals returns the AgentApprovals named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedAgentApprovals(name string) ([]*AgentApproval, error) {
+	if _m.Edges.namedAgentApprovals == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAgentApprovals[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedAgentApprovals(name string, edges ...*AgentApproval) {
+	if _m.Edges.namedAgentApprovals == nil {
+		_m.Edges.namedAgentApprovals = make(map[string][]*AgentApproval)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAgentApprovals[name] = []*AgentApproval{}
+	} else {
+		_m.Edges.namedAgentApprovals[name] = append(_m.Edges.namedAgentApprovals[name], edges...)
+	}
+}
+
+// NamedAgentToolResultBlobs returns the AgentToolResultBlobs named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedAgentToolResultBlobs(name string) ([]*AgentToolResultBlob, error) {
+	if _m.Edges.namedAgentToolResultBlobs == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAgentToolResultBlobs[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedAgentToolResultBlobs(name string, edges ...*AgentToolResultBlob) {
+	if _m.Edges.namedAgentToolResultBlobs == nil {
+		_m.Edges.namedAgentToolResultBlobs = make(map[string][]*AgentToolResultBlob)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAgentToolResultBlobs[name] = []*AgentToolResultBlob{}
+	} else {
+		_m.Edges.namedAgentToolResultBlobs[name] = append(_m.Edges.namedAgentToolResultBlobs[name], edges...)
 	}
 }
 

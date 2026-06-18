@@ -12,6 +12,13 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -52,6 +59,13 @@ type UserQuery struct {
 	withBackgroundTaskScheduleStates      *BackgroundTaskScheduleStateQuery
 	withCloudEvents                       *CloudEventQuery
 	withGoogleWatches                     *GoogleWatchQuery
+	withAgentDefinitions                  *AgentDefinitionQuery
+	withAgentSessions                     *AgentSessionQuery
+	withAgentTurns                        *AgentTurnQuery
+	withAgentSessionEvents                *AgentSessionEventQuery
+	withAgentToolCalls                    *AgentToolCallQuery
+	withAgentApprovals                    *AgentApprovalQuery
+	withAgentToolResultBlobs              *AgentToolResultBlobQuery
 	modifiers                             []func(*sql.Selector)
 	loadTotal                             []func(context.Context, []*User) error
 	withNamedLedgerEntries                map[string]*CreditLedgerQuery
@@ -67,6 +81,13 @@ type UserQuery struct {
 	withNamedBackgroundTaskScheduleStates map[string]*BackgroundTaskScheduleStateQuery
 	withNamedCloudEvents                  map[string]*CloudEventQuery
 	withNamedGoogleWatches                map[string]*GoogleWatchQuery
+	withNamedAgentDefinitions             map[string]*AgentDefinitionQuery
+	withNamedAgentSessions                map[string]*AgentSessionQuery
+	withNamedAgentTurns                   map[string]*AgentTurnQuery
+	withNamedAgentSessionEvents           map[string]*AgentSessionEventQuery
+	withNamedAgentToolCalls               map[string]*AgentToolCallQuery
+	withNamedAgentApprovals               map[string]*AgentApprovalQuery
+	withNamedAgentToolResultBlobs         map[string]*AgentToolResultBlobQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -411,6 +432,160 @@ func (_q *UserQuery) QueryGoogleWatches() *GoogleWatchQuery {
 	return query
 }
 
+// QueryAgentDefinitions chains the current query on the "agent_definitions" edge.
+func (_q *UserQuery) QueryAgentDefinitions() *AgentDefinitionQuery {
+	query := (&AgentDefinitionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(agentdefinition.Table, agentdefinition.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AgentDefinitionsTable, user.AgentDefinitionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAgentSessions chains the current query on the "agent_sessions" edge.
+func (_q *UserQuery) QueryAgentSessions() *AgentSessionQuery {
+	query := (&AgentSessionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(agentsession.Table, agentsession.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AgentSessionsTable, user.AgentSessionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAgentTurns chains the current query on the "agent_turns" edge.
+func (_q *UserQuery) QueryAgentTurns() *AgentTurnQuery {
+	query := (&AgentTurnClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(agentturn.Table, agentturn.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AgentTurnsTable, user.AgentTurnsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAgentSessionEvents chains the current query on the "agent_session_events" edge.
+func (_q *UserQuery) QueryAgentSessionEvents() *AgentSessionEventQuery {
+	query := (&AgentSessionEventClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(agentsessionevent.Table, agentsessionevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AgentSessionEventsTable, user.AgentSessionEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAgentToolCalls chains the current query on the "agent_tool_calls" edge.
+func (_q *UserQuery) QueryAgentToolCalls() *AgentToolCallQuery {
+	query := (&AgentToolCallClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(agenttoolcall.Table, agenttoolcall.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AgentToolCallsTable, user.AgentToolCallsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAgentApprovals chains the current query on the "agent_approvals" edge.
+func (_q *UserQuery) QueryAgentApprovals() *AgentApprovalQuery {
+	query := (&AgentApprovalClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(agentapproval.Table, agentapproval.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AgentApprovalsTable, user.AgentApprovalsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAgentToolResultBlobs chains the current query on the "agent_tool_result_blobs" edge.
+func (_q *UserQuery) QueryAgentToolResultBlobs() *AgentToolResultBlobQuery {
+	query := (&AgentToolResultBlobClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(agenttoolresultblob.Table, agenttoolresultblob.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AgentToolResultBlobsTable, user.AgentToolResultBlobsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -617,6 +792,13 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withBackgroundTaskScheduleStates: _q.withBackgroundTaskScheduleStates.Clone(),
 		withCloudEvents:                  _q.withCloudEvents.Clone(),
 		withGoogleWatches:                _q.withGoogleWatches.Clone(),
+		withAgentDefinitions:             _q.withAgentDefinitions.Clone(),
+		withAgentSessions:                _q.withAgentSessions.Clone(),
+		withAgentTurns:                   _q.withAgentTurns.Clone(),
+		withAgentSessionEvents:           _q.withAgentSessionEvents.Clone(),
+		withAgentToolCalls:               _q.withAgentToolCalls.Clone(),
+		withAgentApprovals:               _q.withAgentApprovals.Clone(),
+		withAgentToolResultBlobs:         _q.withAgentToolResultBlobs.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -777,6 +959,83 @@ func (_q *UserQuery) WithGoogleWatches(opts ...func(*GoogleWatchQuery)) *UserQue
 	return _q
 }
 
+// WithAgentDefinitions tells the query-builder to eager-load the nodes that are connected to
+// the "agent_definitions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithAgentDefinitions(opts ...func(*AgentDefinitionQuery)) *UserQuery {
+	query := (&AgentDefinitionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAgentDefinitions = query
+	return _q
+}
+
+// WithAgentSessions tells the query-builder to eager-load the nodes that are connected to
+// the "agent_sessions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithAgentSessions(opts ...func(*AgentSessionQuery)) *UserQuery {
+	query := (&AgentSessionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAgentSessions = query
+	return _q
+}
+
+// WithAgentTurns tells the query-builder to eager-load the nodes that are connected to
+// the "agent_turns" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithAgentTurns(opts ...func(*AgentTurnQuery)) *UserQuery {
+	query := (&AgentTurnClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAgentTurns = query
+	return _q
+}
+
+// WithAgentSessionEvents tells the query-builder to eager-load the nodes that are connected to
+// the "agent_session_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithAgentSessionEvents(opts ...func(*AgentSessionEventQuery)) *UserQuery {
+	query := (&AgentSessionEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAgentSessionEvents = query
+	return _q
+}
+
+// WithAgentToolCalls tells the query-builder to eager-load the nodes that are connected to
+// the "agent_tool_calls" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithAgentToolCalls(opts ...func(*AgentToolCallQuery)) *UserQuery {
+	query := (&AgentToolCallClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAgentToolCalls = query
+	return _q
+}
+
+// WithAgentApprovals tells the query-builder to eager-load the nodes that are connected to
+// the "agent_approvals" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithAgentApprovals(opts ...func(*AgentApprovalQuery)) *UserQuery {
+	query := (&AgentApprovalClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAgentApprovals = query
+	return _q
+}
+
+// WithAgentToolResultBlobs tells the query-builder to eager-load the nodes that are connected to
+// the "agent_tool_result_blobs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithAgentToolResultBlobs(opts ...func(*AgentToolResultBlobQuery)) *UserQuery {
+	query := (&AgentToolResultBlobClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAgentToolResultBlobs = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -855,7 +1114,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [14]bool{
+		loadedTypes = [21]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -870,6 +1129,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withBackgroundTaskScheduleStates != nil,
 			_q.withCloudEvents != nil,
 			_q.withGoogleWatches != nil,
+			_q.withAgentDefinitions != nil,
+			_q.withAgentSessions != nil,
+			_q.withAgentTurns != nil,
+			_q.withAgentSessionEvents != nil,
+			_q.withAgentToolCalls != nil,
+			_q.withAgentApprovals != nil,
+			_q.withAgentToolResultBlobs != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -1000,6 +1266,59 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withAgentDefinitions; query != nil {
+		if err := _q.loadAgentDefinitions(ctx, query, nodes,
+			func(n *User) { n.Edges.AgentDefinitions = []*AgentDefinition{} },
+			func(n *User, e *AgentDefinition) { n.Edges.AgentDefinitions = append(n.Edges.AgentDefinitions, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAgentSessions; query != nil {
+		if err := _q.loadAgentSessions(ctx, query, nodes,
+			func(n *User) { n.Edges.AgentSessions = []*AgentSession{} },
+			func(n *User, e *AgentSession) { n.Edges.AgentSessions = append(n.Edges.AgentSessions, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAgentTurns; query != nil {
+		if err := _q.loadAgentTurns(ctx, query, nodes,
+			func(n *User) { n.Edges.AgentTurns = []*AgentTurn{} },
+			func(n *User, e *AgentTurn) { n.Edges.AgentTurns = append(n.Edges.AgentTurns, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAgentSessionEvents; query != nil {
+		if err := _q.loadAgentSessionEvents(ctx, query, nodes,
+			func(n *User) { n.Edges.AgentSessionEvents = []*AgentSessionEvent{} },
+			func(n *User, e *AgentSessionEvent) {
+				n.Edges.AgentSessionEvents = append(n.Edges.AgentSessionEvents, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAgentToolCalls; query != nil {
+		if err := _q.loadAgentToolCalls(ctx, query, nodes,
+			func(n *User) { n.Edges.AgentToolCalls = []*AgentToolCall{} },
+			func(n *User, e *AgentToolCall) { n.Edges.AgentToolCalls = append(n.Edges.AgentToolCalls, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAgentApprovals; query != nil {
+		if err := _q.loadAgentApprovals(ctx, query, nodes,
+			func(n *User) { n.Edges.AgentApprovals = []*AgentApproval{} },
+			func(n *User, e *AgentApproval) { n.Edges.AgentApprovals = append(n.Edges.AgentApprovals, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAgentToolResultBlobs; query != nil {
+		if err := _q.loadAgentToolResultBlobs(ctx, query, nodes,
+			func(n *User) { n.Edges.AgentToolResultBlobs = []*AgentToolResultBlob{} },
+			func(n *User, e *AgentToolResultBlob) {
+				n.Edges.AgentToolResultBlobs = append(n.Edges.AgentToolResultBlobs, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -1088,6 +1407,55 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadGoogleWatches(ctx, query, nodes,
 			func(n *User) { n.appendNamedGoogleWatches(name) },
 			func(n *User, e *GoogleWatch) { n.appendNamedGoogleWatches(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedAgentDefinitions {
+		if err := _q.loadAgentDefinitions(ctx, query, nodes,
+			func(n *User) { n.appendNamedAgentDefinitions(name) },
+			func(n *User, e *AgentDefinition) { n.appendNamedAgentDefinitions(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedAgentSessions {
+		if err := _q.loadAgentSessions(ctx, query, nodes,
+			func(n *User) { n.appendNamedAgentSessions(name) },
+			func(n *User, e *AgentSession) { n.appendNamedAgentSessions(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedAgentTurns {
+		if err := _q.loadAgentTurns(ctx, query, nodes,
+			func(n *User) { n.appendNamedAgentTurns(name) },
+			func(n *User, e *AgentTurn) { n.appendNamedAgentTurns(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedAgentSessionEvents {
+		if err := _q.loadAgentSessionEvents(ctx, query, nodes,
+			func(n *User) { n.appendNamedAgentSessionEvents(name) },
+			func(n *User, e *AgentSessionEvent) { n.appendNamedAgentSessionEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedAgentToolCalls {
+		if err := _q.loadAgentToolCalls(ctx, query, nodes,
+			func(n *User) { n.appendNamedAgentToolCalls(name) },
+			func(n *User, e *AgentToolCall) { n.appendNamedAgentToolCalls(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedAgentApprovals {
+		if err := _q.loadAgentApprovals(ctx, query, nodes,
+			func(n *User) { n.appendNamedAgentApprovals(name) },
+			func(n *User, e *AgentApproval) { n.appendNamedAgentApprovals(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedAgentToolResultBlobs {
+		if err := _q.loadAgentToolResultBlobs(ctx, query, nodes,
+			func(n *User) { n.appendNamedAgentToolResultBlobs(name) },
+			func(n *User, e *AgentToolResultBlob) { n.appendNamedAgentToolResultBlobs(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1530,6 +1898,223 @@ func (_q *UserQuery) loadGoogleWatches(ctx context.Context, query *GoogleWatchQu
 	}
 	return nil
 }
+func (_q *UserQuery) loadAgentDefinitions(ctx context.Context, query *AgentDefinitionQuery, nodes []*User, init func(*User), assign func(*User, *AgentDefinition)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.AgentDefinition(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.AgentDefinitionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_agent_definitions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_agent_definitions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_agent_definitions" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadAgentSessions(ctx context.Context, query *AgentSessionQuery, nodes []*User, init func(*User), assign func(*User, *AgentSession)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.AgentSession(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.AgentSessionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_agent_sessions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_agent_sessions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_agent_sessions" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadAgentTurns(ctx context.Context, query *AgentTurnQuery, nodes []*User, init func(*User), assign func(*User, *AgentTurn)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.AgentTurn(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.AgentTurnsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_agent_turns
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_agent_turns" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_agent_turns" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadAgentSessionEvents(ctx context.Context, query *AgentSessionEventQuery, nodes []*User, init func(*User), assign func(*User, *AgentSessionEvent)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.AgentSessionEvent(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.AgentSessionEventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_agent_session_events
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_agent_session_events" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_agent_session_events" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadAgentToolCalls(ctx context.Context, query *AgentToolCallQuery, nodes []*User, init func(*User), assign func(*User, *AgentToolCall)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.AgentToolCall(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.AgentToolCallsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_agent_tool_calls
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_agent_tool_calls" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_agent_tool_calls" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadAgentApprovals(ctx context.Context, query *AgentApprovalQuery, nodes []*User, init func(*User), assign func(*User, *AgentApproval)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.AgentApproval(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.AgentApprovalsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_agent_approvals
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_agent_approvals" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_agent_approvals" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadAgentToolResultBlobs(ctx context.Context, query *AgentToolResultBlobQuery, nodes []*User, init func(*User), assign func(*User, *AgentToolResultBlob)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.AgentToolResultBlob(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.AgentToolResultBlobsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_agent_tool_result_blobs
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_agent_tool_result_blobs" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_agent_tool_result_blobs" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -1794,6 +2379,104 @@ func (_q *UserQuery) WithNamedGoogleWatches(name string, opts ...func(*GoogleWat
 		_q.withNamedGoogleWatches = make(map[string]*GoogleWatchQuery)
 	}
 	_q.withNamedGoogleWatches[name] = query
+	return _q
+}
+
+// WithNamedAgentDefinitions tells the query-builder to eager-load the nodes that are connected to the "agent_definitions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedAgentDefinitions(name string, opts ...func(*AgentDefinitionQuery)) *UserQuery {
+	query := (&AgentDefinitionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedAgentDefinitions == nil {
+		_q.withNamedAgentDefinitions = make(map[string]*AgentDefinitionQuery)
+	}
+	_q.withNamedAgentDefinitions[name] = query
+	return _q
+}
+
+// WithNamedAgentSessions tells the query-builder to eager-load the nodes that are connected to the "agent_sessions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedAgentSessions(name string, opts ...func(*AgentSessionQuery)) *UserQuery {
+	query := (&AgentSessionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedAgentSessions == nil {
+		_q.withNamedAgentSessions = make(map[string]*AgentSessionQuery)
+	}
+	_q.withNamedAgentSessions[name] = query
+	return _q
+}
+
+// WithNamedAgentTurns tells the query-builder to eager-load the nodes that are connected to the "agent_turns"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedAgentTurns(name string, opts ...func(*AgentTurnQuery)) *UserQuery {
+	query := (&AgentTurnClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedAgentTurns == nil {
+		_q.withNamedAgentTurns = make(map[string]*AgentTurnQuery)
+	}
+	_q.withNamedAgentTurns[name] = query
+	return _q
+}
+
+// WithNamedAgentSessionEvents tells the query-builder to eager-load the nodes that are connected to the "agent_session_events"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedAgentSessionEvents(name string, opts ...func(*AgentSessionEventQuery)) *UserQuery {
+	query := (&AgentSessionEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedAgentSessionEvents == nil {
+		_q.withNamedAgentSessionEvents = make(map[string]*AgentSessionEventQuery)
+	}
+	_q.withNamedAgentSessionEvents[name] = query
+	return _q
+}
+
+// WithNamedAgentToolCalls tells the query-builder to eager-load the nodes that are connected to the "agent_tool_calls"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedAgentToolCalls(name string, opts ...func(*AgentToolCallQuery)) *UserQuery {
+	query := (&AgentToolCallClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedAgentToolCalls == nil {
+		_q.withNamedAgentToolCalls = make(map[string]*AgentToolCallQuery)
+	}
+	_q.withNamedAgentToolCalls[name] = query
+	return _q
+}
+
+// WithNamedAgentApprovals tells the query-builder to eager-load the nodes that are connected to the "agent_approvals"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedAgentApprovals(name string, opts ...func(*AgentApprovalQuery)) *UserQuery {
+	query := (&AgentApprovalClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedAgentApprovals == nil {
+		_q.withNamedAgentApprovals = make(map[string]*AgentApprovalQuery)
+	}
+	_q.withNamedAgentApprovals[name] = query
+	return _q
+}
+
+// WithNamedAgentToolResultBlobs tells the query-builder to eager-load the nodes that are connected to the "agent_tool_result_blobs"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedAgentToolResultBlobs(name string, opts ...func(*AgentToolResultBlobQuery)) *UserQuery {
+	query := (&AgentToolResultBlobClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedAgentToolResultBlobs == nil {
+		_q.withNamedAgentToolResultBlobs = make(map[string]*AgentToolResultBlobQuery)
+	}
+	_q.withNamedAgentToolResultBlobs[name] = query
 	return _q
 }
 

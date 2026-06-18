@@ -8,6 +8,352 @@ import (
 )
 
 var (
+	// AgentApprovalsColumns holds the columns for the "agent_approvals" table.
+	AgentApprovalsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "approval_id", Type: field.TypeString},
+		{Name: "turn_seq", Type: field.TypeInt},
+		{Name: "tool_call_index", Type: field.TypeInt, Default: 0},
+		{Name: "tool_name", Type: field.TypeString},
+		{Name: "trust_tier", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeString, Default: "pending"},
+		{Name: "args_redacted_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "approval_token_ref", Type: field.TypeString, Nullable: true},
+		{Name: "requested_by", Type: field.TypeString, Nullable: true},
+		{Name: "resolved_by", Type: field.TypeString, Nullable: true},
+		{Name: "requested_at", Type: field.TypeTime},
+		{Name: "resolved_at", Type: field.TypeTime, Nullable: true},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "agent_session_approvals", Type: field.TypeUUID},
+		{Name: "user_agent_approvals", Type: field.TypeUUID},
+	}
+	// AgentApprovalsTable holds the schema information for the "agent_approvals" table.
+	AgentApprovalsTable = &schema.Table{
+		Name:       "agent_approvals",
+		Columns:    AgentApprovalsColumns,
+		PrimaryKey: []*schema.Column{AgentApprovalsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "agent_approvals_agent_sessions_approvals",
+				Columns:    []*schema.Column{AgentApprovalsColumns[16]},
+				RefColumns: []*schema.Column{AgentSessionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "agent_approvals_users_agent_approvals",
+				Columns:    []*schema.Column{AgentApprovalsColumns[17]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "agentapproval_approval_id_agent_session_approvals",
+				Unique:  true,
+				Columns: []*schema.Column{AgentApprovalsColumns[3], AgentApprovalsColumns[16]},
+			},
+			{
+				Name:    "agentapproval_status",
+				Unique:  false,
+				Columns: []*schema.Column{AgentApprovalsColumns[8]},
+			},
+		},
+	}
+	// AgentDefinitionsColumns holds the columns for the "agent_definitions" table.
+	AgentDefinitionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "slug", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "instructions", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "model", Type: field.TypeString, Nullable: true},
+		{Name: "provider", Type: field.TypeString, Nullable: true},
+		{Name: "limits_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "enabled_tools", Type: field.TypeJSON, Nullable: true},
+		{Name: "subagent_refs", Type: field.TypeJSON, Nullable: true},
+		{Name: "channel_bindings", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "connector_reqs", Type: field.TypeJSON, Nullable: true},
+		{Name: "source", Type: field.TypeString, Default: "tenant"},
+		{Name: "forked_from", Type: field.TypeString, Nullable: true},
+		{Name: "revision", Type: field.TypeInt, Default: 1},
+		{Name: "user_agent_definitions", Type: field.TypeUUID},
+	}
+	// AgentDefinitionsTable holds the schema information for the "agent_definitions" table.
+	AgentDefinitionsTable = &schema.Table{
+		Name:       "agent_definitions",
+		Columns:    AgentDefinitionsColumns,
+		PrimaryKey: []*schema.Column{AgentDefinitionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "agent_definitions_users_agent_definitions",
+				Columns:    []*schema.Column{AgentDefinitionsColumns[16]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "agentdefinition_slug_user_agent_definitions",
+				Unique:  true,
+				Columns: []*schema.Column{AgentDefinitionsColumns[3], AgentDefinitionsColumns[16]},
+			},
+			{
+				Name:    "agentdefinition_source",
+				Unique:  false,
+				Columns: []*schema.Column{AgentDefinitionsColumns[13]},
+			},
+		},
+	}
+	// AgentSessionsColumns holds the columns for the "agent_sessions" table.
+	AgentSessionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "session_id", Type: field.TypeString},
+		{Name: "agent_slug", Type: field.TypeString},
+		{Name: "agent_source", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeString, Default: "active"},
+		{Name: "channel", Type: field.TypeString, Default: "http"},
+		{Name: "channel_key", Type: field.TypeString, Nullable: true},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "temporal_workflow_id", Type: field.TypeString, Nullable: true},
+		{Name: "temporal_run_id", Type: field.TypeString, Nullable: true},
+		{Name: "turn_count", Type: field.TypeInt, Default: 0},
+		{Name: "llm_call_count", Type: field.TypeInt, Default: 0},
+		{Name: "tool_call_count", Type: field.TypeInt, Default: 0},
+		{Name: "cost_units", Type: field.TypeInt, Default: 0},
+		{Name: "error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "error_code", Type: field.TypeString, Nullable: true},
+		{Name: "last_activity_at", Type: field.TypeTime, Nullable: true},
+		{Name: "started_at", Type: field.TypeTime, Nullable: true},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revision", Type: field.TypeInt, Default: 1},
+		{Name: "agent_definition_sessions", Type: field.TypeUUID, Nullable: true},
+		{Name: "user_agent_sessions", Type: field.TypeUUID},
+	}
+	// AgentSessionsTable holds the schema information for the "agent_sessions" table.
+	AgentSessionsTable = &schema.Table{
+		Name:       "agent_sessions",
+		Columns:    AgentSessionsColumns,
+		PrimaryKey: []*schema.Column{AgentSessionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "agent_sessions_agent_definitions_sessions",
+				Columns:    []*schema.Column{AgentSessionsColumns[22]},
+				RefColumns: []*schema.Column{AgentDefinitionsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "agent_sessions_users_agent_sessions",
+				Columns:    []*schema.Column{AgentSessionsColumns[23]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "agentsession_session_id_user_agent_sessions",
+				Unique:  true,
+				Columns: []*schema.Column{AgentSessionsColumns[3], AgentSessionsColumns[23]},
+			},
+			{
+				Name:    "agentsession_status",
+				Unique:  false,
+				Columns: []*schema.Column{AgentSessionsColumns[6]},
+			},
+			{
+				Name:    "agentsession_temporal_workflow_id",
+				Unique:  false,
+				Columns: []*schema.Column{AgentSessionsColumns[10]},
+			},
+			{
+				Name:    "agentsession_channel_channel_key_user_agent_sessions",
+				Unique:  false,
+				Columns: []*schema.Column{AgentSessionsColumns[7], AgentSessionsColumns[8], AgentSessionsColumns[23]},
+			},
+		},
+	}
+	// AgentSessionEventsColumns holds the columns for the "agent_session_events" table.
+	AgentSessionEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "seq", Type: field.TypeInt},
+		{Name: "turn_seq", Type: field.TypeInt, Nullable: true},
+		{Name: "event_type", Type: field.TypeString, Nullable: true},
+		{Name: "event_json", Type: field.TypeString, Size: 2147483647},
+		{Name: "received_at", Type: field.TypeTime},
+		{Name: "agent_session_events", Type: field.TypeUUID},
+		{Name: "user_agent_session_events", Type: field.TypeUUID},
+	}
+	// AgentSessionEventsTable holds the schema information for the "agent_session_events" table.
+	AgentSessionEventsTable = &schema.Table{
+		Name:       "agent_session_events",
+		Columns:    AgentSessionEventsColumns,
+		PrimaryKey: []*schema.Column{AgentSessionEventsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "agent_session_events_agent_sessions_events",
+				Columns:    []*schema.Column{AgentSessionEventsColumns[8]},
+				RefColumns: []*schema.Column{AgentSessionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "agent_session_events_users_agent_session_events",
+				Columns:    []*schema.Column{AgentSessionEventsColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "agentsessionevent_seq_agent_session_events",
+				Unique:  true,
+				Columns: []*schema.Column{AgentSessionEventsColumns[3], AgentSessionEventsColumns[8]},
+			},
+			{
+				Name:    "agentsessionevent_event_type",
+				Unique:  false,
+				Columns: []*schema.Column{AgentSessionEventsColumns[5]},
+			},
+		},
+	}
+	// AgentToolCallsColumns holds the columns for the "agent_tool_calls" table.
+	AgentToolCallsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "call_index", Type: field.TypeInt},
+		{Name: "tool_name", Type: field.TypeString},
+		{Name: "args_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "result_bytes", Type: field.TypeInt, Default: 0},
+		{Name: "status", Type: field.TypeString, Default: "pending"},
+		{Name: "error_code", Type: field.TypeString, Nullable: true},
+		{Name: "trust_tier", Type: field.TypeString, Nullable: true},
+		{Name: "started_at", Type: field.TypeTime, Nullable: true},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "agent_turn_tool_calls", Type: field.TypeUUID},
+		{Name: "user_agent_tool_calls", Type: field.TypeUUID},
+	}
+	// AgentToolCallsTable holds the schema information for the "agent_tool_calls" table.
+	AgentToolCallsTable = &schema.Table{
+		Name:       "agent_tool_calls",
+		Columns:    AgentToolCallsColumns,
+		PrimaryKey: []*schema.Column{AgentToolCallsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "agent_tool_calls_agent_turns_tool_calls",
+				Columns:    []*schema.Column{AgentToolCallsColumns[12]},
+				RefColumns: []*schema.Column{AgentTurnsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "agent_tool_calls_users_agent_tool_calls",
+				Columns:    []*schema.Column{AgentToolCallsColumns[13]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "agenttoolcall_call_index_agent_turn_tool_calls",
+				Unique:  true,
+				Columns: []*schema.Column{AgentToolCallsColumns[3], AgentToolCallsColumns[12]},
+			},
+			{
+				Name:    "agenttoolcall_tool_name",
+				Unique:  false,
+				Columns: []*schema.Column{AgentToolCallsColumns[4]},
+			},
+		},
+	}
+	// AgentToolResultBlobsColumns holds the columns for the "agent_tool_result_blobs" table.
+	AgentToolResultBlobsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "session_id", Type: field.TypeString},
+		{Name: "turn_seq", Type: field.TypeInt},
+		{Name: "call_index", Type: field.TypeInt},
+		{Name: "tool_name", Type: field.TypeString, Nullable: true},
+		{Name: "content", Type: field.TypeString, Size: 2147483647},
+		{Name: "total_bytes", Type: field.TypeInt},
+		{Name: "user_agent_tool_result_blobs", Type: field.TypeUUID},
+	}
+	// AgentToolResultBlobsTable holds the schema information for the "agent_tool_result_blobs" table.
+	AgentToolResultBlobsTable = &schema.Table{
+		Name:       "agent_tool_result_blobs",
+		Columns:    AgentToolResultBlobsColumns,
+		PrimaryKey: []*schema.Column{AgentToolResultBlobsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "agent_tool_result_blobs_users_agent_tool_result_blobs",
+				Columns:    []*schema.Column{AgentToolResultBlobsColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "agenttoolresultblob_session_id_turn_seq_call_index",
+				Unique:  false,
+				Columns: []*schema.Column{AgentToolResultBlobsColumns[3], AgentToolResultBlobsColumns[4], AgentToolResultBlobsColumns[5]},
+			},
+		},
+	}
+	// AgentTurnsColumns holds the columns for the "agent_turns" table.
+	AgentTurnsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "seq", Type: field.TypeInt},
+		{Name: "input", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "status", Type: field.TypeString, Default: "pending"},
+		{Name: "summary", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "finish_reason", Type: field.TypeString, Nullable: true},
+		{Name: "llm_call_count", Type: field.TypeInt, Default: 0},
+		{Name: "tool_call_count", Type: field.TypeInt, Default: 0},
+		{Name: "cost_units", Type: field.TypeInt, Default: 0},
+		{Name: "started_at", Type: field.TypeTime, Nullable: true},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "agent_session_turns", Type: field.TypeUUID},
+		{Name: "user_agent_turns", Type: field.TypeUUID},
+	}
+	// AgentTurnsTable holds the schema information for the "agent_turns" table.
+	AgentTurnsTable = &schema.Table{
+		Name:       "agent_turns",
+		Columns:    AgentTurnsColumns,
+		PrimaryKey: []*schema.Column{AgentTurnsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "agent_turns_agent_sessions_turns",
+				Columns:    []*schema.Column{AgentTurnsColumns[13]},
+				RefColumns: []*schema.Column{AgentSessionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "agent_turns_users_agent_turns",
+				Columns:    []*schema.Column{AgentTurnsColumns[14]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "agentturn_seq_agent_session_turns",
+				Unique:  true,
+				Columns: []*schema.Column{AgentTurnsColumns[3], AgentTurnsColumns[13]},
+			},
+			{
+				Name:    "agentturn_status",
+				Unique:  false,
+				Columns: []*schema.Column{AgentTurnsColumns[5]},
+			},
+		},
+	}
 	// BackgroundTasksColumns holds the columns for the "background_tasks" table.
 	BackgroundTasksColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -801,6 +1147,13 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AgentApprovalsTable,
+		AgentDefinitionsTable,
+		AgentSessionsTable,
+		AgentSessionEventsTable,
+		AgentToolCallsTable,
+		AgentToolResultBlobsTable,
+		AgentTurnsTable,
 		BackgroundTasksTable,
 		BackgroundTaskArtifactsTable,
 		BackgroundTaskRunsTable,
@@ -826,6 +1179,18 @@ var (
 )
 
 func init() {
+	AgentApprovalsTable.ForeignKeys[0].RefTable = AgentSessionsTable
+	AgentApprovalsTable.ForeignKeys[1].RefTable = UsersTable
+	AgentDefinitionsTable.ForeignKeys[0].RefTable = UsersTable
+	AgentSessionsTable.ForeignKeys[0].RefTable = AgentDefinitionsTable
+	AgentSessionsTable.ForeignKeys[1].RefTable = UsersTable
+	AgentSessionEventsTable.ForeignKeys[0].RefTable = AgentSessionsTable
+	AgentSessionEventsTable.ForeignKeys[1].RefTable = UsersTable
+	AgentToolCallsTable.ForeignKeys[0].RefTable = AgentTurnsTable
+	AgentToolCallsTable.ForeignKeys[1].RefTable = UsersTable
+	AgentToolResultBlobsTable.ForeignKeys[0].RefTable = UsersTable
+	AgentTurnsTable.ForeignKeys[0].RefTable = AgentSessionsTable
+	AgentTurnsTable.ForeignKeys[1].RefTable = UsersTable
 	BackgroundTasksTable.ForeignKeys[0].RefTable = UsersTable
 	BackgroundTaskArtifactsTable.ForeignKeys[0].RefTable = BackgroundTasksTable
 	BackgroundTaskArtifactsTable.ForeignKeys[1].RefTable = UsersTable

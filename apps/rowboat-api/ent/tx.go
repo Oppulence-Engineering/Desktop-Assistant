@@ -12,6 +12,20 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// AgentApproval is the client for interacting with the AgentApproval builders.
+	AgentApproval *AgentApprovalClient
+	// AgentDefinition is the client for interacting with the AgentDefinition builders.
+	AgentDefinition *AgentDefinitionClient
+	// AgentSession is the client for interacting with the AgentSession builders.
+	AgentSession *AgentSessionClient
+	// AgentSessionEvent is the client for interacting with the AgentSessionEvent builders.
+	AgentSessionEvent *AgentSessionEventClient
+	// AgentToolCall is the client for interacting with the AgentToolCall builders.
+	AgentToolCall *AgentToolCallClient
+	// AgentToolResultBlob is the client for interacting with the AgentToolResultBlob builders.
+	AgentToolResultBlob *AgentToolResultBlobClient
+	// AgentTurn is the client for interacting with the AgentTurn builders.
+	AgentTurn *AgentTurnClient
 	// BackgroundTask is the client for interacting with the BackgroundTask builders.
 	BackgroundTask *BackgroundTaskClient
 	// BackgroundTaskArtifact is the client for interacting with the BackgroundTaskArtifact builders.
@@ -185,6 +199,13 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.AgentApproval = NewAgentApprovalClient(tx.config)
+	tx.AgentDefinition = NewAgentDefinitionClient(tx.config)
+	tx.AgentSession = NewAgentSessionClient(tx.config)
+	tx.AgentSessionEvent = NewAgentSessionEventClient(tx.config)
+	tx.AgentToolCall = NewAgentToolCallClient(tx.config)
+	tx.AgentToolResultBlob = NewAgentToolResultBlobClient(tx.config)
+	tx.AgentTurn = NewAgentTurnClient(tx.config)
 	tx.BackgroundTask = NewBackgroundTaskClient(tx.config)
 	tx.BackgroundTaskArtifact = NewBackgroundTaskArtifactClient(tx.config)
 	tx.BackgroundTaskRun = NewBackgroundTaskRunClient(tx.config)
@@ -215,7 +236,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: BackgroundTask.QueryXXX(), the query will be executed
+// applies a query, for example: AgentApproval.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

@@ -89,11 +89,15 @@ type ToolCallRequest struct {
 	Arguments json.RawMessage
 }
 
-// ToolDef advertises one tool to the model.
+// ToolDef advertises one tool to the model. TrustTier (RFC 012/027) is
+// runtime metadata, not advertised to the model: the durable agent loop reads
+// it to decide whether a tool call must pause for human approval. Empty for
+// the RFC 004 background-task tools (no HITL).
 type ToolDef struct {
 	Name        string
 	Description string
 	Parameters  json.RawMessage
+	TrustTier   string
 }
 
 // Turn is the assistant's reply.

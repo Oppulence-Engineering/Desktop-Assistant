@@ -9,6 +9,90 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
 
+// The AgentApprovalFunc type is an adapter to allow the use of ordinary
+// function as AgentApproval mutator.
+type AgentApprovalFunc func(context.Context, *ent.AgentApprovalMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgentApprovalFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgentApprovalMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentApprovalMutation", m)
+}
+
+// The AgentDefinitionFunc type is an adapter to allow the use of ordinary
+// function as AgentDefinition mutator.
+type AgentDefinitionFunc func(context.Context, *ent.AgentDefinitionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgentDefinitionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgentDefinitionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentDefinitionMutation", m)
+}
+
+// The AgentSessionFunc type is an adapter to allow the use of ordinary
+// function as AgentSession mutator.
+type AgentSessionFunc func(context.Context, *ent.AgentSessionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgentSessionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgentSessionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentSessionMutation", m)
+}
+
+// The AgentSessionEventFunc type is an adapter to allow the use of ordinary
+// function as AgentSessionEvent mutator.
+type AgentSessionEventFunc func(context.Context, *ent.AgentSessionEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgentSessionEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgentSessionEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentSessionEventMutation", m)
+}
+
+// The AgentToolCallFunc type is an adapter to allow the use of ordinary
+// function as AgentToolCall mutator.
+type AgentToolCallFunc func(context.Context, *ent.AgentToolCallMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgentToolCallFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgentToolCallMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentToolCallMutation", m)
+}
+
+// The AgentToolResultBlobFunc type is an adapter to allow the use of ordinary
+// function as AgentToolResultBlob mutator.
+type AgentToolResultBlobFunc func(context.Context, *ent.AgentToolResultBlobMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgentToolResultBlobFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgentToolResultBlobMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentToolResultBlobMutation", m)
+}
+
+// The AgentTurnFunc type is an adapter to allow the use of ordinary
+// function as AgentTurn mutator.
+type AgentTurnFunc func(context.Context, *ent.AgentTurnMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgentTurnFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgentTurnMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentTurnMutation", m)
+}
+
 // The BackgroundTaskFunc type is an adapter to allow the use of ordinary
 // function as BackgroundTask mutator.
 type BackgroundTaskFunc func(context.Context, *ent.BackgroundTaskMutation) (ent.Value, error)

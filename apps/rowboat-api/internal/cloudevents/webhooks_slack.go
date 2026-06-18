@@ -115,6 +115,12 @@ func (h *Handler) SlackWebhook(w http.ResponseWriter, r *http.Request) {
 
 var errSlackUnconfigured = errors.New("cloudevents: slack signing secret not configured")
 
+// VerifySlackSignature is the exported reuse of the Slack request-signing check
+// (RFC 027 channel adapters verify Slack deliveries with the same rule).
+func VerifySlackSignature(secret, ts string, body []byte, got string, now time.Time) error {
+	return verifySlackSignature(secret, ts, body, got, now)
+}
+
 // verifySlackSignature checks X-Slack-Signature == "v0=" + hex(HMAC-SHA256(
 // secret, "v0:{ts}:{body}")) with constant-time comparison, and rejects
 // timestamps outside ±slackTimestampSkew (replay protection). Fails closed on

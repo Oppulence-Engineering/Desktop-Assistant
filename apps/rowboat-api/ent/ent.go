@@ -12,6 +12,13 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -93,6 +100,13 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			agentapproval.Table:               agentapproval.ValidColumn,
+			agentdefinition.Table:             agentdefinition.ValidColumn,
+			agentsession.Table:                agentsession.ValidColumn,
+			agentsessionevent.Table:           agentsessionevent.ValidColumn,
+			agenttoolcall.Table:               agenttoolcall.ValidColumn,
+			agenttoolresultblob.Table:         agenttoolresultblob.ValidColumn,
+			agentturn.Table:                   agentturn.ValidColumn,
 			backgroundtask.Table:              backgroundtask.ValidColumn,
 			backgroundtaskartifact.Table:      backgroundtaskartifact.ValidColumn,
 			backgroundtaskrun.Table:           backgroundtaskrun.ValidColumn,

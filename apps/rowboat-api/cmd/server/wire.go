@@ -8,6 +8,12 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/proto/entpb"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentchannels"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agents"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentsessions"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentstream"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtasks"
@@ -283,6 +289,38 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}, log)
 	feedbackH.SetOutboundPolicy(vendorPolicy)
 
+	// Durable agent runtime (RFC 027). No master flag — it is active wherever
+	// Temporal is wired (the durable backend it runs on); the full surface
+	// mounts when temporalClient is available. Streaming uses the Redis bus when
+	// configured, else a durable-only poll of the event projection.
+	var agentsH *agents.Handler
+	var agentChannelsH *agentchannels.Handler
+	if temporalClient != nil {
+		agentCatalog := agentregistry.DefaultCatalog()
+		agentLoader, lerr := agentregistry.NewLoader(client, agentCatalog)
+		if lerr != nil {
+			return fmt.Errorf("load agent definitions: %w", lerr)
+		}
+		agentsH = agents.New(client, agentLoader, cfg, log)
+		// One shared starter backs the HTTP handler, channel adapters, and (on the
+		// worker) schedule fires — the single canonical creation path.
+		agentStarter := agentsessions.New(client, agentLoader, agentworkflow.NewStarter(temporalClient, cfg), cfg, log)
+		agentsH.SetStarter(agentStarter)
+		agentsH.SetScheduler(agentworkflow.NewSessionScheduler(temporalClient, cfg))
+		dispatcher := agentchannels.New(client, agentStarter, cfg.AgentDefaultChannelAgent, log)
+		agentChannelsH = agentchannels.NewHandler(client, dispatcher, cfg.SlackSigningSecret, log)
+		var agentBus *agentstream.Bus
+		if cfg.AgentStreamingEnabled && cfg.RedisURL != "" {
+			if b, berr := agentstream.NewBus(ctx, cfg.RedisURL); berr == nil {
+				agentBus = b
+				go func() { <-ctx.Done(); _ = agentBus.Close() }()
+			} else {
+				log.Warn("agent event bus unavailable; streaming falls back to durable-only poll", zap.Error(berr))
+			}
+		}
+		agentsH.SetStreamer(agentstream.NewStreamer(client, agentBus, log))
+	}
+
 	r := srv.Router()
 
 	// Public (no auth).
@@ -328,6 +366,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
 		Post("/v1/webhooks/slack", cloudEventsH.SlackWebhook)
 
+	// Agent channel inbound (RFC 027 P5). Slack delivers here when a workspace is
+	// wired to an agent (verifies its own signature); the generic internal ingest
+	// lets any server-side channel gateway start/continue a session.
+	if agentChannelsH != nil {
+		r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
+			Post("/v1/agent-channels/slack", agentChannelsH.SlackInbound)
+	}
+
 	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer).
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
 		Post("/oauth-hooks/pre-consent", connectorsH.PreConsent)
@@ -337,6 +383,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		Post("/v1/internal/connections/invalidate", connectorsH.Invalidate)
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
 		Post("/v1/internal/events", cloudEventsH.IngestInternal)
+	if agentChannelsH != nil {
+		r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
+			Post("/v1/internal/agent-channels/{channel}/inbound", agentChannelsH.InboundInternal)
+	}
 
 	// Admin GraphQL (entgql + gqlgen) over the full entity graph. Guarded by
 	// the internal secret, which also marks the context internal so the
@@ -386,6 +436,32 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Post("/{slug}/trigger", backgroundTasksH.Trigger)
 			r.Get("/{slug}/schedule-state", backgroundTasksH.GetScheduleState)
 		})
+
+		// Durable agent runtime (RFC 027): AgentDefinition CRUD + agent-session
+		// lifecycle. Mounted only when the master flag is on.
+		if agentsH != nil {
+			r.Route("/v1/agents", func(r chi.Router) {
+				r.Use(rl.PerUserWindow(ratelimit.GroupAgent, 60, time.Minute))
+				r.Get("/", agentsH.ListAgents)
+				r.Post("/", agentsH.CreateAgent)
+				r.Get("/{slug}", agentsH.GetAgent)
+				r.Delete("/{slug}", agentsH.DeleteAgent)
+				// Recurring sessions via Temporal Schedules (P5).
+				r.Post("/{slug}/schedule", agentsH.CreateSchedule)
+				r.Delete("/{slug}/schedule", agentsH.DeleteSchedule)
+			})
+			r.Route("/v1/agent-sessions", func(r chi.Router) {
+				r.Use(rl.PerUserWindow(ratelimit.GroupAgent, 120, time.Minute))
+				r.Post("/", agentsH.CreateSession)
+				r.Get("/{id}", agentsH.GetSession)
+				r.Post("/{id}/turns", agentsH.SubmitTurn)
+				r.Get("/{id}/stream", agentsH.Stream)
+				r.Get("/{id}/events", agentsH.ListEvents)
+				r.Post("/{id}/approvals/{approvalId}/token", agentsH.MintApprovalToken)
+				r.Post("/{id}/approvals/{approvalId}", agentsH.Approve)
+				r.Post("/{id}/cancel", agentsH.Cancel)
+			})
+		}
 
 		r.Route("/v1/llm", func(r chi.Router) {
 			r.Use(rl.PerUser(ratelimit.GroupLLM, 60))

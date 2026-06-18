@@ -35,6 +35,7 @@ const (
 	GroupTaskBurst   = "background_task_burst"
 	GroupEvents      = "events"
 	GroupWebhooks    = "webhooks"
+	GroupAgent       = "agent"
 )
 
 // Limiter is a fixed-window rate limiter.

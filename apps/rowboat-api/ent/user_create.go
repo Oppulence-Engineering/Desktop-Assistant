@@ -12,6 +12,13 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -326,6 +333,111 @@ func (_c *UserCreate) AddGoogleWatches(v ...*GoogleWatch) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddGoogleWatchIDs(ids...)
+}
+
+// AddAgentDefinitionIDs adds the "agent_definitions" edge to the AgentDefinition entity by IDs.
+func (_c *UserCreate) AddAgentDefinitionIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddAgentDefinitionIDs(ids...)
+	return _c
+}
+
+// AddAgentDefinitions adds the "agent_definitions" edges to the AgentDefinition entity.
+func (_c *UserCreate) AddAgentDefinitions(v ...*AgentDefinition) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAgentDefinitionIDs(ids...)
+}
+
+// AddAgentSessionIDs adds the "agent_sessions" edge to the AgentSession entity by IDs.
+func (_c *UserCreate) AddAgentSessionIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddAgentSessionIDs(ids...)
+	return _c
+}
+
+// AddAgentSessions adds the "agent_sessions" edges to the AgentSession entity.
+func (_c *UserCreate) AddAgentSessions(v ...*AgentSession) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAgentSessionIDs(ids...)
+}
+
+// AddAgentTurnIDs adds the "agent_turns" edge to the AgentTurn entity by IDs.
+func (_c *UserCreate) AddAgentTurnIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddAgentTurnIDs(ids...)
+	return _c
+}
+
+// AddAgentTurns adds the "agent_turns" edges to the AgentTurn entity.
+func (_c *UserCreate) AddAgentTurns(v ...*AgentTurn) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAgentTurnIDs(ids...)
+}
+
+// AddAgentSessionEventIDs adds the "agent_session_events" edge to the AgentSessionEvent entity by IDs.
+func (_c *UserCreate) AddAgentSessionEventIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddAgentSessionEventIDs(ids...)
+	return _c
+}
+
+// AddAgentSessionEvents adds the "agent_session_events" edges to the AgentSessionEvent entity.
+func (_c *UserCreate) AddAgentSessionEvents(v ...*AgentSessionEvent) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAgentSessionEventIDs(ids...)
+}
+
+// AddAgentToolCallIDs adds the "agent_tool_calls" edge to the AgentToolCall entity by IDs.
+func (_c *UserCreate) AddAgentToolCallIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddAgentToolCallIDs(ids...)
+	return _c
+}
+
+// AddAgentToolCalls adds the "agent_tool_calls" edges to the AgentToolCall entity.
+func (_c *UserCreate) AddAgentToolCalls(v ...*AgentToolCall) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAgentToolCallIDs(ids...)
+}
+
+// AddAgentApprovalIDs adds the "agent_approvals" edge to the AgentApproval entity by IDs.
+func (_c *UserCreate) AddAgentApprovalIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddAgentApprovalIDs(ids...)
+	return _c
+}
+
+// AddAgentApprovals adds the "agent_approvals" edges to the AgentApproval entity.
+func (_c *UserCreate) AddAgentApprovals(v ...*AgentApproval) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAgentApprovalIDs(ids...)
+}
+
+// AddAgentToolResultBlobIDs adds the "agent_tool_result_blobs" edge to the AgentToolResultBlob entity by IDs.
+func (_c *UserCreate) AddAgentToolResultBlobIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddAgentToolResultBlobIDs(ids...)
+	return _c
+}
+
+// AddAgentToolResultBlobs adds the "agent_tool_result_blobs" edges to the AgentToolResultBlob entity.
+func (_c *UserCreate) AddAgentToolResultBlobs(v ...*AgentToolResultBlob) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAgentToolResultBlobIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -666,6 +778,118 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(googlewatch.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgentDefinitionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AgentDefinitionsTable,
+			Columns: []string{user.AgentDefinitionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentdefinition.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgentSessionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AgentSessionsTable,
+			Columns: []string{user.AgentSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentsession.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgentTurnsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AgentTurnsTable,
+			Columns: []string{user.AgentTurnsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentturn.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgentSessionEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AgentSessionEventsTable,
+			Columns: []string{user.AgentSessionEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentsessionevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgentToolCallsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AgentToolCallsTable,
+			Columns: []string{user.AgentToolCallsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenttoolcall.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgentApprovalsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AgentApprovalsTable,
+			Columns: []string{user.AgentApprovalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentapproval.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgentToolResultBlobsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AgentToolResultBlobsTable,
+			Columns: []string{user.AgentToolResultBlobsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenttoolresultblob.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
