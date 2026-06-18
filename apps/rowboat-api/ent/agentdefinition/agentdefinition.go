@@ -33,6 +33,8 @@ const (
 	FieldLimitsJSON = "limits_json"
 	// FieldEnabledTools holds the string denoting the enabled_tools field in the database.
 	FieldEnabledTools = "enabled_tools"
+	// FieldToolsJSON holds the string denoting the tools_json field in the database.
+	FieldToolsJSON = "tools_json"
 	// FieldSubagentRefs holds the string denoting the subagent_refs field in the database.
 	FieldSubagentRefs = "subagent_refs"
 	// FieldChannelBindings holds the string denoting the channel_bindings field in the database.
@@ -45,6 +47,18 @@ const (
 	FieldForkedFrom = "forked_from"
 	// FieldRevision holds the string denoting the revision field in the database.
 	FieldRevision = "revision"
+	// FieldSourceFormat holds the string denoting the source_format field in the database.
+	FieldSourceFormat = "source_format"
+	// FieldRawSource holds the string denoting the raw_source field in the database.
+	FieldRawSource = "raw_source"
+	// FieldContentHash holds the string denoting the content_hash field in the database.
+	FieldContentHash = "content_hash"
+	// FieldManagedBy holds the string denoting the managed_by field in the database.
+	FieldManagedBy = "managed_by"
+	// FieldAgentSyncState holds the string denoting the agent_sync_state field in the database.
+	FieldAgentSyncState = "agent_sync_state"
+	// FieldAgentSyncError holds the string denoting the agent_sync_error field in the database.
+	FieldAgentSyncError = "agent_sync_error"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// EdgeSessions holds the string denoting the sessions edge name in mutations.
@@ -79,12 +93,19 @@ var Columns = []string{
 	FieldProvider,
 	FieldLimitsJSON,
 	FieldEnabledTools,
+	FieldToolsJSON,
 	FieldSubagentRefs,
 	FieldChannelBindings,
 	FieldConnectorReqs,
 	FieldSource,
 	FieldForkedFrom,
 	FieldRevision,
+	FieldSourceFormat,
+	FieldRawSource,
+	FieldContentHash,
+	FieldManagedBy,
+	FieldAgentSyncState,
+	FieldAgentSyncError,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "agent_definitions"
@@ -121,6 +142,8 @@ var (
 	NameValidator func(string) error
 	// LimitsJSONValidator is a validator for the "limits_json" field. It is called by the builders before save.
 	LimitsJSONValidator func(string) error
+	// ToolsJSONValidator is a validator for the "tools_json" field. It is called by the builders before save.
+	ToolsJSONValidator func(string) error
 	// ChannelBindingsValidator is a validator for the "channel_bindings" field. It is called by the builders before save.
 	ChannelBindingsValidator func(string) error
 	// DefaultSource holds the default value on creation for the "source" field.
@@ -131,6 +154,18 @@ var (
 	DefaultRevision int
 	// RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
 	RevisionValidator func(int) error
+	// DefaultSourceFormat holds the default value on creation for the "source_format" field.
+	DefaultSourceFormat string
+	// SourceFormatValidator is a validator for the "source_format" field. It is called by the builders before save.
+	SourceFormatValidator func(string) error
+	// DefaultManagedBy holds the default value on creation for the "managed_by" field.
+	DefaultManagedBy string
+	// ManagedByValidator is a validator for the "managed_by" field. It is called by the builders before save.
+	ManagedByValidator func(string) error
+	// DefaultAgentSyncState holds the default value on creation for the "agent_sync_state" field.
+	DefaultAgentSyncState string
+	// AgentSyncStateValidator is a validator for the "agent_sync_state" field. It is called by the builders before save.
+	AgentSyncStateValidator func(string) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -183,6 +218,11 @@ func ByLimitsJSON(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLimitsJSON, opts...).ToFunc()
 }
 
+// ByToolsJSON orders the results by the tools_json field.
+func ByToolsJSON(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldToolsJSON, opts...).ToFunc()
+}
+
 // ByChannelBindings orders the results by the channel_bindings field.
 func ByChannelBindings(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldChannelBindings, opts...).ToFunc()
@@ -201,6 +241,36 @@ func ByForkedFrom(opts ...sql.OrderTermOption) OrderOption {
 // ByRevision orders the results by the revision field.
 func ByRevision(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRevision, opts...).ToFunc()
+}
+
+// BySourceFormat orders the results by the source_format field.
+func BySourceFormat(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSourceFormat, opts...).ToFunc()
+}
+
+// ByRawSource orders the results by the raw_source field.
+func ByRawSource(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRawSource, opts...).ToFunc()
+}
+
+// ByContentHash orders the results by the content_hash field.
+func ByContentHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldContentHash, opts...).ToFunc()
+}
+
+// ByManagedBy orders the results by the managed_by field.
+func ByManagedBy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldManagedBy, opts...).ToFunc()
+}
+
+// ByAgentSyncState orders the results by the agent_sync_state field.
+func ByAgentSyncState(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAgentSyncState, opts...).ToFunc()
+}
+
+// ByAgentSyncError orders the results by the agent_sync_error field.
+func ByAgentSyncError(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAgentSyncError, opts...).ToFunc()
 }
 
 // ByUserField orders the results by user field.

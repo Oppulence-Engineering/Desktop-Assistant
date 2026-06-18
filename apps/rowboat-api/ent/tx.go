@@ -16,6 +16,8 @@ type Tx struct {
 	AgentApproval *AgentApprovalClient
 	// AgentDefinition is the client for interacting with the AgentDefinition builders.
 	AgentDefinition *AgentDefinitionClient
+	// AgentDefinitionHistory is the client for interacting with the AgentDefinitionHistory builders.
+	AgentDefinitionHistory *AgentDefinitionHistoryClient
 	// AgentSession is the client for interacting with the AgentSession builders.
 	AgentSession *AgentSessionClient
 	// AgentSessionEvent is the client for interacting with the AgentSessionEvent builders.
@@ -201,6 +203,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.AgentApproval = NewAgentApprovalClient(tx.config)
 	tx.AgentDefinition = NewAgentDefinitionClient(tx.config)
+	tx.AgentDefinitionHistory = NewAgentDefinitionHistoryClient(tx.config)
 	tx.AgentSession = NewAgentSessionClient(tx.config)
 	tx.AgentSessionEvent = NewAgentSessionEventClient(tx.config)
 	tx.AgentToolCall = NewAgentToolCallClient(tx.config)

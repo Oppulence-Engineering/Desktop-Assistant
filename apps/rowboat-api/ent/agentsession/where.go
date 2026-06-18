@@ -81,6 +81,11 @@ func AgentSource(v string) predicate.AgentSession {
 	return predicate.AgentSession(sql.FieldEQ(FieldAgentSource, v))
 }
 
+// AgentRevision applies equality check predicate on the "agent_revision" field. It's identical to AgentRevisionEQ.
+func AgentRevision(v int) predicate.AgentSession {
+	return predicate.AgentSession(sql.FieldEQ(FieldAgentRevision, v))
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.AgentSession {
 	return predicate.AgentSession(sql.FieldEQ(FieldStatus, v))
@@ -444,6 +449,46 @@ func AgentSourceEqualFold(v string) predicate.AgentSession {
 // AgentSourceContainsFold applies the ContainsFold predicate on the "agent_source" field.
 func AgentSourceContainsFold(v string) predicate.AgentSession {
 	return predicate.AgentSession(sql.FieldContainsFold(FieldAgentSource, v))
+}
+
+// AgentRevisionEQ applies the EQ predicate on the "agent_revision" field.
+func AgentRevisionEQ(v int) predicate.AgentSession {
+	return predicate.AgentSession(sql.FieldEQ(FieldAgentRevision, v))
+}
+
+// AgentRevisionNEQ applies the NEQ predicate on the "agent_revision" field.
+func AgentRevisionNEQ(v int) predicate.AgentSession {
+	return predicate.AgentSession(sql.FieldNEQ(FieldAgentRevision, v))
+}
+
+// AgentRevisionIn applies the In predicate on the "agent_revision" field.
+func AgentRevisionIn(vs ...int) predicate.AgentSession {
+	return predicate.AgentSession(sql.FieldIn(FieldAgentRevision, vs...))
+}
+
+// AgentRevisionNotIn applies the NotIn predicate on the "agent_revision" field.
+func AgentRevisionNotIn(vs ...int) predicate.AgentSession {
+	return predicate.AgentSession(sql.FieldNotIn(FieldAgentRevision, vs...))
+}
+
+// AgentRevisionGT applies the GT predicate on the "agent_revision" field.
+func AgentRevisionGT(v int) predicate.AgentSession {
+	return predicate.AgentSession(sql.FieldGT(FieldAgentRevision, v))
+}
+
+// AgentRevisionGTE applies the GTE predicate on the "agent_revision" field.
+func AgentRevisionGTE(v int) predicate.AgentSession {
+	return predicate.AgentSession(sql.FieldGTE(FieldAgentRevision, v))
+}
+
+// AgentRevisionLT applies the LT predicate on the "agent_revision" field.
+func AgentRevisionLT(v int) predicate.AgentSession {
+	return predicate.AgentSession(sql.FieldLT(FieldAgentRevision, v))
+}
+
+// AgentRevisionLTE applies the LTE predicate on the "agent_revision" field.
+func AgentRevisionLTE(v int) predicate.AgentSession {
+	return predicate.AgentSession(sql.FieldLTE(FieldAgentRevision, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

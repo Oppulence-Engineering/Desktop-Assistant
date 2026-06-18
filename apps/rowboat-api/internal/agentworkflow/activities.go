@@ -535,6 +535,7 @@ func (a *Activities) EnsureSession(ctx context.Context, in EnsureSessionInput) e
 			SetSessionID(in.Start.SessionID).
 			SetAgentSlug(in.Start.AgentSlug).
 			SetAgentSource(in.Start.AgentSource).
+			SetAgentRevision(in.Start.AgentRevision).
 			SetChannel(in.Start.Channel).
 			SetStatus("active").
 			SetStartedAt(now)

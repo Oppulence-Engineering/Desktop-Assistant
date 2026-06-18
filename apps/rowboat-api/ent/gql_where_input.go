@@ -9,6 +9,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
@@ -30,6 +31,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/flume/enthistory"
 	"github.com/google/uuid"
 )
 
@@ -1062,6 +1064,23 @@ type AgentDefinitionWhereInput struct {
 	LimitsJSONEqualFold    *string  `json:"limitsJSONEqualFold,omitempty"`
 	LimitsJSONContainsFold *string  `json:"limitsJSONContainsFold,omitempty"`
 
+	// "tools_json" field predicates.
+	ToolsJSON             *string  `json:"toolsJSON,omitempty"`
+	ToolsJSONNEQ          *string  `json:"toolsJSONNEQ,omitempty"`
+	ToolsJSONIn           []string `json:"toolsJSONIn,omitempty"`
+	ToolsJSONNotIn        []string `json:"toolsJSONNotIn,omitempty"`
+	ToolsJSONGT           *string  `json:"toolsJSONGT,omitempty"`
+	ToolsJSONGTE          *string  `json:"toolsJSONGTE,omitempty"`
+	ToolsJSONLT           *string  `json:"toolsJSONLT,omitempty"`
+	ToolsJSONLTE          *string  `json:"toolsJSONLTE,omitempty"`
+	ToolsJSONContains     *string  `json:"toolsJSONContains,omitempty"`
+	ToolsJSONHasPrefix    *string  `json:"toolsJSONHasPrefix,omitempty"`
+	ToolsJSONHasSuffix    *string  `json:"toolsJSONHasSuffix,omitempty"`
+	ToolsJSONIsNil        bool     `json:"toolsJSONIsNil,omitempty"`
+	ToolsJSONNotNil       bool     `json:"toolsJSONNotNil,omitempty"`
+	ToolsJSONEqualFold    *string  `json:"toolsJSONEqualFold,omitempty"`
+	ToolsJSONContainsFold *string  `json:"toolsJSONContainsFold,omitempty"`
+
 	// "channel_bindings" field predicates.
 	ChannelBindings             *string  `json:"channelBindings,omitempty"`
 	ChannelBindingsNEQ          *string  `json:"channelBindingsNEQ,omitempty"`
@@ -1120,6 +1139,102 @@ type AgentDefinitionWhereInput struct {
 	RevisionGTE   *int  `json:"revisionGTE,omitempty"`
 	RevisionLT    *int  `json:"revisionLT,omitempty"`
 	RevisionLTE   *int  `json:"revisionLTE,omitempty"`
+
+	// "source_format" field predicates.
+	SourceFormat             *string  `json:"sourceFormat,omitempty"`
+	SourceFormatNEQ          *string  `json:"sourceFormatNEQ,omitempty"`
+	SourceFormatIn           []string `json:"sourceFormatIn,omitempty"`
+	SourceFormatNotIn        []string `json:"sourceFormatNotIn,omitempty"`
+	SourceFormatGT           *string  `json:"sourceFormatGT,omitempty"`
+	SourceFormatGTE          *string  `json:"sourceFormatGTE,omitempty"`
+	SourceFormatLT           *string  `json:"sourceFormatLT,omitempty"`
+	SourceFormatLTE          *string  `json:"sourceFormatLTE,omitempty"`
+	SourceFormatContains     *string  `json:"sourceFormatContains,omitempty"`
+	SourceFormatHasPrefix    *string  `json:"sourceFormatHasPrefix,omitempty"`
+	SourceFormatHasSuffix    *string  `json:"sourceFormatHasSuffix,omitempty"`
+	SourceFormatEqualFold    *string  `json:"sourceFormatEqualFold,omitempty"`
+	SourceFormatContainsFold *string  `json:"sourceFormatContainsFold,omitempty"`
+
+	// "raw_source" field predicates.
+	RawSource             *string  `json:"rawSource,omitempty"`
+	RawSourceNEQ          *string  `json:"rawSourceNEQ,omitempty"`
+	RawSourceIn           []string `json:"rawSourceIn,omitempty"`
+	RawSourceNotIn        []string `json:"rawSourceNotIn,omitempty"`
+	RawSourceGT           *string  `json:"rawSourceGT,omitempty"`
+	RawSourceGTE          *string  `json:"rawSourceGTE,omitempty"`
+	RawSourceLT           *string  `json:"rawSourceLT,omitempty"`
+	RawSourceLTE          *string  `json:"rawSourceLTE,omitempty"`
+	RawSourceContains     *string  `json:"rawSourceContains,omitempty"`
+	RawSourceHasPrefix    *string  `json:"rawSourceHasPrefix,omitempty"`
+	RawSourceHasSuffix    *string  `json:"rawSourceHasSuffix,omitempty"`
+	RawSourceIsNil        bool     `json:"rawSourceIsNil,omitempty"`
+	RawSourceNotNil       bool     `json:"rawSourceNotNil,omitempty"`
+	RawSourceEqualFold    *string  `json:"rawSourceEqualFold,omitempty"`
+	RawSourceContainsFold *string  `json:"rawSourceContainsFold,omitempty"`
+
+	// "content_hash" field predicates.
+	ContentHash             *string  `json:"contentHash,omitempty"`
+	ContentHashNEQ          *string  `json:"contentHashNEQ,omitempty"`
+	ContentHashIn           []string `json:"contentHashIn,omitempty"`
+	ContentHashNotIn        []string `json:"contentHashNotIn,omitempty"`
+	ContentHashGT           *string  `json:"contentHashGT,omitempty"`
+	ContentHashGTE          *string  `json:"contentHashGTE,omitempty"`
+	ContentHashLT           *string  `json:"contentHashLT,omitempty"`
+	ContentHashLTE          *string  `json:"contentHashLTE,omitempty"`
+	ContentHashContains     *string  `json:"contentHashContains,omitempty"`
+	ContentHashHasPrefix    *string  `json:"contentHashHasPrefix,omitempty"`
+	ContentHashHasSuffix    *string  `json:"contentHashHasSuffix,omitempty"`
+	ContentHashIsNil        bool     `json:"contentHashIsNil,omitempty"`
+	ContentHashNotNil       bool     `json:"contentHashNotNil,omitempty"`
+	ContentHashEqualFold    *string  `json:"contentHashEqualFold,omitempty"`
+	ContentHashContainsFold *string  `json:"contentHashContainsFold,omitempty"`
+
+	// "managed_by" field predicates.
+	ManagedBy             *string  `json:"managedBy,omitempty"`
+	ManagedByNEQ          *string  `json:"managedByNEQ,omitempty"`
+	ManagedByIn           []string `json:"managedByIn,omitempty"`
+	ManagedByNotIn        []string `json:"managedByNotIn,omitempty"`
+	ManagedByGT           *string  `json:"managedByGT,omitempty"`
+	ManagedByGTE          *string  `json:"managedByGTE,omitempty"`
+	ManagedByLT           *string  `json:"managedByLT,omitempty"`
+	ManagedByLTE          *string  `json:"managedByLTE,omitempty"`
+	ManagedByContains     *string  `json:"managedByContains,omitempty"`
+	ManagedByHasPrefix    *string  `json:"managedByHasPrefix,omitempty"`
+	ManagedByHasSuffix    *string  `json:"managedByHasSuffix,omitempty"`
+	ManagedByEqualFold    *string  `json:"managedByEqualFold,omitempty"`
+	ManagedByContainsFold *string  `json:"managedByContainsFold,omitempty"`
+
+	// "agent_sync_state" field predicates.
+	AgentSyncState             *string  `json:"agentSyncState,omitempty"`
+	AgentSyncStateNEQ          *string  `json:"agentSyncStateNEQ,omitempty"`
+	AgentSyncStateIn           []string `json:"agentSyncStateIn,omitempty"`
+	AgentSyncStateNotIn        []string `json:"agentSyncStateNotIn,omitempty"`
+	AgentSyncStateGT           *string  `json:"agentSyncStateGT,omitempty"`
+	AgentSyncStateGTE          *string  `json:"agentSyncStateGTE,omitempty"`
+	AgentSyncStateLT           *string  `json:"agentSyncStateLT,omitempty"`
+	AgentSyncStateLTE          *string  `json:"agentSyncStateLTE,omitempty"`
+	AgentSyncStateContains     *string  `json:"agentSyncStateContains,omitempty"`
+	AgentSyncStateHasPrefix    *string  `json:"agentSyncStateHasPrefix,omitempty"`
+	AgentSyncStateHasSuffix    *string  `json:"agentSyncStateHasSuffix,omitempty"`
+	AgentSyncStateEqualFold    *string  `json:"agentSyncStateEqualFold,omitempty"`
+	AgentSyncStateContainsFold *string  `json:"agentSyncStateContainsFold,omitempty"`
+
+	// "agent_sync_error" field predicates.
+	AgentSyncError             *string  `json:"agentSyncError,omitempty"`
+	AgentSyncErrorNEQ          *string  `json:"agentSyncErrorNEQ,omitempty"`
+	AgentSyncErrorIn           []string `json:"agentSyncErrorIn,omitempty"`
+	AgentSyncErrorNotIn        []string `json:"agentSyncErrorNotIn,omitempty"`
+	AgentSyncErrorGT           *string  `json:"agentSyncErrorGT,omitempty"`
+	AgentSyncErrorGTE          *string  `json:"agentSyncErrorGTE,omitempty"`
+	AgentSyncErrorLT           *string  `json:"agentSyncErrorLT,omitempty"`
+	AgentSyncErrorLTE          *string  `json:"agentSyncErrorLTE,omitempty"`
+	AgentSyncErrorContains     *string  `json:"agentSyncErrorContains,omitempty"`
+	AgentSyncErrorHasPrefix    *string  `json:"agentSyncErrorHasPrefix,omitempty"`
+	AgentSyncErrorHasSuffix    *string  `json:"agentSyncErrorHasSuffix,omitempty"`
+	AgentSyncErrorIsNil        bool     `json:"agentSyncErrorIsNil,omitempty"`
+	AgentSyncErrorNotNil       bool     `json:"agentSyncErrorNotNil,omitempty"`
+	AgentSyncErrorEqualFold    *string  `json:"agentSyncErrorEqualFold,omitempty"`
+	AgentSyncErrorContainsFold *string  `json:"agentSyncErrorContainsFold,omitempty"`
 
 	// "user" edge predicates.
 	HasUser     *bool             `json:"hasUser,omitempty"`
@@ -1531,6 +1646,51 @@ func (i *AgentDefinitionWhereInput) P() (predicate.AgentDefinition, error) {
 	if i.LimitsJSONContainsFold != nil {
 		predicates = append(predicates, agentdefinition.LimitsJSONContainsFold(*i.LimitsJSONContainsFold))
 	}
+	if i.ToolsJSON != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONEQ(*i.ToolsJSON))
+	}
+	if i.ToolsJSONNEQ != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONNEQ(*i.ToolsJSONNEQ))
+	}
+	if len(i.ToolsJSONIn) > 0 {
+		predicates = append(predicates, agentdefinition.ToolsJSONIn(i.ToolsJSONIn...))
+	}
+	if len(i.ToolsJSONNotIn) > 0 {
+		predicates = append(predicates, agentdefinition.ToolsJSONNotIn(i.ToolsJSONNotIn...))
+	}
+	if i.ToolsJSONGT != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONGT(*i.ToolsJSONGT))
+	}
+	if i.ToolsJSONGTE != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONGTE(*i.ToolsJSONGTE))
+	}
+	if i.ToolsJSONLT != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONLT(*i.ToolsJSONLT))
+	}
+	if i.ToolsJSONLTE != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONLTE(*i.ToolsJSONLTE))
+	}
+	if i.ToolsJSONContains != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONContains(*i.ToolsJSONContains))
+	}
+	if i.ToolsJSONHasPrefix != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONHasPrefix(*i.ToolsJSONHasPrefix))
+	}
+	if i.ToolsJSONHasSuffix != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONHasSuffix(*i.ToolsJSONHasSuffix))
+	}
+	if i.ToolsJSONIsNil {
+		predicates = append(predicates, agentdefinition.ToolsJSONIsNil())
+	}
+	if i.ToolsJSONNotNil {
+		predicates = append(predicates, agentdefinition.ToolsJSONNotNil())
+	}
+	if i.ToolsJSONEqualFold != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONEqualFold(*i.ToolsJSONEqualFold))
+	}
+	if i.ToolsJSONContainsFold != nil {
+		predicates = append(predicates, agentdefinition.ToolsJSONContainsFold(*i.ToolsJSONContainsFold))
+	}
 	if i.ChannelBindings != nil {
 		predicates = append(predicates, agentdefinition.ChannelBindingsEQ(*i.ChannelBindings))
 	}
@@ -1684,6 +1844,258 @@ func (i *AgentDefinitionWhereInput) P() (predicate.AgentDefinition, error) {
 	if i.RevisionLTE != nil {
 		predicates = append(predicates, agentdefinition.RevisionLTE(*i.RevisionLTE))
 	}
+	if i.SourceFormat != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatEQ(*i.SourceFormat))
+	}
+	if i.SourceFormatNEQ != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatNEQ(*i.SourceFormatNEQ))
+	}
+	if len(i.SourceFormatIn) > 0 {
+		predicates = append(predicates, agentdefinition.SourceFormatIn(i.SourceFormatIn...))
+	}
+	if len(i.SourceFormatNotIn) > 0 {
+		predicates = append(predicates, agentdefinition.SourceFormatNotIn(i.SourceFormatNotIn...))
+	}
+	if i.SourceFormatGT != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatGT(*i.SourceFormatGT))
+	}
+	if i.SourceFormatGTE != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatGTE(*i.SourceFormatGTE))
+	}
+	if i.SourceFormatLT != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatLT(*i.SourceFormatLT))
+	}
+	if i.SourceFormatLTE != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatLTE(*i.SourceFormatLTE))
+	}
+	if i.SourceFormatContains != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatContains(*i.SourceFormatContains))
+	}
+	if i.SourceFormatHasPrefix != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatHasPrefix(*i.SourceFormatHasPrefix))
+	}
+	if i.SourceFormatHasSuffix != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatHasSuffix(*i.SourceFormatHasSuffix))
+	}
+	if i.SourceFormatEqualFold != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatEqualFold(*i.SourceFormatEqualFold))
+	}
+	if i.SourceFormatContainsFold != nil {
+		predicates = append(predicates, agentdefinition.SourceFormatContainsFold(*i.SourceFormatContainsFold))
+	}
+	if i.RawSource != nil {
+		predicates = append(predicates, agentdefinition.RawSourceEQ(*i.RawSource))
+	}
+	if i.RawSourceNEQ != nil {
+		predicates = append(predicates, agentdefinition.RawSourceNEQ(*i.RawSourceNEQ))
+	}
+	if len(i.RawSourceIn) > 0 {
+		predicates = append(predicates, agentdefinition.RawSourceIn(i.RawSourceIn...))
+	}
+	if len(i.RawSourceNotIn) > 0 {
+		predicates = append(predicates, agentdefinition.RawSourceNotIn(i.RawSourceNotIn...))
+	}
+	if i.RawSourceGT != nil {
+		predicates = append(predicates, agentdefinition.RawSourceGT(*i.RawSourceGT))
+	}
+	if i.RawSourceGTE != nil {
+		predicates = append(predicates, agentdefinition.RawSourceGTE(*i.RawSourceGTE))
+	}
+	if i.RawSourceLT != nil {
+		predicates = append(predicates, agentdefinition.RawSourceLT(*i.RawSourceLT))
+	}
+	if i.RawSourceLTE != nil {
+		predicates = append(predicates, agentdefinition.RawSourceLTE(*i.RawSourceLTE))
+	}
+	if i.RawSourceContains != nil {
+		predicates = append(predicates, agentdefinition.RawSourceContains(*i.RawSourceContains))
+	}
+	if i.RawSourceHasPrefix != nil {
+		predicates = append(predicates, agentdefinition.RawSourceHasPrefix(*i.RawSourceHasPrefix))
+	}
+	if i.RawSourceHasSuffix != nil {
+		predicates = append(predicates, agentdefinition.RawSourceHasSuffix(*i.RawSourceHasSuffix))
+	}
+	if i.RawSourceIsNil {
+		predicates = append(predicates, agentdefinition.RawSourceIsNil())
+	}
+	if i.RawSourceNotNil {
+		predicates = append(predicates, agentdefinition.RawSourceNotNil())
+	}
+	if i.RawSourceEqualFold != nil {
+		predicates = append(predicates, agentdefinition.RawSourceEqualFold(*i.RawSourceEqualFold))
+	}
+	if i.RawSourceContainsFold != nil {
+		predicates = append(predicates, agentdefinition.RawSourceContainsFold(*i.RawSourceContainsFold))
+	}
+	if i.ContentHash != nil {
+		predicates = append(predicates, agentdefinition.ContentHashEQ(*i.ContentHash))
+	}
+	if i.ContentHashNEQ != nil {
+		predicates = append(predicates, agentdefinition.ContentHashNEQ(*i.ContentHashNEQ))
+	}
+	if len(i.ContentHashIn) > 0 {
+		predicates = append(predicates, agentdefinition.ContentHashIn(i.ContentHashIn...))
+	}
+	if len(i.ContentHashNotIn) > 0 {
+		predicates = append(predicates, agentdefinition.ContentHashNotIn(i.ContentHashNotIn...))
+	}
+	if i.ContentHashGT != nil {
+		predicates = append(predicates, agentdefinition.ContentHashGT(*i.ContentHashGT))
+	}
+	if i.ContentHashGTE != nil {
+		predicates = append(predicates, agentdefinition.ContentHashGTE(*i.ContentHashGTE))
+	}
+	if i.ContentHashLT != nil {
+		predicates = append(predicates, agentdefinition.ContentHashLT(*i.ContentHashLT))
+	}
+	if i.ContentHashLTE != nil {
+		predicates = append(predicates, agentdefinition.ContentHashLTE(*i.ContentHashLTE))
+	}
+	if i.ContentHashContains != nil {
+		predicates = append(predicates, agentdefinition.ContentHashContains(*i.ContentHashContains))
+	}
+	if i.ContentHashHasPrefix != nil {
+		predicates = append(predicates, agentdefinition.ContentHashHasPrefix(*i.ContentHashHasPrefix))
+	}
+	if i.ContentHashHasSuffix != nil {
+		predicates = append(predicates, agentdefinition.ContentHashHasSuffix(*i.ContentHashHasSuffix))
+	}
+	if i.ContentHashIsNil {
+		predicates = append(predicates, agentdefinition.ContentHashIsNil())
+	}
+	if i.ContentHashNotNil {
+		predicates = append(predicates, agentdefinition.ContentHashNotNil())
+	}
+	if i.ContentHashEqualFold != nil {
+		predicates = append(predicates, agentdefinition.ContentHashEqualFold(*i.ContentHashEqualFold))
+	}
+	if i.ContentHashContainsFold != nil {
+		predicates = append(predicates, agentdefinition.ContentHashContainsFold(*i.ContentHashContainsFold))
+	}
+	if i.ManagedBy != nil {
+		predicates = append(predicates, agentdefinition.ManagedByEQ(*i.ManagedBy))
+	}
+	if i.ManagedByNEQ != nil {
+		predicates = append(predicates, agentdefinition.ManagedByNEQ(*i.ManagedByNEQ))
+	}
+	if len(i.ManagedByIn) > 0 {
+		predicates = append(predicates, agentdefinition.ManagedByIn(i.ManagedByIn...))
+	}
+	if len(i.ManagedByNotIn) > 0 {
+		predicates = append(predicates, agentdefinition.ManagedByNotIn(i.ManagedByNotIn...))
+	}
+	if i.ManagedByGT != nil {
+		predicates = append(predicates, agentdefinition.ManagedByGT(*i.ManagedByGT))
+	}
+	if i.ManagedByGTE != nil {
+		predicates = append(predicates, agentdefinition.ManagedByGTE(*i.ManagedByGTE))
+	}
+	if i.ManagedByLT != nil {
+		predicates = append(predicates, agentdefinition.ManagedByLT(*i.ManagedByLT))
+	}
+	if i.ManagedByLTE != nil {
+		predicates = append(predicates, agentdefinition.ManagedByLTE(*i.ManagedByLTE))
+	}
+	if i.ManagedByContains != nil {
+		predicates = append(predicates, agentdefinition.ManagedByContains(*i.ManagedByContains))
+	}
+	if i.ManagedByHasPrefix != nil {
+		predicates = append(predicates, agentdefinition.ManagedByHasPrefix(*i.ManagedByHasPrefix))
+	}
+	if i.ManagedByHasSuffix != nil {
+		predicates = append(predicates, agentdefinition.ManagedByHasSuffix(*i.ManagedByHasSuffix))
+	}
+	if i.ManagedByEqualFold != nil {
+		predicates = append(predicates, agentdefinition.ManagedByEqualFold(*i.ManagedByEqualFold))
+	}
+	if i.ManagedByContainsFold != nil {
+		predicates = append(predicates, agentdefinition.ManagedByContainsFold(*i.ManagedByContainsFold))
+	}
+	if i.AgentSyncState != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateEQ(*i.AgentSyncState))
+	}
+	if i.AgentSyncStateNEQ != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateNEQ(*i.AgentSyncStateNEQ))
+	}
+	if len(i.AgentSyncStateIn) > 0 {
+		predicates = append(predicates, agentdefinition.AgentSyncStateIn(i.AgentSyncStateIn...))
+	}
+	if len(i.AgentSyncStateNotIn) > 0 {
+		predicates = append(predicates, agentdefinition.AgentSyncStateNotIn(i.AgentSyncStateNotIn...))
+	}
+	if i.AgentSyncStateGT != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateGT(*i.AgentSyncStateGT))
+	}
+	if i.AgentSyncStateGTE != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateGTE(*i.AgentSyncStateGTE))
+	}
+	if i.AgentSyncStateLT != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateLT(*i.AgentSyncStateLT))
+	}
+	if i.AgentSyncStateLTE != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateLTE(*i.AgentSyncStateLTE))
+	}
+	if i.AgentSyncStateContains != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateContains(*i.AgentSyncStateContains))
+	}
+	if i.AgentSyncStateHasPrefix != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateHasPrefix(*i.AgentSyncStateHasPrefix))
+	}
+	if i.AgentSyncStateHasSuffix != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateHasSuffix(*i.AgentSyncStateHasSuffix))
+	}
+	if i.AgentSyncStateEqualFold != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateEqualFold(*i.AgentSyncStateEqualFold))
+	}
+	if i.AgentSyncStateContainsFold != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncStateContainsFold(*i.AgentSyncStateContainsFold))
+	}
+	if i.AgentSyncError != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorEQ(*i.AgentSyncError))
+	}
+	if i.AgentSyncErrorNEQ != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorNEQ(*i.AgentSyncErrorNEQ))
+	}
+	if len(i.AgentSyncErrorIn) > 0 {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorIn(i.AgentSyncErrorIn...))
+	}
+	if len(i.AgentSyncErrorNotIn) > 0 {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorNotIn(i.AgentSyncErrorNotIn...))
+	}
+	if i.AgentSyncErrorGT != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorGT(*i.AgentSyncErrorGT))
+	}
+	if i.AgentSyncErrorGTE != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorGTE(*i.AgentSyncErrorGTE))
+	}
+	if i.AgentSyncErrorLT != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorLT(*i.AgentSyncErrorLT))
+	}
+	if i.AgentSyncErrorLTE != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorLTE(*i.AgentSyncErrorLTE))
+	}
+	if i.AgentSyncErrorContains != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorContains(*i.AgentSyncErrorContains))
+	}
+	if i.AgentSyncErrorHasPrefix != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorHasPrefix(*i.AgentSyncErrorHasPrefix))
+	}
+	if i.AgentSyncErrorHasSuffix != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorHasSuffix(*i.AgentSyncErrorHasSuffix))
+	}
+	if i.AgentSyncErrorIsNil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorIsNil())
+	}
+	if i.AgentSyncErrorNotNil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorNotNil())
+	}
+	if i.AgentSyncErrorEqualFold != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorEqualFold(*i.AgentSyncErrorEqualFold))
+	}
+	if i.AgentSyncErrorContainsFold != nil {
+		predicates = append(predicates, agentdefinition.AgentSyncErrorContainsFold(*i.AgentSyncErrorContainsFold))
+	}
 
 	if i.HasUser != nil {
 		p := agentdefinition.HasUser()
@@ -1728,6 +2140,1270 @@ func (i *AgentDefinitionWhereInput) P() (predicate.AgentDefinition, error) {
 		return predicates[0], nil
 	default:
 		return agentdefinition.And(predicates...), nil
+	}
+}
+
+// AgentDefinitionHistoryWhereInput represents a where input for filtering AgentDefinitionHistory queries.
+type AgentDefinitionHistoryWhereInput struct {
+	Predicates []predicate.AgentDefinitionHistory  `json:"-"`
+	Not        *AgentDefinitionHistoryWhereInput   `json:"not,omitempty"`
+	Or         []*AgentDefinitionHistoryWhereInput `json:"or,omitempty"`
+	And        []*AgentDefinitionHistoryWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "history_time" field predicates.
+	HistoryTime      *time.Time  `json:"historyTime,omitempty"`
+	HistoryTimeNEQ   *time.Time  `json:"historyTimeNEQ,omitempty"`
+	HistoryTimeIn    []time.Time `json:"historyTimeIn,omitempty"`
+	HistoryTimeNotIn []time.Time `json:"historyTimeNotIn,omitempty"`
+	HistoryTimeGT    *time.Time  `json:"historyTimeGT,omitempty"`
+	HistoryTimeGTE   *time.Time  `json:"historyTimeGTE,omitempty"`
+	HistoryTimeLT    *time.Time  `json:"historyTimeLT,omitempty"`
+	HistoryTimeLTE   *time.Time  `json:"historyTimeLTE,omitempty"`
+
+	// "operation" field predicates.
+	Operation      *enthistory.OpType  `json:"operation,omitempty"`
+	OperationNEQ   *enthistory.OpType  `json:"operationNEQ,omitempty"`
+	OperationIn    []enthistory.OpType `json:"operationIn,omitempty"`
+	OperationNotIn []enthistory.OpType `json:"operationNotIn,omitempty"`
+
+	// "ref" field predicates.
+	Ref       *uuid.UUID  `json:"ref,omitempty"`
+	RefNEQ    *uuid.UUID  `json:"refNEQ,omitempty"`
+	RefIn     []uuid.UUID `json:"refIn,omitempty"`
+	RefNotIn  []uuid.UUID `json:"refNotIn,omitempty"`
+	RefGT     *uuid.UUID  `json:"refGT,omitempty"`
+	RefGTE    *uuid.UUID  `json:"refGTE,omitempty"`
+	RefLT     *uuid.UUID  `json:"refLT,omitempty"`
+	RefLTE    *uuid.UUID  `json:"refLTE,omitempty"`
+	RefIsNil  bool        `json:"refIsNil,omitempty"`
+	RefNotNil bool        `json:"refNotNil,omitempty"`
+
+	// "slug" field predicates.
+	Slug             *string  `json:"slug,omitempty"`
+	SlugNEQ          *string  `json:"slugNEQ,omitempty"`
+	SlugIn           []string `json:"slugIn,omitempty"`
+	SlugNotIn        []string `json:"slugNotIn,omitempty"`
+	SlugGT           *string  `json:"slugGT,omitempty"`
+	SlugGTE          *string  `json:"slugGTE,omitempty"`
+	SlugLT           *string  `json:"slugLT,omitempty"`
+	SlugLTE          *string  `json:"slugLTE,omitempty"`
+	SlugContains     *string  `json:"slugContains,omitempty"`
+	SlugHasPrefix    *string  `json:"slugHasPrefix,omitempty"`
+	SlugHasSuffix    *string  `json:"slugHasSuffix,omitempty"`
+	SlugEqualFold    *string  `json:"slugEqualFold,omitempty"`
+	SlugContainsFold *string  `json:"slugContainsFold,omitempty"`
+
+	// "name" field predicates.
+	Name             *string  `json:"name,omitempty"`
+	NameNEQ          *string  `json:"nameNEQ,omitempty"`
+	NameIn           []string `json:"nameIn,omitempty"`
+	NameNotIn        []string `json:"nameNotIn,omitempty"`
+	NameGT           *string  `json:"nameGT,omitempty"`
+	NameGTE          *string  `json:"nameGTE,omitempty"`
+	NameLT           *string  `json:"nameLT,omitempty"`
+	NameLTE          *string  `json:"nameLTE,omitempty"`
+	NameContains     *string  `json:"nameContains,omitempty"`
+	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
+	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
+	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "instructions" field predicates.
+	Instructions             *string  `json:"instructions,omitempty"`
+	InstructionsNEQ          *string  `json:"instructionsNEQ,omitempty"`
+	InstructionsIn           []string `json:"instructionsIn,omitempty"`
+	InstructionsNotIn        []string `json:"instructionsNotIn,omitempty"`
+	InstructionsGT           *string  `json:"instructionsGT,omitempty"`
+	InstructionsGTE          *string  `json:"instructionsGTE,omitempty"`
+	InstructionsLT           *string  `json:"instructionsLT,omitempty"`
+	InstructionsLTE          *string  `json:"instructionsLTE,omitempty"`
+	InstructionsContains     *string  `json:"instructionsContains,omitempty"`
+	InstructionsHasPrefix    *string  `json:"instructionsHasPrefix,omitempty"`
+	InstructionsHasSuffix    *string  `json:"instructionsHasSuffix,omitempty"`
+	InstructionsIsNil        bool     `json:"instructionsIsNil,omitempty"`
+	InstructionsNotNil       bool     `json:"instructionsNotNil,omitempty"`
+	InstructionsEqualFold    *string  `json:"instructionsEqualFold,omitempty"`
+	InstructionsContainsFold *string  `json:"instructionsContainsFold,omitempty"`
+
+	// "model" field predicates.
+	Model             *string  `json:"model,omitempty"`
+	ModelNEQ          *string  `json:"modelNEQ,omitempty"`
+	ModelIn           []string `json:"modelIn,omitempty"`
+	ModelNotIn        []string `json:"modelNotIn,omitempty"`
+	ModelGT           *string  `json:"modelGT,omitempty"`
+	ModelGTE          *string  `json:"modelGTE,omitempty"`
+	ModelLT           *string  `json:"modelLT,omitempty"`
+	ModelLTE          *string  `json:"modelLTE,omitempty"`
+	ModelContains     *string  `json:"modelContains,omitempty"`
+	ModelHasPrefix    *string  `json:"modelHasPrefix,omitempty"`
+	ModelHasSuffix    *string  `json:"modelHasSuffix,omitempty"`
+	ModelIsNil        bool     `json:"modelIsNil,omitempty"`
+	ModelNotNil       bool     `json:"modelNotNil,omitempty"`
+	ModelEqualFold    *string  `json:"modelEqualFold,omitempty"`
+	ModelContainsFold *string  `json:"modelContainsFold,omitempty"`
+
+	// "provider" field predicates.
+	Provider             *string  `json:"provider,omitempty"`
+	ProviderNEQ          *string  `json:"providerNEQ,omitempty"`
+	ProviderIn           []string `json:"providerIn,omitempty"`
+	ProviderNotIn        []string `json:"providerNotIn,omitempty"`
+	ProviderGT           *string  `json:"providerGT,omitempty"`
+	ProviderGTE          *string  `json:"providerGTE,omitempty"`
+	ProviderLT           *string  `json:"providerLT,omitempty"`
+	ProviderLTE          *string  `json:"providerLTE,omitempty"`
+	ProviderContains     *string  `json:"providerContains,omitempty"`
+	ProviderHasPrefix    *string  `json:"providerHasPrefix,omitempty"`
+	ProviderHasSuffix    *string  `json:"providerHasSuffix,omitempty"`
+	ProviderIsNil        bool     `json:"providerIsNil,omitempty"`
+	ProviderNotNil       bool     `json:"providerNotNil,omitempty"`
+	ProviderEqualFold    *string  `json:"providerEqualFold,omitempty"`
+	ProviderContainsFold *string  `json:"providerContainsFold,omitempty"`
+
+	// "limits_json" field predicates.
+	LimitsJSON             *string  `json:"limitsJSON,omitempty"`
+	LimitsJSONNEQ          *string  `json:"limitsJSONNEQ,omitempty"`
+	LimitsJSONIn           []string `json:"limitsJSONIn,omitempty"`
+	LimitsJSONNotIn        []string `json:"limitsJSONNotIn,omitempty"`
+	LimitsJSONGT           *string  `json:"limitsJSONGT,omitempty"`
+	LimitsJSONGTE          *string  `json:"limitsJSONGTE,omitempty"`
+	LimitsJSONLT           *string  `json:"limitsJSONLT,omitempty"`
+	LimitsJSONLTE          *string  `json:"limitsJSONLTE,omitempty"`
+	LimitsJSONContains     *string  `json:"limitsJSONContains,omitempty"`
+	LimitsJSONHasPrefix    *string  `json:"limitsJSONHasPrefix,omitempty"`
+	LimitsJSONHasSuffix    *string  `json:"limitsJSONHasSuffix,omitempty"`
+	LimitsJSONIsNil        bool     `json:"limitsJSONIsNil,omitempty"`
+	LimitsJSONNotNil       bool     `json:"limitsJSONNotNil,omitempty"`
+	LimitsJSONEqualFold    *string  `json:"limitsJSONEqualFold,omitempty"`
+	LimitsJSONContainsFold *string  `json:"limitsJSONContainsFold,omitempty"`
+
+	// "tools_json" field predicates.
+	ToolsJSON             *string  `json:"toolsJSON,omitempty"`
+	ToolsJSONNEQ          *string  `json:"toolsJSONNEQ,omitempty"`
+	ToolsJSONIn           []string `json:"toolsJSONIn,omitempty"`
+	ToolsJSONNotIn        []string `json:"toolsJSONNotIn,omitempty"`
+	ToolsJSONGT           *string  `json:"toolsJSONGT,omitempty"`
+	ToolsJSONGTE          *string  `json:"toolsJSONGTE,omitempty"`
+	ToolsJSONLT           *string  `json:"toolsJSONLT,omitempty"`
+	ToolsJSONLTE          *string  `json:"toolsJSONLTE,omitempty"`
+	ToolsJSONContains     *string  `json:"toolsJSONContains,omitempty"`
+	ToolsJSONHasPrefix    *string  `json:"toolsJSONHasPrefix,omitempty"`
+	ToolsJSONHasSuffix    *string  `json:"toolsJSONHasSuffix,omitempty"`
+	ToolsJSONIsNil        bool     `json:"toolsJSONIsNil,omitempty"`
+	ToolsJSONNotNil       bool     `json:"toolsJSONNotNil,omitempty"`
+	ToolsJSONEqualFold    *string  `json:"toolsJSONEqualFold,omitempty"`
+	ToolsJSONContainsFold *string  `json:"toolsJSONContainsFold,omitempty"`
+
+	// "channel_bindings" field predicates.
+	ChannelBindings             *string  `json:"channelBindings,omitempty"`
+	ChannelBindingsNEQ          *string  `json:"channelBindingsNEQ,omitempty"`
+	ChannelBindingsIn           []string `json:"channelBindingsIn,omitempty"`
+	ChannelBindingsNotIn        []string `json:"channelBindingsNotIn,omitempty"`
+	ChannelBindingsGT           *string  `json:"channelBindingsGT,omitempty"`
+	ChannelBindingsGTE          *string  `json:"channelBindingsGTE,omitempty"`
+	ChannelBindingsLT           *string  `json:"channelBindingsLT,omitempty"`
+	ChannelBindingsLTE          *string  `json:"channelBindingsLTE,omitempty"`
+	ChannelBindingsContains     *string  `json:"channelBindingsContains,omitempty"`
+	ChannelBindingsHasPrefix    *string  `json:"channelBindingsHasPrefix,omitempty"`
+	ChannelBindingsHasSuffix    *string  `json:"channelBindingsHasSuffix,omitempty"`
+	ChannelBindingsIsNil        bool     `json:"channelBindingsIsNil,omitempty"`
+	ChannelBindingsNotNil       bool     `json:"channelBindingsNotNil,omitempty"`
+	ChannelBindingsEqualFold    *string  `json:"channelBindingsEqualFold,omitempty"`
+	ChannelBindingsContainsFold *string  `json:"channelBindingsContainsFold,omitempty"`
+
+	// "source" field predicates.
+	Source             *string  `json:"source,omitempty"`
+	SourceNEQ          *string  `json:"sourceNEQ,omitempty"`
+	SourceIn           []string `json:"sourceIn,omitempty"`
+	SourceNotIn        []string `json:"sourceNotIn,omitempty"`
+	SourceGT           *string  `json:"sourceGT,omitempty"`
+	SourceGTE          *string  `json:"sourceGTE,omitempty"`
+	SourceLT           *string  `json:"sourceLT,omitempty"`
+	SourceLTE          *string  `json:"sourceLTE,omitempty"`
+	SourceContains     *string  `json:"sourceContains,omitempty"`
+	SourceHasPrefix    *string  `json:"sourceHasPrefix,omitempty"`
+	SourceHasSuffix    *string  `json:"sourceHasSuffix,omitempty"`
+	SourceEqualFold    *string  `json:"sourceEqualFold,omitempty"`
+	SourceContainsFold *string  `json:"sourceContainsFold,omitempty"`
+
+	// "forked_from" field predicates.
+	ForkedFrom             *string  `json:"forkedFrom,omitempty"`
+	ForkedFromNEQ          *string  `json:"forkedFromNEQ,omitempty"`
+	ForkedFromIn           []string `json:"forkedFromIn,omitempty"`
+	ForkedFromNotIn        []string `json:"forkedFromNotIn,omitempty"`
+	ForkedFromGT           *string  `json:"forkedFromGT,omitempty"`
+	ForkedFromGTE          *string  `json:"forkedFromGTE,omitempty"`
+	ForkedFromLT           *string  `json:"forkedFromLT,omitempty"`
+	ForkedFromLTE          *string  `json:"forkedFromLTE,omitempty"`
+	ForkedFromContains     *string  `json:"forkedFromContains,omitempty"`
+	ForkedFromHasPrefix    *string  `json:"forkedFromHasPrefix,omitempty"`
+	ForkedFromHasSuffix    *string  `json:"forkedFromHasSuffix,omitempty"`
+	ForkedFromIsNil        bool     `json:"forkedFromIsNil,omitempty"`
+	ForkedFromNotNil       bool     `json:"forkedFromNotNil,omitempty"`
+	ForkedFromEqualFold    *string  `json:"forkedFromEqualFold,omitempty"`
+	ForkedFromContainsFold *string  `json:"forkedFromContainsFold,omitempty"`
+
+	// "revision" field predicates.
+	Revision      *int  `json:"revision,omitempty"`
+	RevisionNEQ   *int  `json:"revisionNEQ,omitempty"`
+	RevisionIn    []int `json:"revisionIn,omitempty"`
+	RevisionNotIn []int `json:"revisionNotIn,omitempty"`
+	RevisionGT    *int  `json:"revisionGT,omitempty"`
+	RevisionGTE   *int  `json:"revisionGTE,omitempty"`
+	RevisionLT    *int  `json:"revisionLT,omitempty"`
+	RevisionLTE   *int  `json:"revisionLTE,omitempty"`
+
+	// "source_format" field predicates.
+	SourceFormat             *string  `json:"sourceFormat,omitempty"`
+	SourceFormatNEQ          *string  `json:"sourceFormatNEQ,omitempty"`
+	SourceFormatIn           []string `json:"sourceFormatIn,omitempty"`
+	SourceFormatNotIn        []string `json:"sourceFormatNotIn,omitempty"`
+	SourceFormatGT           *string  `json:"sourceFormatGT,omitempty"`
+	SourceFormatGTE          *string  `json:"sourceFormatGTE,omitempty"`
+	SourceFormatLT           *string  `json:"sourceFormatLT,omitempty"`
+	SourceFormatLTE          *string  `json:"sourceFormatLTE,omitempty"`
+	SourceFormatContains     *string  `json:"sourceFormatContains,omitempty"`
+	SourceFormatHasPrefix    *string  `json:"sourceFormatHasPrefix,omitempty"`
+	SourceFormatHasSuffix    *string  `json:"sourceFormatHasSuffix,omitempty"`
+	SourceFormatEqualFold    *string  `json:"sourceFormatEqualFold,omitempty"`
+	SourceFormatContainsFold *string  `json:"sourceFormatContainsFold,omitempty"`
+
+	// "raw_source" field predicates.
+	RawSource             *string  `json:"rawSource,omitempty"`
+	RawSourceNEQ          *string  `json:"rawSourceNEQ,omitempty"`
+	RawSourceIn           []string `json:"rawSourceIn,omitempty"`
+	RawSourceNotIn        []string `json:"rawSourceNotIn,omitempty"`
+	RawSourceGT           *string  `json:"rawSourceGT,omitempty"`
+	RawSourceGTE          *string  `json:"rawSourceGTE,omitempty"`
+	RawSourceLT           *string  `json:"rawSourceLT,omitempty"`
+	RawSourceLTE          *string  `json:"rawSourceLTE,omitempty"`
+	RawSourceContains     *string  `json:"rawSourceContains,omitempty"`
+	RawSourceHasPrefix    *string  `json:"rawSourceHasPrefix,omitempty"`
+	RawSourceHasSuffix    *string  `json:"rawSourceHasSuffix,omitempty"`
+	RawSourceIsNil        bool     `json:"rawSourceIsNil,omitempty"`
+	RawSourceNotNil       bool     `json:"rawSourceNotNil,omitempty"`
+	RawSourceEqualFold    *string  `json:"rawSourceEqualFold,omitempty"`
+	RawSourceContainsFold *string  `json:"rawSourceContainsFold,omitempty"`
+
+	// "content_hash" field predicates.
+	ContentHash             *string  `json:"contentHash,omitempty"`
+	ContentHashNEQ          *string  `json:"contentHashNEQ,omitempty"`
+	ContentHashIn           []string `json:"contentHashIn,omitempty"`
+	ContentHashNotIn        []string `json:"contentHashNotIn,omitempty"`
+	ContentHashGT           *string  `json:"contentHashGT,omitempty"`
+	ContentHashGTE          *string  `json:"contentHashGTE,omitempty"`
+	ContentHashLT           *string  `json:"contentHashLT,omitempty"`
+	ContentHashLTE          *string  `json:"contentHashLTE,omitempty"`
+	ContentHashContains     *string  `json:"contentHashContains,omitempty"`
+	ContentHashHasPrefix    *string  `json:"contentHashHasPrefix,omitempty"`
+	ContentHashHasSuffix    *string  `json:"contentHashHasSuffix,omitempty"`
+	ContentHashIsNil        bool     `json:"contentHashIsNil,omitempty"`
+	ContentHashNotNil       bool     `json:"contentHashNotNil,omitempty"`
+	ContentHashEqualFold    *string  `json:"contentHashEqualFold,omitempty"`
+	ContentHashContainsFold *string  `json:"contentHashContainsFold,omitempty"`
+
+	// "managed_by" field predicates.
+	ManagedBy             *string  `json:"managedBy,omitempty"`
+	ManagedByNEQ          *string  `json:"managedByNEQ,omitempty"`
+	ManagedByIn           []string `json:"managedByIn,omitempty"`
+	ManagedByNotIn        []string `json:"managedByNotIn,omitempty"`
+	ManagedByGT           *string  `json:"managedByGT,omitempty"`
+	ManagedByGTE          *string  `json:"managedByGTE,omitempty"`
+	ManagedByLT           *string  `json:"managedByLT,omitempty"`
+	ManagedByLTE          *string  `json:"managedByLTE,omitempty"`
+	ManagedByContains     *string  `json:"managedByContains,omitempty"`
+	ManagedByHasPrefix    *string  `json:"managedByHasPrefix,omitempty"`
+	ManagedByHasSuffix    *string  `json:"managedByHasSuffix,omitempty"`
+	ManagedByEqualFold    *string  `json:"managedByEqualFold,omitempty"`
+	ManagedByContainsFold *string  `json:"managedByContainsFold,omitempty"`
+
+	// "agent_sync_state" field predicates.
+	AgentSyncState             *string  `json:"agentSyncState,omitempty"`
+	AgentSyncStateNEQ          *string  `json:"agentSyncStateNEQ,omitempty"`
+	AgentSyncStateIn           []string `json:"agentSyncStateIn,omitempty"`
+	AgentSyncStateNotIn        []string `json:"agentSyncStateNotIn,omitempty"`
+	AgentSyncStateGT           *string  `json:"agentSyncStateGT,omitempty"`
+	AgentSyncStateGTE          *string  `json:"agentSyncStateGTE,omitempty"`
+	AgentSyncStateLT           *string  `json:"agentSyncStateLT,omitempty"`
+	AgentSyncStateLTE          *string  `json:"agentSyncStateLTE,omitempty"`
+	AgentSyncStateContains     *string  `json:"agentSyncStateContains,omitempty"`
+	AgentSyncStateHasPrefix    *string  `json:"agentSyncStateHasPrefix,omitempty"`
+	AgentSyncStateHasSuffix    *string  `json:"agentSyncStateHasSuffix,omitempty"`
+	AgentSyncStateEqualFold    *string  `json:"agentSyncStateEqualFold,omitempty"`
+	AgentSyncStateContainsFold *string  `json:"agentSyncStateContainsFold,omitempty"`
+
+	// "agent_sync_error" field predicates.
+	AgentSyncError             *string  `json:"agentSyncError,omitempty"`
+	AgentSyncErrorNEQ          *string  `json:"agentSyncErrorNEQ,omitempty"`
+	AgentSyncErrorIn           []string `json:"agentSyncErrorIn,omitempty"`
+	AgentSyncErrorNotIn        []string `json:"agentSyncErrorNotIn,omitempty"`
+	AgentSyncErrorGT           *string  `json:"agentSyncErrorGT,omitempty"`
+	AgentSyncErrorGTE          *string  `json:"agentSyncErrorGTE,omitempty"`
+	AgentSyncErrorLT           *string  `json:"agentSyncErrorLT,omitempty"`
+	AgentSyncErrorLTE          *string  `json:"agentSyncErrorLTE,omitempty"`
+	AgentSyncErrorContains     *string  `json:"agentSyncErrorContains,omitempty"`
+	AgentSyncErrorHasPrefix    *string  `json:"agentSyncErrorHasPrefix,omitempty"`
+	AgentSyncErrorHasSuffix    *string  `json:"agentSyncErrorHasSuffix,omitempty"`
+	AgentSyncErrorIsNil        bool     `json:"agentSyncErrorIsNil,omitempty"`
+	AgentSyncErrorNotNil       bool     `json:"agentSyncErrorNotNil,omitempty"`
+	AgentSyncErrorEqualFold    *string  `json:"agentSyncErrorEqualFold,omitempty"`
+	AgentSyncErrorContainsFold *string  `json:"agentSyncErrorContainsFold,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *AgentDefinitionHistoryWhereInput) AddPredicates(predicates ...predicate.AgentDefinitionHistory) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the AgentDefinitionHistoryWhereInput filter on the AgentDefinitionHistoryQuery builder.
+func (i *AgentDefinitionHistoryWhereInput) Filter(q *AgentDefinitionHistoryQuery) (*AgentDefinitionHistoryQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyAgentDefinitionHistoryWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyAgentDefinitionHistoryWhereInput is returned in case the AgentDefinitionHistoryWhereInput is empty.
+var ErrEmptyAgentDefinitionHistoryWhereInput = errors.New("ent: empty predicate AgentDefinitionHistoryWhereInput")
+
+// P returns a predicate for filtering agentdefinitionhistories.
+// An error is returned if the input is empty or invalid.
+func (i *AgentDefinitionHistoryWhereInput) P() (predicate.AgentDefinitionHistory, error) {
+	var predicates []predicate.AgentDefinitionHistory
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, agentdefinitionhistory.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.AgentDefinitionHistory, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, agentdefinitionhistory.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.AgentDefinitionHistory, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, agentdefinitionhistory.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, agentdefinitionhistory.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, agentdefinitionhistory.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, agentdefinitionhistory.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.HistoryTime != nil {
+		predicates = append(predicates, agentdefinitionhistory.HistoryTimeEQ(*i.HistoryTime))
+	}
+	if i.HistoryTimeNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.HistoryTimeNEQ(*i.HistoryTimeNEQ))
+	}
+	if len(i.HistoryTimeIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.HistoryTimeIn(i.HistoryTimeIn...))
+	}
+	if len(i.HistoryTimeNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.HistoryTimeNotIn(i.HistoryTimeNotIn...))
+	}
+	if i.HistoryTimeGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.HistoryTimeGT(*i.HistoryTimeGT))
+	}
+	if i.HistoryTimeGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.HistoryTimeGTE(*i.HistoryTimeGTE))
+	}
+	if i.HistoryTimeLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.HistoryTimeLT(*i.HistoryTimeLT))
+	}
+	if i.HistoryTimeLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.HistoryTimeLTE(*i.HistoryTimeLTE))
+	}
+	if i.Operation != nil {
+		predicates = append(predicates, agentdefinitionhistory.OperationEQ(*i.Operation))
+	}
+	if i.OperationNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.OperationNEQ(*i.OperationNEQ))
+	}
+	if len(i.OperationIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.OperationIn(i.OperationIn...))
+	}
+	if len(i.OperationNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.OperationNotIn(i.OperationNotIn...))
+	}
+	if i.Ref != nil {
+		predicates = append(predicates, agentdefinitionhistory.RefEQ(*i.Ref))
+	}
+	if i.RefNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.RefNEQ(*i.RefNEQ))
+	}
+	if len(i.RefIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.RefIn(i.RefIn...))
+	}
+	if len(i.RefNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.RefNotIn(i.RefNotIn...))
+	}
+	if i.RefGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.RefGT(*i.RefGT))
+	}
+	if i.RefGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.RefGTE(*i.RefGTE))
+	}
+	if i.RefLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.RefLT(*i.RefLT))
+	}
+	if i.RefLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.RefLTE(*i.RefLTE))
+	}
+	if i.RefIsNil {
+		predicates = append(predicates, agentdefinitionhistory.RefIsNil())
+	}
+	if i.RefNotNil {
+		predicates = append(predicates, agentdefinitionhistory.RefNotNil())
+	}
+	if i.Slug != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugEQ(*i.Slug))
+	}
+	if i.SlugNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugNEQ(*i.SlugNEQ))
+	}
+	if len(i.SlugIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.SlugIn(i.SlugIn...))
+	}
+	if len(i.SlugNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.SlugNotIn(i.SlugNotIn...))
+	}
+	if i.SlugGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugGT(*i.SlugGT))
+	}
+	if i.SlugGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugGTE(*i.SlugGTE))
+	}
+	if i.SlugLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugLT(*i.SlugLT))
+	}
+	if i.SlugLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugLTE(*i.SlugLTE))
+	}
+	if i.SlugContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugContains(*i.SlugContains))
+	}
+	if i.SlugHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugHasPrefix(*i.SlugHasPrefix))
+	}
+	if i.SlugHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugHasSuffix(*i.SlugHasSuffix))
+	}
+	if i.SlugEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugEqualFold(*i.SlugEqualFold))
+	}
+	if i.SlugContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.SlugContainsFold(*i.SlugContainsFold))
+	}
+	if i.Name != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameEQ(*i.Name))
+	}
+	if i.NameNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameNEQ(*i.NameNEQ))
+	}
+	if len(i.NameIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.NameIn(i.NameIn...))
+	}
+	if len(i.NameNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.NameNotIn(i.NameNotIn...))
+	}
+	if i.NameGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameGT(*i.NameGT))
+	}
+	if i.NameGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameGTE(*i.NameGTE))
+	}
+	if i.NameLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameLT(*i.NameLT))
+	}
+	if i.NameLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameLTE(*i.NameLTE))
+	}
+	if i.NameContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameContains(*i.NameContains))
+	}
+	if i.NameHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameHasPrefix(*i.NameHasPrefix))
+	}
+	if i.NameHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameEqualFold(*i.NameEqualFold))
+	}
+	if i.NameContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.Instructions != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsEQ(*i.Instructions))
+	}
+	if i.InstructionsNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsNEQ(*i.InstructionsNEQ))
+	}
+	if len(i.InstructionsIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsIn(i.InstructionsIn...))
+	}
+	if len(i.InstructionsNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsNotIn(i.InstructionsNotIn...))
+	}
+	if i.InstructionsGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsGT(*i.InstructionsGT))
+	}
+	if i.InstructionsGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsGTE(*i.InstructionsGTE))
+	}
+	if i.InstructionsLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsLT(*i.InstructionsLT))
+	}
+	if i.InstructionsLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsLTE(*i.InstructionsLTE))
+	}
+	if i.InstructionsContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsContains(*i.InstructionsContains))
+	}
+	if i.InstructionsHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsHasPrefix(*i.InstructionsHasPrefix))
+	}
+	if i.InstructionsHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsHasSuffix(*i.InstructionsHasSuffix))
+	}
+	if i.InstructionsIsNil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsIsNil())
+	}
+	if i.InstructionsNotNil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsNotNil())
+	}
+	if i.InstructionsEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsEqualFold(*i.InstructionsEqualFold))
+	}
+	if i.InstructionsContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.InstructionsContainsFold(*i.InstructionsContainsFold))
+	}
+	if i.Model != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelEQ(*i.Model))
+	}
+	if i.ModelNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelNEQ(*i.ModelNEQ))
+	}
+	if len(i.ModelIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ModelIn(i.ModelIn...))
+	}
+	if len(i.ModelNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ModelNotIn(i.ModelNotIn...))
+	}
+	if i.ModelGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelGT(*i.ModelGT))
+	}
+	if i.ModelGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelGTE(*i.ModelGTE))
+	}
+	if i.ModelLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelLT(*i.ModelLT))
+	}
+	if i.ModelLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelLTE(*i.ModelLTE))
+	}
+	if i.ModelContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelContains(*i.ModelContains))
+	}
+	if i.ModelHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelHasPrefix(*i.ModelHasPrefix))
+	}
+	if i.ModelHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelHasSuffix(*i.ModelHasSuffix))
+	}
+	if i.ModelIsNil {
+		predicates = append(predicates, agentdefinitionhistory.ModelIsNil())
+	}
+	if i.ModelNotNil {
+		predicates = append(predicates, agentdefinitionhistory.ModelNotNil())
+	}
+	if i.ModelEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelEqualFold(*i.ModelEqualFold))
+	}
+	if i.ModelContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ModelContainsFold(*i.ModelContainsFold))
+	}
+	if i.Provider != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderEQ(*i.Provider))
+	}
+	if i.ProviderNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderNEQ(*i.ProviderNEQ))
+	}
+	if len(i.ProviderIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ProviderIn(i.ProviderIn...))
+	}
+	if len(i.ProviderNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ProviderNotIn(i.ProviderNotIn...))
+	}
+	if i.ProviderGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderGT(*i.ProviderGT))
+	}
+	if i.ProviderGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderGTE(*i.ProviderGTE))
+	}
+	if i.ProviderLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderLT(*i.ProviderLT))
+	}
+	if i.ProviderLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderLTE(*i.ProviderLTE))
+	}
+	if i.ProviderContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderContains(*i.ProviderContains))
+	}
+	if i.ProviderHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderHasPrefix(*i.ProviderHasPrefix))
+	}
+	if i.ProviderHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderHasSuffix(*i.ProviderHasSuffix))
+	}
+	if i.ProviderIsNil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderIsNil())
+	}
+	if i.ProviderNotNil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderNotNil())
+	}
+	if i.ProviderEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderEqualFold(*i.ProviderEqualFold))
+	}
+	if i.ProviderContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ProviderContainsFold(*i.ProviderContainsFold))
+	}
+	if i.LimitsJSON != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONEQ(*i.LimitsJSON))
+	}
+	if i.LimitsJSONNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONNEQ(*i.LimitsJSONNEQ))
+	}
+	if len(i.LimitsJSONIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONIn(i.LimitsJSONIn...))
+	}
+	if len(i.LimitsJSONNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONNotIn(i.LimitsJSONNotIn...))
+	}
+	if i.LimitsJSONGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONGT(*i.LimitsJSONGT))
+	}
+	if i.LimitsJSONGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONGTE(*i.LimitsJSONGTE))
+	}
+	if i.LimitsJSONLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONLT(*i.LimitsJSONLT))
+	}
+	if i.LimitsJSONLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONLTE(*i.LimitsJSONLTE))
+	}
+	if i.LimitsJSONContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONContains(*i.LimitsJSONContains))
+	}
+	if i.LimitsJSONHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONHasPrefix(*i.LimitsJSONHasPrefix))
+	}
+	if i.LimitsJSONHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONHasSuffix(*i.LimitsJSONHasSuffix))
+	}
+	if i.LimitsJSONIsNil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONIsNil())
+	}
+	if i.LimitsJSONNotNil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONNotNil())
+	}
+	if i.LimitsJSONEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONEqualFold(*i.LimitsJSONEqualFold))
+	}
+	if i.LimitsJSONContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.LimitsJSONContainsFold(*i.LimitsJSONContainsFold))
+	}
+	if i.ToolsJSON != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONEQ(*i.ToolsJSON))
+	}
+	if i.ToolsJSONNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONNEQ(*i.ToolsJSONNEQ))
+	}
+	if len(i.ToolsJSONIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONIn(i.ToolsJSONIn...))
+	}
+	if len(i.ToolsJSONNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONNotIn(i.ToolsJSONNotIn...))
+	}
+	if i.ToolsJSONGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONGT(*i.ToolsJSONGT))
+	}
+	if i.ToolsJSONGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONGTE(*i.ToolsJSONGTE))
+	}
+	if i.ToolsJSONLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONLT(*i.ToolsJSONLT))
+	}
+	if i.ToolsJSONLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONLTE(*i.ToolsJSONLTE))
+	}
+	if i.ToolsJSONContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONContains(*i.ToolsJSONContains))
+	}
+	if i.ToolsJSONHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONHasPrefix(*i.ToolsJSONHasPrefix))
+	}
+	if i.ToolsJSONHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONHasSuffix(*i.ToolsJSONHasSuffix))
+	}
+	if i.ToolsJSONIsNil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONIsNil())
+	}
+	if i.ToolsJSONNotNil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONNotNil())
+	}
+	if i.ToolsJSONEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONEqualFold(*i.ToolsJSONEqualFold))
+	}
+	if i.ToolsJSONContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ToolsJSONContainsFold(*i.ToolsJSONContainsFold))
+	}
+	if i.ChannelBindings != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsEQ(*i.ChannelBindings))
+	}
+	if i.ChannelBindingsNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsNEQ(*i.ChannelBindingsNEQ))
+	}
+	if len(i.ChannelBindingsIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsIn(i.ChannelBindingsIn...))
+	}
+	if len(i.ChannelBindingsNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsNotIn(i.ChannelBindingsNotIn...))
+	}
+	if i.ChannelBindingsGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsGT(*i.ChannelBindingsGT))
+	}
+	if i.ChannelBindingsGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsGTE(*i.ChannelBindingsGTE))
+	}
+	if i.ChannelBindingsLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsLT(*i.ChannelBindingsLT))
+	}
+	if i.ChannelBindingsLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsLTE(*i.ChannelBindingsLTE))
+	}
+	if i.ChannelBindingsContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsContains(*i.ChannelBindingsContains))
+	}
+	if i.ChannelBindingsHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsHasPrefix(*i.ChannelBindingsHasPrefix))
+	}
+	if i.ChannelBindingsHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsHasSuffix(*i.ChannelBindingsHasSuffix))
+	}
+	if i.ChannelBindingsIsNil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsIsNil())
+	}
+	if i.ChannelBindingsNotNil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsNotNil())
+	}
+	if i.ChannelBindingsEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsEqualFold(*i.ChannelBindingsEqualFold))
+	}
+	if i.ChannelBindingsContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ChannelBindingsContainsFold(*i.ChannelBindingsContainsFold))
+	}
+	if i.Source != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceEQ(*i.Source))
+	}
+	if i.SourceNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceNEQ(*i.SourceNEQ))
+	}
+	if len(i.SourceIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.SourceIn(i.SourceIn...))
+	}
+	if len(i.SourceNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.SourceNotIn(i.SourceNotIn...))
+	}
+	if i.SourceGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceGT(*i.SourceGT))
+	}
+	if i.SourceGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceGTE(*i.SourceGTE))
+	}
+	if i.SourceLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceLT(*i.SourceLT))
+	}
+	if i.SourceLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceLTE(*i.SourceLTE))
+	}
+	if i.SourceContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceContains(*i.SourceContains))
+	}
+	if i.SourceHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceHasPrefix(*i.SourceHasPrefix))
+	}
+	if i.SourceHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceHasSuffix(*i.SourceHasSuffix))
+	}
+	if i.SourceEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceEqualFold(*i.SourceEqualFold))
+	}
+	if i.SourceContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceContainsFold(*i.SourceContainsFold))
+	}
+	if i.ForkedFrom != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromEQ(*i.ForkedFrom))
+	}
+	if i.ForkedFromNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromNEQ(*i.ForkedFromNEQ))
+	}
+	if len(i.ForkedFromIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromIn(i.ForkedFromIn...))
+	}
+	if len(i.ForkedFromNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromNotIn(i.ForkedFromNotIn...))
+	}
+	if i.ForkedFromGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromGT(*i.ForkedFromGT))
+	}
+	if i.ForkedFromGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromGTE(*i.ForkedFromGTE))
+	}
+	if i.ForkedFromLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromLT(*i.ForkedFromLT))
+	}
+	if i.ForkedFromLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromLTE(*i.ForkedFromLTE))
+	}
+	if i.ForkedFromContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromContains(*i.ForkedFromContains))
+	}
+	if i.ForkedFromHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromHasPrefix(*i.ForkedFromHasPrefix))
+	}
+	if i.ForkedFromHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromHasSuffix(*i.ForkedFromHasSuffix))
+	}
+	if i.ForkedFromIsNil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromIsNil())
+	}
+	if i.ForkedFromNotNil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromNotNil())
+	}
+	if i.ForkedFromEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromEqualFold(*i.ForkedFromEqualFold))
+	}
+	if i.ForkedFromContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ForkedFromContainsFold(*i.ForkedFromContainsFold))
+	}
+	if i.Revision != nil {
+		predicates = append(predicates, agentdefinitionhistory.RevisionEQ(*i.Revision))
+	}
+	if i.RevisionNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.RevisionNEQ(*i.RevisionNEQ))
+	}
+	if len(i.RevisionIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.RevisionIn(i.RevisionIn...))
+	}
+	if len(i.RevisionNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.RevisionNotIn(i.RevisionNotIn...))
+	}
+	if i.RevisionGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.RevisionGT(*i.RevisionGT))
+	}
+	if i.RevisionGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.RevisionGTE(*i.RevisionGTE))
+	}
+	if i.RevisionLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.RevisionLT(*i.RevisionLT))
+	}
+	if i.RevisionLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.RevisionLTE(*i.RevisionLTE))
+	}
+	if i.SourceFormat != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatEQ(*i.SourceFormat))
+	}
+	if i.SourceFormatNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatNEQ(*i.SourceFormatNEQ))
+	}
+	if len(i.SourceFormatIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatIn(i.SourceFormatIn...))
+	}
+	if len(i.SourceFormatNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatNotIn(i.SourceFormatNotIn...))
+	}
+	if i.SourceFormatGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatGT(*i.SourceFormatGT))
+	}
+	if i.SourceFormatGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatGTE(*i.SourceFormatGTE))
+	}
+	if i.SourceFormatLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatLT(*i.SourceFormatLT))
+	}
+	if i.SourceFormatLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatLTE(*i.SourceFormatLTE))
+	}
+	if i.SourceFormatContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatContains(*i.SourceFormatContains))
+	}
+	if i.SourceFormatHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatHasPrefix(*i.SourceFormatHasPrefix))
+	}
+	if i.SourceFormatHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatHasSuffix(*i.SourceFormatHasSuffix))
+	}
+	if i.SourceFormatEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatEqualFold(*i.SourceFormatEqualFold))
+	}
+	if i.SourceFormatContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.SourceFormatContainsFold(*i.SourceFormatContainsFold))
+	}
+	if i.RawSource != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceEQ(*i.RawSource))
+	}
+	if i.RawSourceNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceNEQ(*i.RawSourceNEQ))
+	}
+	if len(i.RawSourceIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceIn(i.RawSourceIn...))
+	}
+	if len(i.RawSourceNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceNotIn(i.RawSourceNotIn...))
+	}
+	if i.RawSourceGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceGT(*i.RawSourceGT))
+	}
+	if i.RawSourceGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceGTE(*i.RawSourceGTE))
+	}
+	if i.RawSourceLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceLT(*i.RawSourceLT))
+	}
+	if i.RawSourceLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceLTE(*i.RawSourceLTE))
+	}
+	if i.RawSourceContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceContains(*i.RawSourceContains))
+	}
+	if i.RawSourceHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceHasPrefix(*i.RawSourceHasPrefix))
+	}
+	if i.RawSourceHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceHasSuffix(*i.RawSourceHasSuffix))
+	}
+	if i.RawSourceIsNil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceIsNil())
+	}
+	if i.RawSourceNotNil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceNotNil())
+	}
+	if i.RawSourceEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceEqualFold(*i.RawSourceEqualFold))
+	}
+	if i.RawSourceContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.RawSourceContainsFold(*i.RawSourceContainsFold))
+	}
+	if i.ContentHash != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashEQ(*i.ContentHash))
+	}
+	if i.ContentHashNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashNEQ(*i.ContentHashNEQ))
+	}
+	if len(i.ContentHashIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashIn(i.ContentHashIn...))
+	}
+	if len(i.ContentHashNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashNotIn(i.ContentHashNotIn...))
+	}
+	if i.ContentHashGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashGT(*i.ContentHashGT))
+	}
+	if i.ContentHashGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashGTE(*i.ContentHashGTE))
+	}
+	if i.ContentHashLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashLT(*i.ContentHashLT))
+	}
+	if i.ContentHashLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashLTE(*i.ContentHashLTE))
+	}
+	if i.ContentHashContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashContains(*i.ContentHashContains))
+	}
+	if i.ContentHashHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashHasPrefix(*i.ContentHashHasPrefix))
+	}
+	if i.ContentHashHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashHasSuffix(*i.ContentHashHasSuffix))
+	}
+	if i.ContentHashIsNil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashIsNil())
+	}
+	if i.ContentHashNotNil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashNotNil())
+	}
+	if i.ContentHashEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashEqualFold(*i.ContentHashEqualFold))
+	}
+	if i.ContentHashContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ContentHashContainsFold(*i.ContentHashContainsFold))
+	}
+	if i.ManagedBy != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByEQ(*i.ManagedBy))
+	}
+	if i.ManagedByNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByNEQ(*i.ManagedByNEQ))
+	}
+	if len(i.ManagedByIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByIn(i.ManagedByIn...))
+	}
+	if len(i.ManagedByNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByNotIn(i.ManagedByNotIn...))
+	}
+	if i.ManagedByGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByGT(*i.ManagedByGT))
+	}
+	if i.ManagedByGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByGTE(*i.ManagedByGTE))
+	}
+	if i.ManagedByLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByLT(*i.ManagedByLT))
+	}
+	if i.ManagedByLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByLTE(*i.ManagedByLTE))
+	}
+	if i.ManagedByContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByContains(*i.ManagedByContains))
+	}
+	if i.ManagedByHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByHasPrefix(*i.ManagedByHasPrefix))
+	}
+	if i.ManagedByHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByHasSuffix(*i.ManagedByHasSuffix))
+	}
+	if i.ManagedByEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByEqualFold(*i.ManagedByEqualFold))
+	}
+	if i.ManagedByContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.ManagedByContainsFold(*i.ManagedByContainsFold))
+	}
+	if i.AgentSyncState != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateEQ(*i.AgentSyncState))
+	}
+	if i.AgentSyncStateNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateNEQ(*i.AgentSyncStateNEQ))
+	}
+	if len(i.AgentSyncStateIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateIn(i.AgentSyncStateIn...))
+	}
+	if len(i.AgentSyncStateNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateNotIn(i.AgentSyncStateNotIn...))
+	}
+	if i.AgentSyncStateGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateGT(*i.AgentSyncStateGT))
+	}
+	if i.AgentSyncStateGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateGTE(*i.AgentSyncStateGTE))
+	}
+	if i.AgentSyncStateLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateLT(*i.AgentSyncStateLT))
+	}
+	if i.AgentSyncStateLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateLTE(*i.AgentSyncStateLTE))
+	}
+	if i.AgentSyncStateContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateContains(*i.AgentSyncStateContains))
+	}
+	if i.AgentSyncStateHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateHasPrefix(*i.AgentSyncStateHasPrefix))
+	}
+	if i.AgentSyncStateHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateHasSuffix(*i.AgentSyncStateHasSuffix))
+	}
+	if i.AgentSyncStateEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateEqualFold(*i.AgentSyncStateEqualFold))
+	}
+	if i.AgentSyncStateContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncStateContainsFold(*i.AgentSyncStateContainsFold))
+	}
+	if i.AgentSyncError != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorEQ(*i.AgentSyncError))
+	}
+	if i.AgentSyncErrorNEQ != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorNEQ(*i.AgentSyncErrorNEQ))
+	}
+	if len(i.AgentSyncErrorIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorIn(i.AgentSyncErrorIn...))
+	}
+	if len(i.AgentSyncErrorNotIn) > 0 {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorNotIn(i.AgentSyncErrorNotIn...))
+	}
+	if i.AgentSyncErrorGT != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorGT(*i.AgentSyncErrorGT))
+	}
+	if i.AgentSyncErrorGTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorGTE(*i.AgentSyncErrorGTE))
+	}
+	if i.AgentSyncErrorLT != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorLT(*i.AgentSyncErrorLT))
+	}
+	if i.AgentSyncErrorLTE != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorLTE(*i.AgentSyncErrorLTE))
+	}
+	if i.AgentSyncErrorContains != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorContains(*i.AgentSyncErrorContains))
+	}
+	if i.AgentSyncErrorHasPrefix != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorHasPrefix(*i.AgentSyncErrorHasPrefix))
+	}
+	if i.AgentSyncErrorHasSuffix != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorHasSuffix(*i.AgentSyncErrorHasSuffix))
+	}
+	if i.AgentSyncErrorIsNil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorIsNil())
+	}
+	if i.AgentSyncErrorNotNil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorNotNil())
+	}
+	if i.AgentSyncErrorEqualFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorEqualFold(*i.AgentSyncErrorEqualFold))
+	}
+	if i.AgentSyncErrorContainsFold != nil {
+		predicates = append(predicates, agentdefinitionhistory.AgentSyncErrorContainsFold(*i.AgentSyncErrorContainsFold))
+	}
+
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyAgentDefinitionHistoryWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return agentdefinitionhistory.And(predicates...), nil
 	}
 }
 
@@ -1814,6 +3490,16 @@ type AgentSessionWhereInput struct {
 	AgentSourceNotNil       bool     `json:"agentSourceNotNil,omitempty"`
 	AgentSourceEqualFold    *string  `json:"agentSourceEqualFold,omitempty"`
 	AgentSourceContainsFold *string  `json:"agentSourceContainsFold,omitempty"`
+
+	// "agent_revision" field predicates.
+	AgentRevision      *int  `json:"agentRevision,omitempty"`
+	AgentRevisionNEQ   *int  `json:"agentRevisionNEQ,omitempty"`
+	AgentRevisionIn    []int `json:"agentRevisionIn,omitempty"`
+	AgentRevisionNotIn []int `json:"agentRevisionNotIn,omitempty"`
+	AgentRevisionGT    *int  `json:"agentRevisionGT,omitempty"`
+	AgentRevisionGTE   *int  `json:"agentRevisionGTE,omitempty"`
+	AgentRevisionLT    *int  `json:"agentRevisionLT,omitempty"`
+	AgentRevisionLTE   *int  `json:"agentRevisionLTE,omitempty"`
 
 	// "status" field predicates.
 	Status             *string  `json:"status,omitempty"`
@@ -2319,6 +4005,30 @@ func (i *AgentSessionWhereInput) P() (predicate.AgentSession, error) {
 	}
 	if i.AgentSourceContainsFold != nil {
 		predicates = append(predicates, agentsession.AgentSourceContainsFold(*i.AgentSourceContainsFold))
+	}
+	if i.AgentRevision != nil {
+		predicates = append(predicates, agentsession.AgentRevisionEQ(*i.AgentRevision))
+	}
+	if i.AgentRevisionNEQ != nil {
+		predicates = append(predicates, agentsession.AgentRevisionNEQ(*i.AgentRevisionNEQ))
+	}
+	if len(i.AgentRevisionIn) > 0 {
+		predicates = append(predicates, agentsession.AgentRevisionIn(i.AgentRevisionIn...))
+	}
+	if len(i.AgentRevisionNotIn) > 0 {
+		predicates = append(predicates, agentsession.AgentRevisionNotIn(i.AgentRevisionNotIn...))
+	}
+	if i.AgentRevisionGT != nil {
+		predicates = append(predicates, agentsession.AgentRevisionGT(*i.AgentRevisionGT))
+	}
+	if i.AgentRevisionGTE != nil {
+		predicates = append(predicates, agentsession.AgentRevisionGTE(*i.AgentRevisionGTE))
+	}
+	if i.AgentRevisionLT != nil {
+		predicates = append(predicates, agentsession.AgentRevisionLT(*i.AgentRevisionLT))
+	}
+	if i.AgentRevisionLTE != nil {
+		predicates = append(predicates, agentsession.AgentRevisionLTE(*i.AgentRevisionLTE))
 	}
 	if i.Status != nil {
 		predicates = append(predicates, agentsession.StatusEQ(*i.Status))

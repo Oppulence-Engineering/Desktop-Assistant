@@ -33,6 +33,18 @@ func (f AgentDefinitionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentDefinitionMutation", m)
 }
 
+// The AgentDefinitionHistoryFunc type is an adapter to allow the use of ordinary
+// function as AgentDefinitionHistory mutator.
+type AgentDefinitionHistoryFunc func(context.Context, *ent.AgentDefinitionHistoryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgentDefinitionHistoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgentDefinitionHistoryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentDefinitionHistoryMutation", m)
+}
+
 // The AgentSessionFunc type is an adapter to allow the use of ordinary
 // function as AgentSession mutator.
 type AgentSessionFunc func(context.Context, *ent.AgentSessionMutation) (ent.Value, error)

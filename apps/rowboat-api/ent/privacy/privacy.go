@@ -158,6 +158,30 @@ func (f AgentDefinitionMutationRuleFunc) EvalMutation(ctx context.Context, m ent
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.AgentDefinitionMutation", m)
 }
 
+// The AgentDefinitionHistoryQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type AgentDefinitionHistoryQueryRuleFunc func(context.Context, *ent.AgentDefinitionHistoryQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f AgentDefinitionHistoryQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentDefinitionHistoryQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.AgentDefinitionHistoryQuery", q)
+}
+
+// The AgentDefinitionHistoryMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type AgentDefinitionHistoryMutationRuleFunc func(context.Context, *ent.AgentDefinitionHistoryMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f AgentDefinitionHistoryMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.AgentDefinitionHistoryMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.AgentDefinitionHistoryMutation", m)
+}
+
 // The AgentSessionQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type AgentSessionQueryRuleFunc func(context.Context, *ent.AgentSessionQuery) error

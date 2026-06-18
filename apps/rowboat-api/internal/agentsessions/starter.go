@@ -195,11 +195,12 @@ func (s *Starter) buildStart(u *ent.User, spec *agentregistry.Spec, sessionID, c
 		SessionID:        sessionID,
 		AgentSlug:        spec.Slug,
 		AgentSource:      spec.Source,
+		AgentRevision:    spec.Revision,
 		Channel:          channel,
 		Instructions:     spec.Instructions,
 		Model:            model,
 		Provider:         spec.Provider,
-		Tools:            agentworkflow.ToolMetasFromCatalog(s.Loader.Catalog(), spec.EnabledTools, s.Cfg.AgentSubagentsEnabled),
+		Tools:            applyApprovalOverrides(agentworkflow.ToolMetasFromCatalog(s.Loader.Catalog(), spec.EnabledTools, s.Cfg.AgentSubagentsEnabled), spec.ToolApprovalOverrides()),
 		SubagentRefs:     spec.SubagentRefs,
 		Limits:           s.effectiveLimits(spec.Limits),
 		HITLEnabled:      s.Cfg.AgentHITLEnabled,
@@ -226,6 +227,21 @@ func (s *Starter) effectiveLimits(o agentregistry.SpecLimits) agentworkflow.Limi
 	}
 }
 
+// applyApprovalOverrides bumps a tool's effective trust tier to act when the
+// agent's YAML marked it requiresApproval (RFC 028 per-tool HITL override), so
+// the runtime pauses for approval on a tool that would otherwise auto-execute.
+func applyApprovalOverrides(metas []agentworkflow.ToolMeta, overrides map[string]bool) []agentworkflow.ToolMeta {
+	if len(overrides) == 0 {
+		return metas
+	}
+	for i := range metas {
+		if overrides[metas[i].Name] && !agentregistry.RequiresApproval(metas[i].TrustTier) {
+			metas[i].TrustTier = agentregistry.TierAct
+		}
+	}
+	return metas
+}
+
 // capInt returns the override when it is set and tighter than the base.
 func capInt(base, override int) int {
 	if override > 0 && override < base {
@@ -240,6 +256,7 @@ func (s *Starter) createRow(ctx context.Context, p CreateParams, sessionID, work
 		SetSessionID(sessionID).
 		SetAgentSlug(spec.Slug).
 		SetAgentSource(spec.Source).
+		SetAgentRevision(spec.Revision).
 		SetChannel(channel).
 		SetStatus("active").
 		SetTemporalWorkflowID(workflowID)

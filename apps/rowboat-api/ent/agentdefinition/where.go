@@ -96,6 +96,11 @@ func LimitsJSON(v string) predicate.AgentDefinition {
 	return predicate.AgentDefinition(sql.FieldEQ(FieldLimitsJSON, v))
 }
 
+// ToolsJSON applies equality check predicate on the "tools_json" field. It's identical to ToolsJSONEQ.
+func ToolsJSON(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldToolsJSON, v))
+}
+
 // ChannelBindings applies equality check predicate on the "channel_bindings" field. It's identical to ChannelBindingsEQ.
 func ChannelBindings(v string) predicate.AgentDefinition {
 	return predicate.AgentDefinition(sql.FieldEQ(FieldChannelBindings, v))
@@ -114,6 +119,36 @@ func ForkedFrom(v string) predicate.AgentDefinition {
 // Revision applies equality check predicate on the "revision" field. It's identical to RevisionEQ.
 func Revision(v int) predicate.AgentDefinition {
 	return predicate.AgentDefinition(sql.FieldEQ(FieldRevision, v))
+}
+
+// SourceFormat applies equality check predicate on the "source_format" field. It's identical to SourceFormatEQ.
+func SourceFormat(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldSourceFormat, v))
+}
+
+// RawSource applies equality check predicate on the "raw_source" field. It's identical to RawSourceEQ.
+func RawSource(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldRawSource, v))
+}
+
+// ContentHash applies equality check predicate on the "content_hash" field. It's identical to ContentHashEQ.
+func ContentHash(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldContentHash, v))
+}
+
+// ManagedBy applies equality check predicate on the "managed_by" field. It's identical to ManagedByEQ.
+func ManagedBy(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldManagedBy, v))
+}
+
+// AgentSyncState applies equality check predicate on the "agent_sync_state" field. It's identical to AgentSyncStateEQ.
+func AgentSyncState(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldAgentSyncState, v))
+}
+
+// AgentSyncError applies equality check predicate on the "agent_sync_error" field. It's identical to AgentSyncErrorEQ.
+func AgentSyncError(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldAgentSyncError, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -636,6 +671,81 @@ func EnabledToolsNotNil() predicate.AgentDefinition {
 	return predicate.AgentDefinition(sql.FieldNotNull(FieldEnabledTools))
 }
 
+// ToolsJSONEQ applies the EQ predicate on the "tools_json" field.
+func ToolsJSONEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldToolsJSON, v))
+}
+
+// ToolsJSONNEQ applies the NEQ predicate on the "tools_json" field.
+func ToolsJSONNEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNEQ(FieldToolsJSON, v))
+}
+
+// ToolsJSONIn applies the In predicate on the "tools_json" field.
+func ToolsJSONIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIn(FieldToolsJSON, vs...))
+}
+
+// ToolsJSONNotIn applies the NotIn predicate on the "tools_json" field.
+func ToolsJSONNotIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotIn(FieldToolsJSON, vs...))
+}
+
+// ToolsJSONGT applies the GT predicate on the "tools_json" field.
+func ToolsJSONGT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGT(FieldToolsJSON, v))
+}
+
+// ToolsJSONGTE applies the GTE predicate on the "tools_json" field.
+func ToolsJSONGTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGTE(FieldToolsJSON, v))
+}
+
+// ToolsJSONLT applies the LT predicate on the "tools_json" field.
+func ToolsJSONLT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLT(FieldToolsJSON, v))
+}
+
+// ToolsJSONLTE applies the LTE predicate on the "tools_json" field.
+func ToolsJSONLTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLTE(FieldToolsJSON, v))
+}
+
+// ToolsJSONContains applies the Contains predicate on the "tools_json" field.
+func ToolsJSONContains(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContains(FieldToolsJSON, v))
+}
+
+// ToolsJSONHasPrefix applies the HasPrefix predicate on the "tools_json" field.
+func ToolsJSONHasPrefix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasPrefix(FieldToolsJSON, v))
+}
+
+// ToolsJSONHasSuffix applies the HasSuffix predicate on the "tools_json" field.
+func ToolsJSONHasSuffix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasSuffix(FieldToolsJSON, v))
+}
+
+// ToolsJSONIsNil applies the IsNil predicate on the "tools_json" field.
+func ToolsJSONIsNil() predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIsNull(FieldToolsJSON))
+}
+
+// ToolsJSONNotNil applies the NotNil predicate on the "tools_json" field.
+func ToolsJSONNotNil() predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotNull(FieldToolsJSON))
+}
+
+// ToolsJSONEqualFold applies the EqualFold predicate on the "tools_json" field.
+func ToolsJSONEqualFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEqualFold(FieldToolsJSON, v))
+}
+
+// ToolsJSONContainsFold applies the ContainsFold predicate on the "tools_json" field.
+func ToolsJSONContainsFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContainsFold(FieldToolsJSON, v))
+}
+
 // SubagentRefsIsNil applies the IsNil predicate on the "subagent_refs" field.
 func SubagentRefsIsNil() predicate.AgentDefinition {
 	return predicate.AgentDefinition(sql.FieldIsNull(FieldSubagentRefs))
@@ -909,6 +1019,426 @@ func RevisionLT(v int) predicate.AgentDefinition {
 // RevisionLTE applies the LTE predicate on the "revision" field.
 func RevisionLTE(v int) predicate.AgentDefinition {
 	return predicate.AgentDefinition(sql.FieldLTE(FieldRevision, v))
+}
+
+// SourceFormatEQ applies the EQ predicate on the "source_format" field.
+func SourceFormatEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldSourceFormat, v))
+}
+
+// SourceFormatNEQ applies the NEQ predicate on the "source_format" field.
+func SourceFormatNEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNEQ(FieldSourceFormat, v))
+}
+
+// SourceFormatIn applies the In predicate on the "source_format" field.
+func SourceFormatIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIn(FieldSourceFormat, vs...))
+}
+
+// SourceFormatNotIn applies the NotIn predicate on the "source_format" field.
+func SourceFormatNotIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotIn(FieldSourceFormat, vs...))
+}
+
+// SourceFormatGT applies the GT predicate on the "source_format" field.
+func SourceFormatGT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGT(FieldSourceFormat, v))
+}
+
+// SourceFormatGTE applies the GTE predicate on the "source_format" field.
+func SourceFormatGTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGTE(FieldSourceFormat, v))
+}
+
+// SourceFormatLT applies the LT predicate on the "source_format" field.
+func SourceFormatLT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLT(FieldSourceFormat, v))
+}
+
+// SourceFormatLTE applies the LTE predicate on the "source_format" field.
+func SourceFormatLTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLTE(FieldSourceFormat, v))
+}
+
+// SourceFormatContains applies the Contains predicate on the "source_format" field.
+func SourceFormatContains(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContains(FieldSourceFormat, v))
+}
+
+// SourceFormatHasPrefix applies the HasPrefix predicate on the "source_format" field.
+func SourceFormatHasPrefix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasPrefix(FieldSourceFormat, v))
+}
+
+// SourceFormatHasSuffix applies the HasSuffix predicate on the "source_format" field.
+func SourceFormatHasSuffix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasSuffix(FieldSourceFormat, v))
+}
+
+// SourceFormatEqualFold applies the EqualFold predicate on the "source_format" field.
+func SourceFormatEqualFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEqualFold(FieldSourceFormat, v))
+}
+
+// SourceFormatContainsFold applies the ContainsFold predicate on the "source_format" field.
+func SourceFormatContainsFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContainsFold(FieldSourceFormat, v))
+}
+
+// RawSourceEQ applies the EQ predicate on the "raw_source" field.
+func RawSourceEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldRawSource, v))
+}
+
+// RawSourceNEQ applies the NEQ predicate on the "raw_source" field.
+func RawSourceNEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNEQ(FieldRawSource, v))
+}
+
+// RawSourceIn applies the In predicate on the "raw_source" field.
+func RawSourceIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIn(FieldRawSource, vs...))
+}
+
+// RawSourceNotIn applies the NotIn predicate on the "raw_source" field.
+func RawSourceNotIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotIn(FieldRawSource, vs...))
+}
+
+// RawSourceGT applies the GT predicate on the "raw_source" field.
+func RawSourceGT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGT(FieldRawSource, v))
+}
+
+// RawSourceGTE applies the GTE predicate on the "raw_source" field.
+func RawSourceGTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGTE(FieldRawSource, v))
+}
+
+// RawSourceLT applies the LT predicate on the "raw_source" field.
+func RawSourceLT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLT(FieldRawSource, v))
+}
+
+// RawSourceLTE applies the LTE predicate on the "raw_source" field.
+func RawSourceLTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLTE(FieldRawSource, v))
+}
+
+// RawSourceContains applies the Contains predicate on the "raw_source" field.
+func RawSourceContains(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContains(FieldRawSource, v))
+}
+
+// RawSourceHasPrefix applies the HasPrefix predicate on the "raw_source" field.
+func RawSourceHasPrefix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasPrefix(FieldRawSource, v))
+}
+
+// RawSourceHasSuffix applies the HasSuffix predicate on the "raw_source" field.
+func RawSourceHasSuffix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasSuffix(FieldRawSource, v))
+}
+
+// RawSourceIsNil applies the IsNil predicate on the "raw_source" field.
+func RawSourceIsNil() predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIsNull(FieldRawSource))
+}
+
+// RawSourceNotNil applies the NotNil predicate on the "raw_source" field.
+func RawSourceNotNil() predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotNull(FieldRawSource))
+}
+
+// RawSourceEqualFold applies the EqualFold predicate on the "raw_source" field.
+func RawSourceEqualFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEqualFold(FieldRawSource, v))
+}
+
+// RawSourceContainsFold applies the ContainsFold predicate on the "raw_source" field.
+func RawSourceContainsFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContainsFold(FieldRawSource, v))
+}
+
+// ContentHashEQ applies the EQ predicate on the "content_hash" field.
+func ContentHashEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldContentHash, v))
+}
+
+// ContentHashNEQ applies the NEQ predicate on the "content_hash" field.
+func ContentHashNEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNEQ(FieldContentHash, v))
+}
+
+// ContentHashIn applies the In predicate on the "content_hash" field.
+func ContentHashIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIn(FieldContentHash, vs...))
+}
+
+// ContentHashNotIn applies the NotIn predicate on the "content_hash" field.
+func ContentHashNotIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotIn(FieldContentHash, vs...))
+}
+
+// ContentHashGT applies the GT predicate on the "content_hash" field.
+func ContentHashGT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGT(FieldContentHash, v))
+}
+
+// ContentHashGTE applies the GTE predicate on the "content_hash" field.
+func ContentHashGTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGTE(FieldContentHash, v))
+}
+
+// ContentHashLT applies the LT predicate on the "content_hash" field.
+func ContentHashLT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLT(FieldContentHash, v))
+}
+
+// ContentHashLTE applies the LTE predicate on the "content_hash" field.
+func ContentHashLTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLTE(FieldContentHash, v))
+}
+
+// ContentHashContains applies the Contains predicate on the "content_hash" field.
+func ContentHashContains(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContains(FieldContentHash, v))
+}
+
+// ContentHashHasPrefix applies the HasPrefix predicate on the "content_hash" field.
+func ContentHashHasPrefix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasPrefix(FieldContentHash, v))
+}
+
+// ContentHashHasSuffix applies the HasSuffix predicate on the "content_hash" field.
+func ContentHashHasSuffix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasSuffix(FieldContentHash, v))
+}
+
+// ContentHashIsNil applies the IsNil predicate on the "content_hash" field.
+func ContentHashIsNil() predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIsNull(FieldContentHash))
+}
+
+// ContentHashNotNil applies the NotNil predicate on the "content_hash" field.
+func ContentHashNotNil() predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotNull(FieldContentHash))
+}
+
+// ContentHashEqualFold applies the EqualFold predicate on the "content_hash" field.
+func ContentHashEqualFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEqualFold(FieldContentHash, v))
+}
+
+// ContentHashContainsFold applies the ContainsFold predicate on the "content_hash" field.
+func ContentHashContainsFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContainsFold(FieldContentHash, v))
+}
+
+// ManagedByEQ applies the EQ predicate on the "managed_by" field.
+func ManagedByEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldManagedBy, v))
+}
+
+// ManagedByNEQ applies the NEQ predicate on the "managed_by" field.
+func ManagedByNEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNEQ(FieldManagedBy, v))
+}
+
+// ManagedByIn applies the In predicate on the "managed_by" field.
+func ManagedByIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIn(FieldManagedBy, vs...))
+}
+
+// ManagedByNotIn applies the NotIn predicate on the "managed_by" field.
+func ManagedByNotIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotIn(FieldManagedBy, vs...))
+}
+
+// ManagedByGT applies the GT predicate on the "managed_by" field.
+func ManagedByGT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGT(FieldManagedBy, v))
+}
+
+// ManagedByGTE applies the GTE predicate on the "managed_by" field.
+func ManagedByGTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGTE(FieldManagedBy, v))
+}
+
+// ManagedByLT applies the LT predicate on the "managed_by" field.
+func ManagedByLT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLT(FieldManagedBy, v))
+}
+
+// ManagedByLTE applies the LTE predicate on the "managed_by" field.
+func ManagedByLTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLTE(FieldManagedBy, v))
+}
+
+// ManagedByContains applies the Contains predicate on the "managed_by" field.
+func ManagedByContains(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContains(FieldManagedBy, v))
+}
+
+// ManagedByHasPrefix applies the HasPrefix predicate on the "managed_by" field.
+func ManagedByHasPrefix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasPrefix(FieldManagedBy, v))
+}
+
+// ManagedByHasSuffix applies the HasSuffix predicate on the "managed_by" field.
+func ManagedByHasSuffix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasSuffix(FieldManagedBy, v))
+}
+
+// ManagedByEqualFold applies the EqualFold predicate on the "managed_by" field.
+func ManagedByEqualFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEqualFold(FieldManagedBy, v))
+}
+
+// ManagedByContainsFold applies the ContainsFold predicate on the "managed_by" field.
+func ManagedByContainsFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContainsFold(FieldManagedBy, v))
+}
+
+// AgentSyncStateEQ applies the EQ predicate on the "agent_sync_state" field.
+func AgentSyncStateEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldAgentSyncState, v))
+}
+
+// AgentSyncStateNEQ applies the NEQ predicate on the "agent_sync_state" field.
+func AgentSyncStateNEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNEQ(FieldAgentSyncState, v))
+}
+
+// AgentSyncStateIn applies the In predicate on the "agent_sync_state" field.
+func AgentSyncStateIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIn(FieldAgentSyncState, vs...))
+}
+
+// AgentSyncStateNotIn applies the NotIn predicate on the "agent_sync_state" field.
+func AgentSyncStateNotIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotIn(FieldAgentSyncState, vs...))
+}
+
+// AgentSyncStateGT applies the GT predicate on the "agent_sync_state" field.
+func AgentSyncStateGT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGT(FieldAgentSyncState, v))
+}
+
+// AgentSyncStateGTE applies the GTE predicate on the "agent_sync_state" field.
+func AgentSyncStateGTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGTE(FieldAgentSyncState, v))
+}
+
+// AgentSyncStateLT applies the LT predicate on the "agent_sync_state" field.
+func AgentSyncStateLT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLT(FieldAgentSyncState, v))
+}
+
+// AgentSyncStateLTE applies the LTE predicate on the "agent_sync_state" field.
+func AgentSyncStateLTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLTE(FieldAgentSyncState, v))
+}
+
+// AgentSyncStateContains applies the Contains predicate on the "agent_sync_state" field.
+func AgentSyncStateContains(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContains(FieldAgentSyncState, v))
+}
+
+// AgentSyncStateHasPrefix applies the HasPrefix predicate on the "agent_sync_state" field.
+func AgentSyncStateHasPrefix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasPrefix(FieldAgentSyncState, v))
+}
+
+// AgentSyncStateHasSuffix applies the HasSuffix predicate on the "agent_sync_state" field.
+func AgentSyncStateHasSuffix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasSuffix(FieldAgentSyncState, v))
+}
+
+// AgentSyncStateEqualFold applies the EqualFold predicate on the "agent_sync_state" field.
+func AgentSyncStateEqualFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEqualFold(FieldAgentSyncState, v))
+}
+
+// AgentSyncStateContainsFold applies the ContainsFold predicate on the "agent_sync_state" field.
+func AgentSyncStateContainsFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContainsFold(FieldAgentSyncState, v))
+}
+
+// AgentSyncErrorEQ applies the EQ predicate on the "agent_sync_error" field.
+func AgentSyncErrorEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEQ(FieldAgentSyncError, v))
+}
+
+// AgentSyncErrorNEQ applies the NEQ predicate on the "agent_sync_error" field.
+func AgentSyncErrorNEQ(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNEQ(FieldAgentSyncError, v))
+}
+
+// AgentSyncErrorIn applies the In predicate on the "agent_sync_error" field.
+func AgentSyncErrorIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIn(FieldAgentSyncError, vs...))
+}
+
+// AgentSyncErrorNotIn applies the NotIn predicate on the "agent_sync_error" field.
+func AgentSyncErrorNotIn(vs ...string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotIn(FieldAgentSyncError, vs...))
+}
+
+// AgentSyncErrorGT applies the GT predicate on the "agent_sync_error" field.
+func AgentSyncErrorGT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGT(FieldAgentSyncError, v))
+}
+
+// AgentSyncErrorGTE applies the GTE predicate on the "agent_sync_error" field.
+func AgentSyncErrorGTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldGTE(FieldAgentSyncError, v))
+}
+
+// AgentSyncErrorLT applies the LT predicate on the "agent_sync_error" field.
+func AgentSyncErrorLT(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLT(FieldAgentSyncError, v))
+}
+
+// AgentSyncErrorLTE applies the LTE predicate on the "agent_sync_error" field.
+func AgentSyncErrorLTE(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldLTE(FieldAgentSyncError, v))
+}
+
+// AgentSyncErrorContains applies the Contains predicate on the "agent_sync_error" field.
+func AgentSyncErrorContains(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContains(FieldAgentSyncError, v))
+}
+
+// AgentSyncErrorHasPrefix applies the HasPrefix predicate on the "agent_sync_error" field.
+func AgentSyncErrorHasPrefix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasPrefix(FieldAgentSyncError, v))
+}
+
+// AgentSyncErrorHasSuffix applies the HasSuffix predicate on the "agent_sync_error" field.
+func AgentSyncErrorHasSuffix(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldHasSuffix(FieldAgentSyncError, v))
+}
+
+// AgentSyncErrorIsNil applies the IsNil predicate on the "agent_sync_error" field.
+func AgentSyncErrorIsNil() predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldIsNull(FieldAgentSyncError))
+}
+
+// AgentSyncErrorNotNil applies the NotNil predicate on the "agent_sync_error" field.
+func AgentSyncErrorNotNil() predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldNotNull(FieldAgentSyncError))
+}
+
+// AgentSyncErrorEqualFold applies the EqualFold predicate on the "agent_sync_error" field.
+func AgentSyncErrorEqualFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldEqualFold(FieldAgentSyncError, v))
+}
+
+// AgentSyncErrorContainsFold applies the ContainsFold predicate on the "agent_sync_error" field.
+func AgentSyncErrorContainsFold(v string) predicate.AgentDefinition {
+	return predicate.AgentDefinition(sql.FieldContainsFold(FieldAgentSyncError, v))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

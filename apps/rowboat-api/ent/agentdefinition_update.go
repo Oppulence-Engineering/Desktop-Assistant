@@ -164,6 +164,26 @@ func (_u *AgentDefinitionUpdate) ClearEnabledTools() *AgentDefinitionUpdate {
 	return _u
 }
 
+// SetToolsJSON sets the "tools_json" field.
+func (_u *AgentDefinitionUpdate) SetToolsJSON(v string) *AgentDefinitionUpdate {
+	_u.mutation.SetToolsJSON(v)
+	return _u
+}
+
+// SetNillableToolsJSON sets the "tools_json" field if the given value is not nil.
+func (_u *AgentDefinitionUpdate) SetNillableToolsJSON(v *string) *AgentDefinitionUpdate {
+	if v != nil {
+		_u.SetToolsJSON(*v)
+	}
+	return _u
+}
+
+// ClearToolsJSON clears the value of the "tools_json" field.
+func (_u *AgentDefinitionUpdate) ClearToolsJSON() *AgentDefinitionUpdate {
+	_u.mutation.ClearToolsJSON()
+	return _u
+}
+
 // SetSubagentRefs sets the "subagent_refs" field.
 func (_u *AgentDefinitionUpdate) SetSubagentRefs(v []string) *AgentDefinitionUpdate {
 	_u.mutation.SetSubagentRefs(v)
@@ -272,6 +292,108 @@ func (_u *AgentDefinitionUpdate) SetNillableRevision(v *int) *AgentDefinitionUpd
 // AddRevision adds value to the "revision" field.
 func (_u *AgentDefinitionUpdate) AddRevision(v int) *AgentDefinitionUpdate {
 	_u.mutation.AddRevision(v)
+	return _u
+}
+
+// SetSourceFormat sets the "source_format" field.
+func (_u *AgentDefinitionUpdate) SetSourceFormat(v string) *AgentDefinitionUpdate {
+	_u.mutation.SetSourceFormat(v)
+	return _u
+}
+
+// SetNillableSourceFormat sets the "source_format" field if the given value is not nil.
+func (_u *AgentDefinitionUpdate) SetNillableSourceFormat(v *string) *AgentDefinitionUpdate {
+	if v != nil {
+		_u.SetSourceFormat(*v)
+	}
+	return _u
+}
+
+// SetRawSource sets the "raw_source" field.
+func (_u *AgentDefinitionUpdate) SetRawSource(v string) *AgentDefinitionUpdate {
+	_u.mutation.SetRawSource(v)
+	return _u
+}
+
+// SetNillableRawSource sets the "raw_source" field if the given value is not nil.
+func (_u *AgentDefinitionUpdate) SetNillableRawSource(v *string) *AgentDefinitionUpdate {
+	if v != nil {
+		_u.SetRawSource(*v)
+	}
+	return _u
+}
+
+// ClearRawSource clears the value of the "raw_source" field.
+func (_u *AgentDefinitionUpdate) ClearRawSource() *AgentDefinitionUpdate {
+	_u.mutation.ClearRawSource()
+	return _u
+}
+
+// SetContentHash sets the "content_hash" field.
+func (_u *AgentDefinitionUpdate) SetContentHash(v string) *AgentDefinitionUpdate {
+	_u.mutation.SetContentHash(v)
+	return _u
+}
+
+// SetNillableContentHash sets the "content_hash" field if the given value is not nil.
+func (_u *AgentDefinitionUpdate) SetNillableContentHash(v *string) *AgentDefinitionUpdate {
+	if v != nil {
+		_u.SetContentHash(*v)
+	}
+	return _u
+}
+
+// ClearContentHash clears the value of the "content_hash" field.
+func (_u *AgentDefinitionUpdate) ClearContentHash() *AgentDefinitionUpdate {
+	_u.mutation.ClearContentHash()
+	return _u
+}
+
+// SetManagedBy sets the "managed_by" field.
+func (_u *AgentDefinitionUpdate) SetManagedBy(v string) *AgentDefinitionUpdate {
+	_u.mutation.SetManagedBy(v)
+	return _u
+}
+
+// SetNillableManagedBy sets the "managed_by" field if the given value is not nil.
+func (_u *AgentDefinitionUpdate) SetNillableManagedBy(v *string) *AgentDefinitionUpdate {
+	if v != nil {
+		_u.SetManagedBy(*v)
+	}
+	return _u
+}
+
+// SetAgentSyncState sets the "agent_sync_state" field.
+func (_u *AgentDefinitionUpdate) SetAgentSyncState(v string) *AgentDefinitionUpdate {
+	_u.mutation.SetAgentSyncState(v)
+	return _u
+}
+
+// SetNillableAgentSyncState sets the "agent_sync_state" field if the given value is not nil.
+func (_u *AgentDefinitionUpdate) SetNillableAgentSyncState(v *string) *AgentDefinitionUpdate {
+	if v != nil {
+		_u.SetAgentSyncState(*v)
+	}
+	return _u
+}
+
+// SetAgentSyncError sets the "agent_sync_error" field.
+func (_u *AgentDefinitionUpdate) SetAgentSyncError(v string) *AgentDefinitionUpdate {
+	_u.mutation.SetAgentSyncError(v)
+	return _u
+}
+
+// SetNillableAgentSyncError sets the "agent_sync_error" field if the given value is not nil.
+func (_u *AgentDefinitionUpdate) SetNillableAgentSyncError(v *string) *AgentDefinitionUpdate {
+	if v != nil {
+		_u.SetAgentSyncError(*v)
+	}
+	return _u
+}
+
+// ClearAgentSyncError clears the value of the "agent_sync_error" field.
+func (_u *AgentDefinitionUpdate) ClearAgentSyncError() *AgentDefinitionUpdate {
+	_u.mutation.ClearAgentSyncError()
 	return _u
 }
 
@@ -386,6 +508,11 @@ func (_u *AgentDefinitionUpdate) check() error {
 			return &ValidationError{Name: "limits_json", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.limits_json": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ToolsJSON(); ok {
+		if err := agentdefinition.ToolsJSONValidator(v); err != nil {
+			return &ValidationError{Name: "tools_json", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.tools_json": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ChannelBindings(); ok {
 		if err := agentdefinition.ChannelBindingsValidator(v); err != nil {
 			return &ValidationError{Name: "channel_bindings", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.channel_bindings": %w`, err)}
@@ -399,6 +526,21 @@ func (_u *AgentDefinitionUpdate) check() error {
 	if v, ok := _u.mutation.Revision(); ok {
 		if err := agentdefinition.RevisionValidator(v); err != nil {
 			return &ValidationError{Name: "revision", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.revision": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.SourceFormat(); ok {
+		if err := agentdefinition.SourceFormatValidator(v); err != nil {
+			return &ValidationError{Name: "source_format", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.source_format": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ManagedBy(); ok {
+		if err := agentdefinition.ManagedByValidator(v); err != nil {
+			return &ValidationError{Name: "managed_by", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.managed_by": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.AgentSyncState(); ok {
+		if err := agentdefinition.AgentSyncStateValidator(v); err != nil {
+			return &ValidationError{Name: "agent_sync_state", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.agent_sync_state": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
@@ -463,6 +605,12 @@ func (_u *AgentDefinitionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if _u.mutation.EnabledToolsCleared() {
 		_spec.ClearField(agentdefinition.FieldEnabledTools, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.ToolsJSON(); ok {
+		_spec.SetField(agentdefinition.FieldToolsJSON, field.TypeString, value)
+	}
+	if _u.mutation.ToolsJSONCleared() {
+		_spec.ClearField(agentdefinition.FieldToolsJSON, field.TypeString)
+	}
 	if value, ok := _u.mutation.SubagentRefs(); ok {
 		_spec.SetField(agentdefinition.FieldSubagentRefs, field.TypeJSON, value)
 	}
@@ -505,6 +653,33 @@ func (_u *AgentDefinitionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if value, ok := _u.mutation.AddedRevision(); ok {
 		_spec.AddField(agentdefinition.FieldRevision, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.SourceFormat(); ok {
+		_spec.SetField(agentdefinition.FieldSourceFormat, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.RawSource(); ok {
+		_spec.SetField(agentdefinition.FieldRawSource, field.TypeString, value)
+	}
+	if _u.mutation.RawSourceCleared() {
+		_spec.ClearField(agentdefinition.FieldRawSource, field.TypeString)
+	}
+	if value, ok := _u.mutation.ContentHash(); ok {
+		_spec.SetField(agentdefinition.FieldContentHash, field.TypeString, value)
+	}
+	if _u.mutation.ContentHashCleared() {
+		_spec.ClearField(agentdefinition.FieldContentHash, field.TypeString)
+	}
+	if value, ok := _u.mutation.ManagedBy(); ok {
+		_spec.SetField(agentdefinition.FieldManagedBy, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AgentSyncState(); ok {
+		_spec.SetField(agentdefinition.FieldAgentSyncState, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AgentSyncError(); ok {
+		_spec.SetField(agentdefinition.FieldAgentSyncError, field.TypeString, value)
+	}
+	if _u.mutation.AgentSyncErrorCleared() {
+		_spec.ClearField(agentdefinition.FieldAgentSyncError, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -732,6 +907,26 @@ func (_u *AgentDefinitionUpdateOne) ClearEnabledTools() *AgentDefinitionUpdateOn
 	return _u
 }
 
+// SetToolsJSON sets the "tools_json" field.
+func (_u *AgentDefinitionUpdateOne) SetToolsJSON(v string) *AgentDefinitionUpdateOne {
+	_u.mutation.SetToolsJSON(v)
+	return _u
+}
+
+// SetNillableToolsJSON sets the "tools_json" field if the given value is not nil.
+func (_u *AgentDefinitionUpdateOne) SetNillableToolsJSON(v *string) *AgentDefinitionUpdateOne {
+	if v != nil {
+		_u.SetToolsJSON(*v)
+	}
+	return _u
+}
+
+// ClearToolsJSON clears the value of the "tools_json" field.
+func (_u *AgentDefinitionUpdateOne) ClearToolsJSON() *AgentDefinitionUpdateOne {
+	_u.mutation.ClearToolsJSON()
+	return _u
+}
+
 // SetSubagentRefs sets the "subagent_refs" field.
 func (_u *AgentDefinitionUpdateOne) SetSubagentRefs(v []string) *AgentDefinitionUpdateOne {
 	_u.mutation.SetSubagentRefs(v)
@@ -840,6 +1035,108 @@ func (_u *AgentDefinitionUpdateOne) SetNillableRevision(v *int) *AgentDefinition
 // AddRevision adds value to the "revision" field.
 func (_u *AgentDefinitionUpdateOne) AddRevision(v int) *AgentDefinitionUpdateOne {
 	_u.mutation.AddRevision(v)
+	return _u
+}
+
+// SetSourceFormat sets the "source_format" field.
+func (_u *AgentDefinitionUpdateOne) SetSourceFormat(v string) *AgentDefinitionUpdateOne {
+	_u.mutation.SetSourceFormat(v)
+	return _u
+}
+
+// SetNillableSourceFormat sets the "source_format" field if the given value is not nil.
+func (_u *AgentDefinitionUpdateOne) SetNillableSourceFormat(v *string) *AgentDefinitionUpdateOne {
+	if v != nil {
+		_u.SetSourceFormat(*v)
+	}
+	return _u
+}
+
+// SetRawSource sets the "raw_source" field.
+func (_u *AgentDefinitionUpdateOne) SetRawSource(v string) *AgentDefinitionUpdateOne {
+	_u.mutation.SetRawSource(v)
+	return _u
+}
+
+// SetNillableRawSource sets the "raw_source" field if the given value is not nil.
+func (_u *AgentDefinitionUpdateOne) SetNillableRawSource(v *string) *AgentDefinitionUpdateOne {
+	if v != nil {
+		_u.SetRawSource(*v)
+	}
+	return _u
+}
+
+// ClearRawSource clears the value of the "raw_source" field.
+func (_u *AgentDefinitionUpdateOne) ClearRawSource() *AgentDefinitionUpdateOne {
+	_u.mutation.ClearRawSource()
+	return _u
+}
+
+// SetContentHash sets the "content_hash" field.
+func (_u *AgentDefinitionUpdateOne) SetContentHash(v string) *AgentDefinitionUpdateOne {
+	_u.mutation.SetContentHash(v)
+	return _u
+}
+
+// SetNillableContentHash sets the "content_hash" field if the given value is not nil.
+func (_u *AgentDefinitionUpdateOne) SetNillableContentHash(v *string) *AgentDefinitionUpdateOne {
+	if v != nil {
+		_u.SetContentHash(*v)
+	}
+	return _u
+}
+
+// ClearContentHash clears the value of the "content_hash" field.
+func (_u *AgentDefinitionUpdateOne) ClearContentHash() *AgentDefinitionUpdateOne {
+	_u.mutation.ClearContentHash()
+	return _u
+}
+
+// SetManagedBy sets the "managed_by" field.
+func (_u *AgentDefinitionUpdateOne) SetManagedBy(v string) *AgentDefinitionUpdateOne {
+	_u.mutation.SetManagedBy(v)
+	return _u
+}
+
+// SetNillableManagedBy sets the "managed_by" field if the given value is not nil.
+func (_u *AgentDefinitionUpdateOne) SetNillableManagedBy(v *string) *AgentDefinitionUpdateOne {
+	if v != nil {
+		_u.SetManagedBy(*v)
+	}
+	return _u
+}
+
+// SetAgentSyncState sets the "agent_sync_state" field.
+func (_u *AgentDefinitionUpdateOne) SetAgentSyncState(v string) *AgentDefinitionUpdateOne {
+	_u.mutation.SetAgentSyncState(v)
+	return _u
+}
+
+// SetNillableAgentSyncState sets the "agent_sync_state" field if the given value is not nil.
+func (_u *AgentDefinitionUpdateOne) SetNillableAgentSyncState(v *string) *AgentDefinitionUpdateOne {
+	if v != nil {
+		_u.SetAgentSyncState(*v)
+	}
+	return _u
+}
+
+// SetAgentSyncError sets the "agent_sync_error" field.
+func (_u *AgentDefinitionUpdateOne) SetAgentSyncError(v string) *AgentDefinitionUpdateOne {
+	_u.mutation.SetAgentSyncError(v)
+	return _u
+}
+
+// SetNillableAgentSyncError sets the "agent_sync_error" field if the given value is not nil.
+func (_u *AgentDefinitionUpdateOne) SetNillableAgentSyncError(v *string) *AgentDefinitionUpdateOne {
+	if v != nil {
+		_u.SetAgentSyncError(*v)
+	}
+	return _u
+}
+
+// ClearAgentSyncError clears the value of the "agent_sync_error" field.
+func (_u *AgentDefinitionUpdateOne) ClearAgentSyncError() *AgentDefinitionUpdateOne {
+	_u.mutation.ClearAgentSyncError()
 	return _u
 }
 
@@ -967,6 +1264,11 @@ func (_u *AgentDefinitionUpdateOne) check() error {
 			return &ValidationError{Name: "limits_json", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.limits_json": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ToolsJSON(); ok {
+		if err := agentdefinition.ToolsJSONValidator(v); err != nil {
+			return &ValidationError{Name: "tools_json", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.tools_json": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ChannelBindings(); ok {
 		if err := agentdefinition.ChannelBindingsValidator(v); err != nil {
 			return &ValidationError{Name: "channel_bindings", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.channel_bindings": %w`, err)}
@@ -980,6 +1282,21 @@ func (_u *AgentDefinitionUpdateOne) check() error {
 	if v, ok := _u.mutation.Revision(); ok {
 		if err := agentdefinition.RevisionValidator(v); err != nil {
 			return &ValidationError{Name: "revision", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.revision": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.SourceFormat(); ok {
+		if err := agentdefinition.SourceFormatValidator(v); err != nil {
+			return &ValidationError{Name: "source_format", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.source_format": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ManagedBy(); ok {
+		if err := agentdefinition.ManagedByValidator(v); err != nil {
+			return &ValidationError{Name: "managed_by", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.managed_by": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.AgentSyncState(); ok {
+		if err := agentdefinition.AgentSyncStateValidator(v); err != nil {
+			return &ValidationError{Name: "agent_sync_state", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.agent_sync_state": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
@@ -1061,6 +1378,12 @@ func (_u *AgentDefinitionUpdateOne) sqlSave(ctx context.Context) (_node *AgentDe
 	if _u.mutation.EnabledToolsCleared() {
 		_spec.ClearField(agentdefinition.FieldEnabledTools, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.ToolsJSON(); ok {
+		_spec.SetField(agentdefinition.FieldToolsJSON, field.TypeString, value)
+	}
+	if _u.mutation.ToolsJSONCleared() {
+		_spec.ClearField(agentdefinition.FieldToolsJSON, field.TypeString)
+	}
 	if value, ok := _u.mutation.SubagentRefs(); ok {
 		_spec.SetField(agentdefinition.FieldSubagentRefs, field.TypeJSON, value)
 	}
@@ -1103,6 +1426,33 @@ func (_u *AgentDefinitionUpdateOne) sqlSave(ctx context.Context) (_node *AgentDe
 	}
 	if value, ok := _u.mutation.AddedRevision(); ok {
 		_spec.AddField(agentdefinition.FieldRevision, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.SourceFormat(); ok {
+		_spec.SetField(agentdefinition.FieldSourceFormat, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.RawSource(); ok {
+		_spec.SetField(agentdefinition.FieldRawSource, field.TypeString, value)
+	}
+	if _u.mutation.RawSourceCleared() {
+		_spec.ClearField(agentdefinition.FieldRawSource, field.TypeString)
+	}
+	if value, ok := _u.mutation.ContentHash(); ok {
+		_spec.SetField(agentdefinition.FieldContentHash, field.TypeString, value)
+	}
+	if _u.mutation.ContentHashCleared() {
+		_spec.ClearField(agentdefinition.FieldContentHash, field.TypeString)
+	}
+	if value, ok := _u.mutation.ManagedBy(); ok {
+		_spec.SetField(agentdefinition.FieldManagedBy, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AgentSyncState(); ok {
+		_spec.SetField(agentdefinition.FieldAgentSyncState, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AgentSyncError(); ok {
+		_spec.SetField(agentdefinition.FieldAgentSyncError, field.TypeString, value)
+	}
+	if _u.mutation.AgentSyncErrorCleared() {
+		_spec.ClearField(agentdefinition.FieldAgentSyncError, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

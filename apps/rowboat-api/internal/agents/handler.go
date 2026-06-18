@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentgitops"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentsessions"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentstream"
@@ -38,9 +39,11 @@ type Handler struct {
 	starter     *agentsessions.Starter
 	streamer    *agentstream.Streamer
 	scheduler   *agentworkflow.SessionScheduler
+	gitops      *agentgitops.Reconciler // nil → GitOps disabled
 	signer      *agenttoken.Signer
 	approvalTTL time.Duration
 	requireMFA  bool
+	policy      agentregistry.Policy // RFC 028 semantic-validation policy
 	log         *zap.Logger
 }
 
@@ -60,7 +63,14 @@ func New(client *ent.Client, loader *agentregistry.Loader, cfg appconfig.Config,
 		signer:      signer,
 		approvalTTL: cfg.AgentApprovalTokenTTL,
 		requireMFA:  cfg.AgentRequireMFAForMoneyMoving,
-		log:         log,
+		policy: agentregistry.Policy{
+			AllowedModels:           cfg.LLMAllowedModels,
+			MaxTurns:                cfg.AgentMaxTurnsPerSession,
+			MaxLLMCalls:             cfg.AgentMaxLLMCallsPerSession,
+			MaxToolCalls:            cfg.AgentMaxToolCallsPerTurn,
+			DeclarativeToolsEnabled: cfg.AgentDeclarativeToolsEnabled,
+		},
+		log: log,
 	}
 }
 
@@ -73,6 +83,13 @@ func (h *Handler) SetStreamer(s *agentstream.Streamer) { h.streamer = s }
 
 // SetScheduler wires the Temporal-Schedule manager for recurring sessions (P5).
 func (h *Handler) SetScheduler(s *agentworkflow.SessionScheduler) { h.scheduler = s }
+
+// SetGitOps wires the GitOps reconciler (RFC 028 P4), enabling the internal
+// reconcile endpoint.
+func (h *Handler) SetGitOps(r *agentgitops.Reconciler) { h.gitops = r }
+
+// Policy exposes the validation policy (used to build the reconciler).
+func (h *Handler) Policy() agentregistry.Policy { return h.policy }
 
 // --- session views -----------------------------------------------------------
 

@@ -10,6 +10,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
@@ -147,6 +148,33 @@ func (f TraverseAgentDefinition) Traverse(ctx context.Context, q ent.Query) erro
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.AgentDefinitionQuery", q)
+}
+
+// The AgentDefinitionHistoryFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AgentDefinitionHistoryFunc func(context.Context, *ent.AgentDefinitionHistoryQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AgentDefinitionHistoryFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AgentDefinitionHistoryQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AgentDefinitionHistoryQuery", q)
+}
+
+// The TraverseAgentDefinitionHistory type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAgentDefinitionHistory func(context.Context, *ent.AgentDefinitionHistoryQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAgentDefinitionHistory) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAgentDefinitionHistory) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentDefinitionHistoryQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AgentDefinitionHistoryQuery", q)
 }
 
 // The AgentSessionFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -858,6 +886,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.AgentApprovalQuery, predicate.AgentApproval, agentapproval.OrderOption]{typ: ent.TypeAgentApproval, tq: q}, nil
 	case *ent.AgentDefinitionQuery:
 		return &query[*ent.AgentDefinitionQuery, predicate.AgentDefinition, agentdefinition.OrderOption]{typ: ent.TypeAgentDefinition, tq: q}, nil
+	case *ent.AgentDefinitionHistoryQuery:
+		return &query[*ent.AgentDefinitionHistoryQuery, predicate.AgentDefinitionHistory, agentdefinitionhistory.OrderOption]{typ: ent.TypeAgentDefinitionHistory, tq: q}, nil
 	case *ent.AgentSessionQuery:
 		return &query[*ent.AgentSessionQuery, predicate.AgentSession, agentsession.OrderOption]{typ: ent.TypeAgentSession, tq: q}, nil
 	case *ent.AgentSessionEventQuery:

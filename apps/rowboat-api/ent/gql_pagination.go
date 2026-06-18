@@ -13,6 +13,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
@@ -610,6 +611,255 @@ func (_m *AgentDefinition) ToEdge(order *AgentDefinitionOrder) *AgentDefinitionE
 		order = DefaultAgentDefinitionOrder
 	}
 	return &AgentDefinitionEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// AgentDefinitionHistoryEdge is the edge representation of AgentDefinitionHistory.
+type AgentDefinitionHistoryEdge struct {
+	Node   *AgentDefinitionHistory `json:"node"`
+	Cursor Cursor                  `json:"cursor"`
+}
+
+// AgentDefinitionHistoryConnection is the connection containing edges to AgentDefinitionHistory.
+type AgentDefinitionHistoryConnection struct {
+	Edges      []*AgentDefinitionHistoryEdge `json:"edges"`
+	PageInfo   PageInfo                      `json:"pageInfo"`
+	TotalCount int                           `json:"totalCount"`
+}
+
+func (c *AgentDefinitionHistoryConnection) build(nodes []*AgentDefinitionHistory, pager *agentdefinitionhistoryPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *AgentDefinitionHistory
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *AgentDefinitionHistory {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *AgentDefinitionHistory {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*AgentDefinitionHistoryEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &AgentDefinitionHistoryEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// AgentDefinitionHistoryPaginateOption enables pagination customization.
+type AgentDefinitionHistoryPaginateOption func(*agentdefinitionhistoryPager) error
+
+// WithAgentDefinitionHistoryOrder configures pagination ordering.
+func WithAgentDefinitionHistoryOrder(order *AgentDefinitionHistoryOrder) AgentDefinitionHistoryPaginateOption {
+	if order == nil {
+		order = DefaultAgentDefinitionHistoryOrder
+	}
+	o := *order
+	return func(pager *agentdefinitionhistoryPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultAgentDefinitionHistoryOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithAgentDefinitionHistoryFilter configures pagination filter.
+func WithAgentDefinitionHistoryFilter(filter func(*AgentDefinitionHistoryQuery) (*AgentDefinitionHistoryQuery, error)) AgentDefinitionHistoryPaginateOption {
+	return func(pager *agentdefinitionhistoryPager) error {
+		if filter == nil {
+			return errors.New("AgentDefinitionHistoryQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type agentdefinitionhistoryPager struct {
+	reverse bool
+	order   *AgentDefinitionHistoryOrder
+	filter  func(*AgentDefinitionHistoryQuery) (*AgentDefinitionHistoryQuery, error)
+}
+
+func newAgentDefinitionHistoryPager(opts []AgentDefinitionHistoryPaginateOption, reverse bool) (*agentdefinitionhistoryPager, error) {
+	pager := &agentdefinitionhistoryPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultAgentDefinitionHistoryOrder
+	}
+	return pager, nil
+}
+
+func (p *agentdefinitionhistoryPager) applyFilter(query *AgentDefinitionHistoryQuery) (*AgentDefinitionHistoryQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *agentdefinitionhistoryPager) toCursor(_m *AgentDefinitionHistory) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *agentdefinitionhistoryPager) applyCursors(query *AgentDefinitionHistoryQuery, after, before *Cursor) (*AgentDefinitionHistoryQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultAgentDefinitionHistoryOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *agentdefinitionhistoryPager) applyOrder(query *AgentDefinitionHistoryQuery) *AgentDefinitionHistoryQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultAgentDefinitionHistoryOrder.Field {
+		query = query.Order(DefaultAgentDefinitionHistoryOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *agentdefinitionhistoryPager) orderExpr(query *AgentDefinitionHistoryQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultAgentDefinitionHistoryOrder.Field {
+			b.Comma().Ident(DefaultAgentDefinitionHistoryOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to AgentDefinitionHistory.
+func (_m *AgentDefinitionHistoryQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...AgentDefinitionHistoryPaginateOption,
+) (*AgentDefinitionHistoryConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newAgentDefinitionHistoryPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &AgentDefinitionHistoryConnection{Edges: []*AgentDefinitionHistoryEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// AgentDefinitionHistoryOrderField defines the ordering field of AgentDefinitionHistory.
+type AgentDefinitionHistoryOrderField struct {
+	// Value extracts the ordering value from the given AgentDefinitionHistory.
+	Value    func(*AgentDefinitionHistory) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) agentdefinitionhistory.OrderOption
+	toCursor func(*AgentDefinitionHistory) Cursor
+}
+
+// AgentDefinitionHistoryOrder defines the ordering of AgentDefinitionHistory.
+type AgentDefinitionHistoryOrder struct {
+	Direction OrderDirection                    `json:"direction"`
+	Field     *AgentDefinitionHistoryOrderField `json:"field"`
+}
+
+// DefaultAgentDefinitionHistoryOrder is the default ordering of AgentDefinitionHistory.
+var DefaultAgentDefinitionHistoryOrder = &AgentDefinitionHistoryOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &AgentDefinitionHistoryOrderField{
+		Value: func(_m *AgentDefinitionHistory) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: agentdefinitionhistory.FieldID,
+		toTerm: agentdefinitionhistory.ByID,
+		toCursor: func(_m *AgentDefinitionHistory) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts AgentDefinitionHistory into AgentDefinitionHistoryEdge.
+func (_m *AgentDefinitionHistory) ToEdge(order *AgentDefinitionHistoryOrder) *AgentDefinitionHistoryEdge {
+	if order == nil {
+		order = DefaultAgentDefinitionHistoryOrder
+	}
+	return &AgentDefinitionHistoryEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

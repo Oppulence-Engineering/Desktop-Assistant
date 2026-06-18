@@ -9,6 +9,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/proto/entpb"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentchannels"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentgitops"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agents"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentsessions"
@@ -319,6 +320,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			}
 		}
 		agentsH.SetStreamer(agentstream.NewStreamer(client, agentBus, log))
+		if cfg.AgentGitOpsEnabled {
+			agentsH.SetGitOps(agentgitops.New(client, agentLoader, agentsH.Policy(), log))
+		}
 	}
 
 	r := srv.Router()
@@ -387,6 +391,11 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
 			Post("/v1/internal/agent-channels/{channel}/inbound", agentChannelsH.InboundInternal)
 	}
+	if agentsH != nil && cfg.AgentGitOpsEnabled {
+		// RFC 028 P4: a git-sync sidecar / CI posts a declared agent set here.
+		r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
+			Post("/v1/internal/agent-gitops/reconcile", agentsH.ReconcileGitOps)
+	}
 
 	// Admin GraphQL (entgql + gqlgen) over the full entity graph. Guarded by
 	// the internal secret, which also marks the context internal so the
@@ -444,8 +453,13 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 				r.Use(rl.PerUserWindow(ratelimit.GroupAgent, 60, time.Minute))
 				r.Get("/", agentsH.ListAgents)
 				r.Post("/", agentsH.CreateAgent)
-				r.Get("/{slug}", agentsH.GetAgent)
+				// RFC 028: declarative YAML/JSON authoring (one shape, both formats).
+				r.Post("/validate", agentsH.ValidateAgent) // dry-run (CLI/CI)
+				r.Put("/{slug}", agentsH.PutAgent)         // apply (new revision)
+				r.Get("/{slug}", agentsH.GetAgent)         // ?format=yaml round-trips
 				r.Delete("/{slug}", agentsH.DeleteAgent)
+				r.Get("/{slug}/revisions", agentsH.ListRevisions)
+				r.Post("/{slug}/rollback", agentsH.RollbackAgent)
 				// Recurring sessions via Temporal Schedules (P5).
 				r.Post("/{slug}/schedule", agentsH.CreateSchedule)
 				r.Delete("/{slug}/schedule", agentsH.DeleteSchedule)

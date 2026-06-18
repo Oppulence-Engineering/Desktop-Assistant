@@ -83,6 +83,20 @@ func (_c *AgentSessionCreate) SetNillableAgentSource(v *string) *AgentSessionCre
 	return _c
 }
 
+// SetAgentRevision sets the "agent_revision" field.
+func (_c *AgentSessionCreate) SetAgentRevision(v int) *AgentSessionCreate {
+	_c.mutation.SetAgentRevision(v)
+	return _c
+}
+
+// SetNillableAgentRevision sets the "agent_revision" field if the given value is not nil.
+func (_c *AgentSessionCreate) SetNillableAgentRevision(v *int) *AgentSessionCreate {
+	if v != nil {
+		_c.SetAgentRevision(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *AgentSessionCreate) SetStatus(v string) *AgentSessionCreate {
 	_c.mutation.SetStatus(v)
@@ -439,6 +453,10 @@ func (_c *AgentSessionCreate) defaults() {
 		v := agentsession.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.AgentRevision(); !ok {
+		v := agentsession.DefaultAgentRevision
+		_c.mutation.SetAgentRevision(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := agentsession.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -495,6 +513,14 @@ func (_c *AgentSessionCreate) check() error {
 	if v, ok := _c.mutation.AgentSlug(); ok {
 		if err := agentsession.AgentSlugValidator(v); err != nil {
 			return &ValidationError{Name: "agent_slug", err: fmt.Errorf(`ent: validator failed for field "AgentSession.agent_slug": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.AgentRevision(); !ok {
+		return &ValidationError{Name: "agent_revision", err: errors.New(`ent: missing required field "AgentSession.agent_revision"`)}
+	}
+	if v, ok := _c.mutation.AgentRevision(); ok {
+		if err := agentsession.AgentRevisionValidator(v); err != nil {
+			return &ValidationError{Name: "agent_revision", err: fmt.Errorf(`ent: validator failed for field "AgentSession.agent_revision": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
@@ -606,6 +632,10 @@ func (_c *AgentSessionCreate) createSpec() (*AgentSession, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.AgentSource(); ok {
 		_spec.SetField(agentsession.FieldAgentSource, field.TypeString, value)
 		_node.AgentSource = value
+	}
+	if value, ok := _c.mutation.AgentRevision(); ok {
+		_spec.SetField(agentsession.FieldAgentRevision, field.TypeInt, value)
+		_node.AgentRevision = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(agentsession.FieldStatus, field.TypeString, value)
@@ -856,6 +886,24 @@ func (u *AgentSessionUpsert) UpdateAgentSource() *AgentSessionUpsert {
 // ClearAgentSource clears the value of the "agent_source" field.
 func (u *AgentSessionUpsert) ClearAgentSource() *AgentSessionUpsert {
 	u.SetNull(agentsession.FieldAgentSource)
+	return u
+}
+
+// SetAgentRevision sets the "agent_revision" field.
+func (u *AgentSessionUpsert) SetAgentRevision(v int) *AgentSessionUpsert {
+	u.Set(agentsession.FieldAgentRevision, v)
+	return u
+}
+
+// UpdateAgentRevision sets the "agent_revision" field to the value that was provided on create.
+func (u *AgentSessionUpsert) UpdateAgentRevision() *AgentSessionUpsert {
+	u.SetExcluded(agentsession.FieldAgentRevision)
+	return u
+}
+
+// AddAgentRevision adds v to the "agent_revision" field.
+func (u *AgentSessionUpsert) AddAgentRevision(v int) *AgentSessionUpsert {
+	u.Add(agentsession.FieldAgentRevision, v)
 	return u
 }
 
@@ -1246,6 +1294,27 @@ func (u *AgentSessionUpsertOne) UpdateAgentSource() *AgentSessionUpsertOne {
 func (u *AgentSessionUpsertOne) ClearAgentSource() *AgentSessionUpsertOne {
 	return u.Update(func(s *AgentSessionUpsert) {
 		s.ClearAgentSource()
+	})
+}
+
+// SetAgentRevision sets the "agent_revision" field.
+func (u *AgentSessionUpsertOne) SetAgentRevision(v int) *AgentSessionUpsertOne {
+	return u.Update(func(s *AgentSessionUpsert) {
+		s.SetAgentRevision(v)
+	})
+}
+
+// AddAgentRevision adds v to the "agent_revision" field.
+func (u *AgentSessionUpsertOne) AddAgentRevision(v int) *AgentSessionUpsertOne {
+	return u.Update(func(s *AgentSessionUpsert) {
+		s.AddAgentRevision(v)
+	})
+}
+
+// UpdateAgentRevision sets the "agent_revision" field to the value that was provided on create.
+func (u *AgentSessionUpsertOne) UpdateAgentRevision() *AgentSessionUpsertOne {
+	return u.Update(func(s *AgentSessionUpsert) {
+		s.UpdateAgentRevision()
 	})
 }
 
@@ -1849,6 +1918,27 @@ func (u *AgentSessionUpsertBulk) UpdateAgentSource() *AgentSessionUpsertBulk {
 func (u *AgentSessionUpsertBulk) ClearAgentSource() *AgentSessionUpsertBulk {
 	return u.Update(func(s *AgentSessionUpsert) {
 		s.ClearAgentSource()
+	})
+}
+
+// SetAgentRevision sets the "agent_revision" field.
+func (u *AgentSessionUpsertBulk) SetAgentRevision(v int) *AgentSessionUpsertBulk {
+	return u.Update(func(s *AgentSessionUpsert) {
+		s.SetAgentRevision(v)
+	})
+}
+
+// AddAgentRevision adds v to the "agent_revision" field.
+func (u *AgentSessionUpsertBulk) AddAgentRevision(v int) *AgentSessionUpsertBulk {
+	return u.Update(func(s *AgentSessionUpsert) {
+		s.AddAgentRevision(v)
+	})
+}
+
+// UpdateAgentRevision sets the "agent_revision" field to the value that was provided on create.
+func (u *AgentSessionUpsertBulk) UpdateAgentRevision() *AgentSessionUpsertBulk {
+	return u.Update(func(s *AgentSessionUpsert) {
+		s.UpdateAgentRevision()
 	})
 }
 

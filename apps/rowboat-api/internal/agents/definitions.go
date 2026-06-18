@@ -3,6 +3,7 @@ package agents
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
@@ -128,11 +129,28 @@ func (h *Handler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAgent handles GET /v1/agents/{slug} — resolves a tenant row or built-in.
+// ?format=yaml round-trips the canonical agent.yaml (RFC 028).
 func (h *Handler) GetAgent(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	spec, err := h.loader.Resolve(r.Context(), slug)
 	if err != nil {
 		httpx.Error(w, http.StatusNotFound, "agent not found", "not_found")
+		return
+	}
+	if strings.EqualFold(r.URL.Query().Get("format"), "yaml") {
+		raw := ""
+		// Prefer the stored raw source for an exact round-trip.
+		if row, rerr := h.client.AgentDefinition.Query().Where(agentdefinition.SlugEQ(slug)).Only(r.Context()); rerr == nil {
+			raw = row.RawSource
+		}
+		out, merr := renderYAML(spec, raw, spec.SourceFormat)
+		if merr != nil {
+			httpx.Error(w, http.StatusInternalServerError, "could not render yaml", "internal_error")
+			return
+		}
+		w.Header().Set("Content-Type", "application/yaml")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(out)
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, viewSpec(spec))

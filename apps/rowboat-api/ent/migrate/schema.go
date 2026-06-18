@@ -3,6 +3,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -73,12 +74,19 @@ var (
 		{Name: "provider", Type: field.TypeString, Nullable: true},
 		{Name: "limits_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "enabled_tools", Type: field.TypeJSON, Nullable: true},
+		{Name: "tools_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "subagent_refs", Type: field.TypeJSON, Nullable: true},
 		{Name: "channel_bindings", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "connector_reqs", Type: field.TypeJSON, Nullable: true},
 		{Name: "source", Type: field.TypeString, Default: "tenant"},
 		{Name: "forked_from", Type: field.TypeString, Nullable: true},
 		{Name: "revision", Type: field.TypeInt, Default: 1},
+		{Name: "source_format", Type: field.TypeString, Default: "json"},
+		{Name: "raw_source", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "content_hash", Type: field.TypeString, Nullable: true},
+		{Name: "managed_by", Type: field.TypeString, Default: "api"},
+		{Name: "agent_sync_state", Type: field.TypeString, Default: "current"},
+		{Name: "agent_sync_error", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "user_agent_definitions", Type: field.TypeUUID},
 	}
 	// AgentDefinitionsTable holds the schema information for the "agent_definitions" table.
@@ -89,7 +97,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "agent_definitions_users_agent_definitions",
-				Columns:    []*schema.Column{AgentDefinitionsColumns[16]},
+				Columns:    []*schema.Column{AgentDefinitionsColumns[23]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -98,12 +106,54 @@ var (
 			{
 				Name:    "agentdefinition_slug_user_agent_definitions",
 				Unique:  true,
-				Columns: []*schema.Column{AgentDefinitionsColumns[3], AgentDefinitionsColumns[16]},
+				Columns: []*schema.Column{AgentDefinitionsColumns[3], AgentDefinitionsColumns[23]},
 			},
 			{
 				Name:    "agentdefinition_source",
 				Unique:  false,
-				Columns: []*schema.Column{AgentDefinitionsColumns[13]},
+				Columns: []*schema.Column{AgentDefinitionsColumns[14]},
+			},
+		},
+	}
+	// AgentdefinitionHistoryColumns holds the columns for the "agentdefinition_history" table.
+	AgentdefinitionHistoryColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "history_time", Type: field.TypeTime},
+		{Name: "operation", Type: field.TypeEnum, Enums: []string{"INSERT", "UPDATE", "DELETE"}},
+		{Name: "ref", Type: field.TypeUUID, Nullable: true},
+		{Name: "slug", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "instructions", Type: field.TypeString, Nullable: true},
+		{Name: "model", Type: field.TypeString, Nullable: true},
+		{Name: "provider", Type: field.TypeString, Nullable: true},
+		{Name: "limits_json", Type: field.TypeString, Nullable: true},
+		{Name: "enabled_tools", Type: field.TypeJSON, Nullable: true},
+		{Name: "tools_json", Type: field.TypeString, Nullable: true},
+		{Name: "subagent_refs", Type: field.TypeJSON, Nullable: true},
+		{Name: "channel_bindings", Type: field.TypeString, Nullable: true},
+		{Name: "connector_reqs", Type: field.TypeJSON, Nullable: true},
+		{Name: "source", Type: field.TypeString, Default: "tenant"},
+		{Name: "forked_from", Type: field.TypeString, Nullable: true},
+		{Name: "revision", Type: field.TypeInt, Default: 1},
+		{Name: "source_format", Type: field.TypeString, Default: "json"},
+		{Name: "raw_source", Type: field.TypeString, Nullable: true},
+		{Name: "content_hash", Type: field.TypeString, Nullable: true},
+		{Name: "managed_by", Type: field.TypeString, Default: "api"},
+		{Name: "agent_sync_state", Type: field.TypeString, Default: "current"},
+		{Name: "agent_sync_error", Type: field.TypeString, Nullable: true},
+	}
+	// AgentdefinitionHistoryTable holds the schema information for the "agentdefinition_history" table.
+	AgentdefinitionHistoryTable = &schema.Table{
+		Name:       "agentdefinition_history",
+		Columns:    AgentdefinitionHistoryColumns,
+		PrimaryKey: []*schema.Column{AgentdefinitionHistoryColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "agentdefinitionhistory_history_time",
+				Unique:  false,
+				Columns: []*schema.Column{AgentdefinitionHistoryColumns[3]},
 			},
 		},
 	}
@@ -115,6 +165,7 @@ var (
 		{Name: "session_id", Type: field.TypeString},
 		{Name: "agent_slug", Type: field.TypeString},
 		{Name: "agent_source", Type: field.TypeString, Nullable: true},
+		{Name: "agent_revision", Type: field.TypeInt, Default: 0},
 		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "channel", Type: field.TypeString, Default: "http"},
 		{Name: "channel_key", Type: field.TypeString, Nullable: true},
@@ -142,13 +193,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "agent_sessions_agent_definitions_sessions",
-				Columns:    []*schema.Column{AgentSessionsColumns[22]},
+				Columns:    []*schema.Column{AgentSessionsColumns[23]},
 				RefColumns: []*schema.Column{AgentDefinitionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "agent_sessions_users_agent_sessions",
-				Columns:    []*schema.Column{AgentSessionsColumns[23]},
+				Columns:    []*schema.Column{AgentSessionsColumns[24]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -157,22 +208,22 @@ var (
 			{
 				Name:    "agentsession_session_id_user_agent_sessions",
 				Unique:  true,
-				Columns: []*schema.Column{AgentSessionsColumns[3], AgentSessionsColumns[23]},
+				Columns: []*schema.Column{AgentSessionsColumns[3], AgentSessionsColumns[24]},
 			},
 			{
 				Name:    "agentsession_status",
 				Unique:  false,
-				Columns: []*schema.Column{AgentSessionsColumns[6]},
+				Columns: []*schema.Column{AgentSessionsColumns[7]},
 			},
 			{
 				Name:    "agentsession_temporal_workflow_id",
 				Unique:  false,
-				Columns: []*schema.Column{AgentSessionsColumns[10]},
+				Columns: []*schema.Column{AgentSessionsColumns[11]},
 			},
 			{
 				Name:    "agentsession_channel_channel_key_user_agent_sessions",
 				Unique:  false,
-				Columns: []*schema.Column{AgentSessionsColumns[7], AgentSessionsColumns[8], AgentSessionsColumns[23]},
+				Columns: []*schema.Column{AgentSessionsColumns[8], AgentSessionsColumns[9], AgentSessionsColumns[24]},
 			},
 		},
 	}
@@ -1149,6 +1200,7 @@ var (
 	Tables = []*schema.Table{
 		AgentApprovalsTable,
 		AgentDefinitionsTable,
+		AgentdefinitionHistoryTable,
 		AgentSessionsTable,
 		AgentSessionEventsTable,
 		AgentToolCallsTable,
@@ -1182,6 +1234,9 @@ func init() {
 	AgentApprovalsTable.ForeignKeys[0].RefTable = AgentSessionsTable
 	AgentApprovalsTable.ForeignKeys[1].RefTable = UsersTable
 	AgentDefinitionsTable.ForeignKeys[0].RefTable = UsersTable
+	AgentdefinitionHistoryTable.Annotation = &entsql.Annotation{
+		Table: "agentdefinition_history",
+	}
 	AgentSessionsTable.ForeignKeys[0].RefTable = AgentDefinitionsTable
 	AgentSessionsTable.ForeignKeys[1].RefTable = UsersTable
 	AgentSessionEventsTable.ForeignKeys[0].RefTable = AgentSessionsTable

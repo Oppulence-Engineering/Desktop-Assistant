@@ -88,6 +88,27 @@ func (_u *AgentSessionUpdate) ClearAgentSource() *AgentSessionUpdate {
 	return _u
 }
 
+// SetAgentRevision sets the "agent_revision" field.
+func (_u *AgentSessionUpdate) SetAgentRevision(v int) *AgentSessionUpdate {
+	_u.mutation.ResetAgentRevision()
+	_u.mutation.SetAgentRevision(v)
+	return _u
+}
+
+// SetNillableAgentRevision sets the "agent_revision" field if the given value is not nil.
+func (_u *AgentSessionUpdate) SetNillableAgentRevision(v *int) *AgentSessionUpdate {
+	if v != nil {
+		_u.SetAgentRevision(*v)
+	}
+	return _u
+}
+
+// AddAgentRevision adds value to the "agent_revision" field.
+func (_u *AgentSessionUpdate) AddAgentRevision(v int) *AgentSessionUpdate {
+	_u.mutation.AddAgentRevision(v)
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *AgentSessionUpdate) SetStatus(v string) *AgentSessionUpdate {
 	_u.mutation.SetStatus(v)
@@ -604,6 +625,11 @@ func (_u *AgentSessionUpdate) check() error {
 			return &ValidationError{Name: "agent_slug", err: fmt.Errorf(`ent: validator failed for field "AgentSession.agent_slug": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.AgentRevision(); ok {
+		if err := agentsession.AgentRevisionValidator(v); err != nil {
+			return &ValidationError{Name: "agent_revision", err: fmt.Errorf(`ent: validator failed for field "AgentSession.agent_revision": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := agentsession.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "AgentSession.status": %w`, err)}
@@ -666,6 +692,12 @@ func (_u *AgentSessionUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if _u.mutation.AgentSourceCleared() {
 		_spec.ClearField(agentsession.FieldAgentSource, field.TypeString)
+	}
+	if value, ok := _u.mutation.AgentRevision(); ok {
+		_spec.SetField(agentsession.FieldAgentRevision, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedAgentRevision(); ok {
+		_spec.AddField(agentsession.FieldAgentRevision, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(agentsession.FieldStatus, field.TypeString, value)
@@ -1021,6 +1053,27 @@ func (_u *AgentSessionUpdateOne) SetNillableAgentSource(v *string) *AgentSession
 // ClearAgentSource clears the value of the "agent_source" field.
 func (_u *AgentSessionUpdateOne) ClearAgentSource() *AgentSessionUpdateOne {
 	_u.mutation.ClearAgentSource()
+	return _u
+}
+
+// SetAgentRevision sets the "agent_revision" field.
+func (_u *AgentSessionUpdateOne) SetAgentRevision(v int) *AgentSessionUpdateOne {
+	_u.mutation.ResetAgentRevision()
+	_u.mutation.SetAgentRevision(v)
+	return _u
+}
+
+// SetNillableAgentRevision sets the "agent_revision" field if the given value is not nil.
+func (_u *AgentSessionUpdateOne) SetNillableAgentRevision(v *int) *AgentSessionUpdateOne {
+	if v != nil {
+		_u.SetAgentRevision(*v)
+	}
+	return _u
+}
+
+// AddAgentRevision adds value to the "agent_revision" field.
+func (_u *AgentSessionUpdateOne) AddAgentRevision(v int) *AgentSessionUpdateOne {
+	_u.mutation.AddAgentRevision(v)
 	return _u
 }
 
@@ -1553,6 +1606,11 @@ func (_u *AgentSessionUpdateOne) check() error {
 			return &ValidationError{Name: "agent_slug", err: fmt.Errorf(`ent: validator failed for field "AgentSession.agent_slug": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.AgentRevision(); ok {
+		if err := agentsession.AgentRevisionValidator(v); err != nil {
+			return &ValidationError{Name: "agent_revision", err: fmt.Errorf(`ent: validator failed for field "AgentSession.agent_revision": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := agentsession.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "AgentSession.status": %w`, err)}
@@ -1632,6 +1690,12 @@ func (_u *AgentSessionUpdateOne) sqlSave(ctx context.Context) (_node *AgentSessi
 	}
 	if _u.mutation.AgentSourceCleared() {
 		_spec.ClearField(agentsession.FieldAgentSource, field.TypeString)
+	}
+	if value, ok := _u.mutation.AgentRevision(); ok {
+		_spec.SetField(agentsession.FieldAgentRevision, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedAgentRevision(); ok {
+		_spec.AddField(agentsession.FieldAgentRevision, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(agentsession.FieldStatus, field.TypeString, value)

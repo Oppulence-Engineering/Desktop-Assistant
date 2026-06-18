@@ -25,6 +25,8 @@ const (
 	FieldAgentSlug = "agent_slug"
 	// FieldAgentSource holds the string denoting the agent_source field in the database.
 	FieldAgentSource = "agent_source"
+	// FieldAgentRevision holds the string denoting the agent_revision field in the database.
+	FieldAgentRevision = "agent_revision"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldChannel holds the string denoting the channel field in the database.
@@ -114,6 +116,7 @@ var Columns = []string{
 	FieldSessionID,
 	FieldAgentSlug,
 	FieldAgentSource,
+	FieldAgentRevision,
 	FieldStatus,
 	FieldChannel,
 	FieldChannelKey,
@@ -165,6 +168,10 @@ var (
 	SessionIDValidator func(string) error
 	// AgentSlugValidator is a validator for the "agent_slug" field. It is called by the builders before save.
 	AgentSlugValidator func(string) error
+	// DefaultAgentRevision holds the default value on creation for the "agent_revision" field.
+	DefaultAgentRevision int
+	// AgentRevisionValidator is a validator for the "agent_revision" field. It is called by the builders before save.
+	AgentRevisionValidator func(int) error
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -226,6 +233,11 @@ func ByAgentSlug(opts ...sql.OrderTermOption) OrderOption {
 // ByAgentSource orders the results by the agent_source field.
 func ByAgentSource(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAgentSource, opts...).ToFunc()
+}
+
+// ByAgentRevision orders the results by the agent_revision field.
+func ByAgentRevision(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAgentRevision, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

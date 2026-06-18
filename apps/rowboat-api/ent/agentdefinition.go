@@ -38,6 +38,8 @@ type AgentDefinition struct {
 	LimitsJSON string `json:"limits_json,omitempty"`
 	// EnabledTools holds the value of the "enabled_tools" field.
 	EnabledTools []string `json:"enabled_tools,omitempty"`
+	// ToolsJSON holds the value of the "tools_json" field.
+	ToolsJSON string `json:"tools_json,omitempty"`
 	// SubagentRefs holds the value of the "subagent_refs" field.
 	SubagentRefs []string `json:"subagent_refs,omitempty"`
 	// ChannelBindings holds the value of the "channel_bindings" field.
@@ -50,6 +52,18 @@ type AgentDefinition struct {
 	ForkedFrom string `json:"forked_from,omitempty"`
 	// Revision holds the value of the "revision" field.
 	Revision int `json:"revision,omitempty"`
+	// SourceFormat holds the value of the "source_format" field.
+	SourceFormat string `json:"source_format,omitempty"`
+	// RawSource holds the value of the "raw_source" field.
+	RawSource string `json:"raw_source,omitempty"`
+	// ContentHash holds the value of the "content_hash" field.
+	ContentHash string `json:"content_hash,omitempty"`
+	// ManagedBy holds the value of the "managed_by" field.
+	ManagedBy string `json:"managed_by,omitempty"`
+	// AgentSyncState holds the value of the "agent_sync_state" field.
+	AgentSyncState string `json:"agent_sync_state,omitempty"`
+	// AgentSyncError holds the value of the "agent_sync_error" field.
+	AgentSyncError string `json:"agent_sync_error,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AgentDefinitionQuery when eager-loading is set.
 	Edges                  AgentDefinitionEdges `json:"edges"`
@@ -101,7 +115,7 @@ func (*AgentDefinition) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case agentdefinition.FieldRevision:
 			values[i] = new(sql.NullInt64)
-		case agentdefinition.FieldSlug, agentdefinition.FieldName, agentdefinition.FieldInstructions, agentdefinition.FieldModel, agentdefinition.FieldProvider, agentdefinition.FieldLimitsJSON, agentdefinition.FieldChannelBindings, agentdefinition.FieldSource, agentdefinition.FieldForkedFrom:
+		case agentdefinition.FieldSlug, agentdefinition.FieldName, agentdefinition.FieldInstructions, agentdefinition.FieldModel, agentdefinition.FieldProvider, agentdefinition.FieldLimitsJSON, agentdefinition.FieldToolsJSON, agentdefinition.FieldChannelBindings, agentdefinition.FieldSource, agentdefinition.FieldForkedFrom, agentdefinition.FieldSourceFormat, agentdefinition.FieldRawSource, agentdefinition.FieldContentHash, agentdefinition.FieldManagedBy, agentdefinition.FieldAgentSyncState, agentdefinition.FieldAgentSyncError:
 			values[i] = new(sql.NullString)
 		case agentdefinition.FieldCreatedAt, agentdefinition.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -186,6 +200,12 @@ func (_m *AgentDefinition) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field enabled_tools: %w", err)
 				}
 			}
+		case agentdefinition.FieldToolsJSON:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field tools_json", values[i])
+			} else if value.Valid {
+				_m.ToolsJSON = value.String
+			}
 		case agentdefinition.FieldSubagentRefs:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field subagent_refs", values[i])
@@ -225,6 +245,42 @@ func (_m *AgentDefinition) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field revision", values[i])
 			} else if value.Valid {
 				_m.Revision = int(value.Int64)
+			}
+		case agentdefinition.FieldSourceFormat:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field source_format", values[i])
+			} else if value.Valid {
+				_m.SourceFormat = value.String
+			}
+		case agentdefinition.FieldRawSource:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field raw_source", values[i])
+			} else if value.Valid {
+				_m.RawSource = value.String
+			}
+		case agentdefinition.FieldContentHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field content_hash", values[i])
+			} else if value.Valid {
+				_m.ContentHash = value.String
+			}
+		case agentdefinition.FieldManagedBy:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field managed_by", values[i])
+			} else if value.Valid {
+				_m.ManagedBy = value.String
+			}
+		case agentdefinition.FieldAgentSyncState:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field agent_sync_state", values[i])
+			} else if value.Valid {
+				_m.AgentSyncState = value.String
+			}
+		case agentdefinition.FieldAgentSyncError:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field agent_sync_error", values[i])
+			} else if value.Valid {
+				_m.AgentSyncError = value.String
 			}
 		case agentdefinition.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -306,6 +362,9 @@ func (_m *AgentDefinition) String() string {
 	builder.WriteString("enabled_tools=")
 	builder.WriteString(fmt.Sprintf("%v", _m.EnabledTools))
 	builder.WriteString(", ")
+	builder.WriteString("tools_json=")
+	builder.WriteString(_m.ToolsJSON)
+	builder.WriteString(", ")
 	builder.WriteString("subagent_refs=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SubagentRefs))
 	builder.WriteString(", ")
@@ -323,6 +382,24 @@ func (_m *AgentDefinition) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("revision=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Revision))
+	builder.WriteString(", ")
+	builder.WriteString("source_format=")
+	builder.WriteString(_m.SourceFormat)
+	builder.WriteString(", ")
+	builder.WriteString("raw_source=")
+	builder.WriteString(_m.RawSource)
+	builder.WriteString(", ")
+	builder.WriteString("content_hash=")
+	builder.WriteString(_m.ContentHash)
+	builder.WriteString(", ")
+	builder.WriteString("managed_by=")
+	builder.WriteString(_m.ManagedBy)
+	builder.WriteString(", ")
+	builder.WriteString("agent_sync_state=")
+	builder.WriteString(_m.AgentSyncState)
+	builder.WriteString(", ")
+	builder.WriteString("agent_sync_error=")
+	builder.WriteString(_m.AgentSyncError)
 	builder.WriteByte(')')
 	return builder.String()
 }

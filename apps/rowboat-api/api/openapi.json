@@ -293,6 +293,12 @@
       },
       "AgentDefinition": {
         "properties": {
+          "agent_sync_error": {
+            "type": "string"
+          },
+          "agent_sync_state": {
+            "type": "string"
+          },
           "channel_bindings": {
             "type": "string"
           },
@@ -301,6 +307,9 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "content_hash": {
+            "type": "string"
           },
           "created_at": {
             "description": "Row creation timestamp.",
@@ -329,6 +338,9 @@
           "limits_json": {
             "type": "string"
           },
+          "managed_by": {
+            "type": "string"
+          },
           "model": {
             "description": "Desktop-facing LLM model id.",
             "example": "openai/gpt-4.1-mini",
@@ -340,6 +352,9 @@
           "provider": {
             "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
             "example": "openai",
+            "type": "string"
+          },
+          "raw_source": {
             "type": "string"
           },
           "revision": {
@@ -357,11 +372,17 @@
           "source": {
             "type": "string"
           },
+          "source_format": {
+            "type": "string"
+          },
           "subagent_refs": {
             "items": {
               "type": "string"
             },
             "type": "array"
+          },
+          "tools_json": {
+            "type": "string"
           },
           "updated_at": {
             "description": "Last row update timestamp.",
@@ -382,7 +403,138 @@
           "name",
           "source",
           "revision",
+          "source_format",
+          "managed_by",
+          "agent_sync_state",
           "user"
+        ],
+        "type": "object"
+      },
+      "AgentDefinitionHistory": {
+        "properties": {
+          "agent_sync_error": {
+            "type": "string"
+          },
+          "agent_sync_state": {
+            "type": "string"
+          },
+          "channel_bindings": {
+            "type": "string"
+          },
+          "connector_reqs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "content_hash": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "enabled_tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "forked_from": {
+            "type": "string"
+          },
+          "history_time": {
+            "description": "Timestamp when this history record was written.",
+            "example": "2026-06-04T20:40:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "limits_json": {
+            "type": "string"
+          },
+          "managed_by": {
+            "type": "string"
+          },
+          "model": {
+            "description": "Desktop-facing LLM model id.",
+            "example": "openai/gpt-4.1-mini",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "operation": {
+            "description": "Mutation operation that produced this history row.",
+            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "example": "UPDATE",
+            "type": "string"
+          },
+          "provider": {
+            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+            "example": "openai",
+            "type": "string"
+          },
+          "raw_source": {
+            "type": "string"
+          },
+          "ref": {
+            "description": "UUID of the source row represented by a history row.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "source_format": {
+            "type": "string"
+          },
+          "subagent_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "tools_json": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "history_time",
+          "operation",
+          "slug",
+          "name",
+          "source",
+          "revision",
+          "source_format",
+          "managed_by",
+          "agent_sync_state"
         ],
         "type": "object"
       },
@@ -390,6 +542,9 @@
         "properties": {
           "agent": {
             "$ref": "#/components/schemas/AgentDefinition"
+          },
+          "agent_revision": {
+            "type": "integer"
           },
           "agent_slug": {
             "type": "string"
@@ -502,6 +657,7 @@
           "updated_at",
           "session_id",
           "agent_slug",
+          "agent_revision",
           "status",
           "channel",
           "turn_count",

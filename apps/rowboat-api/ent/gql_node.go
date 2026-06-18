@@ -10,6 +10,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
@@ -48,6 +49,11 @@ var agentdefinitionImplementors = []string{"AgentDefinition", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*AgentDefinition) IsNode() {}
+
+var agentdefinitionhistoryImplementors = []string{"AgentDefinitionHistory", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgentDefinitionHistory) IsNode() {}
 
 var agentsessionImplementors = []string{"AgentSession", "Node"}
 
@@ -221,6 +227,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(agentdefinition.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agentdefinitionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case agentdefinitionhistory.Table:
+		query := c.AgentDefinitionHistory.Query().
+			Where(agentdefinitionhistory.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agentdefinitionhistoryImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -498,6 +513,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.AgentDefinition.Query().
 			Where(agentdefinition.IDIn(ids...))
 		query, err := query.CollectFields(ctx, agentdefinitionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case agentdefinitionhistory.Table:
+		query := c.AgentDefinitionHistory.Query().
+			Where(agentdefinitionhistory.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agentdefinitionhistoryImplementors...)
 		if err != nil {
 			return nil, err
 		}

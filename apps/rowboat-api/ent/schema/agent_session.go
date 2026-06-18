@@ -28,6 +28,10 @@ func (AgentSession) Fields() []ent.Field {
 		// self-describing even after the definition is edited or forked.
 		field.String("agent_slug").NotEmpty(),
 		field.String("agent_source").Optional(),
+		// agent_revision pins the AgentDefinition revision this session started
+		// with (RFC 028): editing/rolling back the definition never changes a
+		// running session's behavior mid-flight.
+		field.Int("agent_revision").Default(0).NonNegative(),
 		field.String("status").
 			Default("active").
 			Validate(oneOfBackgroundTask("status", "active", "paused", "completed", "failed", "canceled")),

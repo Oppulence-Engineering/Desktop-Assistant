@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
@@ -102,6 +103,7 @@ func checkColumn(t, c string) error {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			agentapproval.Table:               agentapproval.ValidColumn,
 			agentdefinition.Table:             agentdefinition.ValidColumn,
+			agentdefinitionhistory.Table:      agentdefinitionhistory.ValidColumn,
 			agentsession.Table:                agentsession.ValidColumn,
 			agentsessionevent.Table:           agentsessionevent.ValidColumn,
 			agenttoolcall.Table:               agenttoolcall.ValidColumn,

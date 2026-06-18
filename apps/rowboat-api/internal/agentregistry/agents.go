@@ -13,6 +13,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentspec"
 )
 
 //go:embed builtins/agents
@@ -39,7 +40,7 @@ type SpecLimits struct {
 
 // Spec is a resolved agent definition — the single shape consumed by the
 // session starter and workflow, regardless of whether it came from a tenant ent
-// row or the embedded built-in directory.
+// row, the embedded built-in directory, or compiled YAML (RFC 028).
 type Spec struct {
 	Slug          string
 	Name          string
@@ -48,19 +49,29 @@ type Spec struct {
 	Model         string
 	Provider      string
 	EnabledTools  []string
+	Tools         []agentspec.ToolConfig // RFC 028 rich per-tool config (approval overrides, declarative refs)
 	SubagentRefs  []string
 	ConnectorReqs []string
+	Channels      []string
 	Limits        SpecLimits
+	Revision      int
+	ContentHash   string
+	SourceFormat  string // builtin | yaml | json
 }
 
-// agentJSON is the on-disk shape of a built-in's agent.json.
-type agentJSON struct {
-	Name          string     `json:"name"`
-	Model         string     `json:"model"`
-	Provider      string     `json:"provider"`
-	SubagentRefs  []string   `json:"subagentRefs"`
-	ConnectorReqs []string   `json:"connectorReqs"`
-	Limits        SpecLimits `json:"limits"`
+// ToolApprovalOverrides maps tool name → requiresApproval from the rich tool
+// config, so the session starter can bump a tool's effective trust tier.
+func (s *Spec) ToolApprovalOverrides() map[string]bool {
+	if len(s.Tools) == 0 {
+		return nil
+	}
+	m := make(map[string]bool, len(s.Tools))
+	for _, t := range s.Tools {
+		if t.RequiresApproval {
+			m[t.Name] = true
+		}
+	}
+	return m
 }
 
 // Loader resolves agents by slug: tenant ent rows first (tenant-scoped via the
@@ -136,6 +147,9 @@ func specFromEnt(def *ent.AgentDefinition) *Spec {
 		EnabledTools:  append([]string(nil), def.EnabledTools...),
 		SubagentRefs:  append([]string(nil), def.SubagentRefs...),
 		ConnectorReqs: append([]string(nil), def.ConnectorReqs...),
+		Revision:      def.Revision,
+		ContentHash:   def.ContentHash,
+		SourceFormat:  def.SourceFormat,
 	}
 	if spec.Source == "" {
 		spec.Source = SourceTenant
@@ -143,11 +157,18 @@ func specFromEnt(def *ent.AgentDefinition) *Spec {
 	if strings.TrimSpace(def.LimitsJSON) != "" {
 		_ = json.Unmarshal([]byte(def.LimitsJSON), &spec.Limits)
 	}
+	if strings.TrimSpace(def.ToolsJSON) != "" {
+		_ = json.Unmarshal([]byte(def.ToolsJSON), &spec.Tools)
+	}
+	if strings.TrimSpace(def.ChannelBindings) != "" {
+		_ = json.Unmarshal([]byte(def.ChannelBindings), &spec.Channels)
+	}
 	return spec
 }
 
-// loadBuiltins walks the embedded directory, building one Spec per
-// builtins/agents/<slug>/ folder from instructions.md + agent.json + tools.json.
+// loadBuiltins walks the embedded directory, compiling one Spec per
+// builtins/agents/<slug>/ folder from agent.yaml + instructions.md (RFC 028:
+// built-ins use YAML as the source format, the same pipeline as tenant YAML).
 func loadBuiltins() (map[string]*Spec, error) {
 	const root = "builtins/agents"
 	entries, err := builtinFS.ReadDir(root)
@@ -162,39 +183,23 @@ func loadBuiltins() (map[string]*Spec, error) {
 		slug := e.Name()
 		dir := path.Join(root, slug)
 
+		rawAgent, err := fs.ReadFile(builtinFS, path.Join(dir, "agent.yaml"))
+		if err != nil {
+			return nil, fmt.Errorf("built-in %q: read agent.yaml: %w", slug, err)
+		}
 		instructions, err := fs.ReadFile(builtinFS, path.Join(dir, "instructions.md"))
 		if err != nil {
 			return nil, fmt.Errorf("built-in %q: read instructions.md: %w", slug, err)
 		}
-		rawAgent, err := fs.ReadFile(builtinFS, path.Join(dir, "agent.json"))
+		spec, _, err := LoadYAML(rawAgent, strings.TrimSpace(string(instructions)), "builtin")
 		if err != nil {
-			return nil, fmt.Errorf("built-in %q: read agent.json: %w", slug, err)
+			return nil, fmt.Errorf("built-in %q: compile: %w", slug, err)
 		}
-		var aj agentJSON
-		if err := json.Unmarshal(rawAgent, &aj); err != nil {
-			return nil, fmt.Errorf("built-in %q: parse agent.json: %w", slug, err)
+		if spec.Slug != slug {
+			return nil, fmt.Errorf("built-in %q: agent.yaml slug %q does not match its directory", slug, spec.Slug)
 		}
-		rawTools, err := fs.ReadFile(builtinFS, path.Join(dir, "tools.json"))
-		if err != nil {
-			return nil, fmt.Errorf("built-in %q: read tools.json: %w", slug, err)
-		}
-		var tools []string
-		if err := json.Unmarshal(rawTools, &tools); err != nil {
-			return nil, fmt.Errorf("built-in %q: parse tools.json: %w", slug, err)
-		}
-
-		out[slug] = &Spec{
-			Slug:          slug,
-			Name:          aj.Name,
-			Source:        SourceBuiltin,
-			Instructions:  strings.TrimSpace(string(instructions)),
-			Model:         aj.Model,
-			Provider:      aj.Provider,
-			EnabledTools:  tools,
-			SubagentRefs:  aj.SubagentRefs,
-			ConnectorReqs: aj.ConnectorReqs,
-			Limits:        aj.Limits,
-		}
+		spec.Revision = 1
+		out[slug] = spec
 	}
 	return out, nil
 }

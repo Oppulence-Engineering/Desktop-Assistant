@@ -7,6 +7,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
@@ -119,26 +120,91 @@ func init() {
 	agentdefinitionDescLimitsJSON := agentdefinitionFields[5].Descriptor()
 	// agentdefinition.LimitsJSONValidator is a validator for the "limits_json" field. It is called by the builders before save.
 	agentdefinition.LimitsJSONValidator = agentdefinitionDescLimitsJSON.Validators[0].(func(string) error)
+	// agentdefinitionDescToolsJSON is the schema descriptor for tools_json field.
+	agentdefinitionDescToolsJSON := agentdefinitionFields[7].Descriptor()
+	// agentdefinition.ToolsJSONValidator is a validator for the "tools_json" field. It is called by the builders before save.
+	agentdefinition.ToolsJSONValidator = agentdefinitionDescToolsJSON.Validators[0].(func(string) error)
 	// agentdefinitionDescChannelBindings is the schema descriptor for channel_bindings field.
-	agentdefinitionDescChannelBindings := agentdefinitionFields[8].Descriptor()
+	agentdefinitionDescChannelBindings := agentdefinitionFields[9].Descriptor()
 	// agentdefinition.ChannelBindingsValidator is a validator for the "channel_bindings" field. It is called by the builders before save.
 	agentdefinition.ChannelBindingsValidator = agentdefinitionDescChannelBindings.Validators[0].(func(string) error)
 	// agentdefinitionDescSource is the schema descriptor for source field.
-	agentdefinitionDescSource := agentdefinitionFields[10].Descriptor()
+	agentdefinitionDescSource := agentdefinitionFields[11].Descriptor()
 	// agentdefinition.DefaultSource holds the default value on creation for the source field.
 	agentdefinition.DefaultSource = agentdefinitionDescSource.Default.(string)
 	// agentdefinition.SourceValidator is a validator for the "source" field. It is called by the builders before save.
 	agentdefinition.SourceValidator = agentdefinitionDescSource.Validators[0].(func(string) error)
 	// agentdefinitionDescRevision is the schema descriptor for revision field.
-	agentdefinitionDescRevision := agentdefinitionFields[12].Descriptor()
+	agentdefinitionDescRevision := agentdefinitionFields[13].Descriptor()
 	// agentdefinition.DefaultRevision holds the default value on creation for the revision field.
 	agentdefinition.DefaultRevision = agentdefinitionDescRevision.Default.(int)
 	// agentdefinition.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
 	agentdefinition.RevisionValidator = agentdefinitionDescRevision.Validators[0].(func(int) error)
+	// agentdefinitionDescSourceFormat is the schema descriptor for source_format field.
+	agentdefinitionDescSourceFormat := agentdefinitionFields[14].Descriptor()
+	// agentdefinition.DefaultSourceFormat holds the default value on creation for the source_format field.
+	agentdefinition.DefaultSourceFormat = agentdefinitionDescSourceFormat.Default.(string)
+	// agentdefinition.SourceFormatValidator is a validator for the "source_format" field. It is called by the builders before save.
+	agentdefinition.SourceFormatValidator = agentdefinitionDescSourceFormat.Validators[0].(func(string) error)
+	// agentdefinitionDescManagedBy is the schema descriptor for managed_by field.
+	agentdefinitionDescManagedBy := agentdefinitionFields[17].Descriptor()
+	// agentdefinition.DefaultManagedBy holds the default value on creation for the managed_by field.
+	agentdefinition.DefaultManagedBy = agentdefinitionDescManagedBy.Default.(string)
+	// agentdefinition.ManagedByValidator is a validator for the "managed_by" field. It is called by the builders before save.
+	agentdefinition.ManagedByValidator = agentdefinitionDescManagedBy.Validators[0].(func(string) error)
+	// agentdefinitionDescAgentSyncState is the schema descriptor for agent_sync_state field.
+	agentdefinitionDescAgentSyncState := agentdefinitionFields[18].Descriptor()
+	// agentdefinition.DefaultAgentSyncState holds the default value on creation for the agent_sync_state field.
+	agentdefinition.DefaultAgentSyncState = agentdefinitionDescAgentSyncState.Default.(string)
+	// agentdefinition.AgentSyncStateValidator is a validator for the "agent_sync_state" field. It is called by the builders before save.
+	agentdefinition.AgentSyncStateValidator = agentdefinitionDescAgentSyncState.Validators[0].(func(string) error)
 	// agentdefinitionDescID is the schema descriptor for id field.
 	agentdefinitionDescID := agentdefinitionMixinFields0[0].Descriptor()
 	// agentdefinition.DefaultID holds the default value on creation for the id field.
 	agentdefinition.DefaultID = agentdefinitionDescID.Default.(func() uuid.UUID)
+	agentdefinitionhistoryMixin := schema.AgentDefinitionHistory{}.Mixin()
+	agentdefinitionhistoryMixinFields0 := agentdefinitionhistoryMixin[0].Fields()
+	_ = agentdefinitionhistoryMixinFields0
+	agentdefinitionhistoryFields := schema.AgentDefinitionHistory{}.Fields()
+	_ = agentdefinitionhistoryFields
+	// agentdefinitionhistoryDescCreatedAt is the schema descriptor for created_at field.
+	agentdefinitionhistoryDescCreatedAt := agentdefinitionhistoryMixinFields0[1].Descriptor()
+	// agentdefinitionhistory.DefaultCreatedAt holds the default value on creation for the created_at field.
+	agentdefinitionhistory.DefaultCreatedAt = agentdefinitionhistoryDescCreatedAt.Default.(func() time.Time)
+	// agentdefinitionhistoryDescUpdatedAt is the schema descriptor for updated_at field.
+	agentdefinitionhistoryDescUpdatedAt := agentdefinitionhistoryMixinFields0[2].Descriptor()
+	// agentdefinitionhistory.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	agentdefinitionhistory.DefaultUpdatedAt = agentdefinitionhistoryDescUpdatedAt.Default.(func() time.Time)
+	// agentdefinitionhistory.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	agentdefinitionhistory.UpdateDefaultUpdatedAt = agentdefinitionhistoryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// agentdefinitionhistoryDescHistoryTime is the schema descriptor for history_time field.
+	agentdefinitionhistoryDescHistoryTime := agentdefinitionhistoryFields[1].Descriptor()
+	// agentdefinitionhistory.DefaultHistoryTime holds the default value on creation for the history_time field.
+	agentdefinitionhistory.DefaultHistoryTime = agentdefinitionhistoryDescHistoryTime.Default.(func() time.Time)
+	// agentdefinitionhistoryDescSource is the schema descriptor for source field.
+	agentdefinitionhistoryDescSource := agentdefinitionhistoryFields[15].Descriptor()
+	// agentdefinitionhistory.DefaultSource holds the default value on creation for the source field.
+	agentdefinitionhistory.DefaultSource = agentdefinitionhistoryDescSource.Default.(string)
+	// agentdefinitionhistoryDescRevision is the schema descriptor for revision field.
+	agentdefinitionhistoryDescRevision := agentdefinitionhistoryFields[17].Descriptor()
+	// agentdefinitionhistory.DefaultRevision holds the default value on creation for the revision field.
+	agentdefinitionhistory.DefaultRevision = agentdefinitionhistoryDescRevision.Default.(int)
+	// agentdefinitionhistoryDescSourceFormat is the schema descriptor for source_format field.
+	agentdefinitionhistoryDescSourceFormat := agentdefinitionhistoryFields[18].Descriptor()
+	// agentdefinitionhistory.DefaultSourceFormat holds the default value on creation for the source_format field.
+	agentdefinitionhistory.DefaultSourceFormat = agentdefinitionhistoryDescSourceFormat.Default.(string)
+	// agentdefinitionhistoryDescManagedBy is the schema descriptor for managed_by field.
+	agentdefinitionhistoryDescManagedBy := agentdefinitionhistoryFields[21].Descriptor()
+	// agentdefinitionhistory.DefaultManagedBy holds the default value on creation for the managed_by field.
+	agentdefinitionhistory.DefaultManagedBy = agentdefinitionhistoryDescManagedBy.Default.(string)
+	// agentdefinitionhistoryDescAgentSyncState is the schema descriptor for agent_sync_state field.
+	agentdefinitionhistoryDescAgentSyncState := agentdefinitionhistoryFields[22].Descriptor()
+	// agentdefinitionhistory.DefaultAgentSyncState holds the default value on creation for the agent_sync_state field.
+	agentdefinitionhistory.DefaultAgentSyncState = agentdefinitionhistoryDescAgentSyncState.Default.(string)
+	// agentdefinitionhistoryDescID is the schema descriptor for id field.
+	agentdefinitionhistoryDescID := agentdefinitionhistoryFields[0].Descriptor()
+	// agentdefinitionhistory.DefaultID holds the default value on creation for the id field.
+	agentdefinitionhistory.DefaultID = agentdefinitionhistoryDescID.Default.(func() uuid.UUID)
 	agentsessionMixin := schema.AgentSession{}.Mixin()
 	agentsessionMixinFields0 := agentsessionMixin[0].Fields()
 	_ = agentsessionMixinFields0
@@ -162,42 +228,48 @@ func init() {
 	agentsessionDescAgentSlug := agentsessionFields[1].Descriptor()
 	// agentsession.AgentSlugValidator is a validator for the "agent_slug" field. It is called by the builders before save.
 	agentsession.AgentSlugValidator = agentsessionDescAgentSlug.Validators[0].(func(string) error)
+	// agentsessionDescAgentRevision is the schema descriptor for agent_revision field.
+	agentsessionDescAgentRevision := agentsessionFields[3].Descriptor()
+	// agentsession.DefaultAgentRevision holds the default value on creation for the agent_revision field.
+	agentsession.DefaultAgentRevision = agentsessionDescAgentRevision.Default.(int)
+	// agentsession.AgentRevisionValidator is a validator for the "agent_revision" field. It is called by the builders before save.
+	agentsession.AgentRevisionValidator = agentsessionDescAgentRevision.Validators[0].(func(int) error)
 	// agentsessionDescStatus is the schema descriptor for status field.
-	agentsessionDescStatus := agentsessionFields[3].Descriptor()
+	agentsessionDescStatus := agentsessionFields[4].Descriptor()
 	// agentsession.DefaultStatus holds the default value on creation for the status field.
 	agentsession.DefaultStatus = agentsessionDescStatus.Default.(string)
 	// agentsession.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	agentsession.StatusValidator = agentsessionDescStatus.Validators[0].(func(string) error)
 	// agentsessionDescChannel is the schema descriptor for channel field.
-	agentsessionDescChannel := agentsessionFields[4].Descriptor()
+	agentsessionDescChannel := agentsessionFields[5].Descriptor()
 	// agentsession.DefaultChannel holds the default value on creation for the channel field.
 	agentsession.DefaultChannel = agentsessionDescChannel.Default.(string)
 	// agentsessionDescTurnCount is the schema descriptor for turn_count field.
-	agentsessionDescTurnCount := agentsessionFields[9].Descriptor()
+	agentsessionDescTurnCount := agentsessionFields[10].Descriptor()
 	// agentsession.DefaultTurnCount holds the default value on creation for the turn_count field.
 	agentsession.DefaultTurnCount = agentsessionDescTurnCount.Default.(int)
 	// agentsession.TurnCountValidator is a validator for the "turn_count" field. It is called by the builders before save.
 	agentsession.TurnCountValidator = agentsessionDescTurnCount.Validators[0].(func(int) error)
 	// agentsessionDescLlmCallCount is the schema descriptor for llm_call_count field.
-	agentsessionDescLlmCallCount := agentsessionFields[10].Descriptor()
+	agentsessionDescLlmCallCount := agentsessionFields[11].Descriptor()
 	// agentsession.DefaultLlmCallCount holds the default value on creation for the llm_call_count field.
 	agentsession.DefaultLlmCallCount = agentsessionDescLlmCallCount.Default.(int)
 	// agentsession.LlmCallCountValidator is a validator for the "llm_call_count" field. It is called by the builders before save.
 	agentsession.LlmCallCountValidator = agentsessionDescLlmCallCount.Validators[0].(func(int) error)
 	// agentsessionDescToolCallCount is the schema descriptor for tool_call_count field.
-	agentsessionDescToolCallCount := agentsessionFields[11].Descriptor()
+	agentsessionDescToolCallCount := agentsessionFields[12].Descriptor()
 	// agentsession.DefaultToolCallCount holds the default value on creation for the tool_call_count field.
 	agentsession.DefaultToolCallCount = agentsessionDescToolCallCount.Default.(int)
 	// agentsession.ToolCallCountValidator is a validator for the "tool_call_count" field. It is called by the builders before save.
 	agentsession.ToolCallCountValidator = agentsessionDescToolCallCount.Validators[0].(func(int) error)
 	// agentsessionDescCostUnits is the schema descriptor for cost_units field.
-	agentsessionDescCostUnits := agentsessionFields[12].Descriptor()
+	agentsessionDescCostUnits := agentsessionFields[13].Descriptor()
 	// agentsession.DefaultCostUnits holds the default value on creation for the cost_units field.
 	agentsession.DefaultCostUnits = agentsessionDescCostUnits.Default.(int)
 	// agentsession.CostUnitsValidator is a validator for the "cost_units" field. It is called by the builders before save.
 	agentsession.CostUnitsValidator = agentsessionDescCostUnits.Validators[0].(func(int) error)
 	// agentsessionDescRevision is the schema descriptor for revision field.
-	agentsessionDescRevision := agentsessionFields[18].Descriptor()
+	agentsessionDescRevision := agentsessionFields[19].Descriptor()
 	// agentsession.DefaultRevision holds the default value on creation for the revision field.
 	agentsession.DefaultRevision = agentsessionDescRevision.Default.(int)
 	// agentsession.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.

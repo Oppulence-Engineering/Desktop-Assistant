@@ -30,6 +30,8 @@ type AgentSession struct {
 	AgentSlug string `json:"agent_slug,omitempty"`
 	// AgentSource holds the value of the "agent_source" field.
 	AgentSource string `json:"agent_source,omitempty"`
+	// AgentRevision holds the value of the "agent_revision" field.
+	AgentRevision int `json:"agent_revision,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
 	// Channel holds the value of the "channel" field.
@@ -147,7 +149,7 @@ func (*AgentSession) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case agentsession.FieldTurnCount, agentsession.FieldLlmCallCount, agentsession.FieldToolCallCount, agentsession.FieldCostUnits, agentsession.FieldRevision:
+		case agentsession.FieldAgentRevision, agentsession.FieldTurnCount, agentsession.FieldLlmCallCount, agentsession.FieldToolCallCount, agentsession.FieldCostUnits, agentsession.FieldRevision:
 			values[i] = new(sql.NullInt64)
 		case agentsession.FieldSessionID, agentsession.FieldAgentSlug, agentsession.FieldAgentSource, agentsession.FieldStatus, agentsession.FieldChannel, agentsession.FieldChannelKey, agentsession.FieldTitle, agentsession.FieldTemporalWorkflowID, agentsession.FieldTemporalRunID, agentsession.FieldError, agentsession.FieldErrorCode:
 			values[i] = new(sql.NullString)
@@ -209,6 +211,12 @@ func (_m *AgentSession) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field agent_source", values[i])
 			} else if value.Valid {
 				_m.AgentSource = value.String
+			}
+		case agentsession.FieldAgentRevision:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field agent_revision", values[i])
+			} else if value.Valid {
+				_m.AgentRevision = int(value.Int64)
 			}
 		case agentsession.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -398,6 +406,9 @@ func (_m *AgentSession) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("agent_source=")
 	builder.WriteString(_m.AgentSource)
+	builder.WriteString(", ")
+	builder.WriteString("agent_revision=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AgentRevision))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)

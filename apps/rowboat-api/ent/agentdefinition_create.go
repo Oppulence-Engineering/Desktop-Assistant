@@ -128,6 +128,20 @@ func (_c *AgentDefinitionCreate) SetEnabledTools(v []string) *AgentDefinitionCre
 	return _c
 }
 
+// SetToolsJSON sets the "tools_json" field.
+func (_c *AgentDefinitionCreate) SetToolsJSON(v string) *AgentDefinitionCreate {
+	_c.mutation.SetToolsJSON(v)
+	return _c
+}
+
+// SetNillableToolsJSON sets the "tools_json" field if the given value is not nil.
+func (_c *AgentDefinitionCreate) SetNillableToolsJSON(v *string) *AgentDefinitionCreate {
+	if v != nil {
+		_c.SetToolsJSON(*v)
+	}
+	return _c
+}
+
 // SetSubagentRefs sets the "subagent_refs" field.
 func (_c *AgentDefinitionCreate) SetSubagentRefs(v []string) *AgentDefinitionCreate {
 	_c.mutation.SetSubagentRefs(v)
@@ -192,6 +206,90 @@ func (_c *AgentDefinitionCreate) SetRevision(v int) *AgentDefinitionCreate {
 func (_c *AgentDefinitionCreate) SetNillableRevision(v *int) *AgentDefinitionCreate {
 	if v != nil {
 		_c.SetRevision(*v)
+	}
+	return _c
+}
+
+// SetSourceFormat sets the "source_format" field.
+func (_c *AgentDefinitionCreate) SetSourceFormat(v string) *AgentDefinitionCreate {
+	_c.mutation.SetSourceFormat(v)
+	return _c
+}
+
+// SetNillableSourceFormat sets the "source_format" field if the given value is not nil.
+func (_c *AgentDefinitionCreate) SetNillableSourceFormat(v *string) *AgentDefinitionCreate {
+	if v != nil {
+		_c.SetSourceFormat(*v)
+	}
+	return _c
+}
+
+// SetRawSource sets the "raw_source" field.
+func (_c *AgentDefinitionCreate) SetRawSource(v string) *AgentDefinitionCreate {
+	_c.mutation.SetRawSource(v)
+	return _c
+}
+
+// SetNillableRawSource sets the "raw_source" field if the given value is not nil.
+func (_c *AgentDefinitionCreate) SetNillableRawSource(v *string) *AgentDefinitionCreate {
+	if v != nil {
+		_c.SetRawSource(*v)
+	}
+	return _c
+}
+
+// SetContentHash sets the "content_hash" field.
+func (_c *AgentDefinitionCreate) SetContentHash(v string) *AgentDefinitionCreate {
+	_c.mutation.SetContentHash(v)
+	return _c
+}
+
+// SetNillableContentHash sets the "content_hash" field if the given value is not nil.
+func (_c *AgentDefinitionCreate) SetNillableContentHash(v *string) *AgentDefinitionCreate {
+	if v != nil {
+		_c.SetContentHash(*v)
+	}
+	return _c
+}
+
+// SetManagedBy sets the "managed_by" field.
+func (_c *AgentDefinitionCreate) SetManagedBy(v string) *AgentDefinitionCreate {
+	_c.mutation.SetManagedBy(v)
+	return _c
+}
+
+// SetNillableManagedBy sets the "managed_by" field if the given value is not nil.
+func (_c *AgentDefinitionCreate) SetNillableManagedBy(v *string) *AgentDefinitionCreate {
+	if v != nil {
+		_c.SetManagedBy(*v)
+	}
+	return _c
+}
+
+// SetAgentSyncState sets the "agent_sync_state" field.
+func (_c *AgentDefinitionCreate) SetAgentSyncState(v string) *AgentDefinitionCreate {
+	_c.mutation.SetAgentSyncState(v)
+	return _c
+}
+
+// SetNillableAgentSyncState sets the "agent_sync_state" field if the given value is not nil.
+func (_c *AgentDefinitionCreate) SetNillableAgentSyncState(v *string) *AgentDefinitionCreate {
+	if v != nil {
+		_c.SetAgentSyncState(*v)
+	}
+	return _c
+}
+
+// SetAgentSyncError sets the "agent_sync_error" field.
+func (_c *AgentDefinitionCreate) SetAgentSyncError(v string) *AgentDefinitionCreate {
+	_c.mutation.SetAgentSyncError(v)
+	return _c
+}
+
+// SetNillableAgentSyncError sets the "agent_sync_error" field if the given value is not nil.
+func (_c *AgentDefinitionCreate) SetNillableAgentSyncError(v *string) *AgentDefinitionCreate {
+	if v != nil {
+		_c.SetAgentSyncError(*v)
 	}
 	return _c
 }
@@ -287,6 +385,18 @@ func (_c *AgentDefinitionCreate) defaults() {
 		v := agentdefinition.DefaultRevision
 		_c.mutation.SetRevision(v)
 	}
+	if _, ok := _c.mutation.SourceFormat(); !ok {
+		v := agentdefinition.DefaultSourceFormat
+		_c.mutation.SetSourceFormat(v)
+	}
+	if _, ok := _c.mutation.ManagedBy(); !ok {
+		v := agentdefinition.DefaultManagedBy
+		_c.mutation.SetManagedBy(v)
+	}
+	if _, ok := _c.mutation.AgentSyncState(); !ok {
+		v := agentdefinition.DefaultAgentSyncState
+		_c.mutation.SetAgentSyncState(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := agentdefinition.DefaultID()
 		_c.mutation.SetID(v)
@@ -322,6 +432,11 @@ func (_c *AgentDefinitionCreate) check() error {
 			return &ValidationError{Name: "limits_json", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.limits_json": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.ToolsJSON(); ok {
+		if err := agentdefinition.ToolsJSONValidator(v); err != nil {
+			return &ValidationError{Name: "tools_json", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.tools_json": %w`, err)}
+		}
+	}
 	if v, ok := _c.mutation.ChannelBindings(); ok {
 		if err := agentdefinition.ChannelBindingsValidator(v); err != nil {
 			return &ValidationError{Name: "channel_bindings", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.channel_bindings": %w`, err)}
@@ -341,6 +456,30 @@ func (_c *AgentDefinitionCreate) check() error {
 	if v, ok := _c.mutation.Revision(); ok {
 		if err := agentdefinition.RevisionValidator(v); err != nil {
 			return &ValidationError{Name: "revision", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.revision": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.SourceFormat(); !ok {
+		return &ValidationError{Name: "source_format", err: errors.New(`ent: missing required field "AgentDefinition.source_format"`)}
+	}
+	if v, ok := _c.mutation.SourceFormat(); ok {
+		if err := agentdefinition.SourceFormatValidator(v); err != nil {
+			return &ValidationError{Name: "source_format", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.source_format": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ManagedBy(); !ok {
+		return &ValidationError{Name: "managed_by", err: errors.New(`ent: missing required field "AgentDefinition.managed_by"`)}
+	}
+	if v, ok := _c.mutation.ManagedBy(); ok {
+		if err := agentdefinition.ManagedByValidator(v); err != nil {
+			return &ValidationError{Name: "managed_by", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.managed_by": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.AgentSyncState(); !ok {
+		return &ValidationError{Name: "agent_sync_state", err: errors.New(`ent: missing required field "AgentDefinition.agent_sync_state"`)}
+	}
+	if v, ok := _c.mutation.AgentSyncState(); ok {
+		if err := agentdefinition.AgentSyncStateValidator(v); err != nil {
+			return &ValidationError{Name: "agent_sync_state", err: fmt.Errorf(`ent: validator failed for field "AgentDefinition.agent_sync_state": %w`, err)}
 		}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
@@ -418,6 +557,10 @@ func (_c *AgentDefinitionCreate) createSpec() (*AgentDefinition, *sqlgraph.Creat
 		_spec.SetField(agentdefinition.FieldEnabledTools, field.TypeJSON, value)
 		_node.EnabledTools = value
 	}
+	if value, ok := _c.mutation.ToolsJSON(); ok {
+		_spec.SetField(agentdefinition.FieldToolsJSON, field.TypeString, value)
+		_node.ToolsJSON = value
+	}
 	if value, ok := _c.mutation.SubagentRefs(); ok {
 		_spec.SetField(agentdefinition.FieldSubagentRefs, field.TypeJSON, value)
 		_node.SubagentRefs = value
@@ -441,6 +584,30 @@ func (_c *AgentDefinitionCreate) createSpec() (*AgentDefinition, *sqlgraph.Creat
 	if value, ok := _c.mutation.Revision(); ok {
 		_spec.SetField(agentdefinition.FieldRevision, field.TypeInt, value)
 		_node.Revision = value
+	}
+	if value, ok := _c.mutation.SourceFormat(); ok {
+		_spec.SetField(agentdefinition.FieldSourceFormat, field.TypeString, value)
+		_node.SourceFormat = value
+	}
+	if value, ok := _c.mutation.RawSource(); ok {
+		_spec.SetField(agentdefinition.FieldRawSource, field.TypeString, value)
+		_node.RawSource = value
+	}
+	if value, ok := _c.mutation.ContentHash(); ok {
+		_spec.SetField(agentdefinition.FieldContentHash, field.TypeString, value)
+		_node.ContentHash = value
+	}
+	if value, ok := _c.mutation.ManagedBy(); ok {
+		_spec.SetField(agentdefinition.FieldManagedBy, field.TypeString, value)
+		_node.ManagedBy = value
+	}
+	if value, ok := _c.mutation.AgentSyncState(); ok {
+		_spec.SetField(agentdefinition.FieldAgentSyncState, field.TypeString, value)
+		_node.AgentSyncState = value
+	}
+	if value, ok := _c.mutation.AgentSyncError(); ok {
+		_spec.SetField(agentdefinition.FieldAgentSyncError, field.TypeString, value)
+		_node.AgentSyncError = value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -653,6 +820,24 @@ func (u *AgentDefinitionUpsert) ClearEnabledTools() *AgentDefinitionUpsert {
 	return u
 }
 
+// SetToolsJSON sets the "tools_json" field.
+func (u *AgentDefinitionUpsert) SetToolsJSON(v string) *AgentDefinitionUpsert {
+	u.Set(agentdefinition.FieldToolsJSON, v)
+	return u
+}
+
+// UpdateToolsJSON sets the "tools_json" field to the value that was provided on create.
+func (u *AgentDefinitionUpsert) UpdateToolsJSON() *AgentDefinitionUpsert {
+	u.SetExcluded(agentdefinition.FieldToolsJSON)
+	return u
+}
+
+// ClearToolsJSON clears the value of the "tools_json" field.
+func (u *AgentDefinitionUpsert) ClearToolsJSON() *AgentDefinitionUpsert {
+	u.SetNull(agentdefinition.FieldToolsJSON)
+	return u
+}
+
 // SetSubagentRefs sets the "subagent_refs" field.
 func (u *AgentDefinitionUpsert) SetSubagentRefs(v []string) *AgentDefinitionUpsert {
 	u.Set(agentdefinition.FieldSubagentRefs, v)
@@ -752,6 +937,96 @@ func (u *AgentDefinitionUpsert) UpdateRevision() *AgentDefinitionUpsert {
 // AddRevision adds v to the "revision" field.
 func (u *AgentDefinitionUpsert) AddRevision(v int) *AgentDefinitionUpsert {
 	u.Add(agentdefinition.FieldRevision, v)
+	return u
+}
+
+// SetSourceFormat sets the "source_format" field.
+func (u *AgentDefinitionUpsert) SetSourceFormat(v string) *AgentDefinitionUpsert {
+	u.Set(agentdefinition.FieldSourceFormat, v)
+	return u
+}
+
+// UpdateSourceFormat sets the "source_format" field to the value that was provided on create.
+func (u *AgentDefinitionUpsert) UpdateSourceFormat() *AgentDefinitionUpsert {
+	u.SetExcluded(agentdefinition.FieldSourceFormat)
+	return u
+}
+
+// SetRawSource sets the "raw_source" field.
+func (u *AgentDefinitionUpsert) SetRawSource(v string) *AgentDefinitionUpsert {
+	u.Set(agentdefinition.FieldRawSource, v)
+	return u
+}
+
+// UpdateRawSource sets the "raw_source" field to the value that was provided on create.
+func (u *AgentDefinitionUpsert) UpdateRawSource() *AgentDefinitionUpsert {
+	u.SetExcluded(agentdefinition.FieldRawSource)
+	return u
+}
+
+// ClearRawSource clears the value of the "raw_source" field.
+func (u *AgentDefinitionUpsert) ClearRawSource() *AgentDefinitionUpsert {
+	u.SetNull(agentdefinition.FieldRawSource)
+	return u
+}
+
+// SetContentHash sets the "content_hash" field.
+func (u *AgentDefinitionUpsert) SetContentHash(v string) *AgentDefinitionUpsert {
+	u.Set(agentdefinition.FieldContentHash, v)
+	return u
+}
+
+// UpdateContentHash sets the "content_hash" field to the value that was provided on create.
+func (u *AgentDefinitionUpsert) UpdateContentHash() *AgentDefinitionUpsert {
+	u.SetExcluded(agentdefinition.FieldContentHash)
+	return u
+}
+
+// ClearContentHash clears the value of the "content_hash" field.
+func (u *AgentDefinitionUpsert) ClearContentHash() *AgentDefinitionUpsert {
+	u.SetNull(agentdefinition.FieldContentHash)
+	return u
+}
+
+// SetManagedBy sets the "managed_by" field.
+func (u *AgentDefinitionUpsert) SetManagedBy(v string) *AgentDefinitionUpsert {
+	u.Set(agentdefinition.FieldManagedBy, v)
+	return u
+}
+
+// UpdateManagedBy sets the "managed_by" field to the value that was provided on create.
+func (u *AgentDefinitionUpsert) UpdateManagedBy() *AgentDefinitionUpsert {
+	u.SetExcluded(agentdefinition.FieldManagedBy)
+	return u
+}
+
+// SetAgentSyncState sets the "agent_sync_state" field.
+func (u *AgentDefinitionUpsert) SetAgentSyncState(v string) *AgentDefinitionUpsert {
+	u.Set(agentdefinition.FieldAgentSyncState, v)
+	return u
+}
+
+// UpdateAgentSyncState sets the "agent_sync_state" field to the value that was provided on create.
+func (u *AgentDefinitionUpsert) UpdateAgentSyncState() *AgentDefinitionUpsert {
+	u.SetExcluded(agentdefinition.FieldAgentSyncState)
+	return u
+}
+
+// SetAgentSyncError sets the "agent_sync_error" field.
+func (u *AgentDefinitionUpsert) SetAgentSyncError(v string) *AgentDefinitionUpsert {
+	u.Set(agentdefinition.FieldAgentSyncError, v)
+	return u
+}
+
+// UpdateAgentSyncError sets the "agent_sync_error" field to the value that was provided on create.
+func (u *AgentDefinitionUpsert) UpdateAgentSyncError() *AgentDefinitionUpsert {
+	u.SetExcluded(agentdefinition.FieldAgentSyncError)
+	return u
+}
+
+// ClearAgentSyncError clears the value of the "agent_sync_error" field.
+func (u *AgentDefinitionUpsert) ClearAgentSyncError() *AgentDefinitionUpsert {
+	u.SetNull(agentdefinition.FieldAgentSyncError)
 	return u
 }
 
@@ -953,6 +1228,27 @@ func (u *AgentDefinitionUpsertOne) ClearEnabledTools() *AgentDefinitionUpsertOne
 	})
 }
 
+// SetToolsJSON sets the "tools_json" field.
+func (u *AgentDefinitionUpsertOne) SetToolsJSON(v string) *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetToolsJSON(v)
+	})
+}
+
+// UpdateToolsJSON sets the "tools_json" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertOne) UpdateToolsJSON() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateToolsJSON()
+	})
+}
+
+// ClearToolsJSON clears the value of the "tools_json" field.
+func (u *AgentDefinitionUpsertOne) ClearToolsJSON() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.ClearToolsJSON()
+	})
+}
+
 // SetSubagentRefs sets the "subagent_refs" field.
 func (u *AgentDefinitionUpsertOne) SetSubagentRefs(v []string) *AgentDefinitionUpsertOne {
 	return u.Update(func(s *AgentDefinitionUpsert) {
@@ -1069,6 +1365,111 @@ func (u *AgentDefinitionUpsertOne) AddRevision(v int) *AgentDefinitionUpsertOne 
 func (u *AgentDefinitionUpsertOne) UpdateRevision() *AgentDefinitionUpsertOne {
 	return u.Update(func(s *AgentDefinitionUpsert) {
 		s.UpdateRevision()
+	})
+}
+
+// SetSourceFormat sets the "source_format" field.
+func (u *AgentDefinitionUpsertOne) SetSourceFormat(v string) *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetSourceFormat(v)
+	})
+}
+
+// UpdateSourceFormat sets the "source_format" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertOne) UpdateSourceFormat() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateSourceFormat()
+	})
+}
+
+// SetRawSource sets the "raw_source" field.
+func (u *AgentDefinitionUpsertOne) SetRawSource(v string) *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetRawSource(v)
+	})
+}
+
+// UpdateRawSource sets the "raw_source" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertOne) UpdateRawSource() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateRawSource()
+	})
+}
+
+// ClearRawSource clears the value of the "raw_source" field.
+func (u *AgentDefinitionUpsertOne) ClearRawSource() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.ClearRawSource()
+	})
+}
+
+// SetContentHash sets the "content_hash" field.
+func (u *AgentDefinitionUpsertOne) SetContentHash(v string) *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetContentHash(v)
+	})
+}
+
+// UpdateContentHash sets the "content_hash" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertOne) UpdateContentHash() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateContentHash()
+	})
+}
+
+// ClearContentHash clears the value of the "content_hash" field.
+func (u *AgentDefinitionUpsertOne) ClearContentHash() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.ClearContentHash()
+	})
+}
+
+// SetManagedBy sets the "managed_by" field.
+func (u *AgentDefinitionUpsertOne) SetManagedBy(v string) *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetManagedBy(v)
+	})
+}
+
+// UpdateManagedBy sets the "managed_by" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertOne) UpdateManagedBy() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateManagedBy()
+	})
+}
+
+// SetAgentSyncState sets the "agent_sync_state" field.
+func (u *AgentDefinitionUpsertOne) SetAgentSyncState(v string) *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetAgentSyncState(v)
+	})
+}
+
+// UpdateAgentSyncState sets the "agent_sync_state" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertOne) UpdateAgentSyncState() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateAgentSyncState()
+	})
+}
+
+// SetAgentSyncError sets the "agent_sync_error" field.
+func (u *AgentDefinitionUpsertOne) SetAgentSyncError(v string) *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetAgentSyncError(v)
+	})
+}
+
+// UpdateAgentSyncError sets the "agent_sync_error" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertOne) UpdateAgentSyncError() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateAgentSyncError()
+	})
+}
+
+// ClearAgentSyncError clears the value of the "agent_sync_error" field.
+func (u *AgentDefinitionUpsertOne) ClearAgentSyncError() *AgentDefinitionUpsertOne {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.ClearAgentSyncError()
 	})
 }
 
@@ -1437,6 +1838,27 @@ func (u *AgentDefinitionUpsertBulk) ClearEnabledTools() *AgentDefinitionUpsertBu
 	})
 }
 
+// SetToolsJSON sets the "tools_json" field.
+func (u *AgentDefinitionUpsertBulk) SetToolsJSON(v string) *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetToolsJSON(v)
+	})
+}
+
+// UpdateToolsJSON sets the "tools_json" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertBulk) UpdateToolsJSON() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateToolsJSON()
+	})
+}
+
+// ClearToolsJSON clears the value of the "tools_json" field.
+func (u *AgentDefinitionUpsertBulk) ClearToolsJSON() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.ClearToolsJSON()
+	})
+}
+
 // SetSubagentRefs sets the "subagent_refs" field.
 func (u *AgentDefinitionUpsertBulk) SetSubagentRefs(v []string) *AgentDefinitionUpsertBulk {
 	return u.Update(func(s *AgentDefinitionUpsert) {
@@ -1553,6 +1975,111 @@ func (u *AgentDefinitionUpsertBulk) AddRevision(v int) *AgentDefinitionUpsertBul
 func (u *AgentDefinitionUpsertBulk) UpdateRevision() *AgentDefinitionUpsertBulk {
 	return u.Update(func(s *AgentDefinitionUpsert) {
 		s.UpdateRevision()
+	})
+}
+
+// SetSourceFormat sets the "source_format" field.
+func (u *AgentDefinitionUpsertBulk) SetSourceFormat(v string) *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetSourceFormat(v)
+	})
+}
+
+// UpdateSourceFormat sets the "source_format" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertBulk) UpdateSourceFormat() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateSourceFormat()
+	})
+}
+
+// SetRawSource sets the "raw_source" field.
+func (u *AgentDefinitionUpsertBulk) SetRawSource(v string) *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetRawSource(v)
+	})
+}
+
+// UpdateRawSource sets the "raw_source" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertBulk) UpdateRawSource() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateRawSource()
+	})
+}
+
+// ClearRawSource clears the value of the "raw_source" field.
+func (u *AgentDefinitionUpsertBulk) ClearRawSource() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.ClearRawSource()
+	})
+}
+
+// SetContentHash sets the "content_hash" field.
+func (u *AgentDefinitionUpsertBulk) SetContentHash(v string) *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetContentHash(v)
+	})
+}
+
+// UpdateContentHash sets the "content_hash" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertBulk) UpdateContentHash() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateContentHash()
+	})
+}
+
+// ClearContentHash clears the value of the "content_hash" field.
+func (u *AgentDefinitionUpsertBulk) ClearContentHash() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.ClearContentHash()
+	})
+}
+
+// SetManagedBy sets the "managed_by" field.
+func (u *AgentDefinitionUpsertBulk) SetManagedBy(v string) *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetManagedBy(v)
+	})
+}
+
+// UpdateManagedBy sets the "managed_by" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertBulk) UpdateManagedBy() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateManagedBy()
+	})
+}
+
+// SetAgentSyncState sets the "agent_sync_state" field.
+func (u *AgentDefinitionUpsertBulk) SetAgentSyncState(v string) *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetAgentSyncState(v)
+	})
+}
+
+// UpdateAgentSyncState sets the "agent_sync_state" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertBulk) UpdateAgentSyncState() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateAgentSyncState()
+	})
+}
+
+// SetAgentSyncError sets the "agent_sync_error" field.
+func (u *AgentDefinitionUpsertBulk) SetAgentSyncError(v string) *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.SetAgentSyncError(v)
+	})
+}
+
+// UpdateAgentSyncError sets the "agent_sync_error" field to the value that was provided on create.
+func (u *AgentDefinitionUpsertBulk) UpdateAgentSyncError() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.UpdateAgentSyncError()
+	})
+}
+
+// ClearAgentSyncError clears the value of the "agent_sync_error" field.
+func (u *AgentDefinitionUpsertBulk) ClearAgentSyncError() *AgentDefinitionUpsertBulk {
+	return u.Update(func(s *AgentDefinitionUpsert) {
+		s.ClearAgentSyncError()
 	})
 }
 

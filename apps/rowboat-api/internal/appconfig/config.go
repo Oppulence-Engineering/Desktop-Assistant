@@ -313,6 +313,13 @@ type Config struct {
 	// AgentDefaultChannelAgent is the agent slug a channel adapter uses when no
 	// agent is explicitly named and none is bound to the channel (P5).
 	AgentDefaultChannelAgent string
+
+	// RFC 028 declarative authoring. YAML authoring (PUT/validate/format/
+	// revisions/rollback) is always on wherever the runtime is. These two gate
+	// the conditional pieces: declarative OpenAPI/MCP tools need RFC 020's
+	// generic executor (not yet built), and GitOps makes a repo authoritative.
+	AgentDeclarativeToolsEnabled bool
+	AgentGitOpsEnabled           bool
 }
 
 // AgentSigningSecret resolves the HMAC signing key for agent-runtime tokens:
@@ -532,6 +539,9 @@ func Load() Config {
 		AgentRequireMFAForMoneyMoving: getbool("AGENT_REQUIRE_MFA_FOR_MONEY_MOVING", true),
 		AgentApprovalTokenTTL:         getdur("AGENT_APPROVAL_TOKEN_TTL", 10*time.Minute),
 		AgentDefaultChannelAgent:      getenv("AGENT_DEFAULT_CHANNEL_AGENT", "assistant"),
+
+		AgentDeclarativeToolsEnabled: getbool("AGENT_DECLARATIVE_TOOLS_ENABLED", false),
+		AgentGitOpsEnabled:           getbool("AGENT_GITOPS_ENABLED", false),
 	}
 }
 

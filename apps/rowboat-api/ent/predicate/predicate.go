@@ -12,6 +12,9 @@ type AgentApproval func(*sql.Selector)
 // AgentDefinition is the predicate function for agentdefinition builders.
 type AgentDefinition func(*sql.Selector)
 
+// AgentDefinitionHistory is the predicate function for agentdefinitionhistory builders.
+type AgentDefinitionHistory func(*sql.Selector)
+
 // AgentSession is the predicate function for agentsession builders.
 type AgentSession func(*sql.Selector)
 

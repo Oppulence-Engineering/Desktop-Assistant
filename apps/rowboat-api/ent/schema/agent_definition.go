@@ -35,6 +35,11 @@ func (AgentDefinition) Fields() []ent.Field {
 		// enabled_tools is the deny-by-default allowlist of capability-registry
 		// tool names this agent may use; unknown names are rejected at save.
 		field.Strings("enabled_tools").Optional(),
+		// tools_json carries the RFC 028 rich tool config ([]{name, kind,
+		// manifestRef, requiresApproval}) — per-tool HITL overrides and
+		// declarative (OpenAPI/MCP) references. enabled_tools is the name list
+		// derived from it for RFC 027 deny-by-default compatibility.
+		field.Text("tools_json").Optional().Validate(validJSON),
 		// subagent_refs are the slugs this agent may delegate to (RFC 018).
 		field.Strings("subagent_refs").Optional(),
 		// channel_bindings / connector_reqs are declarative wiring consumed by
@@ -47,6 +52,28 @@ func (AgentDefinition) Fields() []ent.Field {
 		// forked_from records the builtin slug a tenant agent was copied from.
 		field.String("forked_from").Optional(),
 		field.Int("revision").Default(1).Positive(),
+
+		// --- RFC 028: declarative authoring (YAML & GitOps) -----------------
+		// source_format records how this definition was authored; raw_source is
+		// the original YAML/JSON text for round-trip GET ?format=yaml and diffs.
+		field.String("source_format").
+			Default("json").
+			Validate(oneOfBackgroundTask("source_format", "builtin", "yaml", "json")),
+		field.Text("raw_source").Optional(),
+		// content_hash is the canonical-JSON hash: an unchanged hash is an
+		// idempotent no-op apply (GitOps); a change bumps revision.
+		field.String("content_hash").Optional(),
+		// managed_by establishes ownership; gitops makes git authoritative and
+		// (configurably) blocks out-of-band API edits.
+		field.String("managed_by").
+			Default("api").
+			Validate(oneOfBackgroundTask("managed_by", "builtin", "api", "gitops")),
+		// agent_sync_state / agent_sync_error mirror ScheduleSyncState (RFC 005):
+		// the GitOps reconciler repairs drift and records health here.
+		field.String("agent_sync_state").
+			Default("current").
+			Validate(oneOfBackgroundTask("agent_sync_state", "current", "out_of_sync", "failed")),
+		field.Text("agent_sync_error").Optional(),
 	}
 }
 

@@ -70,7 +70,11 @@ type SessionStart struct {
 	SessionID   string `json:"sessionId"`
 	AgentSlug   string `json:"agentSlug"`
 	AgentSource string `json:"agentSource"`
-	Channel     string `json:"channel"`
+	// AgentRevision pins the AgentDefinition revision this session runs against
+	// (RFC 028): editing/rolling back the definition never changes a running
+	// session mid-flight.
+	AgentRevision int    `json:"agentRevision,omitempty"`
+	Channel       string `json:"channel"`
 
 	Instructions string     `json:"instructions"`
 	Model        string     `json:"model"`

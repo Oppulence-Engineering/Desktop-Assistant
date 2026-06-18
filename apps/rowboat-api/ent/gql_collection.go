@@ -8,6 +8,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
@@ -279,6 +280,11 @@ func (_q *AgentDefinitionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, agentdefinition.FieldEnabledTools)
 				fieldSeen[agentdefinition.FieldEnabledTools] = struct{}{}
 			}
+		case "toolsJSON":
+			if _, ok := fieldSeen[agentdefinition.FieldToolsJSON]; !ok {
+				selectedFields = append(selectedFields, agentdefinition.FieldToolsJSON)
+				fieldSeen[agentdefinition.FieldToolsJSON] = struct{}{}
+			}
 		case "subagentRefs":
 			if _, ok := fieldSeen[agentdefinition.FieldSubagentRefs]; !ok {
 				selectedFields = append(selectedFields, agentdefinition.FieldSubagentRefs)
@@ -308,6 +314,36 @@ func (_q *AgentDefinitionQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[agentdefinition.FieldRevision]; !ok {
 				selectedFields = append(selectedFields, agentdefinition.FieldRevision)
 				fieldSeen[agentdefinition.FieldRevision] = struct{}{}
+			}
+		case "sourceFormat":
+			if _, ok := fieldSeen[agentdefinition.FieldSourceFormat]; !ok {
+				selectedFields = append(selectedFields, agentdefinition.FieldSourceFormat)
+				fieldSeen[agentdefinition.FieldSourceFormat] = struct{}{}
+			}
+		case "rawSource":
+			if _, ok := fieldSeen[agentdefinition.FieldRawSource]; !ok {
+				selectedFields = append(selectedFields, agentdefinition.FieldRawSource)
+				fieldSeen[agentdefinition.FieldRawSource] = struct{}{}
+			}
+		case "contentHash":
+			if _, ok := fieldSeen[agentdefinition.FieldContentHash]; !ok {
+				selectedFields = append(selectedFields, agentdefinition.FieldContentHash)
+				fieldSeen[agentdefinition.FieldContentHash] = struct{}{}
+			}
+		case "managedBy":
+			if _, ok := fieldSeen[agentdefinition.FieldManagedBy]; !ok {
+				selectedFields = append(selectedFields, agentdefinition.FieldManagedBy)
+				fieldSeen[agentdefinition.FieldManagedBy] = struct{}{}
+			}
+		case "agentSyncState":
+			if _, ok := fieldSeen[agentdefinition.FieldAgentSyncState]; !ok {
+				selectedFields = append(selectedFields, agentdefinition.FieldAgentSyncState)
+				fieldSeen[agentdefinition.FieldAgentSyncState] = struct{}{}
+			}
+		case "agentSyncError":
+			if _, ok := fieldSeen[agentdefinition.FieldAgentSyncError]; !ok {
+				selectedFields = append(selectedFields, agentdefinition.FieldAgentSyncError)
+				fieldSeen[agentdefinition.FieldAgentSyncError] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -346,6 +382,193 @@ func newAgentDefinitionPaginateArgs(rv map[string]any) *agentdefinitionPaginateA
 	}
 	if v, ok := rv[whereField].(*AgentDefinitionWhereInput); ok {
 		args.opts = append(args.opts, WithAgentDefinitionFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *AgentDefinitionHistoryQuery) CollectFields(ctx context.Context, satisfies ...string) (*AgentDefinitionHistoryQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *AgentDefinitionHistoryQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(agentdefinitionhistory.Columns))
+		selectedFields = []string{agentdefinitionhistory.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "createdAt":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldCreatedAt)
+				fieldSeen[agentdefinitionhistory.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldUpdatedAt)
+				fieldSeen[agentdefinitionhistory.FieldUpdatedAt] = struct{}{}
+			}
+		case "historyTime":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldHistoryTime]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldHistoryTime)
+				fieldSeen[agentdefinitionhistory.FieldHistoryTime] = struct{}{}
+			}
+		case "operation":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldOperation]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldOperation)
+				fieldSeen[agentdefinitionhistory.FieldOperation] = struct{}{}
+			}
+		case "ref":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldRef]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldRef)
+				fieldSeen[agentdefinitionhistory.FieldRef] = struct{}{}
+			}
+		case "slug":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldSlug]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldSlug)
+				fieldSeen[agentdefinitionhistory.FieldSlug] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldName]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldName)
+				fieldSeen[agentdefinitionhistory.FieldName] = struct{}{}
+			}
+		case "instructions":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldInstructions]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldInstructions)
+				fieldSeen[agentdefinitionhistory.FieldInstructions] = struct{}{}
+			}
+		case "model":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldModel]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldModel)
+				fieldSeen[agentdefinitionhistory.FieldModel] = struct{}{}
+			}
+		case "provider":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldProvider]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldProvider)
+				fieldSeen[agentdefinitionhistory.FieldProvider] = struct{}{}
+			}
+		case "limitsJSON":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldLimitsJSON]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldLimitsJSON)
+				fieldSeen[agentdefinitionhistory.FieldLimitsJSON] = struct{}{}
+			}
+		case "enabledTools":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldEnabledTools]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldEnabledTools)
+				fieldSeen[agentdefinitionhistory.FieldEnabledTools] = struct{}{}
+			}
+		case "toolsJSON":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldToolsJSON]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldToolsJSON)
+				fieldSeen[agentdefinitionhistory.FieldToolsJSON] = struct{}{}
+			}
+		case "subagentRefs":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldSubagentRefs]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldSubagentRefs)
+				fieldSeen[agentdefinitionhistory.FieldSubagentRefs] = struct{}{}
+			}
+		case "channelBindings":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldChannelBindings]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldChannelBindings)
+				fieldSeen[agentdefinitionhistory.FieldChannelBindings] = struct{}{}
+			}
+		case "connectorReqs":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldConnectorReqs]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldConnectorReqs)
+				fieldSeen[agentdefinitionhistory.FieldConnectorReqs] = struct{}{}
+			}
+		case "source":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldSource]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldSource)
+				fieldSeen[agentdefinitionhistory.FieldSource] = struct{}{}
+			}
+		case "forkedFrom":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldForkedFrom]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldForkedFrom)
+				fieldSeen[agentdefinitionhistory.FieldForkedFrom] = struct{}{}
+			}
+		case "revision":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldRevision]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldRevision)
+				fieldSeen[agentdefinitionhistory.FieldRevision] = struct{}{}
+			}
+		case "sourceFormat":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldSourceFormat]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldSourceFormat)
+				fieldSeen[agentdefinitionhistory.FieldSourceFormat] = struct{}{}
+			}
+		case "rawSource":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldRawSource]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldRawSource)
+				fieldSeen[agentdefinitionhistory.FieldRawSource] = struct{}{}
+			}
+		case "contentHash":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldContentHash]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldContentHash)
+				fieldSeen[agentdefinitionhistory.FieldContentHash] = struct{}{}
+			}
+		case "managedBy":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldManagedBy]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldManagedBy)
+				fieldSeen[agentdefinitionhistory.FieldManagedBy] = struct{}{}
+			}
+		case "agentSyncState":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldAgentSyncState]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldAgentSyncState)
+				fieldSeen[agentdefinitionhistory.FieldAgentSyncState] = struct{}{}
+			}
+		case "agentSyncError":
+			if _, ok := fieldSeen[agentdefinitionhistory.FieldAgentSyncError]; !ok {
+				selectedFields = append(selectedFields, agentdefinitionhistory.FieldAgentSyncError)
+				fieldSeen[agentdefinitionhistory.FieldAgentSyncError] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type agentdefinitionhistoryPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []AgentDefinitionHistoryPaginateOption
+}
+
+func newAgentDefinitionHistoryPaginateArgs(rv map[string]any) *agentdefinitionhistoryPaginateArgs {
+	args := &agentdefinitionhistoryPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*AgentDefinitionHistoryWhereInput); ok {
+		args.opts = append(args.opts, WithAgentDefinitionHistoryFilter(v.Filter))
 	}
 	return args
 }
@@ -456,6 +679,11 @@ func (_q *AgentSessionQuery) collectField(ctx context.Context, oneNode bool, opC
 			if _, ok := fieldSeen[agentsession.FieldAgentSource]; !ok {
 				selectedFields = append(selectedFields, agentsession.FieldAgentSource)
 				fieldSeen[agentsession.FieldAgentSource] = struct{}{}
+			}
+		case "agentRevision":
+			if _, ok := fieldSeen[agentsession.FieldAgentRevision]; !ok {
+				selectedFields = append(selectedFields, agentsession.FieldAgentRevision)
+				fieldSeen[agentsession.FieldAgentRevision] = struct{}{}
 			}
 		case "status":
 			if _, ok := fieldSeen[agentsession.FieldStatus]; !ok {

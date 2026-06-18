@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://app.solomon-ai.co/schemas/agent.rowboat.dev/v1.json",
+  "title": "Rowboat Agent (agent.rowboat.dev/v1)",
+  "description": "RFC 028 declarative agent definition. YAML is a source format that compiles into the canonical AgentDefinition; this schema validates both the YAML file and the /v1/agents JSON body (one schema, three consumers: server, CLI, editor).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "agent.rowboat.dev/v1" },
+    "kind": { "const": "Agent" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug", "name"],
+      "properties": {
+        "slug": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "validated against the internal/llm model allowlist"
+        },
+        "provider": { "type": "string" },
+        "instructions": {
+          "type": "string",
+          "description": "inline system prompt (or use instructionsFile)"
+        },
+        "instructionsFile": {
+          "type": "string",
+          "description": "path to a markdown system prompt, relative to agent.yaml"
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "per-agent budget overrides, clamped to tenant caps (over-cap is rejected)",
+          "properties": {
+            "maxTurns": { "type": "integer", "minimum": 0 },
+            "maxLLMCalls": { "type": "integer", "minimum": 0 },
+            "maxToolCalls": { "type": "integer", "minimum": 0 },
+            "spendCeilingUsd": { "type": "number", "minimum": 0 }
+          }
+        },
+        "tools": {
+          "type": "array",
+          "description": "tool references by NAME (validated vs the Go capability registry). A bare string is a code-backed tool; an object may set per-tool requiresApproval or declare an OpenAPI/MCP tool (trust-gated).",
+          "items": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["openapi", "mcp"],
+                    "description": "declarative tool kind (RFC 020); omit for code-backed tools"
+                  },
+                  "manifestRef": {
+                    "type": "string",
+                    "description": "required for declarative tools"
+                  },
+                  "requiresApproval": {
+                    "type": "boolean",
+                    "description": "force human approval before this tool runs (RFC 027 HITL)"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "connections": {
+          "type": "array",
+          "description": "capabilities the agent NEEDS — scopes, never credentials",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["scope"],
+            "properties": {
+              "scope": {
+                "type": "string",
+                "pattern": "^[^:]+:[^.]+\\..+$",
+                "description": "{product}:{resource}.{action} (RFC 012)"
+              }
+            }
+          }
+        },
+        "subagents": {
+          "type": "array",
+          "description": "agent slugs this agent may delegate to (cycle-checked)",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "channels": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "triggers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "schedule": { "type": "string", "description": "cron → an RFC 005 Temporal Schedule" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
