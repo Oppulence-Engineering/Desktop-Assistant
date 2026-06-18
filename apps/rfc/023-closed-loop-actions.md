@@ -48,7 +48,7 @@ Today Solomon's agents **draft** — they can write an email about an overdue in
 
 - Defining each product's action catalog/schemas — owned by the products + [RFC 013](./013-oppulence-product-connector-fabric.md)/[020](./020-native-third-party-action-engine.md). This RFC owns the **propose→approve→execute→watch** machinery and the **token** contract.
 - Fully autonomous (no-human) money movement — explicitly out of scope; a future policy tier may auto-approve **non-financial** actions only (see Deferred).
-- The semantic recall ([RFC 021](./021-semantic-memory-index.md)) or identity ([RFC 022](./022-unified-entity-graph.md)) layers — consumed here, not built here.
+- The semantic recall ([RFC 021](./complete-021-semantic-memory-index.md)) or identity ([RFC 022](./022-unified-entity-graph.md)) layers — consumed here, not built here.
 
 ## Design
 

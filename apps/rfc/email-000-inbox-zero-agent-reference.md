@@ -96,7 +96,7 @@ Implementation agents should inspect the Rowboat side before coding:
 | Cloud events                      | `apps/rowboat-api/ent/schema/cloud_event.go`, `apps/rfc/complete-003-cloud-event-ingestion.md`                             |
 | Google watches                    | `apps/rowboat-api/ent/schema/google_watch.go`, `apps/rfc/019-google-push-infrastructure.md`                       |
 | Connector/action architecture     | `apps/rfc/012-connector-suite-and-consent-broker.md`, `apps/rfc/020-native-third-party-action-engine.md`          |
-| Semantic memory direction         | `apps/rfc/021-semantic-memory-index.md`                                                                           |
+| Semantic memory direction         | `apps/rfc/complete-021-semantic-memory-index.md`                                                                           |
 | Durable runtime direction         | `apps/rfc/025-desktop-runtime-durability.md`                                                                      |
 
 ## Per-RFC Inbox Zero References

@@ -75,7 +75,7 @@ flowchart LR
 
 ### Multi-workspace
 
-- Allow N `WorkDir` roots (`~/.solomon/<workspace>/`), each with its own `jobs.db`, scheduler tick, event queue, and index ([RFC 021](./021-semantic-memory-index.md)).
+- Allow N `WorkDir` roots (`~/.solomon/<workspace>/`), each with its own `jobs.db`, scheduler tick, event queue, and index ([RFC 021](./complete-021-semantic-memory-index.md)).
 - **Switch model**: either a workspace switcher in one window (tear down + spin up the workspace-scoped services) or **one window per workspace** (recommended: simpler isolation). Services are constructed per-workspace, not as singletons.
 - `config.ts` `WorkDir` resolution becomes per-workspace context passed down, not a process global.
 
@@ -126,7 +126,7 @@ Existing live-note/bg-task frontmatter run-state (`lastRunAt`, etc.) remains the
 - `background-tasks/scheduler.ts` + live-note scheduler: **enqueue** instead of running inline; delete in-memory guards.
 - `events/processor.ts`: produce into the queue (coalescing) instead of direct fan-out.
 - `config.ts`: per-workspace context; `apps/main` lifecycle constructs services per workspace + handles switching/teardown.
-- New native dep: `better-sqlite3` (or reuse the `sqlite-vec`/SQLite from [RFC 021](./021-semantic-memory-index.md)) bundled by esbuild.
+- New native dep: `better-sqlite3` (or reuse the `sqlite-vec`/SQLite from [RFC 021](./complete-021-semantic-memory-index.md)) bundled by esbuild.
 - **Rollout behind a flag** (`runtime.durableQueue`): default off → on after soak; in-memory path remains as fallback for one release.
 
 ## Code-level implementation playbook

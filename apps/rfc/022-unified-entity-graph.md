@@ -9,7 +9,7 @@
 | **Created**           | 2026-06-10                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Last updated**      | 2026-06-10                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Depends on**        | [RFC 011 — Identity & Authorization](./complete-011-identity-and-authorization-plane.md), [RFC 015 — WorkOS FGA](./015-rowboat-platform-workos-fga-and-widget-auth.md) (org scoping)                                                                                                                                                                                                                |
-| **Enables / related** | [RFC 008 — Conduit & Eigen Faculties](./008-conduit-eigen-faculties.md) & [RFC 013 — Product Connector Fabric](./013-oppulence-product-connector-fabric.md) (the Mirror seam writes `resourceRefs`); [RFC 021 — Semantic Index](./021-semantic-memory-index.md); [RFC 023 — Closed-Loop Actions](./023-closed-loop-actions.md); [RFC 026 — Finance Command Center](./026-finance-command-center.md) |
+| **Enables / related** | [RFC 008 — Conduit & Eigen Faculties](./008-conduit-eigen-faculties.md) & [RFC 013 — Product Connector Fabric](./013-oppulence-product-connector-fabric.md) (the Mirror seam writes `resourceRefs`); [RFC 021 — Semantic Index](./complete-021-semantic-memory-index.md); [RFC 023 — Closed-Loop Actions](./023-closed-loop-actions.md); [RFC 026 — Finance Command Center](./026-finance-command-center.md) |
 | **Supersedes**        | none                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ## Summary
@@ -229,7 +229,7 @@ Indexes on `(org_id, entity_id)` and on each `resource_ref` for reverse lookup (
 
 ## Alternatives considered
 
-- **Fuzzy/embedding entity matching as the primary resolver** — rejected as primary: silent wrong-merges in finance are unacceptable. Deterministic-first; embeddings ([RFC 021](./021-semantic-memory-index.md)) only **suggest** candidates for human confirmation.
+- **Fuzzy/embedding entity matching as the primary resolver** — rejected as primary: silent wrong-merges in finance are unacceptable. Deterministic-first; embeddings ([RFC 021](./complete-021-semantic-memory-index.md)) only **suggest** candidates for human confirmation.
 - **Full entity bodies in the shared spine** — rejected: violates the privacy boundary and bloats the backend. Projection-only.
 - **Backend as the canonical entity store** — rejected: breaks local-first. Vault stays canonical; spine is an identity index.
 
