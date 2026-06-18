@@ -1064,8 +1064,11 @@ export interface components {
       user: components["schemas"]["User"];
     };
     AgentDefinition: {
+      agent_sync_error?: string;
+      agent_sync_state: string;
       channel_bindings?: string;
       connector_reqs?: string[];
+      content_hash?: string;
       /**
        * Format: date-time
        * @description Row creation timestamp.
@@ -1082,6 +1085,7 @@ export interface components {
       id: string;
       instructions?: string;
       limits_json?: string;
+      managed_by: string;
       /**
        * @description Desktop-facing LLM model id.
        * @example openai/gpt-4.1-mini
@@ -1093,11 +1097,14 @@ export interface components {
        * @example openai
        */
       provider?: string;
+      raw_source?: string;
       revision: number;
       sessions?: components["schemas"]["AgentSession"][];
       slug: string;
       source: string;
+      source_format: string;
       subagent_refs?: string[];
+      tools_json?: string;
       /**
        * Format: date-time
        * @description Last row update timestamp.
@@ -1107,8 +1114,75 @@ export interface components {
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
     };
+    AgentDefinitionHistory: {
+      agent_sync_error?: string;
+      agent_sync_state: string;
+      channel_bindings?: string;
+      connector_reqs?: string[];
+      content_hash?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      enabled_tools?: string[];
+      forked_from?: string;
+      /**
+       * Format: date-time
+       * @description Timestamp when this history record was written.
+       * @example 2026-06-04T20:40:00Z
+       */
+      history_time: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      instructions?: string;
+      limits_json?: string;
+      managed_by: string;
+      /**
+       * @description Desktop-facing LLM model id.
+       * @example openai/gpt-4.1-mini
+       */
+      model?: string;
+      name: string;
+      /**
+       * @description Mutation operation that produced this history row.
+       * @example UPDATE
+       * @enum {string}
+       */
+      operation: "INSERT" | "UPDATE" | "DELETE";
+      /**
+       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+       * @example openai
+       */
+      provider?: string;
+      raw_source?: string;
+      /**
+       * Format: uuid
+       * @description UUID of the source row represented by a history row.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      ref?: string;
+      revision: number;
+      slug: string;
+      source: string;
+      source_format: string;
+      subagent_refs?: string[];
+      tools_json?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+    };
     AgentSession: {
       agent?: components["schemas"]["AgentDefinition"];
+      agent_revision: number;
       agent_slug: string;
       agent_source?: string;
       approvals?: components["schemas"]["AgentApproval"][];

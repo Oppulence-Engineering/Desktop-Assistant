@@ -9,6 +9,7 @@ require (
 	github.com/99designs/gqlgen v0.17.90
 	github.com/adhocore/gronx v1.20.0
 	github.com/flume/enthistory v0.17.4
+	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/go-redis/redis/v8 v8.11.3
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -39,7 +40,6 @@ require (
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a // indirect
 	github.com/fatih/color v1.19.0 // indirect
-	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-faster/jx v1.2.0 // indirect
 	github.com/go-faster/yaml v0.4.6 // indirect
@@ -122,7 +122,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/libc v1.72.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
