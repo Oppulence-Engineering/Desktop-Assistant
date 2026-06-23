@@ -1442,10 +1442,11 @@ export function SettingsDialog({
       });
   }, [open]);
 
-  const visibleTabs = useMemo(
-    () => (solomonConnected ? tabs.filter((t) => t.id !== "models") : tabs),
-    [solomonConnected],
-  );
+  // ... (ERRORS.md E51) Keep the Models tab visible when signed in so the
+  // signed-in model picker (SolomonModelSettings) stays reachable — the models
+  // tab content branches to it below. Previously it was filtered out, leaving
+  // signed-in users with no path to the picker.
+  const visibleTabs = useMemo(() => tabs, []);
 
   const activeTabConfig = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0];
 

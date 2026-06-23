@@ -77,6 +77,9 @@ function isCronDue(expression: string, lastRunAt: string | null): boolean {
 }
 
 function isWindowDue(startTime: string, endTime: string, lastRunAt: string | null): boolean {
+  // ... (ERRORS.md E17) Assumes endTime > startTime (a same-day band). Reversed /
+  // overnight windows are rejected at save time by TriggerWindowSchema, so we do
+  // NOT handle wrap-around here.
   const now = new Date();
   const [startHour, startMin] = startTime.split(":").map(Number);
   const [endHour, endMin] = endTime.split(":").map(Number);

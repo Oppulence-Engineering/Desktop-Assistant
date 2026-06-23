@@ -429,6 +429,17 @@ function ChatInputInner({
           }
         }
         setConfiguredModels(models);
+        // ... (ERRORS.md E05) A no-pick run uses the config's ACTIVE default
+        // (top-level provider.flavor + model), not configuredModels[0]. Seed the
+        // displayed model from it so the composer matches what actually runs.
+        // Only when unset — never clobber an explicit user pick.
+        const activeFlavor =
+          typeof parsed?.provider?.flavor === "string" ? parsed.provider.flavor : "";
+        const activeModel = typeof parsed?.model === "string" ? parsed.model : "";
+        const activeKey = activeFlavor && activeModel ? `${activeFlavor}/${activeModel}` : "";
+        if (activeKey && models.some((m) => `${m.provider}/${m.model}` === activeKey)) {
+          setActiveModelKey((prev) => prev || activeKey);
+        }
       }
     } catch {
       // No config yet

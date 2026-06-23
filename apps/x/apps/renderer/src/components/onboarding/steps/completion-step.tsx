@@ -1,5 +1,6 @@
 import { CheckCircle2 } from "@/lib/icons";
 import { motion } from "motion/react";
+import { isProductProvider } from "@x/shared/dist/branding.js";
 import type { OnboardingState } from "../use-onboarding-state";
 
 interface CompletionStepProps {
@@ -7,7 +8,11 @@ interface CompletionStepProps {
 }
 
 export function CompletionStep({ state }: CompletionStepProps) {
-  const { connectedProviders, gmailConnected, googleCalendarConnected } = state;
+  const { gmailConnected, googleCalendarConnected } = state;
+  // ... (ERRORS.md E53) Exclude the product provider (e.g. "solomon") so the
+  // "Connected" card only appears when a real data source is connected — a
+  // bare sign-in with no sources should not render an empty card.
+  const connectedProviders = state.connectedProviders.filter((p) => !isProductProvider(p));
   const hasConnections = connectedProviders.length > 0 || gmailConnected || googleCalendarConnected;
 
   return (

@@ -11,10 +11,7 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { useDebounce } from "@/hooks/use-debounce";
-import {
-  useSidebarSection,
-  type ActiveSection,
-} from "@/contexts/sidebar-context";
+import { useSidebarSection, type ActiveSection } from "@/contexts/sidebar-context";
 import { cn } from "@/lib/utils";
 
 interface SearchResult {
@@ -101,8 +98,7 @@ export function CommandPalette({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [activeTypes, setActiveTypes] = useState<Set<SearchType>>(
-    () =>
-      new Set(defaultScope ? [defaultScope] : activeTabToTypes(activeSection)),
+    () => new Set(defaultScope ? [defaultScope] : activeTabToTypes(activeSection)),
   );
   const debouncedQuery = useDebounce(query, 250);
 
@@ -110,11 +106,7 @@ export function CommandPalette({
   useEffect(() => {
     if (open) {
       setQuery("");
-      setActiveTypes(
-        new Set(
-          defaultScope ? [defaultScope] : activeTabToTypes(activeSection),
-        ),
-      );
+      setActiveTypes(new Set(defaultScope ? [defaultScope] : activeTabToTypes(activeSection)));
     }
   }, [open, activeSection, defaultScope]);
 
@@ -123,8 +115,19 @@ export function CommandPalette({
     searchInputRef.current?.focus();
   }, [open]);
 
+  // ... (ERRORS.md E10) Independent toggles, not radios: add/remove the type,
+  // but never let the set go empty (always search at least one scope).
   const toggleType = useCallback((type: SearchType) => {
-    setActiveTypes(new Set([type]));
+    setActiveTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        if (next.size === 1) return prev; // keep the last scope selected
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
   }, []);
 
   useEffect(() => {

@@ -91,6 +91,7 @@ function nodeToText(node: JsonNode): string {
           for (const mark of child.marks) {
             if (mark.type === "bold") text = `**${text}**`;
             else if (mark.type === "italic") text = `*${text}*`;
+            else if (mark.type === "strike") text = `~~${text}~~`;
             else if (mark.type === "code") text = `\`${text}\``;
             else if (mark.type === "link" && mark.attrs?.href)
               text = `[${text}](${mark.attrs.href})`;

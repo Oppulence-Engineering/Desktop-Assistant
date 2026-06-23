@@ -50,17 +50,12 @@ const FLOAT_SPEED_VARIANCE = 0.00025;
 const MAX_FORCE_SIMULATION_NODES = 180;
 const MAX_AMBIENT_ANIMATION_NODES = 140;
 
-export function GraphView({
-  nodes,
-  edges,
-  error,
-  onSelectNode,
-}: GraphViewProps) {
+export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const positionsRef = useRef<Map<string, NodePosition>>(new Map());
-  const motionSeedsRef = useRef<
-    Map<string, { phase: number; amplitude: number; speed: number }>
-  >(new Map());
+  const motionSeedsRef = useRef<Map<string, { phase: number; amplitude: number; speed: number }>>(
+    new Map(),
+  );
   const motionTimeRef = useRef(0);
   const draggingRef = useRef<{
     id: string;
@@ -85,10 +80,7 @@ export function GraphView({
   const nodeIds = useMemo(() => nodes.map((node) => node.id), [nodes]);
   const useStaticLayout = nodes.length > MAX_FORCE_SIMULATION_NODES;
 
-  const edgeList = useMemo(
-    () => edges.filter((edge) => edge.source !== edge.target),
-    [edges],
-  );
+  const edgeList = useMemo(() => edges.filter((edge) => edge.source !== edge.target), [edges]);
   const nodeGroupMap = useMemo(() => {
     const map = new Map<string, string>();
     nodes.forEach((node) => map.set(node.id, node.group || "root"));
@@ -109,14 +101,10 @@ export function GraphView({
         stroke: node.stroke,
       });
     });
-    return Array.from(grouped.values()).sort((a, b) =>
-      a.label.localeCompare(b.label),
-    );
+    return Array.from(grouped.values()).sort((a, b) => a.label.localeCompare(b.label));
   }, [nodes]);
   const groupCenters = useMemo(() => {
-    const groups = Array.from(
-      new Set(nodes.map((node) => node.group || "root")),
-    );
+    const groups = Array.from(new Set(nodes.map((node) => node.group || "root")));
     if (groups.length === 0) return new Map<string, { x: number; y: number }>();
     const radius = Math.min(
       CLUSTER_RADIUS_MAX,
@@ -357,8 +345,7 @@ export function GraphView({
   }, [nodes, nodeIds, edgeList, groupCenters, nodeGroupMap, useStaticLayout]);
 
   useEffect(() => {
-    if (nodes.length === 0 || nodes.length > MAX_AMBIENT_ANIMATION_NODES)
-      return;
+    if (nodes.length === 0 || nodes.length > MAX_AMBIENT_ANIMATION_NODES) return;
     let rafId = 0;
     let lastTime = performance.now();
 
@@ -495,10 +482,7 @@ export function GraphView({
     const query = searchQuery.toLowerCase();
     const directMatches = new Set<string>();
     nodes.forEach((node) => {
-      if (
-        node.label.toLowerCase().includes(query) ||
-        node.id.toLowerCase().includes(query)
-      ) {
+      if (node.label.toLowerCase().includes(query) || node.id.toLowerCase().includes(query)) {
         directMatches.add(node.id);
       }
     });
@@ -521,7 +505,8 @@ export function GraphView({
 
       {!error && nodes.length === 0 ? (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-          No notes found.
+          {/* ... (ERRORS.md E09) Distinguish "still building" from a truly empty graph. */}
+          {isLoading ? "Building graph…" : "No notes found."}
         </div>
       ) : null}
 
@@ -539,9 +524,7 @@ export function GraphView({
               return (
                 <button
                   key={item.group}
-                  onClick={() =>
-                    setSelectedGroup(isSelected ? null : item.group)
-                  }
+                  onClick={() => setSelectedGroup(isSelected ? null : item.group)}
                   className={`flex items-center gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-foreground/10 ${
                     isSelected ? "bg-foreground/15" : ""
                   }`}
@@ -575,11 +558,7 @@ export function GraphView({
         }}
         onWheel={handleWheel}
       >
-        <rect
-          width={viewport.width}
-          height={viewport.height}
-          fill="transparent"
-        />
+        <rect width={viewport.width} height={viewport.height} fill="transparent" />
         <defs>
           {Array.from(new Set(nodes.map((n) => n.color))).map((color) => (
             <filter
@@ -627,11 +606,8 @@ export function GraphView({
               strokeOpacity = isActiveEdge ? 0.8 : 0.1;
               strokeWidth = isActiveEdge ? 2 : 1;
             }
-            const activeNode = activeNodeId
-              ? nodes.find((n) => n.id === activeNodeId)
-              : null;
-            const stroke =
-              isActiveEdge && activeNode ? activeNode.color : "#333";
+            const activeNode = activeNodeId ? nodes.find((n) => n.id === activeNodeId) : null;
+            const stroke = isActiveEdge && activeNode ? activeNode.color : "#333";
             const dx = target.x - source.x;
             const dy = target.y - source.y;
             const dr = Math.sqrt(dx * dx + dy * dy) * 1.5;
@@ -645,8 +621,7 @@ export function GraphView({
                 strokeOpacity={strokeOpacity}
                 strokeWidth={strokeWidth}
                 style={{
-                  transition:
-                    "stroke 0.2s, stroke-opacity 0.2s, stroke-width 0.2s",
+                  transition: "stroke 0.2s, stroke-opacity 0.2s, stroke-width 0.2s",
                 }}
               />
             );
@@ -656,22 +631,16 @@ export function GraphView({
             const pos = displayPositions.get(node.id);
             if (!pos) return null;
             const nodeGroup = node.group || "root";
-            const isConnected = connectedNodes
-              ? connectedNodes.has(node.id)
-              : true;
+            const isConnected = connectedNodes ? connectedNodes.has(node.id) : true;
             const isSearchMatch = searchMatchingNodes
               ? searchMatchingNodes.matches.has(node.id)
               : true;
             const isDirectMatch = searchMatchingNodes
               ? searchMatchingNodes.directMatches.has(node.id)
               : false;
-            const isGroupMatch = selectedGroup
-              ? nodeGroup === selectedGroup
-              : true;
+            const isGroupMatch = selectedGroup ? nodeGroup === selectedGroup : true;
             const isPrimary =
-              activeNodeId === node.id ||
-              isDirectMatch ||
-              (selectedGroup && isGroupMatch);
+              activeNodeId === node.id || isDirectMatch || (selectedGroup && isGroupMatch);
             let nodeOpacity = 1;
             if (selectedGroup) {
               nodeOpacity = isGroupMatch ? 1 : 0.1;

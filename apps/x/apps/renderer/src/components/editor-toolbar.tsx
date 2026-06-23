@@ -2,11 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import type { Editor } from "@tiptap/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   BoldIcon,
   ItalicIcon,
@@ -59,8 +55,7 @@ const LIVE_PILL_VARIANT_CLASS: Record<LivePillVariant, string> = {
   passive: "text-muted-foreground hover:bg-accent",
   idle: "text-foreground hover:bg-accent",
   running: "text-foreground bg-primary/10 hover:bg-primary/15 animate-pulse",
-  error:
-    "text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15",
+  error: "text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15",
 };
 
 export function EditorToolbar({
@@ -69,6 +64,7 @@ export function EditorToolbar({
   onImageUpload,
   onExport,
   onOpenLiveNote,
+  onOpenRelated,
   liveState,
 }: EditorToolbarProps) {
   const [linkUrl, setLinkUrl] = useState("");
@@ -106,12 +102,7 @@ export function EditorToolbar({
       if (url && !url.match(/^https?:\/\//i) && !url.startsWith("mailto:")) {
         url = "https://" + url;
       }
-      editor
-        .chain()
-        .focus()
-        .extendMarkRange("link")
-        .setLink({ href: url })
-        .run();
+      editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
     }
     closeLinkPopover();
   }, [editor, linkUrl, closeLinkPopover]);
@@ -313,9 +304,7 @@ export function EditorToolbar({
         </PopoverTrigger>
         <PopoverContent className="w-80 p-3" align="start">
           <div className="flex flex-col gap-3">
-            <div className="text-sm font-medium">
-              {isLinkActive ? "Edit Link" : "Add Link"}
-            </div>
+            <div className="text-sm font-medium">{isLinkActive ? "Edit Link" : "Add Link"}</div>
             <Input
               placeholder="https://example.com"
               value={linkUrl}
@@ -347,12 +336,7 @@ export function EditorToolbar({
                   >
                     <ExternalLinkIcon className="size-4" />
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={removeLink}
-                    title="Remove link"
-                  >
+                  <Button size="sm" variant="outline" onClick={removeLink} title="Remove link">
                     <Trash2Icon className="size-4" />
                   </Button>
                 </>

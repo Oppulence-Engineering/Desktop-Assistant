@@ -1651,6 +1651,10 @@ function CloudRunTranscriptView({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
+  // The run/status type carries no paused indicator (pause/resume are workflow
+  // control signals), so track it locally from the last signal sent so we can
+  // show only the applicable control instead of both. // ... (ERRORS.md E35)
+  const [paused, setPaused] = useState(false);
 
   // One-shot run detail (trigger + originating cloud event): immutable data,
   // deliberately outside the 2s status poll. Best-effort — a failure just
@@ -1770,6 +1774,7 @@ function CloudRunTranscriptView({
       });
       if (result.success && result.run) {
         setStatus(cloudRunStatusFromRun(result.run));
+        setPaused(signal === "pause"); // ... (ERRORS.md E35)
         onChanged();
       } else {
         toast(result.error ?? "Signal failed", "error");
@@ -1804,36 +1809,40 @@ function CloudRunTranscriptView({
         </div>
         {active && (
           <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                void signalRun("pause");
-              }}
-              disabled={!!actioning}
-            >
-              {actioning === "pause" ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <Pause className="size-3" />
-              )}{" "}
-              Pause
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                void signalRun("resume");
-              }}
-              disabled={!!actioning}
-            >
-              {actioning === "resume" ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <Play className="size-3" />
-              )}{" "}
-              Resume
-            </Button>
+            {/* Show only the applicable control for the current run state. // ... (ERRORS.md E35) */}
+            {paused ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  void signalRun("resume");
+                }}
+                disabled={!!actioning}
+              >
+                {actioning === "resume" ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <Play className="size-3" />
+                )}{" "}
+                Resume
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  void signalRun("pause");
+                }}
+                disabled={!!actioning}
+              >
+                {actioning === "pause" ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <Pause className="size-3" />
+                )}{" "}
+                Pause
+              </Button>
+            )}
             <Button
               variant="destructive"
               size="sm"
@@ -2411,9 +2420,15 @@ function TaskDetail({
         setCloudRunStatus(result.status);
         if (isTerminalCloudStatus(result.status.status)) {
           if (result.status.status === "succeeded") {
-            const pulled = await window.ipc.invoke("bg-task:pullCloudArtifact", { slug });
-            if (!cancelled && pulled.success) {
-              setOutputRefreshKey((k) => k + 1);
+            // Only overwrite the local index.md when the remote artifact is
+            // actually ahead, mirroring the offline-return auto-pull guard. // ... (ERRORS.md E39)
+            const sync = await window.ipc.invoke("bg-task:getArtifactSyncState", { slug });
+            const syncState = sync.success ? sync.sync?.state : undefined;
+            if (!cancelled && (syncState === "remote_newer" || syncState === "not_pulled")) {
+              const pulled = await window.ipc.invoke("bg-task:pullCloudArtifact", { slug });
+              if (!cancelled && pulled.success) {
+                setOutputRefreshKey((k) => k + 1);
+              }
             }
           }
           if (!cancelled) void loadArtifactSync();
@@ -2521,7 +2536,10 @@ function TaskDetail({
       }
       return;
     }
-    await window.ipc.invoke("bg-task:stop", { slug });
+    const result = await window.ipc.invoke("bg-task:stop", { slug });
+    if (!result.success) {
+      toast(result.error ?? "Stop failed", "error"); // ... (ERRORS.md E34)
+    }
   };
 
   const deleteTask = async () => {
@@ -3246,15 +3264,21 @@ export function BgTasksView({
         onCreated={(slug, executionTarget) => {
           setShowNewDialog(false);
           void load();
-          if (executionTarget === "api") {
-            void window.ipc.invoke("bg-task:triggerCloudRun", {
-              slug,
-              trigger: "manual",
-            });
-          } else {
-            void window.ipc.invoke("bg-task:run", { slug });
-          }
           setSelectedSlug(slug);
+          // Await the first run so a failed kick-off (e.g. an API task while
+          // signed out) surfaces feedback instead of silently no-op'ing. // ... (ERRORS.md E33)
+          void (async () => {
+            const result =
+              executionTarget === "api"
+                ? await window.ipc.invoke("bg-task:triggerCloudRun", {
+                    slug,
+                    trigger: "manual",
+                  })
+                : await window.ipc.invoke("bg-task:run", { slug });
+            if (!result.success) {
+              toast(result.error ?? "Run failed", "error");
+            }
+          })();
         }}
         onCreateWithCopilot={onCreateWithCopilot}
       />

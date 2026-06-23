@@ -1,48 +1,56 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Bug, MoreHorizontal } from '@/lib/icons'
-import { toast } from 'sonner'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Bug, MoreHorizontal } from "@/lib/icons";
+import { toast } from "sonner";
 
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ChatHeader } from '@/components/chat-header'
-import { ChatEmptyState } from '@/components/chat-empty-state'
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChatHeader } from "@/components/chat-header";
+import { ChatEmptyState } from "@/components/chat-empty-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from '@/components/ai-elements/conversation'
+} from "@/components/ai-elements/conversation";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from '@/components/ai-elements/message'
-import { Shimmer } from '@/components/ai-elements/shimmer'
-import { Tool, ToolContent, ToolGroupComponent, ToolHeader, ToolTabbedContent } from '@/components/ai-elements/tool'
-import { WebSearchResult } from '@/components/ai-elements/web-search-result'
-import { MemorySearchSources } from '@/components/ai-elements/memory-search-result'
-import { ComposioConnectCard } from '@/components/ai-elements/composio-connect-card'
-import { PermissionRequest } from '@/components/ai-elements/permission-request'
-import { AutoPermissionDecision } from '@/components/ai-elements/auto-permission-decision'
-import { TerminalOutput } from '@/components/terminal-output'
-import { AskHumanRequest } from '@/components/ai-elements/ask-human-request'
-import { type PromptInputMessage, type FileMention } from '@/components/ai-elements/prompt-input'
-import { FileCardProvider } from '@/contexts/file-card-context'
-import { MarkdownPreOverride } from '@/components/ai-elements/markdown-code-override'
-import { defaultRemarkPlugins } from 'streamdown'
-import remarkBreaks from 'remark-breaks'
-import { type ChatTab } from '@/components/tab-bar'
-import { ChatInputWithMentions, type PermissionMode, type StagedAttachment, type SelectedModel } from '@/components/chat-input-with-mentions'
-import { ChatMessageAttachments } from '@/components/chat-message-attachments'
-import { useSidebar } from '@/components/ui/sidebar'
-import { wikiLabel } from '@/lib/wiki-links'
-import type { ChatPaneSize } from '@/contexts/theme-context'
+  Tool,
+  ToolContent,
+  ToolGroupComponent,
+  ToolHeader,
+  ToolTabbedContent,
+} from "@/components/ai-elements/tool";
+import { WebSearchResult } from "@/components/ai-elements/web-search-result";
+import { MemorySearchSources } from "@/components/ai-elements/memory-search-result";
+import { ComposioConnectCard } from "@/components/ai-elements/composio-connect-card";
+import { PermissionRequest } from "@/components/ai-elements/permission-request";
+import { AutoPermissionDecision } from "@/components/ai-elements/auto-permission-decision";
+import { TerminalOutput } from "@/components/terminal-output";
+import { AskHumanRequest } from "@/components/ai-elements/ask-human-request";
+import { AppActionCard } from "@/components/ai-elements/app-action-card";
+import { type PromptInputMessage, type FileMention } from "@/components/ai-elements/prompt-input";
+import { FileCardProvider } from "@/contexts/file-card-context";
+import { MarkdownPreOverride } from "@/components/ai-elements/markdown-code-override";
+import { defaultRemarkPlugins } from "streamdown";
+import remarkBreaks from "remark-breaks";
+import { type ChatTab } from "@/components/tab-bar";
+import {
+  ChatInputWithMentions,
+  type PermissionMode,
+  type StagedAttachment,
+  type SelectedModel,
+} from "@/components/chat-input-with-mentions";
+import { ChatMessageAttachments } from "@/components/chat-message-attachments";
+import { useSidebar } from "@/components/ui/sidebar";
+import { wikiLabel } from "@/lib/wiki-links";
+import type { ChatPaneSize } from "@/contexts/theme-context";
 import {
   type ChatViewportAnchorState,
   type ChatTabViewState,
@@ -50,6 +58,7 @@ import {
   type PermissionResponse,
   createEmptyChatTabViewState,
   getWebSearchCardData,
+  getAppActionCardData,
   getComposioConnectCardData,
   getToolDisplayName,
   groupConversationItems,
@@ -61,135 +70,150 @@ import {
   normalizeToolOutput,
   parseAttachedFiles,
   toToolState,
-} from '@/lib/chat-conversation'
-import { matchBillingError } from '@/lib/billing-error'
+} from "@/lib/chat-conversation";
+import { matchBillingError } from "@/lib/billing-error";
 
-const streamdownComponents = { pre: MarkdownPreOverride }
+const streamdownComponents = { pre: MarkdownPreOverride };
 
 // Render user messages with markdown so bullets, bold, links, etc. survive the
 // round-trip from the input textarea. `remarkBreaks` turns single newlines
 // into <br> so typed line breaks are preserved without requiring blank lines.
-const userMessageRemarkPlugins = [...Object.values(defaultRemarkPlugins), remarkBreaks]
+const userMessageRemarkPlugins = [...Object.values(defaultRemarkPlugins), remarkBreaks];
 
 function AutoScrollPre({ className, children }: { className?: string; children: React.ReactNode }) {
-  const ref = useRef<HTMLPreElement>(null)
-  const stickToBottom = useRef(true)
+  const ref = useRef<HTMLPreElement>(null);
+  const stickToBottom = useRef(true);
 
   useEffect(() => {
-    const el = ref.current
+    const el = ref.current;
     if (el && stickToBottom.current) {
-      el.scrollTop = el.scrollHeight
+      el.scrollTop = el.scrollHeight;
     }
-  }, [children])
+  }, [children]);
 
   const handleScroll = useCallback(() => {
-    const el = ref.current
-    if (!el) return
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 24
-    stickToBottom.current = atBottom
-  }, [])
+    const el = ref.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+    stickToBottom.current = atBottom;
+  }, []);
 
   return (
     <pre ref={ref} onScroll={handleScroll} className={className}>
       {children}
     </pre>
-  )
+  );
 }
 
-const MIN_WIDTH = 360
-const MAX_WIDTH = 1600
-const MIN_MAIN_PANE_WIDTH = 420
-const MIN_MAIN_PANE_RATIO = 0.3
-const DEFAULT_WIDTH = 460
-const RIGHT_PANE_WIDTH_STORAGE_KEY = 'x:right-pane-width'
+const MIN_WIDTH = 360;
+const MAX_WIDTH = 1600;
+const MIN_MAIN_PANE_WIDTH = 420;
+const MIN_MAIN_PANE_RATIO = 0.3;
+const DEFAULT_WIDTH = 460;
+const RIGHT_PANE_WIDTH_STORAGE_KEY = "x:right-pane-width";
 
 function clampPaneWidth(width: number, maxWidth: number = MAX_WIDTH): number {
-  const boundedMax = Math.max(0, Math.min(MAX_WIDTH, maxWidth))
-  const boundedMin = Math.min(MIN_WIDTH, boundedMax)
-  return Math.min(boundedMax, Math.max(boundedMin, width))
+  const boundedMax = Math.max(0, Math.min(MAX_WIDTH, maxWidth));
+  const boundedMin = Math.min(MIN_WIDTH, boundedMax);
+  return Math.min(boundedMax, Math.max(boundedMin, width));
 }
 
 function getInitialPaneWidth(defaultWidth: number): number {
-  const fallback = clampPaneWidth(defaultWidth)
-  if (typeof window === 'undefined') return fallback
+  const fallback = clampPaneWidth(defaultWidth);
+  if (typeof window === "undefined") return fallback;
   try {
-    const raw = window.localStorage.getItem(RIGHT_PANE_WIDTH_STORAGE_KEY)
-    if (!raw) return fallback
-    const parsed = Number(raw)
-    if (!Number.isFinite(parsed)) return fallback
-    return clampPaneWidth(parsed)
+    const raw = window.localStorage.getItem(RIGHT_PANE_WIDTH_STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return fallback;
+    return clampPaneWidth(parsed);
   } catch {
-    return fallback
+    return fallback;
   }
 }
 
 interface ChatSidebarProps {
-  defaultWidth?: number
-  isOpen?: boolean
-  isMaximized?: boolean
-  placement?: 'middle' | 'right'
-  paneSize?: ChatPaneSize
-  className?: string
-  chatTabs: ChatTab[]
-  activeChatTabId: string
-  getChatTabTitle: (tab: ChatTab) => string
-  onNewChatTab: () => void
-  recentRuns?: { id: string; title?: string; createdAt: string }[]
-  onSelectRun?: (runId: string) => void
-  onOpenChatHistory?: () => void
-  onOpenFullScreen?: () => void
-  conversation: ConversationItem[]
-  currentAssistantMessage: string
-  chatTabStates?: Record<string, ChatTabViewState>
-  viewportAnchors?: Record<string, ChatViewportAnchorState>
-  isProcessing: boolean
-  isStopping?: boolean
-  onStop?: () => void
-  onSubmit: (message: PromptInputMessage, mentions?: FileMention[], attachments?: StagedAttachment[], searchEnabled?: boolean, codeMode?: 'claude' | 'codex', permissionMode?: PermissionMode) => void
-  knowledgeFiles?: string[]
-  recentFiles?: string[]
-  visibleFiles?: string[]
-  runId?: string | null
-  presetMessage?: string
-  onPresetMessageConsumed?: () => void
-  getInitialDraft?: (tabId: string) => string | undefined
-  onDraftChangeForTab?: (tabId: string, text: string) => void
-  onSelectedModelChangeForTab?: (tabId: string, model: SelectedModel | null) => void
-  workDirByTab?: Record<string, string | null>
-  onWorkDirChangeForTab?: (tabId: string, value: string | null) => void
-  pendingAskHumanRequests?: ChatTabViewState['pendingAskHumanRequests']
-  allPermissionRequests?: ChatTabViewState['allPermissionRequests']
-  permissionResponses?: ChatTabViewState['permissionResponses']
-  autoPermissionDecisions?: ChatTabViewState['autoPermissionDecisions']
-  onPermissionResponse?: (toolCallId: string, subflow: string[], response: PermissionResponse, scope?: 'once' | 'session' | 'always') => void
-  onAskHumanResponse?: (toolCallId: string, subflow: string[], response: string) => void
-  isToolOpenForTab?: (tabId: string, toolId: string) => boolean
-  onToolOpenChangeForTab?: (tabId: string, toolId: string, open: boolean) => void
-  onOpenKnowledgeFile?: (path: string) => void
-  onActivate?: () => void
-  collapsedLeftPaddingPx?: number
+  defaultWidth?: number;
+  isOpen?: boolean;
+  isMaximized?: boolean;
+  placement?: "middle" | "right";
+  paneSize?: ChatPaneSize;
+  className?: string;
+  chatTabs: ChatTab[];
+  activeChatTabId: string;
+  getChatTabTitle: (tab: ChatTab) => string;
+  onNewChatTab: () => void;
+  recentRuns?: { id: string; title?: string; createdAt: string }[];
+  onSelectRun?: (runId: string) => void;
+  onOpenChatHistory?: () => void;
+  onOpenFullScreen?: () => void;
+  conversation: ConversationItem[];
+  currentAssistantMessage: string;
+  chatTabStates?: Record<string, ChatTabViewState>;
+  viewportAnchors?: Record<string, ChatViewportAnchorState>;
+  isProcessing: boolean;
+  isStopping?: boolean;
+  onStop?: () => void;
+  onSubmit: (
+    message: PromptInputMessage,
+    mentions?: FileMention[],
+    attachments?: StagedAttachment[],
+    searchEnabled?: boolean,
+    codeMode?: "claude" | "codex",
+    permissionMode?: PermissionMode,
+  ) => void;
+  knowledgeFiles?: string[];
+  recentFiles?: string[];
+  visibleFiles?: string[];
+  runId?: string | null;
+  presetMessage?: string;
+  onPresetMessageConsumed?: () => void;
+  getInitialDraft?: (tabId: string) => string | undefined;
+  onDraftChangeForTab?: (tabId: string, text: string) => void;
+  onSelectedModelChangeForTab?: (tabId: string, model: SelectedModel | null) => void;
+  workDirByTab?: Record<string, string | null>;
+  onWorkDirChangeForTab?: (tabId: string, value: string | null) => void;
+  pendingAskHumanRequests?: ChatTabViewState["pendingAskHumanRequests"];
+  allPermissionRequests?: ChatTabViewState["allPermissionRequests"];
+  permissionResponses?: ChatTabViewState["permissionResponses"];
+  autoPermissionDecisions?: ChatTabViewState["autoPermissionDecisions"];
+  onPermissionResponse?: (
+    toolCallId: string,
+    subflow: string[],
+    response: PermissionResponse,
+    scope?: "once" | "session" | "always",
+  ) => void;
+  onAskHumanResponse?: (toolCallId: string, subflow: string[], response: string) => void;
+  // Swap coding agent (Claude Code <-> Codex) and retry for a coding-command
+  // permission request — parity with the full-screen chat. (ERRORS.md E02)
+  onSwitchAgent?: (toolCallId: string, subflow: string[], newAgent: "claude" | "codex") => void;
+  isToolOpenForTab?: (tabId: string, toolId: string) => boolean;
+  onToolOpenChangeForTab?: (tabId: string, toolId: string, open: boolean) => void;
+  onOpenKnowledgeFile?: (path: string) => void;
+  onActivate?: () => void;
+  collapsedLeftPaddingPx?: number;
   // Voice / TTS props
-  isRecording?: boolean
-  recordingText?: string
-  recordingState?: 'connecting' | 'listening'
-  onStartRecording?: () => void
-  onSubmitRecording?: () => void
-  onCancelRecording?: () => void
-  voiceAvailable?: boolean
-  ttsAvailable?: boolean
-  ttsEnabled?: boolean
-  ttsMode?: 'summary' | 'full'
-  onToggleTts?: () => void
-  onTtsModeChange?: (mode: 'summary' | 'full') => void
-  onComposioConnected?: (toolkitSlug: string) => void
+  isRecording?: boolean;
+  recordingText?: string;
+  recordingState?: "connecting" | "listening";
+  onStartRecording?: () => void;
+  onSubmitRecording?: () => void;
+  onCancelRecording?: () => void;
+  voiceAvailable?: boolean;
+  ttsAvailable?: boolean;
+  ttsEnabled?: boolean;
+  ttsMode?: "summary" | "full";
+  onToggleTts?: () => void;
+  onTtsModeChange?: (mode: "summary" | "full") => void;
+  onComposioConnected?: (toolkitSlug: string) => void;
 }
 
 export function ChatSidebar({
   defaultWidth = DEFAULT_WIDTH,
   isOpen = true,
   isMaximized = false,
-  placement = 'right',
-  paneSize = 'chat-smaller',
+  placement = "right",
+  paneSize = "chat-smaller",
   className,
   chatTabs,
   activeChatTabId,
@@ -224,6 +248,7 @@ export function ChatSidebar({
   autoPermissionDecisions = new Map(),
   onPermissionResponse,
   onAskHumanResponse,
+  onSwitchAgent,
   isToolOpenForTab,
   onToolOpenChangeForTab,
   onOpenKnowledgeFile,
@@ -243,145 +268,151 @@ export function ChatSidebar({
   onTtsModeChange,
   onComposioConnected,
 }: ChatSidebarProps) {
-  const { state: sidebarState } = useSidebar()
-  const [width, setWidth] = useState(() => getInitialPaneWidth(defaultWidth))
-  const [isResizing, setIsResizing] = useState(false)
-  const [showContent, setShowContent] = useState(isOpen)
-  const [localPresetMessage, setLocalPresetMessage] = useState<string | undefined>(undefined)
+  const { state: sidebarState } = useSidebar();
+  const [width, setWidth] = useState(() => getInitialPaneWidth(defaultWidth));
+  const [isResizing, setIsResizing] = useState(false);
+  const [showContent, setShowContent] = useState(isOpen);
+  const [localPresetMessage, setLocalPresetMessage] = useState<string | undefined>(undefined);
 
-  const paneRef = useRef<HTMLDivElement>(null)
-  const startXRef = useRef(0)
-  const startWidthRef = useRef(0)
-  const prevIsMaximizedRef = useRef(isMaximized)
-  const justToggledMaximize = prevIsMaximizedRef.current !== isMaximized
-  const isMiddlePlacement = placement === 'middle'
-  const isResizable = paneSize === 'chat-smaller'
+  const paneRef = useRef<HTMLDivElement>(null);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(0);
+  const prevIsMaximizedRef = useRef(isMaximized);
+  const justToggledMaximize = prevIsMaximizedRef.current !== isMaximized;
+  const isMiddlePlacement = placement === "middle";
+  const isResizable = paneSize === "chat-smaller";
 
   const getMaxAllowedWidth = useCallback(() => {
-    if (typeof window === 'undefined') return MAX_WIDTH
-    const paneElement = paneRef.current
-    const splitContainer = paneElement?.parentElement
-    const mainPane = splitContainer?.querySelector<HTMLElement>('[data-slot="sidebar-inset"]')
-    const paneWidth = paneElement?.getBoundingClientRect().width ?? 0
-    const mainPaneWidth = mainPane?.getBoundingClientRect().width ?? 0
-    const splitWidth = paneWidth + mainPaneWidth
-    const fallbackWidth = splitContainer?.clientWidth ?? window.innerWidth
-    const availableSplitWidth = splitWidth > 0 ? splitWidth : fallbackWidth
+    if (typeof window === "undefined") return MAX_WIDTH;
+    const paneElement = paneRef.current;
+    const splitContainer = paneElement?.parentElement;
+    const mainPane = splitContainer?.querySelector<HTMLElement>('[data-slot="sidebar-inset"]');
+    const paneWidth = paneElement?.getBoundingClientRect().width ?? 0;
+    const mainPaneWidth = mainPane?.getBoundingClientRect().width ?? 0;
+    const splitWidth = paneWidth + mainPaneWidth;
+    const fallbackWidth = splitContainer?.clientWidth ?? window.innerWidth;
+    const availableSplitWidth = splitWidth > 0 ? splitWidth : fallbackWidth;
     const minMainPaneWidth = Math.min(
       availableSplitWidth,
-      Math.max(
-        MIN_MAIN_PANE_WIDTH,
-        Math.floor(availableSplitWidth * MIN_MAIN_PANE_RATIO)
-      )
-    )
-    return Math.max(0, availableSplitWidth - minMainPaneWidth)
-  }, [])
+      Math.max(MIN_MAIN_PANE_WIDTH, Math.floor(availableSplitWidth * MIN_MAIN_PANE_RATIO)),
+    );
+    return Math.max(0, availableSplitWidth - minMainPaneWidth);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
-      const timer = setTimeout(() => setShowContent(true), 150)
-      return () => clearTimeout(timer)
+      const timer = setTimeout(() => setShowContent(true), 150);
+      return () => clearTimeout(timer);
     }
-    setShowContent(false)
-  }, [isOpen])
+    setShowContent(false);
+  }, [isOpen]);
 
   useEffect(() => {
-    prevIsMaximizedRef.current = isMaximized
-  }, [isMaximized])
+    prevIsMaximizedRef.current = isMaximized;
+  }, [isMaximized]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem(RIGHT_PANE_WIDTH_STORAGE_KEY, String(width))
+      window.localStorage.setItem(RIGHT_PANE_WIDTH_STORAGE_KEY, String(width));
     } catch {
       // Ignore persistence failures and keep in-memory behavior.
     }
-  }, [width])
+  }, [width]);
 
   useEffect(() => {
     const clampToAvailableWidth = () => {
-      const maxAllowedWidth = getMaxAllowedWidth()
-      setWidth((prev) => clampPaneWidth(prev, maxAllowedWidth))
-    }
+      const maxAllowedWidth = getMaxAllowedWidth();
+      setWidth((prev) => clampPaneWidth(prev, maxAllowedWidth));
+    };
 
-    clampToAvailableWidth()
-    window.addEventListener('resize', clampToAvailableWidth)
-    return () => window.removeEventListener('resize', clampToAvailableWidth)
-  }, [getMaxAllowedWidth])
+    clampToAvailableWidth();
+    window.addEventListener("resize", clampToAvailableWidth);
+    return () => window.removeEventListener("resize", clampToAvailableWidth);
+  }, [getMaxAllowedWidth]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    startXRef.current = e.clientX
-    startWidthRef.current = width
-    setIsResizing(true)
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      startXRef.current = e.clientX;
+      startWidthRef.current = width;
+      setIsResizing(true);
 
-    const handleMouseMove = (event: MouseEvent) => {
-      const delta = isMiddlePlacement
-        ? event.clientX - startXRef.current
-        : startXRef.current - event.clientX
-      const maxAllowedWidth = getMaxAllowedWidth()
-      setWidth(clampPaneWidth(startWidthRef.current + delta, maxAllowedWidth))
-    }
+      const handleMouseMove = (event: MouseEvent) => {
+        const delta = isMiddlePlacement
+          ? event.clientX - startXRef.current
+          : startXRef.current - event.clientX;
+        const maxAllowedWidth = getMaxAllowedWidth();
+        setWidth(clampPaneWidth(startWidthRef.current + delta, maxAllowedWidth));
+      };
 
-    const handleMouseUp = () => {
-      setIsResizing(false)
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
+      const handleMouseUp = () => {
+        setIsResizing(false);
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
 
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-  }, [width, getMaxAllowedWidth, isMiddlePlacement])
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    },
+    [width, getMaxAllowedWidth, isMiddlePlacement],
+  );
 
-  const activeTabState = useMemo<ChatTabViewState>(() => ({
-    runId: runId ?? null,
-    conversation,
-    currentAssistantMessage,
-    pendingAskHumanRequests,
-    allPermissionRequests,
-    permissionResponses,
-    autoPermissionDecisions,
-  }), [
-    runId,
-    conversation,
-    currentAssistantMessage,
-    pendingAskHumanRequests,
-    allPermissionRequests,
-    permissionResponses,
-    autoPermissionDecisions,
-  ])
-  const emptyTabState = useMemo<ChatTabViewState>(() => createEmptyChatTabViewState(), [])
-  const getTabState = useCallback((tabId: string): ChatTabViewState => {
-    if (tabId === activeChatTabId) return activeTabState
-    return chatTabStates[tabId] ?? emptyTabState
-  }, [activeChatTabId, activeTabState, chatTabStates, emptyTabState])
-  const activeRunId = activeTabState.runId
+  const activeTabState = useMemo<ChatTabViewState>(
+    () => ({
+      runId: runId ?? null,
+      conversation,
+      currentAssistantMessage,
+      pendingAskHumanRequests,
+      allPermissionRequests,
+      permissionResponses,
+      autoPermissionDecisions,
+    }),
+    [
+      runId,
+      conversation,
+      currentAssistantMessage,
+      pendingAskHumanRequests,
+      allPermissionRequests,
+      permissionResponses,
+      autoPermissionDecisions,
+    ],
+  );
+  const emptyTabState = useMemo<ChatTabViewState>(() => createEmptyChatTabViewState(), []);
+  const getTabState = useCallback(
+    (tabId: string): ChatTabViewState => {
+      if (tabId === activeChatTabId) return activeTabState;
+      return chatTabStates[tabId] ?? emptyTabState;
+    },
+    [activeChatTabId, activeTabState, chatTabStates, emptyTabState],
+  );
+  const activeRunId = activeTabState.runId;
   const handleDownloadChatLog = useCallback(async () => {
     if (!activeRunId) {
-      toast.error('No chat log available yet')
-      return
+      toast.error("No chat log available yet");
+      return;
     }
 
     try {
-      const result = await window.ipc.invoke('runs:downloadLog', { runId: activeRunId })
+      const result = await window.ipc.invoke("runs:downloadLog", { runId: activeRunId });
       if (result.success) {
-        toast.success('Chat log saved')
+        toast.success("Chat log saved");
       } else if (result.error) {
-        toast.error(result.error)
+        toast.error(result.error);
       }
     } catch (err) {
-      console.error('Download chat log failed:', err)
-      toast.error('Failed to download chat log')
+      console.error("Download chat log failed:", err);
+      toast.error("Failed to download chat log");
     }
-  }, [activeRunId])
+  }, [activeRunId]);
 
   const renderConversationItem = (
     item: ConversationItem,
     tabId: string,
-    options?: { autoPermissionDetail?: { decision: 'allow'; reason: string } },
+    options?: { autoPermissionDetail?: { decision: "allow"; reason: string } },
   ) => {
     if (isChatMessage(item)) {
-      if (item.role === 'user') {
+      if (item.role === "user") {
         if (item.attachments && item.attachments.length > 0) {
           return (
             <Message key={item.id} from={item.role} data-message-id={item.id}>
@@ -399,9 +430,9 @@ export function ChatSidebar({
                 </MessageContent>
               )}
             </Message>
-          )
+          );
         }
-        const { message, files } = parseAttachedFiles(item.content)
+        const { message, files } = parseAttachedFiles(item.content);
         return (
           <Message key={item.id} from={item.role} data-message-id={item.id}>
             <MessageContent>
@@ -425,7 +456,7 @@ export function ChatSidebar({
               </MessageResponse>
             </MessageContent>
           </Message>
-        )
+        );
       }
       return (
         <Message key={item.id} from={item.role} data-message-id={item.id}>
@@ -433,11 +464,11 @@ export function ChatSidebar({
             <MessageResponse components={streamdownComponents}>{item.content}</MessageResponse>
           </MessageContent>
         </Message>
-      )
+      );
     }
 
     if (isToolCall(item)) {
-      const webSearchData = getWebSearchCardData(item)
+      const webSearchData = getWebSearchCardData(item);
       if (webSearchData) {
         return (
           <WebSearchResult
@@ -447,11 +478,11 @@ export function ChatSidebar({
             status={item.status}
             title={webSearchData.title}
           />
-        )
+        );
       }
-      const composioConnectData = getComposioConnectCardData(item)
+      const composioConnectData = getComposioConnectCardData(item);
       if (composioConnectData) {
-        if (composioConnectData.hidden) return null
+        if (composioConnectData.hidden) return null;
         return (
           <ComposioConnectCard
             key={item.id}
@@ -461,15 +492,21 @@ export function ChatSidebar({
             alreadyConnected={composioConnectData.alreadyConnected}
             onConnected={onComposioConnected}
           />
-        )
+        );
       }
-      if (item.name === 'memory-search') {
-        return <MemorySearchSources key={item.id} result={item.result} status={item.status} />
+      if (item.name === "memory-search") {
+        return <MemorySearchSources key={item.id} result={item.result} status={item.status} />;
       }
-      const toolTitle = getToolDisplayName(item)
-      const errorText = item.status === 'error' ? 'Tool error' : ''
-      const output = normalizeToolOutput(item.result, item.status)
-      const input = normalizeToolInput(item.input)
+      // app-navigation tool calls render as a friendly AppActionCard (parity with
+      // the full-screen chat), not a raw-JSON Tool card. (ERRORS.md E03)
+      const appActionData = getAppActionCardData(item);
+      if (appActionData) {
+        return <AppActionCard key={item.id} data={appActionData} status={item.status} />;
+      }
+      const toolTitle = getToolDisplayName(item);
+      const errorText = item.status === "error" ? "Tool error" : "";
+      const output = normalizeToolOutput(item.result, item.status);
+      const input = normalizeToolInput(item.input);
       return (
         <Tool
           key={item.id}
@@ -477,7 +514,11 @@ export function ChatSidebar({
           onOpenChange={(open) => onToolOpenChangeForTab?.(tabId, item.id, open)}
           autoPermissionDetail={options?.autoPermissionDetail}
         >
-          <ToolHeader title={toolTitle} type={`tool-${item.name}`} state={toToolState(item.status)} />
+          <ToolHeader
+            title={toolTitle}
+            type={`tool-${item.name}`}
+            state={toToolState(item.status)}
+          />
           <ToolContent>
             {item.streamingOutput ? (
               <AutoScrollPre className="max-h-80 overflow-auto px-4 py-3 font-mono text-xs whitespace-pre-wrap text-foreground/90">
@@ -488,12 +529,12 @@ export function ChatSidebar({
             )}
           </ToolContent>
         </Tool>
-      )
+      );
     }
 
     if (isErrorMessage(item)) {
       if (matchBillingError(item.message)) {
-        return null
+        return null;
       }
       return (
         <Message key={item.id} from="assistant" data-message-id={item.id}>
@@ -501,26 +542,26 @@ export function ChatSidebar({
             <pre className="whitespace-pre-wrap font-mono text-xs">{item.message}</pre>
           </MessageContent>
         </Message>
-      )
+      );
     }
 
-    return null
-  }
+    return null;
+  };
 
   const paneStyle = useMemo<React.CSSProperties>(() => {
     if (!isOpen) {
-      return { width: 0, flex: '0 0 auto' }
+      return { width: 0, flex: "0 0 auto" };
     }
     if (isMaximized) {
       // In maximize mode the pane should grow into the freed left space,
       // not add extra width to the right and overflow the app viewport.
-      return { width: 0, flex: '1 1 auto' }
+      return { width: 0, flex: "1 1 auto" };
     }
-    if (paneSize === 'chat-equal' || paneSize === 'chat-bigger') {
-      return { width: 0, flex: '1 1 0' }
+    if (paneSize === "chat-equal" || paneSize === "chat-bigger") {
+      return { width: 0, flex: "1 1 0" };
     }
-    return { width, flex: '0 0 auto' }
-  }, [isOpen, isMaximized, paneSize, width])
+    return { width, flex: "0 0 auto" };
+  }, [isOpen, isMaximized, paneSize, width]);
 
   return (
     <div
@@ -529,10 +570,10 @@ export function ChatSidebar({
       onMouseDownCapture={onActivate}
       onFocusCapture={onActivate}
       className={cn(
-        'relative flex min-w-0 flex-col overflow-hidden bg-background',
-        isMiddlePlacement ? 'border-r border-border' : 'border-l border-border',
-        !isResizing && !justToggledMaximize && 'transition-[width] duration-200 ease-linear',
-        className
+        "relative flex min-w-0 flex-col overflow-hidden bg-background",
+        isMiddlePlacement ? "border-r border-border" : "border-l border-border",
+        !isResizing && !justToggledMaximize && "transition-[width] duration-200 ease-linear",
+        className,
       )}
       style={paneStyle}
     >
@@ -540,11 +581,11 @@ export function ChatSidebar({
         <div
           onMouseDown={handleMouseDown}
           className={cn(
-            'absolute inset-y-0 z-20 w-4 cursor-col-resize',
-            isMiddlePlacement ? 'right-0 translate-x-1/2' : 'left-0 -translate-x-1/2',
-            'after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] after:transition-colors',
-            'hover:after:bg-sidebar-border',
-            isResizing && 'after:bg-primary'
+            "absolute inset-y-0 z-20 w-4 cursor-col-resize",
+            isMiddlePlacement ? "right-0 translate-x-1/2" : "left-0 -translate-x-1/2",
+            "after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] after:transition-colors",
+            "hover:after:bg-sidebar-border",
+            isResizing && "after:bg-primary",
           )}
         />
       )}
@@ -554,15 +595,16 @@ export function ChatSidebar({
           <header
             className="titlebar-drag-region flex h-10 shrink-0 items-stretch border-b border-border bg-background"
             style={{
-              paddingLeft: isMaximized && sidebarState === 'collapsed' ? collapsedLeftPaddingPx : undefined,
+              paddingLeft:
+                isMaximized && sidebarState === "collapsed" ? collapsedLeftPaddingPx : undefined,
               paddingRight: isMaximized ? 12 : undefined,
-              transition: isMaximized ? 'padding-left 200ms linear' : undefined,
+              transition: isMaximized ? "padding-left 200ms linear" : undefined,
             }}
           >
             <ChatHeader
               activeTitle={(() => {
-                const activeTab = chatTabs.find((tab) => tab.id === activeChatTabId)
-                return activeTab ? getChatTabTitle(activeTab) : 'New chat'
+                const activeTab = chatTabs.find((tab) => tab.id === activeChatTabId);
+                return activeTab ? getChatTabTitle(activeTab) : "New chat";
               })()}
               onNewChatTab={onNewChatTab}
               recentRuns={recentRuns}
@@ -590,7 +632,7 @@ export function ChatSidebar({
                 <DropdownMenuItem
                   disabled={!activeRunId}
                   onSelect={() => {
-                    void handleDownloadChatLog()
+                    void handleDownloadChatLog();
                   }}
                 >
                   <Bug className="size-4" />
@@ -606,14 +648,24 @@ export function ChatSidebar({
                     size="icon"
                     onClick={onOpenFullScreen}
                     className="titlebar-no-drag my-1 mr-2 h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                    aria-label={isMaximized ? 'Dock chat to side pane' : 'Expand chat'}
+                    aria-label={isMaximized ? "Dock chat to side pane" : "Expand chat"}
                   >
-                    {isMaximized
-                      ? (isMiddlePlacement ? <ArrowLeft className="size-5" /> : <ArrowRight className="size-5" />)
-                      : (isMiddlePlacement ? <ArrowRight className="size-5" /> : <ArrowLeft className="size-5" />)}
+                    {isMaximized ? (
+                      isMiddlePlacement ? (
+                        <ArrowLeft className="size-5" />
+                      ) : (
+                        <ArrowRight className="size-5" />
+                      )
+                    ) : isMiddlePlacement ? (
+                      <ArrowRight className="size-5" />
+                    ) : (
+                      <ArrowLeft className="size-5" />
+                    )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">{isMaximized ? 'Dock to side pane' : 'Expand chat'}</TooltipContent>
+                <TooltipContent side="bottom">
+                  {isMaximized ? "Dock to side pane" : "Expand chat"}
+                </TooltipContent>
               </Tooltip>
             )}
           </header>
@@ -622,31 +674,34 @@ export function ChatSidebar({
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="relative min-h-0 flex-1">
                 {chatTabs.map((tab) => {
-                  const isActive = tab.id === activeChatTabId
-                  const tabState = getTabState(tab.id)
-                  const tabHasConversation = tabState.conversation.length > 0 || Boolean(tabState.currentAssistantMessage)
+                  const isActive = tab.id === activeChatTabId;
+                  const tabState = getTabState(tab.id);
+                  const tabHasConversation =
+                    tabState.conversation.length > 0 || Boolean(tabState.currentAssistantMessage);
                   return (
                     <div
                       key={tab.id}
                       className={cn(
-                        'min-h-0 h-full flex-col',
-                        isActive
-                          ? 'flex'
-                          : 'pointer-events-none invisible absolute inset-0 flex'
+                        "min-h-0 h-full flex-col",
+                        isActive ? "flex" : "pointer-events-none invisible absolute inset-0 flex",
                       )}
                       data-chat-tab-panel={tab.id}
                       aria-hidden={!isActive}
+                    >
+                      <Conversation
+                        anchorMessageId={viewportAnchors[tab.id]?.messageId}
+                        anchorRequestKey={viewportAnchors[tab.id]?.requestKey}
+                        className="relative flex-1"
                       >
-                        <Conversation
-                          anchorMessageId={viewportAnchors[tab.id]?.messageId}
-                          anchorRequestKey={viewportAnchors[tab.id]?.requestKey}
-                          className="relative flex-1"
-                      >
-                        <ConversationContent className={cn(
-                          'mx-auto w-full max-w-4xl px-3',
-                          tabHasConversation ? 'pb-28' : 'pb-0',
-                          !tabHasConversation && isMaximized && 'min-h-full items-center justify-center',
-                        )}>
+                        <ConversationContent
+                          className={cn(
+                            "mx-auto w-full max-w-4xl px-3",
+                            tabHasConversation ? "pb-28" : "pb-0",
+                            !tabHasConversation &&
+                              isMaximized &&
+                              "min-h-full items-center justify-center",
+                          )}
+                        >
                           {!tabHasConversation ? (
                             <ChatEmptyState
                               wide={isMaximized}
@@ -659,33 +714,46 @@ export function ChatSidebar({
                             <>
                               {groupConversationItems(
                                 tabState.conversation,
-                                (id) => !!tabState.allPermissionRequests.get(id) || !!tabState.autoPermissionDecisions.get(id)
+                                (id) =>
+                                  !!tabState.allPermissionRequests.get(id) ||
+                                  !!tabState.autoPermissionDecisions.get(id),
                               ).map((item) => {
                                 if (isToolGroup(item)) {
                                   return (
                                     <ToolGroupComponent
                                       key={item.groupId}
                                       group={item}
-                                      isToolOpen={(toolId) => isToolOpenForTab?.(tab.id, toolId) ?? false}
-                                      onToolOpenChange={(toolId, open) => onToolOpenChangeForTab?.(tab.id, toolId, open)}
+                                      isToolOpen={(toolId) =>
+                                        isToolOpenForTab?.(tab.id, toolId) ?? false
+                                      }
+                                      onToolOpenChange={(toolId, open) =>
+                                        onToolOpenChangeForTab?.(tab.id, toolId, open)
+                                      }
                                     />
-                                  )
+                                  );
                                 }
                                 const autoDecision = isToolCall(item)
                                   ? tabState.autoPermissionDecisions.get(item.id)
-                                  : undefined
+                                  : undefined;
                                 const rendered = renderConversationItem(
                                   item,
                                   tab.id,
-                                  autoDecision?.decision === 'allow'
-                                    ? { autoPermissionDetail: { decision: 'allow', reason: autoDecision.reason } }
+                                  autoDecision?.decision === "allow"
+                                    ? {
+                                        autoPermissionDetail: {
+                                          decision: "allow",
+                                          reason: autoDecision.reason,
+                                        },
+                                      }
                                     : undefined,
-                                )
+                                );
                                 if (isToolCall(item)) {
-                                  const deniedAutoDecision = autoDecision?.decision === 'deny' ? autoDecision : null
-                                  const permRequest = tabState.allPermissionRequests.get(item.id)
+                                  const deniedAutoDecision =
+                                    autoDecision?.decision === "deny" ? autoDecision : null;
+                                  const permRequest = tabState.allPermissionRequests.get(item.id);
                                   if (deniedAutoDecision || (permRequest && onPermissionResponse)) {
-                                    const response = tabState.permissionResponses.get(item.id) || null
+                                    const response =
+                                      tabState.permissionResponses.get(item.id) || null;
                                     return (
                                       <React.Fragment key={item.id}>
                                         {deniedAutoDecision && (
@@ -700,35 +768,83 @@ export function ChatSidebar({
                                           <PermissionRequest
                                             toolCall={permRequest.toolCall}
                                             permission={permRequest.permission}
-                                            onApprove={() => onPermissionResponse(permRequest.toolCall.toolCallId, permRequest.subflow, 'approve')}
-                                            onApproveSession={() => onPermissionResponse(permRequest.toolCall.toolCallId, permRequest.subflow, 'approve', 'session')}
-                                            onApproveAlways={() => onPermissionResponse(permRequest.toolCall.toolCallId, permRequest.subflow, 'approve', 'always')}
-                                            onDeny={() => onPermissionResponse(permRequest.toolCall.toolCallId, permRequest.subflow, 'deny')}
+                                            onApprove={() =>
+                                              onPermissionResponse(
+                                                permRequest.toolCall.toolCallId,
+                                                permRequest.subflow,
+                                                "approve",
+                                              )
+                                            }
+                                            onApproveSession={() =>
+                                              onPermissionResponse(
+                                                permRequest.toolCall.toolCallId,
+                                                permRequest.subflow,
+                                                "approve",
+                                                "session",
+                                              )
+                                            }
+                                            onApproveAlways={() =>
+                                              onPermissionResponse(
+                                                permRequest.toolCall.toolCallId,
+                                                permRequest.subflow,
+                                                "approve",
+                                                "always",
+                                              )
+                                            }
+                                            onDeny={() =>
+                                              onPermissionResponse(
+                                                permRequest.toolCall.toolCallId,
+                                                permRequest.subflow,
+                                                "deny",
+                                              )
+                                            }
+                                            onSwitchAgent={
+                                              onSwitchAgent
+                                                ? (newAgent) =>
+                                                    onSwitchAgent(
+                                                      permRequest.toolCall.toolCallId,
+                                                      permRequest.subflow,
+                                                      newAgent,
+                                                    )
+                                                : undefined
+                                            }
                                             isProcessing={isActive && isProcessing}
                                             response={response}
                                           />
                                         )}
                                         {rendered}
                                       </React.Fragment>
-                                    )
+                                    );
                                   }
                                 }
-                                return rendered
+                                return rendered;
                               })}
 
-                              {onAskHumanResponse && Array.from(tabState.pendingAskHumanRequests.values()).map((request) => (
-                                <AskHumanRequest
-                                  key={request.toolCallId}
-                                  query={request.query}
-                                  onResponse={(response) => onAskHumanResponse(request.toolCallId, request.subflow, response)}
-                                  isProcessing={isActive && isProcessing}
-                                />
-                              ))}
+                              {onAskHumanResponse &&
+                                Array.from(tabState.pendingAskHumanRequests.values()).map(
+                                  (request) => (
+                                    <AskHumanRequest
+                                      key={request.toolCallId}
+                                      query={request.query}
+                                      options={request.options}
+                                      onResponse={(response) =>
+                                        onAskHumanResponse(
+                                          request.toolCallId,
+                                          request.subflow,
+                                          response,
+                                        )
+                                      }
+                                      isProcessing={isActive && isProcessing}
+                                    />
+                                  ),
+                                )}
 
                               {tabState.currentAssistantMessage && (
                                 <Message from="assistant">
                                   <MessageContent>
-                                    <MessageResponse components={streamdownComponents}>{tabState.currentAssistantMessage}</MessageResponse>
+                                    <MessageResponse components={streamdownComponents}>
+                                      {tabState.currentAssistantMessage}
+                                    </MessageResponse>
                                   </MessageContent>
                                 </Message>
                               )}
@@ -741,12 +857,12 @@ export function ChatSidebar({
                                 </Message>
                               )}
                             </>
-                            )}
-                          </ConversationContent>
-                          <ConversationScrollButton />
-                        </Conversation>
-                      </div>
-                  )
+                          )}
+                        </ConversationContent>
+                        <ConversationScrollButton />
+                      </Conversation>
+                    </div>
+                  );
                 })}
               </div>
 
@@ -754,12 +870,12 @@ export function ChatSidebar({
                 <div className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-linear-to-t from-background to-transparent" />
                 <div className="mx-auto w-full max-w-4xl px-3">
                   {chatTabs.map((tab) => {
-                    const isActive = tab.id === activeChatTabId
-                    const tabState = getTabState(tab.id)
+                    const isActive = tab.id === activeChatTabId;
+                    const tabState = getTabState(tab.id);
                     return (
                       <div
                         key={tab.id}
-                        className={isActive ? 'block' : 'hidden'}
+                        className={isActive ? "block" : "hidden"}
                         data-chat-input-panel={tab.id}
                         aria-hidden={!isActive}
                       >
@@ -772,17 +888,35 @@ export function ChatSidebar({
                           isProcessing={isActive && isProcessing}
                           isStopping={isActive && isStopping}
                           isActive={isActive}
-                          presetMessage={isActive ? (localPresetMessage ?? presetMessage) : undefined}
-                          onPresetMessageConsumed={isActive ? () => {
-                            setLocalPresetMessage(undefined)
-                            onPresetMessageConsumed?.()
-                          } : undefined}
+                          presetMessage={
+                            isActive ? (localPresetMessage ?? presetMessage) : undefined
+                          }
+                          onPresetMessageConsumed={
+                            isActive
+                              ? () => {
+                                  setLocalPresetMessage(undefined);
+                                  onPresetMessageConsumed?.();
+                                }
+                              : undefined
+                          }
                           runId={tabState.runId}
                           initialDraft={getInitialDraft?.(tab.id)}
-                          onDraftChange={onDraftChangeForTab ? (text) => onDraftChangeForTab(tab.id, text) : undefined}
-                          onSelectedModelChange={onSelectedModelChangeForTab ? (m) => onSelectedModelChangeForTab(tab.id, m) : undefined}
+                          onDraftChange={
+                            onDraftChangeForTab
+                              ? (text) => onDraftChangeForTab(tab.id, text)
+                              : undefined
+                          }
+                          onSelectedModelChange={
+                            onSelectedModelChangeForTab
+                              ? (m) => onSelectedModelChangeForTab(tab.id, m)
+                              : undefined
+                          }
                           workDir={workDirByTab[tab.id] ?? null}
-                          onWorkDirChange={onWorkDirChangeForTab ? (v) => onWorkDirChangeForTab(tab.id, v) : undefined}
+                          onWorkDirChange={
+                            onWorkDirChangeForTab
+                              ? (v) => onWorkDirChangeForTab(tab.id, v)
+                              : undefined
+                          }
                           isRecording={isActive && isRecording}
                           recordingText={isActive ? recordingText : undefined}
                           recordingState={isActive ? recordingState : undefined}
@@ -797,7 +931,7 @@ export function ChatSidebar({
                           onTtsModeChange={isActive ? onTtsModeChange : undefined}
                         />
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </div>
@@ -806,5 +940,5 @@ export function ChatSidebar({
         </>
       )}
     </div>
-  )
+  );
 }
