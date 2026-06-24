@@ -41,6 +41,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/server"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slack"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/transcription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/voice"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
@@ -310,6 +311,11 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		agentsH.SetScheduler(agentworkflow.NewSessionScheduler(temporalClient, cfg))
 		dispatcher := agentchannels.New(client, agentStarter, cfg.AgentDefaultChannelAgent, log)
 		agentChannelsH = agentchannels.NewHandler(client, dispatcher, cfg.SlackSigningSecret, log)
+		// HITL approvals surfaced as Slack buttons resolve back through the shared
+		// starter; the Slack client updates the original message via response_url.
+		agentChannelsH.SetApprovals(agentStarter, slackclient.New(outbound.Policy{
+			Timeout: 15 * time.Second, MaxConcurrent: 64, MaxResponseBytes: 1 << 20,
+		}))
 		var agentBus *agentstream.Bus
 		if cfg.AgentStreamingEnabled && cfg.RedisURL != "" {
 			if b, berr := agentstream.NewBus(ctx, cfg.RedisURL); berr == nil {
@@ -376,6 +382,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	if agentChannelsH != nil {
 		r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
 			Post("/v1/agent-channels/slack", agentChannelsH.SlackInbound)
+		// Slack interactive components (Approve/Deny buttons) for HITL approvals.
+		r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
+			Post("/v1/agent-channels/slack/interactivity", agentChannelsH.SlackInteractivity)
 	}
 
 	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer).

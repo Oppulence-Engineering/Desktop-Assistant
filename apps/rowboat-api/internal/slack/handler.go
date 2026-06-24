@@ -61,7 +61,9 @@ func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, log *zap
 		authorizeURL:   "https://slack.com/oauth/v2/authorize",
 		tokenURL:       "https://slack.com/api/oauth.v2.access",
 		deepLinkScheme: "rowboat",
-		scopes:         "channels:history,channels:read,users:read",
+		// app_mentions:read receives @-mentions (the CloudTag trigger); chat:write
+		// posts the agent's reply back into the thread (the round-trip).
+		scopes: "app_mentions:read,channels:history,channels:read,chat:write,users:read",
 	}
 }
 

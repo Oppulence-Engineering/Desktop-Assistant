@@ -234,6 +234,19 @@ type Config struct {
 	SlackSigningSecret         string  // verifies /v1/webhooks/slack signatures
 	GoogleWebhookToken         string  // shared token for /v1/webhooks/google
 
+	// Web search backs the durable-agent web.search tool (Tavily-shaped API).
+	// Empty WebSearchAPIKey disables the tool (it reports itself unavailable).
+	WebSearchAPIURL string
+	WebSearchAPIKey string
+
+	// Portfolio faculties (RFC 008): Conduit (evidence) and Eigen (foresight),
+	// reached as runtime tools. Empty base URL or key disables that faculty's
+	// tool (it reports itself unavailable).
+	ConduitBaseURL string
+	ConduitAPIKey  string
+	EigenBaseURL   string
+	EigenAPIKey    string
+
 	// Slack workspace connect flow (OAuth v2). The connection maps team_id →
 	// user, which is what /v1/webhooks/slack resolves events against.
 	SlackClientID     string
@@ -495,9 +508,17 @@ func Load() Config {
 		SlackSigningSecret:         getenv("SLACK_SIGNING_SECRET", ""),
 		GoogleWebhookToken:         getenv("GOOGLE_WEBHOOK_TOKEN", ""),
 
+		WebSearchAPIURL: getenv("WEB_SEARCH_API_URL", "https://api.tavily.com/search"),
+		WebSearchAPIKey: getenv("WEB_SEARCH_API_KEY", ""),
+
+		ConduitBaseURL: getenv("CONDUIT_BASE_URL", ""),
+		ConduitAPIKey:  getenv("CONDUIT_API_KEY", ""),
+		EigenBaseURL:   getenv("EIGEN_BASE_URL", ""),
+		EigenAPIKey:    getenv("EIGEN_API_KEY", ""),
+
 		SlackClientID:     getenv("SLACK_CLIENT_ID", ""),
 		SlackClientSecret: getenv("SLACK_CLIENT_SECRET", ""),
-		SlackOAuthScopes:  getenv("SLACK_OAUTH_SCOPES", "channels:history,channels:read,users:read"),
+		SlackOAuthScopes:  getenv("SLACK_OAUTH_SCOPES", "app_mentions:read,channels:history,channels:read,chat:write,users:read"),
 		SlackRedirectURI:  getenv("SLACK_REDIRECT_URI", ""),
 		SlackAuthorizeURL: getenv("SLACK_AUTHORIZE_URL", ""),
 		SlackTokenURL:     getenv("SLACK_TOKEN_URL", ""),
