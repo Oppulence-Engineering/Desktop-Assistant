@@ -78,10 +78,14 @@ func (c *Client) PostMessage(ctx context.Context, botToken, channel, threadTS, t
 // Each button carries the (approvalId, sessionId, userId, decision) the
 // interactivity handler needs to resolve the gate; Slack echoes the value back
 // signed, so the handler trusts it after verifying the request signature.
-func (c *Client) PostApprovalRequest(ctx context.Context, botToken, channel, threadTS, headerText, approvalID, sessionID, userID string) error {
+// initiatorSlackUser is the Slack user id of the requester; when non-empty the
+// interactivity handler requires the clicker to match it (so only the person who
+// made the request can approve it).
+func (c *Client) PostApprovalRequest(ctx context.Context, botToken, channel, threadTS, headerText, approvalID, sessionID, userID, initiatorSlackUser string) error {
 	mkValue := func(decision string) string {
 		b, _ := json.Marshal(map[string]string{
-			"approvalId": approvalID, "sessionId": sessionID, "userId": userID, "decision": decision,
+			"approvalId": approvalID, "sessionId": sessionID, "userId": userID,
+			"decision": decision, "slackUser": initiatorSlackUser,
 		})
 		return string(b)
 	}

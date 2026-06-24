@@ -424,21 +424,32 @@ func (e *exec) awaitApproval(ctx workflow.Context, turnSeq, callIndex int, tc ba
 	_ = e.emit(ctx, &turnSeq, EventApprovalRequested, map[string]any{
 		"turn": turnSeq, "approvalId": approvalID, "tool": tc.Name, "trustTier": meta.TrustTier, "args": redactedMap(tc.Arguments),
 	})
-	// Surface the approval as Approve/Deny buttons in the originating Slack
-	// thread (RFC 027 HITL in Slack). Guarded on the channel so non-slack
-	// sessions add no activity to history (replay-safe); the result is ignored so
-	// a delivery outage never blocks the gate (it still resolves via the HTTP
-	// approval path). Money-moving still needs the signed token, which a naked
-	// button cannot supply — so buttons grant act-tier only.
-	if e.state.Start.Channel == "slack" {
-		_ = workflow.ExecuteActivity(e.ioCtx, ActivityDeliverApprovalRequest, DeliverApprovalRequestInput{
-			UserID: st.Start.UserID, SessionID: st.Start.SessionID, ApprovalID: approvalID,
-			Tool: tc.Name, TrustTier: meta.TrustTier, ArgsPreview: backgroundtaskruntime.Truncate(redacted, 300),
-		}).Get(ctx, nil)
-	}
 
+	// Register the gate BEFORE surfacing any approve UI, so a click/Update that
+	// races the delivery resolves the gate instead of being rejected as "unknown
+	// approval" (and so the HTTP approval path works during a Slack outage).
 	gate := &approvalGate{}
 	e.approvals[approvalID] = gate
+
+	// Surface the approval as Approve/Deny buttons in the originating Slack thread
+	// (RFC 027 HITL in Slack). Guarded on the channel; GetVersion keeps sessions
+	// that were running before this change replay-safe (old history has no such
+	// command → version DefaultVersion → skipped). Act-tier only: a naked button
+	// cannot carry the signed money-moving token, so money-moving stays on the
+	// app/token path (otherwise the button would falsely report "approved"). The
+	// result is ignored on a short, bounded budget so a Slack outage never blocks
+	// the gate (it still resolves via the HTTP approval path).
+	if e.state.Start.Channel == "slack" && meta.TrustTier == agentregistry.TierAct {
+		if workflow.GetVersion(ctx, "slack-approval-buttons", workflow.DefaultVersion, 1) >= 1 {
+			dctx := workflow.WithActivityOptions(ctx, deliveryActivityOptions())
+			_ = workflow.ExecuteActivity(dctx, ActivityDeliverApprovalRequest, DeliverApprovalRequestInput{
+				UserID: st.Start.UserID, SessionID: st.Start.SessionID, ApprovalID: approvalID,
+				Tool: tc.Name, TrustTier: meta.TrustTier, ArgsPreview: backgroundtaskruntime.Truncate(redacted, 300),
+				InitiatorRef: st.Start.InitiatorRef,
+			}).Get(ctx, nil)
+		}
+	}
+
 	// Zero-cost indefinite pause: the worker holds no slot while blocked.
 	_ = workflow.Await(ctx, func() bool { return gate.resolved })
 
@@ -578,6 +589,8 @@ func (e *exec) finalizeLimit(ctx workflow.Context, turnSeq int, limit string) st
 	_ = e.emit(ctx, &turnSeq, EventLimitExceeded, map[string]any{"turn": turnSeq, "limit": limit})
 	summary := fmt.Sprintf("The turn stopped after reaching the %s limit.", limit)
 	e.completeTurn(ctx, turnSeq, turnResult{Summary: summary, FinishReason: "limit_exceeded"})
+	// Surface the limit outcome to the channel (don't leave the thread silent).
+	e.deliverChannelReply(ctx, summary)
 	return summary
 }
 
@@ -591,19 +604,25 @@ func (e *exec) completeTurn(ctx workflow.Context, turnSeq int, res turnResult) {
 	_ = e.emit(ctx, &turnSeq, EventTurnCompleted, map[string]any{"turn": turnSeq, "summary": res.Summary, "finishReason": res.FinishReason})
 }
 
-// deliverChannelReply posts the turn's final assistant message back into the
-// session's originating channel thread (RFC 027 channels — the CloudTag
-// round-trip). It is guarded on the channel so non-channel sessions
-// (http/subagent/schedule) add no activity to history, preserving replay for
-// every existing session; the channel value lives in deterministic workflow
-// state. The activity result is ignored so a delivery outage never fails the
-// turn (the activity itself retries transient errors).
+// deliverChannelReply posts a turn's final message back into the session's
+// originating channel thread (RFC 027 channels — the CloudTag round-trip). It is
+// guarded on the channel so non-channel sessions (http/subagent/schedule) add no
+// activity to history; GetVersion keeps sessions that were already running before
+// this change replay-safe (old history has no such command → DefaultVersion →
+// skipped). It runs on a short, bounded activity budget so a Slack outage can't
+// stall turn/session finalization for minutes, and the result is ignored so a
+// delivery failure never fails the turn. Called from exactly one terminal path
+// per turn (stop / fail / limit), so the GetVersion call count is deterministic.
 func (e *exec) deliverChannelReply(ctx workflow.Context, content string) {
 	if e.state.Start.Channel != "slack" || strings.TrimSpace(content) == "" {
 		return
 	}
+	if workflow.GetVersion(ctx, "slack-channel-reply", workflow.DefaultVersion, 1) < 1 {
+		return
+	}
 	st := e.state
-	_ = workflow.ExecuteActivity(e.ioCtx, ActivityDeliverChannelReply, DeliverChannelReplyInput{
+	dctx := workflow.WithActivityOptions(ctx, deliveryActivityOptions())
+	_ = workflow.ExecuteActivity(dctx, ActivityDeliverChannelReply, DeliverChannelReplyInput{
 		UserID: st.Start.UserID, SessionID: st.Start.SessionID, Text: content,
 	}).Get(ctx, nil)
 }
@@ -614,6 +633,8 @@ func (e *exec) failTurn(ctx workflow.Context, turnSeq int, errMsg string) {
 		UserID: st.Start.UserID, SessionID: st.Start.SessionID, Seq: turnSeq, Status: "failed", Finish: true,
 	}).Get(ctx, nil)
 	_ = e.emit(ctx, &turnSeq, EventTurnFailed, map[string]any{"turn": turnSeq, "error": backgroundtaskruntime.Truncate(errMsg, 300)})
+	// Tell the channel the turn failed rather than leaving the thread silent.
+	e.deliverChannelReply(ctx, "Sorry — I ran into an error and couldn't finish that request.")
 }
 
 func (e *exec) auditToolCall(ctx workflow.Context, turnSeq, callIndex int, tool, tier, status string, resultBytes int, errorCode string) {
@@ -703,6 +724,19 @@ func projectionActivityOptions() workflow.ActivityOptions {
 		StartToCloseTimeout: projectionActivityTimeout,
 		RetryPolicy: &temporal.RetryPolicy{
 			InitialInterval: time.Second, BackoffCoefficient: 2, MaximumInterval: 30 * time.Second, MaximumAttempts: 5,
+		},
+	}
+}
+
+// deliveryActivityOptions bounds best-effort channel delivery (Slack reply /
+// approval buttons): a short timeout and few attempts so a Slack outage stalls
+// turn finalization for seconds, not the multi-minute io budget. Delivery is
+// best-effort — the workflow ignores the result.
+func deliveryActivityOptions() workflow.ActivityOptions {
+	return workflow.ActivityOptions{
+		StartToCloseTimeout: 30 * time.Second,
+		RetryPolicy: &temporal.RetryPolicy{
+			InitialInterval: time.Second, BackoffCoefficient: 2, MaximumInterval: 5 * time.Second, MaximumAttempts: 3,
 		},
 	}
 }

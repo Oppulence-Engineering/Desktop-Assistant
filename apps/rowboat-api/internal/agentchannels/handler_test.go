@@ -72,8 +72,11 @@ func TestStripSlackMentions(t *testing.T) {
 		"<@U0BOT> summarize this thread": "summarize this thread",
 		"<@U0BOT|bot> hey there":         "hey there",
 		"no mention here":                "no mention here",
-		"<@U1> ping <@U2> pong":          "ping pong",
-		"<@U0BOT>":                       "",
+		// Only the leading (bot trigger) mention is stripped; in-body referents
+		// like @sarah are preserved so the agent still sees who the request names.
+		"<@U0BOT> remind <@U2SARAH> about the report": "remind <@U2SARAH> about the report",
+		"<@U1> <@U2> hello":                           "hello",
+		"<@U0BOT>":                                    "",
 	}
 	for in, want := range cases {
 		if got := stripSlackMentions(in); got != want {
@@ -103,14 +106,34 @@ func TestSlackInboundAppMentionDispatches(t *testing.T) {
 	}
 }
 
-func TestSlackInboundDropsRetry(t *testing.T) {
+func TestSlackInboundDedupesByEventID(t *testing.T) {
 	_, _, ctrl, srv := newInboundHarness(t)
 	body := []byte(`{"type":"event_callback","team_id":"T1","event_id":"Ev1","event":{"type":"app_mention","text":"<@U0BOT> hi","channel":"C1","ts":"1700000000.000100"}}`)
+	// First delivery dispatches.
+	if got := postSlackInbound(t, srv.URL+"/v1/agent-channels/slack", body, nil); got != http.StatusOK {
+		t.Fatalf("first status = %d, want 200", got)
+	}
+	// A retry of the SAME event_id is deduped (no second turn), even though it
+	// carries the retry header.
 	if got := postSlackInbound(t, srv.URL+"/v1/agent-channels/slack", body, map[string]string{"X-Slack-Retry-Num": "1"}); got != http.StatusOK {
+		t.Fatalf("retry status = %d, want 200", got)
+	}
+	if ctrl.starts != 1 {
+		t.Fatalf("expected exactly 1 session start across duplicate deliveries, got %d", ctrl.starts)
+	}
+}
+
+func TestSlackInboundProcessesRetryWhenFirstNeverDispatched(t *testing.T) {
+	_, _, ctrl, srv := newInboundHarness(t)
+	// Distinct event_id never seen before (simulating a first attempt that failed
+	// before dispatch, so nothing was claimed) — the retry must be processed, not
+	// dropped on the basis of the retry header alone.
+	body := []byte(`{"type":"event_callback","team_id":"T1","event_id":"Ev-late","event":{"type":"app_mention","text":"<@U0BOT> hi","channel":"C1","ts":"1700000000.000900"}}`)
+	if got := postSlackInbound(t, srv.URL+"/v1/agent-channels/slack", body, map[string]string{"X-Slack-Retry-Num": "2"}); got != http.StatusOK {
 		t.Fatalf("status = %d, want 200", got)
 	}
-	if ctrl.starts != 0 {
-		t.Fatalf("retry must be dropped, but %d session(s) started", ctrl.starts)
+	if ctrl.starts != 1 {
+		t.Fatalf("retry of an undispatched event must be processed, got %d starts", ctrl.starts)
 	}
 }
 
@@ -200,6 +223,64 @@ func TestSlackInteractivityResolvesApproval(t *testing.T) {
 	}
 	if got.ResolvedBy != "slack:U7" {
 		t.Fatalf("resolvedBy = %q", got.ResolvedBy)
+	}
+}
+
+// postInteractivity signs and posts a block_actions payload whose button value
+// names the requester (slackUser) and is clicked by clicker. Returns the status
+// and the approver to assert against.
+func postInteractivity(t *testing.T, slackUser, clicker string) (int, *fakeApprover) {
+	t.Helper()
+	c, _, _, _ := setup(t)
+	d := New(c, nil, "assistant", zap.NewNop())
+	h := NewHandler(c, d, testSlackSecret, zap.NewNop())
+	approver := &fakeApprover{}
+	h.SetApprovals(approver, nil)
+	r := chi.NewRouter()
+	r.Post("/v1/agent-channels/slack/interactivity", h.SlackInteractivity)
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	value, _ := json.Marshal(map[string]string{
+		"approvalId": "sess-1/turn/0/approval/0", "sessionId": "sess-1",
+		"userId": "00000000-0000-0000-0000-000000000009", "decision": "granted",
+		"slackUser": slackUser,
+	})
+	payload, _ := json.Marshal(map[string]any{
+		"type":    "block_actions",
+		"user":    map[string]any{"id": clicker},
+		"actions": []any{map[string]any{"action_id": "agent_approve", "value": string(value)}},
+	})
+	body := []byte("payload=" + url.QueryEscape(string(payload)))
+	ts := strconv.FormatInt(time.Now().Unix(), 10)
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/agent-channels/slack/interactivity", bytes.NewReader(body))
+	req.Header.Set("X-Slack-Request-Timestamp", ts)
+	req.Header.Set("X-Slack-Signature", signSlack(testSlackSecret, ts, body))
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("post: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	return resp.StatusCode, approver
+}
+
+func TestSlackInteractivityRejectsNonRequester(t *testing.T) {
+	status, approver := postInteractivity(t, "U_REQUESTER", "U_SOMEONE_ELSE")
+	if status != http.StatusOK {
+		t.Fatalf("status = %d, want 200", status)
+	}
+	if len(approver.calls) != 0 {
+		t.Fatalf("a non-requester click must not resolve the approval, got %d calls", len(approver.calls))
+	}
+}
+
+func TestSlackInteractivityAllowsRequester(t *testing.T) {
+	status, approver := postInteractivity(t, "U_REQUESTER", "U_REQUESTER")
+	if status != http.StatusOK {
+		t.Fatalf("status = %d, want 200", status)
+	}
+	if len(approver.calls) != 1 {
+		t.Fatalf("the requester's click must resolve the approval, got %d calls", len(approver.calls))
 	}
 }
 

@@ -30,12 +30,13 @@ type DeliverChannelReplyInput struct {
 // DeliverApprovalRequestInput carries one pending HITL approval to surface as
 // Approve/Deny buttons in the session's originating channel.
 type DeliverApprovalRequestInput struct {
-	UserID      string `json:"userId"`
-	SessionID   string `json:"sessionId"`
-	ApprovalID  string `json:"approvalId"`
-	Tool        string `json:"tool"`
-	TrustTier   string `json:"trustTier"`
-	ArgsPreview string `json:"argsPreview"`
+	UserID       string `json:"userId"`
+	SessionID    string `json:"sessionId"`
+	ApprovalID   string `json:"approvalId"`
+	Tool         string `json:"tool"`
+	TrustTier    string `json:"trustTier"`
+	ArgsPreview  string `json:"argsPreview"`
+	InitiatorRef string `json:"initiatorRef"` // Slack user id allowed to approve
 }
 
 // DeliverChannelReply posts the turn's final assistant message back into the
@@ -76,7 +77,7 @@ func (a *Activities) DeliverApprovalRequest(ctx context.Context, in DeliverAppro
 	if p := strings.TrimSpace(in.ArgsPreview); p != "" {
 		header += "\n" + p
 	}
-	if err := a.Slack.PostApprovalRequest(ctx, botToken, channel, thread, header, in.ApprovalID, in.SessionID, in.UserID); err != nil {
+	if err := a.Slack.PostApprovalRequest(ctx, botToken, channel, thread, header, in.ApprovalID, in.SessionID, in.UserID, in.InitiatorRef); err != nil {
 		return fmt.Errorf("post slack approval request: %w", err)
 	}
 	return nil

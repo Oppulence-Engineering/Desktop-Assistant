@@ -75,6 +75,10 @@ type SessionStart struct {
 	// session mid-flight.
 	AgentRevision int    `json:"agentRevision,omitempty"`
 	Channel       string `json:"channel"`
+	// InitiatorRef is the platform user id of the requester who started the
+	// session (e.g. the Slack user who @-mentioned the bot). Used to authorize
+	// channel-surfaced HITL approvals: only the initiator may approve.
+	InitiatorRef string `json:"initiatorRef,omitempty"`
 
 	Instructions string     `json:"instructions"`
 	Model        string     `json:"model"`

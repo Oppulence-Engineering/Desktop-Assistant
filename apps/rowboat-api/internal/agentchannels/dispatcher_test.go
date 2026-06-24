@@ -120,3 +120,15 @@ func TestDispatchResolvesBuiltinChannelAgent(t *testing.T) {
 		t.Fatalf("slack should resolve to builtin concierge-slack, got %q", got)
 	}
 }
+
+// TestDispatchOperatorDefaultWinsOverBuiltin confirms an explicitly configured
+// AGENT_DEFAULT_CHANNEL_AGENT is honored over a built-in that advertises the
+// channel (regression guard for the silent-override bug).
+func TestDispatchOperatorDefaultWinsOverBuiltin(t *testing.T) {
+	client, u, starter, _ := setup(t)
+	ctx := auth.WithUser(context.Background(), u)
+	d := New(client, starter, "my-ops-agent", zap.NewNop()) // operator override
+	if got := d.resolveAgentForChannel(ctx, u, "slack"); got != "my-ops-agent" {
+		t.Fatalf("operator default must win over builtin, got %q", got)
+	}
+}

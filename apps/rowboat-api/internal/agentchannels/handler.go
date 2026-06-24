@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -32,6 +33,10 @@ type Approver interface {
 
 const maxChannelBody = 1 << 20
 
+// slackEventTTL bounds how long a processed Slack event_id is remembered for
+// dedupe. Slack retries within ~minutes, so a few minutes is ample.
+const slackEventTTL = 10 * time.Minute
+
 // Handler serves the channel-inbound endpoints.
 type Handler struct {
 	client      *ent.Client
@@ -40,6 +45,14 @@ type Handler struct {
 	approver    Approver            // nil → interactivity returns 503
 	slack       *slackclient.Client // nil → no response_url message update
 	log         *zap.Logger
+
+	// seenEvents dedupes inbound Slack deliveries by event_id (in-process, TTL).
+	// It stops a retried delivery from starting a second turn without dropping a
+	// retry that is the first successful delivery. NOTE: per-process — in a
+	// multi-replica deployment a retry routed to another replica can still
+	// duplicate; a shared store (Redis/DB) would close that gap.
+	seenMu     sync.Mutex
+	seenEvents map[string]time.Time
 }
 
 // NewHandler builds the channel HTTP handler.
@@ -47,7 +60,40 @@ func NewHandler(client *ent.Client, dispatcher *Dispatcher, slackSigningSecret s
 	if log == nil {
 		log = zap.NewNop()
 	}
-	return &Handler{client: client, dispatcher: dispatcher, slackSecret: slackSigningSecret, log: log}
+	return &Handler{
+		client:      client,
+		dispatcher:  dispatcher,
+		slackSecret: slackSigningSecret,
+		log:         log,
+		seenEvents:  make(map[string]time.Time),
+	}
+}
+
+// claimSlackEvent records id as in-progress and reports whether the claim is new
+// (true) or a duplicate of a still-remembered delivery (false). Expired entries
+// are swept opportunistically so the map stays bounded.
+func (h *Handler) claimSlackEvent(id string) bool {
+	now := time.Now()
+	h.seenMu.Lock()
+	defer h.seenMu.Unlock()
+	for k, t := range h.seenEvents {
+		if now.Sub(t) > slackEventTTL {
+			delete(h.seenEvents, k)
+		}
+	}
+	if _, dup := h.seenEvents[id]; dup {
+		return false
+	}
+	h.seenEvents[id] = now
+	return true
+}
+
+// releaseSlackEvent drops a claim so a Slack retry can reprocess the event after
+// a dispatch failure.
+func (h *Handler) releaseSlackEvent(id string) {
+	h.seenMu.Lock()
+	delete(h.seenEvents, id)
+	h.seenMu.Unlock()
 }
 
 // SetApprovals wires the HITL approval round-trip: approver resolves a Slack
@@ -97,13 +143,16 @@ func (h *Handler) InboundInternal(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusAccepted, map[string]any{"sessionId": sess.Row.SessionID, "created": created})
 }
 
-// slackMentionRE matches Slack user-mention tokens: <@U123> or <@U123|display>.
-var slackMentionRE = regexp.MustCompile(`<@[^>]+>`)
+// leadingSlackMentionsRE matches the run of @-mention tokens (and surrounding
+// whitespace) at the START of the text — where the bot's trigger mention sits.
+// Mentions later in the message (referents like "@sarah") are preserved so the
+// agent still sees who the request is about.
+var leadingSlackMentionsRE = regexp.MustCompile(`^(?:\s*<@[^>]+>)+\s*`)
 
-// stripSlackMentions removes mention tokens (the bot's @-mention prefix and any
-// others) and collapses surrounding whitespace, leaving the user's instruction.
+// stripSlackMentions removes the leading bot @-mention(s) and trims, leaving the
+// user's instruction (including any in-body mentions) intact.
 func stripSlackMentions(text string) string {
-	return strings.Join(strings.Fields(slackMentionRE.ReplaceAllString(text, " ")), " ")
+	return strings.TrimSpace(leadingSlackMentionsRE.ReplaceAllString(text, ""))
 }
 
 // SlackInbound handles POST /v1/agent-channels/slack (Slack Events API). It
@@ -140,6 +189,7 @@ func (h *Handler) SlackInbound(w http.ResponseWriter, r *http.Request) {
 			ThreadTS string `json:"thread_ts"`
 			TS       string `json:"ts"`
 			BotID    string `json:"bot_id"`
+			User     string `json:"user"`
 		} `json:"event"`
 	}
 	if err := json.Unmarshal(body, &env); err != nil {
@@ -148,15 +198,6 @@ func (h *Handler) SlackInbound(w http.ResponseWriter, r *http.Request) {
 	}
 	if env.Type == "url_verification" {
 		httpx.WriteJSON(w, http.StatusOK, map[string]string{"challenge": env.Challenge})
-		return
-	}
-	// Slack retries a delivery when it doesn't see our 200 within 3s. We ack fast
-	// and run the turn asynchronously, so a retried delivery duplicates work
-	// already dispatched — drop it to avoid a second turn. Stateless dedupe: no
-	// store needed, and it is multi-replica safe (the retry header travels with
-	// the request, not our state).
-	if r.Header.Get("X-Slack-Retry-Num") != "" {
-		w.WriteHeader(http.StatusOK)
 		return
 	}
 	// Trigger on @-mentions only (the "tag us" model). Ignore everything else and
@@ -176,6 +217,14 @@ func (h *Handler) SlackInbound(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+	// Dedupe by Slack event_id: a retried delivery (our 200 was slow) is dropped
+	// so it doesn't start a second turn, but a first attempt that failed before
+	// dispatching (server restart, panic) left no claim, so its retry — the only
+	// real delivery — is processed rather than blindly discarded.
+	if env.EventID != "" && !h.claimSlackEvent(env.EventID) {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	// A top-level mention starts a thread keyed by its own ts; replies (and later
 	// mentions in that thread) carry thread_ts, threading to the one session.
 	thread := env.Event.ThreadTS
@@ -184,9 +233,14 @@ func (h *Handler) SlackInbound(w http.ResponseWriter, r *http.Request) {
 	}
 	channelKey := fmt.Sprintf("slack:%s:%s:%s", env.TeamID, env.Event.Channel, thread)
 	if _, _, derr := h.dispatcher.Dispatch(auth.WithUser(r.Context(), owner), ChannelMessage{
-		Channel: "slack", ChannelKey: channelKey, User: owner, Text: text,
+		Channel: "slack", ChannelKey: channelKey, User: owner, Text: text, InitiatorID: env.Event.User,
 	}); derr != nil {
+		// Release the claim and return non-2xx so Slack retries — the retry will
+		// re-dispatch rather than be lost.
+		h.releaseSlackEvent(env.EventID)
 		h.log.Warn("slack channel dispatch failed", zap.Error(derr), zap.String("eventId", env.EventID))
+		httpx.Error(w, http.StatusBadGateway, "could not dispatch channel message", "dispatch_failed")
+		return
 	}
 	// Respond fast (Slack's 3s deadline); session work is async.
 	w.WriteHeader(http.StatusOK)
@@ -259,10 +313,31 @@ func (h *Handler) SlackInteractivity(w http.ResponseWriter, r *http.Request) {
 		SessionID  string `json:"sessionId"`
 		UserID     string `json:"userId"`
 		Decision   string `json:"decision"`
+		SlackUser  string `json:"slackUser"` // the requester allowed to approve
 	}
 	if err := json.Unmarshal([]byte(act.Value), &v); err != nil ||
 		v.ApprovalID == "" || v.SessionID == "" || v.UserID == "" ||
 		(v.Decision != "granted" && v.Decision != "denied") {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Authorization: only the requester who started the session may approve its
+	// actions — not just any member of the channel who can see the buttons. The
+	// allowed Slack user id was set by the server when posting and is echoed back
+	// inside the signature-verified payload, so it is trustworthy. (When unknown —
+	// older/in-flight approvals posted before this field existed — fall back to
+	// allowing the click, since the buttons are act-tier only.)
+	if v.SlackUser != "" && p.User.ID != v.SlackUser {
+		h.log.Warn("slack approval click by non-requester rejected",
+			zap.String("approvalId", v.ApprovalID), zap.String("clicker", p.User.ID))
+		if h.slack != nil && p.ResponseURL != "" {
+			_ = h.slack.RespondURL(auth.WithInternal(r.Context()), p.ResponseURL, map[string]any{
+				"replace_original": false,
+				"response_type":    "ephemeral",
+				"text":             "Only the person who made this request can approve it.",
+			})
+		}
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -304,8 +379,13 @@ func (h *Handler) resolveSlackUser(r *http.Request, teamID string) (*ent.User, e
 	if strings.TrimSpace(teamID) == "" {
 		return nil, errors.New("missing team id")
 	}
+	// (provider, external_account_id) is non-unique: two users can connect the
+	// same workspace. Order by created_at so resolution is deterministic — the
+	// earliest connection (the original installer) consistently owns the
+	// workspace's inbound events, rather than an arbitrary row.
 	conn, err := h.client.OAuthConnection.Query().
 		Where(oauthconnection.ProviderEQ("slack"), oauthconnection.ExternalAccountIDEQ(strings.TrimSpace(teamID))).
+		Order(oauthconnection.ByCreatedAt()).
 		WithUser().
 		First(auth.WithInternal(r.Context()))
 	if err != nil {

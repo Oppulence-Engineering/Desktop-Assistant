@@ -148,12 +148,12 @@ func TestPostApprovalRequest(t *testing.T) {
 
 	c := New(outbound.Policy{})
 	c.SetBaseURL(srv.URL)
-	if err := c.PostApprovalRequest(context.Background(), "xoxb-1", "C1", "1.1", "Approval needed", "appr-1", "sess-1", "user-1"); err != nil {
+	if err := c.PostApprovalRequest(context.Background(), "xoxb-1", "C1", "1.1", "Approval needed", "appr-1", "sess-1", "user-1", "U7REQ"); err != nil {
 		t.Fatalf("PostApprovalRequest: %v", err)
 	}
 	// The button value is an escaped JSON string inside the payload; assert on
 	// fragments that survive escaping.
-	for _, want := range []string{ActionApprove, ActionDeny, "appr-1", "sess-1", "user-1", "granted", "denied", `"thread_ts":"1.1"`} {
+	for _, want := range []string{ActionApprove, ActionDeny, "appr-1", "sess-1", "user-1", "granted", "denied", "U7REQ", `"thread_ts":"1.1"`} {
 		if !strings.Contains(gotBody, want) {
 			t.Fatalf("approval body missing %q\nbody: %s", want, gotBody)
 		}
