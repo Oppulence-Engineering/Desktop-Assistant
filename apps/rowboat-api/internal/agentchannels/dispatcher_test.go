@@ -16,9 +16,15 @@ import (
 	"go.uber.org/zap"
 )
 
-type fakeController struct{ submits int }
+type fakeController struct {
+	submits   int
+	starts    int
+	lastStart agentworkflow.SessionState
+}
 
 func (f *fakeController) StartSession(_ context.Context, st agentworkflow.SessionState) (agentworkflow.StartResult, error) {
+	f.starts++
+	f.lastStart = st
 	return agentworkflow.StartResult{WorkflowID: agentworkflow.WorkflowID(st.Start.UserID, st.Start.SessionID), RunID: "run"}, nil
 }
 func (f *fakeController) SubmitTurn(context.Context, string, agentworkflow.TurnInput) (agentworkflow.TurnAck, error) {
@@ -99,5 +105,18 @@ func TestDispatchResolvesAgentBinding(t *testing.T) {
 	}
 	if got := d.resolveAgentForChannel(ctx, u, "discord"); got != "assistant" {
 		t.Fatalf("unbound channel should fall back to default, got %q", got)
+	}
+}
+
+// TestDispatchResolvesBuiltinChannelAgent confirms that, absent a tenant agent
+// bound to the channel, a built-in agent advertising the channel (RFC 028
+// channels:) is selected — so Slack works out of the box (concierge-slack)
+// without the operator changing AGENT_DEFAULT_CHANNEL_AGENT.
+func TestDispatchResolvesBuiltinChannelAgent(t *testing.T) {
+	client, u, starter, _ := setup(t)
+	ctx := auth.WithUser(context.Background(), u)
+	d := New(client, starter, "assistant", zap.NewNop())
+	if got := d.resolveAgentForChannel(ctx, u, "slack"); got != "concierge-slack" {
+		t.Fatalf("slack should resolve to builtin concierge-slack, got %q", got)
 	}
 }

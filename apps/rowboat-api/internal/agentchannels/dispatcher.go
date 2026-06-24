@@ -59,21 +59,31 @@ func (d *Dispatcher) Dispatch(ctx context.Context, msg ChannelMessage) (*agentse
 	})
 }
 
-// resolveAgentForChannel picks the tenant agent bound to this channel via its
-// channel_bindings (a JSON array of channel names), falling back to the default.
+// resolveAgentForChannel picks the agent that should handle this channel:
+// first a tenant agent bound to the channel via its channel_bindings (the user
+// can override), then a built-in agent that advertises the channel (RFC 028
+// channels:), and finally the configured default. Tenant precedence lets a
+// workspace point Slack at its own agent without losing the built-in default.
 func (d *Dispatcher) resolveAgentForChannel(ctx context.Context, u *ent.User, channel string) string {
-	if u == nil {
-		return d.defaultAgent
+	if u != nil {
+		defs, err := d.client.AgentDefinition.Query().
+			Order(agentdefinition.BySlug()).
+			All(auth.WithUser(ctx, u))
+		if err == nil {
+			for _, def := range defs {
+				if channelBindingsInclude(def.ChannelBindings, channel) {
+					return def.Slug
+				}
+			}
+		}
 	}
-	defs, err := d.client.AgentDefinition.Query().
-		Order(agentdefinition.BySlug()).
-		All(auth.WithUser(ctx, u))
-	if err != nil {
-		return d.defaultAgent
-	}
-	for _, def := range defs {
-		if channelBindingsInclude(def.ChannelBindings, channel) {
-			return def.Slug
+	if d.starter != nil && d.starter.Loader != nil {
+		for _, spec := range d.starter.Loader.Builtins() {
+			for _, c := range spec.Channels {
+				if strings.EqualFold(c, channel) {
+					return spec.Slug
+				}
+			}
 		}
 	}
 	return d.defaultAgent

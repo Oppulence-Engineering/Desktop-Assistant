@@ -55,6 +55,8 @@ func Register(w worker.Worker, a *Activities) {
 	w.RegisterActivityWithOptions(a.ValidateApproval, activityOpts(ActivityValidateApproval))
 	w.RegisterActivityWithOptions(a.EnsureSession, activityOpts(ActivityEnsureSession))
 	w.RegisterActivityWithOptions(a.ResolveSubagent, activityOpts(ActivityResolveSubagent))
+	w.RegisterActivityWithOptions(a.DeliverChannelReply, activityOpts(ActivityDeliverChannelReply))
+	w.RegisterActivityWithOptions(a.DeliverApprovalRequest, activityOpts(ActivityDeliverApprovalRequest))
 }
 
 func activityOpts(name string) activity.RegisterOptions {
@@ -322,6 +324,7 @@ func (e *exec) runTurn(ctx workflow.Context, turn TurnInput) turnResult {
 			res.Summary = firstLine(llmRes.Message.Content, 200)
 			_ = e.emit(ctx, &turnSeq, EventMessage, map[string]any{"turn": turnSeq, "content": llmRes.Message.Content})
 			e.completeTurn(ctx, turnSeq, res)
+			e.deliverChannelReply(ctx, llmRes.Message.Content)
 			return res
 		}
 
@@ -421,6 +424,18 @@ func (e *exec) awaitApproval(ctx workflow.Context, turnSeq, callIndex int, tc ba
 	_ = e.emit(ctx, &turnSeq, EventApprovalRequested, map[string]any{
 		"turn": turnSeq, "approvalId": approvalID, "tool": tc.Name, "trustTier": meta.TrustTier, "args": redactedMap(tc.Arguments),
 	})
+	// Surface the approval as Approve/Deny buttons in the originating Slack
+	// thread (RFC 027 HITL in Slack). Guarded on the channel so non-slack
+	// sessions add no activity to history (replay-safe); the result is ignored so
+	// a delivery outage never blocks the gate (it still resolves via the HTTP
+	// approval path). Money-moving still needs the signed token, which a naked
+	// button cannot supply — so buttons grant act-tier only.
+	if e.state.Start.Channel == "slack" {
+		_ = workflow.ExecuteActivity(e.ioCtx, ActivityDeliverApprovalRequest, DeliverApprovalRequestInput{
+			UserID: st.Start.UserID, SessionID: st.Start.SessionID, ApprovalID: approvalID,
+			Tool: tc.Name, TrustTier: meta.TrustTier, ArgsPreview: backgroundtaskruntime.Truncate(redacted, 300),
+		}).Get(ctx, nil)
+	}
 
 	gate := &approvalGate{}
 	e.approvals[approvalID] = gate
@@ -574,6 +589,23 @@ func (e *exec) completeTurn(ctx workflow.Context, turnSeq int, res turnResult) {
 		LLMCalls: res.LLMCalls, ToolCalls: res.ToolCalls, CostUnits: res.CostUnits, Finish: true,
 	}).Get(ctx, nil)
 	_ = e.emit(ctx, &turnSeq, EventTurnCompleted, map[string]any{"turn": turnSeq, "summary": res.Summary, "finishReason": res.FinishReason})
+}
+
+// deliverChannelReply posts the turn's final assistant message back into the
+// session's originating channel thread (RFC 027 channels — the CloudTag
+// round-trip). It is guarded on the channel so non-channel sessions
+// (http/subagent/schedule) add no activity to history, preserving replay for
+// every existing session; the channel value lives in deterministic workflow
+// state. The activity result is ignored so a delivery outage never fails the
+// turn (the activity itself retries transient errors).
+func (e *exec) deliverChannelReply(ctx workflow.Context, content string) {
+	if e.state.Start.Channel != "slack" || strings.TrimSpace(content) == "" {
+		return
+	}
+	st := e.state
+	_ = workflow.ExecuteActivity(e.ioCtx, ActivityDeliverChannelReply, DeliverChannelReplyInput{
+		UserID: st.Start.UserID, SessionID: st.Start.SessionID, Text: content,
+	}).Get(ctx, nil)
 }
 
 func (e *exec) failTurn(ctx workflow.Context, turnSeq int, errMsg string) {

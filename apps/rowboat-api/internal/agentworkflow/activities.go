@@ -19,7 +19,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agenttoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/activity"
 	"go.uber.org/zap"
@@ -44,6 +50,28 @@ type Activities struct {
 	ApprovalSigner *agenttoken.Signer
 	// RequireMFA gates money-moving grants on an MFA step-up claim in the token.
 	RequireMFA bool
+
+	// Sealer decrypts connector credentials (e.g. the Slack bot token) for
+	// channel-reply delivery. nil disables outbound channel delivery.
+	Sealer *crypto.Sealer
+	// Slack posts agent replies back to the originating Slack thread (RFC 027
+	// channels — the CloudTag round-trip) and backs the Slack-native tools. nil
+	// disables Slack delivery and Slack tools.
+	Slack *slackclient.Client
+	// Creds resolves a session owner's connector credentials for tools that act
+	// on the user's behalf (Slack, Gmail, …). nil disables credential-bearing
+	// tools (they report the capability as unavailable rather than failing hard).
+	Creds agentregistry.CredResolver
+	// Secrets + Google back the Google read tools (Gmail/Calendar), which reuse
+	// the RFC 004 connector tools. nil makes those tools report "unavailable".
+	Secrets *secrets.Store
+	Google  *googleapi.Client
+	// Web backs the web.search tool. nil makes it report "unavailable".
+	Web *websearch.Client
+	// Conduit + Eigen back the portfolio faculty tools (RFC 008). nil makes the
+	// corresponding tool report "unavailable".
+	Conduit *faculties.Client
+	Eigen   *faculties.Client
 }
 
 // LLMComplete advances the conversation one turn through the billing gateway
@@ -124,7 +152,7 @@ func (a *Activities) LLMComplete(ctx context.Context, in LLMCompleteInput) (LLMC
 // are resolved INSIDE the tool from its scope, never from model text.
 func (a *Activities) ToolInvoke(ctx context.Context, in ToolInvokeInput) (ToolInvokeResult, error) {
 	ctx = auth.WithInternal(ctx)
-	registry := a.buildToolRegistry(in.AllowedTools)
+	registry := a.buildToolRegistry(in.AllowedTools, in.UserID)
 	tool, err := registry.Lookup(in.ToolName)
 	if err != nil {
 		return ToolInvokeResult{
@@ -201,14 +229,18 @@ func (a *Activities) claimCheck(ctx context.Context, in ToolInvokeInput, result 
 // allowlisted, buildable tools (subagent pseudo-tools are excluded — those are
 // dispatched to child workflows, never invoked here). Tools receive the client
 // for the claim-check reader.
-func (a *Activities) buildToolRegistry(allowed []string) backgroundtaskruntime.ToolRegistry {
+func (a *Activities) buildToolRegistry(allowed []string, userID string) backgroundtaskruntime.ToolRegistry {
 	tools := make([]backgroundtaskruntime.Tool, 0, len(allowed))
 	for _, name := range allowed {
 		cap, ok := a.Catalog.Get(name)
 		if !ok || cap.Kind == agentregistry.KindSubagent || cap.Build == nil {
 			continue
 		}
-		tools = append(tools, cap.Build(agentregistry.ToolDeps{Client: a.Client}))
+		tools = append(tools, cap.Build(agentregistry.ToolDeps{
+			Client: a.Client, Creds: a.Creds, Slack: a.Slack,
+			Sealer: a.Sealer, Secrets: a.Secrets, Google: a.Google, Web: a.Web,
+			Conduit: a.Conduit, Eigen: a.Eigen, UserID: userID,
+		}))
 	}
 	return backgroundtaskruntime.NewRegistry(tools)
 }
