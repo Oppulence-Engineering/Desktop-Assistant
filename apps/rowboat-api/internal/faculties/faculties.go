@@ -46,19 +46,13 @@ func New(name, baseURL, apiKey string, policy outbound.Policy) *Client {
 	}
 }
 
-// SetBaseURL overrides the endpoint (tests point this at an httptest server).
-func (c *Client) SetBaseURL(u string) {
-	if u != "" {
-		c.baseURL = strings.TrimRight(u, "/")
-	}
-}
-
 // Call POSTs body to path on behalf of userID and returns the faculty's raw JSON
 // response (passed through to the model). A non-JSON 200 body is wrapped so the
 // transcript always carries valid JSON.
 func (c *Client) Call(ctx context.Context, userID, path string, body any) (json.RawMessage, error) {
 	if c == nil {
-		return nil, fmt.Errorf("faculties: %s not configured", c.name)
+		// Must not read c.name here — c is the nil receiver.
+		return nil, fmt.Errorf("faculties: client not configured")
 	}
 	reqBody, err := json.Marshal(body)
 	if err != nil {

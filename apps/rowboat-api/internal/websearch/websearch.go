@@ -53,13 +53,6 @@ func New(apiURL, apiKey string, policy outbound.Policy) *Client {
 	return &Client{http: outbound.NewClient(policy), apiURL: apiURL, apiKey: apiKey}
 }
 
-// SetAPIURL overrides the endpoint (tests point this at an httptest server).
-func (c *Client) SetAPIURL(u string) {
-	if u != "" {
-		c.apiURL = u
-	}
-}
-
 // Search runs one query and returns up to maxResults hits (clamped).
 func (c *Client) Search(ctx context.Context, query string, maxResults int) ([]Result, error) {
 	if c == nil {

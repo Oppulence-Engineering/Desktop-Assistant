@@ -85,3 +85,35 @@ func TestCreateDraftRequiresRecipient(t *testing.T) {
 		t.Fatal("expected error for empty recipient")
 	}
 }
+
+func TestCreateDraftEncodesNonASCIIHeaders(t *testing.T) {
+	var raw string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Message struct {
+				Raw string `json:"raw"`
+			} `json:"message"`
+		}
+		b, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(b, &req)
+		mimeBytes, _ := base64.URLEncoding.DecodeString(req.Message.Raw)
+		raw = string(mimeBytes)
+		_, _ = w.Write([]byte(`{"id":"d"}`))
+	}))
+	defer srv.Close()
+	c := New(Config{GmailBaseURL: srv.URL})
+	if _, err := c.CreateDraft(context.Background(), "tok", "Renée <r@x.co>", "Café meeting ☕", "body"); err != nil {
+		t.Fatalf("CreateDraft: %v", err)
+	}
+	// Subject must be an RFC 2047 encoded-word, not raw UTF-8.
+	if !strings.Contains(raw, "Subject: =?utf-8?") {
+		t.Fatalf("subject not encoded:\n%s", raw)
+	}
+	if strings.Contains(raw, "Café meeting") {
+		t.Fatalf("raw non-ASCII subject leaked into headers:\n%s", raw)
+	}
+	// The address itself stays intact; the display name is encoded.
+	if !strings.Contains(raw, "<r@x.co>") {
+		t.Fatalf("address not preserved:\n%s", raw)
+	}
+}

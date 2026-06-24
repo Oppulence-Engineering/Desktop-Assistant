@@ -43,8 +43,10 @@ func (t *webSearchTool) Invoke(ctx context.Context, _ backgroundtaskruntime.Tool
 		Query      string `json:"query"`
 		MaxResults int    `json:"max_results"`
 	}
-	if err := json.Unmarshal(args, &in); err != nil {
-		return nil, fmt.Errorf("invalid web.search arguments: %w", err)
+	if len(args) > 0 {
+		if err := json.Unmarshal(args, &in); err != nil {
+			return nil, fmt.Errorf("invalid web.search arguments: %w", err)
+		}
 	}
 	if strings.TrimSpace(in.Query) == "" {
 		b, _ := json.Marshal(map[string]string{"error": "query is required"})

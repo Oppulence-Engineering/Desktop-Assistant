@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"mime"
+	"net/mail"
 	"net/url"
 	"strconv"
 	"strings"
@@ -91,8 +93,8 @@ func (c *Client) CreateDraft(ctx context.Context, token, to, subject, body strin
 	if strings.TrimSpace(to) == "" {
 		return "", fmt.Errorf("draft recipient is required")
 	}
-	mime := buildPlainTextMIME(sanitizeHeader(to), sanitizeHeader(subject), body)
-	raw := base64.URLEncoding.EncodeToString([]byte(mime))
+	msg := buildPlainTextMIME(encodeAddressHeader(sanitizeHeader(to)), encodeWord(sanitizeHeader(subject)), body)
+	raw := base64.URLEncoding.EncodeToString([]byte(msg))
 	reqBody := map[string]any{"message": map[string]any{"raw": raw}}
 
 	var out struct {
@@ -117,6 +119,26 @@ func buildPlainTextMIME(to, subject, body string) string {
 	b.WriteString("\r\n")
 	b.WriteString(body)
 	return b.String()
+}
+
+// encodeWord RFC 2047-encodes a header value when it contains non-ASCII (a no-op
+// for pure ASCII), so subjects with accents/emoji are not mangled.
+func encodeWord(s string) string {
+	return mime.QEncoding.Encode("utf-8", s)
+}
+
+// encodeAddressHeader encodes the display-name part of a "Name <addr>" header
+// (leaving the address itself untouched). A bare address passes through, and an
+// unparseable value is emitted as-is (already CRLF-sanitized).
+func encodeAddressHeader(to string) string {
+	addr, err := mail.ParseAddress(to)
+	if err != nil {
+		return to
+	}
+	if addr.Name == "" {
+		return addr.Address
+	}
+	return encodeWord(addr.Name) + " <" + addr.Address + ">"
 }
 
 // sanitizeHeader strips CR/LF so a recipient/subject cannot inject extra headers.

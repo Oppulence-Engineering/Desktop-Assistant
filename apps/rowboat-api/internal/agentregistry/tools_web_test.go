@@ -35,6 +35,21 @@ func TestWebSearchUnavailableWhenUnconfigured(t *testing.T) {
 	}
 }
 
+func TestWebSearchEmptyArgsGraceful(t *testing.T) {
+	web := websearch.New("https://x", "k", outbound.Policy{})
+	cap, _ := DefaultCatalog().Get("web.search")
+	tool := cap.Build(ToolDeps{Web: web})
+	// Empty args must yield a graceful "query is required" observation, not a
+	// cryptic JSON-unmarshal error.
+	out, err := tool.Invoke(context.Background(), backgroundtaskruntime.ToolScope{}, nil)
+	if err != nil {
+		t.Fatalf("invoke: %v", err)
+	}
+	if !strings.Contains(string(out), "query is required") {
+		t.Fatalf("expected graceful observation, got %s", out)
+	}
+}
+
 func TestWebSearchToolReturnsResults(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{"results":[{"title":"Rowboat","url":"https://r","content":"docs"}]}`))

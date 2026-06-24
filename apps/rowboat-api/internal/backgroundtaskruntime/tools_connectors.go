@@ -51,7 +51,10 @@ func (d connectorDeps) accessToken(ctx context.Context, requiredScope string) (s
 		return "", fmt.Errorf("load google connection: %w", err)
 	}
 	if !slices.Contains(conn.Scopes, requiredScope) {
-		return "", &RuntimeError{Code: CodeConnectorUnavailable, Message: "google connection lacks the required scope: " + requiredScope}
+		// Connections made before a scope was added to the connect flow won't carry
+		// it; the user must reconnect Google to grant it (we can't widen an existing
+		// grant server-side).
+		return "", &RuntimeError{Code: CodeConnectorUnavailable, Message: "google connection is missing the " + requiredScope + " scope; reconnect Google to grant it"}
 	}
 	token, err := d.google.AccessTokenForConnection(ctx, d.sealer, d.secrets, conn)
 	if err != nil {
@@ -125,8 +128,10 @@ func (t *gmailDraftTool) Invoke(ctx context.Context, _ ToolScope, args json.RawM
 		Subject string `json:"subject"`
 		Body    string `json:"body"`
 	}
-	if err := json.Unmarshal(args, &in); err != nil {
-		return nil, fmt.Errorf("invalid arguments: %w", err)
+	if len(args) > 0 {
+		if err := json.Unmarshal(args, &in); err != nil {
+			return nil, fmt.Errorf("invalid arguments: %w", err)
+		}
 	}
 	if in.To == "" || in.Body == "" {
 		return nil, fmt.Errorf("'to' and 'body' are required")
