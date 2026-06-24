@@ -1,0 +1,20 @@
+apiVersion: agent.rowboat.dev/v1
+kind: Agent
+metadata:
+  slug: concierge-slack
+  name: Slack Concierge
+spec:
+  instructionsFile: ./instructions.md
+  tools:
+    - current_time
+    - slack.read_thread
+    - name: slack.post_message
+      requiresApproval: true
+    - connector.read.gmail
+    - connector.read.calendar
+    - name: connector.write.gmail_draft
+      requiresApproval: true
+    - web.search
+    - conduit.read
+    - eigen.simulate
+  channels: [slack]

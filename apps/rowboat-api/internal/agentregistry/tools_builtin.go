@@ -21,6 +21,14 @@ func DefaultCatalog() *Catalog {
 		demoPaymentCapability(),
 		toolResultReadCapability(),
 		SubagentDelegateCapability(),
+		SlackReadThreadCapability(),
+		SlackPostMessageCapability(),
+		GmailReadCapability(),
+		CalendarReadCapability(),
+		GmailDraftCapability(),
+		WebSearchCapability(),
+		ConduitReadCapability(),
+		EigenSimulateCapability(),
 	)
 }
 

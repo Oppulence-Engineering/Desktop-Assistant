@@ -17,12 +17,19 @@
 package agentregistry
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
 )
 
 // Trust tiers (RFC 012). A capability above the auto-execute line requires a
@@ -51,11 +58,34 @@ func RequiresApproval(tier string) bool {
 	return tier == TierAct || tier == TierMoneyMoving
 }
 
+// CredResolver resolves a session owner's connector credential (the decrypted
+// token) for tools that act on the user's behalf. Implemented by
+// internal/connectorcreds; defined here so credential-bearing capabilities depend
+// only on this package. provider is the OAuthConnection provider key ("slack",
+// "google", …).
+type CredResolver interface {
+	Resolve(ctx context.Context, userID, provider string) (string, error)
+}
+
 // ToolDeps are the per-session dependencies a bound tool needs at invocation.
-// Client backs the claim-check reader (tool_result.read); connector/credential
-// resolution is added as those tools land.
+// Client backs the claim-check reader (tool_result.read); the rest back the
+// credential-bearing connector tools (RFC 012): Creds + Slack for Slack-native
+// tools; Sealer + Secrets + Google for the Google read tools (reusing the RFC 004
+// connector tools); UserID identifies the session owner whose connections those
+// tools act on. Fields are nil when the corresponding capability is not wired —
+// a tool must degrade gracefully (report "unavailable") rather than panic on a
+// nil dep.
 type ToolDeps struct {
-	Client *ent.Client
+	Client  *ent.Client
+	Creds   CredResolver
+	Slack   *slackclient.Client
+	Sealer  *crypto.Sealer
+	Secrets *secrets.Store
+	Google  *googleapi.Client
+	Web     *websearch.Client
+	Conduit *faculties.Client
+	Eigen   *faculties.Client
+	UserID  string
 }
 
 // Capability is one Layer-1 tool: the metadata advertised to the model and used
