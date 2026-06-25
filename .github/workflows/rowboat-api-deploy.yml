@@ -271,9 +271,9 @@ jobs:
           chmod 600 "$env_file"
           trap 'rm -f "$env_file"' EXIT
 
-          infisical secrets \
+          infisical export \
             --silent \
-            --output=dotenv \
+            --format=dotenv \
             --projectId="${INFISICAL_PROJECT_ID}" \
             --env="${INFISICAL_ENVIRONMENT}" \
             --path="${INFISICAL_PATH}" \
