@@ -1,0 +1,399 @@
+name: Deploy Rowboat API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/rowboat-api/**"
+      - "packages/oauth-resource-server-go/**"
+      - "charts/rowboat-api/**"
+      - ".github/workflows/rowboat-api-deploy.yml"
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Deploy even if no relevant path changes are detected"
+        required: false
+        type: boolean
+        default: true
+      run_db_migration:
+        description: "Run rowboat-api schema migration before Helm deploy"
+        required: true
+        type: choice
+        default: auto
+        options:
+          - auto
+          - always
+          - never
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+concurrency:
+  group: rowboat-api-production
+  cancel-in-progress: false
+
+env:
+  IMAGE_REPOSITORY: ghcr.io/oppulence-engineering/rowboat-api
+  INFISICAL_PROJECT_ID: 04ebc1cf-0ec5-4e9e-8ab9-4c6da4252574
+  INFISICAL_ENVIRONMENT: prod
+  INFISICAL_PATH: /
+  KUBE_NAMESPACE: rowboat
+  RELEASE_NAME: rowboat-api
+  VALUES_FILE: charts/rowboat-api/values-production.yaml
+
+jobs:
+  resolve-context:
+    name: Resolve Deployment Context
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.context.outputs.image_tag }}
+      short_sha: ${{ steps.context.outputs.short_sha }}
+      run_db_migration: ${{ steps.context.outputs.run_db_migration }}
+    steps:
+      - name: Determine production context
+        id: context
+        run: |
+          set -euo pipefail
+
+          SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-12)"
+          RUN_DB_MIGRATION="${{ github.event.inputs.run_db_migration || 'auto' }}"
+
+          {
+            echo "short_sha=${SHORT_SHA}"
+            echo "image_tag=production-${SHORT_SHA}"
+            echo "run_db_migration=${RUN_DB_MIGRATION}"
+          } >> "$GITHUB_OUTPUT"
+
+  check-changes:
+    name: Determine Deployment Scope
+    needs: resolve-context
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.decision.outputs.should_deploy }}
+      db_changed: ${{ steps.filter.outputs.db }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'apps/rowboat-api/**'
+              - 'packages/oauth-resource-server-go/**'
+              - 'charts/rowboat-api/**'
+              - '.github/workflows/rowboat-api-deploy.yml'
+            db:
+              - 'apps/rowboat-api/ent/**'
+              - 'apps/rowboat-api/migrations/**'
+              - 'apps/rowboat-api/cmd/migrate/**'
+              - 'apps/rowboat-api/internal/db/**'
+
+      - name: Decide deploy
+        id: decision
+        run: |
+          set -euo pipefail
+
+          SHOULD_DEPLOY="${{ steps.filter.outputs.app }}"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.force_deploy || 'true' }}" == "true" ]]; then
+            SHOULD_DEPLOY="true"
+          fi
+
+          echo "should_deploy=${SHOULD_DEPLOY}" >> "$GITHUB_OUTPUT"
+
+  build-image:
+    name: Build and Push Image
+    needs: [resolve-context, check-changes]
+    if: needs.check-changes.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push rowboat-api
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/rowboat-api/Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            VERSION=${{ needs.resolve-context.outputs.image_tag }}
+            COMMIT=${{ github.sha }}
+            DATE=${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          tags: |
+            ${{ env.IMAGE_REPOSITORY }}:${{ needs.resolve-context.outputs.image_tag }}
+            ${{ env.IMAGE_REPOSITORY }}:production-latest
+
+  deploy:
+    name: Deploy to Production
+    needs: [resolve-context, check-changes, build-image]
+    if: needs.check-changes.outputs.should_deploy == 'true' && needs.build-image.result == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        if: |
+          needs.resolve-context.outputs.run_db_migration == 'always' ||
+          (needs.resolve-context.outputs.run_db_migration == 'auto' && needs.check-changes.outputs.db_changed == 'true')
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v5
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+
+      - name: Load kubeconfig
+        env:
+          KUBE_CONFIG_US_EAST: ${{ secrets.KUBE_CONFIG_US_EAST }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${KUBE_CONFIG_US_EAST}" ]]; then
+            echo "KUBE_CONFIG_US_EAST is required for production deploys"
+            exit 1
+          fi
+
+          mkdir -p "$HOME/.kube"
+          printf '%s' "$KUBE_CONFIG_US_EAST" > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      - name: Verify cluster connection
+        run: |
+          kubectl get nodes
+          kubectl create namespace "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Configure GHCR image pull secret
+        run: |
+          set -euo pipefail
+
+          if kubectl -n "${KUBE_NAMESPACE}" get secret ghcr-pull >/dev/null 2>&1; then
+            echo "ghcr-pull already exists in ${KUBE_NAMESPACE}"
+            exit 0
+          fi
+
+          kubectl -n oppulence-canvas-production get secret ghcr-pull -o json \
+            | jq 'del(
+                .metadata.uid,
+                .metadata.resourceVersion,
+                .metadata.creationTimestamp,
+                .metadata.managedFields,
+                .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration"
+              ) | .metadata.namespace=env.KUBE_NAMESPACE' \
+            | kubectl apply -f -
+
+      - name: Install Infisical CLI
+        env:
+          INFISICAL_TOKEN: ${{ secrets.ROWBOAT_INFISICAL_TOKEN || secrets.INFISICAL_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${INFISICAL_TOKEN:-}" ]]; then
+            echo "No Infisical token configured; will verify existing Kubernetes Secret instead of syncing."
+            exit 0
+          fi
+
+          curl -1sLf "https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh" | sudo -E bash
+          sudo apt-get update
+          sudo apt-get install -y infisical
+
+      - name: Sync Rowboat API secrets
+        env:
+          INFISICAL_TOKEN: ${{ secrets.ROWBOAT_INFISICAL_TOKEN || secrets.INFISICAL_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          required_keys=(
+            DATABASE_URL
+            REDIS_URL
+            DB_ENCRYPTION_KEY
+            WORKOS_CLIENT_ID
+            WORKOS_API_KEY
+            JWKS_URL
+            HOOK_HMAC_SECRET
+            INTERNAL_API_SECRET
+            OPENAI_API_KEY
+            OPENROUTER_API_KEY
+            GOOGLE_OAUTH_CLIENT_ID
+            GOOGLE_OAUTH_CLIENT_SECRET
+          )
+
+          if [[ -z "${INFISICAL_TOKEN:-}" ]]; then
+            missing=()
+            for key in "${required_keys[@]}"; do
+              value="$(
+                kubectl -n "${KUBE_NAMESPACE}" get secret rowboat-api-secrets \
+                  -o "jsonpath={.data.${key}}" 2>/dev/null || true
+              )"
+              if [[ -z "${value}" ]]; then
+                missing+=("${key}")
+              fi
+            done
+
+            if (( ${#missing[@]} > 0 )); then
+              echo "Cannot deploy without Infisical token because rowboat-api-secrets is missing: ${missing[*]}"
+              exit 1
+            fi
+
+            echo "Existing rowboat-api-secrets contains required keys; skipping Infisical sync."
+            exit 0
+          fi
+
+          env_file="$(mktemp)"
+          chmod 600 "$env_file"
+          trap 'rm -f "$env_file"' EXIT
+
+          infisical secrets \
+            --silent \
+            --output=dotenv \
+            --projectId="${INFISICAL_PROJECT_ID}" \
+            --env="${INFISICAL_ENVIRONMENT}" \
+            --path="${INFISICAL_PATH}" \
+            --token="${INFISICAL_TOKEN}" > "$env_file"
+
+          missing=()
+          for key in "${required_keys[@]}"; do
+            if ! grep -Eq "^${key}=" "$env_file"; then
+              missing+=("${key}")
+            fi
+          done
+
+          if (( ${#missing[@]} > 0 )); then
+            echo "Infisical export is missing required keys: ${missing[*]}"
+            exit 1
+          fi
+
+          kubectl -n "${KUBE_NAMESPACE}" create secret generic rowboat-api-secrets \
+            --from-env-file="$env_file" \
+            --dry-run=client \
+            -o yaml | kubectl apply -f -
+
+          echo "rowboat-api-secrets synced from Infisical ${INFISICAL_ENVIRONMENT}${INFISICAL_PATH}"
+
+      - name: Run database migration
+        if: |
+          needs.resolve-context.outputs.run_db_migration == 'always' ||
+          (needs.resolve-context.outputs.run_db_migration == 'auto' && needs.check-changes.outputs.db_changed == 'true')
+        env:
+          DB_ENCRYPTION_KEY: migration-placeholder-key-at-least-32-bytes
+          HOOK_HMAC_SECRET: migration-placeholder
+          INTERNAL_API_SECRET: migration-placeholder
+          PUBLIC_BASE_URL: https://api.oppulence.io
+          GOOGLE_REDIRECT_URI: https://api.oppulence.io/oauth/google/callback
+          REDIS_URL: redis://localhost:6379/0
+          TOKEN_ISSUER: https://api.workos.com
+          WORKOS_API_KEY: migration-placeholder
+          WORKOS_CLIENT_ID: migration-placeholder
+        run: |
+          set -euo pipefail
+
+          database_url="$(
+            kubectl -n "${KUBE_NAMESPACE}" get secret rowboat-api-secrets \
+              -o jsonpath='{.data.DATABASE_URL}' | base64 -d
+          )"
+
+          if [[ -z "${database_url}" ]]; then
+            echo "DATABASE_URL is missing from rowboat-api-secrets"
+            exit 1
+          fi
+
+          (
+            cd apps/rowboat-api
+            ENVIRONMENT=production \
+              DATABASE_URL="$database_url" \
+              CORS_ALLOWED_ORIGINS=https://app.solomon-ai.co \
+              AUTO_MIGRATE=false \
+              go run ./cmd/migrate apply
+          )
+
+      - name: Deploy Helm chart
+        run: |
+          set -euo pipefail
+
+          helm dependency build charts/rowboat-api || helm dependency update charts/rowboat-api
+
+          release_status="$(
+            helm status "${RELEASE_NAME}" -n "${KUBE_NAMESPACE}" -o json 2>/dev/null \
+              | jq -r '.info.status' 2>/dev/null || echo "missing"
+          )"
+          echo "Current release status: ${release_status}"
+          if [[ "${release_status}" == "failed" || "${release_status}" == "pending-install" || "${release_status}" == "pending-upgrade" || "${release_status}" == "pending-rollback" ]]; then
+            helm uninstall "${RELEASE_NAME}" -n "${KUBE_NAMESPACE}" --wait --timeout 5m || true
+          fi
+
+          helm upgrade --install "${RELEASE_NAME}" charts/rowboat-api \
+            -n "${KUBE_NAMESPACE}" \
+            --create-namespace \
+            -f "${VALUES_FILE}" \
+            --set "image.repository=${IMAGE_REPOSITORY}" \
+            --set "image.tag=${{ needs.resolve-context.outputs.image_tag }}" \
+            --set-string "podAnnotations.rollout-revision=${GITHUB_SHA}" \
+            --set-string "podAnnotations.rollout-run-attempt=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --server-side=true \
+            --force-conflicts \
+            --wait \
+            --timeout 10m
+
+      - name: Verify rollout
+        run: |
+          set -euo pipefail
+
+          kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api --timeout=5m
+          kubectl -n "${KUBE_NAMESPACE}" get pods,deploy,hpa,ingress,certificate
+          curl -fsS https://api.oppulence.io/healthz
+          echo
+          curl -fsS https://api.oppulence.io/readyz
+          echo
+
+      - name: Diagnose rollout on failure
+        if: failure()
+        run: |
+          set +e
+
+          echo "::group::Pods"
+          kubectl -n "${KUBE_NAMESPACE}" get pods -o wide
+          echo "::endgroup::"
+
+          echo "::group::Describe pods"
+          kubectl -n "${KUBE_NAMESPACE}" describe pods -l app.kubernetes.io/instance="${RELEASE_NAME}"
+          echo "::endgroup::"
+
+          echo "::group::Pod logs"
+          for pod in $(kubectl -n "${KUBE_NAMESPACE}" get pods -l app.kubernetes.io/instance="${RELEASE_NAME}" -o name); do
+            echo "--- ${pod} current ---"
+            kubectl -n "${KUBE_NAMESPACE}" logs "${pod}" --all-containers --tail=200
+            echo "--- ${pod} previous ---"
+            kubectl -n "${KUBE_NAMESPACE}" logs "${pod}" --all-containers --previous --tail=200
+          done
+          echo "::endgroup::"
+
+          echo "::group::Recent non-Normal events"
+          kubectl -n "${KUBE_NAMESPACE}" get events --sort-by='.lastTimestamp' --field-selector type!=Normal | tail -100
+          echo "::endgroup::"
