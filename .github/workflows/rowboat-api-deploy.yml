@@ -243,6 +243,7 @@ jobs:
             OPENROUTER_API_KEY
             GOOGLE_OAUTH_CLIENT_ID
             GOOGLE_OAUTH_CLIENT_SECRET
+            TEMPORAL_API_KEY
           )
 
           if [[ -z "${INFISICAL_TOKEN:-}" ]]; then
@@ -328,7 +329,7 @@ jobs:
             cd apps/rowboat-api
             ENVIRONMENT=production \
               DATABASE_URL="$database_url" \
-              CORS_ALLOWED_ORIGINS=https://app.solomon-ai.co \
+              CORS_ALLOWED_ORIGINS=https://oppulence.io \
               AUTO_MIGRATE=false \
               go run ./cmd/migrate apply
           )

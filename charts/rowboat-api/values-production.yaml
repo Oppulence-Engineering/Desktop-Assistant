@@ -27,8 +27,12 @@ config:
   ENVIRONMENT: production
   LOG_LEVEL: info
   AUTO_MIGRATE: "false"
-  APP_URL: https://app.solomon-ai.co
-  OIDC_ISSUER_URL: https://auth.solomon-ai.co
+  APP_URL: https://oppulence.io
+  CORS_ALLOWED_ORIGINS: https://oppulence.io
+  OIDC_ISSUER_URL: https://agile-glow-66.authkit.app
+  # WorkOS access tokens are verified against this issuer and the JWKS_URL
+  # stored in rowboat-api-secrets. WorkOS-direct tokens carry no aud, so the
+  # audience check stays explicitly disabled.
   TOKEN_ISSUER: https://api.workos.com
   TOKEN_AUDIENCE: ""
   JWKS_URL: ""
@@ -42,21 +46,18 @@ config:
   # the app does not need an Infisical machine token at boot.
   INFISICAL_ENABLED: "false"
   # --- Temporal Cloud (API-native background task worker) -------------------
-  # Production executes API-target runs on Temporal Cloud (API-key auth over
-  # TLS). To enable: set TEMPORAL_ENABLED to "true", point ADDRESS/NAMESPACE at
-  # your Temporal Cloud namespace, add TEMPORAL_API_KEY to the
-  # rowboat-api-secrets Secret (never inline it here), and set worker.enabled:
-  # true below.
-  TEMPORAL_ENABLED: "false"
-  TEMPORAL_ADDRESS: <namespace>.<account>.tmprl.cloud:7233
-  TEMPORAL_NAMESPACE: <namespace>.<account>
+  # Production executes API-target runs on the dedicated Rowboat Temporal Cloud
+  # namespace using API-key auth over TLS. TEMPORAL_API_KEY lives only in
+  # rowboat-api-secrets / Infisical.
+  TEMPORAL_ENABLED: "true"
+  TEMPORAL_ADDRESS: rowboat-production.kpisa.tmprl.cloud:7233
+  TEMPORAL_NAMESPACE: rowboat-production.kpisa
   TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
   TEMPORAL_TLS_ENABLED: "true"
-  TEMPORAL_WORKER_ENABLED: "false"
+  TEMPORAL_WORKER_ENABLED: "true"
 
-# Flip to true alongside TEMPORAL_ENABLED to run the durable worker.
 worker:
-  enabled: false
+  enabled: true
   replicaCount: 2
 
 # Secrets live in the cluster Secret `rowboat-api-secrets` (sealed-secrets /
