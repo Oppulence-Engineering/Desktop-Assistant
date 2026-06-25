@@ -1,6 +1,7 @@
 package cloudevents
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -108,9 +109,34 @@ func (h *Handler) SlackWebhook(w http.ResponseWriter, r *http.Request) {
 		DedupeKey:  fmt.Sprintf("slack:%s:%s", envelope.TeamID, envelope.EventID),
 		OccurredAt: occurredAt,
 	}
-	// Respond fast: routing is async by design, which keeps this handler well
-	// inside Slack's 3-second delivery deadline.
-	h.respondIngest(w, r, owner, req)
+	dispatchAgent := h.slackAgentDispatcher != nil && envelope.Event.Type == "app_mention"
+	ev, deduped, err := h.ingestWithAfterCreate(r.Context(), owner, req, func(ctx context.Context, _ *ent.CloudEvent) error {
+		if !dispatchAgent {
+			return nil
+		}
+		return h.slackAgentDispatcher(ctx, owner, body)
+	})
+	if err != nil {
+		var hookErr *afterCreateError
+		if errors.As(err, &hookErr) {
+			h.log.Warn("slack agent dispatch failed", zap.Error(hookErr.err), zap.String("eventId", envelope.EventID))
+			httpx.Error(w, http.StatusBadGateway, "could not dispatch slack app mention", "dispatch_failed")
+			return
+		}
+		writeIngestError(w, err, h.log)
+		return
+	}
+	resp := IngestResponse{
+		EventID:          ev.ID.String(),
+		RoutingStatus:    ev.RoutingStatus,
+		Deduped:          deduped,
+		MatchedTaskCount: ev.MatchedTaskCount,
+	}
+	status := http.StatusAccepted
+	if deduped {
+		status = http.StatusOK
+	}
+	httpx.WriteJSON(w, status, resp)
 }
 
 var errSlackUnconfigured = errors.New("cloudevents: slack signing secret not configured")
@@ -160,6 +186,7 @@ func (h *Handler) resolveSlackUser(r *http.Request, teamID string) (*ent.User, b
 			oauthconnection.ProviderEQ("slack"),
 			oauthconnection.ExternalAccountIDEQ(strings.TrimSpace(teamID)),
 		).
+		Order(oauthconnection.ByCreatedAt()).
 		WithUser().
 		First(ctx)
 	if err != nil {

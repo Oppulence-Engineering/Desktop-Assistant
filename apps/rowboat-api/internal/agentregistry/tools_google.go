@@ -29,7 +29,7 @@ func GmailReadCapability() Capability {
 			if err != nil || d.Client == nil || d.Sealer == nil || d.Secrets == nil || d.Google == nil {
 				return newUnavailableTool("connector.read.gmail", "the Gmail tool is not configured on this server")
 			}
-			return backgroundtaskruntime.NewGmailReadTool(d.Client, d.Sealer, d.Secrets, d.Google, uid)
+			return guardOwnerScopedToolInSlack(d, backgroundtaskruntime.NewGmailReadTool(d.Client, d.Sealer, d.Secrets, d.Google, uid))
 		},
 	}
 }
@@ -49,7 +49,7 @@ func GmailDraftCapability() Capability {
 			if err != nil || d.Client == nil || d.Sealer == nil || d.Secrets == nil || d.Google == nil {
 				return newUnavailableTool("connector.write.gmail_draft", "the Gmail draft tool is not configured on this server")
 			}
-			return backgroundtaskruntime.NewGmailDraftTool(d.Client, d.Sealer, d.Secrets, d.Google, uid)
+			return guardOwnerScopedToolInSlack(d, backgroundtaskruntime.NewGmailDraftTool(d.Client, d.Sealer, d.Secrets, d.Google, uid))
 		},
 	}
 }
@@ -67,7 +67,7 @@ func CalendarReadCapability() Capability {
 			if err != nil || d.Client == nil || d.Sealer == nil || d.Secrets == nil || d.Google == nil {
 				return newUnavailableTool("connector.read.calendar", "the Calendar tool is not configured on this server")
 			}
-			return backgroundtaskruntime.NewCalendarReadTool(d.Client, d.Sealer, d.Secrets, d.Google, uid)
+			return guardOwnerScopedToolInSlack(d, backgroundtaskruntime.NewCalendarReadTool(d.Client, d.Sealer, d.Secrets, d.Google, uid))
 		},
 	}
 }

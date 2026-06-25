@@ -62,6 +62,9 @@ type Activities struct {
 	// on the user's behalf (Slack, Gmail, …). nil disables credential-bearing
 	// tools (they report the capability as unavailable rather than failing hard).
 	Creds agentregistry.CredResolver
+	// SlackTokens resolves Slack bot credentials and refreshes rotating Slack
+	// access tokens for Slack channel delivery and Slack-native tools.
+	SlackTokens agentregistry.SlackTokenResolver
 	// Secrets + Google back the Google read tools (Gmail/Calendar), which reuse
 	// the RFC 004 connector tools. nil makes those tools report "unavailable".
 	Secrets *secrets.Store
@@ -237,7 +240,7 @@ func (a *Activities) buildToolRegistry(allowed []string, userID string) backgrou
 			continue
 		}
 		tools = append(tools, cap.Build(agentregistry.ToolDeps{
-			Client: a.Client, Creds: a.Creds, Slack: a.Slack,
+			Client: a.Client, Creds: a.Creds, SlackTokens: a.SlackTokens, Slack: a.Slack,
 			Sealer: a.Sealer, Secrets: a.Secrets, Google: a.Google, Web: a.Web,
 			Conduit: a.Conduit, Eigen: a.Eigen, UserID: userID,
 		}))

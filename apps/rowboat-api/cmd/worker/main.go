@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slacktoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
@@ -271,7 +272,12 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 					MaxConcurrent:    64,
 					MaxResponseBytes: 1 << 20,
 				}),
-				Creds:   connectorcreds.New(client, deps.Sealer),
+				Creds: connectorcreds.New(client, deps.Sealer),
+				SlackTokens: slacktoken.New(client, deps.Sealer, deps.Secrets, cfg.SlackTokenURL, outbound.Policy{
+					Timeout:          15 * time.Second,
+					MaxConcurrent:    64,
+					MaxResponseBytes: 1 << 20,
+				}),
 				Secrets: deps.Secrets,
 				Google:  deps.Google,
 				Web:     websearch.New(cfg.WebSearchAPIURL, cfg.WebSearchAPIKey, outbound.Policy{Timeout: 20 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 4 << 20}),

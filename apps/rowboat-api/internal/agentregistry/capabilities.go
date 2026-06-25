@@ -67,6 +67,12 @@ type CredResolver interface {
 	Resolve(ctx context.Context, userID, provider string) (string, error)
 }
 
+// SlackTokenResolver resolves Slack bot tokens for a specific connected
+// workspace and may refresh rotating Slack credentials before returning.
+type SlackTokenResolver interface {
+	ResolveTeam(ctx context.Context, userID, teamID string) (string, error)
+}
+
 // ToolDeps are the per-session dependencies a bound tool needs at invocation.
 // Client backs the claim-check reader (tool_result.read); the rest back the
 // credential-bearing connector tools (RFC 012): Creds + Slack for Slack-native
@@ -76,16 +82,17 @@ type CredResolver interface {
 // a tool must degrade gracefully (report "unavailable") rather than panic on a
 // nil dep.
 type ToolDeps struct {
-	Client  *ent.Client
-	Creds   CredResolver
-	Slack   *slackclient.Client
-	Sealer  *crypto.Sealer
-	Secrets *secrets.Store
-	Google  *googleapi.Client
-	Web     *websearch.Client
-	Conduit *faculties.Client
-	Eigen   *faculties.Client
-	UserID  string
+	Client      *ent.Client
+	Creds       CredResolver
+	SlackTokens SlackTokenResolver
+	Slack       *slackclient.Client
+	Sealer      *crypto.Sealer
+	Secrets     *secrets.Store
+	Google      *googleapi.Client
+	Web         *websearch.Client
+	Conduit     *faculties.Client
+	Eigen       *faculties.Client
+	UserID      string
 }
 
 // Capability is one Layer-1 tool: the metadata advertised to the model and used

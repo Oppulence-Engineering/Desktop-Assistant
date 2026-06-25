@@ -96,7 +96,7 @@ func (a *Activities) slackTarget(ctx context.Context, userID, sessionID string) 
 	if sess.Channel != "slack" {
 		return "", "", "", false, nil
 	}
-	if a.Slack == nil || a.Sealer == nil {
+	if a.Slack == nil || (a.Sealer == nil && a.SlackTokens == nil) {
 		if a.Log != nil {
 			a.Log.Warn("slack delivery skipped: not configured", zap.String("sessionId", sessionID))
 		}
@@ -109,6 +109,13 @@ func (a *Activities) slackTarget(ctx context.Context, userID, sessionID string) 
 				zap.String("sessionId", sessionID), zap.String("channelKey", sess.ChannelKey))
 		}
 		return "", "", "", false, nil
+	}
+	if a.SlackTokens != nil {
+		token, oerr := a.SlackTokens.ResolveTeam(ctx, owner.ID.String(), team)
+		if oerr != nil {
+			return "", "", "", false, fmt.Errorf("resolve slack bot token: %w", oerr)
+		}
+		return token, ch, th, true, nil
 	}
 	// The bot token is keyed by (provider=slack, team_id) and scoped to the
 	// session owner — two users may connect the same workspace (non-unique

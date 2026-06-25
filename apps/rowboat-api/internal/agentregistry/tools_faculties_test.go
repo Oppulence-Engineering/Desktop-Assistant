@@ -67,3 +67,27 @@ func TestConduitToolForwardsRequest(t *testing.T) {
 		t.Fatalf("passthrough = %s", out)
 	}
 }
+
+func TestFacultyToolsRejectSlackChannelSessions(t *testing.T) {
+	var called bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+	deps, scope := slackSessionToolDeps(t)
+	deps.Conduit = faculties.New("conduit", srv.URL, "k", outbound.Policy{})
+
+	cap, _ := DefaultCatalog().Get("conduit.read")
+	tool := cap.Build(deps)
+	out, err := tool.Invoke(context.Background(), scope, json.RawMessage(`{"operation":"disputes_open"}`))
+	if err != nil {
+		t.Fatalf("invoke returned hard error: %v", err)
+	}
+	if called {
+		t.Fatal("faculty API was called for a Slack-triggered session")
+	}
+	if !strings.Contains(string(out), "not available from Slack") {
+		t.Fatalf("expected Slack restriction observation, got %s", out)
+	}
+}

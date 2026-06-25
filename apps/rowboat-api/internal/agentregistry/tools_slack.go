@@ -113,7 +113,7 @@ func (t *slackPostMessageTool) Invoke(ctx context.Context, scope backgroundtaskr
 // context (set by ActivityToolInvoke), so the session lookup is not
 // tenant-filtered; the session id is globally unique.
 func slackThreadForSession(ctx context.Context, deps ToolDeps, scope backgroundtaskruntime.ToolScope) (botToken, channel, thread string, err error) {
-	if deps.Slack == nil || deps.Creds == nil {
+	if deps.Slack == nil || (deps.SlackTokens == nil && deps.Creds == nil) {
 		return "", "", "", errors.New("slack tools are not configured on this server")
 	}
 	if deps.Client == nil {
@@ -128,11 +128,17 @@ func slackThreadForSession(ctx context.Context, deps ToolDeps, scope backgroundt
 	if sess.Channel != "slack" {
 		return "", "", "", errors.New("this tool is only available in Slack conversations")
 	}
-	_, channel, thread, ok := slackclient.ParseChannelKey(sess.ChannelKey)
+	team, channel, thread, ok := slackclient.ParseChannelKey(sess.ChannelKey)
 	if !ok {
 		return "", "", "", errors.New("could not resolve the Slack thread for this session")
 	}
-	token, terr := deps.Creds.Resolve(ctx, scope.UserID, "slack")
+	var token string
+	var terr error
+	if deps.SlackTokens != nil {
+		token, terr = deps.SlackTokens.ResolveTeam(ctx, scope.UserID, team)
+	} else {
+		token, terr = deps.Creds.Resolve(ctx, scope.UserID, "slack")
+	}
 	if terr != nil {
 		return "", "", "", terr
 	}

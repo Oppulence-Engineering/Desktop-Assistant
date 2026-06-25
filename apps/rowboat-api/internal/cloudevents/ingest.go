@@ -24,6 +24,11 @@ func (e *payloadTooLargeError) Error() string {
 	return fmt.Sprintf("payload exceeds %d bytes", e.limit)
 }
 
+type afterCreateError struct{ err error }
+
+func (e *afterCreateError) Error() string { return e.err.Error() }
+func (e *afterCreateError) Unwrap() error { return e.err }
+
 // validate enforces the RFC 003 ingest contract. It mutates req in place to
 // apply the gist truncation bounds.
 func (h *Handler) validate(req *IngestRequest) error {
@@ -56,6 +61,10 @@ func (h *Handler) validate(req *IngestRequest) error {
 // dedupe_key) index makes provider retries and duplicate posts converge on one
 // row, and only the row's creator ever enqueues the route workflow.
 func (h *Handler) ingest(ctx context.Context, u *ent.User, req IngestRequest) (*ent.CloudEvent, bool, error) {
+	return h.ingestWithAfterCreate(ctx, u, req, nil)
+}
+
+func (h *Handler) ingestWithAfterCreate(ctx context.Context, u *ent.User, req IngestRequest, afterCreate func(context.Context, *ent.CloudEvent) error) (*ent.CloudEvent, bool, error) {
 	if err := h.validate(&req); err != nil {
 		return nil, false, err
 	}
@@ -133,6 +142,16 @@ func (h *Handler) ingest(ctx context.Context, u *ent.User, req IngestRequest) (*
 		}
 		metricDeduped.WithLabelValues(req.Source).Inc()
 		return existing, true, nil
+	}
+
+	if afterCreate != nil {
+		if err := afterCreate(ctx, created); err != nil {
+			if derr := h.client.CloudEvent.DeleteOneID(created.ID).Exec(auth.WithInternal(ctx)); derr != nil {
+				h.log.Error("delete cloud event after create hook failure",
+					zap.String("eventId", created.ID.String()), zap.Error(derr))
+			}
+			return nil, false, &afterCreateError{err: err}
+		}
 	}
 	metricIngested.WithLabelValues(req.Source).Inc()
 

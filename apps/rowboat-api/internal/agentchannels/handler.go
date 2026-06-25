@@ -155,6 +155,67 @@ func stripSlackMentions(text string) string {
 	return strings.TrimSpace(leadingSlackMentionsRE.ReplaceAllString(text, ""))
 }
 
+type slackEnvelope struct {
+	Type      string `json:"type"`
+	Challenge string `json:"challenge"`
+	TeamID    string `json:"team_id"`
+	EventID   string `json:"event_id"`
+	Event     struct {
+		Type     string `json:"type"`
+		Text     string `json:"text"`
+		Channel  string `json:"channel"`
+		ThreadTS string `json:"thread_ts"`
+		TS       string `json:"ts"`
+		BotID    string `json:"bot_id"`
+		User     string `json:"user"`
+	} `json:"event"`
+}
+
+func parseSlackEnvelope(body []byte) (slackEnvelope, error) {
+	var env slackEnvelope
+	if err := json.Unmarshal(body, &env); err != nil {
+		return slackEnvelope{}, err
+	}
+	return env, nil
+}
+
+// DispatchVerifiedSlack starts or continues a Slack-channel agent session from
+// a payload whose Slack request signature has already been verified and whose
+// workspace owner has already been resolved.
+func (h *Handler) DispatchVerifiedSlack(ctx context.Context, owner *ent.User, body []byte) error {
+	env, err := parseSlackEnvelope(body)
+	if err != nil {
+		return err
+	}
+	return h.dispatchSlackEvent(ctx, owner, env)
+}
+
+func (h *Handler) dispatchSlackEvent(ctx context.Context, owner *ent.User, env slackEnvelope) error {
+	// Trigger on @-mentions only (the "tag us" model). Ignore everything else and
+	// bot-authored mentions (no echo loops).
+	if env.Type != "event_callback" || env.Event.Type != "app_mention" || env.Event.BotID != "" {
+		return nil
+	}
+	text := stripSlackMentions(env.Event.Text)
+	if text == "" {
+		return nil
+	}
+	if h.dispatcher == nil {
+		return errors.New("agent channel dispatcher not configured")
+	}
+	// A top-level mention starts a thread keyed by its own ts; replies (and later
+	// mentions in that thread) carry thread_ts, threading to the one session.
+	thread := env.Event.ThreadTS
+	if thread == "" {
+		thread = env.Event.TS
+	}
+	channelKey := fmt.Sprintf("slack:%s:%s:%s", env.TeamID, env.Event.Channel, thread)
+	_, _, err := h.dispatcher.Dispatch(auth.WithUser(ctx, owner), ChannelMessage{
+		Channel: "slack", ChannelKey: channelKey, User: owner, Text: text, InitiatorID: env.Event.User,
+	})
+	return err
+}
+
 // SlackInbound handles POST /v1/agent-channels/slack (Slack Events API). It
 // verifies the Slack signature, resolves the workspace owner, and dispatches a
 // channel message keyed by the Slack channel/thread. The trigger is an
@@ -177,22 +238,8 @@ func (h *Handler) SlackInbound(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusUnauthorized, "invalid slack signature", "unauthorized")
 		return
 	}
-	var env struct {
-		Type      string `json:"type"`
-		Challenge string `json:"challenge"`
-		TeamID    string `json:"team_id"`
-		EventID   string `json:"event_id"`
-		Event     struct {
-			Type     string `json:"type"`
-			Text     string `json:"text"`
-			Channel  string `json:"channel"`
-			ThreadTS string `json:"thread_ts"`
-			TS       string `json:"ts"`
-			BotID    string `json:"bot_id"`
-			User     string `json:"user"`
-		} `json:"event"`
-	}
-	if err := json.Unmarshal(body, &env); err != nil {
+	env, err := parseSlackEnvelope(body)
+	if err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid JSON body", "bad_request")
 		return
 	}
@@ -200,14 +247,7 @@ func (h *Handler) SlackInbound(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteJSON(w, http.StatusOK, map[string]string{"challenge": env.Challenge})
 		return
 	}
-	// Trigger on @-mentions only (the "tag us" model). Ignore everything else and
-	// bot-authored mentions (no echo loops).
-	if env.Type != "event_callback" || env.Event.Type != "app_mention" || env.Event.BotID != "" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-	text := stripSlackMentions(env.Event.Text)
-	if text == "" {
+	if env.Type != "event_callback" || env.Event.Type != "app_mention" || env.Event.BotID != "" || stripSlackMentions(env.Event.Text) == "" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -225,16 +265,7 @@ func (h *Handler) SlackInbound(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	// A top-level mention starts a thread keyed by its own ts; replies (and later
-	// mentions in that thread) carry thread_ts, threading to the one session.
-	thread := env.Event.ThreadTS
-	if thread == "" {
-		thread = env.Event.TS
-	}
-	channelKey := fmt.Sprintf("slack:%s:%s:%s", env.TeamID, env.Event.Channel, thread)
-	if _, _, derr := h.dispatcher.Dispatch(auth.WithUser(r.Context(), owner), ChannelMessage{
-		Channel: "slack", ChannelKey: channelKey, User: owner, Text: text, InitiatorID: env.Event.User,
-	}); derr != nil {
+	if derr := h.dispatchSlackEvent(r.Context(), owner, env); derr != nil {
 		// Release the claim and return non-2xx so Slack retries — the retry will
 		// re-dispatch rather than be lost.
 		h.releaseSlackEvent(env.EventID)

@@ -316,6 +316,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		agentChannelsH.SetApprovals(agentStarter, slackclient.New(outbound.Policy{
 			Timeout: 15 * time.Second, MaxConcurrent: 64, MaxResponseBytes: 1 << 20,
 		}))
+		cloudEventsH.SetSlackAgentDispatcher(agentChannelsH.DispatchVerifiedSlack)
 		var agentBus *agentstream.Bus
 		if cfg.AgentStreamingEnabled && cfg.RedisURL != "" {
 			if b, berr := agentstream.NewBus(ctx, cfg.RedisURL); berr == nil {
@@ -376,12 +377,11 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
 		Post("/v1/webhooks/slack", cloudEventsH.SlackWebhook)
 
-	// Agent channel inbound (RFC 027 P5). Slack delivers here when a workspace is
-	// wired to an agent (verifies its own signature); the generic internal ingest
-	// lets any server-side channel gateway start/continue a session.
+	// Agent channel inbound (RFC 027 P5). Slack Events API has a single request
+	// URL, so /v1/webhooks/slack owns verification, durable event storage, and
+	// app_mention fan-out to agentChannelsH. The generic internal ingest lets
+	// any server-side channel gateway start/continue a session.
 	if agentChannelsH != nil {
-		r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
-			Post("/v1/agent-channels/slack", agentChannelsH.SlackInbound)
 		// Slack interactive components (Approve/Deny buttons) for HITL approvals.
 		r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
 			Post("/v1/agent-channels/slack/interactivity", agentChannelsH.SlackInteractivity)

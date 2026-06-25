@@ -19,10 +19,16 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slack"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slacktoken"
 	"go.uber.org/zap"
 )
 
 func setup(t *testing.T) (*ent.Client, *ent.User, *slack.Handler) {
+	client, user, handler, _ := setupWithSealer(t)
+	return client, user, handler
+}
+
+func setupWithSealer(t *testing.T) (*ent.Client, *ent.User, *slack.Handler, *crypto.Sealer) {
 	t.Helper()
 	d, err := db.Open(context.Background(), appconfig.Config{
 		DatabaseURL: "file:" + t.Name() + "?mode=memory&cache=shared&_pragma=foreign_keys(1)",
@@ -40,7 +46,7 @@ func setup(t *testing.T) (*ent.Client, *ent.User, *slack.Handler) {
 	}
 	sec := secrets.NewFromConfig(appconfig.Config{SlackClientID: "client-1", SlackClientSecret: "secret-1"})
 	h := slack.New(d.Client, sealer, sec, zap.NewNop())
-	return d.Client, u, h
+	return d.Client, u, h, sealer
 }
 
 // mockSlackToken serves oauth.v2.access. Slack returns 200 with ok:false on
@@ -170,6 +176,51 @@ func TestSlackOAuthFullFlow(t *testing.T) {
 	// One-shot: a second claim of the same ticket is rejected.
 	if rec := claim(t, h, u, state); rec.Code != http.StatusNotFound {
 		t.Fatalf("replayed claim: %d, want 404", rec.Code)
+	}
+}
+
+func TestSlackOAuthStoresRotatingAccessTokenBundle(t *testing.T) {
+	client, u, h, sealer := setupWithSealer(t)
+	token := mockSlackToken(t, func(form url.Values) map[string]any {
+		if form.Get("code") != "code-1" || form.Get("client_secret") != "secret-1" {
+			return map[string]any{"ok": false, "error": "invalid_code"}
+		}
+		return map[string]any{
+			"ok":            true,
+			"access_token":  "xoxb-rotating-access-token",
+			"refresh_token": "xoxe-rotating-refresh-token",
+			"expires_in":    43200,
+			"scope":         "channels:history,channels:read",
+			"bot_user_id":   "U0BOT",
+			"app_id":        "A0APP",
+			"team":          map[string]any{"id": "T0EXAMPLE", "name": "Acme"},
+		}
+	})
+	h.SetOAuthFlow("https://slack.example/authorize", token.URL, "https://api.example/oauth/slack/callback", "solomon-ai", "")
+
+	state := startFlow(t, h)
+	runCallback(t, h, state)
+	rec := claim(t, h, u, state)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("claim: %d (%s), want 200", rec.Code, rec.Body.String())
+	}
+
+	conn := client.OAuthConnection.Query().
+		Where(oauthconnection.ProviderEQ("slack")).
+		OnlyX(auth.WithUser(context.Background(), u))
+	plain, err := sealer.OpenString(conn.RefreshTokenEncrypted)
+	if err != nil {
+		t.Fatalf("open credential: %v", err)
+	}
+	cred, ok := slacktoken.DecodeCredential(plain)
+	if !ok {
+		t.Fatalf("credential = %q, want rotating token bundle", plain)
+	}
+	if cred.AccessToken != "xoxb-rotating-access-token" || cred.RefreshToken != "xoxe-rotating-refresh-token" {
+		t.Fatalf("credential = %+v", cred)
+	}
+	if cred.ExpiresAt.IsZero() {
+		t.Fatal("rotating credential missing expiry")
 	}
 }
 

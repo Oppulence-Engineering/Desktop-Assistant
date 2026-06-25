@@ -27,13 +27,13 @@ func ConduitReadCapability() Capability {
 			if d.Conduit == nil {
 				return newUnavailableTool("conduit.read", "Conduit is not configured on this server")
 			}
-			return &facultyTool{
+			return guardOwnerScopedToolInSlack(d, &facultyTool{
 				name:        "conduit.read",
 				description: "Query the Conduit evidence plane (read-only).",
 				schema:      json.RawMessage(`{"type":"object","properties":{"operation":{"type":"string"},"params":{"type":"object"}},"required":["operation"]}`),
 				client:      d.Conduit,
 				path:        "/v1/query",
-			}
+			})
 		},
 	}
 }
@@ -50,13 +50,13 @@ func EigenSimulateCapability() Capability {
 			if d.Eigen == nil {
 				return newUnavailableTool("eigen.simulate", "Eigen is not configured on this server")
 			}
-			return &facultyTool{
+			return guardOwnerScopedToolInSlack(d, &facultyTool{
 				name:        "eigen.simulate",
 				description: "Run a forward financial simulation via Eigen (read-only).",
 				schema:      json.RawMessage(`{"type":"object","properties":{"scenario":{"type":"string"},"params":{"type":"object"}},"required":["scenario"]}`),
 				client:      d.Eigen,
 				path:        "/v1/simulate",
-			}
+			})
 		},
 	}
 }
