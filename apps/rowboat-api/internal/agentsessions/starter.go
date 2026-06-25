@@ -56,12 +56,13 @@ func New(client *ent.Client, loader *agentregistry.Loader, temporal agentworkflo
 
 // CreateParams is the input to CreateSession.
 type CreateParams struct {
-	User       *ent.User
-	AgentSlug  string
-	Channel    string // defaults to "http"
-	ChannelKey string // threads an external conversation to one session (P5)
-	Title      string
-	FirstInput string // optional: seeds the first turn so create→run is one call
+	User         *ent.User
+	AgentSlug    string
+	Channel      string // defaults to "http"
+	ChannelKey   string // threads an external conversation to one session (P5)
+	Title        string
+	FirstInput   string // optional: seeds the first turn so create→run is one call
+	InitiatorRef string // platform user id of the requester (e.g. "Uxxxx" for Slack); HITL authz
 }
 
 // Session is the created session plus its Temporal binding.
@@ -101,6 +102,7 @@ func (s *Starter) CreateSession(ctx context.Context, p CreateParams) (*Session, 
 	workflowID := agentworkflow.WorkflowID(p.User.ID.String(), sessionID)
 
 	start := s.buildStart(p.User, spec, sessionID, channel)
+	start.InitiatorRef = p.InitiatorRef
 	state := agentworkflow.SessionState{Start: start}
 	if p.FirstInput != "" {
 		state.EnqueuedTurns = 1
@@ -271,12 +273,13 @@ func (s *Starter) createRow(ctx context.Context, p CreateParams, sessionID, work
 
 // ContinueParams is the input to CreateOrContinue (channel dispatch).
 type ContinueParams struct {
-	User       *ent.User
-	AgentSlug  string
-	Channel    string
-	ChannelKey string
-	Input      string
-	Title      string
+	User         *ent.User
+	AgentSlug    string
+	Channel      string
+	ChannelKey   string
+	Input        string
+	Title        string
+	InitiatorRef string // platform user id of the requester; recorded on create for HITL authz
 }
 
 // CreateOrContinue threads a channel conversation to a single session: it finds
@@ -317,7 +320,7 @@ func (s *Starter) CreateOrContinue(ctx context.Context, p ContinueParams) (*Sess
 	}
 	sess, err := s.CreateSession(ctx, CreateParams{
 		User: p.User, AgentSlug: p.AgentSlug, Channel: p.Channel, ChannelKey: p.ChannelKey,
-		Title: p.Title, FirstInput: p.Input,
+		Title: p.Title, FirstInput: p.Input, InitiatorRef: p.InitiatorRef,
 	})
 	if err != nil {
 		return sess, false, err

@@ -120,7 +120,7 @@ export async function push(dir: string): Promise<boolean> {
     headers: authHeaders(opts, "application/json"),
     body: JSON.stringify(doc),
   });
-  const json = await res.json().catch(() => ({}));
+  const json = (await res.json().catch(() => ({}))) as { revision?: unknown };
   if (res.status === 200 || res.status === 201) {
     console.log(`  ✓ applied ${slug} (revision ${json?.revision ?? "?"})`);
     return true;

@@ -20,6 +20,7 @@ import (
 // scopes the connect flow requests.
 const (
 	ScopeGmailReadonly    = "https://www.googleapis.com/auth/gmail.readonly"
+	ScopeGmailCompose     = "https://www.googleapis.com/auth/gmail.compose"
 	ScopeCalendarReadonly = "https://www.googleapis.com/auth/calendar.events.readonly"
 )
 
@@ -50,7 +51,10 @@ func (d connectorDeps) accessToken(ctx context.Context, requiredScope string) (s
 		return "", fmt.Errorf("load google connection: %w", err)
 	}
 	if !slices.Contains(conn.Scopes, requiredScope) {
-		return "", &RuntimeError{Code: CodeConnectorUnavailable, Message: "google connection lacks the required scope: " + requiredScope}
+		// Connections made before a scope was added to the connect flow won't carry
+		// it; the user must reconnect Google to grant it (we can't widen an existing
+		// grant server-side).
+		return "", &RuntimeError{Code: CodeConnectorUnavailable, Message: "google connection is missing the " + requiredScope + " scope; reconnect Google to grant it"}
 	}
 	token, err := d.google.AccessTokenForConnection(ctx, d.sealer, d.secrets, conn)
 	if err != nil {
@@ -98,6 +102,49 @@ func (t *gmailReadTool) Invoke(ctx context.Context, _ ToolScope, args json.RawMe
 		return nil, fmt.Errorf("gmail search: %w", err)
 	}
 	return json.Marshal(map[string]any{"messages": messages})
+}
+
+// NewGmailDraftTool builds connector.write.gmail_draft (creates a draft; never
+// sends). It is an outward-facing act — the durable runtime gates it behind a
+// human approval (RFC 012 act tier).
+func NewGmailDraftTool(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, google *googleapi.Client, userID uuid.UUID) Tool {
+	return &gmailDraftTool{deps: connectorDeps{client: client, sealer: sealer, secrets: sec, google: google, userID: userID}}
+}
+
+type gmailDraftTool struct{ deps connectorDeps }
+
+func (t *gmailDraftTool) Name() string { return "connector.write.gmail_draft" }
+func (t *gmailDraftTool) Description() string {
+	return "Create a Gmail draft on the user's behalf (does NOT send it). Returns the draft id."
+}
+
+func (t *gmailDraftTool) JSONSchema() json.RawMessage {
+	return json.RawMessage(`{"type":"object","properties":{"to":{"type":"string","description":"recipient email address"},"subject":{"type":"string"},"body":{"type":"string","description":"plain-text body"}},"required":["to","body"]}`)
+}
+
+func (t *gmailDraftTool) Invoke(ctx context.Context, _ ToolScope, args json.RawMessage) (json.RawMessage, error) {
+	var in struct {
+		To      string `json:"to"`
+		Subject string `json:"subject"`
+		Body    string `json:"body"`
+	}
+	if len(args) > 0 {
+		if err := json.Unmarshal(args, &in); err != nil {
+			return nil, fmt.Errorf("invalid arguments: %w", err)
+		}
+	}
+	if in.To == "" || in.Body == "" {
+		return nil, fmt.Errorf("'to' and 'body' are required")
+	}
+	token, err := t.deps.accessToken(ctx, ScopeGmailCompose)
+	if err != nil {
+		return nil, err
+	}
+	id, err := t.deps.google.CreateDraft(ctx, token, in.To, in.Subject, in.Body)
+	if err != nil {
+		return nil, fmt.Errorf("gmail draft: %w", err)
+	}
+	return json.Marshal(map[string]any{"draftId": id, "status": "created"})
 }
 
 // NewCalendarReadTool builds connector.read.calendar (read-only events list).

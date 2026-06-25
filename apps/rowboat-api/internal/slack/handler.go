@@ -26,6 +26,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slacktoken"
 	"go.uber.org/zap"
 )
 
@@ -61,7 +62,9 @@ func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, log *zap
 		authorizeURL:   "https://slack.com/oauth/v2/authorize",
 		tokenURL:       "https://slack.com/api/oauth.v2.access",
 		deepLinkScheme: "rowboat",
-		scopes:         "channels:history,channels:read,users:read",
+		// app_mentions:read receives @-mentions (the CloudTag trigger); chat:write
+		// posts the agent's reply back into the thread (the round-trip).
+		scopes: "app_mentions:read,channels:history,channels:read,chat:write,users:read",
 	}
 }
 
@@ -97,6 +100,7 @@ type parkedPayload struct {
 	// RefreshToken is present only when the Slack app has token rotation
 	// enabled; v1 persists the access token either way (non-rotating default).
 	RefreshToken string `json:"refresh_token,omitempty"`
+	ExpiresIn    int64  `json:"expires_in,omitempty"`
 	Scope        string `json:"scope,omitempty"`
 	TeamID       string `json:"team_id"`
 	TeamName     string `json:"team_name,omitempty"`
@@ -213,11 +217,21 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 // token (the credential column), granted scopes, and the team id that keys
 // webhook user resolution.
 func (h *Handler) persistConnection(ctx context.Context, u *ent.User, payload parkedPayload) error {
-	// Prefer the rotating refresh token when the Slack app has rotation
-	// enabled; otherwise the (non-expiring) bot token is the credential.
 	credential := payload.AccessToken
 	if payload.RefreshToken != "" {
-		credential = payload.RefreshToken
+		expiresAt := time.Time{}
+		if payload.ExpiresIn > 0 {
+			expiresAt = time.Now().Add(time.Duration(payload.ExpiresIn) * time.Second)
+		}
+		var err error
+		credential, err = slacktoken.MarshalCredential(slacktoken.Credential{
+			AccessToken:  payload.AccessToken,
+			RefreshToken: payload.RefreshToken,
+			ExpiresAt:    expiresAt,
+		})
+		if err != nil {
+			return err
+		}
 	}
 	sealed, err := h.sealer.SealString(credential)
 	if err != nil {

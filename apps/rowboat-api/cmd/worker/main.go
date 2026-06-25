@@ -22,16 +22,21 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectorcreds"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slacktoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
@@ -257,7 +262,28 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 				Publisher:      publisher,
 				ApprovalSigner: agentSigner,
 				RequireMFA:     cfg.AgentRequireMFAForMoneyMoving,
-				Log:            log,
+				// RFC 027 channels round-trip + Slack-native tools: the Slack client
+				// posts replies back into the originating thread and reads thread
+				// history; the Sealer opens the team bot token for delivery and Creds
+				// resolves the session owner's connector tokens for tools.
+				Sealer: deps.Sealer,
+				Slack: slackclient.New(outbound.Policy{
+					Timeout:          15 * time.Second,
+					MaxConcurrent:    64,
+					MaxResponseBytes: 1 << 20,
+				}),
+				Creds: connectorcreds.New(client, deps.Sealer),
+				SlackTokens: slacktoken.New(client, deps.Sealer, deps.Secrets, cfg.SlackTokenURL, outbound.Policy{
+					Timeout:          15 * time.Second,
+					MaxConcurrent:    64,
+					MaxResponseBytes: 1 << 20,
+				}),
+				Secrets: deps.Secrets,
+				Google:  deps.Google,
+				Web:     websearch.New(cfg.WebSearchAPIURL, cfg.WebSearchAPIKey, outbound.Policy{Timeout: 20 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 4 << 20}),
+				Conduit: faculties.New("conduit", cfg.ConduitBaseURL, cfg.ConduitAPIKey, outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
+				Eigen:   faculties.New("eigen", cfg.EigenBaseURL, cfg.EigenAPIKey, outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
+				Log:     log,
 			})
 			// RFC 027 P5: the scheduled-session action runs on the worker and
 			// starts sessions through the canonical starter (which needs the

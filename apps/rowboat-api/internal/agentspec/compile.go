@@ -85,14 +85,14 @@ func Compile(doc *Document, resolvedInstructions string) (Compiled, error) {
 		Channels:     append([]string(nil), doc.Spec.Channels...),
 	}
 	for _, t := range doc.Spec.Tools {
-		out.Tools = append(out.Tools, ToolConfig{Name: t.Name, Kind: t.Kind, ManifestRef: t.ManifestRef, RequiresApproval: t.RequiresApproval})
+		out.Tools = append(out.Tools, ToolConfig(t))
 		out.EnabledTools = append(out.EnabledTools, t.Name)
 	}
 	for _, c := range doc.Spec.Connections {
 		out.ConnectorReqs = append(out.ConnectorReqs, c.Scope)
 	}
 	for _, tr := range doc.Spec.Triggers {
-		out.Triggers = append(out.Triggers, TriggerConfig{Schedule: tr.Schedule})
+		out.Triggers = append(out.Triggers, TriggerConfig(tr))
 	}
 	if doc.Spec.Limits != nil {
 		out.Limits = LimitsConfig{
