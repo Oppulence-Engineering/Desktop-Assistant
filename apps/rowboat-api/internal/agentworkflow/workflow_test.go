@@ -34,7 +34,7 @@ func newWFHarness(t *testing.T) *wfHarness {
 	h := &wfHarness{env: ts.NewTestWorkflowEnvironment()}
 	h.env.SetTestTimeout(30 * time.Second)
 	// Default LLM: end the turn immediately with a final message.
-	h.llm = func(in LLMCompleteInput) LLMCompleteResult {
+	h.llm = func(_ LLMCompleteInput) LLMCompleteResult {
 		return finalMsg("done.")
 	}
 

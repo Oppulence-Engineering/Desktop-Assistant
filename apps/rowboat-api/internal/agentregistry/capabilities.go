@@ -153,8 +153,8 @@ func NewCatalog(caps ...Capability) *Catalog {
 
 // Get resolves a capability by name.
 func (c *Catalog) Get(name string) (Capability, bool) {
-	cap, ok := c.caps[name]
-	return cap, ok
+	capability, ok := c.caps[name]
+	return capability, ok
 }
 
 // Names lists every capability name in stable order.
@@ -182,11 +182,11 @@ func (c *Catalog) Validate(names []string) error {
 func (c *Catalog) Defs(names []string) []backgroundtaskruntime.ToolDef {
 	out := make([]backgroundtaskruntime.ToolDef, 0, len(names))
 	for _, n := range names {
-		cap, ok := c.caps[n]
-		if !ok || cap.Kind == KindSubagent {
+		capability, ok := c.caps[n]
+		if !ok || capability.Kind == KindSubagent {
 			continue
 		}
-		out = append(out, cap.Def())
+		out = append(out, capability.Def())
 	}
 	return out
 }

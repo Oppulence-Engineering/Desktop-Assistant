@@ -23,7 +23,9 @@ import (
 type Kind string
 
 const (
-	KindApproval     Kind = "approval"
+	// KindApproval identifies a signed approval token.
+	KindApproval Kind = "approval"
+	// KindContinuation identifies a signed continuation token.
 	KindContinuation Kind = "continuation"
 )
 

@@ -29,8 +29,8 @@ func TestFacultyToolsRegistered(t *testing.T) {
 
 func TestFacultyToolsUnavailableWhenUnconfigured(t *testing.T) {
 	for _, name := range []string{"conduit.read", "eigen.simulate"} {
-		cap, _ := DefaultCatalog().Get(name)
-		tool := cap.Build(ToolDeps{}) // no faculty clients
+		capability, _ := DefaultCatalog().Get(name)
+		tool := capability.Build(ToolDeps{}) // no faculty clients
 		out, err := tool.Invoke(context.Background(), backgroundtaskruntime.ToolScope{}, json.RawMessage(`{"operation":"x","scenario":"y"}`))
 		if err != nil {
 			t.Fatalf("invoke: %v", err)
@@ -51,8 +51,8 @@ func TestConduitToolForwardsRequest(t *testing.T) {
 	defer srv.Close()
 	conduit := faculties.New("conduit", srv.URL, "k", outbound.Policy{})
 
-	cap, _ := DefaultCatalog().Get("conduit.read")
-	tool := cap.Build(ToolDeps{Conduit: conduit})
+	capability, _ := DefaultCatalog().Get("conduit.read")
+	tool := capability.Build(ToolDeps{Conduit: conduit})
 	out, err := tool.Invoke(context.Background(), backgroundtaskruntime.ToolScope{UserID: "user-1"}, json.RawMessage(`{"operation":"disputes_open"}`))
 	if err != nil {
 		t.Fatalf("invoke: %v", err)
@@ -70,7 +70,7 @@ func TestConduitToolForwardsRequest(t *testing.T) {
 
 func TestFacultyToolsRejectSlackChannelSessions(t *testing.T) {
 	var called bool
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		called = true
 		_, _ = w.Write([]byte(`{"ok":true}`))
 	}))
@@ -78,8 +78,8 @@ func TestFacultyToolsRejectSlackChannelSessions(t *testing.T) {
 	deps, scope := slackSessionToolDeps(t)
 	deps.Conduit = faculties.New("conduit", srv.URL, "k", outbound.Policy{})
 
-	cap, _ := DefaultCatalog().Get("conduit.read")
-	tool := cap.Build(deps)
+	capability, _ := DefaultCatalog().Get("conduit.read")
+	tool := capability.Build(deps)
 	out, err := tool.Invoke(context.Background(), scope, json.RawMessage(`{"operation":"disputes_open"}`))
 	if err != nil {
 		t.Fatalf("invoke returned hard error: %v", err)

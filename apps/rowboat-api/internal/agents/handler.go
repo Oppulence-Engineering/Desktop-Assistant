@@ -499,7 +499,7 @@ func continuationFromRequest(r *http.Request) string {
 	return r.Header.Get("X-Continuation-Token")
 }
 
-func (h *Handler) writeStarterError(w http.ResponseWriter, err error, sess *agentsessions.Session) {
+func (h *Handler) writeStarterError(w http.ResponseWriter, err error, _ *agentsessions.Session) {
 	var invalid *agentsessions.InvalidParamsError
 	switch {
 	case errors.As(err, &invalid):

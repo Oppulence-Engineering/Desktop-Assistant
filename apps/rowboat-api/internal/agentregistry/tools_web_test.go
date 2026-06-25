@@ -24,8 +24,8 @@ func TestWebSearchRegistered(t *testing.T) {
 }
 
 func TestWebSearchUnavailableWhenUnconfigured(t *testing.T) {
-	cap, _ := DefaultCatalog().Get("web.search")
-	tool := cap.Build(ToolDeps{}) // no Web client
+	capability, _ := DefaultCatalog().Get("web.search")
+	tool := capability.Build(ToolDeps{}) // no Web client
 	out, err := tool.Invoke(context.Background(), backgroundtaskruntime.ToolScope{}, json.RawMessage(`{"query":"x"}`))
 	if err != nil {
 		t.Fatalf("invoke: %v", err)
@@ -37,8 +37,8 @@ func TestWebSearchUnavailableWhenUnconfigured(t *testing.T) {
 
 func TestWebSearchEmptyArgsGraceful(t *testing.T) {
 	web := websearch.New("https://x", "k", outbound.Policy{})
-	cap, _ := DefaultCatalog().Get("web.search")
-	tool := cap.Build(ToolDeps{Web: web})
+	capability, _ := DefaultCatalog().Get("web.search")
+	tool := capability.Build(ToolDeps{Web: web})
 	// Empty args must yield a graceful "query is required" observation, not a
 	// cryptic JSON-unmarshal error.
 	out, err := tool.Invoke(context.Background(), backgroundtaskruntime.ToolScope{}, nil)
@@ -57,8 +57,8 @@ func TestWebSearchToolReturnsResults(t *testing.T) {
 	defer srv.Close()
 	web := websearch.New(srv.URL, "k", outbound.Policy{})
 
-	cap, _ := DefaultCatalog().Get("web.search")
-	tool := cap.Build(ToolDeps{Web: web})
+	capability, _ := DefaultCatalog().Get("web.search")
+	tool := capability.Build(ToolDeps{Web: web})
 	out, err := tool.Invoke(context.Background(), backgroundtaskruntime.ToolScope{}, json.RawMessage(`{"query":"rowboat","max_results":1}`))
 	if err != nil {
 		t.Fatalf("invoke: %v", err)

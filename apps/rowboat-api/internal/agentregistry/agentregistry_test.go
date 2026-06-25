@@ -11,13 +11,13 @@ func TestDefaultCatalogHasCoreCapabilities(t *testing.T) {
 			t.Fatalf("DefaultCatalog missing %q", name)
 		}
 	}
-	if cap, _ := c.Get("demo.payment"); cap.TrustTier != TierMoneyMoving {
-		t.Fatalf("demo.payment tier = %q, want %q", cap.TrustTier, TierMoneyMoving)
+	if capability, _ := c.Get("demo.payment"); capability.TrustTier != TierMoneyMoving {
+		t.Fatalf("demo.payment tier = %q, want %q", capability.TrustTier, TierMoneyMoving)
 	}
-	if cap, _ := c.Get("subagent.delegate"); cap.Kind != KindSubagent {
-		t.Fatalf("subagent.delegate kind = %q, want %q", cap.Kind, KindSubagent)
+	if capability, _ := c.Get("subagent.delegate"); capability.Kind != KindSubagent {
+		t.Fatalf("subagent.delegate kind = %q, want %q", capability.Kind, KindSubagent)
 	}
-	if cap, _ := c.Get("echo"); cap.Build == nil {
+	if capability, _ := c.Get("echo"); capability.Build == nil {
 		t.Fatal("echo capability has no Build")
 	}
 }

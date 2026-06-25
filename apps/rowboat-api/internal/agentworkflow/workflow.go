@@ -192,8 +192,8 @@ func (e *exec) registerHandlers(ctx workflow.Context) error {
 				if strings.TrimSpace(in.Input) == "" {
 					return errors.New("turn input is required")
 				}
-				if max := st.Start.Limits.MaxTurnsPerSession; max > 0 && st.CompletedTurns+len(st.Pending) >= max {
-					return fmt.Errorf("session turn limit (%d) reached", max)
+				if maxTurns := st.Start.Limits.MaxTurnsPerSession; maxTurns > 0 && st.CompletedTurns+len(st.Pending) >= maxTurns {
+					return fmt.Errorf("session turn limit (%d) reached", maxTurns)
 				}
 				return nil
 			},

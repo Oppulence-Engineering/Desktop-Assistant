@@ -46,9 +46,9 @@ func TestGmailDraftCapabilityIsApprovalTier(t *testing.T) {
 
 func TestGoogleToolUnavailableWhenUnconfigured(t *testing.T) {
 	for _, name := range []string{"connector.read.gmail", "connector.read.calendar", "connector.write.gmail_draft"} {
-		cap, _ := DefaultCatalog().Get(name)
+		capability, _ := DefaultCatalog().Get(name)
 		// No Google deps and no user id → graceful "unavailable", never a panic.
-		tool := cap.Build(ToolDeps{})
+		tool := capability.Build(ToolDeps{})
 		if tool.Name() != name {
 			t.Fatalf("unavailable tool name = %q, want %q", tool.Name(), name)
 		}
@@ -103,8 +103,8 @@ func TestGoogleToolsRejectSlackChannelSessions(t *testing.T) {
 		{name: "connector.write.gmail_draft", args: json.RawMessage(`{"to":"customer@example.com","body":"hello"}`)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			cap, _ := DefaultCatalog().Get(tc.name)
-			tool := cap.Build(deps)
+			capability, _ := DefaultCatalog().Get(tc.name)
+			tool := capability.Build(deps)
 			out, err := tool.Invoke(auth.WithInternal(context.Background()), scope, tc.args)
 			if err != nil {
 				t.Fatalf("invoke returned hard error: %v", err)

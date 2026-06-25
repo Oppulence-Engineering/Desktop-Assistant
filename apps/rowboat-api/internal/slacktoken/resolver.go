@@ -32,7 +32,7 @@ const (
 	refreshBeforeSlackToken = 5 * time.Minute
 )
 
-var ErrNotConnected = errors.New("slacktoken: slack connection not found")
+var errNotConnected = errors.New("slacktoken: slack connection not found")
 
 // Credential is the plaintext Slack credential shape sealed into
 // OAuthConnection.refresh_token_encrypted when Slack token rotation is enabled.
@@ -138,7 +138,7 @@ func (r *Resolver) TokenForConnection(ctx context.Context, conn *ent.OAuthConnec
 		return "", errors.New("slacktoken: resolver not configured")
 	}
 	if conn == nil {
-		return "", ErrNotConnected
+		return "", errNotConnected
 	}
 	plain, err := r.sealer.OpenString(conn.RefreshTokenEncrypted)
 	if err != nil {
@@ -179,7 +179,7 @@ func (r *Resolver) lookup(ctx context.Context, userID, teamID string) (*ent.OAut
 	conn, err := query.Only(auth.WithInternal(ctx))
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return nil, ErrNotConnected
+			return nil, errNotConnected
 		}
 		return nil, fmt.Errorf("slacktoken: load connection: %w", err)
 	}
