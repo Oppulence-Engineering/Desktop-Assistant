@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.17](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.16...v0.1.17) (2026-06-25)
+
+
+### Features
+
+* **apps/x:** implement RFC 017 on-device meeting diarization ([3b8c398](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/3b8c398233de62cb0423c904cd6e7360c1dd7d10))
+* **apps/x:** implement RFC 021 local semantic memory index + app surfaces ([5e318b4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/5e318b45c39e1b1ee1c088fe87d6a88b5efe805d))
+* **apps/x:** surface semantic memory in the UI (settings, related notes, sources, ⌘K) ([34feb52](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/34feb52a2c6247002b9656298c2717be8ef9b4f7))
+
+
+### Bug Fixes
+
+* **apps/x:** wire related notes toolbar action ([82b2ab5](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/82b2ab5babda14eba38164ab64fb651015a5b694))
+
 ## [0.1.16](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.15...v0.1.16) (2026-06-14)
 
 
