@@ -24,7 +24,7 @@ import path from 'path';
 
 // --- Parse CLI args before any core imports (WorkDir reads env at import time) ---
 
-const VALID_STEPS = ['label', 'graph', 'tag'] as const;
+const VALID_STEPS = ['label', 'graph', 'tag', 'memory'] as const;
 type Step = typeof VALID_STEPS[number];
 
 function parseArgs(): { workdir: string; steps: Step[]; concurrency: number } {
@@ -50,7 +50,7 @@ Usage: run_pipeline --workdir <path> [--steps label,graph,tag] [--concurrency N]
 
 Options:
   --workdir <path>      Working directory containing gmail_sync/ folder (required)
-  --steps <list>        Comma-separated steps to run: label, graph, tag (default: all)
+  --steps <list>        Comma-separated steps to run: label, graph, tag, memory (default: all)
   --concurrency <N>     Number of parallel batches for labeling (default: 3)
   --help, -h            Show this help message
 
@@ -134,6 +134,20 @@ async function main() {
         console.log('[Pipeline] === Step 3: Note Tagging ===');
         const { processUntaggedNotes } = await import('./tag_notes.js');
         await processUntaggedNotes();
+        console.log();
+    }
+
+    if (steps.includes('memory')) {
+        // RFC 021: incremental semantic index over the vault, piggybacking the
+        // same sync pass as the graph build. Idempotent; only changed chunks
+        // re-embed. Degrades gracefully (logs) if embeddings are unavailable.
+        console.log('[Pipeline] === Step 4: Semantic Memory Index ===');
+        try {
+            const { runMemoryIndex } = await import('../memory/index.js');
+            await runMemoryIndex();
+        } catch (error) {
+            console.error('[Pipeline] Memory index step failed (non-fatal):', error);
+        }
         console.log();
     }
 

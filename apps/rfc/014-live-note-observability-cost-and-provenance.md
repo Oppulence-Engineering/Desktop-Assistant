@@ -1,16 +1,16 @@
 # RFC 014: Live-Note Observability, Cost, and Provenance
 
-|                  |                                                                                                                                                  |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **RFC**          | 014                                                                                                                                              |
-| **Status**       | Draft                                                                                                                                            |
-| **Track**        | Trust, observability, and user control                                                                                                           |
-| **Owners**       | `apps/x`, `apps/rowboat-api`                                                                                                                     |
-| **Created**      | 2026-06-06                                                                                                                                       |
-| **Last updated** | 2026-06-06                                                                                                                                       |
-| **Depends on**   | Existing live-note/background-task runtime, [RFC 006](./006-desktop-cloud-control-plane.md), [RFC 010](./010-rowboat-api-service-plane.md)       |
-| **Related**      | RFCs 001-007 for cloud run observability                                                                                                         |
-| **Parent docs**  | [`docs/roadmap-2026-2046.md`](../../docs/roadmap-2026-2046.md) P0 defensive gaps, [`docs/one-pager-product.md`](../../docs/one-pager-product.md) |
+|                  |                                                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **RFC**          | 014                                                                                                                                                          |
+| **Status**       | Draft                                                                                                                                                        |
+| **Track**        | Trust, observability, and user control                                                                                                                       |
+| **Owners**       | `apps/x`, `apps/rowboat-api`                                                                                                                                 |
+| **Created**      | 2026-06-06                                                                                                                                                   |
+| **Last updated** | 2026-06-06                                                                                                                                                   |
+| **Depends on**   | Existing live-note/background-task runtime, [RFC 006](./complete-006-desktop-cloud-control-plane.md), [RFC 010](./complete-010-rowboat-api-service-plane.md) |
+| **Related**      | RFCs 001-007 for cloud run observability                                                                                                                     |
+| **Parent docs**  | [`docs/roadmap-2026-2046.md`](../../docs/roadmap-2026-2046.md) P0 defensive gaps, [`docs/one-pager-product.md`](../../docs/one-pager-product.md)             |
 
 ## Summary
 

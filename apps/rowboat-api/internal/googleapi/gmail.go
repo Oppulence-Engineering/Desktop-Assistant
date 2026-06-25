@@ -2,9 +2,13 @@ package googleapi
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"mime"
+	"net/mail"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // maxGmailMessages caps the messages.list → messages.get fan-out: each listed
@@ -79,4 +83,65 @@ func (c *Client) ListMessages(ctx context.Context, token, query string, limit in
 		out = append(out, msg)
 	}
 	return out, nil
+}
+
+// CreateDraft creates a Gmail draft (it does NOT send) addressed to `to` with the
+// given subject and plain-text body, returning the draft id. The caller supplies
+// a token carrying the gmail.compose scope. Header values are sanitized to
+// prevent CRLF header injection.
+func (c *Client) CreateDraft(ctx context.Context, token, to, subject, body string) (string, error) {
+	if strings.TrimSpace(to) == "" {
+		return "", fmt.Errorf("draft recipient is required")
+	}
+	msg := buildPlainTextMIME(encodeAddressHeader(sanitizeHeader(to)), encodeWord(sanitizeHeader(subject)), body)
+	raw := base64.URLEncoding.EncodeToString([]byte(msg))
+	reqBody := map[string]any{"message": map[string]any{"raw": raw}}
+
+	var out struct {
+		ID      string `json:"id"`
+		Message struct {
+			ID string `json:"id"`
+		} `json:"message"`
+	}
+	if err := c.PostJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/drafts", reqBody, &out); err != nil {
+		return "", fmt.Errorf("gmail drafts.create: %w", err)
+	}
+	return out.ID, nil
+}
+
+// buildPlainTextMIME assembles a minimal RFC 822 plain-text message.
+func buildPlainTextMIME(to, subject, body string) string {
+	var b strings.Builder
+	b.WriteString("To: " + to + "\r\n")
+	b.WriteString("Subject: " + subject + "\r\n")
+	b.WriteString("MIME-Version: 1.0\r\n")
+	b.WriteString("Content-Type: text/plain; charset=\"UTF-8\"\r\n")
+	b.WriteString("\r\n")
+	b.WriteString(body)
+	return b.String()
+}
+
+// encodeWord RFC 2047-encodes a header value when it contains non-ASCII (a no-op
+// for pure ASCII), so subjects with accents/emoji are not mangled.
+func encodeWord(s string) string {
+	return mime.QEncoding.Encode("utf-8", s)
+}
+
+// encodeAddressHeader encodes the display-name part of a "Name <addr>" header
+// (leaving the address itself untouched). A bare address passes through, and an
+// unparseable value is emitted as-is (already CRLF-sanitized).
+func encodeAddressHeader(to string) string {
+	addr, err := mail.ParseAddress(to)
+	if err != nil {
+		return to
+	}
+	if addr.Name == "" {
+		return addr.Address
+	}
+	return encodeWord(addr.Name) + " <" + addr.Address + ">"
+}
+
+// sanitizeHeader strips CR/LF so a recipient/subject cannot inject extra headers.
+func sanitizeHeader(s string) string {
+	return strings.NewReplacer("\r", "", "\n", "").Replace(s)
 }

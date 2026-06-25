@@ -36,20 +36,49 @@ func (m *Middleware) ResolveUser(ctx context.Context, claims *oauthrs.Claims) (*
 		Only(ctx)
 	switch {
 	case err == nil:
-		// Refresh email if the token now carries one and it changed.
-		if claims.Email != "" && u.Email != claims.Email {
-			if updated, uErr := u.Update().SetEmail(claims.Email).Save(ctx); uErr == nil {
-				u = updated
-			} else {
-				m.log.Warn("email refresh failed", zap.Error(uErr))
-			}
-		}
-		return u, nil
+		return m.refreshUser(ctx, u, claims), nil
 	case ent.IsNotFound(err):
 		return m.createUser(ctx, claims)
 	default:
 		return nil, err
 	}
+}
+
+// refreshUser keeps the local mirror in step with the token: it refreshes the
+// email when it changes and maps the organization claim when the token's org
+// differs from the stored one (RFC 011 org mapping: "known org" / "user
+// switched org"). Mirror updates are best-effort — a write failure logs and
+// returns the existing row rather than failing the request.
+func (m *Middleware) refreshUser(ctx context.Context, u *ent.User, claims *oauthrs.Claims) *ent.User {
+	emailChanged := claims.Email != "" && u.Email != claims.Email
+	orgOp := ""
+	if claims.WorkOSOrgID != "" && u.WorkosOrgID != claims.WorkOSOrgID {
+		if u.WorkosOrgID == "" {
+			orgOp = "set"
+		} else {
+			orgOp = "switched"
+		}
+	}
+	if !emailChanged && orgOp == "" {
+		return u
+	}
+
+	upd := u.Update()
+	if emailChanged {
+		upd = upd.SetEmail(claims.Email)
+	}
+	if orgOp != "" {
+		upd = upd.SetWorkosOrgID(claims.WorkOSOrgID)
+	}
+	updated, uErr := upd.Save(ctx)
+	if uErr != nil {
+		m.log.Warn("user mirror refresh failed", zap.Error(uErr))
+		return u
+	}
+	if orgOp != "" {
+		m.audit.OrgMapped(ctx, orgOp, updated.ID.String(), claims.WorkOSOrgID)
+	}
+	return updated
 }
 
 // createUser creates the user + free-tier subscription in one transaction.
@@ -101,5 +130,9 @@ func (m *Middleware) createUser(ctx context.Context, claims *oauthrs.Claims) (*e
 	m.log.Info("user provisioned",
 		zap.String("workos_user_id", claims.WorkOSUserID),
 		zap.String("user_id", u.ID.String()))
+	m.audit.UserUpserted(ctx, "created", u.ID.String(), claims.WorkOSUserID)
+	if claims.WorkOSOrgID != "" {
+		m.audit.OrgMapped(ctx, "set", u.ID.String(), claims.WorkOSOrgID)
+	}
 	return u, nil
 }

@@ -415,6 +415,30 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
         },
     },
 
+    'memory-search': {
+        description:
+            'Semantic + lexical recall over the knowledge vault. Returns the most relevant chunks ' +
+            'with file backlinks (path#anchor) the agent can open with file-readText. Prefer this over ' +
+            'file-grep when the query is conceptual ("overdue AR for Acme") rather than an exact string; ' +
+            'it ranks paraphrase and exact identifiers together and falls back to lexical search automatically.',
+        inputSchema: z.object({
+            query: z.string().min(1).describe('Natural-language or keyword query'),
+            k: z.number().int().min(1).max(25).default(8).describe('Number of chunks to return'),
+            pathPrefix: z.string().optional().describe('Scope to a subfolder, e.g. "Invoices/" or "People/"'),
+        }),
+        execute: async ({ query, k, pathPrefix }: { query: string; k?: number; pathPrefix?: string }) => {
+            try {
+                // Lazy import: keeps the embeddings/index subsystem out of startup
+                // and makes memory optional.
+                const { memorySearch } = await import('../../memory/index.js');
+                const res = await memorySearch(query, { k, pathPrefix });
+                return { mode: res.mode, count: res.results.length, results: res.results };
+            } catch (error) {
+                return { error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        },
+    },
+
     'parseFile': {
         description: 'Parse and extract text content from files (PDF, XLSX, CSV, Word .docx). Auto-detects format from file extension.',
         inputSchema: z.object({

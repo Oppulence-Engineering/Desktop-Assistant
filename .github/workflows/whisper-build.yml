@@ -15,6 +15,10 @@ on:
       - "apps/x/vendor/whisper/build.sh"
       - ".github/workflows/whisper-build.yml"
 
+# Publishing the per-arch binaries to the PIN-keyed GitHub Release.
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -27,11 +31,19 @@ jobs:
               arch: arm64,
               flags: "-DCMAKE_OSX_ARCHITECTURES=arm64 -DGGML_METAL=ON -DWHISPER_COREML=ON -DWHISPER_COREML_ALLOW_FALLBACK=ON",
             }
+          # Cross-compile the x86_64 binary on an Apple-Silicon runner: the
+          # -DCMAKE_OSX_ARCHITECTURES=x86_64 directive targets Intel regardless of
+          # host arch, and macos-14 (arm64) runners are plentiful whereas macos-13
+          # (Intel) runners are scarce and can sit queued for hours. build.sh's
+          # smoke test is `|| true`, so the non-native binary not running here is fine.
+          # GGML_NATIVE=OFF is required when cross-compiling: with it ON, ggml probes
+          # the *host* CPU and passes -mcpu=apple-m1, which the x86_64 backend rejects
+          # ("unknown target CPU 'apple-m1'"). OFF builds a portable x86_64 baseline.
           - {
-              os: macos-13,
+              os: macos-14,
               plat: darwin,
               arch: x64,
-              flags: "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DGGML_METAL=ON",
+              flags: "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DGGML_METAL=ON -DGGML_NATIVE=OFF",
             }
           - {
               os: windows-2022,
@@ -40,6 +52,11 @@ jobs:
               flags: '-G "Visual Studio 17 2022" -A x64 -DGGML_VULKAN=ON',
             }
           - { os: ubuntu-22.04, plat: linux, arch: x64, flags: "-DGGML_VULKAN=ON" }
+          # linux-arm64 builds CPU-only: the LunarG apt repo does not reliably
+          # serve arm64, and capability.ts gates CPU support on core count, so a
+          # CPU binary is still useful. Revisit Vulkan here if/when arm64 GPU
+          # desktops become a target.
+          - { os: ubuntu-22.04-arm, plat: linux, arch: arm64, flags: "" }
     runs-on: ${{ matrix.os }}
     env:
       # LunarG Vulkan SDK pin for the Windows installer (Linux uses the apt repo,
@@ -53,7 +70,7 @@ jobs:
       # Metal and needs nothing here. Without this, cmake's find_package(Vulkan)
       # fails at configure ("missing: Vulkan_LIBRARY Vulkan_INCLUDE_DIR glslc").
       - name: Install Vulkan SDK (Linux)
-        if: matrix.plat == 'linux'
+        if: matrix.plat == 'linux' && matrix.arch == 'x64'
         shell: bash
         run: |
           wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc \
@@ -103,3 +120,38 @@ jobs:
           name: whisper-${{ matrix.plat }}-${{ matrix.arch }}
           path: apps/x/vendor/whisper/out/
           if-no-files-found: error
+
+      # Publish to a PIN-keyed GitHub Release so the release + e2e pipelines can
+      # stage the matching arch by tag (see .github/scripts/stage-whisper-bin.sh).
+      # Keyed to the whisper.cpp PIN, the binaries are reproducible and reusable
+      # across many app releases without re-running this C++ build.
+      - name: Publish to PIN-keyed release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PIN="$(tr -d '[:space:]' < apps/x/vendor/whisper/PIN)"
+          TAG="whisper-bin-$PIN"
+          ASSET="whisper-${{ matrix.plat }}-${{ matrix.arch }}.tar.gz"
+          # Archive the contents of out/ so the binary extracts directly into
+          # vendor/whisper/<plat>-<arch>/ on the consuming side.
+          tar -czf "$ASSET" -C apps/x/vendor/whisper/out .
+          # Idempotent + race-tolerant across parallel matrix legs: create the
+          # release if missing (swallow "already exists"), then upload this leg's
+          # asset, retrying in case another leg is mid-create.
+          for attempt in 1 2 3 4 5; do
+            gh release create "$TAG" \
+              --title "whisper-cli $PIN" \
+              --notes "Prebuilt, statically-linked whisper-cli for whisper.cpp $PIN (RFC 009). Consumed by release.yml and x-e2e-nightly.yml via .github/scripts/stage-whisper-bin.sh." \
+              --prerelease 2>/dev/null || true
+            if gh release upload "$TAG" "$ASSET" --clobber; then
+              echo "✅ published $ASSET to $TAG"
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "error: failed to publish $ASSET to $TAG after 5 attempts" >&2
+              exit 1
+            fi
+            echo "upload attempt $attempt failed; retrying in 5s..."
+            sleep 5
+          done

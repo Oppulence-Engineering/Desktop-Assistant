@@ -192,6 +192,55 @@ export const DEFAULT_WHISPER_SETTINGS: WhisperSettings = {
 };
 
 /**
+ * Persisted on-device diarization settings (the `diarization` block of
+ * `transcription.json`, RFC 017). The four leading booleans mirror the RFC 017
+ * rollback flags (LOCAL_DIARIZATION_*); the rest are clustering/VAD tunables that
+ * are config-driven for fixture tuning but NOT exposed as normal user
+ * preferences. Defined here (the config home) so `diarization.ts` can re-export
+ * it without a circular import.
+ */
+export const DiarizationSettings = z.object({
+  /** LOCAL_DIARIZATION_ENABLED — master switch for the local pipeline. */
+  enabled: z.boolean().default(false),
+  /** LOCAL_DIARIZATION_BETA_UI — shows the beta meeting mode + provenance UI. */
+  betaUI: z.boolean().default(false),
+  /** LOCAL_DIARIZATION_REFINEMENT — run a trailing re-clustering pass. */
+  refinement: z.boolean().default(true),
+  /** LOCAL_DIARIZATION_FIXTURE_MODE — deterministic embedder for fixtures/tests. */
+  fixtureMode: z.boolean().default(false),
+  /** Speaker-embedding model id (catalog). */
+  model: z.string().default("speaker-embedding-v1"),
+  /** Max speakers before requiring a manual split (over-split guard). */
+  maxSpeakers: z.number().int().positive().default(8),
+  /** Cosine similarity at/above which a segment joins an existing speaker. */
+  similarityThreshold: z.number().min(0).max(1).default(0.65),
+  /** Below this best-similarity, a segment is left `Unknown speaker`. */
+  unknownThreshold: z.number().min(0).max(1).default(0.45),
+  /** Weight of a new segment when updating a centroid (0..1). */
+  centroidUpdateWeight: z.number().min(0).max(1).default(0.25),
+  /** Minimum speech length (ms) to embed; shorter turns are left unknown. */
+  minSegmentMs: z.number().int().positive().default(400),
+  /** Treat overlap-heavy segments above this overlap ratio as unknown. */
+  maxOverlapRatio: z.number().min(0).max(1).default(0.5),
+});
+export type DiarizationSettings = z.infer<typeof DiarizationSettings>;
+
+/** Fully-resolved default diarization settings (off by default, v1). */
+export const DEFAULT_DIARIZATION_SETTINGS: DiarizationSettings = {
+  enabled: false,
+  betaUI: false,
+  refinement: true,
+  fixtureMode: false,
+  model: "speaker-embedding-v1",
+  maxSpeakers: 8,
+  similarityThreshold: 0.65,
+  unknownThreshold: 0.45,
+  centroidUpdateWeight: 0.25,
+  minSegmentMs: 400,
+  maxOverlapRatio: 0.5,
+};
+
+/**
  * `~/.rowboat/config/transcription.json` (RFC 009 §12, Appendix J).
  *
  * Unknown fields are ignored (forward-compat). When the file is absent the main
@@ -209,6 +258,8 @@ export const TranscriptionConfig = z.object({
     retainDiagnostics: false,
     redactTranscriptsInLogs: true,
   }),
+  // RFC 017: on-device meeting diarization (off by default, beta).
+  diarization: DiarizationSettings.default(DEFAULT_DIARIZATION_SETTINGS),
 });
 export type TranscriptionConfig = z.infer<typeof TranscriptionConfig>;
 
@@ -222,5 +273,7 @@ export const TranscriptionDefaults = z.object({
   voiceProvider: TranscriptionProvider.optional(),
   meetingProvider: TranscriptionProvider.optional(),
   freeMeetingMinutes: z.number().nonnegative().optional(),
+  /** RFC 017 fleet default for the local-diarization beta (off unless enabled). */
+  diarizationEnabled: z.boolean().optional(),
 });
 export type TranscriptionDefaults = z.infer<typeof TranscriptionDefaults>;

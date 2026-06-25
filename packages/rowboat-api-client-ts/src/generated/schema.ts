@@ -521,29 +521,29 @@ export interface paths {
     };
     /**
      * Proxy Composio v3 Get
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.
+     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
      */
     get: operations["proxyComposioGet"];
     /**
      * Proxy Composio v3 Put
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.
+     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
      */
     put: operations["proxyComposioPut"];
     /**
      * Proxy Composio v3 Post
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.
+     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
      */
     post: operations["proxyComposioPost"];
     /**
      * Proxy Composio v3 Delete
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.
+     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
      */
     delete: operations["proxyComposioDelete"];
     options?: never;
     head?: never;
     /**
      * Proxy Composio v3 Patch
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.
+     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
      */
     patch: operations["proxyComposioPatch"];
     trace?: never;
@@ -1016,6 +1016,366 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AgentApproval: {
+      approval_id: string;
+      approval_token_ref?: string;
+      args_redacted_json?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description Credential or one-time ticket expiry timestamp.
+       * @example 2026-06-04T20:48:00Z
+       */
+      expires_at?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** Format: date-time */
+      requested_at: string;
+      requested_by?: string;
+      /** Format: date-time */
+      resolved_at?: string;
+      resolved_by?: string;
+      session: components["schemas"]["AgentSession"];
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      tool_call_index: number;
+      tool_name: string;
+      trust_tier?: string;
+      turn_seq: number;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    AgentDefinition: {
+      agent_sync_error?: string;
+      agent_sync_state: string;
+      channel_bindings?: string;
+      connector_reqs?: string[];
+      content_hash?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      enabled_tools?: string[];
+      forked_from?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      instructions?: string;
+      limits_json?: string;
+      managed_by: string;
+      /**
+       * @description Desktop-facing LLM model id.
+       * @example openai/gpt-4.1-mini
+       */
+      model?: string;
+      name: string;
+      /**
+       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+       * @example openai
+       */
+      provider?: string;
+      raw_source?: string;
+      revision: number;
+      sessions?: components["schemas"]["AgentSession"][];
+      slug: string;
+      source: string;
+      source_format: string;
+      subagent_refs?: string[];
+      tools_json?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    AgentDefinitionHistory: {
+      agent_sync_error?: string;
+      agent_sync_state: string;
+      channel_bindings?: string;
+      connector_reqs?: string[];
+      content_hash?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      enabled_tools?: string[];
+      forked_from?: string;
+      /**
+       * Format: date-time
+       * @description Timestamp when this history record was written.
+       * @example 2026-06-04T20:40:00Z
+       */
+      history_time: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      instructions?: string;
+      limits_json?: string;
+      managed_by: string;
+      /**
+       * @description Desktop-facing LLM model id.
+       * @example openai/gpt-4.1-mini
+       */
+      model?: string;
+      name: string;
+      /**
+       * @description Mutation operation that produced this history row.
+       * @example UPDATE
+       * @enum {string}
+       */
+      operation: "INSERT" | "UPDATE" | "DELETE";
+      /**
+       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+       * @example openai
+       */
+      provider?: string;
+      raw_source?: string;
+      /**
+       * Format: uuid
+       * @description UUID of the source row represented by a history row.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      ref?: string;
+      revision: number;
+      slug: string;
+      source: string;
+      source_format: string;
+      subagent_refs?: string[];
+      tools_json?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+    };
+    AgentSession: {
+      agent?: components["schemas"]["AgentDefinition"];
+      agent_revision: number;
+      agent_slug: string;
+      agent_source?: string;
+      approvals?: components["schemas"]["AgentApproval"][];
+      channel: string;
+      channel_key?: string;
+      /** Format: date-time */
+      completed_at?: string;
+      /**
+       * @description Settled credit cost for the request.
+       * @example 8
+       */
+      cost_units: number;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      error?: string;
+      error_code?: string;
+      events?: components["schemas"]["AgentSessionEvent"][];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** Format: date-time */
+      last_activity_at?: string;
+      llm_call_count: number;
+      revision: number;
+      session_id: string;
+      /** Format: date-time */
+      started_at?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      temporal_run_id?: string;
+      temporal_workflow_id?: string;
+      title?: string;
+      tool_call_count: number;
+      turn_count: number;
+      turns?: components["schemas"]["AgentTurn"][];
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    AgentSessionEvent: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      event_json: string;
+      event_type?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** Format: date-time */
+      received_at: string;
+      seq: number;
+      session: components["schemas"]["AgentSession"];
+      turn_seq?: number;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    AgentToolCall: {
+      args_json?: string;
+      call_index: number;
+      /** Format: date-time */
+      completed_at?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      error_code?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      result_bytes: number;
+      /** Format: date-time */
+      started_at?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      tool_name: string;
+      trust_tier?: string;
+      turn: components["schemas"]["AgentTurn"];
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    AgentToolResultBlob: {
+      call_index: number;
+      content: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      session_id: string;
+      tool_name?: string;
+      total_bytes: number;
+      turn_seq: number;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    AgentTurn: {
+      /** Format: date-time */
+      completed_at?: string;
+      /**
+       * @description Settled credit cost for the request.
+       * @example 8
+       */
+      cost_units: number;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      finish_reason?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      input?: string;
+      llm_call_count: number;
+      seq: number;
+      session: components["schemas"]["AgentSession"];
+      /** Format: date-time */
+      started_at?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      summary?: string;
+      tool_call_count: number;
+      tool_calls?: components["schemas"]["AgentToolCall"][];
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
     /** @description Server-readable mirror of one desktop background task spec. Owned by a user and keyed by slug per user. */
     BackgroundTask: {
       /**
@@ -2179,7 +2539,7 @@ export interface components {
       /** @description Linked runs. */
       runs: components["schemas"]["CloudEventRun"][];
     };
-    /** @description Composio v3 response body, proxied unchanged. */
+    /** @description Composio v3 response body. Connected-account list responses are filtered to the caller's mapped accounts. */
     ComposioProxyResponse: {
       [key: string]: unknown;
     };
@@ -3539,6 +3899,13 @@ export interface components {
     };
     /** @description Local mirror of a WorkOS identity. Upserted when a verified bearer token is first seen. */
     User: {
+      agent_approvals?: components["schemas"]["AgentApproval"][];
+      agent_definitions?: components["schemas"]["AgentDefinition"][];
+      agent_session_events?: components["schemas"]["AgentSessionEvent"][];
+      agent_sessions?: components["schemas"]["AgentSession"][];
+      agent_tool_calls?: components["schemas"]["AgentToolCall"][];
+      agent_tool_result_blobs?: components["schemas"]["AgentToolResultBlob"][];
+      agent_turns?: components["schemas"]["AgentTurn"][];
       /** @description Background task artifact mirrors owned by the user. */
       background_task_artifacts?: components["schemas"]["BackgroundTaskArtifact"][];
       /** @description Background task run event mirrors owned by the user. */
@@ -5588,7 +5955,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Composio response body, proxied unchanged. */
+      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5603,6 +5970,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      404: components["responses"]["404"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
@@ -5619,7 +5987,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Composio response body, proxied unchanged. */
+      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5634,6 +6002,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      404: components["responses"]["404"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
@@ -5650,7 +6019,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Composio response body, proxied unchanged. */
+      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5665,6 +6034,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      404: components["responses"]["404"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
@@ -5681,7 +6051,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Composio response body, proxied unchanged. */
+      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5696,6 +6066,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      404: components["responses"]["404"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
@@ -5712,7 +6083,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Composio response body, proxied unchanged. */
+      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5727,6 +6098,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      404: components["responses"]["404"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };

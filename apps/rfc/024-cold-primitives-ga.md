@@ -8,7 +8,7 @@
 | **Owners**            | `apps/x` (core + renderer)                                                                                                                       |
 | **Created**           | 2026-06-10                                                                                                                                       |
 | **Last updated**      | 2026-06-10                                                                                                                                       |
-| **Depends on**        | [RFC 003 — Cloud Event Ingestion](./003-cloud-event-ingestion.md) (Slack event shape), local event queue                                         |
+| **Depends on**        | [RFC 003 — Cloud Event Ingestion](./complete-003-cloud-event-ingestion.md) (Slack event shape), local event queue                                         |
 | **Enables / related** | [RFC 025 — Desktop Runtime Durability](./025-desktop-runtime-durability.md), [RFC 026 — Finance Command Center](./026-finance-command-center.md) |
 | **Supersedes**        | none                                                                                                                                             |
 
@@ -66,7 +66,7 @@ flowchart LR
 
 - New `packages/core/src/knowledge/sync_slack.ts` using `slack/repo.ts` creds; subscribe to messages/mentions in selected channels; dedupe by Slack `ts`.
 - Emit `RowboatEvent{source:"slack", type:"slack.message.received", payload:<markdown gist>, target?}`; the existing processor routes it to consumers (no consumer changes needed — they already fan out by source/criteria).
-- Optional Mirror to `knowledge/Slack/` for recall ([RFC 021](./021-semantic-memory-index.md)).
+- Optional Mirror to `knowledge/Slack/` for recall ([RFC 021](./complete-021-semantic-memory-index.md)).
 
 ### WP2 — Code Mode GA
 

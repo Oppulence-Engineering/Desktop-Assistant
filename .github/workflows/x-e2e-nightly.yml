@@ -1,10 +1,11 @@
 name: x e2e nightly
 
-# Nightly Playwright-Electron regression matrix (Linux + macOS): package the app
-# unsigned and drive the built binary via _electron.launch. The same smoke spec
-# the PR gate runs, exercised on both desktop platforms. PRs run only the Linux
-# leg (x-smoke-test.yml) to keep them fast; this widens coverage off the critical
-# path. No APPLE_* secrets are provided, so macOS packages unsigned.
+# Nightly Playwright-Electron regression matrix (Linux + macOS + Windows): package
+# the app unsigned, stage the prebuilt whisper-cli (RFC 009), and drive the built
+# binary via _electron.launch. The same smoke spec the PR gate runs, plus the
+# whisper engine spec, exercised on all three desktop platforms. PRs run only the
+# Linux leg (x-smoke-test.yml) to keep them fast; this widens coverage off the
+# critical path. No APPLE_* secrets are provided, so macOS packages unsigned.
 on:
   schedule:
     - cron: "30 7 * * *"
@@ -24,12 +25,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # expectEngine="1": the Vulkan/Metal binary's runtime deps resolve on
+          # these legs, so we assert the engine actually spawns. Windows asserts
+          # only that the binary is staged into the package (no GPU runtime dep).
           - os: ubuntu-latest
             platform: linux
             arch: x64
+            expectEngine: "1"
           - os: macos-latest
             platform: darwin
             arch: arm64
+            expectEngine: "1"
+          - os: windows-latest
+            platform: win32
+            arch: x64
+            expectEngine: ""
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     env:
@@ -68,17 +78,31 @@ jobs:
         run: npm run deps
         working-directory: apps/x
 
-      - name: Install xvfb (Linux)
+      - name: Install xvfb + Vulkan loader (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb
+          # libvulkan1 + a software ICD let the Vulkan-built whisper-cli start
+          # (it falls back to CPU at inference when there's no GPU device).
+          sudo apt-get install -y xvfb libvulkan1 mesa-vulkan-drivers
+
+      # Stage the prebuilt whisper-cli so generateAssets bundles it (RFC 009).
+      - name: Stage whisper-cli (RFC 009)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: .github/scripts/stage-whisper-bin.sh ${{ matrix.platform }} ${{ matrix.arch }}
 
       - name: Package electron app (unsigned)
         run: node .github/scripts/x-smoke-package-linux.mjs
 
       - name: Playwright-Electron e2e
         working-directory: apps/x/apps/main
+        shell: bash
+        env:
+          # Tighten whisper.spec.ts now that the binary is staged (RFC 009 WP 3.x).
+          WHISPER_E2E_EXPECT_BINARY: "1"
+          WHISPER_E2E_EXPECT_ENGINE: ${{ matrix.expectEngine }}
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
             xvfb-run -a pnpm exec playwright test

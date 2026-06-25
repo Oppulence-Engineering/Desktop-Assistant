@@ -1,0 +1,177 @@
+import { describe, it, expect, vi, afterEach } from 'vitest';
+
+// embedBatch (metered path) needs an access token; stub it so no real auth runs.
+vi.mock('../auth/tokens.js', () => ({ getAccessToken: async () => 'test-token' }));
+
+// resolveEmbedTarget reads the active chat provider config; stub the repo so we
+// can drive the metered-vs-BYOK decision deterministically.
+const { getConfig } = vi.hoisted(() => ({ getConfig: vi.fn() }));
+vi.mock('../models/repo.js', async (io) => ({
+    ...(await io<typeof import('../models/repo.js')>()),
+    FSModelConfigRepo: class {
+        getConfig = getConfig;
+    },
+}));
+
+// BYOK path: stub the ai-sdk embedder and the provider factory (keep every other
+// real export via importOriginal so module loading isn't disturbed).
+vi.mock('ai', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('ai')>();
+    return { ...actual, embedMany: vi.fn(async () => ({ embeddings: [[1, 2, 3]], usage: { tokens: 9 } })) };
+});
+vi.mock('../models/models.js', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../models/models.js')>();
+    return { ...actual, createProvider: () => ({ textEmbeddingModel: (m: string) => m }) };
+});
+
+import { embedBatch, resolveEmbedTarget, type EmbedTarget } from './embed.js';
+
+const metered: EmbedTarget = { metered: true, providerConfig: { flavor: 'solomon' }, model: 'm' };
+const byok: EmbedTarget = { metered: false, providerConfig: { flavor: 'openai' }, model: 'text-embedding-3-small' };
+
+interface FakeRes {
+    ok: boolean;
+    status: number;
+    json: () => Promise<unknown>;
+    text: () => Promise<string>;
+}
+function res(body: unknown, init: { ok?: boolean; status?: number } = {}): FakeRes {
+    return { ok: init.ok ?? true, status: init.status ?? 200, json: async () => body, text: async () => '' };
+}
+function stubFetch(impl: () => FakeRes): ReturnType<typeof vi.fn> {
+    const fn = vi.fn(async () => impl());
+    vi.stubGlobal('fetch', fn);
+    return fn;
+}
+
+describe('embedBatch — empty input', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('short-circuits empty input without calling the network', async () => {
+        const fetchSpy = vi.fn();
+        vi.stubGlobal('fetch', fetchSpy);
+        expect(await embedBatch(metered, [])).toEqual({ vectors: [], tokens: 0 });
+        expect(fetchSpy).not.toHaveBeenCalled();
+    });
+});
+
+describe('embedBatch — metered proxy', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('returns vectors + tokens on a well-formed response', async () => {
+        stubFetch(() => res({ data: [{ embedding: [1, 2, 3] }], usage: { total_tokens: 7 } }));
+        expect(await embedBatch(metered, ['hello'])).toEqual({ vectors: [[1, 2, 3]], tokens: 7 });
+    });
+
+    it('includes a requested Matryoshka dimensions in the request body (and omits it otherwise)', async () => {
+        let body: Record<string, unknown> = {};
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (_url: unknown, init: { body: string }) => {
+                body = JSON.parse(init.body) as Record<string, unknown>;
+                return res({ data: [{ embedding: [1, 2] }], usage: { total_tokens: 1 } });
+            }),
+        );
+        await embedBatch({ metered: true, providerConfig: { flavor: 'solomon' }, model: 'm', dimensions: 256 }, ['x']);
+        expect(body.dimensions).toBe(256);
+
+        await embedBatch(metered, ['x']); // no dimensions on the target
+        expect('dimensions' in body).toBe(false);
+    });
+
+    it('rejects a malformed response shape (missing data[].embedding)', async () => {
+        stubFetch(() => res({ unexpected: true }));
+        await expect(embedBatch(metered, ['hello'])).rejects.toThrow(/unexpected response shape/);
+    });
+
+    it('throws when the vector count does not match the input count', async () => {
+        stubFetch(() => res({ data: [{ embedding: [1] }, { embedding: [2] }] }));
+        await expect(embedBatch(metered, ['only-one'])).rejects.toThrow(/2 vectors for 1 inputs/);
+    });
+
+    it('prefers total_tokens, falls back to prompt_tokens, then estimates', async () => {
+        stubFetch(() => res({ data: [{ embedding: [1] }], usage: { total_tokens: 11, prompt_tokens: 5 } }));
+        expect((await embedBatch(metered, ['x'])).tokens).toBe(11);
+
+        stubFetch(() => res({ data: [{ embedding: [1] }], usage: { prompt_tokens: 5 } }));
+        expect((await embedBatch(metered, ['x'])).tokens).toBe(5);
+
+        stubFetch(() => res({ data: [{ embedding: [1] }] })); // no usage → estimate ceil(len/4)
+        expect((await embedBatch(metered, ['hello'])).tokens).toBe(Math.ceil('hello'.length / 4));
+    });
+
+    it('retries a transient 5xx then succeeds', async () => {
+        let n = 0;
+        const fetchFn = stubFetch(() => {
+            n += 1;
+            return n === 1 ? res({}, { ok: false, status: 503 }) : res({ data: [{ embedding: [9] }], usage: { total_tokens: 1 } });
+        });
+        const out = await embedBatch(metered, ['x']);
+        expect(out.vectors).toEqual([[9]]);
+        expect(fetchFn).toHaveBeenCalledTimes(2); // one retry
+    });
+
+    it('fails fast on a non-retryable 4xx (no retry)', async () => {
+        const fetchFn = stubFetch(() => res({}, { ok: false, status: 400 }));
+        await expect(embedBatch(metered, ['x'])).rejects.toThrow(/400/);
+        expect(fetchFn).toHaveBeenCalledTimes(1); // 400 is not retried
+    });
+
+    it('reuses one idempotency key across all retries of a batch', async () => {
+        const keys: string[] = [];
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (_url: unknown, init: { headers: Record<string, string> }) => {
+                keys.push(init.headers['Idempotency-Key']);
+                return res({}, { ok: false, status: 500 }); // always transient → exhausts retries
+            }),
+        );
+        await expect(embedBatch(metered, ['x'])).rejects.toBeTruthy();
+        expect(keys).toHaveLength(3); // MAX_ATTEMPTS
+        expect(new Set(keys).size).toBe(1); // stable key → no double-charge on retry
+    });
+});
+
+describe('embedBatch — BYOK direct', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('uses the ai-sdk embedder and never touches the metered proxy', async () => {
+        const fetchSpy = vi.fn();
+        vi.stubGlobal('fetch', fetchSpy);
+        const out = await embedBatch(byok, ['hello']);
+        expect(out.vectors).toEqual([[1, 2, 3]]); // from the mocked embedMany
+        expect(out.tokens).toBe(9); // from the mocked usage
+        expect(fetchSpy).not.toHaveBeenCalled();
+    });
+});
+
+describe('resolveEmbedTarget', () => {
+    it('routes solomon/rowboat chat providers through the metered proxy', async () => {
+        getConfig.mockResolvedValue({ provider: { flavor: 'solomon' } });
+        expect((await resolveEmbedTarget('m')).metered).toBe(true);
+        getConfig.mockResolvedValue({ provider: { flavor: 'rowboat' } });
+        expect((await resolveEmbedTarget('m')).metered).toBe(true);
+    });
+
+    it('routes other providers as BYOK (not metered) and reuses the chat config', async () => {
+        getConfig.mockResolvedValue({ provider: { flavor: 'anthropic', apiKey: 'sk-x' } });
+        const target = await resolveEmbedTarget('text-embedding-3-small');
+        expect(target.metered).toBe(false);
+        expect(target.providerConfig.flavor).toBe('anthropic');
+        expect(target.model).toBe('text-embedding-3-small');
+    });
+
+    it('falls back to BYOK OpenAI defaults when no chat config exists', async () => {
+        getConfig.mockRejectedValue(new Error('no config'));
+        const target = await resolveEmbedTarget('m');
+        expect(target.metered).toBe(false);
+        expect(target.providerConfig.flavor).toBe('openai');
+    });
+
+    it('threads a positive dimensions value onto the target (Matryoshka)', async () => {
+        getConfig.mockResolvedValue({ provider: { flavor: 'openai' } });
+        expect((await resolveEmbedTarget('m', 512)).dimensions).toBe(512);
+        expect((await resolveEmbedTarget('m', 0)).dimensions).toBeUndefined();
+        expect((await resolveEmbedTarget('m')).dimensions).toBeUndefined();
+    });
+});

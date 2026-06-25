@@ -82,6 +82,8 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [voiceProvider, setVoiceProvider] = useState<TranscriptionProvider>("whisper-local");
   const [meetingProvider, setMeetingProvider] = useState<TranscriptionProvider>("deepgram");
   const [localOnly, setLocalOnly] = useState(false);
+  // RFC 017: on-device meeting diarization (beta). Off by default.
+  const [diarizationEnabled, setDiarizationEnabled] = useState(false);
   const [activeModel, setActiveModel] = useState<string>("base.en-q5_1");
   // Per-model download progress in [0, 1]; absent until a download starts.
   const [progress, setProgress] = useState<Record<string, number>>({});
@@ -129,6 +131,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         setMeetingProvider(cfg.meetingProvider);
         setLocalOnly(cfg.privacy.localOnly);
         setActiveModel(cfg.whisper.model);
+        setDiarizationEnabled(cfg.diarization?.enabled ?? false);
       })
       .catch(() => {});
 
@@ -189,6 +192,23 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       }
     },
     [localOnly],
+  );
+
+  const changeDiarizationEnabled = useCallback(
+    async (next: boolean) => {
+      const previous = diarizationEnabled;
+      setDiarizationEnabled(next);
+      try {
+        // Enabling the beta also turns on the beta UI surface (RFC 017 flags).
+        const cfg = await window.ipc.invoke("transcription:setConfig", {
+          diarization: { enabled: next, betaUI: next },
+        });
+        setDiarizationEnabled(cfg.diarization?.enabled ?? false);
+      } catch {
+        setDiarizationEnabled(previous);
+      }
+    },
+    [diarizationEnabled],
   );
 
   const selectModel = useCallback(
@@ -593,8 +613,42 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
             selected={meetingProvider === "whisper-local"}
             onSelect={() => changeMeetingProvider("whisper-local")}
             title="On-device"
-            hint="Private · no speaker labels"
+            hint={
+              meetingProvider === "whisper-local" && diarizationEnabled
+                ? "Private · local beta speaker labels"
+                : "Private · no speaker labels"
+            }
           />
+          {meetingProvider === "whisper-local" && (
+            <button
+              type="button"
+              onClick={() => void changeDiarizationEnabled(!diarizationEnabled)}
+              aria-pressed={diarizationEnabled}
+              className={cn(
+                "flex w-full items-center justify-between gap-3 rounded-none border px-3.5 py-3 text-left transition-all",
+                diarizationEnabled
+                  ? "border-primary bg-primary/[0.03] ring-2 ring-primary/20"
+                  : "border-border hover:border-primary/40 hover:bg-muted/40",
+              )}
+            >
+              <span className="flex flex-col">
+                <span className="text-sm font-medium">Local diarization (beta)</span>
+                <span className="text-xs text-muted-foreground">
+                  Anonymous speaker labels on-device · falls back to no labels when uncertain
+                </span>
+              </span>
+              <span
+                className={cn(
+                  "shrink-0 rounded-none border px-2 py-0.5 text-xs",
+                  diarizationEnabled
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "bg-card text-muted-foreground",
+                )}
+              >
+                {diarizationEnabled ? "On" : "Off"}
+              </span>
+            </button>
+          )}
         </div>
       </SettingsSection>
     </div>

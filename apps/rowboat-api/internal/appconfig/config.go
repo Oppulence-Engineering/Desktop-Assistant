@@ -61,6 +61,14 @@ type Config struct {
 	TokenAudience string // expected aud claim; empty → audience check skipped
 	JWKSURL       string // JWKS endpoint; empty → discovered from TokenIssuer's OIDC metadata
 
+	// Identity & authorization plane (RFC 011). These classify a verified
+	// token's issuer into a bounded type/actor kind for audit + metrics and
+	// power step-up. ServiceTokenIssuer/BrokerTokenIssuer are dark until the
+	// deferred service-token / broker modes are promoted.
+	ServiceTokenIssuer     string        // iss of first-party signed service tokens
+	BrokerTokenIssuer      string        // iss of broker-minted connector resource tokens
+	StepUpRecentAuthWindow time.Duration // recent-auth window for RequireStepUp
+
 	// WorkOS (user-metadata enrichment on first sight + sign-in broker).
 	WorkOSAPIKey   string
 	WorkOSClientID string
@@ -226,6 +234,19 @@ type Config struct {
 	SlackSigningSecret         string  // verifies /v1/webhooks/slack signatures
 	GoogleWebhookToken         string  // shared token for /v1/webhooks/google
 
+	// Web search backs the durable-agent web.search tool (Tavily-shaped API).
+	// Empty WebSearchAPIKey disables the tool (it reports itself unavailable).
+	WebSearchAPIURL string
+	WebSearchAPIKey string
+
+	// Portfolio faculties (RFC 008): Conduit (evidence) and Eigen (foresight),
+	// reached as runtime tools. Empty base URL or key disables that faculty's
+	// tool (it reports itself unavailable).
+	ConduitBaseURL string
+	ConduitAPIKey  string
+	EigenBaseURL   string
+	EigenAPIKey    string
+
 	// Slack workspace connect flow (OAuth v2). The connection maps team_id →
 	// user, which is what /v1/webhooks/slack resolves events against.
 	SlackClientID     string
@@ -263,6 +284,68 @@ type Config struct {
 	CloudRuntimeMaxToolCalls     int
 	CloudRuntimeMaxArtifactBytes int
 	CloudRuntimeMaxEventBytes    int
+
+	// Durable agent runtime (RFC 027): the per-step durable, multi-turn agent
+	// framework whose reason→act loop runs in Temporal workflow code (each
+	// LLM/tool call its own checkpointed activity). It has no master flag — it is
+	// active wherever Temporal is enabled (the same gating as the cloud runtime
+	// and event router; it cannot run without durable workflows). The sub-flags
+	// are capability toggles, on by default.
+	AgentStreamingEnabled bool // P2: NDJSON SSE + Redis fan-out (falls back to poll without Redis)
+	AgentHITLEnabled      bool // P3: approval-required tools pause on workflow.Await
+	AgentSubagentsEnabled bool // P4: subagent.delegate → child workflows
+	AgentRuntimeModel     string
+
+	// Per-turn budgets. AgentMaxWallclockPerTurn MUST stay < the 5m activity
+	// StartToCloseTimeout (same coupling invariant as CLOUD_RUNTIME_MAX_DURATION).
+	AgentMaxLLMCallsPerTurn  int
+	AgentMaxToolCallsPerTurn int
+	AgentMaxWallclockPerTurn time.Duration
+
+	// Per-session governors carried through ContinueAsNew. The cost ceiling is
+	// an additional governor layered on the per-call quota.Gate SpendLimits.
+	AgentMaxTurnsPerSession      int
+	AgentMaxLLMCallsPerSession   int
+	AgentMaxCostUnitsPerSession  int
+	AgentSessionIdleTimeout      time.Duration // idle-between-turns close timer (zero-cost while idle)
+	AgentContinueAsNewEveryTurns int           // bound Temporal history every N turns
+
+	// Subagent caps (RFC 018) bound recursive credit burn.
+	AgentMaxSubagentDepth  int
+	AgentMaxSubagentFanout int
+
+	// Agent runtime signing secret (RFC 012/027): the HMAC key for money-moving
+	// approval tokens and session continuation tokens. Required in production
+	// when HITL is enabled; AgentSigningSecret() derives a dev fallback when
+	// empty. RequireMFAForMoneyMoving gates money-moving grants on an MFA
+	// step-up (the WorkOS amr/acr claim); ApprovalTokenTTL bounds token life.
+	AgentRuntimeSigningSecret     string
+	AgentRequireMFAForMoneyMoving bool
+	AgentApprovalTokenTTL         time.Duration
+
+	// AgentDefaultChannelAgent is the agent slug a channel adapter uses when no
+	// agent is explicitly named and none is bound to the channel (P5).
+	AgentDefaultChannelAgent string
+
+	// RFC 028 declarative authoring. YAML authoring (PUT/validate/format/
+	// revisions/rollback) is always on wherever the runtime is. These two gate
+	// the conditional pieces: declarative OpenAPI/MCP tools need RFC 020's
+	// generic executor (not yet built), and GitOps makes a repo authoritative.
+	AgentDeclarativeToolsEnabled bool
+	AgentGitOpsEnabled           bool
+}
+
+// AgentSigningSecret resolves the HMAC signing key for agent-runtime tokens:
+// the dedicated secret, else the internal API secret, else a clearly-marked dev
+// fallback (production rejects the empty case in Validate when HITL is on).
+func (c Config) AgentSigningSecret() string {
+	if s := strings.TrimSpace(c.AgentRuntimeSigningSecret); s != "" {
+		return s
+	}
+	if s := strings.TrimSpace(c.InternalAPISecret); s != "" {
+		return s
+	}
+	return "dev-agent-signing-secret-do-not-use-in-prod"
 }
 
 // Load reads configuration from the environment, applying defaults.
@@ -320,6 +403,13 @@ func Load() Config {
 		// audience check (WorkOS access tokens carry no `aud`).
 		TokenAudience: getenvAllowEmpty("TOKEN_AUDIENCE", "rowboat-api"),
 		JWKSURL:       getenv("JWKS_URL", ""), // empty → discovered from TokenIssuer
+
+		// RFC 011 issuer classification + step-up. The service/broker issuers
+		// default to stable internal names (matching the RFC claim contracts) so
+		// classification works the moment those token modes are enabled.
+		ServiceTokenIssuer:     getenv("SERVICE_TOKEN_ISSUER", "rowboat-internal"),
+		BrokerTokenIssuer:      getenv("BROKER_TOKEN_ISSUER", "rowboat-broker"),
+		StepUpRecentAuthWindow: getdur("STEPUP_RECENT_AUTH_WINDOW", 15*time.Minute),
 
 		WorkOSAPIKey:           getenv("WORKOS_API_KEY", ""),
 		WorkOSClientID:         getenv("WORKOS_CLIENT_ID", ""),
@@ -418,9 +508,17 @@ func Load() Config {
 		SlackSigningSecret:         getenv("SLACK_SIGNING_SECRET", ""),
 		GoogleWebhookToken:         getenv("GOOGLE_WEBHOOK_TOKEN", ""),
 
+		WebSearchAPIURL: getenv("WEB_SEARCH_API_URL", "https://api.tavily.com/search"),
+		WebSearchAPIKey: getenv("WEB_SEARCH_API_KEY", ""),
+
+		ConduitBaseURL: getenv("CONDUIT_BASE_URL", ""),
+		ConduitAPIKey:  getenv("CONDUIT_API_KEY", ""),
+		EigenBaseURL:   getenv("EIGEN_BASE_URL", ""),
+		EigenAPIKey:    getenv("EIGEN_API_KEY", ""),
+
 		SlackClientID:     getenv("SLACK_CLIENT_ID", ""),
 		SlackClientSecret: getenv("SLACK_CLIENT_SECRET", ""),
-		SlackOAuthScopes:  getenv("SLACK_OAUTH_SCOPES", "channels:history,channels:read,users:read"),
+		SlackOAuthScopes:  getenv("SLACK_OAUTH_SCOPES", "app_mentions:read,channels:history,channels:read,chat:write,users:read"),
 		SlackRedirectURI:  getenv("SLACK_REDIRECT_URI", ""),
 		SlackAuthorizeURL: getenv("SLACK_AUTHORIZE_URL", ""),
 		SlackTokenURL:     getenv("SLACK_TOKEN_URL", ""),
@@ -439,6 +537,32 @@ func Load() Config {
 		CloudRuntimeMaxToolCalls:     getint("CLOUD_RUNTIME_MAX_TOOL_CALLS", 24),
 		CloudRuntimeMaxArtifactBytes: getint("CLOUD_RUNTIME_MAX_ARTIFACT_BYTES", 1<<20),
 		CloudRuntimeMaxEventBytes:    getint("CLOUD_RUNTIME_MAX_EVENT_BYTES", 64<<10),
+
+		AgentStreamingEnabled: getbool("AGENT_STREAMING_ENABLED", true),
+		AgentHITLEnabled:      getbool("AGENT_HITL_ENABLED", true),
+		AgentSubagentsEnabled: getbool("AGENT_SUBAGENTS_ENABLED", true),
+		AgentRuntimeModel:     getenv("AGENT_RUNTIME_MODEL", "anthropic/claude-sonnet-4-5"),
+
+		AgentMaxLLMCallsPerTurn:  getint("AGENT_MAX_LLM_CALLS_PER_TURN", 12),
+		AgentMaxToolCallsPerTurn: getint("AGENT_MAX_TOOL_CALLS_PER_TURN", 24),
+		AgentMaxWallclockPerTurn: getdur("AGENT_MAX_WALLCLOCK_PER_TURN", 4*time.Minute),
+
+		AgentMaxTurnsPerSession:      getint("AGENT_MAX_TURNS_PER_SESSION", 100),
+		AgentMaxLLMCallsPerSession:   getint("AGENT_MAX_LLM_CALLS_PER_SESSION", 500),
+		AgentMaxCostUnitsPerSession:  getint("AGENT_MAX_COST_UNITS_PER_SESSION", 1000000),
+		AgentSessionIdleTimeout:      getdur("AGENT_SESSION_IDLE_TIMEOUT", 24*time.Hour),
+		AgentContinueAsNewEveryTurns: getint("AGENT_CONTINUE_AS_NEW_EVERY_TURNS", 20),
+
+		AgentMaxSubagentDepth:  getint("AGENT_MAX_SUBAGENT_DEPTH", 3),
+		AgentMaxSubagentFanout: getint("AGENT_MAX_SUBAGENT_FANOUT", 8),
+
+		AgentRuntimeSigningSecret:     getenv("AGENT_RUNTIME_SIGNING_SECRET", ""),
+		AgentRequireMFAForMoneyMoving: getbool("AGENT_REQUIRE_MFA_FOR_MONEY_MOVING", true),
+		AgentApprovalTokenTTL:         getdur("AGENT_APPROVAL_TOKEN_TTL", 10*time.Minute),
+		AgentDefaultChannelAgent:      getenv("AGENT_DEFAULT_CHANNEL_AGENT", "assistant"),
+
+		AgentDeclarativeToolsEnabled: getbool("AGENT_DECLARATIVE_TOOLS_ENABLED", false),
+		AgentGitOpsEnabled:           getbool("AGENT_GITOPS_ENABLED", false),
 	}
 }
 
@@ -607,6 +731,46 @@ func (c Config) Validate() error {
 	}
 	if c.CloudEventsMaxPayloadBytes <= 0 {
 		return fmt.Errorf("CLOUD_EVENTS_MAX_PAYLOAD_BYTES must be > 0")
+	}
+	if c.TemporalEnabled {
+		// The durable agent runtime (RFC 027) is active wherever Temporal is — it
+		// has no master flag. Its budgets are validated here so a Temporal-enabled
+		// deployment fails fast on a bad agent config.
+		//
+		// The per-turn wall clock must fire before the per-call activity's 5m
+		// StartToCloseTimeout, or a turn that hangs surfaces as activity_timeout
+		// and hides the real per-turn budget breach (the RFC 004 duration
+		// coupling, re-applied per turn).
+		if c.AgentMaxWallclockPerTurn <= 0 || c.AgentMaxWallclockPerTurn >= 5*time.Minute {
+			return fmt.Errorf("AGENT_MAX_WALLCLOCK_PER_TURN must be in (0, 5m); got %s", c.AgentMaxWallclockPerTurn)
+		}
+		if c.AgentMaxLLMCallsPerTurn <= 0 || c.AgentMaxToolCallsPerTurn <= 0 {
+			return fmt.Errorf("AGENT_MAX_LLM_CALLS_PER_TURN and AGENT_MAX_TOOL_CALLS_PER_TURN must be > 0")
+		}
+		if c.AgentMaxTurnsPerSession <= 0 || c.AgentMaxLLMCallsPerSession <= 0 {
+			return fmt.Errorf("AGENT_MAX_TURNS_PER_SESSION and AGENT_MAX_LLM_CALLS_PER_SESSION must be > 0")
+		}
+		if c.AgentMaxCostUnitsPerSession <= 0 {
+			return fmt.Errorf("AGENT_MAX_COST_UNITS_PER_SESSION must be > 0")
+		}
+		if c.AgentContinueAsNewEveryTurns <= 0 {
+			return fmt.Errorf("AGENT_CONTINUE_AS_NEW_EVERY_TURNS must be > 0")
+		}
+		if c.AgentSessionIdleTimeout <= 0 {
+			return fmt.Errorf("AGENT_SESSION_IDLE_TIMEOUT must be > 0")
+		}
+		if c.AgentSubagentsEnabled && (c.AgentMaxSubagentDepth <= 0 || c.AgentMaxSubagentFanout <= 0) {
+			return fmt.Errorf("AGENT_MAX_SUBAGENT_DEPTH and AGENT_MAX_SUBAGENT_FANOUT must be > 0 when AGENT_SUBAGENTS_ENABLED=true")
+		}
+		if c.AgentApprovalTokenTTL <= 0 {
+			return fmt.Errorf("AGENT_APPROVAL_TOKEN_TTL must be > 0")
+		}
+		// HITL money-moving tokens are HMAC-signed; a real secret is mandatory in
+		// production (no signing on the dev fallback key).
+		if c.AgentHITLEnabled && c.IsProduction() &&
+			strings.TrimSpace(c.AgentRuntimeSigningSecret) == "" && strings.TrimSpace(c.InternalAPISecret) == "" {
+			return fmt.Errorf("AGENT_RUNTIME_SIGNING_SECRET is required when AGENT_HITL_ENABLED=true in production")
+		}
 	}
 	if c.IsProduction() {
 		return c.validateProduction()

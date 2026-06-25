@@ -8,12 +8,21 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/composioaccount"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -85,6 +94,222 @@ func (f TraverseFunc) Traverse(ctx context.Context, q ent.Query) error {
 		return err
 	}
 	return f(ctx, query)
+}
+
+// The AgentApprovalFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AgentApprovalFunc func(context.Context, *ent.AgentApprovalQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AgentApprovalFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AgentApprovalQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AgentApprovalQuery", q)
+}
+
+// The TraverseAgentApproval type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAgentApproval func(context.Context, *ent.AgentApprovalQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAgentApproval) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAgentApproval) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentApprovalQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AgentApprovalQuery", q)
+}
+
+// The AgentDefinitionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AgentDefinitionFunc func(context.Context, *ent.AgentDefinitionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AgentDefinitionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AgentDefinitionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AgentDefinitionQuery", q)
+}
+
+// The TraverseAgentDefinition type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAgentDefinition func(context.Context, *ent.AgentDefinitionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAgentDefinition) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAgentDefinition) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentDefinitionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AgentDefinitionQuery", q)
+}
+
+// The AgentDefinitionHistoryFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AgentDefinitionHistoryFunc func(context.Context, *ent.AgentDefinitionHistoryQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AgentDefinitionHistoryFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AgentDefinitionHistoryQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AgentDefinitionHistoryQuery", q)
+}
+
+// The TraverseAgentDefinitionHistory type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAgentDefinitionHistory func(context.Context, *ent.AgentDefinitionHistoryQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAgentDefinitionHistory) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAgentDefinitionHistory) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentDefinitionHistoryQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AgentDefinitionHistoryQuery", q)
+}
+
+// The AgentSessionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AgentSessionFunc func(context.Context, *ent.AgentSessionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AgentSessionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AgentSessionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AgentSessionQuery", q)
+}
+
+// The TraverseAgentSession type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAgentSession func(context.Context, *ent.AgentSessionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAgentSession) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAgentSession) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentSessionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AgentSessionQuery", q)
+}
+
+// The AgentSessionEventFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AgentSessionEventFunc func(context.Context, *ent.AgentSessionEventQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AgentSessionEventFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AgentSessionEventQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AgentSessionEventQuery", q)
+}
+
+// The TraverseAgentSessionEvent type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAgentSessionEvent func(context.Context, *ent.AgentSessionEventQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAgentSessionEvent) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAgentSessionEvent) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentSessionEventQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AgentSessionEventQuery", q)
+}
+
+// The AgentToolCallFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AgentToolCallFunc func(context.Context, *ent.AgentToolCallQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AgentToolCallFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AgentToolCallQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AgentToolCallQuery", q)
+}
+
+// The TraverseAgentToolCall type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAgentToolCall func(context.Context, *ent.AgentToolCallQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAgentToolCall) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAgentToolCall) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentToolCallQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AgentToolCallQuery", q)
+}
+
+// The AgentToolResultBlobFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AgentToolResultBlobFunc func(context.Context, *ent.AgentToolResultBlobQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AgentToolResultBlobFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AgentToolResultBlobQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AgentToolResultBlobQuery", q)
+}
+
+// The TraverseAgentToolResultBlob type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAgentToolResultBlob func(context.Context, *ent.AgentToolResultBlobQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAgentToolResultBlob) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAgentToolResultBlob) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentToolResultBlobQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AgentToolResultBlobQuery", q)
+}
+
+// The AgentTurnFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AgentTurnFunc func(context.Context, *ent.AgentTurnQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AgentTurnFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AgentTurnQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AgentTurnQuery", q)
+}
+
+// The TraverseAgentTurn type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAgentTurn func(context.Context, *ent.AgentTurnQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAgentTurn) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAgentTurn) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentTurnQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AgentTurnQuery", q)
 }
 
 // The BackgroundTaskFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -247,6 +472,33 @@ func (f TraverseCloudEvent) Traverse(ctx context.Context, q ent.Query) error {
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.CloudEventQuery", q)
+}
+
+// The ComposioAccountFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ComposioAccountFunc func(context.Context, *ent.ComposioAccountQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ComposioAccountFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ComposioAccountQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ComposioAccountQuery", q)
+}
+
+// The TraverseComposioAccount type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseComposioAccount func(context.Context, *ent.ComposioAccountQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseComposioAccount) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseComposioAccount) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ComposioAccountQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ComposioAccountQuery", q)
 }
 
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -630,6 +882,22 @@ func (f TraverseUserHistory) Traverse(ctx context.Context, q ent.Query) error {
 // NewQuery returns the generic Query interface for the given typed query.
 func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
+	case *ent.AgentApprovalQuery:
+		return &query[*ent.AgentApprovalQuery, predicate.AgentApproval, agentapproval.OrderOption]{typ: ent.TypeAgentApproval, tq: q}, nil
+	case *ent.AgentDefinitionQuery:
+		return &query[*ent.AgentDefinitionQuery, predicate.AgentDefinition, agentdefinition.OrderOption]{typ: ent.TypeAgentDefinition, tq: q}, nil
+	case *ent.AgentDefinitionHistoryQuery:
+		return &query[*ent.AgentDefinitionHistoryQuery, predicate.AgentDefinitionHistory, agentdefinitionhistory.OrderOption]{typ: ent.TypeAgentDefinitionHistory, tq: q}, nil
+	case *ent.AgentSessionQuery:
+		return &query[*ent.AgentSessionQuery, predicate.AgentSession, agentsession.OrderOption]{typ: ent.TypeAgentSession, tq: q}, nil
+	case *ent.AgentSessionEventQuery:
+		return &query[*ent.AgentSessionEventQuery, predicate.AgentSessionEvent, agentsessionevent.OrderOption]{typ: ent.TypeAgentSessionEvent, tq: q}, nil
+	case *ent.AgentToolCallQuery:
+		return &query[*ent.AgentToolCallQuery, predicate.AgentToolCall, agenttoolcall.OrderOption]{typ: ent.TypeAgentToolCall, tq: q}, nil
+	case *ent.AgentToolResultBlobQuery:
+		return &query[*ent.AgentToolResultBlobQuery, predicate.AgentToolResultBlob, agenttoolresultblob.OrderOption]{typ: ent.TypeAgentToolResultBlob, tq: q}, nil
+	case *ent.AgentTurnQuery:
+		return &query[*ent.AgentTurnQuery, predicate.AgentTurn, agentturn.OrderOption]{typ: ent.TypeAgentTurn, tq: q}, nil
 	case *ent.BackgroundTaskQuery:
 		return &query[*ent.BackgroundTaskQuery, predicate.BackgroundTask, backgroundtask.OrderOption]{typ: ent.TypeBackgroundTask, tq: q}, nil
 	case *ent.BackgroundTaskArtifactQuery:
@@ -642,6 +910,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.BackgroundTaskScheduleStateQuery, predicate.BackgroundTaskScheduleState, backgroundtaskschedulestate.OrderOption]{typ: ent.TypeBackgroundTaskScheduleState, tq: q}, nil
 	case *ent.CloudEventQuery:
 		return &query[*ent.CloudEventQuery, predicate.CloudEvent, cloudevent.OrderOption]{typ: ent.TypeCloudEvent, tq: q}, nil
+	case *ent.ComposioAccountQuery:
+		return &query[*ent.ComposioAccountQuery, predicate.ComposioAccount, composioaccount.OrderOption]{typ: ent.TypeComposioAccount, tq: q}, nil
 	case *ent.CreditLedgerQuery:
 		return &query[*ent.CreditLedgerQuery, predicate.CreditLedger, creditledger.OrderOption]{typ: ent.TypeCreditLedger, tq: q}, nil
 	case *ent.GoogleWatchQuery:

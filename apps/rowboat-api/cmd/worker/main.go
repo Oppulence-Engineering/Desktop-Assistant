@@ -12,21 +12,31 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentsessions"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentstream"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agenttoken"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectorcreds"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slacktoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
@@ -120,9 +130,12 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 	// Shared vendor-facing dependencies, built ONCE before the redial loop
 	// (rebuilding per dial leaked one Infisical-refresh goroutine per failed
 	// w.Start). Static config errors (pricing, sealer) stay fatal; a transient
-	// Infisical outage retries instead of crash-looping the whole worker.
+	// Infisical outage retries instead of crash-looping the whole worker. The
+	// worker only runs with Temporal enabled (run guards it), and the durable
+	// agent runtime + cloud runtime + event router all need these deps, so they
+	// are built unconditionally.
 	var deps *workerDeps
-	if cfg.CloudEventsRoutingEnabled || cfg.CloudRuntimeEnabled {
+	{
 		var err error
 		for {
 			deps, err = buildWorkerDeps(ctx, cfg, log, client)
@@ -134,6 +147,37 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 			}
 			if waitForRetry(ctx, log, "load infisical secrets", err, retryAfter) != nil {
 				return nil
+			}
+		}
+	}
+
+	// Durable agent runtime (RFC 027) worker-side deps, built once: the
+	// compiled-in capability catalog, the agent-definition loader, the approval
+	// token signer, and an optional Redis event bus for live streaming fan-out.
+	// The runtime is always active on the worker (no master flag); bus failures
+	// degrade to durable-only (the projection is the source of truth), never fatal.
+	var agentCatalog *agentregistry.Catalog
+	var agentLoader *agentregistry.Loader
+	var agentBus *agentstream.Bus
+	var agentSigner *agenttoken.Signer
+	{
+		agentCatalog = agentregistry.DefaultCatalog()
+		var lerr error
+		agentLoader, lerr = agentregistry.NewLoader(client, agentCatalog)
+		if lerr != nil {
+			return fmt.Errorf("load agent definitions: %w", lerr)
+		}
+		if s, serr := agenttoken.NewSigner(cfg.AgentSigningSecret()); serr == nil {
+			agentSigner = s
+		} else {
+			log.Warn("agent token signer unavailable; approval-token verification falls back to structural", zap.Error(serr))
+		}
+		if cfg.AgentStreamingEnabled && cfg.RedisURL != "" {
+			if b, berr := agentstream.NewBus(ctx, cfg.RedisURL); berr == nil {
+				agentBus = b
+				defer func() { _ = agentBus.Close() }()
+			} else {
+				log.Warn("agent event bus unavailable; streaming falls back to durable-only", zap.Error(berr))
 			}
 		}
 	}
@@ -199,6 +243,61 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 			log.Info("cloud event route workflow registered",
 				zap.String("model", cfg.CloudEventsRouterModel),
 				zap.Float64("threshold", cfg.CloudEventsMatchThreshold))
+		}
+
+		// RFC 027: register the durable agent runtime (session + subagent
+		// workflows and their activities) — always on (no master flag). The loop
+		// body — every LLM and tool call — now lives in workflow code; these
+		// activities are the IO boundary it drives.
+		if deps != nil && agentLoader != nil {
+			var publisher agentworkflow.EventPublisher
+			if agentBus != nil {
+				publisher = agentBus
+			}
+			agentworkflow.Register(w, &agentworkflow.Activities{
+				Client:         client,
+				LLM:            deps.LLM,
+				Catalog:        agentCatalog,
+				Loader:         agentLoader,
+				Publisher:      publisher,
+				ApprovalSigner: agentSigner,
+				RequireMFA:     cfg.AgentRequireMFAForMoneyMoving,
+				// RFC 027 channels round-trip + Slack-native tools: the Slack client
+				// posts replies back into the originating thread and reads thread
+				// history; the Sealer opens the team bot token for delivery and Creds
+				// resolves the session owner's connector tokens for tools.
+				Sealer: deps.Sealer,
+				Slack: slackclient.New(outbound.Policy{
+					Timeout:          15 * time.Second,
+					MaxConcurrent:    64,
+					MaxResponseBytes: 1 << 20,
+				}),
+				Creds: connectorcreds.New(client, deps.Sealer),
+				SlackTokens: slacktoken.New(client, deps.Sealer, deps.Secrets, cfg.SlackTokenURL, outbound.Policy{
+					Timeout:          15 * time.Second,
+					MaxConcurrent:    64,
+					MaxResponseBytes: 1 << 20,
+				}),
+				Secrets: deps.Secrets,
+				Google:  deps.Google,
+				Web:     websearch.New(cfg.WebSearchAPIURL, cfg.WebSearchAPIKey, outbound.Policy{Timeout: 20 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 4 << 20}),
+				Conduit: faculties.New("conduit", cfg.ConduitBaseURL, cfg.ConduitAPIKey, outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
+				Eigen:   faculties.New("eigen", cfg.EigenBaseURL, cfg.EigenAPIKey, outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
+				Log:     log,
+			})
+			// RFC 027 P5: the scheduled-session action runs on the worker and
+			// starts sessions through the canonical starter (which needs the
+			// Temporal client this dial produced).
+			agentworkflow.RegisterScheduler(w, &agentworkflow.ScheduleActivities{
+				Starter: agentsessions.New(client, agentLoader, agentworkflow.NewStarter(temporalClient, cfg), cfg, log),
+				Enabled: true,
+				Log:     log,
+			})
+			log.Info("durable agent runtime registered",
+				zap.String("model", cfg.AgentRuntimeModel),
+				zap.Bool("hitl", cfg.AgentHITLEnabled),
+				zap.Bool("subagents", cfg.AgentSubagentsEnabled),
+				zap.Bool("streaming", cfg.AgentStreamingEnabled))
 		}
 
 		if err := w.Start(); err != nil {

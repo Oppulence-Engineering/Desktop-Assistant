@@ -57,6 +57,7 @@ Every `llm_usage` emit point in the codebase:
 | `knowledge_sync`  | `inline_task_run`      | yes           | Inline `@rowboat` task execution (two call sites)                           | `packages/core/src/knowledge/inline_tasks.ts:471, 552` (createRun)                       |
 | `knowledge_sync`  | `inline_task_classify` | no            | Inline task scheduling classifier (`generateText`)                          | `packages/core/src/knowledge/inline_tasks.ts:673`                                        |
 | `knowledge_sync`  | `pre_built`            | yes           | Pre-built scheduled agents                                                  | `packages/core/src/pre_built/runner.ts:43` (createRun)                                   |
+| `knowledge_sync`  | `memory_query_expand`  | no            | Memory-search query expansion / HyDE (`generateObject`); only when query expansion is enabled | `packages/core/src/memory/expand.ts` (`expandQuery`)                  |
 
 ##### `live_note_agent` sub-use-case shape
 
@@ -83,6 +84,37 @@ Emitted from **both** processes:
 Emitted on rowboat disconnect. No properties. Followed immediately by `posthog.reset()`.
 
 Emit points: `apps/main/src/oauth-handler.ts:369` and `apps/renderer/src/hooks/useAnalyticsIdentity.ts:82`.
+
+### `memory_index_built`
+
+Emitted by the local semantic memory index (RFC 021) after an incremental pass that actually did work — i.e. when `files_processed > 0` or the store was rebuilt. A no-op tick (nothing changed) emits nothing, so this event counts real re-embed activity rather than tick frequency. Main-process only, via `capture()` from `packages/core/src/memory/index.ts`.
+
+| Property          | Type    | Notes                                                                        |
+| ----------------- | ------- | ---------------------------------------------------------------------------- |
+| `files_processed` | number  | Markdown files (re)chunked this pass                                         |
+| `chunks`          | number  | Total chunks in the index after the pass                                     |
+| `chunks_new`      | number  | Chunks embedded this pass                                                    |
+| `chunks_reused`   | number  | Chunks whose embedding was reused (unchanged content hash)                   |
+| `chunks_deleted`  | number  | Chunks dropped (deleted/changed files)                                       |
+| `tokens`          | number  | Embedding tokens consumed this pass                                          |
+| `rebuilt`         | boolean | Full rebuild (model change or corrupt store) vs incremental                  |
+| `paused`          | boolean | Stopped early because the monthly embed-token cap was hit                    |
+| `duration_ms`     | number  | Wall-clock of the pass                                                       |
+| `metered`         | boolean | `true` = routed through the cloud `/v1/llm/embeddings` proxy; `false` = BYOK |
+
+### `memory_searched`
+
+Emitted once per `memory-search` retrieval (RFC 021), on every path including fallbacks. Main-process only, via `capture()` from `packages/core/src/memory/index.ts`. Powers retrieval-health dashboards (mode mix, latency, zero-result rate).
+
+| Property       | Type    | Notes                                                                       |
+| -------------- | ------- | --------------------------------------------------------------------------- |
+| `mode`         | enum    | `hybrid` / `lexical_fallback` / `vector_only` (see `SearchMode`)            |
+| `result_count` | number  | Number of results returned                                                  |
+| `zero_result`  | boolean | `true` when nothing was returned (a recall-quality signal)                  |
+| `k`            | number  | Requested result count                                                      |
+| `scoped`       | boolean | `true` when a `pathPrefix` scoped the search                                |
+| `expanded`     | boolean | `true` when LLM query expansion / HyDE ran (also emits `memory_query_expand`) |
+| `duration_ms`  | number  | Wall-clock of the search                                                     |
 
 ### Other events (pre-existing, not added by the LLM-usage work)
 

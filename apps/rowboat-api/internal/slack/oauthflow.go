@@ -132,6 +132,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		Error        string `json:"error"`
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
+		ExpiresIn    int64  `json:"expires_in"`
 		Scope        string `json:"scope"`
 		BotUserID    string `json:"bot_user_id"`
 		AppID        string `json:"app_id"`
@@ -149,6 +150,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	raw, _ := json.Marshal(parkedPayload{
 		AccessToken:  stok.AccessToken,
 		RefreshToken: stok.RefreshToken,
+		ExpiresIn:    stok.ExpiresIn,
 		Scope:        stok.Scope,
 		TeamID:       stok.Team.ID,
 		TeamName:     stok.Team.Name,

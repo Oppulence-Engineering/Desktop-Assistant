@@ -16,7 +16,14 @@ export type {
 export type { PcmStats, RunOpts, RunResult, Segment } from "./runner.js";
 export { configureWhisperBinary, binaryAvailable, binaryPath, vadModelPath } from "./bin.js";
 export { probe as probeCapability, resetCapabilityCache } from "./capability.js";
-export { CATALOG, defaultModelId, findModel, VAD_MODEL_ID } from "./catalog.js";
+export {
+  CATALOG,
+  defaultModelId,
+  defaultSpeakerEmbeddingId,
+  findModel,
+  SPEAKER_EMBEDDING_MODEL_ID,
+  VAD_MODEL_ID,
+} from "./catalog.js";
 export type { ModelEntry } from "./catalog.js";
 export { WhisperError, codeOf } from "./errors.js";
 export type { WhisperErrorCode } from "./errors.js";

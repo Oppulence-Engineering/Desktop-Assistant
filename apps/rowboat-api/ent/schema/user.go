@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/contrib/entgql"
+	"entgo.io/contrib/entoas"
 	"entgo.io/contrib/entproto"
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
@@ -58,6 +59,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("llm_usages", LLMUsage.Type).Annotations(entproto.Skip()),
 		edge.To("oauth_connections", OAuthConnection.Type).Annotations(entproto.Skip()),
 		edge.To("mcp_connections", MCPConnection.Type).Annotations(entproto.Skip()),
+		edge.To("composio_accounts", ComposioAccount.Type).Annotations(entproto.Skip(), entoas.Skip(true)),
 		edge.To("background_tasks", BackgroundTask.Type).Annotations(entproto.Skip()),
 		edge.To("background_task_artifacts", BackgroundTaskArtifact.Type).Annotations(entproto.Skip()),
 		edge.To("background_task_runs", BackgroundTaskRun.Type).Annotations(entproto.Skip()),
@@ -65,5 +67,13 @@ func (User) Edges() []ent.Edge {
 		edge.To("background_task_schedule_states", BackgroundTaskScheduleState.Type).Annotations(entproto.Skip()),
 		edge.To("cloud_events", CloudEvent.Type).Annotations(entproto.Skip()),
 		edge.To("google_watches", GoogleWatch.Type).Annotations(entproto.Skip()),
+		// Durable agent runtime (RFC 027).
+		edge.To("agent_definitions", AgentDefinition.Type).Annotations(entproto.Skip()),
+		edge.To("agent_sessions", AgentSession.Type).Annotations(entproto.Skip()),
+		edge.To("agent_turns", AgentTurn.Type).Annotations(entproto.Skip()),
+		edge.To("agent_session_events", AgentSessionEvent.Type).Annotations(entproto.Skip()),
+		edge.To("agent_tool_calls", AgentToolCall.Type).Annotations(entproto.Skip()),
+		edge.To("agent_approvals", AgentApproval.Type).Annotations(entproto.Skip()),
+		edge.To("agent_tool_result_blobs", AgentToolResultBlob.Type).Annotations(entproto.Skip()),
 	}
 }

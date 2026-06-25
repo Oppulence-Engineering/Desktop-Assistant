@@ -35,6 +35,9 @@ type Problem struct {
 	Code      string `json:"code,omitempty"`
 	RequestID string `json:"requestId,omitempty"`
 	TraceID   string `json:"traceId,omitempty"`
+	// Retryable is set by server policy (RFC 010), not guessed by the client.
+	// A non-nil pointer always serializes (even when false) so clients can branch.
+	Retryable *bool `json:"retryable,omitempty"`
 }
 
 // WriteJSON writes v as JSON with the given status.
@@ -84,6 +87,9 @@ func ErrorWith(w http.ResponseWriter, status int, msg, code string, extra map[st
 	if problem.TraceID != "" {
 		body["traceId"] = problem.TraceID
 	}
+	if problem.Retryable != nil {
+		body["retryable"] = *problem.Retryable
+	}
 	for k, v := range extra {
 		body[k] = v
 	}
@@ -103,6 +109,13 @@ func problemFromContext(ctx context.Context, status int, msg, code string) Probl
 		Detail: msg,
 		Code:   code,
 	}
+	// Server-policy retry hint: transient/upstream classes are retryable; client
+	// and quota errors are not. Set on every problem so clients never guess.
+	retryable := status == http.StatusTooManyRequests ||
+		status == http.StatusBadGateway ||
+		status == http.StatusServiceUnavailable ||
+		status == http.StatusGatewayTimeout
+	p.Retryable = &retryable
 	if ctx == nil {
 		return p
 	}

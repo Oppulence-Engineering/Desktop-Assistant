@@ -8,6 +8,14 @@ import (
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -31,6 +39,46 @@ import (
 type Noder interface {
 	IsNode()
 }
+
+var agentapprovalImplementors = []string{"AgentApproval", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgentApproval) IsNode() {}
+
+var agentdefinitionImplementors = []string{"AgentDefinition", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgentDefinition) IsNode() {}
+
+var agentdefinitionhistoryImplementors = []string{"AgentDefinitionHistory", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgentDefinitionHistory) IsNode() {}
+
+var agentsessionImplementors = []string{"AgentSession", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgentSession) IsNode() {}
+
+var agentsessioneventImplementors = []string{"AgentSessionEvent", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgentSessionEvent) IsNode() {}
+
+var agenttoolcallImplementors = []string{"AgentToolCall", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgentToolCall) IsNode() {}
+
+var agenttoolresultblobImplementors = []string{"AgentToolResultBlob", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgentToolResultBlob) IsNode() {}
+
+var agentturnImplementors = []string{"AgentTurn", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgentTurn) IsNode() {}
 
 var backgroundtaskImplementors = []string{"BackgroundTask", "Node"}
 
@@ -165,6 +213,78 @@ func (c *Client) Noder(ctx context.Context, id uuid.UUID, opts ...NodeOption) (_
 
 func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, error) {
 	switch table {
+	case agentapproval.Table:
+		query := c.AgentApproval.Query().
+			Where(agentapproval.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agentapprovalImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case agentdefinition.Table:
+		query := c.AgentDefinition.Query().
+			Where(agentdefinition.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agentdefinitionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case agentdefinitionhistory.Table:
+		query := c.AgentDefinitionHistory.Query().
+			Where(agentdefinitionhistory.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agentdefinitionhistoryImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case agentsession.Table:
+		query := c.AgentSession.Query().
+			Where(agentsession.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agentsessionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case agentsessionevent.Table:
+		query := c.AgentSessionEvent.Query().
+			Where(agentsessionevent.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agentsessioneventImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case agenttoolcall.Table:
+		query := c.AgentToolCall.Query().
+			Where(agenttoolcall.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agenttoolcallImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case agenttoolresultblob.Table:
+		query := c.AgentToolResultBlob.Query().
+			Where(agenttoolresultblob.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agenttoolresultblobImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case agentturn.Table:
+		query := c.AgentTurn.Query().
+			Where(agentturn.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agentturnImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case backgroundtask.Table:
 		query := c.BackgroundTask.Query().
 			Where(backgroundtask.ID(id))
@@ -373,6 +493,134 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case agentapproval.Table:
+		query := c.AgentApproval.Query().
+			Where(agentapproval.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agentapprovalImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case agentdefinition.Table:
+		query := c.AgentDefinition.Query().
+			Where(agentdefinition.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agentdefinitionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case agentdefinitionhistory.Table:
+		query := c.AgentDefinitionHistory.Query().
+			Where(agentdefinitionhistory.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agentdefinitionhistoryImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case agentsession.Table:
+		query := c.AgentSession.Query().
+			Where(agentsession.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agentsessionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case agentsessionevent.Table:
+		query := c.AgentSessionEvent.Query().
+			Where(agentsessionevent.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agentsessioneventImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case agenttoolcall.Table:
+		query := c.AgentToolCall.Query().
+			Where(agenttoolcall.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agenttoolcallImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case agenttoolresultblob.Table:
+		query := c.AgentToolResultBlob.Query().
+			Where(agenttoolresultblob.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agenttoolresultblobImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case agentturn.Table:
+		query := c.AgentTurn.Query().
+			Where(agentturn.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agentturnImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case backgroundtask.Table:
 		query := c.BackgroundTask.Query().
 			Where(backgroundtask.IDIn(ids...))

@@ -8,6 +8,162 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+func (_m *AgentApproval) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentApproval) Session(ctx context.Context) (*AgentSession, error) {
+	result, err := _m.Edges.SessionOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QuerySession().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentDefinition) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentDefinition) Sessions(ctx context.Context) (result []*AgentSession, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedSessions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.SessionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QuerySessions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentSession) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentSession) Agent(ctx context.Context) (*AgentDefinition, error) {
+	result, err := _m.Edges.AgentOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAgent().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *AgentSession) Turns(ctx context.Context) (result []*AgentTurn, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedTurns(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.TurnsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTurns().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentSession) Events(ctx context.Context) (result []*AgentSessionEvent, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedEvents(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.EventsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentSession) Approvals(ctx context.Context) (result []*AgentApproval, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedApprovals(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ApprovalsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryApprovals().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentSessionEvent) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentSessionEvent) Session(ctx context.Context) (*AgentSession, error) {
+	result, err := _m.Edges.SessionOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QuerySession().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentToolCall) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentToolCall) Turn(ctx context.Context) (*AgentTurn, error) {
+	result, err := _m.Edges.TurnOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTurn().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentToolResultBlob) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentTurn) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentTurn) Session(ctx context.Context) (*AgentSession, error) {
+	result, err := _m.Edges.SessionOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QuerySession().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgentTurn) ToolCalls(ctx context.Context) (result []*AgentToolCall, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedToolCalls(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ToolCallsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryToolCalls().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *BackgroundTask) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -376,6 +532,90 @@ func (_m *User) GoogleWatches(ctx context.Context) (result []*GoogleWatch, err e
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryGoogleWatches().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) AgentDefinitions(ctx context.Context) (result []*AgentDefinition, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAgentDefinitions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AgentDefinitionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAgentDefinitions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) AgentSessions(ctx context.Context) (result []*AgentSession, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAgentSessions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AgentSessionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAgentSessions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) AgentTurns(ctx context.Context) (result []*AgentTurn, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAgentTurns(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AgentTurnsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAgentTurns().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) AgentSessionEvents(ctx context.Context) (result []*AgentSessionEvent, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAgentSessionEvents(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AgentSessionEventsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAgentSessionEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) AgentToolCalls(ctx context.Context) (result []*AgentToolCall, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAgentToolCalls(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AgentToolCallsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAgentToolCalls().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) AgentApprovals(ctx context.Context) (result []*AgentApproval, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAgentApprovals(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AgentApprovalsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAgentApprovals().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) AgentToolResultBlobs(ctx context.Context) (result []*AgentToolResultBlob, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAgentToolResultBlobs(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AgentToolResultBlobsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAgentToolResultBlobs().All(ctx)
 	}
 	return result, err
 }

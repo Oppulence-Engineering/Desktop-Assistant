@@ -8,13 +8,13 @@
 | **Owners**            | `apps/x` (core: scheduler, events, runtime; main: lifecycle)                                                                                                                                                                                                                      |
 | **Created**           | 2026-06-10                                                                                                                                                                                                                                                                        |
 | **Last updated**      | 2026-06-10                                                                                                                                                                                                                                                                        |
-| **Depends on**        | none new; mirrors the durability ideas of [RFC 002 — Durable Schedule State](./002-durable-schedule-state.md) on-device                                                                                                                                                           |
-| **Enables / related** | [RFC 001 — API-Owned Scheduler](./001-api-owned-scheduler.md) (cloud counterpart), [RFC 003 — Cloud Event Ingestion](./003-cloud-event-ingestion.md), [RFC 023](./023-closed-loop-actions.md), [RFC 024](./024-cold-primitives-ga.md), [RFC 026](./026-finance-command-center.md) |
+| **Depends on**        | none new; mirrors the durability ideas of [RFC 002 — Durable Schedule State](./complete-002-durable-schedule-state.md) on-device                                                                                                                                                           |
+| **Enables / related** | [RFC 001 — API-Owned Scheduler](./complete-001-api-owned-scheduler.md) (cloud counterpart), [RFC 003 — Cloud Event Ingestion](./complete-003-cloud-event-ingestion.md), [RFC 023](./023-closed-loop-actions.md), [RFC 024](./024-cold-primitives-ga.md), [RFC 026](./026-finance-command-center.md) |
 | **Supersedes**        | none                                                                                                                                                                                                                                                                              |
 
 ## Summary
 
-The desktop's automation engine — live-notes, background tasks, and event consumers — is fast but **fragile**: concurrency is guarded **in-memory**, so a crash or quit loses in-flight state and a second window can double-run a task; the file event queue (`events/pending/`) has **no backpressure**, so a sync storm fans out unboundedly and can hammer the LLM provider; and the app is bound to **one workspace** (`WorkDir`), so switching businesses/clients needs a restart. For a finance operator running autonomous AR/AP loops ([RFC 023](./023-closed-loop-actions.md)), this is unacceptable — a missed or double-fired dunning action erodes trust. This RFC adds a **durable local job queue** (SQLite, at-most-once, crash-safe), an **event backpressure + coalescing** policy (storms collapse to one pending run per object), and **multi-workspace** support (switch without restart). It is the on-device analogue of the cloud durability work in [RFC 001](./001-api-owned-scheduler.md)/[002](./002-durable-schedule-state.md).
+The desktop's automation engine — live-notes, background tasks, and event consumers — is fast but **fragile**: concurrency is guarded **in-memory**, so a crash or quit loses in-flight state and a second window can double-run a task; the file event queue (`events/pending/`) has **no backpressure**, so a sync storm fans out unboundedly and can hammer the LLM provider; and the app is bound to **one workspace** (`WorkDir`), so switching businesses/clients needs a restart. For a finance operator running autonomous AR/AP loops ([RFC 023](./023-closed-loop-actions.md)), this is unacceptable — a missed or double-fired dunning action erodes trust. This RFC adds a **durable local job queue** (SQLite, at-most-once, crash-safe), an **event backpressure + coalescing** policy (storms collapse to one pending run per object), and **multi-workspace** support (switch without restart). It is the on-device analogue of the cloud durability work in [RFC 001](./complete-001-api-owned-scheduler.md)/[002](./complete-002-durable-schedule-state.md).
 
 ## Current state (grounded)
 
@@ -24,7 +24,7 @@ The desktop's automation engine — live-notes, background tasks, and event cons
 | The event queue is plain files moved `pending/` → `done/`; no depth bound or coalescing | `apps/x/packages/core/src/events/processor.ts:23-29,44` (writes `done/`, unlinks `pending/`)                                                                               |
 | Producers append files to `events/pending/`; processor fans out to all consumers        | `processor.ts` (Pass-1 fan-out per source/criteria)                                                                                                                        |
 | One `WorkDir` per process; switching needs a restart                                    | `apps/x/packages/core/src/config/config.ts` (`WorkDir` resolved once)                                                                                                      |
-| The cloud side already solved durability with leases                                    | [RFC 002](./002-durable-schedule-state.md) (`BackgroundTaskScheduleState` + atomic lease)                                                                                  |
+| The cloud side already solved durability with leases                                    | [RFC 002](./complete-002-durable-schedule-state.md) (`BackgroundTaskScheduleState` + atomic lease)                                                                                  |
 
 **Problem.** In-memory guards + an unbounded file queue + single-workspace binding mean: lost runs on crash, possible double-runs across windows, provider hammering during storms, and no clean way to operate multiple businesses. As autonomous actions ([RFC 023](./023-closed-loop-actions.md)) land, these become correctness/safety bugs, not just papercuts.
 
@@ -43,7 +43,7 @@ The desktop's automation engine — live-notes, background tasks, and event cons
 
 ## Non-Goals
 
-- Moving desktop execution to the cloud (that's the [RFC 001](./001-api-owned-scheduler.md)/[004](./004-cloud-agent-runtime.md) `executionTarget:"api"` path; this RFC hardens the **local** path).
+- Moving desktop execution to the cloud (that's the [RFC 001](./complete-001-api-owned-scheduler.md)/[004](./complete-004-cloud-agent-runtime.md) `executionTarget:"api"` path; this RFC hardens the **local** path).
 - A distributed queue across machines (single-device durability only; cross-device is the cloud plane).
 - Changing trigger semantics (cron/window/event evaluation is unchanged — only execution durability/backpressure).
 
@@ -62,7 +62,7 @@ flowchart LR
 ```
 
 - A SQLite DB `~/.solomon/<workspace>/runtime/jobs.db` with a `jobs` table: `{id, kind, target, dedupe_key, state(queued|leased|done|failed), lease_owner, lease_expires_at, attempts, created_at}`.
-- Enqueue is **idempotent on `dedupe_key`** = `(consumer, target, triggerWindow)`; a worker **leases** a `queued` row (atomic `UPDATE … WHERE state='queued'` — the on-device analogue of the [RFC 002](./002-durable-schedule-state.md) lease), runs it, marks `done`.
+- Enqueue is **idempotent on `dedupe_key`** = `(consumer, target, triggerWindow)`; a worker **leases** a `queued` row (atomic `UPDATE … WHERE state='queued'` — the on-device analogue of the [RFC 002](./complete-002-durable-schedule-state.md) lease), runs it, marks `done`.
 - **Recovery**: on launch, rows `leased` past `lease_expires_at` are reset to `queued` (the prior process died); at-most-once is preserved because completion flips state under the lease.
 - Replaces the in-memory guards in `runtime.ts`/`scheduler.ts`.
 
@@ -75,7 +75,7 @@ flowchart LR
 
 ### Multi-workspace
 
-- Allow N `WorkDir` roots (`~/.solomon/<workspace>/`), each with its own `jobs.db`, scheduler tick, event queue, and index ([RFC 021](./021-semantic-memory-index.md)).
+- Allow N `WorkDir` roots (`~/.solomon/<workspace>/`), each with its own `jobs.db`, scheduler tick, event queue, and index ([RFC 021](./complete-021-semantic-memory-index.md)).
 - **Switch model**: either a workspace switcher in one window (tear down + spin up the workspace-scoped services) or **one window per workspace** (recommended: simpler isolation). Services are constructed per-workspace, not as singletons.
 - `config.ts` `WorkDir` resolution becomes per-workspace context passed down, not a process global.
 
@@ -126,7 +126,7 @@ Existing live-note/bg-task frontmatter run-state (`lastRunAt`, etc.) remains the
 - `background-tasks/scheduler.ts` + live-note scheduler: **enqueue** instead of running inline; delete in-memory guards.
 - `events/processor.ts`: produce into the queue (coalescing) instead of direct fan-out.
 - `config.ts`: per-workspace context; `apps/main` lifecycle constructs services per workspace + handles switching/teardown.
-- New native dep: `better-sqlite3` (or reuse the `sqlite-vec`/SQLite from [RFC 021](./021-semantic-memory-index.md)) bundled by esbuild.
+- New native dep: `better-sqlite3` (or reuse the `sqlite-vec`/SQLite from [RFC 021](./complete-021-semantic-memory-index.md)) bundled by esbuild.
 - **Rollout behind a flag** (`runtime.durableQueue`): default off → on after soak; in-memory path remains as fallback for one release.
 
 ## Code-level implementation playbook
@@ -178,20 +178,20 @@ Existing live-note/bg-task frontmatter run-state (`lastRunAt`, etc.) remains the
 ## Alternatives considered
 
 - **Keep in-memory guards, add a mutex file** — rejected: doesn't survive crashes or give recovery/coalescing; half-measure.
-- **Reuse the cloud Temporal path for everything** — rejected: breaks local-first/offline and adds latency for routine local runs; the cloud plane ([RFC 001](./001-api-owned-scheduler.md)/[004](./004-cloud-agent-runtime.md)) remains for `executionTarget:"api"`.
-- **A real embedded queue (e.g., NATS/JetStream)** — overkill for a single device; SQLite + leases matches the proven [RFC 002](./002-durable-schedule-state.md) pattern at desktop scale.
+- **Reuse the cloud Temporal path for everything** — rejected: breaks local-first/offline and adds latency for routine local runs; the cloud plane ([RFC 001](./complete-001-api-owned-scheduler.md)/[004](./complete-004-cloud-agent-runtime.md)) remains for `executionTarget:"api"`.
+- **A real embedded queue (e.g., NATS/JetStream)** — overkill for a single device; SQLite + leases matches the proven [RFC 002](./complete-002-durable-schedule-state.md) pattern at desktop scale.
 
 ## Decisions
 
 Resolved forks (consolidated in [`README.md`](./README.md)):
 
-- **Durability → a local SQLite job queue with atomic leases + launch recovery** (the on-device analogue of [RFC 002](./002-durable-schedule-state.md)).
+- **Durability → a local SQLite job queue with atomic leases + launch recovery** (the on-device analogue of [RFC 002](./complete-002-durable-schedule-state.md)).
 - **Backpressure → coalesce by `(consumer,target,window)`; never silently drop** (overflow countered/logged).
 - **Multi-workspace → per-workspace services; recommend one window per workspace** for isolation.
 - **Roll out behind a flag**, in-memory path retained one release as fallback.
 
 ### Deferred (not blocking)
 
-- Cross-device run handoff (start on laptop, finish in cloud) — relates to [RFC 006](./006-desktop-cloud-control-plane.md).
+- Cross-device run handoff (start on laptop, finish in cloud) — relates to [RFC 006](./complete-006-desktop-cloud-control-plane.md).
 - Priority lanes (interactive Copilot runs preempt background runs).
 - Adaptive concurrency that auto-tunes `maxConcurrent` to observed provider limits.

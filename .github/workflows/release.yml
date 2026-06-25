@@ -138,6 +138,16 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
 
+      # Stage the prebuilt whisper-cli for every arch this job packages (RFC 009).
+      # Without this, generateAssets finds an empty vendor dir and ships without
+      # on-device transcription. Required: fails the release if binaries are absent.
+      - name: Stage whisper-cli binaries (RFC 009)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          .github/scripts/stage-whisper-bin.sh darwin arm64
+          .github/scripts/stage-whisper-bin.sh darwin x64
+
       - name: Build electron distributables
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -167,11 +177,14 @@ jobs:
           const executableName = packagerConfig.executableName ?? 'solomon-ai';
           const appName = packagerConfig.name ?? 'Solomon AI';
 
-          if (forgeConfig.hooks?.generateAssets) {
-            await forgeConfig.hooks.generateAssets(forgeConfig, platform, arches[0]);
-          }
-
           for (const arch of arches) {
+            // Re-run generateAssets per arch so the arch-specific whisper-cli
+            // (RFC 009) is staged into each package. The JS bundle it also builds
+            // is arch-independent; rebuilding it per arch is just redundant work.
+            if (forgeConfig.hooks?.generateAssets) {
+              await forgeConfig.hooks.generateAssets(forgeConfig, platform, arch);
+            }
+
             const outputPaths = await packager({
               ...packagerConfig,
               dir: appDir,
@@ -310,6 +323,14 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
 
+      # Stage the prebuilt whisper-cli for every arch this job packages (RFC 009).
+      - name: Stage whisper-cli binaries (RFC 009)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          .github/scripts/stage-whisper-bin.sh linux x64
+          .github/scripts/stage-whisper-bin.sh linux arm64
+
       - name: Build electron distributables
         env:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
@@ -331,11 +352,14 @@ jobs:
           const executableName = packagerConfig.executableName ?? 'solomon-ai';
           const appName = packagerConfig.name ?? 'Solomon AI';
 
-          if (forgeConfig.hooks?.generateAssets) {
-            await forgeConfig.hooks.generateAssets(forgeConfig, platform, arches[0]);
-          }
-
           for (const arch of arches) {
+            // Re-run generateAssets per arch so the arch-specific whisper-cli
+            // (RFC 009) is staged into each package. The JS bundle it also builds
+            // is arch-independent; rebuilding it per arch is just redundant work.
+            if (forgeConfig.hooks?.generateAssets) {
+              await forgeConfig.hooks.generateAssets(forgeConfig, platform, arch);
+            }
+
             const outputPaths = await packager({
               ...packagerConfig,
               dir: appDir,
@@ -426,6 +450,14 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
 
+      # Stage the prebuilt whisper-cli for this job's arch (RFC 009). Uses bash
+      # (git-bash on the Windows runner) so the shared staging script runs as-is.
+      - name: Stage whisper-cli binaries (RFC 009)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: .github/scripts/stage-whisper-bin.sh win32 x64
+
       - name: Build electron distributables
         env:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
@@ -447,11 +479,14 @@ jobs:
           const executableName = packagerConfig.executableName ?? 'solomon-ai';
           const appName = packagerConfig.name ?? 'Solomon AI';
 
-          if (forgeConfig.hooks?.generateAssets) {
-            await forgeConfig.hooks.generateAssets(forgeConfig, platform, arches[0]);
-          }
-
           for (const arch of arches) {
+            // Re-run generateAssets per arch so the arch-specific whisper-cli
+            // (RFC 009) is staged into each package. The JS bundle it also builds
+            // is arch-independent; rebuilding it per arch is just redundant work.
+            if (forgeConfig.hooks?.generateAssets) {
+              await forgeConfig.hooks.generateAssets(forgeConfig, platform, arch);
+            }
+
             const outputPaths = await packager({
               ...packagerConfig,
               dir: appDir,

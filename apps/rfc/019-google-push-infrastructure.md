@@ -8,12 +8,12 @@
 | **Owners**       | `apps/rowboat-api` (watch manager, webhook) · Platform/Infra (GCP project, Pub/Sub)                                                                              |
 | **Created**      | 2026-06-09                                                                                                                                                       |
 | **Last updated** | 2026-06-09                                                                                                                                                       |
-| **Depends on**   | [RFC 003](./003-cloud-event-ingestion.md) (webhook + router), [RFC 007](./007-production-cloud-enablement.md) (production rollout gates)                         |
+| **Depends on**   | [RFC 003](./complete-003-cloud-event-ingestion.md) (webhook + router), [RFC 007](./007-production-cloud-enablement.md) (production rollout gates)                         |
 | **Related**      | [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md) (operator prerequisites index)                                                                  |
 
 ## Summary
 
-[RFC 003](./003-cloud-event-ingestion.md) shipped the *receiving* half of Google
+[RFC 003](./complete-003-cloud-event-ingestion.md) shipped the *receiving* half of Google
 event ingestion: `POST /v1/webhooks/google` verifies and ingests Gmail Pub/Sub
 pushes and Calendar channel notifications, and `internal/googlewatch` registers
 and renews the per-account subscriptions that make Google send them. What

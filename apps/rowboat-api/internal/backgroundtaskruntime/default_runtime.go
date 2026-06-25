@@ -20,6 +20,19 @@ const toolResultCap = 16 << 10 // 16 KiB
 // explicit and billed, so the cost is bounded by the model's own choices.
 const artifactResultCap = 256 << 10 // 256 KiB
 
+// DefaultToolResultCap is the per-tool transcript budget (the generic cap),
+// exported for reuse by the durable agent runtime (RFC 027), which truncates
+// tool results before they re-enter the workflow transcript / Temporal history.
+const DefaultToolResultCap = toolResultCap
+
+// TruncateToolResult is the exported reuse of the transcript-truncation rule
+// (RFC 027 reuses it for tool results entering workflow history). See
+// truncateToolResult for the envelope semantics.
+func TruncateToolResult(raw []byte, maxBytes int) string { return truncateToolResult(raw, maxBytes) }
+
+// Truncate bounds a string to maxLen runes with an ellipsis (exported reuse).
+func Truncate(s string, maxLen int) string { return truncate(s, maxLen) }
+
 // resultCap returns the transcript budget for one tool's result.
 func resultCap(toolName string) int {
 	if toolName == "artifact.read" {

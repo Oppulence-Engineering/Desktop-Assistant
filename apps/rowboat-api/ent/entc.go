@@ -37,6 +37,8 @@ func main() {
 		schema.OAuthConnection{},
 		schema.MCPConnection{},
 		schema.LLMUsage{},
+		// RFC 028: AgentDefinition history backs revision listing + rollback.
+		schema.AgentDefinition{},
 	}
 	if err := enthistory.Generate("./schema", tracked,
 		enthistory.WithHistoryTimeIndex(),

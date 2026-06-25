@@ -1,0 +1,11 @@
+apiVersion: agent.rowboat.dev/v1
+kind: Agent
+metadata:
+  slug: assistant
+  name: Assistant
+spec:
+  instructionsFile: ./instructions.md
+  tools:
+    - current_time
+    - echo
+  channels: [http]

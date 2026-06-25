@@ -5,6 +5,21 @@ describe("whisper catalog", () => {
   it("pins a checksum for every installable catalog entry", () => {
     expect(CATALOG.length).toBeGreaterThan(0);
     for (const model of CATALOG) {
+      if (model.sha256) {
+        // A captured checksum must be a valid sha256.
+        expect(model.sha256, `${model.id} checksum should be a sha256`).toMatch(/^[a-f0-9]{64}$/);
+      } else {
+        // A not-yet-pinned asset (e.g. the RFC 017 speaker-embedding beta) must be
+        // non-installable so an unverified download can never reach disk.
+        expect(model.downloadable, `${model.id} without a checksum must not be downloadable`).toBe(
+          false,
+        );
+      }
+    }
+  });
+
+  it("pins a checksum for every downloadable model", () => {
+    for (const model of CATALOG.filter((entry) => entry.downloadable)) {
       expect(model.sha256, `${model.id} should have a pinned checksum`).toMatch(/^[a-f0-9]{64}$/);
     }
   });

@@ -1,0 +1,16 @@
+apiVersion: agent.rowboat.dev/v1
+kind: Agent
+metadata:
+  slug: concierge
+  name: Concierge
+spec:
+  instructionsFile: ./instructions.md
+  tools:
+    - current_time
+    - echo
+    - name: demo.payment
+      requiresApproval: true
+    - subagent.delegate
+  subagents:
+    - assistant
+  channels: [http]

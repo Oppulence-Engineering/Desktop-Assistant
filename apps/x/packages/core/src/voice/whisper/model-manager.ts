@@ -156,7 +156,10 @@ export class ModelManager {
     }
 
     let vadOk = true;
-    const vad = id === VAD_MODEL_ID ? undefined : this.findEntry(VAD_MODEL_ID);
+    // Only transcription models carry a companion VAD; VAD/speaker-embedding
+    // assets verify on their own (RFC 017).
+    const vad =
+      m.kind !== "transcription" || id === VAD_MODEL_ID ? undefined : this.findEntry(VAD_MODEL_ID);
     if (vad) {
       if (!vad.sha256) {
         vadOk = false;
@@ -246,12 +249,18 @@ export class ModelManager {
     return this.verifyModel(id);
   }
 
-  /** Free space for everything except the active model and the VAD model. */
+  /**
+   * Free space for everything except the active model and the shared non-
+   * transcription assets (VAD + speaker embedding), which are reused across
+   * models and must survive GC (RFC 017).
+   */
   async gc(activeId: string): Promise<number> {
     const led = await this.loadLedger();
     let freed = 0;
     for (const id of Object.keys(led.installed)) {
-      if (id === activeId || id === VAD_MODEL_ID) continue;
+      if (id === activeId) continue;
+      const entry = this.findEntry(id);
+      if (entry && entry.kind !== "transcription") continue; // keep vad + embedding
       freed += led.installed[id].bytes;
       await this.remove(id);
     }

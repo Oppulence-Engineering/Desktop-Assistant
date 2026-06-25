@@ -24,6 +24,39 @@ interface SearchResult {
   path: string;
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Bold the query's terms within a result preview (semantic results may not contain
+ *  the literal terms — non-matches just render plainly). */
+function HighlightHits({ text, query }: { text: string; query: string }) {
+  const terms = Array.from(
+    new Set(
+      query
+        .toLowerCase()
+        .split(/\s+/)
+        .map((t) => t.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, ""))
+        .filter((t) => t.length > 1),
+    ),
+  );
+  if (terms.length === 0) return <>{text}</>;
+  const segments = text.split(new RegExp(`(${terms.map(escapeRegExp).join("|")})`, "gi"));
+  return (
+    <>
+      {segments.map((seg, i) =>
+        terms.includes(seg.toLowerCase()) ? (
+          <mark key={i} className="bg-transparent font-semibold text-foreground">
+            {seg}
+          </mark>
+        ) : (
+          <span key={i}>{seg}</span>
+        ),
+      )}
+    </>
+  );
+}
+
 export type SearchType = "knowledge" | "chat";
 
 function activeTabToTypes(section: ActiveSection): SearchType[] {
@@ -194,7 +227,7 @@ export function CommandPalette({
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="truncate font-medium">{result.title}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {result.preview}
+                    <HighlightHits text={result.preview} query={debouncedQuery} />
                   </span>
                 </div>
               </CommandItem>
@@ -213,7 +246,7 @@ export function CommandPalette({
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="truncate font-medium">{result.title}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {result.preview}
+                    <HighlightHits text={result.preview} query={debouncedQuery} />
                   </span>
                 </div>
               </CommandItem>

@@ -8,7 +8,7 @@
 | **Owners**       | `apps/rowboat-api` · Platform/Infra (Hetzner k3s, Temporal Cloud, Infisical)                                                                                                                 |
 | **Created**      | 2026-06-05                                                                                                                                                                                   |
 | **Last updated** | 2026-06-06                                                                                                                                                                                   |
-| **Gates**        | the production rollout of [RFC 001](./001-api-owned-scheduler.md), [003](./003-cloud-event-ingestion.md), [004](./004-cloud-agent-runtime.md), [005](./005-temporal-schedule-integration.md) |
+| **Gates**        | the production rollout of [RFC 001](./complete-001-api-owned-scheduler.md), [003](./complete-003-cloud-event-ingestion.md), [004](./complete-004-cloud-agent-runtime.md), [005](./complete-005-temporal-schedule-integration.md) |
 | **Refs**         | Supersedes former cloud workflow production-enablement plan; operational deployment reference: [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md).                             |
 
 ## Summary
@@ -49,7 +49,7 @@ The code and chart are ready; only the switch is off.
 - Self-hosting Temporal in production (we use Temporal Cloud; local kind uses
   `temporalio/auto-setup`).
 - Migrating all desktop tasks to API execution by default (local stays the default).
-- Enabling unbounded cloud tool execution before [RFC 004](./004-cloud-agent-runtime.md)
+- Enabling unbounded cloud tool execution before [RFC 004](./complete-004-cloud-agent-runtime.md)
   ships (the deterministic-artifact runtime is the safe interim; the LLM runtime gates on
   RFC 004 + `CLOUD_RUNTIME_ENABLED`).
 
@@ -117,8 +117,8 @@ worker:
 - Run scheduled + manual cloud tasks. Monitor failure rate + queue latency.
 - Verify artifact pullback, cancel/retry/rerun, and that logs carry run + workflow ids
   (`runLogFields`, `handler.go:1815`).
-- Enable [RFC 001](./001-api-owned-scheduler.md) scheduler (single replica) and confirm
-  desktop-closed firing; then [RFC 005](./005-temporal-schedule-integration.md) cron behind
+- Enable [RFC 001](./complete-001-api-owned-scheduler.md) scheduler (single replica) and confirm
+  desktop-closed firing; then [RFC 005](./complete-005-temporal-schedule-integration.md) cron behind
   its flag.
 
 ### Phase 3 — Production limited enablement

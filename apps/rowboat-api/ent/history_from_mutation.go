@@ -40,6 +40,350 @@ func rollback(tx *Tx, err error) error {
 	return err
 }
 
+func (m *AgentDefinitionMutation) CreateHistoryFromCreate(ctx context.Context) error {
+	client := m.Client()
+	tx, err := m.Tx()
+	if err != nil {
+		tx = nil
+	}
+
+	id, ok := m.ID()
+	if !ok {
+		return rollback(tx, idNotFoundError)
+	}
+
+	create := client.AgentDefinitionHistory.Create()
+	if tx != nil {
+		create = tx.AgentDefinitionHistory.Create()
+	}
+
+	create = create.
+		SetOperation(EntOpToHistoryOp(m.Op())).
+		SetHistoryTime(time.Now()).
+		SetRef(id)
+
+	if createdAt, exists := m.CreatedAt(); exists {
+		create = create.SetCreatedAt(createdAt)
+	}
+
+	if updatedAt, exists := m.UpdatedAt(); exists {
+		create = create.SetUpdatedAt(updatedAt)
+	}
+
+	if slug, exists := m.Slug(); exists {
+		create = create.SetSlug(slug)
+	}
+
+	if name, exists := m.Name(); exists {
+		create = create.SetName(name)
+	}
+
+	if instructions, exists := m.Instructions(); exists {
+		create = create.SetInstructions(instructions)
+	}
+
+	if model, exists := m.Model(); exists {
+		create = create.SetModel(model)
+	}
+
+	if provider, exists := m.Provider(); exists {
+		create = create.SetProvider(provider)
+	}
+
+	if limitsJSON, exists := m.LimitsJSON(); exists {
+		create = create.SetLimitsJSON(limitsJSON)
+	}
+
+	if enabledTools, exists := m.EnabledTools(); exists {
+		create = create.SetEnabledTools(enabledTools)
+	}
+
+	if toolsJSON, exists := m.ToolsJSON(); exists {
+		create = create.SetToolsJSON(toolsJSON)
+	}
+
+	if subagentRefs, exists := m.SubagentRefs(); exists {
+		create = create.SetSubagentRefs(subagentRefs)
+	}
+
+	if channelBindings, exists := m.ChannelBindings(); exists {
+		create = create.SetChannelBindings(channelBindings)
+	}
+
+	if connectorReqs, exists := m.ConnectorReqs(); exists {
+		create = create.SetConnectorReqs(connectorReqs)
+	}
+
+	if source, exists := m.Source(); exists {
+		create = create.SetSource(source)
+	}
+
+	if forkedFrom, exists := m.ForkedFrom(); exists {
+		create = create.SetForkedFrom(forkedFrom)
+	}
+
+	if revision, exists := m.Revision(); exists {
+		create = create.SetRevision(revision)
+	}
+
+	if sourceFormat, exists := m.SourceFormat(); exists {
+		create = create.SetSourceFormat(sourceFormat)
+	}
+
+	if rawSource, exists := m.RawSource(); exists {
+		create = create.SetRawSource(rawSource)
+	}
+
+	if contentHash, exists := m.ContentHash(); exists {
+		create = create.SetContentHash(contentHash)
+	}
+
+	if managedBy, exists := m.ManagedBy(); exists {
+		create = create.SetManagedBy(managedBy)
+	}
+
+	if agentSyncState, exists := m.AgentSyncState(); exists {
+		create = create.SetAgentSyncState(agentSyncState)
+	}
+
+	if agentSyncError, exists := m.AgentSyncError(); exists {
+		create = create.SetAgentSyncError(agentSyncError)
+	}
+
+	_, err = create.Save(ctx)
+	if err != nil {
+		rollback(tx, err)
+	}
+	return nil
+}
+
+func (m *AgentDefinitionMutation) CreateHistoryFromUpdate(ctx context.Context) error {
+	client := m.Client()
+	tx, err := m.Tx()
+	if err != nil {
+		tx = nil
+	}
+
+	ids, err := m.IDs(ctx)
+	if err != nil {
+		return rollback(tx, fmt.Errorf("getting ids: %w", err))
+	}
+
+	for _, id := range ids {
+		agentdefinition, err := client.AgentDefinition.Get(ctx, id)
+		if err != nil {
+			return rollback(tx, err)
+		}
+
+		create := client.AgentDefinitionHistory.Create()
+		if tx != nil {
+			create = tx.AgentDefinitionHistory.Create()
+		}
+
+		create = create.
+			SetOperation(EntOpToHistoryOp(m.Op())).
+			SetHistoryTime(time.Now()).
+			SetRef(id)
+
+		if createdAt, exists := m.CreatedAt(); exists {
+			create = create.SetCreatedAt(createdAt)
+		} else {
+			create = create.SetCreatedAt(agentdefinition.CreatedAt)
+		}
+
+		if updatedAt, exists := m.UpdatedAt(); exists {
+			create = create.SetUpdatedAt(updatedAt)
+		} else {
+			create = create.SetUpdatedAt(agentdefinition.UpdatedAt)
+		}
+
+		if slug, exists := m.Slug(); exists {
+			create = create.SetSlug(slug)
+		} else {
+			create = create.SetSlug(agentdefinition.Slug)
+		}
+
+		if name, exists := m.Name(); exists {
+			create = create.SetName(name)
+		} else {
+			create = create.SetName(agentdefinition.Name)
+		}
+
+		if instructions, exists := m.Instructions(); exists {
+			create = create.SetInstructions(instructions)
+		} else {
+			create = create.SetInstructions(agentdefinition.Instructions)
+		}
+
+		if model, exists := m.Model(); exists {
+			create = create.SetModel(model)
+		} else {
+			create = create.SetModel(agentdefinition.Model)
+		}
+
+		if provider, exists := m.Provider(); exists {
+			create = create.SetProvider(provider)
+		} else {
+			create = create.SetProvider(agentdefinition.Provider)
+		}
+
+		if limitsJSON, exists := m.LimitsJSON(); exists {
+			create = create.SetLimitsJSON(limitsJSON)
+		} else {
+			create = create.SetLimitsJSON(agentdefinition.LimitsJSON)
+		}
+
+		if enabledTools, exists := m.EnabledTools(); exists {
+			create = create.SetEnabledTools(enabledTools)
+		} else {
+			create = create.SetEnabledTools(agentdefinition.EnabledTools)
+		}
+
+		if toolsJSON, exists := m.ToolsJSON(); exists {
+			create = create.SetToolsJSON(toolsJSON)
+		} else {
+			create = create.SetToolsJSON(agentdefinition.ToolsJSON)
+		}
+
+		if subagentRefs, exists := m.SubagentRefs(); exists {
+			create = create.SetSubagentRefs(subagentRefs)
+		} else {
+			create = create.SetSubagentRefs(agentdefinition.SubagentRefs)
+		}
+
+		if channelBindings, exists := m.ChannelBindings(); exists {
+			create = create.SetChannelBindings(channelBindings)
+		} else {
+			create = create.SetChannelBindings(agentdefinition.ChannelBindings)
+		}
+
+		if connectorReqs, exists := m.ConnectorReqs(); exists {
+			create = create.SetConnectorReqs(connectorReqs)
+		} else {
+			create = create.SetConnectorReqs(agentdefinition.ConnectorReqs)
+		}
+
+		if source, exists := m.Source(); exists {
+			create = create.SetSource(source)
+		} else {
+			create = create.SetSource(agentdefinition.Source)
+		}
+
+		if forkedFrom, exists := m.ForkedFrom(); exists {
+			create = create.SetForkedFrom(forkedFrom)
+		} else {
+			create = create.SetForkedFrom(agentdefinition.ForkedFrom)
+		}
+
+		if revision, exists := m.Revision(); exists {
+			create = create.SetRevision(revision)
+		} else {
+			create = create.SetRevision(agentdefinition.Revision)
+		}
+
+		if sourceFormat, exists := m.SourceFormat(); exists {
+			create = create.SetSourceFormat(sourceFormat)
+		} else {
+			create = create.SetSourceFormat(agentdefinition.SourceFormat)
+		}
+
+		if rawSource, exists := m.RawSource(); exists {
+			create = create.SetRawSource(rawSource)
+		} else {
+			create = create.SetRawSource(agentdefinition.RawSource)
+		}
+
+		if contentHash, exists := m.ContentHash(); exists {
+			create = create.SetContentHash(contentHash)
+		} else {
+			create = create.SetContentHash(agentdefinition.ContentHash)
+		}
+
+		if managedBy, exists := m.ManagedBy(); exists {
+			create = create.SetManagedBy(managedBy)
+		} else {
+			create = create.SetManagedBy(agentdefinition.ManagedBy)
+		}
+
+		if agentSyncState, exists := m.AgentSyncState(); exists {
+			create = create.SetAgentSyncState(agentSyncState)
+		} else {
+			create = create.SetAgentSyncState(agentdefinition.AgentSyncState)
+		}
+
+		if agentSyncError, exists := m.AgentSyncError(); exists {
+			create = create.SetAgentSyncError(agentSyncError)
+		} else {
+			create = create.SetAgentSyncError(agentdefinition.AgentSyncError)
+		}
+
+		_, err = create.Save(ctx)
+		if err != nil {
+			rollback(tx, err)
+		}
+	}
+
+	return nil
+}
+
+func (m *AgentDefinitionMutation) CreateHistoryFromDelete(ctx context.Context) error {
+	client := m.Client()
+	tx, err := m.Tx()
+	if err != nil {
+		tx = nil
+	}
+
+	ids, err := m.IDs(ctx)
+	if err != nil {
+		return rollback(tx, fmt.Errorf("getting ids: %w", err))
+	}
+
+	for _, id := range ids {
+		agentdefinition, err := client.AgentDefinition.Get(ctx, id)
+		if err != nil {
+			return rollback(tx, err)
+		}
+
+		create := client.AgentDefinitionHistory.Create()
+		if tx != nil {
+			create = tx.AgentDefinitionHistory.Create()
+		}
+
+		_, err = create.
+			SetOperation(EntOpToHistoryOp(m.Op())).
+			SetHistoryTime(time.Now()).
+			SetRef(id).
+			SetCreatedAt(agentdefinition.CreatedAt).
+			SetUpdatedAt(agentdefinition.UpdatedAt).
+			SetSlug(agentdefinition.Slug).
+			SetName(agentdefinition.Name).
+			SetInstructions(agentdefinition.Instructions).
+			SetModel(agentdefinition.Model).
+			SetProvider(agentdefinition.Provider).
+			SetLimitsJSON(agentdefinition.LimitsJSON).
+			SetEnabledTools(agentdefinition.EnabledTools).
+			SetToolsJSON(agentdefinition.ToolsJSON).
+			SetSubagentRefs(agentdefinition.SubagentRefs).
+			SetChannelBindings(agentdefinition.ChannelBindings).
+			SetConnectorReqs(agentdefinition.ConnectorReqs).
+			SetSource(agentdefinition.Source).
+			SetForkedFrom(agentdefinition.ForkedFrom).
+			SetRevision(agentdefinition.Revision).
+			SetSourceFormat(agentdefinition.SourceFormat).
+			SetRawSource(agentdefinition.RawSource).
+			SetContentHash(agentdefinition.ContentHash).
+			SetManagedBy(agentdefinition.ManagedBy).
+			SetAgentSyncState(agentdefinition.AgentSyncState).
+			SetAgentSyncError(agentdefinition.AgentSyncError).
+			Save(ctx)
+		if err != nil {
+			rollback(tx, err)
+		}
+	}
+
+	return nil
+}
+
 func (m *LLMUsageMutation) CreateHistoryFromCreate(ctx context.Context) error {
 	client := m.Client()
 	tx, err := m.Tx()

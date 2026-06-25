@@ -5,12 +5,20 @@ import (
 	"errors"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsessionevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/composioaccount"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
@@ -110,6 +118,13 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 			})
 		}))
 
+	client.ComposioAccount.Intercept(intercept.TraverseComposioAccount(
+		func(ctx context.Context, q *ent.ComposioAccountQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(composioaccount.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
 	client.LLMUsage.Intercept(intercept.TraverseLLMUsage(
 		func(ctx context.Context, q *ent.LLMUsageQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
@@ -135,6 +150,58 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.SubscriptionQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(subscription.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	// Durable agent runtime entities (RFC 027). Each carries a required user
+	// edge, so the same read-side tenant scoping applies; mutations still follow
+	// the scoped-read-first rule documented above.
+	client.AgentDefinition.Intercept(intercept.TraverseAgentDefinition(
+		func(ctx context.Context, q *ent.AgentDefinitionQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(agentdefinition.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.AgentSession.Intercept(intercept.TraverseAgentSession(
+		func(ctx context.Context, q *ent.AgentSessionQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(agentsession.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.AgentTurn.Intercept(intercept.TraverseAgentTurn(
+		func(ctx context.Context, q *ent.AgentTurnQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(agentturn.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.AgentSessionEvent.Intercept(intercept.TraverseAgentSessionEvent(
+		func(ctx context.Context, q *ent.AgentSessionEventQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(agentsessionevent.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.AgentToolCall.Intercept(intercept.TraverseAgentToolCall(
+		func(ctx context.Context, q *ent.AgentToolCallQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(agenttoolcall.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.AgentApproval.Intercept(intercept.TraverseAgentApproval(
+		func(ctx context.Context, q *ent.AgentApprovalQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(agentapproval.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.AgentToolResultBlob.Intercept(intercept.TraverseAgentToolResultBlob(
+		func(ctx context.Context, q *ent.AgentToolResultBlobQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(agenttoolresultblob.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 }

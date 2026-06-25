@@ -2,11 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import type { Editor } from "@tiptap/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   BoldIcon,
   ItalicIcon,
@@ -30,6 +26,7 @@ import {
   FileIcon,
   FileTypeIcon,
   Radio,
+  BrainIcon,
 } from "@/lib/icons";
 import {
   DropdownMenu,
@@ -44,6 +41,7 @@ interface EditorToolbarProps {
   onImageUpload?: (file: File) => Promise<void> | void;
   onExport?: (format: "md" | "pdf" | "docx") => void;
   onOpenLiveNote?: () => void;
+  onOpenRelated?: () => void;
   liveState?: LivePillState;
 }
 
@@ -57,8 +55,7 @@ const LIVE_PILL_VARIANT_CLASS: Record<LivePillVariant, string> = {
   passive: "text-muted-foreground hover:bg-accent",
   idle: "text-foreground hover:bg-accent",
   running: "text-foreground bg-primary/10 hover:bg-primary/15 animate-pulse",
-  error:
-    "text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15",
+  error: "text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15",
 };
 
 export function EditorToolbar({
@@ -67,6 +64,7 @@ export function EditorToolbar({
   onImageUpload,
   onExport,
   onOpenLiveNote,
+  onOpenRelated,
   liveState,
 }: EditorToolbarProps) {
   const [linkUrl, setLinkUrl] = useState("");
@@ -104,12 +102,7 @@ export function EditorToolbar({
       if (url && !url.match(/^https?:\/\//i) && !url.startsWith("mailto:")) {
         url = "https://" + url;
       }
-      editor
-        .chain()
-        .focus()
-        .extendMarkRange("link")
-        .setLink({ href: url })
-        .run();
+      editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
     }
     closeLinkPopover();
   }, [editor, linkUrl, closeLinkPopover]);
@@ -311,9 +304,7 @@ export function EditorToolbar({
         </PopoverTrigger>
         <PopoverContent className="w-80 p-3" align="start">
           <div className="flex flex-col gap-3">
-            <div className="text-sm font-medium">
-              {isLinkActive ? "Edit Link" : "Add Link"}
-            </div>
+            <div className="text-sm font-medium">{isLinkActive ? "Edit Link" : "Add Link"}</div>
             <Input
               placeholder="https://example.com"
               value={linkUrl}
@@ -345,12 +336,7 @@ export function EditorToolbar({
                   >
                     <ExternalLinkIcon className="size-4" />
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={removeLink}
-                    title="Remove link"
-                  >
+                  <Button size="sm" variant="outline" onClick={removeLink} title="Remove link">
                     <Trash2Icon className="size-4" />
                   </Button>
                 </>
@@ -409,21 +395,32 @@ export function EditorToolbar({
         </>
       )}
 
-      {/* Live Note pill — pushed to far right */}
-      {onOpenLiveNote && liveState && (
-        <button
-          type="button"
-          onClick={onOpenLiveNote}
-          title={
-            liveState.variant === "passive"
-              ? "Make this note live"
-              : "Live note"
-          }
-          className={`ml-auto inline-flex h-7 items-center gap-1.5 rounded-none px-2 text-xs font-medium transition-colors ${LIVE_PILL_VARIANT_CLASS[liveState.variant]}`}
-        >
-          <Radio className="size-3.5" />
-          <span className="truncate max-w-[160px]">{liveState.label}</span>
-        </button>
+      {/* Right-aligned note actions: Related notes + Live Note */}
+      {(onOpenRelated || (onOpenLiveNote && liveState)) && (
+        <div className="ml-auto flex items-center gap-1.5">
+          {onOpenRelated && (
+            <button
+              type="button"
+              onClick={onOpenRelated}
+              title="Related notes"
+              className="inline-flex h-7 items-center gap-1.5 rounded-none px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <BrainIcon className="size-3.5" />
+              <span>Related</span>
+            </button>
+          )}
+          {onOpenLiveNote && liveState && (
+            <button
+              type="button"
+              onClick={onOpenLiveNote}
+              title={liveState.variant === "passive" ? "Make this note live" : "Live note"}
+              className={`inline-flex h-7 items-center gap-1.5 rounded-none px-2 text-xs font-medium transition-colors ${LIVE_PILL_VARIANT_CLASS[liveState.variant]}`}
+            >
+              <Radio className="size-3.5" />
+              <span className="truncate max-w-[160px]">{liveState.label}</span>
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

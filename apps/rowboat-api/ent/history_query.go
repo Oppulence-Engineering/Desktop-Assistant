@@ -8,12 +8,87 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
 )
+
+func (_m *AgentDefinition) History() *AgentDefinitionHistoryQuery {
+	historyClient := NewAgentDefinitionHistoryClient(_m.config)
+	return historyClient.Query().Where(agentdefinitionhistory.Ref(_m.ID))
+}
+
+func (_m *AgentDefinitionHistory) Next(ctx context.Context) (*AgentDefinitionHistory, error) {
+	client := NewAgentDefinitionHistoryClient(_m.config)
+	return client.Query().
+		Where(
+			agentdefinitionhistory.Ref(_m.Ref),
+			agentdefinitionhistory.HistoryTimeGT(_m.HistoryTime),
+		).
+		Order(agentdefinitionhistory.ByHistoryTime()).
+		First(ctx)
+}
+
+func (_m *AgentDefinitionHistory) Prev(ctx context.Context) (*AgentDefinitionHistory, error) {
+	client := NewAgentDefinitionHistoryClient(_m.config)
+	return client.Query().
+		Where(
+			agentdefinitionhistory.Ref(_m.Ref),
+			agentdefinitionhistory.HistoryTimeLT(_m.HistoryTime),
+		).
+		Order(agentdefinitionhistory.ByHistoryTime(sql.OrderDesc())).
+		First(ctx)
+}
+
+func (adhq *AgentDefinitionHistoryQuery) Earliest(ctx context.Context) (*AgentDefinitionHistory, error) {
+	return adhq.
+		Order(agentdefinitionhistory.ByHistoryTime()).
+		First(ctx)
+}
+
+func (adhq *AgentDefinitionHistoryQuery) Latest(ctx context.Context) (*AgentDefinitionHistory, error) {
+	return adhq.
+		Order(agentdefinitionhistory.ByHistoryTime(sql.OrderDesc())).
+		First(ctx)
+}
+
+func (adhq *AgentDefinitionHistoryQuery) AsOf(ctx context.Context, time time.Time) (*AgentDefinitionHistory, error) {
+	return adhq.
+		Where(agentdefinitionhistory.HistoryTimeLTE(time)).
+		Order(agentdefinitionhistory.ByHistoryTime(sql.OrderDesc())).
+		First(ctx)
+}
+
+func (_m *AgentDefinitionHistory) Restore(ctx context.Context) (*AgentDefinition, error) {
+	client := NewAgentDefinitionClient(_m.config)
+	return client.
+		UpdateOneID(_m.Ref).
+		SetUpdatedAt(_m.UpdatedAt).
+		SetSlug(_m.Slug).
+		SetName(_m.Name).
+		SetInstructions(_m.Instructions).
+		SetModel(_m.Model).
+		SetProvider(_m.Provider).
+		SetLimitsJSON(_m.LimitsJSON).
+		SetEnabledTools(_m.EnabledTools).
+		SetToolsJSON(_m.ToolsJSON).
+		SetSubagentRefs(_m.SubagentRefs).
+		SetChannelBindings(_m.ChannelBindings).
+		SetConnectorReqs(_m.ConnectorReqs).
+		SetSource(_m.Source).
+		SetForkedFrom(_m.ForkedFrom).
+		SetRevision(_m.Revision).
+		SetSourceFormat(_m.SourceFormat).
+		SetRawSource(_m.RawSource).
+		SetContentHash(_m.ContentHash).
+		SetManagedBy(_m.ManagedBy).
+		SetAgentSyncState(_m.AgentSyncState).
+		SetAgentSyncError(_m.AgentSyncError).
+		Save(ctx)
+}
 
 func (_m *LLMUsage) History() *LLMUsageHistoryQuery {
 	historyClient := NewLLMUsageHistoryClient(_m.config)

@@ -37,6 +37,8 @@ const (
 	EdgeOauthConnections = "oauth_connections"
 	// EdgeMcpConnections holds the string denoting the mcp_connections edge name in mutations.
 	EdgeMcpConnections = "mcp_connections"
+	// EdgeComposioAccounts holds the string denoting the composio_accounts edge name in mutations.
+	EdgeComposioAccounts = "composio_accounts"
 	// EdgeBackgroundTasks holds the string denoting the background_tasks edge name in mutations.
 	EdgeBackgroundTasks = "background_tasks"
 	// EdgeBackgroundTaskArtifacts holds the string denoting the background_task_artifacts edge name in mutations.
@@ -51,6 +53,20 @@ const (
 	EdgeCloudEvents = "cloud_events"
 	// EdgeGoogleWatches holds the string denoting the google_watches edge name in mutations.
 	EdgeGoogleWatches = "google_watches"
+	// EdgeAgentDefinitions holds the string denoting the agent_definitions edge name in mutations.
+	EdgeAgentDefinitions = "agent_definitions"
+	// EdgeAgentSessions holds the string denoting the agent_sessions edge name in mutations.
+	EdgeAgentSessions = "agent_sessions"
+	// EdgeAgentTurns holds the string denoting the agent_turns edge name in mutations.
+	EdgeAgentTurns = "agent_turns"
+	// EdgeAgentSessionEvents holds the string denoting the agent_session_events edge name in mutations.
+	EdgeAgentSessionEvents = "agent_session_events"
+	// EdgeAgentToolCalls holds the string denoting the agent_tool_calls edge name in mutations.
+	EdgeAgentToolCalls = "agent_tool_calls"
+	// EdgeAgentApprovals holds the string denoting the agent_approvals edge name in mutations.
+	EdgeAgentApprovals = "agent_approvals"
+	// EdgeAgentToolResultBlobs holds the string denoting the agent_tool_result_blobs edge name in mutations.
+	EdgeAgentToolResultBlobs = "agent_tool_result_blobs"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -95,6 +111,13 @@ const (
 	McpConnectionsInverseTable = "mcp_connections"
 	// McpConnectionsColumn is the table column denoting the mcp_connections relation/edge.
 	McpConnectionsColumn = "user_mcp_connections"
+	// ComposioAccountsTable is the table that holds the composio_accounts relation/edge.
+	ComposioAccountsTable = "composio_accounts"
+	// ComposioAccountsInverseTable is the table name for the ComposioAccount entity.
+	// It exists in this package in order to avoid circular dependency with the "composioaccount" package.
+	ComposioAccountsInverseTable = "composio_accounts"
+	// ComposioAccountsColumn is the table column denoting the composio_accounts relation/edge.
+	ComposioAccountsColumn = "user_composio_accounts"
 	// BackgroundTasksTable is the table that holds the background_tasks relation/edge.
 	BackgroundTasksTable = "background_tasks"
 	// BackgroundTasksInverseTable is the table name for the BackgroundTask entity.
@@ -144,6 +167,55 @@ const (
 	GoogleWatchesInverseTable = "google_watches"
 	// GoogleWatchesColumn is the table column denoting the google_watches relation/edge.
 	GoogleWatchesColumn = "user_google_watches"
+	// AgentDefinitionsTable is the table that holds the agent_definitions relation/edge.
+	AgentDefinitionsTable = "agent_definitions"
+	// AgentDefinitionsInverseTable is the table name for the AgentDefinition entity.
+	// It exists in this package in order to avoid circular dependency with the "agentdefinition" package.
+	AgentDefinitionsInverseTable = "agent_definitions"
+	// AgentDefinitionsColumn is the table column denoting the agent_definitions relation/edge.
+	AgentDefinitionsColumn = "user_agent_definitions"
+	// AgentSessionsTable is the table that holds the agent_sessions relation/edge.
+	AgentSessionsTable = "agent_sessions"
+	// AgentSessionsInverseTable is the table name for the AgentSession entity.
+	// It exists in this package in order to avoid circular dependency with the "agentsession" package.
+	AgentSessionsInverseTable = "agent_sessions"
+	// AgentSessionsColumn is the table column denoting the agent_sessions relation/edge.
+	AgentSessionsColumn = "user_agent_sessions"
+	// AgentTurnsTable is the table that holds the agent_turns relation/edge.
+	AgentTurnsTable = "agent_turns"
+	// AgentTurnsInverseTable is the table name for the AgentTurn entity.
+	// It exists in this package in order to avoid circular dependency with the "agentturn" package.
+	AgentTurnsInverseTable = "agent_turns"
+	// AgentTurnsColumn is the table column denoting the agent_turns relation/edge.
+	AgentTurnsColumn = "user_agent_turns"
+	// AgentSessionEventsTable is the table that holds the agent_session_events relation/edge.
+	AgentSessionEventsTable = "agent_session_events"
+	// AgentSessionEventsInverseTable is the table name for the AgentSessionEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "agentsessionevent" package.
+	AgentSessionEventsInverseTable = "agent_session_events"
+	// AgentSessionEventsColumn is the table column denoting the agent_session_events relation/edge.
+	AgentSessionEventsColumn = "user_agent_session_events"
+	// AgentToolCallsTable is the table that holds the agent_tool_calls relation/edge.
+	AgentToolCallsTable = "agent_tool_calls"
+	// AgentToolCallsInverseTable is the table name for the AgentToolCall entity.
+	// It exists in this package in order to avoid circular dependency with the "agenttoolcall" package.
+	AgentToolCallsInverseTable = "agent_tool_calls"
+	// AgentToolCallsColumn is the table column denoting the agent_tool_calls relation/edge.
+	AgentToolCallsColumn = "user_agent_tool_calls"
+	// AgentApprovalsTable is the table that holds the agent_approvals relation/edge.
+	AgentApprovalsTable = "agent_approvals"
+	// AgentApprovalsInverseTable is the table name for the AgentApproval entity.
+	// It exists in this package in order to avoid circular dependency with the "agentapproval" package.
+	AgentApprovalsInverseTable = "agent_approvals"
+	// AgentApprovalsColumn is the table column denoting the agent_approvals relation/edge.
+	AgentApprovalsColumn = "user_agent_approvals"
+	// AgentToolResultBlobsTable is the table that holds the agent_tool_result_blobs relation/edge.
+	AgentToolResultBlobsTable = "agent_tool_result_blobs"
+	// AgentToolResultBlobsInverseTable is the table name for the AgentToolResultBlob entity.
+	// It exists in this package in order to avoid circular dependency with the "agenttoolresultblob" package.
+	AgentToolResultBlobsInverseTable = "agent_tool_result_blobs"
+	// AgentToolResultBlobsColumn is the table column denoting the agent_tool_result_blobs relation/edge.
+	AgentToolResultBlobsColumn = "user_agent_tool_result_blobs"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -289,6 +361,20 @@ func ByMcpConnections(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByComposioAccountsCount orders the results by composio_accounts count.
+func ByComposioAccountsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newComposioAccountsStep(), opts...)
+	}
+}
+
+// ByComposioAccounts orders the results by composio_accounts terms.
+func ByComposioAccounts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newComposioAccountsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByBackgroundTasksCount orders the results by background_tasks count.
 func ByBackgroundTasksCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -386,6 +472,104 @@ func ByGoogleWatches(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newGoogleWatchesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByAgentDefinitionsCount orders the results by agent_definitions count.
+func ByAgentDefinitionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAgentDefinitionsStep(), opts...)
+	}
+}
+
+// ByAgentDefinitions orders the results by agent_definitions terms.
+func ByAgentDefinitions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAgentDefinitionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAgentSessionsCount orders the results by agent_sessions count.
+func ByAgentSessionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAgentSessionsStep(), opts...)
+	}
+}
+
+// ByAgentSessions orders the results by agent_sessions terms.
+func ByAgentSessions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAgentSessionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAgentTurnsCount orders the results by agent_turns count.
+func ByAgentTurnsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAgentTurnsStep(), opts...)
+	}
+}
+
+// ByAgentTurns orders the results by agent_turns terms.
+func ByAgentTurns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAgentTurnsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAgentSessionEventsCount orders the results by agent_session_events count.
+func ByAgentSessionEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAgentSessionEventsStep(), opts...)
+	}
+}
+
+// ByAgentSessionEvents orders the results by agent_session_events terms.
+func ByAgentSessionEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAgentSessionEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAgentToolCallsCount orders the results by agent_tool_calls count.
+func ByAgentToolCallsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAgentToolCallsStep(), opts...)
+	}
+}
+
+// ByAgentToolCalls orders the results by agent_tool_calls terms.
+func ByAgentToolCalls(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAgentToolCallsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAgentApprovalsCount orders the results by agent_approvals count.
+func ByAgentApprovalsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAgentApprovalsStep(), opts...)
+	}
+}
+
+// ByAgentApprovals orders the results by agent_approvals terms.
+func ByAgentApprovals(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAgentApprovalsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAgentToolResultBlobsCount orders the results by agent_tool_result_blobs count.
+func ByAgentToolResultBlobsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAgentToolResultBlobsStep(), opts...)
+	}
+}
+
+// ByAgentToolResultBlobs orders the results by agent_tool_result_blobs terms.
+func ByAgentToolResultBlobs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAgentToolResultBlobsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -426,6 +610,13 @@ func newMcpConnectionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(McpConnectionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, McpConnectionsTable, McpConnectionsColumn),
+	)
+}
+func newComposioAccountsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ComposioAccountsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ComposioAccountsTable, ComposioAccountsColumn),
 	)
 }
 func newBackgroundTasksStep() *sqlgraph.Step {
@@ -475,5 +666,54 @@ func newGoogleWatchesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GoogleWatchesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, GoogleWatchesTable, GoogleWatchesColumn),
+	)
+}
+func newAgentDefinitionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AgentDefinitionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AgentDefinitionsTable, AgentDefinitionsColumn),
+	)
+}
+func newAgentSessionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AgentSessionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AgentSessionsTable, AgentSessionsColumn),
+	)
+}
+func newAgentTurnsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AgentTurnsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AgentTurnsTable, AgentTurnsColumn),
+	)
+}
+func newAgentSessionEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AgentSessionEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AgentSessionEventsTable, AgentSessionEventsColumn),
+	)
+}
+func newAgentToolCallsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AgentToolCallsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AgentToolCallsTable, AgentToolCallsColumn),
+	)
+}
+func newAgentApprovalsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AgentApprovalsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AgentApprovalsTable, AgentApprovalsColumn),
+	)
+}
+func newAgentToolResultBlobsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AgentToolResultBlobsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AgentToolResultBlobsTable, AgentToolResultBlobsColumn),
 	)
 }

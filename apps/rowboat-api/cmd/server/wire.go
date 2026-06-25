@@ -8,6 +8,13 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/proto/entpb"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentchannels"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentgitops"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agents"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentsessions"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentstream"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtasks"
@@ -34,6 +41,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/server"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slack"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/transcription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/voice"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
@@ -123,6 +131,24 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 	enricher := auth.NewWorkOSEnricher(cfg.WorkOSAPIKey)
 	authMW := auth.NewMiddleware(verifier, client, enricher, cfg.FreeTierCredits, log)
+	// RFC 011: classify verified tokens by issuer for audit/metrics + actor kind,
+	// and set the step-up recent-auth window. WorkOS is the human-identity issuer;
+	// the service/broker issuers stay dark until those modes are promoted.
+	authMW.SetIssuerPolicy(auth.IssuerPolicy{
+		WorkOSIssuer:  cfg.TokenIssuer,
+		ServiceIssuer: cfg.ServiceTokenIssuer,
+		BrokerIssuer:  cfg.BrokerTokenIssuer,
+	})
+	authMW.SetStepUpWindow(cfg.StepUpRecentAuthWindow)
+	// Optional readiness signal (RFC 010): report JWKS availability without
+	// failing readiness — the service intentionally boots before the IdP is
+	// reachable and serves 503 on authed routes until then.
+	srv.AddOptionalReadyCheck("workos_jwks", func(context.Context) error {
+		if verifier == nil {
+			return fmt.Errorf("workos jwks not loaded")
+		}
+		return nil
+	})
 
 	// --- Handlers -----------------------------------------------------------
 	configH := config.New(cfg)
@@ -223,7 +249,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		slackRedirect = strings.TrimRight(cfg.AppURL, "/") + "/oauth/slack/callback"
 	}
 	slackH.SetOAuthFlow(cfg.SlackAuthorizeURL, cfg.SlackTokenURL, slackRedirect, cfg.DesktopDeepLinkScheme, cfg.SlackOAuthScopes)
-	composioH := composio.New(sec, log)
+	composioH := composio.New(client, sec, log)
 	composioPolicy := vendorPolicy
 	composioPolicy.MaxResponseBytes = cfg.ComposioResponseMaxBytes
 	composioH.SetOutboundPolicy(composioPolicy)
@@ -264,6 +290,47 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		TitlePrefix:  cfg.PlainTitlePrefix,
 	}, log)
 	feedbackH.SetOutboundPolicy(vendorPolicy)
+
+	// Durable agent runtime (RFC 027). No master flag — it is active wherever
+	// Temporal is wired (the durable backend it runs on); the full surface
+	// mounts when temporalClient is available. Streaming uses the Redis bus when
+	// configured, else a durable-only poll of the event projection.
+	var agentsH *agents.Handler
+	var agentChannelsH *agentchannels.Handler
+	if temporalClient != nil {
+		agentCatalog := agentregistry.DefaultCatalog()
+		agentLoader, lerr := agentregistry.NewLoader(client, agentCatalog)
+		if lerr != nil {
+			return fmt.Errorf("load agent definitions: %w", lerr)
+		}
+		agentsH = agents.New(client, agentLoader, cfg, log)
+		// One shared starter backs the HTTP handler, channel adapters, and (on the
+		// worker) schedule fires — the single canonical creation path.
+		agentStarter := agentsessions.New(client, agentLoader, agentworkflow.NewStarter(temporalClient, cfg), cfg, log)
+		agentsH.SetStarter(agentStarter)
+		agentsH.SetScheduler(agentworkflow.NewSessionScheduler(temporalClient, cfg))
+		dispatcher := agentchannels.New(client, agentStarter, cfg.AgentDefaultChannelAgent, log)
+		agentChannelsH = agentchannels.NewHandler(client, dispatcher, cfg.SlackSigningSecret, log)
+		// HITL approvals surfaced as Slack buttons resolve back through the shared
+		// starter; the Slack client updates the original message via response_url.
+		agentChannelsH.SetApprovals(agentStarter, slackclient.New(outbound.Policy{
+			Timeout: 15 * time.Second, MaxConcurrent: 64, MaxResponseBytes: 1 << 20,
+		}))
+		cloudEventsH.SetSlackAgentDispatcher(agentChannelsH.DispatchVerifiedSlack)
+		var agentBus *agentstream.Bus
+		if cfg.AgentStreamingEnabled && cfg.RedisURL != "" {
+			if b, berr := agentstream.NewBus(ctx, cfg.RedisURL); berr == nil {
+				agentBus = b
+				go func() { <-ctx.Done(); _ = agentBus.Close() }()
+			} else {
+				log.Warn("agent event bus unavailable; streaming falls back to durable-only poll", zap.Error(berr))
+			}
+		}
+		agentsH.SetStreamer(agentstream.NewStreamer(client, agentBus, log))
+		if cfg.AgentGitOpsEnabled {
+			agentsH.SetGitOps(agentgitops.New(client, agentLoader, agentsH.Policy(), log))
+		}
+	}
 
 	r := srv.Router()
 
@@ -310,6 +377,16 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
 		Post("/v1/webhooks/slack", cloudEventsH.SlackWebhook)
 
+	// Agent channel inbound (RFC 027 P5). Slack Events API has a single request
+	// URL, so /v1/webhooks/slack owns verification, durable event storage, and
+	// app_mention fan-out to agentChannelsH. The generic internal ingest lets
+	// any server-side channel gateway start/continue a session.
+	if agentChannelsH != nil {
+		// Slack interactive components (Approve/Deny buttons) for HITL approvals.
+		r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
+			Post("/v1/agent-channels/slack/interactivity", agentChannelsH.SlackInteractivity)
+	}
+
 	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer).
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
 		Post("/oauth-hooks/pre-consent", connectorsH.PreConsent)
@@ -319,6 +396,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		Post("/v1/internal/connections/invalidate", connectorsH.Invalidate)
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
 		Post("/v1/internal/events", cloudEventsH.IngestInternal)
+	if agentChannelsH != nil {
+		r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
+			Post("/v1/internal/agent-channels/{channel}/inbound", agentChannelsH.InboundInternal)
+	}
+	if agentsH != nil && cfg.AgentGitOpsEnabled {
+		// RFC 028 P4: a git-sync sidecar / CI posts a declared agent set here.
+		r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
+			Post("/v1/internal/agent-gitops/reconcile", agentsH.ReconcileGitOps)
+	}
 
 	// Admin GraphQL (entgql + gqlgen) over the full entity graph. Guarded by
 	// the internal secret, which also marks the context internal so the
@@ -368,6 +454,37 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Post("/{slug}/trigger", backgroundTasksH.Trigger)
 			r.Get("/{slug}/schedule-state", backgroundTasksH.GetScheduleState)
 		})
+
+		// Durable agent runtime (RFC 027): AgentDefinition CRUD + agent-session
+		// lifecycle. Mounted only when the master flag is on.
+		if agentsH != nil {
+			r.Route("/v1/agents", func(r chi.Router) {
+				r.Use(rl.PerUserWindow(ratelimit.GroupAgent, 60, time.Minute))
+				r.Get("/", agentsH.ListAgents)
+				r.Post("/", agentsH.CreateAgent)
+				// RFC 028: declarative YAML/JSON authoring (one shape, both formats).
+				r.Post("/validate", agentsH.ValidateAgent) // dry-run (CLI/CI)
+				r.Put("/{slug}", agentsH.PutAgent)         // apply (new revision)
+				r.Get("/{slug}", agentsH.GetAgent)         // ?format=yaml round-trips
+				r.Delete("/{slug}", agentsH.DeleteAgent)
+				r.Get("/{slug}/revisions", agentsH.ListRevisions)
+				r.Post("/{slug}/rollback", agentsH.RollbackAgent)
+				// Recurring sessions via Temporal Schedules (P5).
+				r.Post("/{slug}/schedule", agentsH.CreateSchedule)
+				r.Delete("/{slug}/schedule", agentsH.DeleteSchedule)
+			})
+			r.Route("/v1/agent-sessions", func(r chi.Router) {
+				r.Use(rl.PerUserWindow(ratelimit.GroupAgent, 120, time.Minute))
+				r.Post("/", agentsH.CreateSession)
+				r.Get("/{id}", agentsH.GetSession)
+				r.Post("/{id}/turns", agentsH.SubmitTurn)
+				r.Get("/{id}/stream", agentsH.Stream)
+				r.Get("/{id}/events", agentsH.ListEvents)
+				r.Post("/{id}/approvals/{approvalId}/token", agentsH.MintApprovalToken)
+				r.Post("/{id}/approvals/{approvalId}", agentsH.Approve)
+				r.Post("/{id}/cancel", agentsH.Cancel)
+			})
+		}
 
 		r.Route("/v1/llm", func(r chi.Router) {
 			r.Use(rl.PerUser(ratelimit.GroupLLM, 60))

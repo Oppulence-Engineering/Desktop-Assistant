@@ -6,6 +6,7 @@ package server
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -27,9 +28,13 @@ import (
 )
 
 // ReadyCheck is a named readiness probe (e.g. a DB ping). It runs on /readyz.
+// Optional checks report their state in the /readyz body but never fail overall
+// readiness (RFC 010: "degraded" for optional deps, "fail" only for required
+// ones such as the database).
 type ReadyCheck struct {
-	Name  string
-	Check func(context.Context) error
+	Name     string
+	Check    func(context.Context) error
+	Optional bool
 }
 
 // namedCloser is a cleanup function run during graceful shutdown.
@@ -195,11 +200,21 @@ func checkGRPCInternalSecret(ctx context.Context, secret string) error {
 	return nil
 }
 
-// AddReadyCheck registers a readiness probe consulted by /readyz.
+// AddReadyCheck registers a required readiness probe consulted by /readyz. A
+// failure marks the service not-ready (503).
 func (s *Server) AddReadyCheck(name string, check func(context.Context) error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.checks = append(s.checks, ReadyCheck{Name: name, Check: check})
+}
+
+// AddOptionalReadyCheck registers an optional readiness probe. A failure is
+// reported as "degraded" in the /readyz body but does not fail overall readiness
+// (RFC 010 readiness checks).
+func (s *Server) AddOptionalReadyCheck(name string, check func(context.Context) error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.checks = append(s.checks, ReadyCheck{Name: name, Check: check, Optional: true})
 }
 
 // AddCloser registers a cleanup function invoked during graceful shutdown,
@@ -225,18 +240,32 @@ func (s *Server) handleReadyz(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), s.cfg.ReadinessTimeout)
 	defer cancel()
 
+	// Report every dependency's state (RFC 010), not just the first failure.
+	// Required-check failures fail readiness (503); optional ones degrade only.
+	results := make(map[string]string, len(checks))
+	failed := false
 	for _, c := range checks {
 		if err := c.Check(ctx); err != nil {
-			s.log.Warn("readiness check failed", zap.String("check", c.Name), zap.Error(err))
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusServiceUnavailable)
-			_, _ = w.Write([]byte(`{"status":"not_ready","failed":"` + c.Name + `"}`))
-			return
+			s.log.Warn("readiness check failed",
+				zap.String("check", c.Name), zap.Bool("optional", c.Optional), zap.Error(err))
+			if c.Optional {
+				results[c.Name] = "degraded"
+			} else {
+				results[c.Name] = "fail"
+				failed = true
+			}
+			continue
 		}
+		results[c.Name] = "ok"
+	}
+
+	status, code := "ready", http.StatusOK
+	if failed {
+		status, code = "not_ready", http.StatusServiceUnavailable
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`{"status":"ready"}`))
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(map[string]any{"status": status, "checks": results})
 }
 
 // Run starts the public + metrics listeners and blocks until ctx is cancelled,

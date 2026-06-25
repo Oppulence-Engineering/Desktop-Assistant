@@ -44,7 +44,9 @@ func RequireHookHMAC(secret string) func(http.Handler) http.Handler {
 
 			// Restore the body for the downstream handler and mark internal.
 			r.Body = io.NopCloser(bytes.NewReader(body))
-			next.ServeHTTP(w, r.WithContext(WithInternal(r.Context())))
+			ctx := WithInternal(r.Context())
+			ctx = WithActor(ctx, &Actor{Kind: KindInternal, ServiceName: "oauth-hook"})
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
@@ -64,7 +66,9 @@ func RequireInternalSecret(secret string) func(http.Handler) http.Handler {
 				httpx.Error(w, http.StatusUnauthorized, "invalid internal secret", "unauthorized")
 				return
 			}
-			next.ServeHTTP(w, r.WithContext(WithInternal(r.Context())))
+			ctx := WithInternal(r.Context())
+			ctx = WithActor(ctx, &Actor{Kind: KindInternal, ServiceName: "internal"})
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }

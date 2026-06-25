@@ -74,6 +74,7 @@ func Enrich(spec obj) {
 	addCommonResponses(responses)
 	addRuntimeSchemas(schemas)
 	enrichEntitySchemas(schemas)
+	hideInternalEntitySchemas(schemas)
 
 	paths := obj{}
 	addRuntimePaths(paths)
@@ -99,6 +100,35 @@ func addSecuritySchemes(schemes obj) {
 		"name":        "X-Internal-Secret",
 		"description": "Static shared secret for server-to-server internal APIs.",
 	}
+}
+
+func hideInternalEntitySchemas(schemas obj) {
+	delete(schemas, "ComposioAccount")
+	userSchema, ok := schemas["User"].(obj)
+	if !ok {
+		return
+	}
+	props, ok := userSchema["properties"].(obj)
+	if !ok {
+		return
+	}
+	delete(props, "composio_accounts")
+	removeRequiredField(userSchema, "composio_accounts")
+}
+
+func removeRequiredField(schema obj, field string) {
+	required, ok := schema["required"].([]any)
+	if !ok {
+		return
+	}
+	next := required[:0]
+	for _, item := range required {
+		if name, ok := item.(string); ok && name == field {
+			continue
+		}
+		next = append(next, item)
+	}
+	schema["required"] = next
 }
 
 func addRuntimeSchemas(schemas obj) {
@@ -482,7 +512,7 @@ func addVendorProxySchemas(schemas obj) {
 	}, "query")
 	schemas["ExaSearchRequest"].(obj)["additionalProperties"] = true
 	schemas["ExaSearchResponse"] = freeFormSchema("Exa /search JSON response, proxied unchanged.")
-	schemas["ComposioProxyResponse"] = freeFormSchema("Composio v3 response body, proxied unchanged.")
+	schemas["ComposioProxyResponse"] = freeFormSchema("Composio v3 response body. Connected-account list responses are filtered to the caller's mapped accounts.")
 }
 
 func addOAuthSchemas(schemas obj) {
@@ -1017,11 +1047,12 @@ func addVendorProxyPaths(paths obj) {
 	})}
 	composioOps := obj{}
 	for _, method := range []string{"get", "post", "put", "patch", "delete"} {
-		composioOps[method] = operation("Composio", "Proxy Composio v3 "+methodName(method), "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and request/response bodies are passed through unchanged.", "proxyComposio"+methodName(method), bearer(), []any{
+		composioOps[method] = operation("Composio", "Proxy Composio v3 "+methodName(method), "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.", "proxyComposio"+methodName(method), bearer(), []any{
 			pathParam("path", "Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard.", stringSchema("Composio path.", "toolkits")),
 		}, nil, obj{
-			"200": jsonResponse("Composio response body, proxied unchanged.", ref("ComposioProxyResponse"), obj{"items": []any{}}),
+			"200": jsonResponse("Composio response body. Connected-account list responses are filtered to the caller's mapped accounts.", ref("ComposioProxyResponse"), obj{"items": []any{}}),
 			"401": responseRef("401"),
+			"404": responseRef("404"),
 			"502": responseRef("502"),
 			"503": responseRef("503"),
 		})
