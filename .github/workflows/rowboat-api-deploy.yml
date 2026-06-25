@@ -271,21 +271,22 @@ jobs:
             exit 0
           fi
 
-          env_file="$(mktemp)"
-          chmod 600 "$env_file"
-          trap 'rm -f "$env_file"' EXIT
+          secrets_json="$(mktemp)"
+          secret_manifest="$(mktemp)"
+          chmod 600 "$secrets_json" "$secret_manifest"
+          trap 'rm -f "$secrets_json" "$secret_manifest"' EXIT
 
           infisical export \
             --silent \
-            --format=dotenv \
+            --format=json \
             --projectId="${INFISICAL_PROJECT_ID}" \
             --env="${INFISICAL_ENVIRONMENT}" \
             --path="${INFISICAL_PATH}" \
-            --token="${INFISICAL_TOKEN}" > "$env_file"
+            --token="${INFISICAL_TOKEN}" > "$secrets_json"
 
           missing=()
           for key in "${required_keys[@]}"; do
-            if ! grep -Eq "^${key}=" "$env_file"; then
+            if ! jq -e --arg key "$key" '.[] | select(.key == $key)' "$secrets_json" >/dev/null; then
               missing+=("${key}")
             fi
           done
@@ -295,10 +296,23 @@ jobs:
             exit 1
           fi
 
-          kubectl -n "${KUBE_NAMESPACE}" create secret generic rowboat-api-secrets \
-            --from-env-file="$env_file" \
-            --dry-run=client \
-            -o yaml | kubectl apply -f -
+          jq -n \
+            --arg namespace "${KUBE_NAMESPACE}" \
+            --arg name "rowboat-api-secrets" \
+            --slurpfile secrets "$secrets_json" \
+            '{
+              apiVersion: "v1",
+              kind: "Secret",
+              type: "Opaque",
+              metadata: {name: $name, namespace: $namespace},
+              stringData: (
+                $secrets[0]
+                | map({key: .key, value: ((.value // "") | tostring)})
+                | from_entries
+              )
+            }' > "$secret_manifest"
+
+          kubectl apply -f "$secret_manifest"
 
           echo "rowboat-api-secrets synced from Infisical ${INFISICAL_ENVIRONMENT}${INFISICAL_PATH}"
 
