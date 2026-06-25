@@ -123,7 +123,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Build and push rowboat-api
         id: build
@@ -137,6 +137,10 @@ jobs:
             VERSION=${{ needs.resolve-context.outputs.image_tag }}
             COMMIT=${{ github.sha }}
             DATE=${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.resolve-context.outputs.image_tag }}
           tags: |
             ${{ env.IMAGE_REPOSITORY }}:${{ needs.resolve-context.outputs.image_tag }}
             ${{ env.IMAGE_REPOSITORY }}:production-latest
