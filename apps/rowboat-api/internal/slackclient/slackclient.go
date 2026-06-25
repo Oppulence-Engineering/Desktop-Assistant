@@ -25,8 +25,9 @@ const defaultBaseURL = "https://slack.com/api"
 // Client calls the Slack Web API over the shared outbound policy (timeouts,
 // retries, circuit breaker, response cap).
 type Client struct {
-	http    *outbound.Client
-	baseURL string
+	http            *outbound.Client
+	baseURL         string
+	responseURLBase *url.URL
 }
 
 // New builds a Slack Web API client. A zero Timeout is bumped to a sane default
@@ -36,7 +37,11 @@ func New(policy outbound.Policy) *Client {
 	if policy.Timeout == 0 {
 		policy.Timeout = 15 * time.Second
 	}
-	return &Client{http: outbound.NewClient(policy), baseURL: defaultBaseURL}
+	return &Client{
+		http:            outbound.NewClient(policy),
+		baseURL:         defaultBaseURL,
+		responseURLBase: &url.URL{Scheme: "https", Host: "hooks.slack.com"},
+	}
 }
 
 // SetBaseURL overrides the API root (tests point this at an httptest server).
@@ -126,11 +131,15 @@ func (c *Client) RespondURL(ctx context.Context, responseURL string, payload map
 	if responseURL == "" {
 		return fmt.Errorf("slackclient: missing response_url")
 	}
+	targetURL, err := c.validResponseURL(responseURL)
+	if err != nil {
+		return err
+	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, responseURL, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -145,6 +154,34 @@ func (c *Client) RespondURL(ctx context.Context, responseURL string, payload map
 		return fmt.Errorf("slackclient: response_url status %d", resp.StatusCode)
 	}
 	return nil
+}
+
+func (c *Client) validResponseURL(raw string) (string, error) {
+	u, err := url.Parse(raw)
+	if err != nil || !u.IsAbs() {
+		return "", fmt.Errorf("slackclient: invalid response_url")
+	}
+	if u.User != nil || u.Fragment != "" {
+		return "", fmt.Errorf("slackclient: invalid response_url")
+	}
+	base := c.responseURLBase
+	if base == nil {
+		base = &url.URL{Scheme: "https", Host: "hooks.slack.com"}
+	}
+	if !strings.EqualFold(u.Scheme, base.Scheme) || !strings.EqualFold(u.Host, base.Host) {
+		return "", fmt.Errorf("slackclient: response_url host is not allowed")
+	}
+	if !strings.HasPrefix(u.EscapedPath(), "/actions/") {
+		return "", fmt.Errorf("slackclient: response_url path is not allowed")
+	}
+	safe := &url.URL{
+		Scheme:   base.Scheme,
+		Host:     base.Host,
+		Path:     u.Path,
+		RawPath:  u.RawPath,
+		RawQuery: u.RawQuery,
+	}
+	return safe.String(), nil
 }
 
 // postMessage sends a chat.postMessage payload and enforces the ok-flag contract.

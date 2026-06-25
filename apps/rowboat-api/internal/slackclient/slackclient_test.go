@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -169,11 +170,30 @@ func TestRespondURL(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := New(outbound.Policy{})
-	if err := c.RespondURL(context.Background(), srv.URL, map[string]any{"replace_original": true, "text": "done"}); err != nil {
+	u, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.responseURLBase = &url.URL{Scheme: u.Scheme, Host: u.Host}
+	if err := c.RespondURL(context.Background(), srv.URL+"/actions/T1/B1/R1", map[string]any{"replace_original": true, "text": "done"}); err != nil {
 		t.Fatalf("RespondURL: %v", err)
 	}
 	if !strings.Contains(gotBody, `"replace_original":true`) || !strings.Contains(gotBody, `"text":"done"`) {
 		t.Fatalf("response_url body = %s", gotBody)
+	}
+}
+
+func TestRespondURLRejectsUnexpectedURL(t *testing.T) {
+	c := New(outbound.Policy{})
+	for _, raw := range []string{
+		"http://hooks.slack.com/actions/T/B/R",
+		"https://example.com/actions/T/B/R",
+		"https://hooks.slack.com/api/chat.postMessage",
+		"https://user:pass@hooks.slack.com/actions/T/B/R",
+	} {
+		if err := c.RespondURL(context.Background(), raw, map[string]any{"text": "done"}); err == nil {
+			t.Fatalf("expected %q to be rejected", raw)
+		}
 	}
 }
 
