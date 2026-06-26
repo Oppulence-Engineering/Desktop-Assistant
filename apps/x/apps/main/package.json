@@ -3,7 +3,7 @@
   "productName": "Solomon AI",
   "description": "AI coworker with memory",
   "type": "module",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "main": ".package/dist/main.cjs",
   "license": "Apache-2.0",
   "scripts": {
