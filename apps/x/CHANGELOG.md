@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.18](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.17...v0.1.18) (2026-06-26)
+
+
+### Bug Fixes
+
+* **desktop:** normalize retired api host ([bf25382](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/bf2538216a9b61901f2299c25bbd1b6f5ae50ae6))
+
 ## [0.1.17](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.16...v0.1.17) (2026-06-25)
 
 
