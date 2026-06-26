@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.19](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.18...v0.1.19) (2026-06-26)
+
+
+### Bug Fixes
+
+* **desktop:** refresh oauth callback page ([23194b6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/23194b691880094df209fba19bd1089627abc4ec))
+
 ## [0.1.18](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.17...v0.1.18) (2026-06-26)
 
 
