@@ -44,6 +44,18 @@ await esbuild.build({
   },
 });
 
+const mainBundle = await readFile("./.package/dist/main.cjs", "utf8");
+if (!mainBundle.includes("https://api.oppulence.io")) {
+  throw new Error("Packaged main bundle is missing the production API URL.");
+}
+if (
+  /API_URL\s*=\s*process\.env\.API_URL\s*\|\|\s*["']https:\/\/api\.x\.solomon-ai\.co["']/.test(
+    mainBundle,
+  )
+) {
+  throw new Error("Packaged main bundle still defaults to the retired Solomon API URL.");
+}
+
 await esbuild.build({
   entryPoints: ["./dist/whisper-utility.js"],
   bundle: true,
