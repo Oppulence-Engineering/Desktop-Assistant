@@ -34,7 +34,7 @@ func (CloudEvent) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("source").
 			Validate(oneOfBackgroundTask("source",
-				"gmail", "google_calendar", "slack", "webhook", "internal")),
+				"gmail", "google_calendar", "google_drive", "slack", "webhook", "mcp", "github", "linear", "stripe", "internal")),
 		field.String("source_event_id").Optional(),   // provider's id (e.g. Gmail historyId)
 		field.String("source_account_id").Optional(), // which connected account
 		field.String("event_type").Optional(),        // provider-specific, e.g. "message.new"

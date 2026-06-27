@@ -167,6 +167,15 @@ func googleMock(t *testing.T, tokenErr string) *httptest.Server {
 			"payload": map[string]any{"headers": []map[string]string{{"name": "Subject", "value": "Hi"}}},
 		})
 	})
+	mux.HandleFunc("/files", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"files": []map[string]any{{
+				"id": "file_1", "name": "Invoice 4821.pdf", "mimeType": "application/pdf",
+				"modifiedTime": "2026-06-08T17:00:00Z",
+				"webViewLink":  "https://drive.google.com/file/d/file_1/view",
+			}},
+		})
+	})
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 	return srv
@@ -229,4 +238,194 @@ func TestGmailReadTool(t *testing.T) {
 			t.Fatalf("err = %v, want connector_unavailable", err)
 		}
 	})
+}
+
+func TestDriveReadTool(t *testing.T) {
+	client, u, ctx := setupDB(t)
+	sealer := testSealer(t)
+	sec := secrets.NewFromConfig(appconfig.Config{GoogleOAuthClientID: "cid", GoogleOAuthClientSecret: "csec"})
+	srv := googleMock(t, "")
+	google := googleapi.New(googleapi.Config{TokenURL: srv.URL + "/token", DriveBaseURL: srv.URL})
+
+	connect := func(scopes ...string) {
+		sealed, _ := sealer.SealString("1//refresh")
+		client.OAuthConnection.Delete().ExecX(ctx)
+		client.OAuthConnection.Create().
+			SetUser(u).SetProvider("google").
+			SetRefreshTokenEncrypted(sealed).SetScopes(scopes).
+			SaveX(context.Background())
+	}
+
+	t.Run("happy path", func(t *testing.T) {
+		connect(ScopeDriveReadonly)
+		tool := NewDriveReadTool(client, sealer, sec, google, u.ID)
+		out, err := tool.Invoke(ctx, ToolScope{}, json.RawMessage(`{"query":"name contains 'invoice'","limit":2}`))
+		if err != nil || !strings.Contains(string(out), `"name":"Invoice 4821.pdf"`) {
+			t.Fatalf("out = %s err = %v", out, err)
+		}
+	})
+
+	t.Run("missing scope is connector_unavailable", func(t *testing.T) {
+		connect(ScopeGmailReadonly)
+		tool := NewDriveReadTool(client, sealer, sec, google, u.ID)
+		_, err := tool.Invoke(ctx, ToolScope{}, json.RawMessage(`{}`))
+		if re, ok := AsRuntimeError(err); !ok || re.Code != CodeConnectorUnavailable {
+			t.Fatalf("err = %v, want connector_unavailable", err)
+		}
+	})
+}
+
+func googleWriteMock(t *testing.T) *httptest.Server {
+	t.Helper()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/token", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"access_token": "ya29.t"})
+	})
+	mux.HandleFunc("/gmail/v1/users/me/messages/send", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]string{"id": "msg_1", "threadId": "thr_1"})
+	})
+	mux.HandleFunc("/calendars/primary/events", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id": "evt_1", "summary": "Kickoff",
+			"start": map[string]string{"dateTime": "2026-06-27T15:00:00Z"},
+			"end":   map[string]string{"dateTime": "2026-06-27T15:30:00Z"},
+		})
+	})
+	mux.HandleFunc("/calendars/primary/events/evt_1", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id": "evt_1", "summary": "Updated",
+			"start": map[string]string{"dateTime": "2026-06-27T16:00:00Z"},
+			"end":   map[string]string{"dateTime": "2026-06-27T16:30:00Z"},
+		})
+	})
+	mux.HandleFunc("/files/file_1", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]string{"id": "file_1", "name": "Plan", "mimeType": "text/plain"})
+	})
+	mux.HandleFunc("/upload/files/file_1", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch || r.URL.Query().Get("uploadType") != "multipart" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]string{"id": "file_1", "name": "Plan.txt", "mimeType": "text/plain"})
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestGoogleWriteTools(t *testing.T) {
+	client, u, ctx := setupDB(t)
+	sealer := testSealer(t)
+	sec := secrets.NewFromConfig(appconfig.Config{GoogleOAuthClientID: "cid", GoogleOAuthClientSecret: "csec"})
+	srv := googleWriteMock(t)
+	google := googleapi.New(googleapi.Config{
+		TokenURL:        srv.URL + "/token",
+		GmailBaseURL:    srv.URL,
+		CalendarBaseURL: srv.URL,
+		DriveBaseURL:    srv.URL,
+	})
+	sealed, _ := sealer.SealString("1//refresh")
+	client.OAuthConnection.Create().
+		SetUser(u).SetProvider("google").
+		SetRefreshTokenEncrypted(sealed).
+		SetScopes([]string{ScopeGmailSend, ScopeCalendarEvents, ScopeDriveFile}).
+		SaveX(ctx)
+
+	for _, tc := range []struct {
+		name      string
+		tool      Tool
+		args      json.RawMessage
+		want      string
+		wantScope string
+	}{
+		{
+			name:      "gmail send",
+			tool:      NewGmailSendTool(client, sealer, sec, google, u.ID),
+			args:      json.RawMessage(`{"to":"x@y.co","subject":"Hi","body":"hello"}`),
+			want:      `"messageId":"msg_1"`,
+			wantScope: ScopeGmailSend,
+		},
+		{
+			name:      "calendar create",
+			tool:      NewCalendarCreateTool(client, sealer, sec, google, u.ID),
+			args:      json.RawMessage(`{"summary":"Kickoff","start":"2026-06-27T15:00:00Z","end":"2026-06-27T15:30:00Z"}`),
+			want:      `"id":"evt_1"`,
+			wantScope: ScopeCalendarEvents,
+		},
+		{
+			name:      "calendar update",
+			tool:      NewCalendarUpdateTool(client, sealer, sec, google, u.ID),
+			args:      json.RawMessage(`{"eventId":"evt_1","summary":"Updated","start":"2026-06-27T16:00:00Z","end":"2026-06-27T16:30:00Z"}`),
+			want:      `"summary":"Updated"`,
+			wantScope: ScopeCalendarEvents,
+		},
+		{
+			name:      "drive metadata update",
+			tool:      NewDriveUpdateTool(client, sealer, sec, google, u.ID),
+			args:      json.RawMessage(`{"fileId":"file_1","name":"Plan"}`),
+			want:      `"name":"Plan"`,
+			wantScope: ScopeDriveFile,
+		},
+		{
+			name:      "drive content replace",
+			tool:      NewDriveUpdateTool(client, sealer, sec, google, u.ID),
+			args:      json.RawMessage(`{"fileId":"file_1","replaceContent":true,"name":"Plan.txt","mimeType":"text/plain","content":"replacement"}`),
+			want:      `"name":"Plan.txt"`,
+			wantScope: ScopeDriveFile,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := tc.tool.Invoke(ctx, ToolScope{}, tc.args)
+			if err != nil {
+				t.Fatalf("invoke: %v", err)
+			}
+			if !strings.Contains(string(out), tc.want) {
+				t.Fatalf("out = %s, want %s", out, tc.want)
+			}
+			audit := tc.tool.(ToolAuditProvider).AuditInfo(tc.args)
+			if audit.TrustTier != TierAct {
+				t.Fatalf("audit tier = %q, want act", audit.TrustTier)
+			}
+			if !hasScopeValue(audit.RequiredScopes, tc.wantScope) {
+				t.Fatalf("audit scopes = %v, want %q", audit.RequiredScopes, tc.wantScope)
+			}
+		})
+	}
+}
+
+func TestGmailSendToolMissingScope(t *testing.T) {
+	client, u, ctx := setupDB(t)
+	sealer := testSealer(t)
+	sec := secrets.NewFromConfig(appconfig.Config{GoogleOAuthClientID: "cid", GoogleOAuthClientSecret: "csec"})
+	srv := googleWriteMock(t)
+	google := googleapi.New(googleapi.Config{TokenURL: srv.URL + "/token", GmailBaseURL: srv.URL})
+	sealed, _ := sealer.SealString("1//refresh")
+	client.OAuthConnection.Create().
+		SetUser(u).SetProvider("google").
+		SetRefreshTokenEncrypted(sealed).
+		SetScopes([]string{ScopeGmailCompose}).
+		SaveX(ctx)
+
+	tool := NewGmailSendTool(client, sealer, sec, google, u.ID)
+	_, err := tool.Invoke(ctx, ToolScope{}, json.RawMessage(`{"to":"x@y.co","body":"hello"}`))
+	if re, ok := AsRuntimeError(err); !ok || re.Code != CodeConnectorUnavailable {
+		t.Fatalf("err = %v, want connector_unavailable", err)
+	}
 }

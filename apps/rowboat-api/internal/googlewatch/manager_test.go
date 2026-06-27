@@ -21,12 +21,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// mockGoogle is a fake token endpoint + Gmail/Calendar API recording calls.
+// mockGoogle is a fake token endpoint + Gmail/Calendar/Drive API recording calls.
 type mockGoogle struct {
 	mu            sync.Mutex
 	tokenErr      string // non-empty → token endpoint returns this OAuth error
 	gmailCalls    int
 	calendarCalls []map[string]any // events.watch bodies
+	driveCalls    []map[string]any // changes.watch bodies
 	stopCalls     []map[string]any // channels/stop bodies
 	srv           *httptest.Server
 }
@@ -64,6 +65,21 @@ func newMockGoogle(t *testing.T) *mockGoogle {
 		m.calendarCalls = append(m.calendarCalls, body)
 		m.mu.Unlock()
 		_ = json.NewEncoder(w).Encode(map[string]string{"resourceId": "res-1", "expiration": exp})
+	})
+	mux.HandleFunc("/changes/startPageToken", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]string{"startPageToken": "drive-page-1"})
+	})
+	mux.HandleFunc("/changes/watch", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("pageToken") != "drive-page-1" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		m.mu.Lock()
+		m.driveCalls = append(m.driveCalls, body)
+		m.mu.Unlock()
+		_ = json.NewEncoder(w).Encode(map[string]string{"resourceId": "drive-res-1", "expiration": exp})
 	})
 	mux.HandleFunc("/channels/stop", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
@@ -121,6 +137,7 @@ func newManager(t *testing.T, client *ent.Client, sealer *crypto.Sealer, g *mock
 		TokenURL:         g.srv.URL + "/token",
 		GmailBaseURL:     g.srv.URL,
 		CalendarBaseURL:  g.srv.URL,
+		DriveBaseURL:     g.srv.URL,
 	}, zap.NewNop())
 }
 
@@ -136,8 +153,8 @@ func TestBootstrapCreatesWatches(t *testing.T) {
 
 	ctx := auth.WithInternal(context.Background())
 	rows := client.GoogleWatch.Query().AllX(ctx)
-	if len(rows) != 2 {
-		t.Fatalf("watch rows = %d, want 2 (gmail + calendar)", len(rows))
+	if len(rows) != 3 {
+		t.Fatalf("watch rows = %d, want 3 (gmail + calendar + drive)", len(rows))
 	}
 	byKind := map[string]*ent.GoogleWatch{}
 	for _, r := range rows {
@@ -151,16 +168,27 @@ func TestBootstrapCreatesWatches(t *testing.T) {
 	if cal == nil || !strings.HasPrefix(cal.ChannelID, "gcal:me@gmail.com:") || cal.ResourceID != "res-1" {
 		t.Fatalf("calendar row = %+v (channel id must be gcal:{email}:{uuid})", cal)
 	}
-	if gm.RenewClaimedAt != nil || cal.RenewClaimedAt != nil {
+	drive := byKind[KindDrive]
+	if drive == nil || !strings.HasPrefix(drive.ChannelID, "gdrive:me@gmail.com:") || drive.ResourceID != "drive-res-1" || drive.HistoryID != "drive-page-1" {
+		t.Fatalf("drive row = %+v (channel id must be gdrive:{email}:{uuid})", drive)
+	}
+	if gm.RenewClaimedAt != nil || cal.RenewClaimedAt != nil || drive.RenewClaimedAt != nil {
 		t.Fatal("claims must be released after successful registration")
 	}
-	// The registered channel carries the webhook address + verification token.
+	// The registered channels carry the webhook address + verification token.
 	if len(g.calendarCalls) != 1 {
 		t.Fatalf("calendar watch calls = %d, want 1", len(g.calendarCalls))
 	}
 	call := g.calendarCalls[0]
 	if call["address"] != "https://api.example/v1/webhooks/google" || call["token"] != "tok-1" {
 		t.Fatalf("calendar watch body = %+v", call)
+	}
+	if len(g.driveCalls) != 1 {
+		t.Fatalf("drive watch calls = %d, want 1", len(g.driveCalls))
+	}
+	call = g.driveCalls[0]
+	if call["address"] != "https://api.example/v1/webhooks/google" || call["token"] != "tok-1" {
+		t.Fatalf("drive watch body = %+v", call)
 	}
 }
 
@@ -175,14 +203,15 @@ func TestHealthyWatchesAreNotTouched(t *testing.T) {
 	}
 	gmailBefore := g.gmailCalls
 	calBefore := len(g.calendarCalls)
+	driveBefore := len(g.driveCalls)
 
 	// Second pass: everything is fresh (expires in ~6d, margin 24h) → no calls.
 	if err := m.RenewDue(context.Background()); err != nil {
 		t.Fatalf("second pass: %v", err)
 	}
-	if g.gmailCalls != gmailBefore || len(g.calendarCalls) != calBefore {
-		t.Fatalf("healthy watches were re-registered (gmail %d→%d, cal %d→%d)",
-			gmailBefore, g.gmailCalls, calBefore, len(g.calendarCalls))
+	if g.gmailCalls != gmailBefore || len(g.calendarCalls) != calBefore || len(g.driveCalls) != driveBefore {
+		t.Fatalf("healthy watches were re-registered (gmail %d→%d, cal %d→%d, drive %d→%d)",
+			gmailBefore, g.gmailCalls, calBefore, len(g.calendarCalls), driveBefore, len(g.driveCalls))
 	}
 }
 
@@ -264,15 +293,15 @@ func TestInvalidGrantRecordsErrorAndSkipsRegistration(t *testing.T) {
 
 	ctx := auth.WithInternal(context.Background())
 	rows := client.GoogleWatch.Query().AllX(ctx)
-	if len(rows) != 2 {
-		t.Fatalf("rows = %d, want 2 (rows persist with the error recorded)", len(rows))
+	if len(rows) != 3 {
+		t.Fatalf("rows = %d, want 3 (rows persist with the error recorded)", len(rows))
 	}
 	for _, r := range rows {
 		if !strings.Contains(r.LastError, "reconnect") {
 			t.Fatalf("last_error = %q, want invalid_grant/reconnect marker", r.LastError)
 		}
 	}
-	if g.gmailCalls != 0 || len(g.calendarCalls) != 0 {
+	if g.gmailCalls != 0 || len(g.calendarCalls) != 0 || len(g.driveCalls) != 0 {
 		t.Fatal("registration must not be attempted with a dead refresh token")
 	}
 }
@@ -287,8 +316,8 @@ func TestOrphanSweepRemovesDisconnectedWatches(t *testing.T) {
 		t.Fatalf("bootstrap: %v", err)
 	}
 	ctx := auth.WithInternal(context.Background())
-	if n := client.GoogleWatch.Query().CountX(ctx); n != 1 {
-		t.Fatalf("rows = %d, want 1", n)
+	if n := client.GoogleWatch.Query().CountX(ctx); n != 2 {
+		t.Fatalf("rows = %d, want 2", n)
 	}
 
 	// Disconnect: the connection row goes away; the next pass sweeps the watch.
@@ -312,8 +341,15 @@ func TestGmailSkippedWithoutTopic(t *testing.T) {
 	}
 	ctx := auth.WithInternal(context.Background())
 	rows := client.GoogleWatch.Query().AllX(ctx)
-	if len(rows) != 1 || rows[0].Kind != KindCalendar {
-		t.Fatalf("rows = %+v, want calendar only when no Pub/Sub topic is configured", rows)
+	if len(rows) != 2 {
+		t.Fatalf("rows = %+v, want calendar + drive when no Pub/Sub topic is configured", rows)
+	}
+	byKind := map[string]bool{}
+	for _, row := range rows {
+		byKind[row.Kind] = true
+	}
+	if !byKind[KindCalendar] || !byKind[KindDrive] {
+		t.Fatalf("rows = %+v, want calendar + drive when no Pub/Sub topic is configured", rows)
 	}
 	if g.gmailCalls != 0 {
 		t.Fatal("gmail watch must not be called without a topic")

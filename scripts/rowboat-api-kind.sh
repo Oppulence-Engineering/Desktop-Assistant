@@ -8,6 +8,11 @@ RELEASE_NAME="${ROWBOAT_API_RELEASE:-rowboat-api}"
 IMAGE="${ROWBOAT_API_IMAGE:-rowboat-api:kind}"
 API_PORT="${ROWBOAT_API_PORT:-18080}"
 DEVSTACK_PORT="${ROWBOAT_DEVSTACK_PORT:-18090}"
+API_PORT_ENV_SET="${ROWBOAT_API_PORT+x}"
+DEVSTACK_PORT_ENV_SET="${ROWBOAT_DEVSTACK_PORT+x}"
+FALLBACK_API_PORT="${ROWBOAT_API_FALLBACK_PORT:-18081}"
+FALLBACK_DEVSTACK_PORT="${ROWBOAT_DEVSTACK_FALLBACK_PORT:-18091}"
+COREDNS_MEMORY_LIMIT="${ROWBOAT_KIND_COREDNS_MEMORY_LIMIT:-512Mi}"
 STATE_DIR="${ROWBOAT_KIND_STATE_DIR:-${ROOT_DIR}/.rowboat-kind}"
 DEPS_FILE="${ROOT_DIR}/deploy/kind/rowboat-api/dependencies.yaml"
 KIND_CONFIG_FILE="${ROOT_DIR}/deploy/kind/rowboat-api/kind-config.yaml"
@@ -31,6 +36,9 @@ REQUIRED_KIND_SECRET_KEYS=(
   GOOGLE_OAUTH_CLIENT_SECRET
   HOOK_HMAC_SECRET
   INTERNAL_API_SECRET
+  SLACK_SIGNING_SECRET
+  GOOGLE_WEBHOOK_TOKEN
+  WEBHOOK_SIGNING_SECRET
 )
 
 usage() {
@@ -40,7 +48,7 @@ Usage: $(basename "$0") <command>
 Commands:
   up              Create/update kind, build/load the image, deploy deps + chart, smoke test.
   deploy          Apply deps and helm upgrade using the already-loaded image.
-  port-forward    Foreground fallback port-forwards for API and devstack.
+  port-forward    Start/restart persistent port-forwards for API and devstack.
   helm-validate   Run Helm lint/template checks for kind/stage/prod values.
   infisical-validate
                   Validate Infisical CLI-created kind secret and required keys.
@@ -61,6 +69,8 @@ Environment overrides:
   ROWBOAT_API_IMAGE       default: rowboat-api:kind
   ROWBOAT_API_PORT        default: 18080
   ROWBOAT_DEVSTACK_PORT   default: 18090
+  ROWBOAT_API_FALLBACK_PORT       default: 18081
+  ROWBOAT_DEVSTACK_FALLBACK_PORT  default: 18091
   INFISICAL_PROJECT_ID                    required unless .infisical.json exists
   INFISICAL_TOKEN                         optional service/machine token for CI
   INFISICAL_ENVIRONMENT                   default: dev
@@ -94,6 +104,29 @@ ensure_cluster() {
     kind create cluster --name "$CLUSTER_NAME" --config "$KIND_CONFIG_FILE"
   fi
   kubectl config use-context "kind-${CLUSTER_NAME}" >/dev/null
+  ensure_coredns_capacity
+  wait_for_cluster_dns
+}
+
+ensure_coredns_capacity() {
+  if ! kubectl -n kube-system get deployment/coredns >/dev/null 2>&1; then
+    return
+  fi
+  local current_limit
+  current_limit="$(kubectl -n kube-system get deployment/coredns -o jsonpath='{.spec.template.spec.containers[?(@.name=="coredns")].resources.limits.memory}' 2>/dev/null || true)"
+  if [[ "$current_limit" == "$COREDNS_MEMORY_LIMIT" ]]; then
+    return
+  fi
+  echo "setting CoreDNS memory limit to ${COREDNS_MEMORY_LIMIT} for local kind stability"
+  kubectl -n kube-system set resources deployment/coredns \
+    --requests=cpu=100m,memory=70Mi \
+    --limits=memory="$COREDNS_MEMORY_LIMIT" >/dev/null
+  kubectl -n kube-system rollout status deployment/coredns --timeout=180s
+}
+
+wait_for_cluster_dns() {
+  kubectl wait -n kube-system --for=condition=Ready pod -l k8s-app=kube-dns --timeout=180s >/dev/null
+  kubectl --request-timeout=15s get --raw=/readyz >/dev/null
 }
 
 image_repository() {
@@ -116,6 +149,12 @@ build_and_load_image() {
 
 ensure_namespace() {
   kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$NAMESPACE"
+}
+
+pod_uid_for_label() {
+  local selector="$1"
+  kubectl get pod -n "$NAMESPACE" -l "$selector" \
+    -o jsonpath='{.items[0].metadata.uid}' 2>/dev/null || true
 }
 
 has_infisical_project_config() {
@@ -209,22 +248,44 @@ validate_infisical_secret_keys() {
 deploy_dependencies() {
   ensure_cluster
   ensure_namespace
+  local postgres_pod_before
+  postgres_pod_before="$(pod_uid_for_label app.kubernetes.io/name=rowboat-api-postgres)"
   kubectl apply -n "$NAMESPACE" -f "$DEPS_FILE"
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-postgres --timeout=180s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-redis --timeout=180s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-temporal --timeout=240s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-devstack --timeout=180s
+  local postgres_pod_after
+  postgres_pod_after="$(pod_uid_for_label app.kubernetes.io/name=rowboat-api-postgres)"
+  if [[ -n "$postgres_pod_before" && -n "$postgres_pod_after" && "$postgres_pod_before" != "$postgres_pod_after" ]]; then
+    echo "postgres pod changed; restarting Temporal to refresh database connections"
+    kubectl rollout restart -n "$NAMESPACE" deployment/rowboat-api-temporal
+    kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-temporal --timeout=300s
+  fi
 }
 
 deploy_chart() {
   ensure_cluster
   ensure_namespace
+  select_host_ports
   sync_infisical_cli_secret
+  local api_origin="http://localhost:${API_PORT}"
+  local devstack_origin="http://localhost:${DEVSTACK_PORT}"
+  local cors_origins="http://localhost:3000\\,http://localhost:5173\\,${api_origin}"
   helm upgrade --install "$RELEASE_NAME" "$CHART_DIR" \
     --namespace "$NAMESPACE" \
     --values "$VALUES_FILE" \
     --set "image.repository=$(image_repository)" \
     --set "image.tag=$(image_tag)" \
+    --set-string "config.APP_URL=${api_origin}" \
+    --set-string "config.PUBLIC_BASE_URL=${api_origin}" \
+    --set-string "config.CORS_ALLOWED_ORIGINS=${cors_origins}" \
+    --set-string "config.GOOGLE_REDIRECT_URI=${api_origin}/oauth/google/callback" \
+    --set-string "config.OIDC_ISSUER_URL=${devstack_origin}" \
+    --set-string "config.TOKEN_ISSUER=${devstack_origin}" \
+    --set-string "config.WORKOS_AUTHORIZE_BASE_URL=${devstack_origin}" \
+    --set-string "config.ORY_PUBLIC_URL=${devstack_origin}" \
+    --set-string "config.GOOGLE_AUTHORIZE_URL=${devstack_origin}/o/oauth2/v2/auth" \
     --wait \
     --timeout 5m
   # Helm may prune a previously chart-managed Secret during the migration to
@@ -253,6 +314,131 @@ port_in_use() {
   fi
 }
 
+listener_pids_for_port() {
+  local port="$1"
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u
+  fi
+}
+
+http_ready() {
+  local url="$1"
+  curl --fail --silent --show-error --connect-timeout 2 --max-time 3 "$url" >/dev/null 2>&1
+}
+
+child_pids_for() {
+  local pid="$1"
+  pgrep -P "$pid" 2>/dev/null || true
+}
+
+process_group_for() {
+  local pid="$1"
+  ps -o pgid= -p "$pid" 2>/dev/null | tr -d '[:space:]' || true
+}
+
+process_command_for() {
+  local pid="$1"
+  ps -o command= -p "$pid" 2>/dev/null || true
+}
+
+process_parent_for() {
+  local pid="$1"
+  ps -o ppid= -p "$pid" 2>/dev/null | tr -d '[:space:]' || true
+}
+
+send_signal_to_pid_tree() {
+  local signal="$1"
+  local pid="$2"
+  local child
+  for child in $(child_pids_for "$pid"); do
+    send_signal_to_pid_tree "$signal" "$child"
+  done
+  kill "-${signal}" "$pid" >/dev/null 2>&1 || true
+}
+
+wait_for_pid_exit() {
+  local pid="$1"
+  for _ in $(seq 1 40); do
+    if ! kill -0 "$pid" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.25
+  done
+  return 1
+}
+
+wait_for_port_release() {
+  local port="$1"
+  for _ in $(seq 1 40); do
+    if ! port_in_use "$port"; then
+      return 0
+    fi
+    sleep 0.25
+  done
+  return 1
+}
+
+stop_pid_tree() {
+  local pid="$1"
+  if [[ ! "$pid" =~ ^[0-9]+$ ]] || ! kill -0 "$pid" >/dev/null 2>&1; then
+    return
+  fi
+
+  local pgid
+  pgid="$(process_group_for "$pid")"
+  if [[ "$pgid" == "$pid" ]]; then
+    kill -TERM "-${pid}" >/dev/null 2>&1 || true
+  else
+    send_signal_to_pid_tree TERM "$pid"
+  fi
+
+  if wait_for_pid_exit "$pid"; then
+    return
+  fi
+
+  if [[ "$pgid" == "$pid" ]]; then
+    kill -KILL "-${pid}" >/dev/null 2>&1 || true
+  else
+    send_signal_to_pid_tree KILL "$pid"
+  fi
+  wait_for_pid_exit "$pid" >/dev/null 2>&1 || true
+}
+
+command_matches_port_forward() {
+  local command="$1"
+  local resource="$2"
+  local local_port="$3"
+  local remote_port="$4"
+  [[ "$command" == *"port-forward"* && "$command" == *"$resource"* && "$command" == *"${local_port}:${remote_port}"* ]]
+}
+
+stop_matching_port_forward_listeners() {
+  local resource="$1"
+  local local_port="$2"
+  local remote_port="$3"
+  local stopped=1
+  local pid
+  for pid in $(listener_pids_for_port "$local_port"); do
+    local command
+    command="$(process_command_for "$pid")"
+    if ! command_matches_port_forward "$command" "$resource" "$local_port" "$remote_port"; then
+      continue
+    fi
+
+    local parent
+    local parent_command
+    parent="$(process_parent_for "$pid")"
+    parent_command="$(process_command_for "$parent")"
+    if [[ "$parent" =~ ^[0-9]+$ && "$parent_command" == *"rowboat-port-forward"* ]]; then
+      stop_pid_tree "$parent"
+    else
+      stop_pid_tree "$pid"
+    fi
+    stopped=0
+  done
+  return "$stopped"
+}
+
 stop_port_forwards() {
   mkdir -p "$STATE_DIR"
   for name in api devstack; do
@@ -260,11 +446,16 @@ stop_port_forwards() {
     if [[ -f "$pid_file" ]]; then
       local pid
       pid="$(cat "$pid_file")"
-      if [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" >/dev/null 2>&1; then
-        pkill -TERM -P "$pid" >/dev/null 2>&1 || true
-        kill "$pid" >/dev/null 2>&1 || true
-      fi
+      stop_pid_tree "$pid"
       rm -f "$pid_file"
+    fi
+
+    if [[ "$name" == api ]]; then
+      stop_matching_port_forward_listeners svc/rowboat-api "$API_PORT" 80 >/dev/null 2>&1 || true
+      wait_for_port_release "$API_PORT" >/dev/null 2>&1 || true
+    elif [[ "$name" == devstack ]]; then
+      stop_matching_port_forward_listeners svc/rowboat-api-devstack "$DEVSTACK_PORT" 8090 >/dev/null 2>&1 || true
+      wait_for_port_release "$DEVSTACK_PORT" >/dev/null 2>&1 || true
     fi
   done
 }
@@ -282,10 +473,20 @@ start_port_forward() {
     local existing_pid
     existing_pid="$(cat "$pid_file")"
     if [[ "$existing_pid" =~ ^[0-9]+$ ]] && kill -0 "$existing_pid" >/dev/null 2>&1; then
-      echo "${name} port-forward already running on localhost:${local_port} (pid ${existing_pid})"
-      return
+      if port_in_use "$local_port"; then
+        echo "${name} port-forward already running on localhost:${local_port} (pid ${existing_pid})"
+        return
+      fi
+      echo "${name} port-forward pid ${existing_pid} is alive but localhost:${local_port} is not listening; restarting"
+      stop_pid_tree "$existing_pid"
+      wait_for_port_release "$local_port" >/dev/null 2>&1 || true
     fi
     rm -f "$pid_file"
+  fi
+
+  if port_in_use "$local_port"; then
+    stop_matching_port_forward_listeners "$resource" "$local_port" "$remote_port" >/dev/null 2>&1 || true
+    wait_for_port_release "$local_port" >/dev/null 2>&1 || true
   fi
 
   if port_in_use "$local_port"; then
@@ -293,18 +494,48 @@ start_port_forward() {
     exit 1
   fi
 
-  nohup sh -c '
-    namespace="$1"
-    resource="$2"
-    local_port="$3"
-    remote_port="$4"
-    trap "exit 0" INT TERM
-    while :; do
-      tail -f /dev/null | kubectl -n "$namespace" port-forward "$resource" "${local_port}:${remote_port}"
-      sleep 1
-    done
-  ' rowboat-port-forward "$NAMESPACE" "$resource" "$local_port" "$remote_port" >"$log_file" 2>&1 &
-  echo "$!" >"$pid_file"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$pid_file" "$log_file" "$NAMESPACE" "$resource" "$local_port" "$remote_port" <<'PY'
+import subprocess
+import sys
+
+pid_file, log_file, namespace, resource, local_port, remote_port = sys.argv[1:]
+script = """
+trap "" INT
+trap "exit 0" TERM
+while :; do
+  kubectl -n "$1" port-forward "$2" "${3}:${4}" </dev/null
+  sleep 1
+done
+"""
+log = open(log_file, "ab", buffering=0)
+proc = subprocess.Popen(
+    ["/bin/sh", "-c", script, "rowboat-port-forward", namespace, resource, local_port, remote_port],
+    stdin=subprocess.DEVNULL,
+    stdout=log,
+    stderr=subprocess.STDOUT,
+    start_new_session=True,
+    close_fds=True,
+)
+with open(pid_file, "w", encoding="utf-8") as pid:
+    pid.write(f"{proc.pid}\n")
+PY
+  else
+    nohup sh -c '
+      namespace="$1"
+      resource="$2"
+      local_port="$3"
+      remote_port="$4"
+      trap "" INT
+      trap "exit 0" TERM
+      while :; do
+        kubectl -n "$namespace" port-forward "$resource" "${local_port}:${remote_port}" </dev/null
+        sleep 1
+      done
+    ' rowboat-port-forward "$NAMESPACE" "$resource" "$local_port" "$remote_port" >"$log_file" 2>&1 </dev/null &
+    echo "$!" >"$pid_file"
+    disown "$(cat "$pid_file")" 2>/dev/null || true
+  fi
   sleep 2
   if ! kill -0 "$(cat "$pid_file")" >/dev/null 2>&1; then
     echo "failed to start ${name} port-forward; see ${log_file}" >&2
@@ -313,25 +544,159 @@ start_port_forward() {
   echo "${name} port-forward: localhost:${local_port} -> ${resource}:${remote_port}"
 }
 
-start_port_forwards() {
+wait_for_http() {
+  local name="$1"
+  local url="$2"
+  for _ in $(seq 1 30); do
+    if http_ready "$url"; then
+      return 0
+    fi
+    sleep 1
+  done
+  echo "timed out waiting for ${name}: ${url}" >&2
+  return 1
+}
+
+wait_for_existing_http() {
+  local url="$1"
+  local port="$2"
+  for _ in $(seq 1 10); do
+    if http_ready "$url"; then
+      return 0
+    fi
+    if ! port_in_use "$port"; then
+      return 1
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+select_host_port() {
+  local name="$1"
+  local resource="$2"
+  local remote_port="$3"
+  local path="$4"
+  local port_var="$5"
+  local fallback_port="$6"
+  local env_set="$7"
+  local port="${!port_var}"
+
+  if http_ready "http://localhost:${port}${path}"; then
+    return
+  fi
+
+  if port_in_use "$port"; then
+    if wait_for_existing_http "http://localhost:${port}${path}" "$port"; then
+      return
+    fi
+    if stop_matching_port_forward_listeners "$resource" "$port" "$remote_port" >/dev/null 2>&1; then
+      wait_for_port_release "$port" >/dev/null 2>&1 || true
+      start_port_forward "$name" "$resource" "$port" "$remote_port"
+      wait_for_http "$name" "http://localhost:${port}${path}"
+      return
+    fi
+    if [[ -n "$env_set" ]]; then
+      echo "localhost:${port} is in use but ${name} is not healthy; choose a different ${port_var}" >&2
+      exit 1
+    fi
+    echo "localhost:${port} is occupied but ${name} is not healthy; falling back to localhost:${fallback_port}"
+    printf -v "$port_var" "%s" "$fallback_port"
+  fi
+}
+
+select_host_ports() {
+  select_host_port api svc/rowboat-api 80 /healthz API_PORT "$FALLBACK_API_PORT" "$API_PORT_ENV_SET"
+  select_host_port devstack svc/rowboat-api-devstack 8090 /.well-known/jwks.json DEVSTACK_PORT "$FALLBACK_DEVSTACK_PORT" "$DEVSTACK_PORT_ENV_SET"
+}
+
+ensure_local_http() {
+  local name="$1"
+  local resource="$2"
+  local remote_port="$3"
+  local path="$4"
+  local port_var="$5"
+  local fallback_port="$6"
+  local env_set="$7"
+  local port="${!port_var}"
+
+  if http_ready "http://localhost:${port}${path}"; then
+    return
+  fi
+
+  if port_in_use "$port"; then
+    if wait_for_existing_http "http://localhost:${port}${path}" "$port"; then
+      return
+    fi
+    if [[ -n "$env_set" ]]; then
+      echo "localhost:${port} is in use but ${name} is not healthy; choose a different ${port_var}" >&2
+      exit 1
+    fi
+    echo "localhost:${port} is occupied but ${name} is not healthy; falling back to localhost:${fallback_port}"
+    printf -v "$port_var" "%s" "$fallback_port"
+    port="$fallback_port"
+  fi
+
+  start_port_forward "$name" "$resource" "$port" "$remote_port"
+  wait_for_http "$name" "http://localhost:${port}${path}"
+}
+
+ensure_host_access() {
   ensure_cluster
-  kubectl -n "$NAMESPACE" port-forward svc/rowboat-api "${API_PORT}:80" &
-  local api_pid=$!
-  kubectl -n "$NAMESPACE" port-forward svc/rowboat-api-devstack "${DEVSTACK_PORT}:8090" &
-  local devstack_pid=$!
-  trap 'kill "$api_pid" "$devstack_pid" >/dev/null 2>&1 || true' INT TERM EXIT
-  wait
+  ensure_local_http api svc/rowboat-api 80 /healthz API_PORT "$FALLBACK_API_PORT" "$API_PORT_ENV_SET"
+  ensure_local_http devstack svc/rowboat-api-devstack 8090 /.well-known/jwks.json DEVSTACK_PORT "$FALLBACK_DEVSTACK_PORT" "$DEVSTACK_PORT_ENV_SET"
+}
+
+start_port_forwards() {
+  ensure_host_access
+  echo "api host port reachable: http://localhost:${API_PORT}"
+  echo "devstack host port reachable: http://localhost:${DEVSTACK_PORT}"
 }
 
 json_token() {
   sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
 }
 
+json_me_user_id() {
+  sed -n 's/.*"user"[[:space:]]*:[[:space:]]*{[^}]*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+}
+
+base64_decode() {
+  if printf "" | base64 --decode >/dev/null 2>&1; then
+    base64 --decode
+  else
+    base64 -D
+  fi
+}
+
+secret_value() {
+  local key="$1"
+  kubectl get secret -n "$NAMESPACE" "$INFISICAL_SYNC_SECRET" \
+    -o "jsonpath={.data.${key}}" | base64_decode
+}
+
+webhook_signature() {
+  local secret="$1" body="$2"
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "python3 is required to sign webhook smoke requests" >&2
+    return 1
+  fi
+  WEBHOOK_SECRET="$secret" WEBHOOK_BODY="$body" python3 - <<'PY'
+import hashlib
+import hmac
+import os
+
+secret = os.environ["WEBHOOK_SECRET"].encode()
+body = os.environ["WEBHOOK_BODY"].encode()
+print("sha256=" + hmac.new(secret, body, hashlib.sha256).hexdigest())
+PY
+}
+
 curl_smoke() {
   local err_file
   err_file="$(mktemp)"
   local output
-  if output="$(curl --fail --silent --show-error --retry 10 --retry-delay 1 --retry-all-errors "$@" 2>"$err_file")"; then
+  if output="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 20 --retry 10 --retry-delay 1 --retry-all-errors "$@" 2>"$err_file")"; then
     rm -f "$err_file"
     printf "%s" "$output"
     return 0
@@ -376,8 +741,11 @@ validate_stack() {
   curl_smoke "http://localhost:${API_PORT}/v1/auth/workos/login-url?redirect_uri=http://localhost:8080/oauth/callback&state=kind-smoke&code_challenge=kind-smoke-challenge"
   echo
 
-  local token
-  token="$(curl_smoke "http://localhost:${DEVSTACK_PORT}/mint?workos_user_id=user_kind_smoke&email=kind%40solomon-ai.co" | json_token)"
+  local smoke_workos_id smoke_email smoke_email_q token
+  smoke_workos_id="${ROWBOAT_KIND_SMOKE_WORKOS_ID:-user_kind_smoke_$(date +%s)}"
+  smoke_email="${ROWBOAT_KIND_SMOKE_EMAIL:-kind-${smoke_workos_id}@solomon-ai.co}"
+  smoke_email_q="${smoke_email/@/%40}"
+  token="$(curl_smoke "http://localhost:${DEVSTACK_PORT}/mint?workos_user_id=${smoke_workos_id}&email=${smoke_email_q}" | json_token)"
   if [[ -z "$token" ]]; then
     echo "could not mint devstack token" >&2
     exit 1
@@ -391,12 +759,19 @@ validate_stack() {
     echo "/v1/me response is missing billing.usage.monthly or billing.usage.daily" >&2
     exit 1
   fi
+  local user_id
+  user_id="$(json_me_user_id <<<"$me_json" | head -1)"
+  if [[ -z "$user_id" ]]; then
+    echo "could not parse user id from /v1/me" >&2
+    exit 1
+  fi
 
   echo "authenticated /v1/llm/models:"
   curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/llm/models"
   echo
 
   validate_temporal_background_task "$token"
+  validate_event_webhook_task "$token" "$user_id"
   validate_scheduler_background_task "$token"
 }
 
@@ -478,14 +853,7 @@ validate_temporal_background_task() {
   fi
 }
 
-# validate_scheduler_background_task proves RFC 001: with NO HTTP /trigger call
-# (the "desktop closed" scenario), the in-cluster scheduler fires an API-target
-# cron task on its own and the run executes to success in the cloud.
-# Deletes the scheduler smoke task by slug, best-effort. The caller routes every
-# path (success, assertion failure, guarded curl failure) to a single call of
-# this, so the `*/1` cron is always removed — without it, a leftover task would
-# fire a new run every minute for the life of the cluster.
-delete_scheduler_task() {
+delete_background_task() {
   local token="$1" slug="$2" task_json revision
   task_json="$(curl --fail --silent "http://localhost:${API_PORT}/v1/background-tasks/${slug}" -H "Authorization: Bearer ${token}" 2>/dev/null)" || return 0
   revision="$(sed -n 's/.*"revision"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' <<<"$task_json" | head -1)"
@@ -495,6 +863,126 @@ delete_scheduler_task() {
     -H "Authorization: Bearer ${token}" >/dev/null 2>&1 || true
 }
 
+delete_scheduler_task() {
+  delete_background_task "$@"
+}
+
+validate_event_webhook_task() {
+  local token="$1" user_id="$2"
+  local slug="kind-event-webhook-$(date +%s)"
+  local source_event_id="kind-webhook-$(date +%s)"
+  local fail="" task_json="" body="" sig="" ingest_json="" runs_json="" run_id="" status_json="" run_json=""
+
+  echo "signed external webhook event-triggered task:"
+
+  if ! task_json="$(curl_smoke \
+    -H "Authorization: Bearer ${token}" \
+    -H "Content-Type: application/json" \
+    -X POST \
+    --data "{\"slug\":\"${slug}\",\"name\":\"Kind Webhook Event Smoke\",\"instructions\":\"Write a short status artifact for an externally delivered invoice dispute event.\",\"executionTarget\":\"api\",\"triggers\":{\"eventMatchCriteria\":\"webhook invoice dispute for Acme invoice 4821\"}}" \
+    "http://localhost:${API_PORT}/v1/background-tasks")"; then
+    fail="could not create event webhook smoke task"
+  fi
+
+  if [[ -z "$fail" ]]; then
+    local webhook_secret
+    if ! webhook_secret="$(secret_value WEBHOOK_SIGNING_SECRET)"; then
+      fail="could not read WEBHOOK_SIGNING_SECRET from secret/${INFISICAL_SYNC_SECRET}"
+    elif [[ -z "$webhook_secret" ]]; then
+      fail="WEBHOOK_SIGNING_SECRET is missing from secret/${INFISICAL_SYNC_SECRET}"
+    elif ! body="$(USER_ID="$user_id" SOURCE_EVENT_ID="$source_event_id" python3 - <<'PY'
+import json
+import os
+
+print(json.dumps({
+    "userId": os.environ["USER_ID"],
+    "sourceEventId": os.environ["SOURCE_EVENT_ID"],
+    "sourceAccountId": "kind-smoke",
+    "eventType": "invoice.disputed",
+    "payload": {
+        "customer": "Acme",
+        "invoice": "4821",
+        "reason": "kind external webhook smoke",
+    },
+}, separators=(",", ":")))
+PY
+)"; then
+      fail="could not build webhook smoke body"
+    elif ! sig="$(webhook_signature "$webhook_secret" "$body")"; then
+      fail="could not sign webhook smoke body"
+    elif ! ingest_json="$(curl_smoke \
+      -H "Content-Type: application/json" \
+      -H "X-Webhook-Signature: ${sig}" \
+      -X POST \
+      --data "$body" \
+      "http://localhost:${API_PORT}/v1/webhooks/events")"; then
+      fail="signed generic webhook was rejected"
+    elif [[ "$ingest_json" != *'"routingStatus":"pending"'* && "$ingest_json" != *'"routingStatus":"routed"'* ]]; then
+      fail="webhook ingest did not enqueue routing"
+    fi
+  fi
+
+  if [[ -z "$fail" ]]; then
+    for _ in $(seq 1 60); do
+      runs_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs")" || { fail="event run list query failed"; break; }
+      run_id="$(sed -n 's/.*"runId"[[:space:]]*:[[:space:]]*"\(event-[^"]*\)".*/\1/p' <<<"$runs_json" | head -1)"
+      if [[ -n "$run_id" ]]; then
+        break
+      fi
+      sleep 2
+    done
+  fi
+  if [[ -z "$fail" && -z "$run_id" ]]; then
+    fail="cloud event router did not create an event-prefixed run"
+  elif [[ -z "$fail" && ("$runs_json" != *'"trigger":"event"'* || "$runs_json" != *'"executor":"api"'*) ]]; then
+    fail="cloud event run is not trigger=event/executor=api"
+  fi
+
+  if [[ -z "$fail" ]]; then
+    echo "cloud event router created ${run_id} (trigger=event, executor=api)"
+    for _ in $(seq 1 100); do
+      status_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs/${run_id}/status")" || { fail="event run status query failed"; break; }
+      if [[ "$status_json" == *'"status":"succeeded"'* ]]; then
+        break
+      fi
+      if [[ "$status_json" == *'"status":"failed"'* ]]; then
+        fail="event-triggered run failed"
+        break
+      fi
+      sleep 3
+    done
+    if [[ -z "$fail" && "$status_json" != *'"status":"succeeded"'* ]]; then
+      fail="event-triggered run did not complete before timeout"
+    fi
+  fi
+
+  if [[ -z "$fail" ]]; then
+    run_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs/${run_id}")" || fail="event run detail query failed"
+    if [[ -z "$fail" && ("$run_json" != *'"sourceEvent"'* || "$run_json" != *'"source":"webhook"'* || "$run_json" != *'"eventType":"invoice.disputed"'*) ]]; then
+      fail="event run detail is missing webhook sourceEvent linkage"
+    fi
+  fi
+
+  delete_background_task "$token" "$slug"
+
+  if [[ -n "$fail" ]]; then
+    echo "${ingest_json}" >&2
+    echo "${runs_json}" >&2
+    echo "${status_json}" >&2
+    echo "${run_json}" >&2
+    echo "$fail" >&2
+    return 1
+  fi
+  echo "signed external webhook event-triggered run: ok"
+}
+
+# validate_scheduler_background_task proves RFC 001: with NO HTTP /trigger call
+# (the "desktop closed" scenario), the in-cluster scheduler fires an API-target
+# cron task on its own and the run executes to success in the cloud.
+# Deletes the scheduler smoke task by slug, best-effort. The caller routes every
+# path (success, assertion failure, guarded curl failure) to a single call of
+# this, so the `*/1` cron is always removed — without it, a leftover task would
+# fire a new run every minute for the life of the cluster.
 validate_scheduler_background_task() {
   local token="$1"
   if ! kubectl get deployment -n "$NAMESPACE" rowboat-api-scheduler >/dev/null 2>&1; then
@@ -522,12 +1010,12 @@ validate_scheduler_background_task() {
     fail="could not create scheduler smoke task"
   fi
 
-  # Wait for a scheduler-created run to appear: run id prefixed sched-cron-,
+  # Wait for a scheduler-created run to appear: run id prefixed sched-,
   # trigger=cron, executor=api — none of which an HTTP trigger would produce.
   if [[ -z "$fail" ]]; then
     for _ in $(seq 1 36); do # ~180s = two 2-minute grace windows + slack
       runs_json="$(curl_smoke -H "Authorization: Bearer ${token}" "http://localhost:${API_PORT}/v1/background-tasks/${slug}/runs")" || { fail="run list query failed"; break; }
-      run_id="$(sed -n 's/.*"runId"[[:space:]]*:[[:space:]]*"\(sched-cron-[^"]*\)".*/\1/p' <<<"$runs_json" | head -1)"
+      run_id="$(sed -n 's/.*"runId"[[:space:]]*:[[:space:]]*"\(sched-[^"]*\)".*/\1/p' <<<"$runs_json" | head -1)"
       if [[ -n "$run_id" ]]; then
         break
       fi
@@ -666,20 +1154,22 @@ validate_full() {
   helm_validate
   validate_infisical
   validate_kubernetes
+  ensure_host_access
   validate_stack
   desktop_smoke
 }
 
 show_status() {
   ensure_cluster
+  select_host_ports
   kubectl get all -n "$NAMESPACE" || true
   kubectl get secret -n "$NAMESPACE" "$INFISICAL_SYNC_SECRET" || true
-  if curl -fsS "http://localhost:${API_PORT}/healthz" >/dev/null 2>&1; then
+  if http_ready "http://localhost:${API_PORT}/healthz"; then
     echo "api host port reachable: http://localhost:${API_PORT}"
   else
     echo "api host port not reachable: http://localhost:${API_PORT}"
   fi
-  if curl -fsS "http://localhost:${DEVSTACK_PORT}/.well-known/jwks.json" >/dev/null 2>&1; then
+  if http_ready "http://localhost:${DEVSTACK_PORT}/.well-known/jwks.json"; then
     echo "devstack host port reachable: http://localhost:${DEVSTACK_PORT}"
   else
     echo "devstack host port not reachable: http://localhost:${DEVSTACK_PORT}"
@@ -687,6 +1177,7 @@ show_status() {
 }
 
 run_desktop() {
+  ensure_host_access
   cd "${ROOT_DIR}/apps/x"
   API_URL="http://localhost:${API_PORT}" \
     ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="${ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT:-9222}" \
@@ -694,7 +1185,9 @@ run_desktop() {
 }
 
 desktop_smoke() {
-  "${ROOT_DIR}/scripts/rowboat-desktop-smoke.sh"
+  ensure_host_access
+  ROWBOAT_API_PORT="$API_PORT" ROWBOAT_DEVSTACK_PORT="$DEVSTACK_PORT" \
+    "${ROOT_DIR}/scripts/rowboat-desktop-smoke.sh"
 }
 
 desktop_perf() {
@@ -726,6 +1219,7 @@ case "$cmd" in
     build_and_load_image
     deploy_dependencies
     deploy_chart
+    ensure_host_access
     validate_stack
     cat <<EOF
 
@@ -755,6 +1249,7 @@ EOF
     validate_infisical
     ;;
   validate)
+    ensure_host_access
     validate_stack
     ;;
   validate-full)

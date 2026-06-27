@@ -1,6 +1,6 @@
 // Package googleapi is the shared client for server-side Google API calls
 // made with a user's connected-account credentials: OAuth token exchange from
-// the sealed refresh token, plus the narrow Gmail/Calendar read calls the
+// the sealed refresh token, plus the narrow Gmail/Calendar/Drive read calls the
 // cloud runtime's connector tools and the watch manager need. It is a leaf
 // package (no imports from internal/google or internal/googlewatch) so both
 // the OAuth handler flow and its consumers can depend on it without cycles.
@@ -15,6 +15,7 @@ import (
 const (
 	defaultGmailBase    = "https://gmail.googleapis.com"
 	defaultCalendarBase = "https://www.googleapis.com/calendar/v3"
+	defaultDriveBase    = "https://www.googleapis.com/drive/v3"
 	defaultTokenURL     = "https://oauth2.googleapis.com/token"
 )
 
@@ -24,6 +25,7 @@ type Config struct {
 	TokenURL        string
 	GmailBaseURL    string
 	CalendarBaseURL string
+	DriveBaseURL    string
 }
 
 // Client issues Google API calls through the shared outbound vendor policy.
@@ -43,6 +45,9 @@ func New(cfg Config) *Client {
 	if cfg.CalendarBaseURL == "" {
 		cfg.CalendarBaseURL = defaultCalendarBase
 	}
+	if cfg.DriveBaseURL == "" {
+		cfg.DriveBaseURL = defaultDriveBase
+	}
 	return &Client{
 		http: outbound.NewClient(outbound.Policy{
 			Name:                  "google-api",
@@ -61,3 +66,6 @@ func (c *Client) GmailBaseURL() string { return c.cfg.GmailBaseURL }
 
 // CalendarBaseURL returns the resolved Calendar API base.
 func (c *Client) CalendarBaseURL() string { return c.cfg.CalendarBaseURL }
+
+// DriveBaseURL returns the resolved Drive API base.
+func (c *Client) DriveBaseURL() string { return c.cfg.DriveBaseURL }

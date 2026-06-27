@@ -84,9 +84,12 @@ services:
       OPENAI_API_KEY: "${OPENAI_API_KEY:?set OPENAI_API_KEY in the root .env}"
       OPENROUTER_BASE_URL: "http://devstack:8090"
       OPENROUTER_API_KEY: "dev-dummy"
-      # Webhook / internal shared secrets (for /oauth-hooks and /v1/internal).
+      # Webhook / internal shared secrets.
       HOOK_HMAC_SECRET: "dev-hook-secret"
       INTERNAL_API_SECRET: "dev-internal-secret"
+      SLACK_SIGNING_SECRET: "dev-slack-signing-secret"
+      GOOGLE_WEBHOOK_TOKEN: "dev-google-webhook-token"
+      WEBHOOK_SIGNING_SECRET: "dev-webhook-secret"
       FREE_TIER_CREDITS: "10000"
       # Google OAuth broker → mock token endpoint on devstack. Dummy client
       # credentials satisfy the "configured" check so /v1/google-oauth/refresh

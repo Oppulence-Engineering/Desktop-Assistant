@@ -62,6 +62,7 @@ import { qualifyAndDisconnectComposioGoogle } from "@x/core/dist/migrations/comp
 import { IAgentScheduleRepo } from "@x/core/dist/agent-schedule/repo.js";
 import { IAgentScheduleStateRepo } from "@x/core/dist/agent-schedule/state-repo.js";
 import { triggerRun as triggerAgentScheduleRun } from "@x/core/dist/agent-schedule/runner.js";
+import { loadAgent } from "@x/core/dist/agents/runtime.js";
 import { search } from "@x/core/dist/search/search.js";
 import { memorySearch, relatedNotes, memoryStatus } from "@x/core/dist/memory/index.js";
 import { memoryBus } from "@x/core/dist/memory/bus.js";
@@ -1061,8 +1062,17 @@ export function setupIpcHandlers() {
       }
     },
     "agent-schedule:updateAgent": async (_event, args) => {
+      const agentName = args.agentName.trim();
+      if (!agentName) {
+        throw new Error("Agent name is required");
+      }
+      try {
+        await loadAgent(agentName);
+      } catch {
+        throw new Error(`Agent "${agentName}" not found`);
+      }
       const repo = container.resolve<IAgentScheduleRepo>("agentScheduleRepo");
-      await repo.upsert(args.agentName, args.entry);
+      await repo.upsert(agentName, args.entry);
       // Trigger the runner to pick up the change immediately
       triggerAgentScheduleRun();
       return { success: true };

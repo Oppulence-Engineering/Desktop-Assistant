@@ -1,27 +1,32 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Loader2, Mic, Mail, Calendar } from "@/lib/icons"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { GoogleClientIdModal } from "@/components/google-client-id-modal"
-import { ComposioApiKeyModal } from "@/components/composio-api-key-modal"
-import { useConnectors } from "@/hooks/useConnectors"
+import * as React from "react";
+import { Loader2, Mic, Mail, Calendar } from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { GoogleClientIdModal } from "@/components/google-client-id-modal";
+import { ComposioApiKeyModal } from "@/components/composio-api-key-modal";
+import { useConnectors } from "@/hooks/useConnectors";
 
 interface ConnectedAccountsSettingsProps {
-  dialogOpen: boolean
+  dialogOpen: boolean;
 }
 
 export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSettingsProps) {
-  const c = useConnectors(dialogOpen)
+  const c = useConnectors(dialogOpen);
 
-  const renderOAuthProvider = (provider: string, displayName: string, icon: React.ReactNode, description: string) => {
+  const renderOAuthProvider = (
+    provider: string,
+    displayName: string,
+    icon: React.ReactNode,
+    description: string,
+  ) => {
     const state = c.providerStates[provider] || {
       isConnected: false,
       isLoading: true,
       isConnecting: false,
-    }
-    const needsReconnect = Boolean(c.providerStatus[provider]?.error)
+    };
+    const needsReconnect = Boolean(c.providerStatus[provider]?.error);
 
     return (
       <div
@@ -54,6 +59,7 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
               size="sm"
               onClick={() => c.handleReconnect(provider)}
               className="h-7 px-3 text-xs"
+              aria-label={`Reconnect ${displayName}`}
             >
               Reconnect
             </Button>
@@ -63,6 +69,7 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
               size="sm"
               onClick={() => c.handleDisconnect(provider)}
               className="h-7 px-3 text-xs"
+              aria-label={`Disconnect ${displayName}`}
             >
               Disconnect
             </Button>
@@ -73,25 +80,22 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
               onClick={() => c.handleConnect(provider)}
               disabled={state.isConnecting}
               className="h-7 px-3 text-xs"
+              aria-label={`Connect ${displayName}`}
             >
-              {state.isConnecting ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                "Connect"
-              )}
+              {state.isConnecting ? <Loader2 className="size-3 animate-spin" /> : "Connect"}
             </Button>
           )}
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   if (c.providersLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="size-5 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
   return (
@@ -99,9 +103,9 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
       <GoogleClientIdModal
         open={c.googleClientIdOpen}
         onOpenChange={(nextOpen) => {
-          c.setGoogleClientIdOpen(nextOpen)
+          c.setGoogleClientIdOpen(nextOpen);
           if (!nextOpen) {
-            c.setGoogleClientIdDescription(undefined)
+            c.setGoogleClientIdDescription(undefined);
           }
         }}
         onSubmit={c.handleGoogleClientIdSubmit}
@@ -117,7 +121,9 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
 
       <div className="space-y-1">
         {/* Email & Calendar Section */}
-        {(c.useComposioForGoogle || c.useComposioForGoogleCalendar || c.providers.includes('google')) && (
+        {(c.useComposioForGoogle ||
+          c.useComposioForGoogleCalendar ||
+          c.providers.includes("google")) && (
           <>
             <div className="px-3 pt-1 pb-0.5">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -150,6 +156,7 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
                       size="sm"
                       onClick={c.handleDisconnectGmail}
                       className="h-7 px-3 text-xs"
+                      aria-label="Disconnect Gmail"
                     >
                       Disconnect
                     </Button>
@@ -160,18 +167,21 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
                       onClick={c.handleConnectGmail}
                       disabled={c.gmailConnecting}
                       className="h-7 px-3 text-xs"
+                      aria-label="Connect Gmail"
                     >
-                      {c.gmailConnecting ? (
-                        <Loader2 className="size-3 animate-spin" />
-                      ) : (
-                        "Connect"
-                      )}
+                      {c.gmailConnecting ? <Loader2 className="size-3 animate-spin" /> : "Connect"}
                     </Button>
                   )}
                 </div>
               </div>
             ) : (
-              c.providers.includes('google') && renderOAuthProvider('google', 'Google', <Mail className="size-4" />, 'Sync emails and calendar')
+              c.providers.includes("google") &&
+              renderOAuthProvider(
+                "google",
+                "Google",
+                <Mail className="size-4" />,
+                "Sync emails and calendar",
+              )
             )}
             {c.useComposioForGoogleCalendar && (
               <div className="flex items-center justify-between gap-2 rounded-none px-3 py-2 hover:bg-accent/50 transition-colors">
@@ -186,7 +196,9 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
                     ) : c.googleCalendarConnected ? (
                       <span className="text-xs text-emerald-600">Connected</span>
                     ) : (
-                      <span className="text-xs text-muted-foreground truncate">Sync calendar events</span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        Sync calendar events
+                      </span>
                     )}
                   </div>
                 </div>
@@ -199,6 +211,7 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
                       size="sm"
                       onClick={c.handleDisconnectGoogleCalendar}
                       className="h-7 px-3 text-xs"
+                      aria-label="Disconnect Google Calendar"
                     >
                       Disconnect
                     </Button>
@@ -209,6 +222,7 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
                       onClick={c.handleConnectGoogleCalendar}
                       disabled={c.googleCalendarConnecting}
                       className="h-7 px-3 text-xs"
+                      aria-label="Connect Google Calendar"
                     >
                       {c.googleCalendarConnecting ? (
                         <Loader2 className="size-3 animate-spin" />
@@ -225,7 +239,7 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
         )}
 
         {/* Meeting Notes Section */}
-        {c.providers.includes('fireflies-ai') && (
+        {c.providers.includes("fireflies-ai") && (
           <>
             <div className="px-3 pt-1 pb-0.5">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -234,10 +248,15 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
             </div>
 
             {/* Fireflies */}
-            {renderOAuthProvider('fireflies-ai', 'Fireflies', <Mic className="size-4" />, 'AI meeting transcripts')}
+            {renderOAuthProvider(
+              "fireflies-ai",
+              "Fireflies",
+              <Mic className="size-4" />,
+              "AI meeting transcripts",
+            )}
           </>
         )}
       </div>
     </>
-  )
+  );
 }

@@ -127,13 +127,9 @@ function parseAllDay(s: string): Date | null {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
 }
 
-function normalizeCalEvent(
-  raw: RawCalEvent,
-  sourcePath: string,
-): CalEvent | null {
+function normalizeCalEvent(raw: RawCalEvent, sourcePath: string): CalEvent | null {
   if (raw.status === "cancelled") return null;
-  const declined =
-    raw.attendees?.find((a) => a.self)?.responseStatus === "declined";
+  const declined = raw.attendees?.find((a) => a.self)?.responseStatus === "declined";
   if (declined) return null;
   const timed = raw.start?.dateTime;
   const allDay = raw.start?.date;
@@ -154,8 +150,7 @@ function normalizeCalEvent(
     start,
     end,
     isAllDay,
-    conferenceLink:
-      extractConferenceLink(raw as unknown as Record<string, unknown>) ?? null,
+    conferenceLink: extractConferenceLink(raw as unknown as Record<string, unknown>) ?? null,
     rawStart: raw.start,
     rawEnd: raw.end,
     location: raw.location?.trim() || null,
@@ -254,9 +249,7 @@ export function HomeView({
   const [toolkitPreviews, setToolkitPreviews] = useState<ToolkitPreview[]>(
     cachedToolkitPreviews ?? [],
   );
-  const [toolkitLogosLoaded, setToolkitLogosLoaded] = useState(
-    cachedToolkitLogosLoaded,
-  );
+  const [toolkitLogosLoaded, setToolkitLogosLoaded] = useState(cachedToolkitLogosLoaded);
   const [connectionsSettingsOpen, setConnectionsSettingsOpen] = useState(false);
 
   const loadEvents = useCallback(async () => {
@@ -272,24 +265,18 @@ export function HomeView({
         path: "calendar_sync",
         opts: { recursive: false, includeHidden: false, includeStats: false },
       });
-      const jsonEntries = entries.filter(
-        (e) => e.kind === "file" && e.name.endsWith(".json"),
-      );
+      const jsonEntries = entries.filter((e) => e.kind === "file" && e.name.endsWith(".json"));
       const settled = await Promise.allSettled(
         jsonEntries.map(async (entry): Promise<CalEvent | null> => {
           const result = await window.ipc.invoke("workspace:readFile", {
             path: entry.path,
             encoding: "utf8",
           });
-          return normalizeCalEvent(
-            JSON.parse(result.data) as RawCalEvent,
-            entry.path,
-          );
+          return normalizeCalEvent(JSON.parse(result.data) as RawCalEvent, entry.path);
         }),
       );
       const out: CalEvent[] = [];
-      for (const r of settled)
-        if (r.status === "fulfilled" && r.value) out.push(r.value);
+      for (const r of settled) if (r.status === "fulfilled" && r.value) out.push(r.value);
       out.sort((a, b) => a.start.getTime() - b.start.getTime());
       setEvents(out);
     } catch (err) {
@@ -320,10 +307,7 @@ export function HomeView({
   const loadConnectorLogos = useCallback(async () => {
     if (cachedToolkitLogosLoaded) return;
     try {
-      const configured = await window.ipc.invoke(
-        "composio:is-configured",
-        null,
-      );
+      const configured = await window.ipc.invoke("composio:is-configured", null);
       if (!configured.configured) return;
       const toolkits = await window.ipc.invoke("composio:list-toolkits", {});
       const previews = toolkits.items
@@ -363,8 +347,7 @@ export function HomeView({
   const upcoming = useMemo(() => {
     const now = Date.now();
     return events.filter((e) => {
-      const end =
-        e.end ?? (e.isAllDay ? new Date(e.start.getTime() + 864e5) : e.start);
+      const end = e.end ?? (e.isAllDay ? new Date(e.start.getTime() + 864e5) : e.start);
       return end.getTime() > now;
     });
   }, [events]);
@@ -381,16 +364,12 @@ export function HomeView({
     );
   }, [upcoming]);
 
-  const activeAgents = useMemo(
-    () => bgTaskSummaries.filter((t) => t.active),
-    [bgTaskSummaries],
-  );
+  const activeAgents = useMemo(() => bgTaskSummaries.filter((t) => t.active), [bgTaskSummaries]);
   const recentAgent = useMemo(() => {
     const t = (s?: string) => (s ? new Date(s).getTime() || 0 : 0);
     return [...bgTaskSummaries].sort(
       (a, b) =>
-        Math.max(t(b.lastRunAt), t(b.lastAttemptAt)) -
-        Math.max(t(a.lastRunAt), t(a.lastAttemptAt)),
+        Math.max(t(b.lastRunAt), t(b.lastAttemptAt)) - Math.max(t(a.lastRunAt), t(a.lastAttemptAt)),
     )[0];
   }, [bgTaskSummaries]);
 
@@ -398,8 +377,7 @@ export function HomeView({
     const out: TreeNode[] = [];
     const walk = (nodes: TreeNode[]) => {
       for (const n of nodes) {
-        if (n.path === "knowledge/Meetings" || n.path === "knowledge/Workspace")
-          continue;
+        if (n.path === "knowledge/Meetings" || n.path === "knowledge/Workspace") continue;
         if (n.kind === "file") out.push(n);
         else if (n.children?.length) walk(n.children);
       }
@@ -445,16 +423,12 @@ export function HomeView({
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-      <div className="flex-1 overflow-y-auto px-9 py-7">
+      <div className="flex-1 overflow-y-auto px-5 py-6 md:px-9 md:py-7">
         <div className="mx-auto flex max-w-[820px] flex-col gap-4">
           {/* Greeting */}
-          <div className="flex items-baseline gap-3">
-            <h1 className="text-[26px] font-semibold tracking-tight">
-              {greeting()}
-            </h1>
-            <span className="text-sm text-muted-foreground">
-              {todayLabel()}
-            </span>
+          <div className="flex flex-wrap items-baseline gap-3">
+            <h1 className="text-[26px] font-semibold tracking-tight">{greeting()}</h1>
+            <span className="text-sm text-muted-foreground">{todayLabel()}</span>
           </div>
 
           {/* Up-next hero */}
@@ -465,14 +439,9 @@ export function HomeView({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Up next ·{" "}
-                  {nextEvent.isAllDay
-                    ? "today"
-                    : relativeFromNow(nextEvent.start)}
+                  Up next · {nextEvent.isAllDay ? "today" : relativeFromNow(nextEvent.start)}
                 </div>
-                <div className="mb-0.5 truncate text-[17px] font-medium">
-                  {nextEvent.summary}
-                </div>
+                <div className="mb-0.5 truncate text-[17px] font-medium">{nextEvent.summary}</div>
                 <div className="truncate text-[13px] text-muted-foreground">
                   {nextEvent.isAllDay
                     ? "All day"
@@ -491,9 +460,7 @@ export function HomeView({
                 {nextEvent.conferenceLink && (
                   <button
                     type="button"
-                    onClick={() =>
-                      window.open(nextEvent.conferenceLink!, "_blank")
-                    }
+                    onClick={() => window.open(nextEvent.conferenceLink!, "_blank")}
                     className="rounded-none border border-border px-3 py-2 text-foreground transition-colors hover:bg-accent"
                     aria-label="Join meeting"
                   >
@@ -504,8 +471,8 @@ export function HomeView({
             </div>
           )}
 
-          {/* Inbox + Background agents */}
-          <div className="grid grid-cols-2 gap-[18px]">
+          {/* Inbox + Background tasks */}
+          <div className="grid grid-cols-1 gap-[18px] md:grid-cols-2">
             <div className={CARD}>
               <div className="mb-3 flex items-center gap-2">
                 <Mail className="size-[15px]" />
@@ -549,11 +516,9 @@ export function HomeView({
             <div className={CARD}>
               <div className="mb-3 flex items-center gap-2">
                 <Workflow className="size-[15px]" />
-                <span className="text-sm font-medium">Background agents</span>
+                <span className="text-sm font-medium">Background tasks</span>
                 <span className="flex-1" />
-                <span className="text-xs text-muted-foreground">
-                  {activeAgents.length} active
-                </span>
+                <span className="text-xs text-muted-foreground">{activeAgents.length} active</span>
                 <button
                   type="button"
                   onClick={onOpenAgents}
@@ -572,17 +537,13 @@ export function HomeView({
                   <span
                     className={`size-2 shrink-0 rounded-full ${recentAgent.active ? "bg-emerald-500" : "bg-muted-foreground"}`}
                   />
-                  <span className="flex-1 truncate font-medium">
-                    {recentAgent.name}
-                  </span>
+                  <span className="flex-1 truncate font-medium">{recentAgent.name}</span>
                   <span className="text-[11.5px] text-muted-foreground">
                     {relativeAgo(recentAgent.lastRunAt) || "—"}
                   </span>
                 </button>
               ) : (
-                <div className="py-1 text-[12.5px] text-muted-foreground">
-                  No agents yet.
-                </div>
+                <div className="py-1 text-[12.5px] text-muted-foreground">No tasks yet.</div>
               )}
               <button
                 type="button"
@@ -590,7 +551,7 @@ export function HomeView({
                 className="mt-3.5 flex items-center gap-2 border-t border-border pt-3 text-[12.5px] font-medium text-primary"
               >
                 <Plus className="size-3" />
-                Create an agent
+                Create a task
               </button>
             </div>
           </div>
@@ -628,9 +589,7 @@ export function HomeView({
                   <span
                     className={`size-2 shrink-0 rounded-full ${i === 0 ? "bg-emerald-500" : "bg-border"}`}
                   />
-                  <span className="min-w-0 flex-1 truncate font-medium">
-                    {e.summary}
-                  </span>
+                  <span className="min-w-0 flex-1 truncate font-medium">{e.summary}</span>
                   <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                     <button
                       type="button"

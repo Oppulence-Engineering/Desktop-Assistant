@@ -70,10 +70,11 @@ var scheduledStartTimeKey = temporal.NewSearchAttributeKeyTime("TemporalSchedule
 // successes: the task changed underneath the schedule (deleted, deactivated,
 // retargeted, cron removed) and the reconciler will repair the schedule.
 type ScheduledRunResult struct {
-	RunID      string `json:"runId,omitempty"`
-	WorkflowID string `json:"workflowId,omitempty"`
-	Skipped    bool   `json:"skipped,omitempty"`
-	SkipReason string `json:"skipReason,omitempty"`
+	RunID        string `json:"runId,omitempty"`
+	WorkflowID   string `json:"workflowId,omitempty"`
+	Skipped      bool   `json:"skipped,omitempty"`
+	SkipReason   string `json:"skipReason,omitempty"`
+	DeadLettered bool   `json:"deadLettered,omitempty"`
 }
 
 // ScheduledRunStarter starts a run for a schedule fire. Implemented by
@@ -122,6 +123,11 @@ func (a *ScheduleActivities) CreateScheduledRun(ctx context.Context, in Schedule
 		a.Log.Warn("scheduled run start failed",
 			zap.String("taskSlug", in.Slug), zap.String("userId", in.UserID), zap.Error(err))
 		return ScheduledRunResult{}, err
+	case out.DeadLettered:
+		countFire("dead_lettered")
+		a.Log.Warn("scheduled fire dead-lettered",
+			zap.String("taskSlug", in.Slug), zap.String("userId", in.UserID),
+			zap.String("runId", out.RunID))
 	case out.Skipped:
 		countFire("skipped")
 		a.Log.Info("scheduled fire skipped",

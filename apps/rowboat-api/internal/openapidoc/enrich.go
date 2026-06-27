@@ -94,6 +94,12 @@ func addSecuritySchemes(schemes obj) {
 		"name":        "X-Hook-Signature",
 		"description": "HMAC-SHA256 over the raw request body, formatted as sha256=<hex>.",
 	}
+	schemes["WebhookHMAC"] = obj{
+		"type":        "apiKey",
+		"in":          "header",
+		"name":        "X-Webhook-Signature",
+		"description": "HMAC-SHA256 over the raw request body, formatted as sha256=<hex>.",
+	}
 	schemes["InternalSecret"] = obj{
 		"type":        "apiKey",
 		"in":          "header",
@@ -269,6 +275,32 @@ func addBackgroundTaskSchemas(schemas obj) {
 	schemas["BackgroundTaskListResponse"] = objectSchema("Task list for the authenticated user, ordered by slug.", obj{
 		"tasks": arraySchema("Mirrored background tasks visible to this user.", ref("BackgroundTask")),
 	}, "tasks")
+	schemas["BackgroundTaskTemplate"] = objectSchema("Built-in starter template for creating API-target background tasks with safe defaults.", obj{
+		"slug":               stringSchema("Stable template slug.", "inbox-digest"),
+		"taskSlug":           stringSchema("Default task slug used when instantiating this template.", "inbox-digest"),
+		"name":               stringSchema("Default task name.", "Inbox Digest"),
+		"description":        stringSchema("Short explanation of what the template does.", "Summarize new priority email and produce a short follow-up plan."),
+		"instructions":       stringSchema("Default task instructions.", "Review recent important Gmail messages and produce a markdown digest."),
+		"active":             boolSchema("Whether instantiated tasks are active by default.", true),
+		"triggers":           triggerJSON,
+		"model":              stringSchema("Default model id for runs.", "anthropic/claude-sonnet-4-5", nullable()),
+		"provider":           stringSchema("Default provider slug.", "openrouter", nullable()),
+		"executionTarget":    stringEnum("Default execution target.", "api", "api", "desktop"),
+		"tags":               arraySchema("Template tags for UI grouping.", stringSchema("Tag.", "gmail")),
+		"requiredConnectors": arraySchema("Connectors this template expects for full fidelity.", stringSchema("Connector slug.", "google")),
+	}, "slug", "taskSlug", "name", "description", "instructions", "active", "executionTarget")
+	schemas["BackgroundTaskTemplatesResponse"] = objectSchema("Built-in background task templates available to the authenticated user.", obj{
+		"templates": arraySchema("Available task templates.", ref("BackgroundTaskTemplate")),
+	}, "templates")
+	schemas["BackgroundTaskTemplateInstantiateRequest"] = objectSchema("Overrides applied while creating a task from a built-in template. Omitted fields use template defaults.", obj{
+		"slug":            stringSchema("Task slug override. Defaults to template.taskSlug.", "exec-inbox", nullable()),
+		"name":            stringSchema("Task name override.", "Executive Inbox Digest", nullable()),
+		"active":          boolSchema("Override active state.", true),
+		"triggers":        triggerJSON,
+		"model":           stringSchema("Model override.", "anthropic/claude-sonnet-4-5", nullable()),
+		"provider":        stringSchema("Provider override.", "openrouter", nullable()),
+		"executionTarget": stringEnum("Execution target override.", "api", "desktop", "api"),
+	})
 	schemas["BackgroundTaskCreateRequest"] = objectSchema("Creates or first-syncs a desktop background task into the cloud mirror.", obj{
 		"slug":            stringSchema("Optional stable slug. If omitted, rowboat-api slugifies name.", "daily-summary", nullable()),
 		"name":            stringSchema("Human-readable task name.", "Daily Account Summary"),
@@ -409,19 +441,19 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"startedAt":          stringSchema("Run start timestamp.", "2026-06-04T21:01:00Z", obj{"format": "date-time"}, nullable()),
 		"completedAt":        stringSchema("Run completion timestamp.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
 	}, "revision")
-	schemas["BackgroundTaskRunEvent"] = objectSchema("One JSONL event mirrored from a desktop run log.", obj{
+	schemas["BackgroundTaskRunEvent"] = objectSchema("One durable log/progress event mirrored from a desktop run or API-worker workflow.", obj{
 		"id":         uuidSchema("Stable server id for the event row.", "06227adb-924f-46f1-b324-1b10d080a660"),
 		"seq":        intSchema("Zero-based sequence number within the run log. Duplicate seq values for a run are ignored on append.", 1),
-		"type":       stringSchema("Event type, either supplied explicitly or copied from event.type.", "completed", nullable()),
+		"type":       stringSchema("Event type, either supplied explicitly or copied from event.type.", "temporal.completed", nullable()),
 		"event":      freeFormSchema("Original JSON event object from the desktop run log."),
 		"receivedAt": stringSchema("Server timestamp when the event was stored.", "2026-06-04T21:02:05Z", obj{"format": "date-time"}),
 	}, "id", "seq", "event", "receivedAt")
-	schemas["BackgroundTaskRunEventsResponse"] = objectSchema("Ordered event list for a run.", obj{
-		"events": arraySchema("Run events ordered by seq.", ref("BackgroundTaskRunEvent")),
+	schemas["BackgroundTaskRunEventsResponse"] = objectSchema("Ordered durable task log/progress event list for a run.", obj{
+		"events": arraySchema("Run log/progress events ordered by seq.", ref("BackgroundTaskRunEvent")),
 	}, "events")
 	schemas["BackgroundTaskRunEventInput"] = objectSchema("One event to append to a run log mirror.", obj{
 		"seq":   intSchema("Zero-based sequence number within the run log.", 1),
-		"type":  stringSchema("Optional event type. If omitted, rowboat-api reads event.type when present.", "completed", nullable()),
+		"type":  stringSchema("Optional event type. If omitted, rowboat-api reads event.type when present.", "temporal.completed", nullable()),
 		"event": freeFormSchema("Original JSON event object from the desktop run log."),
 	}, "seq", "event")
 	schemas["BackgroundTaskRunEventsAppendRequest"] = objectSchema("Batch append for JSONL run events. Existing seq values are skipped to make retries idempotent.", obj{
@@ -437,7 +469,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 	})
 	schemas["BackgroundTaskSignalRequest"] = objectSchema("Control signal sent to a Temporal-backed API-worker run.", obj{
 		"signal":  stringEnum("Supported control signal.", "pause", "pause", "resume", "update_context"),
-		"payload": freeFormSchema("Optional signal payload. update_context can carry replacement context."),
+		"payload": freeFormSchema("Optional signal payload. update_context can carry context/text/requestedContext for the next runtime checkpoint."),
 	}, "signal")
 }
 
@@ -539,10 +571,15 @@ func addConnectorSchemas(schemas obj) {
 		"mcpUrl":      stringSchema("MCP endpoint the desktop should call after obtaining an MCP token.", "https://api.canvas.solomon-ai.co/v1/mcp"),
 		"authType":    stringEnum("Connector credential flow.", "oauth", "oauth", "api_key"),
 		"scopes":      arraySchema("OAuth scopes requested for this connector.", stringSchema("Scope.", "invoices:read")),
+		"mcpTools":    arraySchema("Allowlisted upstream MCP tools and trust tiers for cloud runtime calls.", ref("MCPToolPolicy")),
 		"iconUrl":     stringSchema("Optional icon URL for UI display.", "https://example.com/icon.png", nullable()),
 		"connected":   boolSchema("Whether the authenticated user has an active connection.", true),
 		"connectedAt": stringSchema("RFC3339 connection timestamp when connected.", "2026-06-04T20:38:00Z", nullable()),
 	}, "name", "displayName", "description", "mcpUrl", "authType", "connected")
+	schemas["MCPToolPolicy"] = objectSchema("Allowlisted upstream MCP tool metadata.", obj{
+		"name":      stringSchema("Upstream MCP tool name.", "customer.lookup"),
+		"trustTier": stringEnum("Runtime trust tier for this tool.", "read", "read", "write", "act", "money-moving"),
+	}, "name", "trustTier")
 	schemas["ConnectorsResponse"] = objectSchema("Connector registry plus per-user connection state.", obj{
 		"connectors": arraySchema("Available connectors in configured order.", ref("Connector")),
 	}, "connectors")
@@ -572,7 +609,7 @@ func addSlackOAuthSchemas(schemas obj) {
 
 func addCloudEventSchemas(schemas obj) {
 	schemas["CloudEventIngestRequest"] = objectSchema("Normalized cloud event envelope posted by internal services, tests, or the desktop (RFC 003).", obj{
-		"source":          stringEnum("Event source.", "internal", "gmail", "google_calendar", "slack", "webhook", "internal"),
+		"source":          stringEnum("Event source.", "internal", "gmail", "google_calendar", "google_drive", "slack", "webhook", "mcp", "github", "linear", "stripe", "internal"),
 		"sourceEventId":   stringSchema("Provider-side event id.", "evt_123", nullable()),
 		"sourceAccountId": stringSchema("Connected-account key the event belongs to.", "acct_google_primary", nullable()),
 		"eventType":       stringSchema("Provider-specific event type.", "email.received", nullable()),
@@ -590,7 +627,7 @@ func addCloudEventSchemas(schemas obj) {
 	}, "eventId", "routingStatus", "deduped")
 	schemas["CloudEvent"] = objectSchema("Stored cloud event. payload and routing appear only on the detail endpoint.", obj{
 		"id":               stringSchema("Cloud event id.", "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111"),
-		"source":           stringEnum("Event source.", "gmail", "gmail", "google_calendar", "slack", "webhook", "internal"),
+		"source":           stringEnum("Event source.", "gmail", "gmail", "google_calendar", "google_drive", "slack", "webhook", "mcp", "github", "linear", "stripe", "internal"),
 		"sourceEventId":    stringSchema("Provider-side event id.", "evt_123", nullable()),
 		"sourceAccountId":  stringSchema("Connected-account key.", "acct_google_primary", nullable()),
 		"eventType":        stringSchema("Provider-specific event type.", "email.received", nullable()),
@@ -623,9 +660,21 @@ func addCloudEventSchemas(schemas obj) {
 	}, "runs")
 	schemas["InternalCloudEventIngestRequest"] = objectSchema("Server-to-server cloud event ingestion: the caller names the event owner explicitly.", obj{
 		"userId":    stringSchema("Rowboat user id (UUID) owning the event.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
-		"source":    stringEnum("Event source.", "internal", "gmail", "google_calendar", "slack", "webhook", "internal"),
+		"source":    stringEnum("Event source.", "internal", "gmail", "google_calendar", "google_drive", "slack", "webhook", "mcp", "github", "linear", "stripe", "internal"),
 		"dedupeKey": stringSchema("Required idempotency anchor.", "internal:job:42"),
 	}, "userId", "source", "dedupeKey")
+	schemas["GenericWebhookEventRequest"] = objectSchema("Signed generic webhook event ingestion. Defaults source=webhook; connector/provider gateways may send source=mcp, github, linear, or stripe. The receiver resolves the owner from userId.", obj{
+		"userId":          stringSchema("Rowboat user id (UUID) owning the event.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+		"source":          stringEnum("Webhook source.", "webhook", "webhook", "mcp", "github", "linear", "stripe"),
+		"sourceEventId":   stringSchema("Provider-side event id. Used to derive dedupeKey when dedupeKey is omitted.", "evt_123", nullable()),
+		"sourceAccountId": stringSchema("External account or webhook integration key.", "zapier-acme-ar", nullable()),
+		"eventType":       stringSchema("Provider-specific event type.", "invoice.disputed", nullable()),
+		"subject":         stringSchema("Short title used in UI and routing prompts. Defaults to eventType when omitted.", "Invoice #4821 dispute", nullable()),
+		"text":            stringSchema("Human-readable gist used in routing prompts. Defaults to a compact payload summary when omitted.", "Acme disputed invoice #4821.", nullable()),
+		"payload":         freeFormSchema("Full provider object. Sealed at rest; returned only by the event detail endpoint."),
+		"dedupeKey":       stringSchema("Optional idempotency anchor. If omitted, sourceEventId is required and derives <source>:<sourceAccountId>:<sourceEventId>.", "webhook:zapier-acme-ar:evt_123", nullable()),
+		"occurredAt":      stringSchema("RFC3339 provider event time.", "2026-06-06T14:00:00Z", nullable()),
+	}, "userId")
 }
 
 func addInternalSchemas(schemas obj) {
@@ -750,9 +799,9 @@ func addCloudEventPaths(paths obj) {
 		"404": responseRef("404"),
 		"500": responseRef("500"),
 	})}
-	paths["/v1/webhooks/google"] = obj{"post": operation("Cloud Events", "Google push webhook", "Receives Gmail Pub/Sub pushes and Google Calendar channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for Calendar). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.", "googleWebhook", nil, []any{
+	paths["/v1/webhooks/google"] = obj{"post": operation("Cloud Events", "Google push webhook", "Receives Gmail Pub/Sub pushes plus Google Calendar and Drive channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for channels). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.", "googleWebhook", nil, []any{
 		queryParam("token", "Shared webhook token configured on the Pub/Sub push subscription URL.", false, stringSchema("Webhook token.", "")),
-	}, jsonRequestOptional("Pub/Sub push envelope (Gmail). Calendar notifications carry no body.", freeFormSchema("Pub/Sub push envelope."), obj{
+	}, jsonRequestOptional("Pub/Sub push envelope (Gmail). Calendar and Drive notifications carry no body.", freeFormSchema("Pub/Sub push envelope."), obj{
 		"message": obj{"data": "eyJlbWFpbEFkZHJlc3MiOiJtZUBnbWFpbC5jb20iLCJoaXN0b3J5SWQiOjk5ODg3N30=", "messageId": "m1"},
 	}), obj{
 		"200": obj{"description": "Acknowledged: sync handshake, duplicate, or unresolved account (dropped)."},
@@ -769,6 +818,20 @@ func addCloudEventPaths(paths obj) {
 		"202": jsonResponse("Event ingested.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "pending", "deduped": false}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/webhooks/events"] = obj{"post": operation("Cloud Events", "Generic signed webhook event", "Receives arbitrary normalized webhook events, verified via X-Webhook-Signature HMAC over the raw body using WEBHOOK_SIGNING_SECRET. The request names the owning userId; source defaults to webhook and may be mcp, github, linear, or stripe for connector/provider gateways. Payload is sealed, and routing uses the same cloud event router as provider webhooks.", "genericWebhook", []any{obj{"WebhookHMAC": []any{}}}, nil, jsonRequest("Generic webhook event envelope.", ref("GenericWebhookEventRequest"), obj{
+		"userId":          "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+		"sourceEventId":   "evt_123",
+		"sourceAccountId": "zapier-acme-ar",
+		"eventType":       "invoice.disputed",
+		"payload":         obj{"customer": "Acme", "invoice": "4821", "reason": "pricing mismatch"},
+	}), obj{
+		"202": jsonResponse("Event ingested.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "pending", "deduped": false}),
+		"200": jsonResponse("Duplicate dedupeKey: existing event returned.", ref("CloudEventIngestResponse"), obj{"eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111", "routingStatus": "routed", "deduped": true}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"413": problemResponse("Payload exceeds the configured size cap.", ref("ErrorEnvelope"), problemExample(413, "Request Entity Too Large", "request body exceeds 327680 bytes", "request_body_too_large")),
 		"500": responseRef("500"),
 	})}
 	paths["/v1/internal/events"] = obj{"post": operation("Internal", "Ingest a cloud event (server-to-server)", "Internal-secret ingestion used by backend services and test fixtures. Identical to /v1/events except the caller names the owning userId explicitly.", "ingestInternalCloudEvent", internalSecret(), nil, jsonRequest("Normalized event envelope with explicit owner.", ref("InternalCloudEventIngestRequest"), obj{
@@ -817,6 +880,34 @@ func addBackgroundTaskPaths(paths obj) {
 			"200": jsonResponse("Account run list.", ref("BackgroundTaskRunsResponse"), obj{"runs": []any{backgroundTaskRunExample()}}),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-task-templates"] = obj{
+		"get": operation("Background Tasks", "List background task templates", "Lists built-in API-target task templates that can be instantiated into normal background tasks. Templates provide known-good instructions, triggers, and execution defaults for common cloud task patterns.", "listBackgroundTaskTemplates", bearer(), nil, nil, obj{
+			"200": jsonResponse("Task templates.", ref("BackgroundTaskTemplatesResponse"), obj{"templates": []any{backgroundTaskTemplateExample()}}),
+			"401": responseRef("401"),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-task-templates/{templateSlug}"] = obj{
+		"get": operation("Background Tasks", "Get background task template", "Fetches one built-in task template by slug so clients can preview the instructions, default trigger, and required connectors before instantiation.", "getBackgroundTaskTemplate", bearer(), []any{templateSlugParam()}, nil, obj{
+			"200": jsonResponse("Task template.", ref("BackgroundTaskTemplate"), backgroundTaskTemplateExample()),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-task-templates/{templateSlug}/instantiate"] = obj{
+		"post": operation("Background Tasks", "Instantiate background task template", "Creates a normal background task from a built-in template. The resulting task is owned by the authenticated user and then follows the same trigger, admission, and Temporal execution path as tasks created directly.", "instantiateBackgroundTaskTemplate", bearer(), []any{templateSlugParam()}, jsonRequestOptional("Optional template overrides.", ref("BackgroundTaskTemplateInstantiateRequest"), obj{
+			"slug": "exec-inbox",
+			"name": "Executive Inbox Digest",
+		}), obj{
+			"201": jsonResponse("Created task.", ref("BackgroundTask"), backgroundTaskExample()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"409": problemResponse("A task with this slug already exists for the user.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "background task already exists", "conflict")),
 			"500": responseRef("500"),
 		}),
 	}
@@ -969,7 +1060,7 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks/{slug}/runs/{runId}/signal"] = obj{
-		"post": operation("Background Tasks", "Signal API-worker run", "Sends a constrained control signal to the Temporal workflow. V1 accepts pause, resume, and update_context signals for workflow versions that know how to consume them.", "signalBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), jsonRequest("Signal payload.", ref("BackgroundTaskSignalRequest"), obj{"signal": "pause", "payload": obj{"reason": "operator requested"}}), obj{
+		"post": operation("Background Tasks", "Signal API-worker run", "Sends a constrained control signal to the Temporal workflow. API-worker runs persist the signal as a durable run event and honor pause, resume, and update_context at cooperative runtime checkpoints between model steps.", "signalBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), jsonRequest("Signal payload.", ref("BackgroundTaskSignalRequest"), obj{"signal": "pause", "payload": obj{"reason": "operator requested"}}), obj{
 			"202": jsonResponse("Signal accepted.", ref("BackgroundTaskRun"), backgroundTaskAPIRunExample()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
@@ -979,19 +1070,28 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks/{slug}/runs/{runId}/events"] = obj{
-		"get": operation("Background Tasks", "List task run events", "Returns mirrored JSONL events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.", "listBackgroundTaskRunEvents", bearer(), append(append(slugParam(), runIDParam()...), queryParam("afterSeq", "Optional sequence cursor. When provided, only events with seq greater than this value are returned.", false, intSchema("Last seen event seq.", 0))), nil, obj{
-			"200": jsonResponse("Run events.", ref("BackgroundTaskRunEventsResponse"), obj{"events": []any{backgroundTaskRunEventExample()}}),
+		"get": operation("Background Tasks", "List task run logs", "Returns durable log/progress events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.", "listBackgroundTaskRunEvents", bearer(), append(append(slugParam(), runIDParam()...), queryParam("afterSeq", "Optional sequence cursor. When provided, only events with seq greater than this value are returned.", false, intSchema("Last seen event seq.", 0))), nil, obj{
+			"200": jsonResponse("Run log/progress events.", ref("BackgroundTaskRunEventsResponse"), obj{"events": []any{backgroundTaskRunEventExample()}}),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
 			"500": responseRef("500"),
 		}),
-		"post": operation("Background Tasks", "Append task run events", "Appends a batch of JSONL run events. The unique (run, seq) key makes retries idempotent: duplicate seq values are counted as skipped.", "appendBackgroundTaskRunEvents", bearer(), append(slugParam(), runIDParam()...), jsonRequest("Run event batch.", ref("BackgroundTaskRunEventsAppendRequest"), obj{
+		"post": operation("Background Tasks", "Append task run logs", "Appends a batch of durable log/progress events. The unique (run, seq) key makes retries idempotent: duplicate seq values are counted as skipped.", "appendBackgroundTaskRunEvents", bearer(), append(slugParam(), runIDParam()...), jsonRequest("Run event batch.", ref("BackgroundTaskRunEventsAppendRequest"), obj{
 			"events": []any{
 				obj{"seq": 0, "event": obj{"type": "started"}},
-				obj{"seq": 1, "type": "completed", "event": obj{"type": "completed", "summary": "ok"}},
+				obj{"seq": 1, "type": "temporal.completed", "event": obj{"type": "temporal.completed", "summary": "ok"}},
 			},
 		}), obj{
 			"200": jsonResponse("Append counts.", ref("BackgroundTaskRunEventsAppendResponse"), obj{"stored": 2, "skipped": 0}),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] = obj{
+		"get": operation("Background Tasks", "Stream task run progress", "Streams durable task log/progress events as application/x-ndjson. The stream first backfills events with seq greater than afterSeq, then tails the run log until a terminal event or client disconnect.", "streamBackgroundTaskRunEvents", bearer(), append(append(slugParam(), runIDParam()...), queryParam("afterSeq", "Optional reconnect cursor. When provided, only events with seq greater than this value are streamed.", false, intSchema("Last seen event seq.", 0))), nil, obj{
+			"200": ndjsonResponse("NDJSON stream of BackgroundTaskRunEvent objects.", ref("BackgroundTaskRunEvent"), backgroundTaskRunEventExample()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
@@ -1121,7 +1221,7 @@ func addSlackOAuthPaths(paths obj) {
 
 func addConnectorPaths(paths obj) {
 	paths["/v1/connectors"] = obj{"get": operation("Connectors", "List connectors", "Returns the configured connector registry plus the authenticated user's connection state for each connector.", "listConnectors", bearer(), nil, nil, obj{
-		"200": jsonResponse("Connector registry with connection state.", ref("ConnectorsResponse"), obj{"connectors": []any{obj{"name": "canvas", "displayName": "Canvas", "description": "Banking, invoicing, dunning, transactions", "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp", "authType": "oauth", "scopes": []any{"invoices:read"}, "connected": true, "connectedAt": "2026-06-04T20:38:00Z"}}}),
+		"200": jsonResponse("Connector registry with connection state.", ref("ConnectorsResponse"), obj{"connectors": []any{obj{"name": "canvas", "displayName": "Canvas", "description": "Banking, invoicing, dunning, transactions", "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp", "authType": "oauth", "scopes": []any{"invoices:read"}, "mcpTools": []any{obj{"name": "customer.lookup", "trustTier": "read"}}, "connected": true, "connectedAt": "2026-06-04T20:38:00Z"}}}),
 		"401": responseRef("401"),
 		"500": responseRef("500"),
 		"503": responseRef("503"),
@@ -1387,6 +1487,10 @@ func slugParam() []any {
 	return []any{pathParam("slug", "Background task slug, matching bg-tasks/<slug> locally.", stringSchema("Task slug.", "daily-summary"))}
 }
 
+func templateSlugParam() obj {
+	return pathParam("templateSlug", "Background task template slug.", stringSchema("Template slug.", "inbox-digest"))
+}
+
 func runIDParam() []any {
 	return []any{pathParam("runId", "Cloud-visible run id for a background task run.", stringSchema("Run id.", "run-20260604-210000"))}
 }
@@ -1483,6 +1587,14 @@ func binaryResponse(description, contentType string) obj {
 	return obj{"description": description, "content": obj{contentType: obj{"schema": obj{"type": "string", "format": "binary"}}}}
 }
 
+func ndjsonResponse(description string, schema any, example any) obj {
+	media := obj{"schema": schema}
+	if example != nil {
+		media["example"] = example
+	}
+	return obj{"description": description, "content": obj{"application/x-ndjson": media}}
+}
+
 func htmlResponse(description string) obj {
 	return obj{"description": description, "content": obj{"text/html": obj{"schema": obj{"type": "string"}}}}
 }
@@ -1525,6 +1637,23 @@ func backgroundTaskExample() obj {
 		"lastRunSummary":  "No high-priority account changes.",
 		"lastRunError":    "",
 		"revision":        2,
+	}
+}
+
+func backgroundTaskTemplateExample() obj {
+	return obj{
+		"slug":               "inbox-digest",
+		"taskSlug":           "inbox-digest",
+		"name":               "Inbox Digest",
+		"description":        "Summarize new priority email and produce a short follow-up plan.",
+		"instructions":       "Review recent important Gmail messages and produce a markdown digest.",
+		"active":             true,
+		"triggers":           obj{"cronExpr": "0 8 * * 1-5", "timezone": "America/New_York"},
+		"model":              "anthropic/claude-sonnet-4-5",
+		"provider":           "openrouter",
+		"executionTarget":    "api",
+		"tags":               []any{"gmail", "digest", "scheduled"},
+		"requiredConnectors": []any{"google"},
 	}
 }
 
@@ -1618,8 +1747,8 @@ func backgroundTaskRunEventExample() obj {
 	return obj{
 		"id":         "06227adb-924f-46f1-b324-1b10d080a660",
 		"seq":        1,
-		"type":       "completed",
-		"event":      obj{"type": "completed", "summary": "ok"},
+		"type":       "temporal.completed",
+		"event":      obj{"type": "temporal.completed", "summary": "ok"},
 		"receivedAt": "2026-06-04T21:02:05Z",
 	}
 }

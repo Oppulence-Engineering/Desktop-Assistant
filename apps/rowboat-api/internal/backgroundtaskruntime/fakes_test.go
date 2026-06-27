@@ -77,11 +77,33 @@ func (f *fakeEventSink) types() []string {
 	return out
 }
 
+type fakeControlSource struct {
+	states []ControlState
+	calls  int
+	err    error
+}
+
+func (f *fakeControlSource) Checkpoint(context.Context) (ControlState, error) {
+	if f.err != nil {
+		return ControlState{}, f.err
+	}
+	if len(f.states) == 0 {
+		return ControlState{}, nil
+	}
+	if f.calls >= len(f.states) {
+		return f.states[len(f.states)-1], nil
+	}
+	state := f.states[f.calls]
+	f.calls++
+	return state, nil
+}
+
 // fakeTool returns a scripted result or error.
 type fakeTool struct {
 	name    string
 	result  json.RawMessage
 	err     error
+	audit   ToolAudit
 	invokes []json.RawMessage
 	scopes  []ToolScope
 }
@@ -89,6 +111,9 @@ type fakeTool struct {
 func (f *fakeTool) Name() string                { return f.name }
 func (f *fakeTool) Description() string         { return "fake " + f.name }
 func (f *fakeTool) JSONSchema() json.RawMessage { return json.RawMessage(`{"type":"object"}`) }
+func (f *fakeTool) AuditInfo(json.RawMessage) ToolAudit {
+	return f.audit
+}
 func (f *fakeTool) Invoke(_ context.Context, scope ToolScope, args json.RawMessage) (json.RawMessage, error) {
 	f.invokes = append(f.invokes, args)
 	f.scopes = append(f.scopes, scope)

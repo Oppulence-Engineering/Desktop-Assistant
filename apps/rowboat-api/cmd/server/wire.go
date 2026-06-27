@@ -17,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtasks"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskschedule"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
@@ -155,6 +156,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	docsH := docs.New()
 	billingH := billing.New(client, cfg.FreeTierCredits, cfg.DailyCreditLimit, database.Cached, log)
 	backgroundTasksH := backgroundtasks.New(client, log)
+	backgroundTasksH.SetAdmission(backgroundtaskruns.AdmissionFromConfig(cfg, gate, prices))
 	// temporalClient outlives this block: the cloud-events route starter below
 	// reuses the same connection. Closed on shutdown by the goroutine.
 	var temporalClient temporalsdk.Client
@@ -262,9 +264,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		routeCtl = cloudevents.NewRouteStarter(temporalClient, cfg)
 	}
 	cloudEventsH := cloudevents.New(client, sealer, routeCtl, cloudevents.Config{
-		MaxPayloadBytes:    cfg.CloudEventsMaxPayloadBytes,
-		SlackSigningSecret: cfg.SlackSigningSecret,
-		GoogleWebhookToken: cfg.GoogleWebhookToken,
+		MaxPayloadBytes:      cfg.CloudEventsMaxPayloadBytes,
+		SlackSigningSecret:   cfg.SlackSigningSecret,
+		GoogleWebhookToken:   cfg.GoogleWebhookToken,
+		WebhookSigningSecret: cfg.WebhookSigningSecret,
 	}, log)
 
 	registry, err := connectors.LoadRegistry([]byte(cfg.ConnectorsJSON))
@@ -376,6 +379,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		Post("/v1/webhooks/google", cloudEventsH.GoogleWebhook)
 	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
 		Post("/v1/webhooks/slack", cloudEventsH.SlackWebhook)
+	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
+		Post("/v1/webhooks/events", cloudEventsH.GenericWebhook)
 
 	// Agent channel inbound (RFC 027 P5). Slack Events API has a single request
 	// URL, so /v1/webhooks/slack owns verification, durable event storage, and
@@ -428,12 +433,20 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			Post("/v1/feedback", feedbackH.Submit)
 
 		r.Get("/v1/background-task-runs", backgroundTasksH.ListAllRuns)
+		r.Route("/v1/background-task-templates", func(r chi.Router) {
+			r.Use(rl.PerUserWindow(ratelimit.GroupTaskBurst, 120, 10*time.Second))
+			r.Get("/", backgroundTasksH.ListTemplates)
+			r.Get("/{templateSlug}", backgroundTasksH.GetTemplate)
+			r.Post("/{templateSlug}/instantiate", backgroundTasksH.InstantiateTemplate)
+		})
 		// NOTE: do not register /v1/background-tasks directly here — the Route
 		// block below registers the same paths WITH the burst limiter, and a
 		// direct registration would (depending on chi's shadowing rules) bypass
 		// it.
 		r.Route("/v1/background-tasks", func(r chi.Router) {
-			r.Use(rl.PerUserWindow(ratelimit.GroupTaskBurst, 30, 10*time.Second))
+			// Desktop task runs sync artifacts, run state, events, and UI refreshes
+			// in a short burst; keep the guardrail high enough for normal runs.
+			r.Use(rl.PerUserWindow(ratelimit.GroupTaskBurst, 120, 10*time.Second))
 			r.Get("/", backgroundTasksH.List)
 			r.Post("/", backgroundTasksH.Create)
 			r.Get("/{slug}", backgroundTasksH.Get)
@@ -451,6 +464,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Post("/{slug}/runs/{runId}/signal", backgroundTasksH.SignalRun)
 			r.Get("/{slug}/runs/{runId}/events", backgroundTasksH.ListRunEvents)
 			r.Post("/{slug}/runs/{runId}/events", backgroundTasksH.AppendRunEvents)
+			r.Get("/{slug}/runs/{runId}/events/stream", backgroundTasksH.StreamRunEvents)
 			r.Post("/{slug}/trigger", backgroundTasksH.Trigger)
 			r.Get("/{slug}/schedule-state", backgroundTasksH.GetScheduleState)
 		})

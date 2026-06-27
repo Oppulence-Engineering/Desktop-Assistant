@@ -21,6 +21,7 @@ type RunInput struct {
 
 	Artifacts ArtifactStore
 	Events    EventSink
+	Controls  ControlSource
 	Tools     ToolRegistry
 	LLM       LLMClient
 	Limits    Limits
@@ -64,6 +65,29 @@ type EventSink interface {
 	ProgressEvent(ctx context.Context, eventType string, percent int, message string, extra map[string]any) error
 	// Emit appends an event without touching run-row progress.
 	Emit(ctx context.Context, eventType string, payload map[string]any) error
+}
+
+// ControlSource provides cooperative controls for long-running activity
+// executions. Implementations should be idempotent: each Checkpoint call
+// returns only newly observed context updates while carrying forward current
+// pause state. The runtime polls it between LLM/tool steps.
+type ControlSource interface {
+	Checkpoint(ctx context.Context) (ControlState, error)
+}
+
+// ControlState is the durable control-plane state at one runtime checkpoint.
+type ControlState struct {
+	Paused         bool
+	ContextUpdates []string
+	ToolApprovals  map[string]ToolApprovalDecision
+}
+
+// ToolApprovalDecision is a durable operator decision observed from the
+// run-control stream for one approval id.
+type ToolApprovalDecision struct {
+	Approved   bool
+	ResolvedBy string
+	Reason     string
 }
 
 // LLMClient is the gateway-backed completion surface (billing applies).
@@ -113,10 +137,12 @@ type Turn struct {
 // ToolScope is the immutable identity every tool invocation carries. Tools
 // resolve credentials from it internally — never from model-provided text.
 type ToolScope struct {
-	UserID   string
-	TaskSlug string
-	RunID    string
-	Allowed  []string // capability scopes, e.g. ["gmail.readonly"]
+	UserID        string
+	TaskSlug      string
+	RunID         string
+	ToolCallIndex int
+	ApprovalID    string
+	Allowed       []string // capability scopes, e.g. ["gmail.readonly"]
 }
 
 // Tool is one allowlisted capability.
@@ -125,6 +151,32 @@ type Tool interface {
 	Description() string
 	JSONSchema() json.RawMessage
 	Invoke(ctx context.Context, scope ToolScope, args json.RawMessage) (json.RawMessage, error)
+}
+
+const (
+	TierRead        = "read"
+	TierWrite       = "write"
+	TierAct         = "act"
+	TierMoneyMoving = "money-moving"
+)
+
+// RequiresApproval reports whether a tool call must pause for HITL approval.
+func RequiresApproval(tier string) bool {
+	return tier == TierAct || tier == TierMoneyMoving
+}
+
+// ToolAudit describes a tool call for audit events and approval routing.
+type ToolAudit struct {
+	TrustTier      string
+	Connector      string
+	Operation      string
+	RequiredScopes []string
+}
+
+// ToolAuditProvider lets tools expose connector/operation/trust-tier metadata,
+// including argument-dependent metadata such as MCP connector + tool names.
+type ToolAuditProvider interface {
+	AuditInfo(args json.RawMessage) ToolAudit
 }
 
 // ToolRegistry is the deny-by-default tool surface: Lookup resolves a tool

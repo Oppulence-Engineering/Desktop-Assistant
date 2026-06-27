@@ -236,6 +236,11 @@ func TestUpsertCreatesThenNoops(t *testing.T) {
 	if act.ID != backgroundtaskworkflow.ScheduleWorkflowID("u1", "daily-digest") {
 		t.Fatalf("action workflow id = %q", act.ID)
 	}
+	if act.Priority.PriorityKey != backgroundtaskworkflow.PriorityLow ||
+		act.Priority.FairnessKey != d.UserID ||
+		act.Priority.FairnessWeight != 1 {
+		t.Fatalf("action priority = %+v, want low priority with per-user fairness", act.Priority)
+	}
 
 	// Same desired state → noop, even with a bumped revision.
 	d.TaskRevision = 9

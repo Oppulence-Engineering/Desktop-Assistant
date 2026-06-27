@@ -26,6 +26,10 @@ import {
   Pause,
   Download,
   CheckCircle2,
+  Terminal,
+  Server,
+  Workflow,
+  InfoIcon,
 } from "@/lib/icons";
 import type { z } from "zod";
 import type {
@@ -405,6 +409,334 @@ function eventBodyText(event: BackgroundTaskCloudRunEventType["event"]): string 
   }
 }
 
+type EventPayload = Record<string, unknown>;
+
+function isEventPayload(value: unknown): value is EventPayload {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function eventPayload(event: BackgroundTaskCloudRunEventType["event"]): EventPayload {
+  return isEventPayload(event) ? event : {};
+}
+
+function payloadString(payload: EventPayload, key: string): string | null {
+  const value = payload[key];
+  if (typeof value === "string" && value.trim()) return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return null;
+}
+
+function payloadNumber(payload: EventPayload, key: string): number | null {
+  const value = payload[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function payloadBool(payload: EventPayload, key: string): boolean {
+  return payload[key] === true;
+}
+
+function formatBytes(bytes: number | null): string | null {
+  if (bytes === null) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatMs(ms: number | null): string | null {
+  if (ms === null) return null;
+  if (ms < 1000) return `${ms} ms`;
+  return `${(ms / 1000).toFixed(1)} s`;
+}
+
+function cloudEventTitle(type: string | undefined, payload: EventPayload): string {
+  const eventType = type ?? payloadString(payload, "type") ?? "event";
+  switch (eventType) {
+    case "runtime.tool_call_started":
+      return `Tool started${payloadString(payload, "tool") ? ` · ${payloadString(payload, "tool")}` : ""}`;
+    case "runtime.tool_call_completed":
+      return `Tool completed${payloadString(payload, "tool") ? ` · ${payloadString(payload, "tool")}` : ""}`;
+    case "runtime.tool_denied":
+      return "Tool denied";
+    case "runtime.tool_approval_requested":
+      return "Tool approval requested";
+    case "runtime.tool_approval_resolved":
+      return "Tool approval resolved";
+    case "runtime.llm_call_started":
+      return "LLM call started";
+    case "runtime.llm_call_completed":
+      return "LLM call completed";
+    case "runtime.limit_exceeded":
+      return "Runtime limit exceeded";
+    case "runtime.final_artifact_ready":
+      return "Final artifact ready";
+    case "temporal.progress":
+      return "Progress";
+    case "temporal.artifact_updated":
+      return "Artifact updated";
+    case "temporal.completed":
+      return "Run completed";
+    case "temporal.failed":
+      return "Run failed";
+    case "temporal.running":
+      return "Run started";
+    case "temporal.queued":
+      return "Run queued";
+    default:
+      return eventType;
+  }
+}
+
+function cloudEventTone(type: string | undefined, payload: EventPayload): string {
+  const eventType = type ?? payloadString(payload, "type") ?? "";
+  if (
+    eventType.includes("failed") ||
+    eventType.includes("error") ||
+    payloadString(payload, "error")
+  ) {
+    return "text-destructive";
+  }
+  if (
+    eventType === "runtime.tool_call_completed" &&
+    payloadString(payload, "tool") === sandboxToolNameForUI
+  ) {
+    const status = payloadString(payload, "sandboxStatus");
+    if (status === "failed" || status === "timeout" || payloadBool(payload, "sandboxTimedOut")) {
+      return "text-destructive";
+    }
+    if (status === "succeeded") return "text-emerald-700 dark:text-emerald-400";
+  }
+  if (eventType.includes("completed") || eventType.includes("artifact_updated")) {
+    return "text-emerald-700 dark:text-emerald-400";
+  }
+  return "text-muted-foreground";
+}
+
+function CloudEventIcon({ type, payload }: { type: string | undefined; payload: EventPayload }) {
+  const eventType = type ?? payloadString(payload, "type") ?? "";
+  const className = `size-3.5 shrink-0 ${cloudEventTone(type, payload)}`;
+  if (payloadString(payload, "tool") === sandboxToolNameForUI)
+    return <Server className={className} />;
+  if (eventType.startsWith("runtime.tool")) return <Terminal className={className} />;
+  if (eventType.startsWith("runtime.llm")) return <Sparkles className={className} />;
+  if (eventType.startsWith("temporal.")) return <Workflow className={className} />;
+  if (eventType.startsWith("desktop.")) return <Laptop className={className} />;
+  if (cloudEventTone(type, payload) === "text-destructive")
+    return <AlertCircle className={className} />;
+  return <InfoIcon className={className} />;
+}
+
+const sandboxToolNameForUI = "sandbox.run";
+
+type EventField = { label: string; value: ReactNode; title?: string };
+
+function EventFields({ fields }: { fields: EventField[] }) {
+  const visible = fields.filter(
+    (field) => field.value !== null && field.value !== undefined && field.value !== "",
+  );
+  if (visible.length === 0) return null;
+  return (
+    <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-[11px]">
+      {visible.map((field) => (
+        <div key={field.label} className="contents">
+          <div className="text-muted-foreground">{field.label}</div>
+          <div className="min-w-0 truncate font-mono text-foreground/80" title={field.title}>
+            {field.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RuntimeEventDetails({ payload }: { payload: EventPayload }) {
+  const isSandbox = payloadString(payload, "tool") === sandboxToolNameForUI;
+  const sandboxOutput = payloadString(payload, "sandboxOutput");
+  const sandboxStatus = payloadString(payload, "sandboxStatus");
+  return (
+    <div className="space-y-2">
+      <EventFields
+        fields={[
+          { label: "Tool", value: payloadString(payload, "tool") },
+          { label: "Call", value: payloadString(payload, "callIndex") },
+          { label: "Trust", value: payloadString(payload, "trustTier") },
+          { label: "Connector", value: payloadString(payload, "connector") },
+          { label: "Operation", value: payloadString(payload, "operation") },
+          {
+            label: "Approval",
+            value: payloadString(payload, "approvalId"),
+            title: payloadString(payload, "approvalId") ?? undefined,
+          },
+          { label: "Latency", value: formatMs(payloadNumber(payload, "latencyMs")) },
+          { label: "Result", value: formatBytes(payloadNumber(payload, "resultBytes")) },
+          {
+            label: "Error",
+            value: payloadString(payload, "error"),
+            title: payloadString(payload, "error") ?? undefined,
+          },
+        ]}
+      />
+      {isSandbox && (
+        <div className="space-y-2 border-t border-border/70 pt-2">
+          <EventFields
+            fields={[
+              { label: "Backend", value: payloadString(payload, "sandboxBackend") },
+              { label: "Sandbox", value: sandboxStatus },
+              {
+                label: "Workload",
+                value: payloadString(payload, "sandboxJobName"),
+                title: payloadString(payload, "sandboxJobName") ?? undefined,
+              },
+              { label: "Exit", value: payloadString(payload, "sandboxExitCode") },
+              { label: "Output", value: formatBytes(payloadNumber(payload, "sandboxOutputBytes")) },
+              { label: "Timed out", value: payloadBool(payload, "sandboxTimedOut") ? "yes" : null },
+              {
+                label: "Truncated",
+                value: payloadBool(payload, "sandboxOutputTruncated") ? "yes" : null,
+              },
+              {
+                label: "Preview",
+                value: payloadBool(payload, "sandboxOutputEventTruncated") ? "truncated" : null,
+              },
+            ]}
+          />
+          {sandboxOutput && (
+            <div>
+              <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Output
+              </div>
+              <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words border-l border-border pl-3 font-mono text-[11px] leading-relaxed text-foreground/80">
+                {sandboxOutput}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LLMEventDetails({ payload }: { payload: EventPayload }) {
+  return (
+    <EventFields
+      fields={[
+        { label: "Model", value: payloadString(payload, "model") },
+        { label: "Provider", value: payloadString(payload, "provider") },
+        { label: "Call", value: payloadString(payload, "callIndex") },
+        { label: "Latency", value: formatMs(payloadNumber(payload, "latencyMs")) },
+        { label: "Input", value: payloadString(payload, "inputTokens") },
+        { label: "Output", value: payloadString(payload, "outputTokens") },
+        { label: "Prompt", value: payloadString(payload, "prompt_version") },
+      ]}
+    />
+  );
+}
+
+function TemporalEventDetails({ payload }: { payload: EventPayload }) {
+  return (
+    <EventFields
+      fields={[
+        { label: "Percent", value: payloadString(payload, "percent") },
+        {
+          label: "Message",
+          value: payloadString(payload, "message"),
+          title: payloadString(payload, "message") ?? undefined,
+        },
+        { label: "Limit", value: payloadString(payload, "limit") },
+        { label: "Value", value: payloadString(payload, "value") },
+        { label: "Max", value: payloadString(payload, "max") },
+        { label: "Bytes", value: formatBytes(payloadNumber(payload, "artifactBytes")) },
+        { label: "Type", value: payloadString(payload, "contentType") },
+      ]}
+    />
+  );
+}
+
+function RawEventDetails({ event }: { event: BackgroundTaskCloudRunEventType["event"] }) {
+  return (
+    <details className="group">
+      <summary className="cursor-pointer select-none text-[10.5px] text-muted-foreground hover:text-foreground">
+        Raw event
+      </summary>
+      <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words border-l border-border pl-3 font-mono text-[11px] leading-relaxed text-foreground/70">
+        {eventBodyText(event)}
+      </pre>
+    </details>
+  );
+}
+
+function CloudRunEventDetails({
+  type,
+  payload,
+  event,
+}: {
+  type: string | undefined;
+  payload: EventPayload;
+  event: BackgroundTaskCloudRunEventType["event"];
+}) {
+  const eventType = type ?? payloadString(payload, "type") ?? "";
+  const known =
+    eventType.startsWith("runtime.tool") ||
+    eventType.startsWith("runtime.llm") ||
+    eventType.startsWith("temporal.") ||
+    eventType === "runtime.limit_exceeded" ||
+    eventType === "runtime.final_artifact_ready";
+
+  if (eventType.startsWith("runtime.tool")) {
+    return (
+      <div className="space-y-2">
+        <RuntimeEventDetails payload={payload} />
+        <RawEventDetails event={event} />
+      </div>
+    );
+  }
+  if (eventType.startsWith("runtime.llm")) {
+    return (
+      <div className="space-y-2">
+        <LLMEventDetails payload={payload} />
+        <RawEventDetails event={event} />
+      </div>
+    );
+  }
+  if (
+    eventType.startsWith("temporal.") ||
+    eventType === "runtime.limit_exceeded" ||
+    eventType === "runtime.final_artifact_ready"
+  ) {
+    return (
+      <div className="space-y-2">
+        <TemporalEventDetails payload={payload} />
+        <RawEventDetails event={event} />
+      </div>
+    );
+  }
+  if (known) {
+    return <RawEventDetails event={event} />;
+  }
+  return (
+    <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-foreground/80">
+      {eventBodyText(event)}
+    </pre>
+  );
+}
+
+function CloudRunEventCard({ event }: { event: BackgroundTaskCloudRunEventType }) {
+  const payload = eventPayload(event.event);
+  const eventType = event.type ?? payloadString(payload, "type") ?? undefined;
+  return (
+    <div className="rounded-none border border-border bg-background px-3 py-2">
+      <div className="mb-2 flex items-center gap-2 text-[10.5px] text-muted-foreground">
+        <CloudEventIcon type={eventType} payload={payload} />
+        <span className={`min-w-0 truncate font-medium ${cloudEventTone(eventType, payload)}`}>
+          {cloudEventTitle(eventType, payload)}
+        </span>
+        <span className="shrink-0 font-mono">#{event.seq}</span>
+        <span className="ml-auto shrink-0">{formatRunAt(event.receivedAt)}</span>
+      </div>
+      <CloudRunEventDetails type={eventType} payload={payload} event={event.event} />
+    </div>
+  );
+}
+
 function TriggersEditor({
   value,
   onChange,
@@ -685,19 +1017,30 @@ function NewTaskDialog({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-background-task-title"
+        aria-describedby="new-background-task-description"
         className="w-full max-w-xl rounded-none border bg-background p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">New background task</h2>
+          <h2 id="new-background-task-title" className="text-base font-semibold">
+            New background task
+          </h2>
           <button
             type="button"
             onClick={onClose}
             className="inline-flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+            aria-label="Close new background task dialog"
           >
             <X className="size-4" />
           </button>
         </div>
+        <p id="new-background-task-description" className="sr-only">
+          Create a background task by describing it to Copilot or configuring the name,
+          instructions, execution target, and triggers manually.
+        </p>
 
         {mode === "describe" ? (
           <>
@@ -1959,19 +2302,7 @@ function CloudRunTranscriptView({
           {!loading && events.length > 0 && (
             <div className="space-y-2">
               {events.map((event) => (
-                <div
-                  key={event.id}
-                  className="rounded-none border border-border bg-background px-3 py-2"
-                >
-                  <div className="mb-1 flex items-center gap-2 text-[10.5px] text-muted-foreground">
-                    <span className="font-mono">#{event.seq}</span>
-                    {event.type && <span>{event.type}</span>}
-                    <span className="ml-auto">{formatRunAt(event.receivedAt)}</span>
-                  </div>
-                  <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-foreground/80">
-                    {eventBodyText(event.event)}
-                  </pre>
-                </div>
+                <CloudRunEventCard key={event.id} event={event} />
               ))}
             </div>
           )}
@@ -3063,7 +3394,7 @@ export function BgTasksView({
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           {listMode === "tasks"
-            ? "Persistent agents that fire on a schedule or in response to events. Toggle a task inactive to pause it."
+            ? "Persistent tasks that fire on a schedule or in response to events. Toggle a task inactive to pause it."
             : "Every API-worker run across all tasks. Click a run to inspect its timeline; filter by status and trigger."}
         </p>
       </div>

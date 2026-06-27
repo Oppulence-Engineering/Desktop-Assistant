@@ -33,7 +33,7 @@ func (e *afterCreateError) Unwrap() error { return e.err }
 // apply the gist truncation bounds.
 func (h *Handler) validate(req *IngestRequest) error {
 	if _, ok := knownSources[req.Source]; !ok {
-		return &validationError{msg: "source must be one of gmail, google_calendar, slack, webhook, internal"}
+		return &validationError{msg: "source must be one of gmail, google_calendar, google_drive, slack, webhook, mcp, github, linear, stripe, internal"}
 	}
 	if req.DedupeKey == "" {
 		return &validationError{msg: "dedupeKey is required"}

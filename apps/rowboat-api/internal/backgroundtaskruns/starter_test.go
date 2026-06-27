@@ -6,8 +6,10 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
@@ -46,8 +48,9 @@ func (f *fakeController) SignalBackgroundTaskRun(context.Context, string, string
 
 func setup(t *testing.T) (*ent.Client, *ent.User, *ent.BackgroundTask) {
 	t.Helper()
+	dbName := strings.NewReplacer("/", "_", " ", "_").Replace(t.Name())
 	d, err := db.Open(context.Background(), appconfig.Config{
-		DatabaseURL: "file:" + t.Name() + "?mode=memory&cache=shared&_pragma=foreign_keys(1)",
+		DatabaseURL: "file:" + dbName + "?mode=memory&cache=shared&_pragma=foreign_keys(1)",
 		AutoMigrate: true,
 	}, zap.NewNop())
 	if err != nil {
@@ -61,6 +64,55 @@ func setup(t *testing.T) (*ent.Client, *ent.User, *ent.BackgroundTask) {
 		SetInstructions("Run on the server.").SetExecutionTarget("api").
 		SaveX(ctx)
 	return d.Client, u, task
+}
+
+func createUserTask(t *testing.T, client *ent.Client, email, workosID, slug string) (*ent.User, *ent.BackgroundTask) {
+	t.Helper()
+	ctx := context.Background()
+	u := client.User.Create().SetEmail(email).SetWorkosUserID(workosID).SaveX(ctx)
+	task := client.BackgroundTask.Create().
+		SetUser(u).SetSlug(slug).SetName("API Task").
+		SetInstructions("Run on the server.").SetExecutionTarget("api").
+		SaveX(ctx)
+	return u, task
+}
+
+func assertDeadLetterRun(t *testing.T, client *ent.Client, ctx context.Context, run *ent.BackgroundTaskRun, wantCode string, wantRequestedBy backgroundtaskruns.Source, wantPriorityKey int, wantRetryAfterSeconds int) {
+	t.Helper()
+	if run == nil || run.Status != "failed" || run.TemporalStatus != "DeadLettered" || run.ErrorCode != wantCode {
+		t.Fatalf("run = %+v, want failed/DeadLettered/%s", run, wantCode)
+	}
+	ev := client.BackgroundTaskRunEvent.Query().
+		Where(
+			backgroundtaskrunevent.EventTypeEQ(backgroundtaskworkflow.EventDeadLettered),
+			backgroundtaskrunevent.HasRunWith(backgroundtaskrun.IDEQ(run.ID)),
+		).
+		OnlyX(ctx)
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(ev.EventJSON), &payload); err != nil {
+		t.Fatalf("dead-letter event json: %v", err)
+	}
+	if payload["requestedBy"] != string(wantRequestedBy) {
+		t.Fatalf("dead-letter requestedBy = %v, want %s", payload["requestedBy"], wantRequestedBy)
+	}
+	if payload["errorCode"] != wantCode {
+		t.Fatalf("dead-letter errorCode = %v, want %s", payload["errorCode"], wantCode)
+	}
+	gotPriority, ok := payload["priorityKey"].(float64)
+	if !ok || int(gotPriority) != wantPriorityKey {
+		t.Fatalf("dead-letter priorityKey = %v, want %d", payload["priorityKey"], wantPriorityKey)
+	}
+	gotRetryAfter, hasRetryAfter := payload["retryAfterSeconds"]
+	if wantRetryAfterSeconds == 0 {
+		if hasRetryAfter {
+			t.Fatalf("dead-letter retryAfterSeconds = %v, want absent", gotRetryAfter)
+		}
+		return
+	}
+	got, ok := gotRetryAfter.(float64)
+	if !ok || int(got) != wantRetryAfterSeconds {
+		t.Fatalf("dead-letter retryAfterSeconds = %v, want %d", gotRetryAfter, wantRetryAfterSeconds)
+	}
 }
 
 // TestStartCreatesQueuedAPIRunWithInternalContext is the scheduler-shaped call:
@@ -106,6 +158,236 @@ func TestStartCreatesQueuedAPIRunWithInternalContext(t *testing.T) {
 	}
 	if payload["requestedBy"] != "scheduler" || payload["trigger"] != "cron" {
 		t.Fatalf("queued event payload = %+v, want requestedBy=scheduler trigger=cron", payload)
+	}
+}
+
+func TestStartPropagatesTemporalPriority(t *testing.T) {
+	cases := []struct {
+		name        string
+		trigger     string
+		source      backgroundtaskruns.Source
+		prefix      string
+		want        int
+		configure   func(*backgroundtaskruns.Params)
+		eventType   string
+		eventRunKey string
+	}{
+		{name: "manual http high", trigger: "manual", source: backgroundtaskruns.SourceHTTP, prefix: "api-trigger-", want: backgroundtaskworkflow.PriorityHigh, eventType: backgroundtaskworkflow.EventQueued},
+		{
+			name: "retry http high", trigger: "retry", source: backgroundtaskruns.SourceHTTP, prefix: "retry-", want: backgroundtaskworkflow.PriorityHigh, eventType: backgroundtaskworkflow.EventRetryRequested,
+			configure: func(p *backgroundtaskruns.Params) {
+				attempt := 2
+				p.PreviousRunID = "api-trigger-prev"
+				p.RetryOfRunID = "api-trigger-prev"
+				p.Attempt = &attempt
+			},
+		},
+		{name: "event default", trigger: "event", source: backgroundtaskruns.SourceEvent, prefix: "event-", want: backgroundtaskworkflow.PriorityDefault, eventType: backgroundtaskworkflow.EventQueued},
+		{name: "scheduler cron low", trigger: "cron", source: backgroundtaskruns.SourceScheduler, prefix: "sched-cron-", want: backgroundtaskworkflow.PriorityLow, eventType: backgroundtaskworkflow.EventQueued},
+		{name: "scheduler window low", trigger: "window", source: backgroundtaskruns.SourceScheduler, prefix: "sched-window-", want: backgroundtaskworkflow.PriorityLow, eventType: backgroundtaskworkflow.EventQueued},
+		{name: "temporal schedule cron low", trigger: "cron", source: backgroundtaskruns.SourceTemporalSchedule, prefix: "sched-temporal-", want: backgroundtaskworkflow.PriorityLow, eventType: backgroundtaskworkflow.EventQueued},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, u, task := setup(t)
+			ctrl := &fakeController{}
+			starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+			params := backgroundtaskruns.Params{
+				User: u, Task: task, Trigger: tc.trigger, RunIDPrefix: tc.prefix, Source: tc.source,
+			}
+			if tc.configure != nil {
+				tc.configure(&params)
+			}
+			if _, err := starter.Start(auth.WithInternal(context.Background()), params); err != nil {
+				t.Fatalf("Start: %v", err)
+			}
+			if len(ctrl.starts) != 1 {
+				t.Fatalf("starts = %+v", ctrl.starts)
+			}
+			if ctrl.starts[0].PriorityKey != tc.want {
+				t.Fatalf("priority = %d, want %d", ctrl.starts[0].PriorityKey, tc.want)
+			}
+
+			ev := client.BackgroundTaskRunEvent.Query().
+				Where(backgroundtaskrunevent.EventTypeEQ(tc.eventType)).
+				OnlyX(auth.WithInternal(context.Background()))
+			var payload map[string]any
+			if err := json.Unmarshal([]byte(ev.EventJSON), &payload); err != nil {
+				t.Fatalf("event json: %v", err)
+			}
+			gotPriority, ok := payload["priorityKey"].(float64)
+			if !ok || int(gotPriority) != tc.want {
+				t.Fatalf("event priorityKey = %v, want %d", payload["priorityKey"], tc.want)
+			}
+		})
+	}
+}
+
+func TestPriorityForCoversFallbackSources(t *testing.T) {
+	cases := []struct {
+		name    string
+		trigger string
+		source  backgroundtaskruns.Source
+		want    int
+	}{
+		{name: "unknown http defaults", trigger: "custom", source: backgroundtaskruns.SourceHTTP, want: backgroundtaskworkflow.PriorityDefault},
+		{name: "unknown scheduler stays low", trigger: "custom", source: backgroundtaskruns.SourceScheduler, want: backgroundtaskworkflow.PriorityLow},
+		{name: "unknown temporal schedule stays low", trigger: "custom", source: backgroundtaskruns.SourceTemporalSchedule, want: backgroundtaskworkflow.PriorityLow},
+		{name: "empty source defaults", trigger: "custom", source: "", want: backgroundtaskworkflow.PriorityDefault},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := backgroundtaskruns.PriorityFor(tc.trigger, tc.source); got != tc.want {
+				t.Fatalf("PriorityFor(%q, %q) = %d, want %d", tc.trigger, tc.source, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestStartAdmissionBackpressureDeadLettersBeforeTemporal(t *testing.T) {
+	cases := []struct {
+		name      string
+		admission backgroundtaskruns.AdmissionConfig
+		seed      func(t *testing.T, client *ent.Client, u *ent.User, task *ent.BackgroundTask)
+		wantMsg   string
+	}{
+		{
+			name:      "per user",
+			admission: backgroundtaskruns.AdmissionConfig{Enabled: true, MaxInflightPerUser: 1},
+			seed: func(t *testing.T, client *ent.Client, u *ent.User, task *ent.BackgroundTask) {
+				t.Helper()
+				client.BackgroundTaskRun.Create().
+					SetUser(u).SetTask(task).SetRunID("existing-user").
+					SetTrigger("manual").SetStatus("queued").SetExecutor("api").
+					SaveX(auth.WithInternal(context.Background()))
+			},
+			wantMsg: "per-user capacity",
+		},
+		{
+			name:      "global",
+			admission: backgroundtaskruns.AdmissionConfig{Enabled: true, MaxInflightGlobal: 1},
+			seed: func(t *testing.T, client *ent.Client, _ *ent.User, _ *ent.BackgroundTask) {
+				t.Helper()
+				other, otherTask := createUserTask(t, client, "b@x.co", "user_2", "other-api-task")
+				client.BackgroundTaskRun.Create().
+					SetUser(other).SetTask(otherTask).SetRunID("existing-global").
+					SetTrigger("manual").SetStatus("running").SetExecutor("api").
+					SaveX(auth.WithInternal(context.Background()))
+			},
+			wantMsg: "global capacity",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, u, task := setup(t)
+			ctx := auth.WithInternal(context.Background())
+			tc.seed(t, client, u, task)
+			ctrl := &fakeController{}
+			starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+			starter.SetAdmission(tc.admission)
+
+			run, err := starter.Start(ctx, backgroundtaskruns.Params{
+				User: u, Task: task, Trigger: "manual", RunIDPrefix: "api-trigger-", Source: backgroundtaskruns.SourceHTTP,
+			})
+			var rejected *backgroundtaskruns.AdmissionRejectedError
+			if !errors.As(err, &rejected) {
+				t.Fatalf("want AdmissionRejectedError, got %v", err)
+			}
+			if rejected.Code != backgroundtaskworkflow.ErrCodeAdmissionBackpressure || !strings.Contains(rejected.Message, tc.wantMsg) {
+				t.Fatalf("rejection = code %q message %q", rejected.Code, rejected.Message)
+			}
+			assertDeadLetterRun(t, client, ctx, run, backgroundtaskworkflow.ErrCodeAdmissionBackpressure, backgroundtaskruns.SourceHTTP, backgroundtaskworkflow.PriorityHigh, 0)
+			if len(ctrl.starts) != 0 {
+				t.Fatalf("backpressure must not start Temporal, got %+v", ctrl.starts)
+			}
+		})
+	}
+}
+
+func TestStartAdmissionRateLimitDeadLettersBeforeTemporal(t *testing.T) {
+	cases := []struct {
+		name      string
+		admission backgroundtaskruns.AdmissionConfig
+		seed      func(t *testing.T, client *ent.Client, u *ent.User, task *ent.BackgroundTask)
+		wantMsg   string
+	}{
+		{
+			name:      "per user",
+			admission: backgroundtaskruns.AdmissionConfig{Enabled: true, MaxStartsPerWindowPerUser: 1, StartRateWindow: time.Minute},
+			seed: func(t *testing.T, client *ent.Client, u *ent.User, task *ent.BackgroundTask) {
+				t.Helper()
+				client.BackgroundTaskRun.Create().
+					SetUser(u).SetTask(task).SetRunID("recent-user").
+					SetTrigger("manual").SetStatus("failed").SetExecutor("api").
+					SaveX(auth.WithInternal(context.Background()))
+			},
+			wantMsg: "this user",
+		},
+		{
+			name:      "global",
+			admission: backgroundtaskruns.AdmissionConfig{Enabled: true, MaxStartsPerWindowGlobal: 1, StartRateWindow: time.Minute},
+			seed: func(t *testing.T, client *ent.Client, _ *ent.User, _ *ent.BackgroundTask) {
+				t.Helper()
+				other, otherTask := createUserTask(t, client, "b@x.co", "user_2", "other-api-task")
+				client.BackgroundTaskRun.Create().
+					SetUser(other).SetTask(otherTask).SetRunID("recent-global").
+					SetTrigger("manual").SetStatus("failed").SetExecutor("api").
+					SaveX(auth.WithInternal(context.Background()))
+			},
+			wantMsg: "globally",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, u, task := setup(t)
+			ctx := auth.WithInternal(context.Background())
+			tc.seed(t, client, u, task)
+			ctrl := &fakeController{}
+			starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+			starter.SetAdmission(tc.admission)
+
+			run, err := starter.Start(ctx, backgroundtaskruns.Params{
+				User: u, Task: task, Trigger: "manual", RunIDPrefix: "api-trigger-", Source: backgroundtaskruns.SourceHTTP,
+			})
+			var rejected *backgroundtaskruns.AdmissionRejectedError
+			if !errors.As(err, &rejected) {
+				t.Fatalf("want AdmissionRejectedError, got %v", err)
+			}
+			if rejected.Code != backgroundtaskworkflow.ErrCodeAdmissionRateLimited || !strings.Contains(rejected.Message, tc.wantMsg) {
+				t.Fatalf("rejection = code %q message %q", rejected.Code, rejected.Message)
+			}
+			assertDeadLetterRun(t, client, ctx, run, backgroundtaskworkflow.ErrCodeAdmissionRateLimited, backgroundtaskruns.SourceHTTP, backgroundtaskworkflow.PriorityHigh, 60)
+			if len(ctrl.starts) != 0 {
+				t.Fatalf("rate-limited run must not start Temporal, got %+v", ctrl.starts)
+			}
+			if got := client.BackgroundTaskRun.Query().Where(backgroundtaskrun.StatusEQ("failed")).CountX(ctx); got != 2 {
+				t.Fatalf("failed run count = %d, want existing+dead-letter", got)
+			}
+		})
+	}
+}
+
+func TestStartAdmissionRateLimitIgnoresStartsOutsideWindow(t *testing.T) {
+	client, u, task := setup(t)
+	ctx := auth.WithInternal(context.Background())
+	client.BackgroundTaskRun.Create().
+		SetUser(u).SetTask(task).SetRunID("old").
+		SetTrigger("manual").SetStatus("failed").SetExecutor("api").
+		SetCreatedAt(time.Now().UTC().Add(-2 * time.Hour)).
+		SaveX(ctx)
+
+	ctrl := &fakeController{}
+	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+	starter.SetAdmission(backgroundtaskruns.AdmissionConfig{Enabled: true, MaxStartsPerWindowPerUser: 1, StartRateWindow: time.Minute})
+
+	run, err := starter.Start(ctx, backgroundtaskruns.Params{
+		User: u, Task: task, Trigger: "manual", RunIDPrefix: "api-trigger-", Source: backgroundtaskruns.SourceHTTP,
+	})
+	if err != nil {
+		t.Fatalf("old start outside window must not rate-limit: %v", err)
+	}
+	if run.Status != "queued" || len(ctrl.starts) != 1 {
+		t.Fatalf("run status=%q starts=%d, want admitted with one Temporal start", run.Status, len(ctrl.starts))
 	}
 }
 

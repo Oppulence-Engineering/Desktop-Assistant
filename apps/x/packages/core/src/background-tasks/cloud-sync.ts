@@ -124,15 +124,63 @@ class CloudHTTPError extends Error {
   constructor(
     readonly status: number,
     readonly body: string,
+    readonly retryAfterMs?: number,
   ) {
     super(`Background task cloud sync failed: ${status}${body ? ` ${body}` : ""}`);
   }
 }
 
 const remoteRunsInFlight = new Set<string>();
+const taskSyncQueue = new Map<string, Promise<unknown>>();
+const runSyncQueue = new Map<string, Promise<unknown>>();
+const CLOUD_FETCH_MAX_ATTEMPTS = 4;
+const CLOUD_FETCH_RETRY_BASE_MS = 1_000;
+const LOCAL_RUN_EVENT_TYPE_TO_CLOUD: Record<string, string> = {
+  "run-processing-start": "desktop.run_processing_start",
+  "run-processing-end": "desktop.run_processing_end",
+  start: "desktop.start",
+  "spawn-subflow": "desktop.spawn_subflow",
+  "llm-stream-event": "desktop.llm_stream_event",
+  message: "desktop.message",
+  "tool-invocation": "desktop.tool_invocation",
+  "tool-result": "desktop.tool_result",
+  "tool-output-stream": "desktop.tool_output_stream",
+  "ask-human-request": "desktop.ask_human_request",
+  "ask-human-response": "desktop.ask_human_response",
+  "tool-permission-request": "desktop.tool_permission_request",
+  "tool-permission-response": "desktop.tool_permission_response",
+  "code-run-event": "desktop.code_run_event",
+  "code-run-permission-request": "desktop.code_run_permission_request",
+  "tool-permission-auto-decision": "desktop.tool_permission_auto_decision",
+  error: "desktop.error",
+  "run-stopped": "desktop.run_stopped",
+};
 
 function isHTTPStatus(err: unknown, status: number): boolean {
   return err instanceof CloudHTTPError && err.status === status;
+}
+
+function enqueueByKey<T>(
+  queue: Map<string, Promise<unknown>>,
+  key: string,
+  op: () => Promise<T>,
+): Promise<T> {
+  const previous = queue.get(key);
+  const run = (async () => {
+    if (previous) {
+      await previous.catch(() => undefined);
+    }
+    return op();
+  })();
+  const tracked = run
+    .catch(() => undefined)
+    .finally(() => {
+      if (queue.get(key) === tracked) {
+        queue.delete(key);
+      }
+    });
+  queue.set(key, tracked);
+  return run;
 }
 
 export function isCloudAuthUnavailable(err: unknown): boolean {
@@ -145,22 +193,55 @@ export function isCloudAuthUnavailable(err: unknown): boolean {
   );
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseRetryAfterMs(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000;
+  const dateMs = new Date(value).getTime();
+  if (Number.isFinite(dateMs)) return Math.max(0, dateMs - Date.now());
+  return undefined;
+}
+
+function cloudRetryDelayMs(err: CloudHTTPError, attempt: number): number {
+  if (err.retryAfterMs !== undefined) return err.retryAfterMs;
+  return CLOUD_FETCH_RETRY_BASE_MS * 2 ** (attempt - 1);
+}
+
 async function cloudFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = await getAccessToken();
-  const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${token}`);
-  if (init.body !== undefined && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
+  for (let attempt = 1; attempt <= CLOUD_FETCH_MAX_ATTEMPTS; attempt++) {
+    const token = await getAccessToken();
+    const headers = new Headers(init.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    if (init.body !== undefined && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+
+    const res = await fetch(`${API_URL}${path}`, { ...init, headers });
+    if (!res.ok) {
+      const err = new CloudHTTPError(
+        res.status,
+        await res.text().catch(() => ""),
+        parseRetryAfterMs(res.headers.get("Retry-After")),
+      );
+      if (err.status === 429 && attempt < CLOUD_FETCH_MAX_ATTEMPTS) {
+        const delayMs = cloudRetryDelayMs(err, attempt);
+        log.log(`${path} — rate limited, retrying in ${delayMs}ms`);
+        await sleep(delayMs);
+        continue;
+      }
+      throw err;
+    }
+    if (res.status === 204) {
+      return undefined as T;
+    }
+    return (await res.json()) as T;
   }
 
-  const res = await fetch(`${API_URL}${path}`, { ...init, headers });
-  if (!res.ok) {
-    throw new CloudHTTPError(res.status, await res.text().catch(() => ""));
-  }
-  if (res.status === 204) {
-    return undefined as T;
-  }
-  return (await res.json()) as T;
+  throw new Error("unreachable cloud fetch retry state");
 }
 
 function taskPayload(task: BackgroundTask, slug: string): Record<string, unknown> {
@@ -250,7 +331,7 @@ async function syncArtifactToCloud(slug: string): Promise<void> {
   }
 }
 
-export async function syncTaskToCloud(slug: string): Promise<void> {
+async function syncTaskToCloudUnlocked(slug: string): Promise<void> {
   const task = await fetchTask(slug);
   if (!task) {
     await deleteTaskFromCloud(slug);
@@ -287,6 +368,10 @@ export async function syncTaskToCloud(slug: string): Promise<void> {
   if (remote && (task.executionTarget ?? "desktop") === "desktop") {
     await syncArtifactToCloud(slug);
   }
+}
+
+export async function syncTaskToCloud(slug: string): Promise<void> {
+  return enqueueByKey(taskSyncQueue, slug, () => syncTaskToCloudUnlocked(slug));
 }
 
 export async function syncArtifactFromCloud(slug: string): Promise<void> {
@@ -353,6 +438,7 @@ export async function getArtifactSyncState(slug: string): Promise<BackgroundTask
 export async function getCloudScheduleState(
   slug: string,
 ): Promise<BackgroundTaskCloudScheduleStateType> {
+  await syncTaskToCloud(slug);
   return await cloudFetch<BackgroundTaskCloudScheduleStateType>(
     `/v1/background-tasks/${encodeURIComponent(slug)}/schedule-state`,
   );
@@ -461,6 +547,19 @@ export async function listCloudRunEvents(
     `/v1/background-tasks/${encodeURIComponent(slug)}/runs/${encodeURIComponent(runId)}/events${query}`,
   );
   return body.events;
+}
+
+async function lastCloudRunEventSeq(slug: string, runId: string): Promise<number> {
+  let afterSeq: number | undefined;
+  let lastSeq = -1;
+  while (true) {
+    const events = await listCloudRunEvents(slug, runId, afterSeq);
+    if (events.length === 0) return lastSeq;
+    const pageMaxSeq = events.reduce((max, event) => Math.max(max, event.seq), afterSeq ?? -1);
+    if (pageMaxSeq <= (afterSeq ?? -1)) return lastSeq;
+    lastSeq = Math.max(lastSeq, pageMaxSeq);
+    afterSeq = pageMaxSeq;
+  }
 }
 
 export async function triggerCloudRun(
@@ -573,9 +672,10 @@ async function createRemoteRun(slug: string, body: Record<string, unknown>): Pro
 
 async function appendRunEvents(slug: string, runId: string, localRunId: string): Promise<void> {
   const run = await fetchRun(localRunId);
-  const events = run.log.map((event, seq) => ({
-    seq,
-    type: typeof event.type === "string" ? event.type : undefined,
+  const lastSyncedSeq = await lastCloudRunEventSeq(slug, runId);
+  const events = run.log.slice(lastSyncedSeq + 1).map((event, index) => ({
+    seq: lastSyncedSeq + 1 + index,
+    type: LOCAL_RUN_EVENT_TYPE_TO_CLOUD[event.type],
     event,
   }));
   if (events.length === 0) return;
@@ -588,7 +688,7 @@ async function appendRunEvents(slug: string, runId: string, localRunId: string):
   );
 }
 
-export async function syncRunToCloud(
+async function syncRunToCloudUnlocked(
   slug: string,
   localRunId: string,
   trigger: BackgroundTaskTriggerType,
@@ -654,6 +754,18 @@ export async function syncRunToCloud(
       }
     }
   }
+}
+
+export async function syncRunToCloud(
+  slug: string,
+  localRunId: string,
+  trigger: BackgroundTaskTriggerType,
+  result?: BackgroundTaskAgentResult,
+  remoteRunId = localRunId,
+): Promise<void> {
+  return enqueueByKey(runSyncQueue, `${slug}:${remoteRunId}`, () =>
+    syncRunToCloudUnlocked(slug, localRunId, trigger, result, remoteRunId),
+  );
 }
 
 export function syncTaskToCloudBestEffort(slug: string): void {

@@ -167,6 +167,23 @@ func TestLoadCloudSchedulerDefaults(t *testing.T) {
 	}
 }
 
+func TestLoadProviderWebhookSecrets(t *testing.T) {
+	t.Setenv("SLACK_SIGNING_SECRET", "slack-secret")
+	t.Setenv("GOOGLE_WEBHOOK_TOKEN", "google-token")
+	t.Setenv("WEBHOOK_SIGNING_SECRET", "webhook-secret")
+
+	c := Load()
+	if c.SlackSigningSecret != "slack-secret" {
+		t.Fatalf("SlackSigningSecret = %q", c.SlackSigningSecret)
+	}
+	if c.GoogleWebhookToken != "google-token" {
+		t.Fatalf("GoogleWebhookToken = %q", c.GoogleWebhookToken)
+	}
+	if c.WebhookSigningSecret != "webhook-secret" {
+		t.Fatalf("WebhookSigningSecret = %q", c.WebhookSigningSecret)
+	}
+}
+
 // TestLoadCloudSchedulerOverrides checks env overrides flow through Load.
 func TestLoadCloudSchedulerOverrides(t *testing.T) {
 	t.Setenv("CLOUD_SCHEDULER_ENABLED", "true")
@@ -281,9 +298,9 @@ func TestDefaultHostname(t *testing.T) {
 
 // TestCloudRuntimeDefaults locks the RFC 004 runtime knobs: enabled by
 // default (user decision overriding the RFC's ship-dark stance), with the
-// duration ceiling strictly under the 5m Temporal activity timeout.
+// duration ceiling strictly under the execute activity timeout.
 func TestCloudRuntimeDefaults(t *testing.T) {
-	for _, k := range []string{"CLOUD_RUNTIME_ENABLED", "CLOUD_RUNTIME_MODEL", "CLOUD_RUNTIME_MAX_DURATION", "CLOUD_RUNTIME_MAX_LLM_CALLS"} {
+	for _, k := range []string{"CLOUD_RUNTIME_ENABLED", "CLOUD_RUNTIME_MODEL", "CLOUD_RUNTIME_MAX_DURATION", "CLOUD_RUNTIME_MAX_LLM_CALLS", "CLOUD_RUNTIME_SANDBOX_ENABLED", "CLOUD_RUNTIME_SANDBOX_BACKEND", "CLOUD_RUNTIME_SANDBOX_IMAGE", "CLOUD_RUNTIME_SANDBOX_ALLOWED_IMAGES"} {
 		t.Setenv(k, "")
 	}
 	c := Load()
@@ -295,22 +312,79 @@ func TestCloudRuntimeDefaults(t *testing.T) {
 		c.CloudRuntimeMaxArtifactBytes != 1<<20 || c.CloudRuntimeMaxEventBytes != 64<<10 {
 		t.Fatalf("unexpected runtime defaults: %+v", c)
 	}
+	if c.CloudRuntimeSandboxEnabled {
+		t.Fatal("sandbox runtime must default to disabled")
+	}
+	if c.CloudRuntimeSandboxBackend != "kubernetes-job" {
+		t.Fatalf("sandbox backend = %q, want kubernetes-job", c.CloudRuntimeSandboxBackend)
+	}
+	if !imageAllowedByList("mcr.microsoft.com/playwright:v1", c.CloudRuntimeSandboxAllowedImages) {
+		t.Fatalf("sandbox defaults must allow browser-capable images: %v", c.CloudRuntimeSandboxAllowedImages)
+	}
 	if err := c.Validate(); err != nil {
 		t.Fatalf("default config must validate: %v", err)
 	}
 }
 
 // TestCloudRuntimeDurationCoupling rejects a runtime deadline at or above the
-// activity StartToCloseTimeout (it would mask runtime_deadline_exceeded as
+// execute activity StartToCloseTimeout (it would mask runtime_deadline_exceeded as
 // activity_timeout).
 func TestCloudRuntimeDurationCoupling(t *testing.T) {
 	c := baseConfig()
-	c.CloudRuntimeMaxDuration = 5 * time.Minute
+	c.CloudRuntimeMaxDuration = 30 * time.Minute
 	if err := c.Validate(); err == nil {
-		t.Fatal("5m runtime duration must be rejected (activity timeout is 5m)")
+		t.Fatal("30m runtime duration must be rejected (execute activity timeout is 30m)")
 	}
-	c.CloudRuntimeMaxDuration = 4 * time.Minute
+	c.CloudRuntimeMaxDuration = 29 * time.Minute
 	if err := c.Validate(); err != nil {
-		t.Fatalf("4m must validate: %v", err)
+		t.Fatalf("29m must validate: %v", err)
+	}
+}
+
+func TestValidateCloudRuntimeSandbox(t *testing.T) {
+	c := baseConfig()
+	c.CloudRuntimeSandboxEnabled = true
+	c.CloudRuntimeMaxDuration = 20 * time.Minute
+	c.CloudRuntimeSandboxImage = "python:3.12-slim"
+	c.CloudRuntimeSandboxAllowedImages = []string{"python:3.12-slim", "mcr.microsoft.com/playwright:*"}
+	c.CloudRuntimeSandboxMaxDuration = 10 * time.Minute
+	c.CloudRuntimeSandboxPollInterval = 5 * time.Second
+	c.CloudRuntimeSandboxMaxScriptBytes = 32 << 10
+	c.CloudRuntimeSandboxMaxOutputBytes = 64 << 10
+	c.CloudRuntimeSandboxTTLSeconds = 600
+	if err := c.Validate(); err != nil {
+		t.Fatalf("valid sandbox config rejected: %v", err)
+	}
+
+	c.CloudRuntimeSandboxMaxDuration = 21 * time.Minute
+	if err := c.Validate(); err == nil {
+		t.Fatal("sandbox max duration above runtime max must be rejected")
+	}
+}
+
+func TestValidateCloudRuntimeSandboxBackend(t *testing.T) {
+	c := baseConfig()
+	c.CloudRuntimeSandboxEnabled = true
+	c.CloudRuntimeMaxDuration = 20 * time.Minute
+	c.CloudRuntimeSandboxBackend = "argo-workflow"
+	c.CloudRuntimeSandboxImage = "python:3.12-slim"
+	c.CloudRuntimeSandboxAllowedImages = []string{"python:3.12-slim"}
+	c.CloudRuntimeSandboxServiceAccount = "rowboat-sandbox"
+	c.CloudRuntimeSandboxMaxDuration = 10 * time.Minute
+	c.CloudRuntimeSandboxPollInterval = 5 * time.Second
+	c.CloudRuntimeSandboxMaxScriptBytes = 32 << 10
+	c.CloudRuntimeSandboxMaxOutputBytes = 64 << 10
+	c.CloudRuntimeSandboxTTLSeconds = 600
+	if err := c.Validate(); err != nil {
+		t.Fatalf("argo sandbox config rejected: %v", err)
+	}
+
+	c.CloudRuntimeSandboxServiceAccount = ""
+	if err := c.Validate(); err == nil {
+		t.Fatal("argo sandbox backend must require a service account")
+	}
+	c.CloudRuntimeSandboxBackend = "not-real"
+	if err := c.Validate(); err == nil {
+		t.Fatal("unknown sandbox backend must be rejected")
 	}
 }

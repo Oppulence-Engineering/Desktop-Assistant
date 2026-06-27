@@ -28,6 +28,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlewatch"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
@@ -147,6 +148,7 @@ func buildWatchManager(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		TokenURL:         cfg.GoogleTokenURL, // empty → real Google endpoint
 		GmailBaseURL:     cfg.GmailAPIBaseURL,
 		CalendarBaseURL:  cfg.CalendarAPIBaseURL,
+		DriveBaseURL:     cfg.DriveAPIBaseURL,
 	}, log), nil
 }
 
@@ -217,7 +219,13 @@ func runScheduler(ctx context.Context, cfg appconfig.Config, log *zap.Logger, da
 	// Temporal is connected — the scheduler can now create runs, so report ready.
 	ready.Store(true)
 
+	prices, err := pricing.LoadJSON([]byte(cfg.PricingJSON))
+	if err != nil {
+		return err
+	}
+	gate := quota.New(database.Client, log)
 	starter := backgroundtaskruns.New(database.Client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log)
+	starter.SetAdmission(backgroundtaskruns.AdmissionFromConfig(cfg, gate, prices))
 
 	if cfg.TemporalSchedulesEnabled {
 		// RFC 005: the reconciler repairs Temporal Schedule drift (failed

@@ -22,6 +22,12 @@ spec:
         - name: postgres
           image: postgres:16-alpine
           imagePullPolicy: IfNotPresent
+          args:
+            - postgres
+            - -c
+            - shared_buffers=32MB
+            - -c
+            - max_connections=100
           ports:
             - name: postgres
               containerPort: 5432
@@ -42,9 +48,17 @@ spec:
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 50m
+              memory: 160Mi
+            limits:
+              cpu: "500m"
+              memory: 768Mi
       volumes:
         - name: postgres-data
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -95,6 +109,13 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 10
             failureThreshold: 12
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: "250m"
+              memory: 128Mi
 ---
 apiVersion: v1
 kind: Service
@@ -227,6 +248,13 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 10
             failureThreshold: 12
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: "250m"
+              memory: 256Mi
 ---
 apiVersion: v1
 kind: Service

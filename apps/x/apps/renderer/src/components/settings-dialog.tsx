@@ -34,14 +34,19 @@ import {
   Bell,
 } from "@/lib/icons";
 
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { AnimatePresence, motion } from "motion/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AccountSettings } from "@/components/settings/account-settings";
 import { ConnectedAccountsSettings } from "@/components/settings/connected-accounts-settings";
@@ -628,6 +633,7 @@ function ToolsLibrarySettings({
                           size="sm"
                           onClick={() => handleDisconnect(toolkit.slug)}
                           className="text-xs h-7 shrink-0"
+                          aria-label={`Disconnect ${toolkit.name}`}
                         >
                           Disconnect
                         </Button>
@@ -637,6 +643,7 @@ function ToolsLibrarySettings({
                           onClick={() => handleConnect(toolkit.slug)}
                           disabled={isConnecting}
                           className="text-xs h-7 shrink-0"
+                          aria-label={`Connect ${toolkit.name}`}
                         >
                           {isConnecting ? (
                             <>
@@ -822,10 +829,11 @@ function TagGroupTable({
       {!collapsed && group.tags.length === 0 && (
         <button
           onClick={onAdd}
+          aria-label={`Add ${group.label.toLowerCase()} tag`}
           className="flex w-full items-center justify-center gap-1.5 rounded-none border border-dashed py-3 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
         >
           <Plus className="size-3.5" />
-          Add a {group.label.toLowerCase()} tag
+          Add tag
         </button>
       )}
     </div>
@@ -871,7 +879,7 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
       list.push(tag);
       map.set(tag.type, list);
     }
-    return NOTE_TAG_TYPE_ORDER.filter((type) => map.has(type)).map((type) => ({
+    return NOTE_TAG_TYPE_ORDER.map((type) => ({
       type,
       label: TAG_TYPE_LABELS[type],
       tags: map.get(type) ?? [],
@@ -886,7 +894,7 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
       list.push(tag);
       map.set(tag.type, list);
     }
-    return EMAIL_TAG_TYPE_ORDER.filter((type) => map.has(type)).map((type) => ({
+    return EMAIL_TAG_TYPE_ORDER.map((type) => ({
       type,
       label: TAG_TYPE_LABELS[type],
       tags: map.get(type) ?? [],
@@ -897,14 +905,19 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
     (type: string, localIndex: number) => {
       let count = 0;
       for (let i = 0; i < tags.length; i++) {
-        if (tags[i].type === type) {
+        if (
+          tags[i].type === type &&
+          (activeSection === "notes"
+            ? tags[i].applicability !== "email"
+            : tags[i].applicability !== "notes")
+        ) {
           if (count === localIndex) return i;
           count++;
         }
       }
       return -1;
     },
-    [tags],
+    [tags, activeSection],
   );
 
   const updateTag = useCallback((index: number, field: keyof TagDef, value: string | boolean) => {
@@ -1290,7 +1303,12 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
               installed agents.
             </div>
           </div>
-          <Switch checked={enabled} onCheckedChange={handleToggle} disabled={saving} />
+          <Switch
+            checked={enabled}
+            onCheckedChange={handleToggle}
+            disabled={saving}
+            aria-label="Enable code mode"
+          />
         </div>
       </SettingsSection>
 
@@ -1398,6 +1416,7 @@ function NotificationSettings() {
             checked={cloudRunsOfflineNotify}
             onCheckedChange={(next) => void handleToggle(next)}
             disabled={!loaded || saving}
+            aria-label="System notifications for missed runs"
           />
         </div>
       </SettingsSection>
@@ -1442,10 +1461,7 @@ export function SettingsDialog({
       });
   }, [open]);
 
-  const visibleTabs = useMemo(
-    () => (solomonConnected ? tabs.filter((t) => t.id !== "models") : tabs),
-    [solomonConnected],
-  );
+  const visibleTabs = tabs;
 
   const activeTabConfig = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0];
 
@@ -1455,6 +1471,11 @@ export function SettingsDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="rowboat-settings w-[1000px]! max-w-[96vw]! h-[660px] max-h-[88vh] p-0 gap-0 overflow-hidden">
+        <DialogTitle className="sr-only">Settings</DialogTitle>
+        <DialogDescription className="sr-only">
+          Manage account, connections, models, transcription, appearance, security, and memory
+          settings.
+        </DialogDescription>
         <div className="flex h-full overflow-hidden">
           {/* Sidebar nav — grouped, ElevenLabs developer-console rail */}
           <div className="flex w-60 shrink-0 flex-col border-r bg-muted/20">
@@ -1527,66 +1548,55 @@ export function SettingsDialog({
               </div>
             </div>
 
-            {/* Content — animated per-tab */}
-            <div className="min-h-0 flex-1">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex h-full min-h-0 flex-col"
-                >
-                  {activeTab === "note-tagging" ? (
-                    // NoteTaggingSettings owns its own internal scroll.
-                    <div className="flex min-h-0 flex-1 flex-col px-6 py-5">
-                      <NoteTaggingSettings dialogOpen={open} />
+            {/* Content */}
+            <div className="flex min-h-0 flex-1 flex-col">
+              {activeTab === "note-tagging" ? (
+                // NoteTaggingSettings owns its own internal scroll.
+                <div className="flex min-h-0 flex-1 flex-col px-6 py-5">
+                  <NoteTaggingSettings dialogOpen={open} />
+                </div>
+              ) : (
+                <ScrollArea className="flex-1 px-6 py-5">
+                  {activeTab === "account" ? (
+                    <AccountSettings dialogOpen={open} />
+                  ) : activeTab === "connections" ? (
+                    <div className="space-y-6">
+                      <SettingsSection title="Primary accounts">
+                        <ConnectedAccountsSettings dialogOpen={open} />
+                      </SettingsSection>
+                      <Separator />
+                      <SettingsSection title="Library">
+                        <ToolsLibrarySettings
+                          dialogOpen={open}
+                          rowboatConnected={solomonConnected}
+                        />
+                      </SettingsSection>
                     </div>
-                  ) : (
-                    <ScrollArea className="flex-1 px-6 py-5">
-                      {activeTab === "account" ? (
-                        <AccountSettings dialogOpen={open} />
-                      ) : activeTab === "connections" ? (
-                        <div className="space-y-6">
-                          <SettingsSection title="Primary accounts">
-                            <ConnectedAccountsSettings dialogOpen={open} />
-                          </SettingsSection>
-                          <Separator />
-                          <SettingsSection title="Library">
-                            <ToolsLibrarySettings
-                              dialogOpen={open}
-                              rowboatConnected={solomonConnected}
-                            />
-                          </SettingsSection>
-                        </div>
-                      ) : activeTab === "models" ? (
-                        solomonConnected ? (
-                          <SolomonModelSettings dialogOpen={open} />
-                        ) : (
-                          <ModelSettings dialogOpen={open} />
-                        )
-                      ) : activeTab === "transcription" ? (
-                        <TranscriptionSettings dialogOpen={open} />
-                      ) : activeTab === "notifications" ? (
-                        <NotificationSettings />
-                      ) : activeTab === "appearance" ? (
-                        <AppearanceSettings />
-                      ) : activeTab === "help" ? (
-                        <HelpSettings />
-                      ) : activeTab === "code-mode" ? (
-                        <CodeModeSettings dialogOpen={open} />
-                      ) : activeTab === "mcp" ? (
-                        <McpSettings dialogOpen={open} />
-                      ) : activeTab === "security" ? (
-                        <SecuritySettings dialogOpen={open} />
-                      ) : activeTab === "memory" ? (
-                        <MemorySettings dialogOpen={open} />
-                      ) : null}
-                    </ScrollArea>
-                  )}
-                </motion.div>
-              </AnimatePresence>
+                  ) : activeTab === "models" ? (
+                    solomonConnected ? (
+                      <SolomonModelSettings dialogOpen={open} />
+                    ) : (
+                      <ModelSettings dialogOpen={open} />
+                    )
+                  ) : activeTab === "transcription" ? (
+                    <TranscriptionSettings dialogOpen={open} />
+                  ) : activeTab === "notifications" ? (
+                    <NotificationSettings />
+                  ) : activeTab === "appearance" ? (
+                    <AppearanceSettings />
+                  ) : activeTab === "help" ? (
+                    <HelpSettings />
+                  ) : activeTab === "code-mode" ? (
+                    <CodeModeSettings dialogOpen={open} />
+                  ) : activeTab === "mcp" ? (
+                    <McpSettings dialogOpen={open} />
+                  ) : activeTab === "security" ? (
+                    <SecuritySettings dialogOpen={open} />
+                  ) : activeTab === "memory" ? (
+                    <MemorySettings dialogOpen={open} />
+                  ) : null}
+                </ScrollArea>
+              )}
             </div>
           </div>
         </div>
