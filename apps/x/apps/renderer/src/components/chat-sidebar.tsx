@@ -34,6 +34,7 @@ import { PermissionRequest } from "@/components/ai-elements/permission-request";
 import { AutoPermissionDecision } from "@/components/ai-elements/auto-permission-decision";
 import { TerminalOutput } from "@/components/terminal-output";
 import { AskHumanRequest } from "@/components/ai-elements/ask-human-request";
+import { AppActionCard } from "@/components/ai-elements/app-action-card";
 import { type PromptInputMessage, type FileMention } from "@/components/ai-elements/prompt-input";
 import { FileCardProvider } from "@/contexts/file-card-context";
 import { MarkdownPreOverride } from "@/components/ai-elements/markdown-code-override";
@@ -57,6 +58,7 @@ import {
   type PermissionResponse,
   createEmptyChatTabViewState,
   getWebSearchCardData,
+  getAppActionCardData,
   getComposioConnectCardData,
   getToolDisplayName,
   groupConversationItems,
@@ -105,7 +107,7 @@ function AutoScrollPre({ className, children }: { className?: string; children: 
 
 const MIN_WIDTH = 360;
 const MAX_WIDTH = 1600;
-const MIN_MAIN_PANE_WIDTH = 360;
+const MIN_MAIN_PANE_WIDTH = 420;
 const MIN_MAIN_PANE_RATIO = 0.3;
 const DEFAULT_WIDTH = 460;
 const RIGHT_PANE_WIDTH_STORAGE_KEY = "x:right-pane-width";
@@ -182,6 +184,9 @@ interface ChatSidebarProps {
     scope?: "once" | "session" | "always",
   ) => void;
   onAskHumanResponse?: (toolCallId: string, subflow: string[], response: string) => void;
+  // Swap coding agent (Claude Code <-> Codex) and retry for a coding-command
+  // permission request — parity with the full-screen chat. (ERRORS.md E02)
+  onSwitchAgent?: (toolCallId: string, subflow: string[], newAgent: "claude" | "codex") => void;
   isToolOpenForTab?: (tabId: string, toolId: string) => boolean;
   onToolOpenChangeForTab?: (tabId: string, toolId: string, open: boolean) => void;
   onOpenKnowledgeFile?: (path: string) => void;
@@ -243,6 +248,7 @@ export function ChatSidebar({
   autoPermissionDecisions = new Map(),
   onPermissionResponse,
   onAskHumanResponse,
+  onSwitchAgent,
   isToolOpenForTab,
   onToolOpenChangeForTab,
   onOpenKnowledgeFile,
@@ -319,6 +325,7 @@ export function ChatSidebar({
     const clampToAvailableWidth = () => {
       const nextMaxAllowedWidth = getMaxAllowedWidth();
       setMaxAllowedWidth(nextMaxAllowedWidth);
+      setWidth((prev) => clampPaneWidth(prev, nextMaxAllowedWidth));
     };
 
     clampToAvailableWidth();
@@ -500,6 +507,12 @@ export function ChatSidebar({
       }
       if (item.name === "memory-search") {
         return <MemorySearchSources key={item.id} result={item.result} status={item.status} />;
+      }
+      // app-navigation tool calls render as a friendly AppActionCard (parity with
+      // the full-screen chat), not a raw-JSON Tool card. (ERRORS.md E03)
+      const appActionData = getAppActionCardData(item);
+      if (appActionData) {
+        return <AppActionCard key={item.id} data={appActionData} status={item.status} />;
       }
       const toolTitle = getToolDisplayName(item);
       const errorText = item.status === "error" ? "Tool error" : "";
@@ -797,6 +810,16 @@ export function ChatSidebar({
                                                 "deny",
                                               )
                                             }
+                                            onSwitchAgent={
+                                              onSwitchAgent
+                                                ? (newAgent) =>
+                                                    onSwitchAgent(
+                                                      permRequest.toolCall.toolCallId,
+                                                      permRequest.subflow,
+                                                      newAgent,
+                                                    )
+                                                : undefined
+                                            }
                                             isProcessing={isActive && isProcessing}
                                             response={response}
                                           />
@@ -815,6 +838,7 @@ export function ChatSidebar({
                                     <AskHumanRequest
                                       key={request.toolCallId}
                                       query={request.query}
+                                      options={request.options}
                                       onResponse={(response) =>
                                         onAskHumanResponse(
                                           request.toolCallId,

@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Wrench,
 } from "@/lib/icons";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -260,6 +261,12 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
           return next;
         });
         await refreshModels();
+      } else {
+        // ... (ERRORS.md E59) ensureModel resolves {success:false,code} instead
+        // of throwing; surface it so the bar doesn't just vanish silently.
+        toast.error("Couldn't download model", {
+          description: res.code ? `Reason: ${res.code}` : undefined,
+        });
       }
     },
     [benchmarkBusy, refreshModels],
@@ -313,6 +320,18 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         });
         setHealth((prev) => ({ ...prev, [id]: result }));
         await refreshModels();
+      } catch (err) {
+        // ... (ERRORS.md E60) repairModel can reject; surface it and re-check
+        // health so the UI doesn't silently keep showing stale state.
+        toast.error("Couldn't repair model", {
+          description: err instanceof Error ? err.message : undefined,
+        });
+        try {
+          const health = await window.ipc.invoke("whisper:verifyModel", { id });
+          setHealth((prev) => ({ ...prev, [id]: health }));
+        } catch {
+          /* health refresh is best-effort */
+        }
       } finally {
         setHealthOp((prev) => {
           const next = { ...prev };
@@ -380,6 +399,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
             onSelect={() => changeVoiceProvider("whisper-local")}
             title="On-device (Whisper)"
             hint="Private · offline · free"
+            disabled={capability?.supported === false}
           />
           <ProviderOption
             icon={Cloud}
@@ -618,6 +638,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 ? "Private · local beta speaker labels"
                 : "Private · no speaker labels"
             }
+            disabled={capability?.supported === false}
           />
           {meetingProvider === "whisper-local" && (
             <button
@@ -661,20 +682,25 @@ function ProviderOption({
   icon: Icon,
   title,
   hint,
+  disabled = false,
 }: {
   selected: boolean;
   onSelect: () => void;
   icon: React.ElementType;
   title: string;
   hint: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onSelect}
+      disabled={disabled}
       aria-pressed={selected}
       className={cn(
         "flex w-full items-center gap-3 rounded-none border px-3.5 py-3 text-left transition-all",
+        // ... (ERRORS.md E61) Dim + block selection when local isn't supported.
+        disabled && "cursor-not-allowed opacity-50",
         selected
           ? "border-primary bg-primary/[0.03] ring-2 ring-primary/20"
           : "border-border hover:border-primary/40 hover:bg-muted/40",
@@ -692,7 +718,9 @@ function ProviderOption({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[13px] font-medium text-foreground">{title}</span>
-        <span className="block text-xs text-muted-foreground">{hint}</span>
+        <span className="block text-xs text-muted-foreground">
+          {disabled ? "Not supported on this device — will use cloud" : hint}
+        </span>
       </span>
       <span
         className={cn(

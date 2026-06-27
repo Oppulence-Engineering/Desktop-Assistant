@@ -61,7 +61,10 @@ import { consumePendingDeepLink } from "./deeplink.js";
 import { qualifyAndDisconnectComposioGoogle } from "@x/core/dist/migrations/composio-google-migration.js";
 import { IAgentScheduleRepo } from "@x/core/dist/agent-schedule/repo.js";
 import { IAgentScheduleStateRepo } from "@x/core/dist/agent-schedule/state-repo.js";
-import { triggerRun as triggerAgentScheduleRun } from "@x/core/dist/agent-schedule/runner.js";
+import {
+  triggerRun as triggerAgentScheduleRun,
+  calculateNextRunAt as calculateAgentNextRunAt,
+} from "@x/core/dist/agent-schedule/runner.js";
 import { loadAgent } from "@x/core/dist/agents/runtime.js";
 import { search } from "@x/core/dist/search/search.js";
 import { memorySearch, relatedNotes, memoryStatus } from "@x/core/dist/memory/index.js";
@@ -89,6 +92,7 @@ import {
 } from "@x/core/dist/knowledge/inline_tasks.js";
 import { getBillingInfo } from "@x/core/dist/billing/billing.js";
 import { submitFeedback } from "@x/core/dist/feedback/feedback.js";
+import { AuthUnavailableError } from "@x/core/dist/auth/refresh-errors.js";
 import { summarizeMeeting } from "@x/core/dist/knowledge/summarize_meeting.js";
 import { getAccessToken } from "@x/core/dist/auth/tokens.js";
 import { getSolomonConfig } from "@x/core/dist/config/solomon.js";
@@ -1073,6 +1077,16 @@ export function setupIpcHandlers() {
       }
       const repo = container.resolve<IAgentScheduleRepo>("agentScheduleRepo");
       await repo.upsert(agentName, args.entry);
+      // Recompute nextRunAt from the (possibly changed) schedule so the runner
+      // honors the new cadence on its next tick instead of firing on the stale
+      // nextRunAt (which used the old schedule, or a past time after re-enable). (ERRORS.md E58)
+      try {
+        const stateRepo = container.resolve<IAgentScheduleStateRepo>("agentScheduleStateRepo");
+        const nextRunAt = calculateAgentNextRunAt(args.entry.schedule);
+        await stateRepo.updateAgentState(agentName, { nextRunAt });
+      } catch (e) {
+        console.error("[agent-schedule:updateAgent] failed to recompute nextRunAt", e);
+      }
       // Trigger the runner to pick up the change immediately
       triggerAgentScheduleRun();
       return { success: true };
@@ -1717,11 +1731,20 @@ export function setupIpcHandlers() {
         return { success: true };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        // Branch on the typed auth reason rather than substring-matching the
+        // message (which breaks for reconnect_required/refresh_backoff and is
+        // fragile to wording changes). (ERRORS.md E54)
+        let errorCode: "not_signed_in" | "server" = "server";
+        if (err instanceof AuthUnavailableError) {
+          // not_signed_in + reconnect_required both need the user to (re)auth →
+          // prompt sign-in; refresh_backoff is transient → generic retry.
+          errorCode = err.reason === "refresh_backoff" ? "server" : "not_signed_in";
+        } else if (message.includes("Not signed into")) {
+          errorCode = "not_signed_in";
+        }
         return {
           success: false,
-          errorCode: message.includes("Not signed into")
-            ? ("not_signed_in" as const)
-            : ("server" as const),
+          errorCode,
           error: message,
         };
       }

@@ -1,32 +1,39 @@
-import type { ApprovalPolicy, CodeRunEvent, CodingAgent, PermissionAsk, PermissionDecision, RunPromptResult } from './types.js';
-import { AcpClient } from './client.js';
-import { PermissionBroker } from './permission-broker.js';
-import { readStoredSession, writeStoredSession, clearStoredSession } from './session-store.js';
+import type {
+  ApprovalPolicy,
+  CodeRunEvent,
+  CodingAgent,
+  PermissionAsk,
+  PermissionDecision,
+  RunPromptResult,
+} from "./types.js";
+import { AcpClient } from "./client.js";
+import { PermissionBroker } from "./permission-broker.js";
+import { readStoredSession, writeStoredSession, clearStoredSession } from "./session-store.js";
 
 export interface RunPromptArgs {
-    runId: string;
-    agent: CodingAgent;
-    cwd: string;
-    prompt: string;
-    policy: ApprovalPolicy;
-    /** Called when the policy needs the user to decide (the "ask" path). */
-    ask: (ask: PermissionAsk) => Promise<PermissionDecision>;
-    /** Stream sink for this prompt's run. */
-    onEvent: (event: CodeRunEvent) => void;
-    /** Aborts the turn on stop; the manager cancels then force-kills the adapter. */
-    signal?: AbortSignal;
+  runId: string;
+  agent: CodingAgent;
+  cwd: string;
+  prompt: string;
+  policy: ApprovalPolicy;
+  /** Called when the policy needs the user to decide (the "ask" path). */
+  ask: (ask: PermissionAsk) => Promise<PermissionDecision>;
+  /** Stream sink for this prompt's run. */
+  onEvent: (event: CodeRunEvent) => void;
+  /** Aborts the turn on stop; the manager cancels then force-kills the adapter. */
+  signal?: AbortSignal;
 }
 
 interface ActiveRun {
-    client: AcpClient;
-    sessionId: string;
-    agent: CodingAgent;
-    cwd: string;
-    // Prompts currently streaming on this connection. Disposal is deferred while
-    // this is > 0 so we never tear down a connection mid-turn.
-    inflight: number;
-    // Pending grace-window teardown, cleared if the run is reused before it fires.
-    disposeTimer?: ReturnType<typeof setTimeout>;
+  client: AcpClient;
+  sessionId: string;
+  agent: CodingAgent;
+  cwd: string;
+  // Prompts currently streaming on this connection. Disposal is deferred while
+  // this is > 0 so we never tear down a connection mid-turn.
+  inflight: number;
+  // Pending grace-window teardown, cleared if the run is reused before it fires.
+  disposeTimer?: ReturnType<typeof setTimeout>;
 }
 
 // How long a connection stays warm after its last turn ends before we tear it down.
@@ -48,142 +55,151 @@ const CANCEL_GRACE_MS = 2_000;
 // the warm connection; anything colder (grace elapsed, or after an app restart)
 // resumes the persisted session via session/load.
 export class CodeModeManager {
-    private readonly runs = new Map<string, ActiveRun>();
+  private readonly runs = new Map<string, ActiveRun>();
 
-    async runPrompt(args: RunPromptArgs): Promise<RunPromptResult> {
-        const { runId, agent, cwd, prompt, policy, ask, onEvent, signal } = args;
+  async runPrompt(args: RunPromptArgs): Promise<RunPromptResult> {
+    const { runId, agent, cwd, prompt, policy, ask, onEvent, signal } = args;
 
-        const broker = new PermissionBroker({
-            policy,
-            ask,
-            onResolved: (a, decision, auto) => onEvent({ type: 'permission', ask: a, decision, auto }),
-        });
+    const broker = new PermissionBroker({
+      policy,
+      ask,
+      onResolved: (a, decision, auto) => onEvent({ type: "permission", ask: a, decision, auto }),
+    });
 
-        const run = await this.ensureRun(runId, agent, cwd, broker, onEvent);
-        run.inflight++;
+    const run = await this.ensureRun(runId, agent, cwd, broker, onEvent);
+    run.inflight++;
 
-        let graceTimer: ReturnType<typeof setTimeout> | undefined;
-        let onAbort: (() => void) | undefined;
-        try {
-            const promptP = run.client.prompt(run.sessionId, prompt);
-            // We may stop awaiting this prompt below (force-kill on stop rejects it);
-            // attach a no-op catch so the orphaned rejection isn't flagged.
-            promptP.catch(() => {});
+    let graceTimer: ReturnType<typeof setTimeout> | undefined;
+    let onAbort: (() => void) | undefined;
+    try {
+      const promptP = run.client.prompt(run.sessionId, prompt);
+      // We may stop awaiting this prompt below (force-kill on stop rejects it);
+      // attach a no-op catch so the orphaned rejection isn't flagged.
+      promptP.catch(() => {});
 
-            // Stop handling: on abort, ask the adapter to cancel; if it hasn't unwound
-            // within the grace, force-kill it and resolve as cancelled. This guarantees
-            // the turn ends even if the adapter ignores cancel or is wedged — a hung
-            // prompt would otherwise lock the chat (no run-stopped, composer disabled).
-            const cancelledP = new Promise<{ stopReason: string }>((resolve) => {
-                if (!signal) return;
-                onAbort = () => {
-                    run.client.cancel(run.sessionId).catch(() => {});
-                    graceTimer = setTimeout(() => {
-                        this.dispose(runId);
-                        resolve({ stopReason: 'cancelled' });
-                    }, CANCEL_GRACE_MS);
-                    graceTimer.unref?.();
-                };
-                if (signal.aborted) onAbort();
-                else signal.addEventListener('abort', onAbort, { once: true });
-            });
-
-            const res = await Promise.race([promptP, cancelledP]);
-            return { stopReason: res.stopReason, sessionId: run.sessionId };
-        } catch (e) {
-            // A kill-induced "connection closed" during a stop is an expected cancel.
-            if (signal?.aborted) return { stopReason: 'cancelled', sessionId: run.sessionId };
-            throw e;
-        } finally {
-            if (signal && onAbort) signal.removeEventListener('abort', onAbort);
-            if (graceTimer) clearTimeout(graceTimer);
-            run.inflight--;
-            this.scheduleDispose(runId);
-        }
-    }
-
-    dispose(runId: string): void {
-        const run = this.runs.get(runId);
-        if (!run) return;
-        this.cancelDispose(run);
-        run.client.dispose();
-        this.runs.delete(runId);
-    }
-
-    // Tear down the connection a grace window after its last turn ends. Skipped while a
-    // prompt is still streaming, and re-armed when each turn ends so the window measures
-    // idle-since-last-activity. With grace 0 we dispose immediately (strict per-turn).
-    private scheduleDispose(runId: string): void {
-        const run = this.runs.get(runId);
-        if (!run || run.inflight > 0) return;
-        this.cancelDispose(run);
-        if (DISPOSE_GRACE_MS <= 0) {
+      // Stop handling: on abort, ask the adapter to cancel; if it hasn't unwound
+      // within the grace, force-kill it and resolve as cancelled. This guarantees
+      // the turn ends even if the adapter ignores cancel or is wedged — a hung
+      // prompt would otherwise lock the chat (no run-stopped, composer disabled).
+      const cancelledP = new Promise<{ stopReason: string }>((resolve) => {
+        if (!signal) return;
+        onAbort = () => {
+          run.client.cancel(run.sessionId).catch(() => {});
+          graceTimer = setTimeout(() => {
             this.dispose(runId);
-            return;
-        }
-        run.disposeTimer = setTimeout(() => {
-            const r = this.runs.get(runId);
-            if (r && r.inflight === 0) this.dispose(runId);
-        }, DISPOSE_GRACE_MS);
-        // A pending teardown timer must not keep the process alive at quit.
-        run.disposeTimer.unref?.();
+            resolve({ stopReason: "cancelled" });
+          }, CANCEL_GRACE_MS);
+          graceTimer.unref?.();
+        };
+        if (signal.aborted) onAbort();
+        else signal.addEventListener("abort", onAbort, { once: true });
+      });
+
+      const res = await Promise.race([promptP, cancelledP]);
+      return { stopReason: res.stopReason, sessionId: run.sessionId };
+    } catch (e) {
+      // A kill-induced "connection closed" during a stop is an expected cancel.
+      if (signal?.aborted) return { stopReason: "cancelled", sessionId: run.sessionId };
+      throw e;
+    } finally {
+      if (signal && onAbort) signal.removeEventListener("abort", onAbort);
+      if (graceTimer) clearTimeout(graceTimer);
+      run.inflight--;
+      this.scheduleDispose(runId);
     }
+  }
 
-    private cancelDispose(run: ActiveRun): void {
-        if (run.disposeTimer) {
-            clearTimeout(run.disposeTimer);
-            run.disposeTimer = undefined;
-        }
+  dispose(runId: string): void {
+    const run = this.runs.get(runId);
+    if (!run) return;
+    this.cancelDispose(run);
+    run.client.dispose();
+    this.runs.delete(runId);
+  }
+
+  // Tear down the connection a grace window after its last turn ends. Skipped while a
+  // prompt is still streaming, and re-armed when each turn ends so the window measures
+  // idle-since-last-activity. With grace 0 we dispose immediately (strict per-turn).
+  private scheduleDispose(runId: string): void {
+    const run = this.runs.get(runId);
+    if (!run || run.inflight > 0) return;
+    this.cancelDispose(run);
+    if (DISPOSE_GRACE_MS <= 0) {
+      this.dispose(runId);
+      return;
     }
+    run.disposeTimer = setTimeout(() => {
+      const r = this.runs.get(runId);
+      if (r && r.inflight === 0) this.dispose(runId);
+    }, DISPOSE_GRACE_MS);
+    // A pending teardown timer must not keep the process alive at quit.
+    run.disposeTimer.unref?.();
+  }
 
-    disposeAll(): void {
-        for (const runId of [...this.runs.keys()]) this.dispose(runId);
+  private cancelDispose(run: ActiveRun): void {
+    if (run.disposeTimer) {
+      clearTimeout(run.disposeTimer);
+      run.disposeTimer = undefined;
     }
+  }
 
-    // Reuse the warm connection if it matches; otherwise (cold start, or the user
-    // switched agent/cwd for this chat) build a fresh one and create-or-resume its session.
-    private async ensureRun(
-        runId: string,
-        agent: CodingAgent,
-        cwd: string,
-        broker: PermissionBroker,
-        onEvent: (event: CodeRunEvent) => void,
-    ): Promise<ActiveRun> {
-        const existing = this.runs.get(runId);
-        if (existing && existing.agent === agent && existing.cwd === cwd) {
-            this.cancelDispose(existing); // reused before its grace window elapsed
-            existing.client.setHandlers(broker, onEvent);
-            return existing;
-        }
-        if (existing) this.dispose(runId); // agent/cwd changed — start over
+  disposeAll(): void {
+    for (const runId of [...this.runs.keys()]) this.dispose(runId);
+  }
 
-        // session/load can replay prior conversation items. Do not publish those
-        // into the current tool card; attach the live sink only after resume.
-        const client = new AcpClient({ agent, cwd, broker, onEvent: () => {} });
-        await client.start();
-
-        const sessionId = await this.openSession(runId, agent, cwd, client);
-        client.setHandlers(broker, onEvent);
-        const run: ActiveRun = { client, sessionId, agent, cwd, inflight: 0 };
-        this.runs.set(runId, run);
-        return run;
+  // Reuse the warm connection if it matches; otherwise (cold start, or the user
+  // switched agent/cwd for this chat) build a fresh one and create-or-resume its session.
+  private async ensureRun(
+    runId: string,
+    agent: CodingAgent,
+    cwd: string,
+    broker: PermissionBroker,
+    onEvent: (event: CodeRunEvent) => void,
+  ): Promise<ActiveRun> {
+    const existing = this.runs.get(runId);
+    if (existing && existing.agent === agent && existing.cwd === cwd && existing.client.isAlive()) {
+      this.cancelDispose(existing); // reused before its grace window elapsed
+      existing.client.setHandlers(broker, onEvent);
+      return existing;
     }
+    // ... (ERRORS.md E32) Start over when agent/cwd changed OR the adapter died
+    // during the grace window — reusing a dead client would reject every prompt
+    // ("connection closed") until idle dispose. A fresh client resumes the
+    // persisted session via session/load below, so no context is lost.
+    if (existing) this.dispose(runId);
 
-    // Resume the persisted session for this chat when possible; else start a new one
-    // and persist its id so a later restart can resume it.
-    private async openSession(runId: string, agent: CodingAgent, cwd: string, client: AcpClient): Promise<string> {
-        const stored = await readStoredSession(runId);
-        if (stored && stored.agent === agent && stored.cwd === cwd && client.loadSupported) {
-            try {
-                await client.loadSession(stored.sessionId);
-                return stored.sessionId;
-            } catch {
-                // Stored session is stale/unloadable — fall through to a fresh one.
-                await clearStoredSession(runId);
-            }
-        }
-        const sessionId = await client.newSession();
-        await writeStoredSession({ runId, agent, cwd, sessionId });
-        return sessionId;
+    // session/load can replay prior conversation items. Do not publish those
+    // into the current tool card; attach the live sink only after resume.
+    const client = new AcpClient({ agent, cwd, broker, onEvent: () => {} });
+    await client.start();
+
+    const sessionId = await this.openSession(runId, agent, cwd, client);
+    client.setHandlers(broker, onEvent);
+    const run: ActiveRun = { client, sessionId, agent, cwd, inflight: 0 };
+    this.runs.set(runId, run);
+    return run;
+  }
+
+  // Resume the persisted session for this chat when possible; else start a new one
+  // and persist its id so a later restart can resume it.
+  private async openSession(
+    runId: string,
+    agent: CodingAgent,
+    cwd: string,
+    client: AcpClient,
+  ): Promise<string> {
+    const stored = await readStoredSession(runId);
+    if (stored && stored.agent === agent && stored.cwd === cwd && client.loadSupported) {
+      try {
+        await client.loadSession(stored.sessionId);
+        return stored.sessionId;
+      } catch {
+        // Stored session is stale/unloadable — fall through to a fresh one.
+        await clearStoredSession(runId);
+      }
     }
+    const sessionId = await client.newSession();
+    await writeStoredSession({ runId, agent, cwd, sessionId });
+    return sessionId;
+  }
 }

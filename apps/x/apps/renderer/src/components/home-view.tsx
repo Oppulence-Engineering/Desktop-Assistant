@@ -246,6 +246,8 @@ export function HomeView({
 }: HomeViewProps) {
   const [events, setEvents] = useState<CalEvent[]>([]);
   const [emails, setEmails] = useState<EmailThread[]>([]);
+  // True unread count, tracked separately from the 3-item preview. (ERRORS.md E28)
+  const [unreadCount, setUnreadCount] = useState(0);
   const [toolkitPreviews, setToolkitPreviews] = useState<ToolkitPreview[]>(
     cachedToolkitPreviews ?? [],
   );
@@ -289,15 +291,14 @@ export function HomeView({
       const result = await window.ipc.invoke("gmail:getImportant", {
         limit: 25,
       });
+      const unread = result.threads.filter((t) => t.unread === true);
+      setUnreadCount(unread.length);
       setEmails(
-        result.threads
-          .filter((t) => t.unread === true)
-          .slice(0, 3)
-          .map((t) => ({
-            threadId: t.threadId,
-            subject: t.subject ?? "(No subject)",
-            from: t.from ?? "",
-          })),
+        unread.slice(0, 3).map((t) => ({
+          threadId: t.threadId,
+          subject: t.subject ?? "(No subject)",
+          from: t.from ?? "",
+        })),
       );
     } catch (err) {
       console.error("Home: failed to load emails", err);
@@ -477,9 +478,9 @@ export function HomeView({
               <div className="mb-3 flex items-center gap-2">
                 <Mail className="size-[15px]" />
                 <span className="text-sm font-medium">Inbox</span>
-                {emails.length > 0 && (
+                {unreadCount > 0 && (
                   <span className="rounded-full bg-destructive px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-wide text-white">
-                    {emails.length} new
+                    {unreadCount} new
                   </span>
                 )}
                 <span className="flex-1" />

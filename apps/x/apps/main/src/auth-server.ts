@@ -1,18 +1,18 @@
-import { createServer, Server } from 'http';
-import { URL } from 'url';
+import { createServer, Server } from "http";
+import { URL } from "url";
 
-const OAUTH_CALLBACK_PATH = '/oauth/callback';
+const OAUTH_CALLBACK_PATH = "/oauth/callback";
 export const DEFAULT_PORT = 8080;
 export const PORT_RANGE_SIZE = 10;
 
 /** Escape HTML special characters to prevent XSS */
 function escapeHtml(str: string): string {
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 export interface AuthServerResult {
@@ -22,23 +22,28 @@ export interface AuthServerResult {
 
 function tryBindPort(
   port: number,
-  onCallback: (callbackUrl: URL) => void | Promise<void>
+  onCallback: (callbackUrl: URL) => void | Promise<void>,
 ): Promise<AuthServerResult> {
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
       if (!req.url) {
         res.writeHead(400);
-        res.end('Bad Request');
+        res.end("Bad Request");
         return;
       }
 
       const url = new URL(req.url, `http://localhost:${port}`);
 
       if (url.pathname === OAUTH_CALLBACK_PATH) {
-        const error = url.searchParams.get('error');
+        const error = url.searchParams.get("error");
 
         if (error) {
-          res.writeHead(200, { 'Content-Type': 'text/html' });
+          // ... (ERRORS.md E44) Surface denials/provider errors to the flow
+          // immediately so connectProvider can emit a specific failure, instead
+          // of leaving it to resolve only via the 2-minute abandoned-flow timeout.
+          // Swallow rejections — the callback reports failure via its own channel.
+          Promise.resolve(onCallback(url)).catch(() => {});
+          res.writeHead(200, { "Content-Type": "text/html" });
           res.end(`
             <!DOCTYPE html>
             <html>
@@ -63,19 +68,21 @@ function tryBindPort(
         // Handle callback - pass full URL so params like iss (OpenID Connect) are preserved for token exchange
         onCallback(url);
 
-        res.writeHead(200, { 'Content-Type': 'text/html' });
+        // ... (ERRORS.md E50) Stay neutral: the token exchange runs asynchronously
+        // after this responds, so we must not assert "Authorization Successful" —
+        // it may still fail. The app surfaces the real outcome.
+        res.writeHead(200, { "Content-Type": "text/html" });
         res.end(`
           <!DOCTYPE html>
           <html>
             <head>
-              <title>Authorization Successful</title>
+              <title>Return to the app</title>
               <style>
                 body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                .success { color: #2e7d32; }
               </style>
             </head>
             <body>
-              <h1 class="success">Authorization Successful</h1>
+              <h1>You can return to the app.</h1>
               <p>You can close this window.</p>
               <script>setTimeout(() => window.close(), 2000);</script>
             </body>
@@ -83,17 +90,17 @@ function tryBindPort(
         `);
       } else {
         res.writeHead(404);
-        res.end('Not Found');
+        res.end("Not Found");
       }
     });
 
-    server.listen(port, 'localhost', () => {
+    server.listen(port, "localhost", () => {
       resolve({ server, port });
     });
 
-    server.on('error', (err: NodeJS.ErrnoException) => {
+    server.on("error", (err: NodeJS.ErrnoException) => {
       server.close();
-      if (err.code === 'EADDRINUSE' || err.code === 'EACCES') {
+      if (err.code === "EADDRINUSE" || err.code === "EACCES") {
         // Signal caller to try next port
         reject(Object.assign(new Error(err.code), { code: err.code }));
       } else {
@@ -131,18 +138,21 @@ export async function createAuthServer(
       return await tryBindPort(p, onCallback);
     } catch (err) {
       const code = (err as NodeJS.ErrnoException).code;
-      if (fallback && (code === 'EADDRINUSE' || code === 'EACCES') && p < limit) {
+      if (fallback && (code === "EADDRINUSE" || code === "EACCES") && p < limit) {
         console.warn(`[OAuth] Port ${p} unavailable (${code}), trying ${p + 1}…`);
         continue;
       }
       if (!fallback) {
-        const reason = code === 'EACCES' || code === 'EADDRINUSE'
-          ? `Port ${port} is unavailable (${code}). This port must be free for sign-in to work — close any app using it and try again.`
-          : (err instanceof Error ? err.message : String(err));
+        const reason =
+          code === "EACCES" || code === "EADDRINUSE"
+            ? `Port ${port} is unavailable (${code}). This port must be free for sign-in to work — close any app using it and try again.`
+            : err instanceof Error
+              ? err.message
+              : String(err);
         throw new Error(reason);
       }
       throw new Error(
-        `No available port found in range ${port}–${limit}. Free a port in that range and try again.`
+        `No available port found in range ${port}–${limit}. Free a port in that range and try again.`,
       );
     }
   }
@@ -150,4 +160,3 @@ export async function createAuthServer(
   // Unreachable — loop always returns or throws — but satisfies TypeScript
   throw new Error(`No available port found in range ${port}–${limit}.`);
 }
-

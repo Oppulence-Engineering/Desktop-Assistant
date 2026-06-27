@@ -127,11 +127,35 @@ export function McpSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const update = (id: string, patch: Partial<EditorServer>) =>
     setServers((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
 
+  // ... (ERRORS.md E45) Seed the raw-JSON view from the current (possibly
+  // unsaved) form state when opening it, so it reflects in-progress edits
+  // instead of the last loaded/saved snapshot.
+  const handleJsonOpenChange = (open: boolean) => {
+    if (open) setRawJson(JSON.stringify(toConfig(servers), null, 2));
+    setJsonOpen(open);
+  };
+
   const save = async () => {
     setSaving(true);
     setError(null);
     setSaved(false);
     try {
+      // ... (ERRORS.md E46) Require command (stdio) / url (http) for named
+      // servers in form mode — the schema accepts "", which would otherwise
+      // save and only fail later at connect with a cryptic transport error.
+      if (!jsonOpen) {
+        const invalid = servers.find(
+          (s) => s.name.trim() && (s.kind === "stdio" ? !s.command.trim() : !s.url.trim()),
+        );
+        if (invalid) {
+          setError(
+            `Server "${invalid.name.trim()}" needs a ${
+              invalid.kind === "stdio" ? "command" : "URL"
+            }`,
+          );
+          return;
+        }
+      }
       const config = jsonOpen ? JSON.parse(rawJson || "{}") : toConfig(servers);
       // Validate against the shared schema before persisting.
       McpServerConfig.parse(config);
@@ -294,7 +318,7 @@ export function McpSettings({ dialogOpen }: { dialogOpen: boolean }) {
       )}
 
       {/* Raw JSON escape hatch */}
-      <Collapsible open={jsonOpen} onOpenChange={setJsonOpen}>
+      <Collapsible open={jsonOpen} onOpenChange={handleJsonOpenChange}>
         <CollapsibleTrigger asChild>
           <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
             <CodeIcon className="size-3.5" />

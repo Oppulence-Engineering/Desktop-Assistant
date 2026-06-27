@@ -3,7 +3,11 @@ import { LlmProvider } from "@x/shared/dist/models.js";
 import { IModelConfigRepo } from "./repo.js";
 import { isSignedIn } from "../account/account.js";
 import container from "../di/container.js";
-import { PRODUCT_PROVIDER_ID, LEGACY_PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/dist/branding.js";
+import {
+  PRODUCT_PROVIDER_ID,
+  LEGACY_PRODUCT_PROVIDER_ID,
+  isProductProvider,
+} from "@x/shared/dist/branding.js";
 
 // Signed-in defaults must be ids the Solomon AI gateway actually serves (see
 // its pricing/catalog: openai/*, anthropic/*, google/gemini-2.5*). openai/* is
@@ -14,18 +18,32 @@ const SIGNED_IN_KG_MODEL = "openai/gpt-4.1-mini";
 const SIGNED_IN_LIVE_NOTE_AGENT_MODEL = "openai/gpt-4.1-mini";
 const SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL = "openai/gpt-4.1-mini";
 
+// ... (ERRORS.md E52) Only honor a signed-in user's saved model when it's a real
+// gateway-served id. Gateway ids are namespaced ("openai/…", "anthropic/…",
+// "google/gemini-2.5*"); the bootstrap/BYOK default ("gpt-5.4") is NOT served by
+// the gateway, so for those (and any unset value) we fall back to the curated
+// default instead of sending an id the gateway would reject.
+function honorGatewayModel(saved: string | undefined, fallback: string): string {
+  return saved && saved.includes("/") ? saved : fallback;
+}
+
 /**
  * The single source of truth for "what model+provider should we use when
  * the caller didn't specify and the agent didn't declare". Returns names only.
  * This is the only place that branches on signed-in state.
  */
 export async function getDefaultModelAndProvider(): Promise<{ model: string; provider: string }> {
-    if (await isSignedIn()) {
-        return { model: SIGNED_IN_DEFAULT_MODEL, provider: SIGNED_IN_DEFAULT_PROVIDER };
-    }
-    const repo = container.resolve<IModelConfigRepo>("modelConfigRepo");
-    const cfg = await repo.getConfig();
-    return { model: cfg.model, provider: cfg.provider.flavor };
+  const repo = container.resolve<IModelConfigRepo>("modelConfigRepo");
+  const cfg = await repo.getConfig();
+  if (await isSignedIn()) {
+    // ... (ERRORS.md E52) Honor the model SolomonModelSettings saved to
+    // config/models.json; routing stays on the product gateway regardless.
+    return {
+      model: honorGatewayModel(cfg.model, SIGNED_IN_DEFAULT_MODEL),
+      provider: SIGNED_IN_DEFAULT_PROVIDER,
+    };
+  }
+  return { model: cfg.model, provider: cfg.provider.flavor };
 }
 
 /**
@@ -39,24 +57,27 @@ export async function getDefaultModelAndProvider(): Promise<{ model: string; pro
  *   single-provider configs that didn't write to the providers map yet).
  */
 export async function resolveProviderConfig(name: string): Promise<z.infer<typeof LlmProvider>> {
-    if (isProductProvider(name)) {
-        return { flavor: name === LEGACY_PRODUCT_PROVIDER_ID ? LEGACY_PRODUCT_PROVIDER_ID : PRODUCT_PROVIDER_ID };
-    }
-    const repo = container.resolve<IModelConfigRepo>("modelConfigRepo");
-    const cfg = await repo.getConfig();
-    const entry = cfg.providers?.[name];
-    if (entry) {
-        return LlmProvider.parse({
-            flavor: name,
-            apiKey: entry.apiKey,
-            baseURL: entry.baseURL,
-            headers: entry.headers,
-        });
-    }
-    if (cfg.provider.flavor === name) {
-        return cfg.provider;
-    }
-    throw new Error(`Provider '${name}' is referenced but not configured`);
+  if (isProductProvider(name)) {
+    return {
+      flavor:
+        name === LEGACY_PRODUCT_PROVIDER_ID ? LEGACY_PRODUCT_PROVIDER_ID : PRODUCT_PROVIDER_ID,
+    };
+  }
+  const repo = container.resolve<IModelConfigRepo>("modelConfigRepo");
+  const cfg = await repo.getConfig();
+  const entry = cfg.providers?.[name];
+  if (entry) {
+    return LlmProvider.parse({
+      flavor: name,
+      apiKey: entry.apiKey,
+      baseURL: entry.baseURL,
+      headers: entry.headers,
+    });
+  }
+  if (cfg.provider.flavor === name) {
+    return cfg.provider;
+  }
+  throw new Error(`Provider '${name}' is referenced but not configured`);
 }
 
 /**
@@ -65,9 +86,16 @@ export async function resolveProviderConfig(name: string): Promise<z.infer<typeo
  * BYOK: user override (`knowledgeGraphModel`) or assistant model.
  */
 export async function getKgModel(): Promise<string> {
-    if (await isSignedIn()) return SIGNED_IN_KG_MODEL;
-    const cfg = await container.resolve<IModelConfigRepo>("modelConfigRepo").getConfig();
-    return cfg.knowledgeGraphModel ?? cfg.model;
+  const cfg = await container.resolve<IModelConfigRepo>("modelConfigRepo").getConfig();
+  if (await isSignedIn()) {
+    // ... (ERRORS.md E52) Honor the saved KG selection; "Same as assistant"
+    // (knowledgeGraphModel unset) → the resolved assistant model.
+    return honorGatewayModel(
+      cfg.knowledgeGraphModel,
+      honorGatewayModel(cfg.model, SIGNED_IN_KG_MODEL),
+    );
+  }
+  return cfg.knowledgeGraphModel ?? cfg.model;
 }
 
 /**
@@ -76,9 +104,9 @@ export async function getKgModel(): Promise<string> {
  * assistant model.
  */
 export async function getLiveNoteAgentModel(): Promise<string> {
-    if (await isSignedIn()) return SIGNED_IN_LIVE_NOTE_AGENT_MODEL;
-    const cfg = await container.resolve<IModelConfigRepo>("modelConfigRepo").getConfig();
-    return cfg.liveNoteAgentModel ?? cfg.model;
+  if (await isSignedIn()) return SIGNED_IN_LIVE_NOTE_AGENT_MODEL;
+  const cfg = await container.resolve<IModelConfigRepo>("modelConfigRepo").getConfig();
+  return cfg.liveNoteAgentModel ?? cfg.model;
 }
 
 /**
@@ -87,9 +115,9 @@ export async function getLiveNoteAgentModel(): Promise<string> {
  * (`autoPermissionDecisionModel`) or assistant model.
  */
 export async function getAutoPermissionDecisionModel(): Promise<string> {
-    if (await isSignedIn()) return SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL;
-    const cfg = await container.resolve<IModelConfigRepo>("modelConfigRepo").getConfig();
-    return cfg.autoPermissionDecisionModel ?? cfg.model;
+  if (await isSignedIn()) return SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL;
+  const cfg = await container.resolve<IModelConfigRepo>("modelConfigRepo").getConfig();
+  return cfg.autoPermissionDecisionModel ?? cfg.model;
 }
 
 /**
@@ -98,9 +126,9 @@ export async function getAutoPermissionDecisionModel(): Promise<string> {
  * (`meetingNotesModel`) or assistant model.
  */
 export async function getMeetingNotesModel(): Promise<string> {
-    if (await isSignedIn()) return SIGNED_IN_DEFAULT_MODEL;
-    const cfg = await container.resolve<IModelConfigRepo>("modelConfigRepo").getConfig();
-    return cfg.meetingNotesModel ?? cfg.model;
+  if (await isSignedIn()) return SIGNED_IN_DEFAULT_MODEL;
+  const cfg = await container.resolve<IModelConfigRepo>("modelConfigRepo").getConfig();
+  return cfg.meetingNotesModel ?? cfg.model;
 }
 
 /**
@@ -110,5 +138,5 @@ export async function getMeetingNotesModel(): Promise<string> {
  * doesn't require touching all call sites.
  */
 export async function getBackgroundTaskAgentModel(): Promise<string> {
-    return getLiveNoteAgentModel();
+  return getLiveNoteAgentModel();
 }

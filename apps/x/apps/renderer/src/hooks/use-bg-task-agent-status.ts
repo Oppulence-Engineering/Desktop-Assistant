@@ -1,14 +1,14 @@
-import z from 'zod';
-import { useSyncExternalStore } from 'react';
-import { BackgroundTaskAgentEvent } from '@x/shared/dist/background-task.js';
+import z from "zod";
+import { useSyncExternalStore } from "react";
+import { BackgroundTaskAgentEvent } from "@x/shared/dist/background-task.js";
 
-export type BackgroundTaskAgentStatus = 'idle' | 'running' | 'done' | 'error';
+export type BackgroundTaskAgentStatus = "idle" | "running" | "done" | "error";
 
 export interface BackgroundTaskAgentState {
-    status: BackgroundTaskAgentStatus;
-    runId?: string;
-    summary?: string | null;
-    error?: string | null;
+  status: BackgroundTaskAgentStatus;
+  runId?: string;
+  summary?: string | null;
+  error?: string | null;
 }
 
 // Module-level store — shared across all hook consumers, subscribed once.
@@ -18,42 +18,50 @@ const listeners = new Set<() => void>();
 let subscribed = false;
 
 function updateStore(fn: (prev: Map<string, BackgroundTaskAgentState>) => void) {
-    store = new Map(store);
-    fn(store);
-    for (const listener of listeners) listener();
+  store = new Map(store);
+  fn(store);
+  for (const listener of listeners) listener();
 }
 
 function ensureSubscription() {
-    if (subscribed) return;
-    subscribed = true;
-    window.ipc.on('bg-task-agent:events', ((event: z.infer<typeof BackgroundTaskAgentEvent>) => {
-        const key = event.slug;
+  if (subscribed) return;
+  subscribed = true;
+  window.ipc.on("bg-task-agent:events", ((event: z.infer<typeof BackgroundTaskAgentEvent>) => {
+    const key = event.slug;
 
-        if (event.type === 'background_task_agent_start') {
-            updateStore(s => s.set(key, { status: 'running', runId: event.runId }));
-        } else if (event.type === 'background_task_agent_complete') {
-            updateStore(s => s.set(key, {
-                status: event.error ? 'error' : 'done',
-                runId: event.runId,
-                summary: event.summary ?? null,
-                error: event.error ?? null,
-            }));
-            // Auto-clear after 5 seconds
-            setTimeout(() => {
-                updateStore(s => s.delete(key));
-            }, 5000);
-        }
-    }) as (event: z.infer<typeof BackgroundTaskAgentEvent>) => void);
+    if (event.type === "background_task_agent_start") {
+      updateStore((s) => s.set(key, { status: "running", runId: event.runId }));
+    } else if (event.type === "background_task_agent_complete") {
+      const completedRunId = event.runId;
+      updateStore((s) =>
+        s.set(key, {
+          status: event.error ? "error" : "done",
+          runId: event.runId,
+          summary: event.summary ?? null,
+          error: event.error ?? null,
+        }),
+      );
+      // Auto-clear after 5 seconds — but only if a newer run for the same
+      // slug hasn't taken over in the meantime; otherwise the timer would
+      // wipe the new run's running state (e.g. the Stop button). // ... (ERRORS.md E30)
+      setTimeout(() => {
+        if (store.get(key)?.runId !== completedRunId) return;
+        updateStore((s) => s.delete(key));
+      }, 5000);
+    }
+  }) as (event: z.infer<typeof BackgroundTaskAgentEvent>) => void);
 }
 
 function subscribe(onStoreChange: () => void): () => void {
-    ensureSubscription();
-    listeners.add(onStoreChange);
-    return () => { listeners.delete(onStoreChange); };
+  ensureSubscription();
+  listeners.add(onStoreChange);
+  return () => {
+    listeners.delete(onStoreChange);
+  };
 }
 
 function getSnapshot(): Map<string, BackgroundTaskAgentState> {
-    return store;
+  return store;
 }
 
 /**
@@ -68,5 +76,5 @@ function getSnapshot(): Map<string, BackgroundTaskAgentState> {
  *   const anyRunning = [...status.values()].some(s => s.status === 'running');
  */
 export function useBackgroundTaskAgentStatus(): Map<string, BackgroundTaskAgentState> {
-    return useSyncExternalStore(subscribe, getSnapshot);
+  return useSyncExternalStore(subscribe, getSnapshot);
 }

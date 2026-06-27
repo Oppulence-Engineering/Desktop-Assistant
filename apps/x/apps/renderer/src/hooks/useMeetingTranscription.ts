@@ -250,16 +250,22 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
     };
   }, [cleanup]);
 
+  // E16: arm/reset the silence auto-stop timer. Shared by start() (so an all-silent
+  // session still auto-stops), Deepgram ws.onmessage, and appendLocalFinal.
+  const resetSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = setTimeout(() => {
+      console.log("[meeting] 2 minutes of silence — auto-stopping");
+      onAutoStopRef.current?.();
+    }, SILENCE_AUTO_STOP_MS);
+  }, []);
+
   // Append a final on-device segment to the transcript ("You"/"Other"), reusing the
   // same entry-coalescing + debounced-write + silence-timer machinery as Deepgram.
   const appendLocalFinal = useCallback(
     (segment: { text: string; speaker?: "you" | "other" }) => {
       if (!segment.text) return;
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = setTimeout(() => {
-        console.log("[meeting] 2 minutes of silence — auto-stopping");
-        onAutoStopRef.current?.();
-      }, SILENCE_AUTO_STOP_MS);
+      resetSilenceTimer();
 
       const speaker = segment.speaker === "other" ? "Other" : "You";
       const entries = transcriptRef.current;
@@ -270,7 +276,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       }
       scheduleDebouncedWrite();
     },
-    [scheduleDebouncedWrite],
+    [scheduleDebouncedWrite, resetSilenceTimer],
   );
 
   const start = useCallback(
@@ -474,11 +480,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
           if (!transcript) return;
 
           // Reset silence auto-stop timer on any transcript
-          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-          silenceTimerRef.current = setTimeout(() => {
-            console.log("[meeting] 2 minutes of silence — auto-stopping");
-            onAutoStopRef.current?.();
-          }, SILENCE_AUTO_STOP_MS);
+          resetSilenceTimer();
 
           const channelIndex = data.channel_index?.[0] ?? 0;
           const isMic = channelIndex === 0;
@@ -613,9 +615,19 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       });
 
       setState("recording");
+      // E16: arm the silence timer once at the start so an all-silent session
+      // (muted mic / broken capture, zero transcripts) still auto-stops.
+      resetSilenceTimer();
       return notePath;
     },
-    [state, cleanup, scheduleDebouncedWrite, refreshSolomonAccount, appendLocalFinal],
+    [
+      state,
+      cleanup,
+      scheduleDebouncedWrite,
+      refreshSolomonAccount,
+      appendLocalFinal,
+      resetSilenceTimer,
+    ],
   );
 
   const stop = useCallback(async () => {
