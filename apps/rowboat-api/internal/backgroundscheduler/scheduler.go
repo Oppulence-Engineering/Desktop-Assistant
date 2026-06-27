@@ -331,6 +331,16 @@ func (s *Scheduler) evaluateTask(ctx context.Context, task *ent.BackgroundTask, 
 	startCtxErr := startCtx.Err()
 	cancelStart()
 	if err != nil {
+		var admissionRejected *backgroundtaskruns.AdmissionRejectedError
+		if errors.As(err, &admissionRejected) && run != nil {
+			s.recordFire(ctx, lease, task, due.source, now, run.RunID)
+			metrics.Errors.WithLabelValues("admission").Inc()
+			s.log.Warn("scheduler run dead-lettered before temporal start",
+				zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID),
+				zap.String("trigger", due.source), zap.String("scheduleKey", key),
+				zap.String("errorCode", admissionRejected.Code), zap.Error(err))
+			return
+		}
 		// A PersistIDsError means the Temporal workflow IS already running and
 		// only persisting its ids failed — so this is a fire, not a retryable
 		// failure. Advancing the cycle (rather than backing off and re-firing)

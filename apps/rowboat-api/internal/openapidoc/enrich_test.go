@@ -33,12 +33,16 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/auth/workos/exchange",
 		"/v1/auth/workos/refresh",
 		"/v1/me",
+		"/v1/background-task-templates",
+		"/v1/background-task-templates/{templateSlug}",
+		"/v1/background-task-templates/{templateSlug}/instantiate",
 		"/v1/background-tasks",
 		"/v1/background-tasks/{slug}",
 		"/v1/background-tasks/{slug}/artifact",
 		"/v1/background-tasks/{slug}/runs",
 		"/v1/background-tasks/{slug}/runs/{runId}",
 		"/v1/background-tasks/{slug}/runs/{runId}/events",
+		"/v1/background-tasks/{slug}/runs/{runId}/events/stream",
 		"/v1/background-tasks/{slug}/trigger",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
@@ -64,6 +68,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/events/{eventId}/runs",
 		"/v1/webhooks/google",
 		"/v1/webhooks/slack",
+		"/v1/webhooks/events",
 		"/v1/internal/events",
 		"/oauth-hooks/pre-consent",
 		"/v1/internal/connections/invalidate",
@@ -92,14 +97,14 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 
 	components := asObj(spec["components"])
 	schemes := asObj(components["securitySchemes"])
-	for _, name := range []string{"BearerAuth", "HookHMAC", "InternalSecret"} {
+	for _, name := range []string{"BearerAuth", "HookHMAC", "WebhookHMAC", "InternalSecret"} {
 		if schemes[name] == nil {
 			t.Fatalf("missing security scheme %s", name)
 		}
 	}
 
 	schemas := asObj(components["schemas"])
-	for _, name := range []string{"MeResponse", "BackgroundTask", "BackgroundTaskRun", "BackgroundTaskRunEventsAppendRequest", "RevisionConflictEnvelope", "LLMChatCompletionsRequest", "Connector", "GraphQLRequest"} {
+	for _, name := range []string{"MeResponse", "BackgroundTask", "BackgroundTaskTemplate", "BackgroundTaskTemplatesResponse", "BackgroundTaskRun", "BackgroundTaskRunEventsAppendRequest", "RevisionConflictEnvelope", "LLMChatCompletionsRequest", "Connector", "GraphQLRequest"} {
 		if schemas[name] == nil {
 			t.Fatalf("missing runtime schema %s", name)
 		}
@@ -121,14 +126,14 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("parse checked-in openapi json: %v", err)
 	}
 	paths := asObj(spec["paths"])
-	if paths["/v1/me"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil {
+	if paths["/v1/me"] == nil || paths["/v1/background-task-templates"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil {
 		t.Fatal("checked-in openapi json is missing mounted runtime API paths")
 	}
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("checked-in openapi json still contains unmounted ent CRUD paths")
 	}
 	schemas := asObj(asObj(spec["components"])["schemas"])
-	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["RevisionConflictEnvelope"] == nil {
+	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
 	}
 }

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/testsuite"
 	"go.temporal.io/sdk/workflow"
@@ -69,6 +71,31 @@ func TestSchedulerWorkflowSkippedFireSucceeds(t *testing.T) {
 	env.ExecuteWorkflow(SchedulerWorkflow, ScheduleFireInput{UserID: "u1", TaskID: "t1", Slug: "s", Trigger: "cron"})
 	if !env.IsWorkflowCompleted() || env.GetWorkflowError() != nil {
 		t.Fatalf("skipped fire must complete cleanly: err=%v", env.GetWorkflowError())
+	}
+}
+
+func TestScheduleActivityDeadLetteredFireSucceedsAndCounts(t *testing.T) {
+	runs := &fakeScheduledRunStarter{result: ScheduledRunResult{RunID: "sched-temporal-1", DeadLettered: true}}
+	a := &ScheduleActivities{Runs: runs, Log: zap.NewNop(), Enabled: true}
+	in := ScheduleFireInput{UserID: "u1", TaskID: "t1", Slug: "daily-digest", Trigger: "cron", TaskRevision: 3}
+
+	beforeDeadLettered := testutil.ToFloat64(backgroundtaskmetrics.ScheduleFires.WithLabelValues("dead_lettered"))
+	beforeFailed := testutil.ToFloat64(backgroundtaskmetrics.ScheduleFires.WithLabelValues("failed"))
+	out, err := a.CreateScheduledRun(context.Background(), in)
+	if err != nil {
+		t.Fatalf("CreateScheduledRun: %v", err)
+	}
+	if !out.DeadLettered || out.RunID != "sched-temporal-1" {
+		t.Fatalf("result = %+v, want dead-lettered run result", out)
+	}
+	if runs.calls != 1 || runs.lastIn != in {
+		t.Fatalf("starter calls=%d lastIn=%+v", runs.calls, runs.lastIn)
+	}
+	if got := testutil.ToFloat64(backgroundtaskmetrics.ScheduleFires.WithLabelValues("dead_lettered")) - beforeDeadLettered; got != 1 {
+		t.Fatalf("dead_lettered metric delta = %v, want 1", got)
+	}
+	if got := testutil.ToFloat64(backgroundtaskmetrics.ScheduleFires.WithLabelValues("failed")) - beforeFailed; got != 0 {
+		t.Fatalf("failed metric delta = %v, want 0 for admission dead-letter", got)
 	}
 }
 

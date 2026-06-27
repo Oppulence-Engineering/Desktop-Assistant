@@ -155,6 +155,11 @@ func (m *TemporalManager) options(d DesiredCronSchedule) client.ScheduleOptions 
 			ID:        backgroundtaskworkflow.ScheduleWorkflowID(d.UserID, d.Slug),
 			Workflow:  backgroundtaskworkflow.SchedulerWorkflowName,
 			TaskQueue: d.TaskQueue,
+			Priority: temporal.Priority{
+				PriorityKey:    backgroundtaskworkflow.PriorityLow,
+				FairnessKey:    d.UserID,
+				FairnessWeight: 1,
+			},
 			Args: []any{backgroundtaskworkflow.ScheduleFireInput{
 				UserID: d.UserID, TaskID: d.TaskID, Slug: d.Slug,
 				Trigger: "cron", TaskRevision: d.TaskRevision,

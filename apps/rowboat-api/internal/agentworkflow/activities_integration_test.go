@@ -92,8 +92,8 @@ func TestToolInvokeClaimChecksOversizedResult(t *testing.T) {
 	}
 
 	// The full result is retrievable via tool_result.read.
-	cap, _ := a.Catalog.Get("tool_result.read")
-	reader := cap.Build(agentregistry.ToolDeps{Client: a.Client})
+	capability, _ := a.Catalog.Get("tool_result.read")
+	reader := capability.Build(agentregistry.ToolDeps{Client: a.Client})
 	readArgs, _ := json.Marshal(map[string]any{"blobRef": env.BlobRef, "offset": 0, "limit": 64 << 10})
 	out, err := reader.Invoke(auth.WithInternal(ctx), backgroundtaskruntime.ToolScope{UserID: u.ID.String(), RunID: sessionID}, readArgs)
 	if err != nil {

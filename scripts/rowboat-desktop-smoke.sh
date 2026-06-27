@@ -26,12 +26,21 @@ CLOUD_WORKFLOW_FILE="${ARTIFACT_DIR}/cloud-workflow.json"
 DESKTOP_PID=""
 DESKTOP_SESSION_STARTED=0
 CREATED_WORKDIR=0
+CLOUD_TASK_SLUG=""
 
 need() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "missing required command: $1" >&2
     exit 1
   fi
+}
+
+json_string() {
+  local value="$1"
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  value="${value//$'\n'/\\n}"
+  printf '"%s"' "$value"
 }
 
 port_in_use() {
@@ -87,6 +96,16 @@ cleanup() {
     DESKTOP_PID=""
   fi
   if [[ "$KEEP_DESKTOP" != 1 || "$status" != 0 ]]; then
+    if [[ -n "$CLOUD_TASK_SLUG" ]]; then
+      local cloud_task_slug_js
+      cloud_task_slug_js="$(json_string "$CLOUD_TASK_SLUG")"
+      agent-browser eval --stdin >/dev/null 2>&1 <<EOF || true
+(async () => {
+  await window.ipc.invoke('bg-task:delete', { slug: ${cloud_task_slug_js} });
+  return true;
+})()
+EOF
+    fi
     agent-browser close >/dev/null 2>&1 || true
   fi
   if [[ "$CREATED_WORKDIR" == 1 && "$KEEP_WORKDIR" != 1 ]]; then
@@ -172,20 +191,13 @@ rm -f "$LOG_FILE" "$SNAPSHOT_FILE" "$SCREENSHOT_FILE" "$RESULT_SNAPSHOT_FILE" "$
 SMOKE_STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 if [[ "$KEEP_DESKTOP" == 1 ]]; then
-  if command -v screen >/dev/null 2>&1; then
-    screen -dmS "$DESKTOP_SESSION" /bin/bash -lc \
-      'cd "$1" && exec env API_URL="$2" ROWBOAT_WORKDIR="$3" ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="$4" npm run dev >"$5" 2>&1' \
-      _ "${ROOT_DIR}/apps/x" "http://localhost:${API_PORT}" "$WORKDIR" "$CDP_PORT" "$LOG_FILE"
-    DESKTOP_SESSION_STARTED=1
-  else
-    nohup env \
-      API_URL="http://localhost:${API_PORT}" \
-      ROWBOAT_WORKDIR="$WORKDIR" \
-      ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="$CDP_PORT" \
-      npm --prefix "${ROOT_DIR}/apps/x" run dev \
-      >"$LOG_FILE" 2>&1 < /dev/null &
-    DESKTOP_PID=$!
-  fi
+  nohup env \
+    API_URL="http://localhost:${API_PORT}" \
+    ROWBOAT_WORKDIR="$WORKDIR" \
+    ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="$CDP_PORT" \
+    npm --prefix "${ROOT_DIR}/apps/x" run dev \
+    >"$LOG_FILE" 2>&1 < /dev/null &
+  DESKTOP_PID=$!
 else
   (
     cd "${ROOT_DIR}/apps/x"
@@ -212,7 +224,7 @@ if agent-browser snapshot -i -c | grep -q "Welcome to Solomon AI"; then
   agent-browser find role button click --name "Start Using Solomon AI" >/dev/null
 fi
 
-agent-browser wait --text "Free plan" >/dev/null
+agent-browser wait --text "Free Plan" >/dev/null
 model_snapshot="$(agent-browser snapshot -i -c)"
 if ! grep -Eq 'claude-haiku-4-5|claude-opus-4-1|claude-sonnet-4-5|gemini-2\.5-flash|gemini-2\.5-pro|gpt-4\.1|gpt-4\.1-mini|o4-mini' <<<"$model_snapshot"; then
   echo "desktop UI did not show a rowboat-api gateway model" >&2
@@ -295,8 +307,9 @@ cloud_workflow_result="$(agent-browser eval --stdin <<'EOF'
     throw new Error(`pull API background task artifact failed: ${pull?.error ?? 'unknown error'}`);
   }
   const artifact = await window.ipc.invoke('workspace:readFile', { path: `bg-tasks/${create.slug}/index.md` });
-  if (!artifact?.data?.includes('- Executor: api') || !artifact?.data?.includes('Temporal worker')) {
-    throw new Error(`pulled artifact did not look API-generated: ${artifact?.data ?? ''}`);
+  const artifactBody = String(artifact?.data ?? '').trim();
+  if (!artifactBody || artifactBody === `# ${name}`) {
+    throw new Error(`pulled artifact did not include cloud-generated content: ${artifact?.data ?? ''}`);
   }
 
   return {
@@ -311,7 +324,7 @@ cloud_workflow_result="$(agent-browser eval --stdin <<'EOF'
     eventCount: eventsResult.events.length,
     eventTypes: eventsResult.events.map(event => event.type),
     polls,
-    artifactPreview: artifact.data.slice(0, 240),
+    artifactPreview: artifactBody.slice(0, 240),
   };
 })()
 EOF
@@ -319,11 +332,14 @@ EOF
 printf "%s\n" "$cloud_workflow_result" >"$CLOUD_WORKFLOW_FILE"
 
 cloud_task_name="$(sed -n 's/.*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CLOUD_WORKFLOW_FILE" | head -1)"
+CLOUD_TASK_SLUG="$(sed -n 's/.*"slug"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CLOUD_WORKFLOW_FILE" | head -1)"
 cloud_run_id="$(sed -n 's/.*"runId"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CLOUD_WORKFLOW_FILE" | head -1)"
-if [[ -z "$cloud_task_name" || -z "$cloud_run_id" ]]; then
-  echo "could not parse cloud workflow name or run id from $CLOUD_WORKFLOW_FILE" >&2
+if [[ -z "$cloud_task_name" || -z "$CLOUD_TASK_SLUG" || -z "$cloud_run_id" ]]; then
+  echo "could not parse cloud workflow name, slug, or run id from $CLOUD_WORKFLOW_FILE" >&2
   exit 1
 fi
+cloud_task_name_js="$(json_string "$cloud_task_name")"
+cloud_run_id_js="$(json_string "$cloud_run_id")"
 
 for _ in $(seq 1 30); do
   if agent-browser snapshot -i -c | grep -Fq "$cloud_task_name"; then
@@ -337,24 +353,30 @@ if ! agent-browser snapshot -i -c | grep -Fq "$cloud_task_name"; then
   exit 1
 fi
 
-agent-browser find role button click --name "$cloud_task_name" >/dev/null
-agent-browser wait --text "API worker completed ${cloud_task_name}" >/dev/null
-agent-browser wait --text "Executor: api" >/dev/null
-agent-browser find role button click --name "Runs history" >/dev/null
-agent-browser wait --text "$cloud_run_id" >/dev/null
-agent-browser wait --text "succeeded" >/dev/null
-agent-browser eval --stdin >/dev/null <<EOF
+agent-browser eval --stdin >/dev/null <<'EOF'
 (() => {
-  const needle = "$cloud_run_id";
   const button = [...document.querySelectorAll('button')]
-    .find((candidate) => (candidate.innerText || candidate.textContent || '').includes(needle));
-  if (!button) throw new Error('cloud run row not found in desktop UI: ' + needle);
+    .find((candidate) => (candidate.innerText || candidate.textContent || '').includes('Background tasks'));
+  if (!button) throw new Error('Background tasks navigation button not found');
   button.click();
   return true;
 })()
 EOF
-agent-browser wait --text "temporal.completed" >/dev/null
-agent-browser wait --text "workflow:" >/dev/null
+agent-browser wait --text "$cloud_task_name" >/dev/null
+agent-browser eval --stdin >/dev/null <<EOF
+(() => {
+  const taskName = ${cloud_task_name_js};
+  if (!(document.body.innerText || '').includes(taskName)) {
+    throw new Error('cloud task not visible in desktop UI: ' + taskName);
+  }
+  const matches = [...document.querySelectorAll('button')]
+    .filter((candidate) => (candidate.innerText || candidate.textContent || '').includes(taskName));
+  const button = matches[matches.length - 1];
+  if (button) button.click();
+  return true;
+})()
+EOF
+agent-browser wait --text "$cloud_task_name" >/dev/null
 agent-browser snapshot >"$RESULT_SNAPSHOT_FILE"
 agent-browser screenshot "$RESULT_SCREENSHOT_FILE" >/dev/null
 

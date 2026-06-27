@@ -1,6 +1,7 @@
 // Package googlewatch keeps Google push subscriptions alive (RFC 003): for
 // every connected Google account it registers — and renews before expiry —
-// the Gmail users.watch and the Calendar events channel that make Google
+// the Gmail users.watch, Calendar events channel, and Drive changes channel
+// that make Google
 // deliver pushes to /v1/webhooks/google. Without this manager the webhook is
 // a working endpoint that Google never calls.
 //
@@ -14,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -33,6 +35,7 @@ import (
 const (
 	KindGmail    = "gmail"
 	KindCalendar = "calendar"
+	KindDrive    = "drive"
 
 	// claimTTL bounds how long a renewal claim excludes other replicas. A
 	// renewal is a couple of HTTP calls; a claim older than this belongs to a
@@ -43,7 +46,7 @@ const (
 // Config tunes the manager.
 type Config struct {
 	GmailPubSubTopic string        // projects/{p}/topics/{t}; empty → skip Gmail watches
-	WebhookURL       string        // public address Calendar channels push to
+	WebhookURL       string        // public address Calendar/Drive channels push to
 	ChannelToken     string        // X-Goog-Channel-Token the webhook verifies
 	RenewMargin      time.Duration // renew registrations expiring within this window
 	Interval         time.Duration // Run loop cadence
@@ -52,6 +55,7 @@ type Config struct {
 	TokenURL        string
 	GmailBaseURL    string
 	CalendarBaseURL string
+	DriveBaseURL    string
 }
 
 // Manager owns watch registration and renewal.
@@ -84,6 +88,7 @@ func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, cfg Conf
 			TokenURL:        cfg.TokenURL,
 			GmailBaseURL:    cfg.GmailBaseURL,
 			CalendarBaseURL: cfg.CalendarBaseURL,
+			DriveBaseURL:    cfg.DriveBaseURL,
 		}),
 		cfg: cfg,
 		log: log,
@@ -150,7 +155,7 @@ func (m *Manager) RenewDue(ctx context.Context) error {
 		}
 		connected[owner.ID] = conn
 
-		kinds := []string{KindCalendar}
+		kinds := []string{KindCalendar, KindDrive}
 		if m.cfg.GmailPubSubTopic != "" {
 			kinds = append(kinds, KindGmail)
 		}
@@ -249,6 +254,8 @@ func (m *Manager) register(ctx context.Context, conn *ent.OAuthConnection, kind 
 		return m.registerGmail(ctx, token, conn, row)
 	case KindCalendar:
 		return m.registerCalendar(ctx, token, conn, row)
+	case KindDrive:
+		return m.registerDrive(ctx, token, conn, row)
 	default:
 		return fmt.Errorf("unknown watch kind %q", kind)
 	}
@@ -316,6 +323,55 @@ func (m *Manager) registerCalendar(ctx context.Context, token string, conn *ent.
 		SetAccountEmail(conn.ExternalAccountID).
 		SetChannelID(channelID).
 		SetResourceID(resp.ResourceID).
+		SetExpiresAt(exp).
+		ClearLastError().
+		ClearRenewClaimedAt().
+		Exec(ctx)
+}
+
+func (m *Manager) registerDrive(ctx context.Context, token string, conn *ent.OAuthConnection, row *ent.GoogleWatch) error {
+	// Renewal means a NEW channel: Drive channels cannot be extended. Stop the
+	// old one best-effort first.
+	if row.ChannelID != "" && row.ResourceID != "" {
+		stopBody := map[string]any{"id": row.ChannelID, "resourceId": row.ResourceID}
+		if err := m.google.PostJSON(ctx, token, m.google.DriveBaseURL()+"/channels/stop", stopBody, nil); err != nil {
+			m.log.Warn("drive channel stop failed (continuing)",
+				zap.String("channelId", row.ChannelID), zap.Error(err))
+		}
+	}
+
+	var tokenResp struct {
+		StartPageToken string `json:"startPageToken"`
+	}
+	if err := m.google.GetJSON(ctx, token, m.google.DriveBaseURL()+"/changes/startPageToken", nil, &tokenResp); err != nil {
+		return fmt.Errorf("drive changes.startPageToken: %w", err)
+	}
+	if tokenResp.StartPageToken == "" {
+		return errors.New("drive changes.startPageToken returned empty page token")
+	}
+
+	channelID := "gdrive:" + conn.ExternalAccountID + ":" + uuid.NewString()
+	body := map[string]any{
+		"id":      channelID,
+		"type":    "web_hook",
+		"address": m.cfg.WebhookURL,
+		"token":   m.cfg.ChannelToken,
+	}
+	q := url.Values{}
+	q.Set("pageToken", tokenResp.StartPageToken)
+	var resp googleWatchResponse
+	if err := m.google.PostJSON(ctx, token, m.google.DriveBaseURL()+"/changes/watch?"+q.Encode(), body, &resp); err != nil {
+		return fmt.Errorf("drive changes.watch: %w", err)
+	}
+	exp, err := parseMsEpoch(resp.Expiration)
+	if err != nil {
+		return fmt.Errorf("drive watch expiration: %w", err)
+	}
+	return row.Update().
+		SetAccountEmail(conn.ExternalAccountID).
+		SetChannelID(channelID).
+		SetResourceID(resp.ResourceID).
+		SetHistoryID(tokenResp.StartPageToken).
 		SetExpiresAt(exp).
 		ClearLastError().
 		ClearRenewClaimedAt().

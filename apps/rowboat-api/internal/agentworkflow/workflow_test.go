@@ -34,7 +34,7 @@ func newWFHarness(t *testing.T) *wfHarness {
 	h := &wfHarness{env: ts.NewTestWorkflowEnvironment()}
 	h.env.SetTestTimeout(30 * time.Second)
 	// Default LLM: end the turn immediately with a final message.
-	h.llm = func(in LLMCompleteInput) LLMCompleteResult {
+	h.llm = func(_ LLMCompleteInput) LLMCompleteResult {
 		return finalMsg("done.")
 	}
 
@@ -238,6 +238,29 @@ func TestWorkflowIDStableAcrossSession(t *testing.T) {
 	}
 	if SubagentWorkflowID("u", "s", 1, 0) == SubagentWorkflowID("u", "s", 1, 1) {
 		t.Fatal("subagent workflow ids must be unique per call index")
+	}
+}
+
+func TestApprovalIDScopeValidation(t *testing.T) {
+	st := baseState("hello", []ToolMeta{{Name: "demo.payment", TrustTier: agentregistry.TierMoneyMoving, Kind: agentregistry.KindTool}})
+	e := &exec{state: &st}
+
+	if err := e.validateApprovalID(ApprovalID(st.Start.SessionID, 0, 0)); err != nil {
+		t.Fatalf("accepted turn approval rejected: %v", err)
+	}
+	if err := e.validateApprovalID(ApprovalID("other-session", 0, 0)); err == nil {
+		t.Fatal("foreign approval id must be rejected")
+	}
+	if err := e.validateApprovalID(ApprovalID(st.Start.SessionID, 1, 0)); err == nil {
+		t.Fatal("future turn approval id must be rejected")
+	}
+	if err := e.validateApprovalID(st.Start.SessionID + "/turn/not-a-number/approval/0"); err == nil {
+		t.Fatal("malformed approval id must be rejected")
+	}
+
+	st.CompletedTurns = 1
+	if err := e.validateApprovalID(ApprovalID(st.Start.SessionID, 0, 0)); err == nil {
+		t.Fatal("completed turn approval id must be rejected")
 	}
 }
 

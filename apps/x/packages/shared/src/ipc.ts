@@ -33,6 +33,7 @@ import {
   BackgroundTaskCloudRunStatusSchema,
   BackgroundTaskCloudScheduleStateSchema,
   BackgroundTaskOfflineRunsEventSchema,
+  BackgroundTaskPatchSchema,
   BackgroundTaskRunExecutor,
   BackgroundTaskRunStatus,
   BackgroundTaskSignal,
@@ -776,7 +777,9 @@ const ipcSchemas = {
           snippet: z.string(),
           score: z.number(),
           highlights: z.array(z.object({ start: z.number(), end: z.number() })).optional(),
-          scores: z.object({ vector: z.number().optional(), lexical: z.number().optional() }).optional(),
+          scores: z
+            .object({ vector: z.number().optional(), lexical: z.number().optional() })
+            .optional(),
           startLine: z.number(),
           endLine: z.number(),
         }),
@@ -1159,7 +1162,7 @@ const ipcSchemas = {
   "bg-task:patch": {
     req: z.object({
       slug: z.string(),
-      partial: BackgroundTaskSchema.partial(),
+      partial: BackgroundTaskPatchSchema,
     }),
     res: z.object({
       success: z.boolean(),

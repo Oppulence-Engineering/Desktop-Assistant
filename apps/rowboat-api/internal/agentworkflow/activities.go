@@ -19,7 +19,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agenttoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/activity"
 	"go.uber.org/zap"
@@ -44,6 +50,31 @@ type Activities struct {
 	ApprovalSigner *agenttoken.Signer
 	// RequireMFA gates money-moving grants on an MFA step-up claim in the token.
 	RequireMFA bool
+
+	// Sealer decrypts connector credentials (e.g. the Slack bot token) for
+	// channel-reply delivery. nil disables outbound channel delivery.
+	Sealer *crypto.Sealer
+	// Slack posts agent replies back to the originating Slack thread (RFC 027
+	// channels — the CloudTag round-trip) and backs the Slack-native tools. nil
+	// disables Slack delivery and Slack tools.
+	Slack *slackclient.Client
+	// Creds resolves a session owner's connector credentials for tools that act
+	// on the user's behalf (Slack, Gmail, …). nil disables credential-bearing
+	// tools (they report the capability as unavailable rather than failing hard).
+	Creds agentregistry.CredResolver
+	// SlackTokens resolves Slack bot credentials and refreshes rotating Slack
+	// access tokens for Slack channel delivery and Slack-native tools.
+	SlackTokens agentregistry.SlackTokenResolver
+	// Secrets + Google back the Google read tools (Gmail/Calendar), which reuse
+	// the RFC 004 connector tools. nil makes those tools report "unavailable".
+	Secrets *secrets.Store
+	Google  *googleapi.Client
+	// Web backs the web.search tool. nil makes it report "unavailable".
+	Web *websearch.Client
+	// Conduit + Eigen back the portfolio faculty tools (RFC 008). nil makes the
+	// corresponding tool report "unavailable".
+	Conduit *faculties.Client
+	Eigen   *faculties.Client
 }
 
 // LLMComplete advances the conversation one turn through the billing gateway
@@ -63,11 +94,11 @@ func (a *Activities) LLMComplete(ctx context.Context, in LLMCompleteInput) (LLMC
 
 	tools := make([]llm.ToolDef, 0, len(in.ToolNames))
 	for _, name := range in.ToolNames {
-		cap, ok := a.Catalog.Get(name)
+		capability, ok := a.Catalog.Get(name)
 		if !ok {
 			continue
 		}
-		tools = append(tools, llm.ToolDef{Name: cap.Name, Description: cap.Description, Parameters: cap.Parameters})
+		tools = append(tools, llm.ToolDef{Name: capability.Name, Description: capability.Description, Parameters: capability.Parameters})
 	}
 
 	msgs := make([]llm.ChatMessage, 0, len(in.Messages))
@@ -124,7 +155,7 @@ func (a *Activities) LLMComplete(ctx context.Context, in LLMCompleteInput) (LLMC
 // are resolved INSIDE the tool from its scope, never from model text.
 func (a *Activities) ToolInvoke(ctx context.Context, in ToolInvokeInput) (ToolInvokeResult, error) {
 	ctx = auth.WithInternal(ctx)
-	registry := a.buildToolRegistry(in.AllowedTools)
+	registry := a.buildToolRegistry(in.AllowedTools, in.UserID)
 	tool, err := registry.Lookup(in.ToolName)
 	if err != nil {
 		return ToolInvokeResult{
@@ -201,14 +232,18 @@ func (a *Activities) claimCheck(ctx context.Context, in ToolInvokeInput, result 
 // allowlisted, buildable tools (subagent pseudo-tools are excluded — those are
 // dispatched to child workflows, never invoked here). Tools receive the client
 // for the claim-check reader.
-func (a *Activities) buildToolRegistry(allowed []string) backgroundtaskruntime.ToolRegistry {
+func (a *Activities) buildToolRegistry(allowed []string, userID string) backgroundtaskruntime.ToolRegistry {
 	tools := make([]backgroundtaskruntime.Tool, 0, len(allowed))
 	for _, name := range allowed {
-		cap, ok := a.Catalog.Get(name)
-		if !ok || cap.Kind == agentregistry.KindSubagent || cap.Build == nil {
+		capability, ok := a.Catalog.Get(name)
+		if !ok || capability.Kind == agentregistry.KindSubagent || capability.Build == nil {
 			continue
 		}
-		tools = append(tools, cap.Build(agentregistry.ToolDeps{Client: a.Client}))
+		tools = append(tools, capability.Build(agentregistry.ToolDeps{
+			Client: a.Client, Creds: a.Creds, SlackTokens: a.SlackTokens, Slack: a.Slack,
+			Sealer: a.Sealer, Secrets: a.Secrets, Google: a.Google, Web: a.Web,
+			Conduit: a.Conduit, Eigen: a.Eigen, UserID: userID,
+		}))
 	}
 	return backgroundtaskruntime.NewRegistry(tools)
 }
@@ -636,11 +671,6 @@ func (a *Activities) loadSessionAndUser(ctx context.Context, userID, sessionID s
 	return sess, owner, nil
 }
 
-// sessionRequestID derives the deterministic per-(session, turn, call, attempt)
-// billing idempotency anchor — the GatewayLLM.runtimeRequestID pattern, anchored
-// to agent-session/{sessionID}/turn/{turnSeq}/llm/{callIndex} plus the activity
-// attempt so Temporal retries reserve fresh while a within-attempt duplicate
-// replays the reservation.
 // ToolMetasFromCatalog builds the deterministic ToolMeta list for an allowlist.
 // Subagent pseudo-tools are dropped when subagents are disabled (so they are
 // neither advertised nor invocable). Used by the session starter to populate
@@ -648,14 +678,14 @@ func (a *Activities) loadSessionAndUser(ctx context.Context, userID, sessionID s
 func ToolMetasFromCatalog(catalog *agentregistry.Catalog, names []string, subagentsEnabled bool) []ToolMeta {
 	out := make([]ToolMeta, 0, len(names))
 	for _, n := range names {
-		cap, ok := catalog.Get(n)
+		capability, ok := catalog.Get(n)
 		if !ok {
 			continue
 		}
-		if cap.Kind == agentregistry.KindSubagent && !subagentsEnabled {
+		if capability.Kind == agentregistry.KindSubagent && !subagentsEnabled {
 			continue
 		}
-		out = append(out, ToolMeta{Name: cap.Name, TrustTier: cap.TrustTier, Kind: cap.Kind})
+		out = append(out, ToolMeta{Name: capability.Name, TrustTier: capability.TrustTier, Kind: capability.Kind})
 	}
 	return out
 }
@@ -685,6 +715,11 @@ func intersect(a, b []string) []string {
 	return out
 }
 
+// sessionRequestID derives the deterministic per-(session, turn, call, attempt)
+// billing idempotency anchor — the GatewayLLM.runtimeRequestID pattern, anchored
+// to agent-session/{sessionID}/turn/{turnSeq}/llm/{callIndex} plus the activity
+// attempt so Temporal retries reserve fresh while a within-attempt duplicate
+// replays the reservation.
 func sessionRequestID(sessionID string, turnSeq, callIndex, attempt int) uuid.UUID {
 	if attempt < 1 {
 		attempt = 1

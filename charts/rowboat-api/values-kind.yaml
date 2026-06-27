@@ -55,6 +55,13 @@ config:
   METRICS_ADDR: ":9090"
   GRPC_ADDR: ":8081"
   AUTO_MIGRATE: "true"
+  # Keep the three local processes (API, worker, scheduler) from collectively
+  # exhausting the in-cluster Postgres while the Electron app fans out startup
+  # requests. Production keeps the code defaults unless explicitly overridden.
+  DB_MAX_OPEN_CONNS: "8"
+  DB_MAX_IDLE_CONNS: "4"
+  DB_CONN_MAX_LIFETIME: 10m
+  DB_CONN_MAX_IDLE_TIME: 30s
   CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:18080
   GRAPHQL_INTROSPECTION_ENABLED: "true"
 
@@ -86,7 +93,14 @@ config:
   TEMPORAL_NAMESPACE: default
   TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
   TEMPORAL_WORKER_ENABLED: "false"
+  CLOUD_EVENTS_ROUTING_ENABLED: "true"
+  CLOUD_RUNTIME_SANDBOX_ENABLED: "true"
+  CLOUD_RUNTIME_SANDBOX_BACKEND: kubernetes-job
   READINESS_TIMEOUT: 20s
+
+sandbox:
+  rbac:
+    enabled: true
 
 worker:
   enabled: true

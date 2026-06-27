@@ -65,6 +65,7 @@ import {
   triggerRun as triggerAgentScheduleRun,
   calculateNextRunAt as calculateAgentNextRunAt,
 } from "@x/core/dist/agent-schedule/runner.js";
+import { loadAgent } from "@x/core/dist/agents/runtime.js";
 import { search } from "@x/core/dist/search/search.js";
 import { memorySearch, relatedNotes, memoryStatus } from "@x/core/dist/memory/index.js";
 import { memoryBus } from "@x/core/dist/memory/bus.js";
@@ -1065,15 +1066,24 @@ export function setupIpcHandlers() {
       }
     },
     "agent-schedule:updateAgent": async (_event, args) => {
+      const agentName = args.agentName.trim();
+      if (!agentName) {
+        throw new Error("Agent name is required");
+      }
+      try {
+        await loadAgent(agentName);
+      } catch {
+        throw new Error(`Agent "${agentName}" not found`);
+      }
       const repo = container.resolve<IAgentScheduleRepo>("agentScheduleRepo");
-      await repo.upsert(args.agentName, args.entry);
+      await repo.upsert(agentName, args.entry);
       // Recompute nextRunAt from the (possibly changed) schedule so the runner
       // honors the new cadence on its next tick instead of firing on the stale
       // nextRunAt (which used the old schedule, or a past time after re-enable). (ERRORS.md E58)
       try {
         const stateRepo = container.resolve<IAgentScheduleStateRepo>("agentScheduleStateRepo");
         const nextRunAt = calculateAgentNextRunAt(args.entry.schedule);
-        await stateRepo.updateAgentState(args.agentName, { nextRunAt });
+        await stateRepo.updateAgentState(agentName, { nextRunAt });
       } catch (e) {
         console.error("[agent-schedule:updateAgent] failed to recompute nextRunAt", e);
       }

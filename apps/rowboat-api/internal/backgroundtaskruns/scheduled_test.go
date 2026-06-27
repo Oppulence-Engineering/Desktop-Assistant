@@ -11,9 +11,12 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -52,6 +55,9 @@ func TestStartScheduledRunCreatesRun(t *testing.T) {
 	if run.Trigger != "cron" || run.Executor != "api" || run.Status != "queued" {
 		t.Fatalf("run = trigger=%q executor=%q status=%q", run.Trigger, run.Executor, run.Status)
 	}
+	if len(ctrl.starts) != 1 || ctrl.starts[0].PriorityKey != backgroundtaskworkflow.PriorityLow {
+		t.Fatalf("scheduled run start priority = %+v, want one low-priority start", ctrl.starts)
+	}
 	if !strings.Contains(run.RequestedContext, `"0 9 * * *"`) {
 		t.Fatalf("requested context missing cron expression: %q", run.RequestedContext)
 	}
@@ -65,6 +71,107 @@ func TestStartScheduledRunCreatesRun(t *testing.T) {
 	}
 	if payload["requestedBy"] != "temporal-schedule" {
 		t.Fatalf("queued event requestedBy = %v, want temporal-schedule", payload["requestedBy"])
+	}
+}
+
+func TestStartScheduledRunDeadLettersCreditPreflightVariants(t *testing.T) {
+	cases := []struct {
+		name         string
+		limits       quota.SpendLimits
+		setupCredits func(t *testing.T, client *ent.Client, u *ent.User)
+		wantCode     string
+	}{
+		{
+			name:     "insufficient credits",
+			wantCode: backgroundtaskworkflow.ErrCodeInsufficientCredits,
+		},
+		{
+			name:   "daily credit limit",
+			limits: quota.SpendLimits{Daily: 50},
+			setupCredits: func(t *testing.T, client *ent.Client, u *ent.User) {
+				t.Helper()
+				ctx := auth.WithInternal(context.Background())
+				client.Subscription.Create().SetUser(u).SetSanctionedCredits(1_000_000).SaveX(ctx)
+				client.CreditLedger.Create().
+					SetUser(u).
+					SetDelta(-100).
+					SetReason("llm_call.reserve").
+					SetRequestID(uuid.New()).
+					SetTs(time.Now().UTC()).
+					SaveX(ctx)
+			},
+			wantCode: backgroundtaskworkflow.ErrCodeDailyCreditLimit,
+		},
+		{
+			name:   "monthly credit limit",
+			limits: quota.SpendLimits{Monthly: 50},
+			setupCredits: func(t *testing.T, client *ent.Client, u *ent.User) {
+				t.Helper()
+				ctx := auth.WithInternal(context.Background())
+				client.Subscription.Create().SetUser(u).SetSanctionedCredits(1_000_000).SaveX(ctx)
+				client.CreditLedger.Create().
+					SetUser(u).
+					SetDelta(-100).
+					SetReason("llm_call.reserve").
+					SetRequestID(uuid.New()).
+					SetTs(time.Now().UTC()).
+					SaveX(ctx)
+			},
+			wantCode: backgroundtaskworkflow.ErrCodeMonthlyCreditLimit,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, u, task := setup(t)
+			task = setCron(t, client, task)
+			if tc.setupCredits != nil {
+				tc.setupCredits(t, client, u)
+			}
+			ctx := auth.WithInternal(context.Background())
+			beforeLedger := client.CreditLedger.Query().
+				Where(creditledger.HasUserWith()).
+				CountX(ctx)
+
+			ctrl := &fakeController{}
+			starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+			starter.SetAdmission(backgroundtaskruns.AdmissionConfig{
+				Enabled:                true,
+				CreditPreflightEnabled: true,
+				CreditGate:             quota.New(client, zap.NewNop()),
+				Prices:                 pricing.DefaultTable(),
+				SpendLimits:            tc.limits,
+				DefaultModel:           "anthropic/claude-sonnet-4-5",
+				MaxLLMCalls:            1,
+			})
+
+			out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+			if err != nil {
+				t.Fatalf("StartScheduledRun: %v", err)
+			}
+			if !out.DeadLettered || out.RunID == "" || out.WorkflowID != "" {
+				t.Fatalf("result = %+v, want dead-lettered run without workflow id", out)
+			}
+			if len(ctrl.starts) != 0 {
+				t.Fatalf("dead-lettered scheduled run must not start Temporal, got %+v", ctrl.starts)
+			}
+
+			run := client.BackgroundTaskRun.Query().Where(backgroundtaskrun.RunIDEQ(out.RunID)).OnlyX(ctx)
+			assertDeadLetterRun(ctx, t, client, run, tc.wantCode, backgroundtaskruns.SourceTemporalSchedule, backgroundtaskworkflow.PriorityLow, 0)
+
+			afterLedger := client.CreditLedger.Query().
+				Where(creditledger.HasUserWith()).
+				CountX(ctx)
+			if afterLedger != beforeLedger {
+				t.Fatalf("preflight rejection wrote ledger rows: before=%d after=%d", beforeLedger, afterLedger)
+			}
+			gotTask := client.BackgroundTask.GetX(ctx, task.ID)
+			if gotTask.LastAttemptAt == nil {
+				t.Fatal("dead-lettered scheduled fire must stamp last_attempt_at")
+			}
+			if gotTask.LastRunAt != nil {
+				t.Fatal("dead-lettered scheduled fire must not advance last_run_at")
+			}
+		})
 	}
 }
 

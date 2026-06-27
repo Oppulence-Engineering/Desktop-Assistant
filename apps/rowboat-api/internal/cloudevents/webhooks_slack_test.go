@@ -102,6 +102,23 @@ func slackEventBody(teamID, eventID, text string) string {
 	return string(raw)
 }
 
+func slackEventBodyWithType(teamID, eventID, eventType, text string) string {
+	raw, _ := json.Marshal(map[string]any{
+		"type":       "event_callback",
+		"team_id":    teamID,
+		"event_id":   eventID,
+		"event_time": 1750000000,
+		"event": map[string]any{
+			"type":    eventType,
+			"text":    text,
+			"channel": "C1",
+			"user":    "U1",
+			"ts":      "1750000000.000100",
+		},
+	})
+	return string(raw)
+}
+
 func TestSlackWebhookFlow(t *testing.T) {
 	client, u := setup(t)
 	connectSlack(t, client, u, "T0EXAMPLE")
@@ -156,5 +173,46 @@ func TestSlackWebhookFlow(t *testing.T) {
 	}
 	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
 		t.Fatalf("events = %d, want 1 (unmapped events never stored)", n)
+	}
+}
+
+func TestSlackWebhookDispatchesAppMentionOnceAfterDurableIngest(t *testing.T) {
+	client, u := setup(t)
+	connectSlack(t, client, u, "T0EXAMPLE")
+	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, SlackSigningSecret: slackSecret}, zap.NewNop())
+	var dispatches int
+	h.SetSlackAgentDispatcher(func(_ context.Context, owner *ent.User, body []byte) error {
+		dispatches++
+		if owner.ID != u.ID {
+			t.Fatalf("owner = %s, want %s", owner.ID, u.ID)
+		}
+		if !strings.Contains(string(body), `"app_mention"`) {
+			t.Fatalf("dispatch body = %s", body)
+		}
+		return nil
+	})
+	srv := newSlackServer(t, h)
+	ts := fmt.Sprintf("%d", time.Now().Unix())
+	body := slackEventBodyWithType("T0EXAMPLE", "EvMention001", "app_mention", "<@U0BOT> summarize this")
+	sig := slackSign(slackSecret, ts, []byte(body))
+
+	if status, _ := postSlack(t, srv, body, ts, sig); status != http.StatusAccepted {
+		t.Fatalf("signed app mention: %d, want 202", status)
+	}
+	if dispatches != 1 {
+		t.Fatalf("dispatches = %d, want 1", dispatches)
+	}
+	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
+		t.Fatalf("events = %d, want 1", n)
+	}
+
+	if status, _ := postSlack(t, srv, body, ts, sig); status != http.StatusOK {
+		t.Fatalf("retry: %d, want 200", status)
+	}
+	if dispatches != 1 {
+		t.Fatalf("dispatches after retry = %d, want 1", dispatches)
+	}
+	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
+		t.Fatalf("events after retry = %d, want 1", n)
 	}
 }

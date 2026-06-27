@@ -76,9 +76,10 @@ func (e *PersistIDsError) Unwrap() error { return e.Err }
 
 // Starter creates executor=api runs and launches their Temporal workflows.
 type Starter struct {
-	Client   *ent.Client
-	Temporal backgroundtaskworkflow.Controller
-	Log      *zap.Logger
+	Client    *ent.Client
+	Temporal  backgroundtaskworkflow.Controller
+	Log       *zap.Logger
+	Admission AdmissionConfig
 }
 
 // New builds a Starter. Temporal may be nil; Start then returns
@@ -133,14 +134,29 @@ func (s *Starter) Start(ctx context.Context, p Params) (*ent.BackgroundTaskRun, 
 	if err := validateRunTrigger(trigger); err != nil {
 		return nil, err
 	}
+	if p.Attempt != nil && *p.Attempt < 1 {
+		return nil, &InvalidParamsError{Message: "attempt must be >= 1"}
+	}
 	isRetry := p.RetryOfRunID != ""
 	queuedMessage := p.QueuedMessage
 	if queuedMessage == "" {
 		queuedMessage = "Queued for API worker."
 	}
+	source := p.sourceOrDefault()
+	priorityKey := PriorityFor(trigger, source)
 
 	runID := p.RunIDPrefix + uuid.NewString()
 	workflowID := backgroundtaskworkflow.WorkflowID(p.User.ID.String(), p.Task.Slug, runID)
+
+	if rejected, err := s.checkAdmission(ctx, p); err != nil {
+		return nil, err
+	} else if rejected != nil {
+		run, err := s.createDeadLetterRun(ctx, p, runID, trigger, rejected, priorityKey)
+		if err != nil {
+			return nil, err
+		}
+		return run, rejected
+	}
 
 	run, err := s.createQueuedRun(ctx, p, runID, workflowID, trigger, queuedMessage)
 	if err != nil {
@@ -161,6 +177,7 @@ func (s *Starter) Start(ctx context.Context, p Params) (*ent.BackgroundTaskRun, 
 		RunID:            runID,
 		Trigger:          trigger,
 		RequestedContext: p.RequestedContext,
+		PriorityKey:      priorityKey,
 	})
 	if err != nil {
 		return s.markStartFailed(ctx, run, err, isRetry), &StartFailedError{Err: err}
@@ -211,9 +228,6 @@ func (s *Starter) createQueuedRun(ctx context.Context, p Params, runID, workflow
 		create = create.SetRetryOfRunID(p.RetryOfRunID)
 	}
 	if p.Attempt != nil {
-		if *p.Attempt < 1 {
-			return nil, &InvalidParamsError{Message: "attempt must be >= 1"}
-		}
 		create = create.SetAttempt(*p.Attempt)
 	}
 	if p.CloudEventID != nil {
@@ -241,6 +255,7 @@ func (s *Starter) appendQueuedEvent(ctx context.Context, p Params, run *ent.Back
 		"trigger":     trigger,
 		"runId":       run.RunID,
 		"requestedBy": string(p.sourceOrDefault()),
+		"priorityKey": PriorityFor(trigger, p.sourceOrDefault()),
 	}
 	if isRetry {
 		eventType = backgroundtaskworkflow.EventRetryRequested
@@ -250,6 +265,7 @@ func (s *Starter) appendQueuedEvent(ctx context.Context, p Params, run *ent.Back
 			"retryOfRunId": p.RetryOfRunID,
 			"attempt":      run.Attempt,
 			"requestedBy":  string(p.sourceOrDefault()),
+			"priorityKey":  PriorityFor(trigger, p.sourceOrDefault()),
 		}
 	}
 	raw, err := json.Marshal(event)
@@ -330,6 +346,7 @@ func runLogFields(ctx context.Context, p Params, run *ent.BackgroundTaskRun) []z
 		fields = append(fields, zap.String("cloudEventId", p.CloudEventID.String()))
 	}
 	fields = append(fields, zap.String("requestedBy", string(p.sourceOrDefault())))
+	fields = append(fields, zap.Int("priorityKey", PriorityFor(run.Trigger, p.sourceOrDefault())))
 	if sc := trace.SpanContextFromContext(ctx); sc.HasTraceID() {
 		fields = append(fields, zap.String("traceId", sc.TraceID().String()))
 	}

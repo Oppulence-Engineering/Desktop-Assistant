@@ -270,6 +270,7 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const { state: sidebarState } = useSidebar();
   const [width, setWidth] = useState(() => getInitialPaneWidth(defaultWidth));
+  const [maxAllowedWidth, setMaxAllowedWidth] = useState(MAX_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const [showContent, setShowContent] = useState(isOpen);
   const [localPresetMessage, setLocalPresetMessage] = useState<string | undefined>(undefined);
@@ -322,13 +323,23 @@ export function ChatSidebar({
 
   useEffect(() => {
     const clampToAvailableWidth = () => {
-      const maxAllowedWidth = getMaxAllowedWidth();
-      setWidth((prev) => clampPaneWidth(prev, maxAllowedWidth));
+      const nextMaxAllowedWidth = getMaxAllowedWidth();
+      setMaxAllowedWidth(nextMaxAllowedWidth);
+      setWidth((prev) => clampPaneWidth(prev, nextMaxAllowedWidth));
     };
 
     clampToAvailableWidth();
+    const resizeObserver =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(clampToAvailableWidth);
+    const splitContainer = paneRef.current?.parentElement;
+    const mainPane = splitContainer?.querySelector<HTMLElement>('[data-slot="sidebar-inset"]');
+    if (splitContainer) resizeObserver?.observe(splitContainer);
+    if (mainPane) resizeObserver?.observe(mainPane);
     window.addEventListener("resize", clampToAvailableWidth);
-    return () => window.removeEventListener("resize", clampToAvailableWidth);
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", clampToAvailableWidth);
+    };
   }, [getMaxAllowedWidth]);
 
   const handleMouseDown = useCallback(
@@ -557,11 +568,12 @@ export function ChatSidebar({
       // not add extra width to the right and overflow the app viewport.
       return { width: 0, flex: "1 1 auto" };
     }
+    const responsiveMaxWidth = { maxWidth: maxAllowedWidth };
     if (paneSize === "chat-equal" || paneSize === "chat-bigger") {
-      return { width: 0, flex: "1 1 0" };
+      return { ...responsiveMaxWidth, width: 0, flex: "1 1 0" };
     }
-    return { width, flex: "0 0 auto" };
-  }, [isOpen, isMaximized, paneSize, width]);
+    return { ...responsiveMaxWidth, width, flex: "0 0 auto" };
+  }, [isOpen, isMaximized, maxAllowedWidth, paneSize, width]);
 
   return (
     <div

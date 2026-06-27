@@ -424,10 +424,10 @@ export function HomeView({
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-      <div className="flex-1 overflow-y-auto px-9 py-7">
+      <div className="flex-1 overflow-y-auto px-5 py-6 md:px-9 md:py-7">
         <div className="mx-auto flex max-w-[820px] flex-col gap-4">
           {/* Greeting */}
-          <div className="flex items-baseline gap-3">
+          <div className="flex flex-wrap items-baseline gap-3">
             <h1 className="text-[26px] font-semibold tracking-tight">{greeting()}</h1>
             <span className="text-sm text-muted-foreground">{todayLabel()}</span>
           </div>
@@ -472,8 +472,8 @@ export function HomeView({
             </div>
           )}
 
-          {/* Inbox + Background agents */}
-          <div className="grid grid-cols-2 gap-[18px]">
+          {/* Inbox + Background tasks */}
+          <div className="grid grid-cols-1 gap-[18px] md:grid-cols-2">
             <div className={CARD}>
               <div className="mb-3 flex items-center gap-2">
                 <Mail className="size-[15px]" />
@@ -517,7 +517,7 @@ export function HomeView({
             <div className={CARD}>
               <div className="mb-3 flex items-center gap-2">
                 <Workflow className="size-[15px]" />
-                <span className="text-sm font-medium">Background agents</span>
+                <span className="text-sm font-medium">Background tasks</span>
                 <span className="flex-1" />
                 <span className="text-xs text-muted-foreground">{activeAgents.length} active</span>
                 <button
@@ -544,7 +544,7 @@ export function HomeView({
                   </span>
                 </button>
               ) : (
-                <div className="py-1 text-[12.5px] text-muted-foreground">No agents yet.</div>
+                <div className="py-1 text-[12.5px] text-muted-foreground">No tasks yet.</div>
               )}
               <button
                 type="button"
@@ -552,7 +552,7 @@ export function HomeView({
                 className="mt-3.5 flex items-center gap-2 border-t border-border pt-3 text-[12.5px] font-medium text-primary"
               >
                 <Plus className="size-3" />
-                Create an agent
+                Create a task
               </button>
             </div>
           </div>

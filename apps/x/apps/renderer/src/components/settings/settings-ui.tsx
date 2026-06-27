@@ -123,12 +123,16 @@ export function KeyValueRows({
   keyPlaceholder = "KEY",
   valuePlaceholder = "value",
   addLabel = "Add variable",
+  keyLabel = "Key",
+  valueLabel = "Value",
 }: {
   entries: Record<string, string>;
   onChange: (next: Record<string, string>) => void;
   keyPlaceholder?: string;
   valuePlaceholder?: string;
   addLabel?: string;
+  keyLabel?: string;
+  valueLabel?: string;
 }) {
   // Keep insertion order stable across edits by working on entry tuples.
   const rows = React.useMemo(() => Object.entries(entries), [entries]);
@@ -147,6 +151,7 @@ export function KeyValueRows({
             value={k}
             placeholder={keyPlaceholder}
             className="h-8 flex-1 font-mono text-xs"
+            aria-label={`${keyLabel} ${i + 1}`}
             onChange={(e) => {
               const next = [...rows] as [string, string][];
               next[i] = [e.target.value, v];
@@ -157,6 +162,7 @@ export function KeyValueRows({
             value={v}
             placeholder={valuePlaceholder}
             className="h-8 flex-1 font-mono text-xs"
+            aria-label={`${valueLabel} ${i + 1}`}
             onChange={(e) => {
               const next = [...rows] as [string, string][];
               next[i] = [k, e.target.value];
@@ -169,7 +175,7 @@ export function KeyValueRows({
             size="icon-sm"
             className="shrink-0 text-muted-foreground hover:text-destructive"
             onClick={() => commit(rows.filter((_, j) => j !== i) as [string, string][])}
-            aria-label="Remove"
+            aria-label={`Remove ${keyLabel.toLowerCase()} row ${i + 1}`}
           >
             <Trash2 className="size-4" />
           </Button>
@@ -196,12 +202,14 @@ export function StringListRows({
   placeholder,
   addLabel = "Add",
   mono = true,
+  itemLabel = "Item",
 }: {
   values: string[];
   onChange: (next: string[]) => void;
   placeholder?: string;
   addLabel?: string;
   mono?: boolean;
+  itemLabel?: string;
 }) {
   return (
     <div className="space-y-2">
@@ -211,6 +219,7 @@ export function StringListRows({
             value={val}
             placeholder={placeholder}
             className={cn("h-8 flex-1 text-xs", mono && "font-mono")}
+            aria-label={`${itemLabel} ${i + 1}`}
             onChange={(e) => {
               const next = [...values];
               next[i] = e.target.value;
@@ -223,7 +232,7 @@ export function StringListRows({
             size="icon-sm"
             className="shrink-0 text-muted-foreground hover:text-destructive"
             onClick={() => onChange(values.filter((_, j) => j !== i))}
-            aria-label="Remove"
+            aria-label={`Remove ${itemLabel.toLowerCase()} ${i + 1}`}
           >
             <Trash2 className="size-4" />
           </Button>

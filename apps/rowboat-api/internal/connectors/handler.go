@@ -75,15 +75,16 @@ type connectPending struct {
 }
 
 type connectorView struct {
-	Name        string   `json:"name"`
-	DisplayName string   `json:"displayName"`
-	Description string   `json:"description"`
-	MCPURL      string   `json:"mcpUrl"`
-	AuthType    string   `json:"authType"`
-	Scopes      []string `json:"scopes,omitempty"`
-	IconURL     string   `json:"iconUrl,omitempty"`
-	Connected   bool     `json:"connected"`
-	ConnectedAt string   `json:"connectedAt,omitempty"`
+	Name        string          `json:"name"`
+	DisplayName string          `json:"displayName"`
+	Description string          `json:"description"`
+	MCPURL      string          `json:"mcpUrl"`
+	AuthType    string          `json:"authType"`
+	Scopes      []string        `json:"scopes,omitempty"`
+	IconURL     string          `json:"iconUrl,omitempty"`
+	MCPTools    []MCPToolPolicy `json:"mcpTools,omitempty"`
+	Connected   bool            `json:"connected"`
+	ConnectedAt string          `json:"connectedAt,omitempty"`
 }
 
 // List handles GET /v1/connectors.
@@ -107,7 +108,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for _, c := range h.registry.List() {
 		v := connectorView{
 			Name: c.Name, DisplayName: c.DisplayName, Description: c.Description,
-			MCPURL: c.MCPURL, AuthType: c.AuthType, Scopes: c.Scopes, IconURL: c.IconURL,
+			MCPURL: c.MCPURL, AuthType: c.AuthType, Scopes: c.Scopes, IconURL: c.IconURL, MCPTools: c.MCPTools,
 		}
 		if mc, ok := connected[c.Name]; ok {
 			v.Connected = true

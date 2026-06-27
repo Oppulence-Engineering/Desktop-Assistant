@@ -54,6 +54,13 @@ var (
 		Help: "API-native background task cancellation requests accepted.",
 	})
 
+	// AdmissionRejected counts runs rejected before Temporal start by bounded
+	// admission guardrails (capacity, rate, or credit preflight).
+	AdmissionRejected = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "cloud_run_admission_rejected_total",
+		Help: "API-native background task runs rejected before Temporal start, by error code.",
+	}, []string{"error_code"})
+
 	// ArtifactSyncFailures counts failures persisting the run artifact.
 	ArtifactSyncFailures = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "cloud_run_artifact_sync_failures_total",
@@ -145,14 +152,14 @@ var (
 	}, []string{"kind"})
 
 	// ScheduleFires counts scheduler-workflow fire ATTEMPTS by outcome:
-	// started (a run was created — comparable 1:1 with
-	// cloud_runs_triggered_total{trigger=cron}), skipped (stale fire,
-	// occurrence covered, in-flight, or backout), failed (start error; one
-	// per failing attempt, matching the failed run rows left behind). A
-	// retried fire can contribute to more than one label.
+	// started (a run was admitted and Temporal-started), dead_lettered (a run
+	// row was created but admission rejected it before Temporal), skipped
+	// (stale fire, occurrence covered, in-flight, or backout), failed (start
+	// error; one per failing attempt, matching the failed run rows left
+	// behind). A retried fire can contribute to more than one label.
 	ScheduleFires = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "temporal_schedule_fires_total",
-		Help: "Temporal Schedule fire attempts handled by the scheduler workflow, by outcome (started|skipped|failed).",
+		Help: "Temporal Schedule fire attempts handled by the scheduler workflow, by outcome (started|dead_lettered|skipped|failed).",
 	}, []string{"result"})
 )
 

@@ -1,6 +1,7 @@
 package cloudevents
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -20,9 +21,10 @@ import (
 
 // Config tunes the ingestion surface.
 type Config struct {
-	MaxPayloadBytes    int
-	SlackSigningSecret string
-	GoogleWebhookToken string
+	MaxPayloadBytes      int
+	SlackSigningSecret   string
+	GoogleWebhookToken   string
+	WebhookSigningSecret string
 }
 
 // Handler serves /v1/events, /v1/internal/events, and /v1/webhooks/*.
@@ -32,11 +34,23 @@ type Handler struct {
 	router RouteController // nil → routing disabled; events stored skipped
 	cfg    Config
 	log    *zap.Logger
+
+	slackAgentDispatcher SlackAgentDispatcher
 }
+
+// SlackAgentDispatcher starts or continues an agent session for a verified
+// Slack Events API payload owned by owner.
+type SlackAgentDispatcher func(ctx context.Context, owner *ent.User, body []byte) error
 
 // New builds the cloud events handler. router may be nil (routing disabled).
 func New(client *ent.Client, sealer *crypto.Sealer, router RouteController, cfg Config, log *zap.Logger) *Handler {
 	return &Handler{client: client, sealer: sealer, router: router, cfg: cfg, log: log}
+}
+
+// SetSlackAgentDispatcher lets /v1/webhooks/slack fan out app_mention events to
+// the agent channel adapter after the CloudEvent row durably claims the event.
+func (h *Handler) SetSlackAgentDispatcher(fn SlackAgentDispatcher) {
+	h.slackAgentDispatcher = fn
 }
 
 // maxIngestBody bounds the whole ingest request body: the payload cap plus

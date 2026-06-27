@@ -7,13 +7,15 @@ on:
       - "charts/rowboat-api/**"
       - "packages/rowboat-api-client-ts/**"
       - ".github/workflows/rowboat-api-quality.yml"
+      - ".github/workflows/rowboat-api-deploy.yml"
   push:
-    branches: [develop]
+    branches: [develop, main]
     paths:
       - "apps/rowboat-api/**"
       - "charts/rowboat-api/**"
       - "packages/rowboat-api-client-ts/**"
       - ".github/workflows/rowboat-api-quality.yml"
+      - ".github/workflows/rowboat-api-deploy.yml"
 
 permissions:
   contents: read
@@ -114,6 +116,8 @@ jobs:
         run: helm template rowboat-api charts/rowboat-api
       - name: Helm template kind values
         run: helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-kind.yaml
+      - name: Helm template production values
+        run: helm template rowboat-api charts/rowboat-api -n rowboat -f charts/rowboat-api/values-production.yaml --set image.tag=ci
 
   vulnerability-scan:
     runs-on: ubuntu-latest

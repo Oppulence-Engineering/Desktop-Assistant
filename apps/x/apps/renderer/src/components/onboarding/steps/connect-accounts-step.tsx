@@ -66,7 +66,12 @@ function ProviderCard({
               <span className="font-medium">Connected</span>
             </div>
           ) : (
-            <Button size="sm" onClick={onConnect} disabled={providerState?.isConnecting}>
+            <Button
+              size="sm"
+              onClick={onConnect}
+              disabled={providerState?.isConnecting}
+              aria-label={`Connect ${name}`}
+            >
               {providerState?.isConnecting ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (

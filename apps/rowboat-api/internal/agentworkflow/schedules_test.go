@@ -49,7 +49,9 @@ func TestCreateScheduledSessionDisabledSkips(t *testing.T) {
 }
 
 func TestScheduleIDsDeterministic(t *testing.T) {
-	if SessionScheduleID("u1", "a") != SessionScheduleID("u1", "a") {
+	first := SessionScheduleID("u1", "a")
+	second := SessionScheduleID("u1", "a")
+	if first != second {
 		t.Fatal("schedule id must be stable")
 	}
 	if SessionScheduleID("u1", "a") == SessionScheduleID("u1", "b") {

@@ -285,7 +285,7 @@ func renderYAML(spec *agentregistry.Spec, raw string, format string) ([]byte, er
 		},
 	}
 	for _, t := range spec.Tools {
-		doc.Spec.Tools = append(doc.Spec.Tools, agentspec.Tool{Name: t.Name, Kind: t.Kind, ManifestRef: t.ManifestRef, RequiresApproval: t.RequiresApproval})
+		doc.Spec.Tools = append(doc.Spec.Tools, agentspec.Tool(t))
 	}
 	if len(spec.Tools) == 0 {
 		for _, n := range spec.EnabledTools {

@@ -6,8 +6,13 @@ replicaCount: 3
 image:
   tag: "" # set by CI to the released git SHA / tag
 
+imagePullSecrets:
+  - name: ghcr-pull
+
 ingress:
-  host: api.x.solomon-ai.co
+  host: api.oppulence.io
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
 
 autoscaling:
   enabled: true
@@ -16,37 +21,66 @@ autoscaling:
   targetCPUUtilizationPercentage: 65
 
 serviceMonitor:
-  enabled: true
+  enabled: false
 
 config:
   ENVIRONMENT: production
   LOG_LEVEL: info
   AUTO_MIGRATE: "false"
-  APP_URL: https://app.solomon-ai.co
-  PUBLIC_BASE_URL: https://api.x.solomon-ai.co
+  APP_URL: https://oppulence.io
+  CORS_ALLOWED_ORIGINS: https://oppulence.io
+  OIDC_ISSUER_URL: https://agile-glow-66.authkit.app
+  # WorkOS access tokens are verified against this issuer and the JWKS_URL
+  # stored in rowboat-api-secrets. WorkOS-direct tokens carry no aud, so the
+  # audience check stays explicitly disabled.
+  TOKEN_ISSUER: https://api.workos.com
+  TOKEN_AUDIENCE: ""
+  JWKS_URL: ""
+  OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  PUBLIC_BASE_URL: https://api.oppulence.io
   # Google OAuth broker callback — the API host serving /oauth/google/callback (NOT
   # APP_URL, which the default would use). Register this exact URI in Google Cloud.
-  GOOGLE_REDIRECT_URI: https://api.x.solomon-ai.co/oauth/google/callback
-  INFISICAL_ENABLED: "true"
-  INFISICAL_ENVIRONMENT: production
+  GOOGLE_REDIRECT_URI: https://api.oppulence.io/oauth/google/callback
+  # Production secrets are synced from Infisical into `rowboat-api-secrets`
+  # before Helm deploys. Runtime app-level Infisical refresh stays disabled so
+  # the app does not need an Infisical machine token at boot.
+  INFISICAL_ENABLED: "false"
   # --- Temporal Cloud (API-native background task worker) -------------------
-  # Production executes API-target runs on Temporal Cloud (API-key auth over
-  # TLS). To enable: set TEMPORAL_ENABLED to "true", point ADDRESS/NAMESPACE at
-  # your Temporal Cloud namespace, add TEMPORAL_API_KEY to the
-  # rowboat-api-secrets Secret (never inline it here), and set worker.enabled:
-  # true below.
-  TEMPORAL_ENABLED: "false"
-  TEMPORAL_ADDRESS: <namespace>.<account>.tmprl.cloud:7233
-  TEMPORAL_NAMESPACE: <namespace>.<account>
+  # Production executes API-target runs on the dedicated Rowboat Temporal Cloud
+  # namespace using API-key auth over TLS. TEMPORAL_API_KEY lives only in
+  # rowboat-api-secrets / Infisical.
+  TEMPORAL_ENABLED: "true"
+  TEMPORAL_ADDRESS: rowboat-production.kpisa.tmprl.cloud:7233
+  TEMPORAL_NAMESPACE: rowboat-production.kpisa
   TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
   TEMPORAL_TLS_ENABLED: "true"
-  TEMPORAL_WORKER_ENABLED: "false"
+  TEMPORAL_WORKER_ENABLED: "true"
 
-# Flip to true alongside TEMPORAL_ENABLED to run the durable worker.
 worker:
-  enabled: false
+  enabled: true
   replicaCount: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 65
 
 # Secrets live in the cluster Secret `rowboat-api-secrets` (sealed-secrets /
 # external-secrets / Infisical operator). Do NOT inline secret values here.
+#
+# Required database/cache values in that Secret:
+#   postgresql://rowboat_app:<password>@oppulence-storage-do-user-14647471-0.l.db.ondigitalocean.com:25061/solomonai-desktop-backend-db-pool?sslmode=require
+#   rediss://default:<password>@solomon-ai-redis-cluster-do-user-14647471-0.b.db.ondigitalocean.com:25061
+#
+# DATABASE_URL points at the DigitalOcean PgBouncer transaction pool
+# `solomonai-desktop-backend-db-pool`, backed by database
+# `solomonai-desktop-backend-db` on the `oppulence-storage` cluster. This uses
+# the public TLS pool endpoint because the Kubernetes production cluster is not
+# on the DigitalOcean private database network. Keep Rowboat on the pool
+# endpoint rather than the direct Postgres port so the API, worker, and
+# scheduler replicas do not exhaust backend connection slots.
+#
+# REDIS_URL points at the existing DigitalOcean Valkey cluster
+# `solomon-ai-redis-cluster` over the public TLS endpoint for the same network
+# reachability reason.
 existingSecret: rowboat-api-secrets

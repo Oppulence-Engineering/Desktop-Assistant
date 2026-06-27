@@ -59,10 +59,25 @@ func Open(ctx context.Context, cfg appconfig.Config, log *zap.Logger) (*DB, erro
 		// and ConnMaxLifetime=0 (connections never recycled), which can exhaust
 		// the server's connection slots and pin stale connections. Bound the pool
 		// and recycle connections so usage stays predictable.
-		sqlDB.SetMaxOpenConns(20)
-		sqlDB.SetMaxIdleConns(10)
-		sqlDB.SetConnMaxLifetime(30 * time.Minute)
-		sqlDB.SetConnMaxIdleTime(5 * time.Minute)
+		maxOpen := cfg.DBMaxOpenConns
+		if maxOpen <= 0 {
+			maxOpen = 20
+		}
+		maxIdle := cfg.DBMaxIdleConns
+		if maxIdle < 0 {
+			maxIdle = 0
+		}
+		if maxIdle > maxOpen {
+			maxIdle = maxOpen
+		}
+		sqlDB.SetMaxOpenConns(maxOpen)
+		sqlDB.SetMaxIdleConns(maxIdle)
+		if cfg.DBConnMaxLifetime > 0 {
+			sqlDB.SetConnMaxLifetime(cfg.DBConnMaxLifetime)
+		}
+		if cfg.DBConnMaxIdleTime > 0 {
+			sqlDB.SetConnMaxIdleTime(cfg.DBConnMaxIdleTime)
+		}
 	}
 
 	base := entsql.OpenDB(dlct, sqlDB)

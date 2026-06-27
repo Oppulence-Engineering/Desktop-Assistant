@@ -161,3 +161,41 @@ func TestCalendarNotification(t *testing.T) {
 		t.Fatalf("events = %d, want 1", n)
 	}
 }
+
+func TestDriveNotification(t *testing.T) {
+	client, u := setup(t)
+	connectGoogle(t, client, u, "me@gmail.com")
+	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
+	srv := newWebhookServer(t, h)
+
+	send := func(msgNum string) int {
+		t.Helper()
+		req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/webhooks/google", nil)
+		req.Header.Set("X-Goog-Channel-Token", "tok-1")
+		req.Header.Set("X-Goog-Resource-State", "exists")
+		req.Header.Set("X-Goog-Channel-ID", "gdrive:me@gmail.com:abc")
+		req.Header.Set("X-Goog-Message-Number", msgNum)
+		req.Header.Set("X-Goog-Resource-ID", "drive-res-1")
+		req.Header.Set("X-Goog-Changed", "children")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("send: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		return resp.StatusCode
+	}
+
+	if status := send("4"); status != http.StatusAccepted {
+		t.Fatalf("drive notification: %d, want 202", status)
+	}
+	ev := client.CloudEvent.Query().OnlyX(auth.WithInternal(context.Background()))
+	if ev.Source != SourceGoogleDrive || ev.DedupeKey != "gdrive:gdrive:me@gmail.com:abc:4" || ev.SourceAccountID != "me@gmail.com" {
+		t.Fatalf("event = %s/%s/%s", ev.Source, ev.DedupeKey, ev.SourceAccountID)
+	}
+	if status := send("4"); status != http.StatusOK {
+		t.Fatalf("dup: %d, want 200", status)
+	}
+	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
+		t.Fatalf("events = %d, want 1", n)
+	}
+}

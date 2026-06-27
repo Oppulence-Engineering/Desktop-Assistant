@@ -63,6 +63,36 @@ async function writeTask(slug: string, task: Partial<BackgroundTask> = {}): Prom
   await fs.writeFile(path.join(dir, "index.md"), `# ${body.name}\n\n`, "utf8");
 }
 
+async function writeRun(runId: string): Promise<void> {
+  await fs.mkdir(path.join(workDir, "runs"), { recursive: true });
+  const start = {
+    runId,
+    type: "start",
+    agentName: "background-task-agent",
+    model: "openai/gpt-4.1-mini",
+    provider: "openai",
+    useCase: "background_task_agent",
+    subUseCase: "manual",
+    subflow: [],
+    ts: now,
+  };
+  const message = {
+    runId,
+    type: "message",
+    messageId: "message-1",
+    message: {
+      role: "user",
+      content: "Run the desktop task.",
+    },
+    subflow: [],
+  };
+  await fs.writeFile(
+    path.join(workDir, "runs", `${runId}.jsonl`),
+    `${JSON.stringify(start)}\n${JSON.stringify(message)}\n`,
+    "utf8",
+  );
+}
+
 function cloudRun(
   slug: string,
   runId: string,
@@ -192,6 +222,58 @@ describe("background task cloud workflows", () => {
     INTEGRATION_TIMEOUT_MS,
   );
 
+  it("flushes task sync before reading cloud schedule state", async () => {
+    const slug = "schedule-state-sync";
+    await writeOAuthToken();
+    await writeTask(slug, { triggers: { cronExpr: "*/1 * * * *" } });
+
+    const scheduleState = {
+      target: "api",
+      triggerSources: ["cron"],
+      health: "current",
+      mechanism: "temporal_schedule",
+      nextDueAt: "2026-06-05T12:01:00.000Z",
+      scheduleSyncState: "current",
+      sources: {
+        cron: {
+          health: "current",
+          mechanism: "temporal_schedule",
+          nextDueAt: "2026-06-05T12:01:00.000Z",
+        },
+      },
+    };
+    const fetchMock = vi.fn(async (input: unknown, init?: RequestInit) => {
+      const url = requestURL(input);
+      const method = requestMethod(init);
+      const pathname = url.pathname;
+
+      if (method === "GET" && pathname === `/v1/background-tasks/${slug}`) {
+        return new Response("not found", { status: 404 });
+      }
+      if (method === "POST" && pathname === "/v1/background-tasks") {
+        return response({ slug, revision: 1 });
+      }
+      if (method === "GET" && pathname === `/v1/background-tasks/${slug}/schedule-state`) {
+        return response(scheduleState);
+      }
+      throw new Error(`unexpected cloud request: ${method} ${pathname}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { getCloudScheduleState } = await import("./cloud-sync.js");
+    await expect(getCloudScheduleState(slug)).resolves.toMatchObject({
+      mechanism: "temporal_schedule",
+      scheduleSyncState: "current",
+    });
+
+    const paths = fetchMock.mock.calls.map(([input]) => requestURL(input).pathname);
+    expect(paths).toEqual([
+      `/v1/background-tasks/${slug}`,
+      "/v1/background-tasks",
+      `/v1/background-tasks/${slug}/schedule-state`,
+    ]);
+  });
+
   it(
     "refetches and patches the remote task when create races another desktop sync",
     async () => {
@@ -238,6 +320,88 @@ describe("background task cloud workflows", () => {
     },
     INTEGRATION_TIMEOUT_MS,
   );
+
+  it("syncs desktop transcript events once using known cloud event types", async () => {
+    const slug = "desktop-event-sync";
+    const runId = "local-run-1";
+    await writeOAuthToken();
+    await writeTask(slug, { executionTarget: "desktop" });
+    await writeRun(runId);
+
+    let remoteRunCreated = false;
+    const storedEvents: Array<{ seq: number; type?: string; event: unknown }> = [];
+    const fetchMock = vi.fn(async (input: unknown, init?: RequestInit) => {
+      const url = requestURL(input);
+      const method = requestMethod(init);
+      const pathname = url.pathname;
+
+      if (method === "GET" && pathname === `/v1/background-tasks/${slug}`) {
+        return response({ slug, revision: 1 });
+      }
+      if (method === "PATCH" && pathname === `/v1/background-tasks/${slug}`) {
+        return response({ slug, revision: 2 });
+      }
+      if (method === "GET" && pathname === `/v1/background-tasks/${slug}/artifact`) {
+        return response({ slug, revision: 1, body: "" });
+      }
+      if (method === "PUT" && pathname === `/v1/background-tasks/${slug}/artifact`) {
+        return response({ slug, revision: 2, body: "# Cloud workflow smoke\n\n" });
+      }
+      if (method === "GET" && pathname === `/v1/background-tasks/${slug}/runs/${runId}`) {
+        if (!remoteRunCreated) return new Response("not found", { status: 404 });
+        return response({
+          ...cloudRun(slug, runId, "running"),
+          executor: "desktop",
+          localRunId: runId,
+          temporalWorkflowId: undefined,
+          temporalRunId: undefined,
+        });
+      }
+      if (method === "POST" && pathname === `/v1/background-tasks/${slug}/runs`) {
+        remoteRunCreated = true;
+        return response({
+          ...cloudRun(slug, runId, "running"),
+          executor: "desktop",
+          localRunId: runId,
+          temporalWorkflowId: undefined,
+          temporalRunId: undefined,
+        });
+      }
+      if (method === "GET" && pathname === `/v1/background-tasks/${slug}/runs/${runId}/events`) {
+        return response({
+          events: storedEvents.map((event, index) => ({
+            id: `event-${index}`,
+            ...event,
+            receivedAt: now,
+          })),
+        });
+      }
+      if (method === "POST" && pathname === `/v1/background-tasks/${slug}/runs/${runId}/events`) {
+        const body = JSON.parse(String(init?.body));
+        storedEvents.push(...body.events);
+        return response({ stored: body.events.length, skipped: 0 });
+      }
+      throw new Error(`unexpected cloud request: ${method} ${pathname}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { syncRunToCloud } = await import("./cloud-sync.js");
+    await syncRunToCloud(slug, runId, "manual");
+    await syncRunToCloud(slug, runId, "manual");
+
+    const eventPosts = fetchMock.mock.calls.filter(
+      ([input, init]) =>
+        requestMethod(init as RequestInit | undefined) === "POST" &&
+        requestURL(input).pathname === `/v1/background-tasks/${slug}/runs/${runId}/events`,
+    );
+    expect(eventPosts).toHaveLength(1);
+    expect(JSON.parse(String(eventPosts[0]?.[1]?.body))).toMatchObject({
+      events: [
+        { seq: 0, type: "desktop.start", event: { type: "start" } },
+        { seq: 1, type: "desktop.message", event: { type: "message" } },
+      ],
+    });
+  });
 
   it("skips api-target timed triggers entirely — cloud schedulers own them (RFC 006)", async () => {
     const triggerCloudRun = vi.fn();

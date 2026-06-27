@@ -108,6 +108,7 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 		}
 	}
 
+	deadLettered := false
 	run, err := s.Start(ctx, Params{
 		User:    task.Edges.User,
 		Task:    task,
@@ -122,6 +123,7 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 	})
 	var persistErr *PersistIDsError
 	var startErr *StartFailedError
+	var admissionRejected *AdmissionRejectedError
 	switch {
 	case errors.As(err, &persistErr):
 		// The run workflow IS already running; only persisting its Temporal
@@ -144,12 +146,21 @@ func (s *Starter) StartScheduledRun(ctx context.Context, in backgroundtaskworkfl
 		s.Log.Error("scheduled run temporal start failed",
 			zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID), zap.Error(err))
 		return backgroundtaskworkflow.ScheduledRunResult{}, err
+	case errors.As(err, &admissionRejected):
+		// Admission failures are deliberate dead-letter outcomes, not Temporal
+		// transport failures. Do not return an error here: activity retry would
+		// just create duplicate failed rows for the same scheduled occurrence.
+		s.stampScheduledAttempt(ctx, task, now)
+		s.Log.Warn("scheduled run dead-lettered before temporal start",
+			zap.String("taskSlug", task.Slug), zap.String("runId", run.RunID),
+			zap.String("errorCode", admissionRejected.Code), zap.Error(err))
+		deadLettered = true
 	case err != nil:
 		return backgroundtaskworkflow.ScheduledRunResult{}, err
 	default:
 		s.stampScheduledFire(ctx, task, now, run.RunID)
 	}
-	return backgroundtaskworkflow.ScheduledRunResult{RunID: run.RunID, WorkflowID: run.TemporalWorkflowID}, nil
+	return backgroundtaskworkflow.ScheduledRunResult{RunID: run.RunID, WorkflowID: run.TemporalWorkflowID, DeadLettered: deadLettered}, nil
 }
 
 // stampScheduledFire mirrors the loop's stampFired: a successful fire advances
