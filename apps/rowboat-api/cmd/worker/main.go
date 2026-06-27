@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
@@ -155,11 +156,15 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 
 	var sandboxExec backgroundtaskruntime.SandboxExecutor
 	if cfg.CloudRuntimeEnabled && cfg.CloudRuntimeSandboxEnabled {
+		ttlSeconds := cfg.CloudRuntimeSandboxTTLSeconds
+		if ttlSeconds > math.MaxInt32 {
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_TTL_SECONDS must be <= %d; got %d", math.MaxInt32, ttlSeconds)
+		}
 		sandboxCfg := backgroundtaskruntime.KubernetesSandboxConfig{
 			Namespace:          cfg.CloudRuntimeSandboxNamespace,
 			ServiceAccountName: cfg.CloudRuntimeSandboxServiceAccount,
 			PollInterval:       cfg.CloudRuntimeSandboxPollInterval,
-			TTLSeconds:         int32(cfg.CloudRuntimeSandboxTTLSeconds),
+			TTLSeconds:         int32(ttlSeconds),
 			CPURequest:         cfg.CloudRuntimeSandboxCPURequest,
 			MemoryRequest:      cfg.CloudRuntimeSandboxMemoryRequest,
 			CPULimit:           cfg.CloudRuntimeSandboxCPULimit,

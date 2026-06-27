@@ -102,7 +102,7 @@ func (s *eventSink) ProgressEvent(ctx context.Context, eventType string, percent
 }
 
 func (s *eventSink) Emit(ctx context.Context, eventType string, payload map[string]any) error {
-	withType := make(map[string]any, len(payload)+1)
+	withType := make(map[string]any, len(payload))
 	withType["type"] = eventType
 	for k, v := range payload {
 		withType[k] = v
