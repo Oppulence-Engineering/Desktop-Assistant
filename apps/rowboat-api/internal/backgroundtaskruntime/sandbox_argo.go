@@ -31,6 +31,7 @@ func NewArgoSandboxExecutor(cfg KubernetesSandboxConfig) (*ArgoSandboxExecutor, 
 	return &ArgoSandboxExecutor{kube: kube}, nil
 }
 
+// Execute runs one sandbox request as an Argo Workflow.
 func (e *ArgoSandboxExecutor) Execute(ctx context.Context, run SandboxRun) (SandboxResult, error) {
 	if run.Timeout <= 0 {
 		run.Timeout = time.Minute
@@ -84,7 +85,7 @@ func (e *ArgoSandboxExecutor) ensureWorkflow(ctx context.Context, name string, r
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusConflict {
 		return nil
 	}
@@ -181,7 +182,7 @@ func (e *ArgoSandboxExecutor) getWorkflowStatus(ctx context.Context, name string
 	if err != nil {
 		return argoWorkflowStatus{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusNotFound {
 		return argoWorkflowStatus{}, errKubernetesNotFound
 	}
@@ -245,7 +246,7 @@ func (e *ArgoSandboxExecutor) logs(ctx context.Context, workflowName string, max
 	if err != nil {
 		return "", false, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return "", false, fmt.Errorf("read argo sandbox logs: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
@@ -273,7 +274,7 @@ func (e *ArgoSandboxExecutor) exitCode(ctx context.Context, workflowName string)
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return 0, nil
 	}
@@ -307,7 +308,7 @@ func (e *ArgoSandboxExecutor) firstWorkflowPod(ctx context.Context, workflowName
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return "", fmt.Errorf("list argo sandbox pods: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
@@ -333,7 +334,7 @@ func (e *ArgoSandboxExecutor) mainContainerName(ctx context.Context, pod string)
 	if err != nil {
 		return "main"
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "main"
 	}
@@ -362,7 +363,7 @@ func (e *ArgoSandboxExecutor) deleteWorkflow(ctx context.Context, name string) e
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusNotFound || (resp.StatusCode >= 200 && resp.StatusCode < 300) {
 		return nil
 	}

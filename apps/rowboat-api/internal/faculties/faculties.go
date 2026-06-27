@@ -30,14 +30,22 @@ const (
 )
 
 var (
+	// ErrMalformedDelegation reports a token that cannot be decoded.
 	ErrMalformedDelegation = errors.New("faculties: malformed delegation token")
+	// ErrDelegationSignature reports a token signature mismatch.
 	ErrDelegationSignature = errors.New("faculties: delegation signature mismatch")
-	ErrDelegationExpired   = errors.New("faculties: delegation token expired")
-	ErrDelegationBody      = errors.New("faculties: delegation body hash mismatch")
-	ErrDelegationIssuer    = errors.New("faculties: delegation issuer mismatch")
-	ErrDelegationAudience  = errors.New("faculties: delegation audience mismatch")
-	ErrDelegationMethod    = errors.New("faculties: delegation method mismatch")
-	ErrDelegationPath      = errors.New("faculties: delegation path mismatch")
+	// ErrDelegationExpired reports an expired delegation token.
+	ErrDelegationExpired = errors.New("faculties: delegation token expired")
+	// ErrDelegationBody reports a request body hash mismatch.
+	ErrDelegationBody = errors.New("faculties: delegation body hash mismatch")
+	// ErrDelegationIssuer reports an unexpected delegation issuer.
+	ErrDelegationIssuer = errors.New("faculties: delegation issuer mismatch")
+	// ErrDelegationAudience reports an unexpected delegation audience.
+	ErrDelegationAudience = errors.New("faculties: delegation audience mismatch")
+	// ErrDelegationMethod reports a delegation method mismatch.
+	ErrDelegationMethod = errors.New("faculties: delegation method mismatch")
+	// ErrDelegationPath reports a delegation path mismatch.
+	ErrDelegationPath = errors.New("faculties: delegation path mismatch")
 )
 
 // DelegationClaims are signed into every faculty request.

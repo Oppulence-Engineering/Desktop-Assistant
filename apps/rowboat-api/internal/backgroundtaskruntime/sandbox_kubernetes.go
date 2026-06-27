@@ -133,6 +133,7 @@ func NewKubernetesSandboxExecutor(cfg KubernetesSandboxConfig) (*KubernetesSandb
 	}, nil
 }
 
+// Execute runs one sandbox request as a Kubernetes Job.
 func (e *KubernetesSandboxExecutor) Execute(ctx context.Context, run SandboxRun) (SandboxResult, error) {
 	if run.Timeout <= 0 {
 		run.Timeout = time.Minute
@@ -186,7 +187,7 @@ func (e *KubernetesSandboxExecutor) ensureJob(ctx context.Context, name string, 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusConflict {
 		return nil
 	}
@@ -311,7 +312,7 @@ func (e *KubernetesSandboxExecutor) getJobStatus(ctx context.Context, name strin
 	if err != nil {
 		return kubernetesJobStatus{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusNotFound {
 		return kubernetesJobStatus{}, errKubernetesNotFound
 	}
@@ -385,7 +386,7 @@ func (e *KubernetesSandboxExecutor) logs(ctx context.Context, jobName string, ma
 	if err != nil {
 		return "", false, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return "", false, fmt.Errorf("read sandbox logs: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
@@ -413,7 +414,7 @@ func (e *KubernetesSandboxExecutor) exitCode(ctx context.Context, jobName string
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return 0, nil
 	}
@@ -447,7 +448,7 @@ func (e *KubernetesSandboxExecutor) firstPod(ctx context.Context, jobName string
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return "", fmt.Errorf("list sandbox pods: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
@@ -475,7 +476,7 @@ func (e *KubernetesSandboxExecutor) deleteJob(ctx context.Context, name string) 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusNotFound || (resp.StatusCode >= 200 && resp.StatusCode < 300) {
 		return nil
 	}

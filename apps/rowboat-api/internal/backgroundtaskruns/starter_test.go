@@ -77,7 +77,7 @@ func createUserTask(t *testing.T, client *ent.Client, email, workosID, slug stri
 	return u, task
 }
 
-func assertDeadLetterRun(t *testing.T, client *ent.Client, ctx context.Context, run *ent.BackgroundTaskRun, wantCode string, wantRequestedBy backgroundtaskruns.Source, wantPriorityKey int, wantRetryAfterSeconds int) {
+func assertDeadLetterRun(ctx context.Context, t *testing.T, client *ent.Client, run *ent.BackgroundTaskRun, wantCode string, wantRequestedBy backgroundtaskruns.Source, wantPriorityKey int, wantRetryAfterSeconds int) {
 	t.Helper()
 	if run == nil || run.Status != "failed" || run.TemporalStatus != "DeadLettered" || run.ErrorCode != wantCode {
 		t.Fatalf("run = %+v, want failed/DeadLettered/%s", run, wantCode)
@@ -296,7 +296,7 @@ func TestStartAdmissionBackpressureDeadLettersBeforeTemporal(t *testing.T) {
 			if rejected.Code != backgroundtaskworkflow.ErrCodeAdmissionBackpressure || !strings.Contains(rejected.Message, tc.wantMsg) {
 				t.Fatalf("rejection = code %q message %q", rejected.Code, rejected.Message)
 			}
-			assertDeadLetterRun(t, client, ctx, run, backgroundtaskworkflow.ErrCodeAdmissionBackpressure, backgroundtaskruns.SourceHTTP, backgroundtaskworkflow.PriorityHigh, 0)
+			assertDeadLetterRun(ctx, t, client, run, backgroundtaskworkflow.ErrCodeAdmissionBackpressure, backgroundtaskruns.SourceHTTP, backgroundtaskworkflow.PriorityHigh, 0)
 			if len(ctrl.starts) != 0 {
 				t.Fatalf("backpressure must not start Temporal, got %+v", ctrl.starts)
 			}
@@ -356,7 +356,7 @@ func TestStartAdmissionRateLimitDeadLettersBeforeTemporal(t *testing.T) {
 			if rejected.Code != backgroundtaskworkflow.ErrCodeAdmissionRateLimited || !strings.Contains(rejected.Message, tc.wantMsg) {
 				t.Fatalf("rejection = code %q message %q", rejected.Code, rejected.Message)
 			}
-			assertDeadLetterRun(t, client, ctx, run, backgroundtaskworkflow.ErrCodeAdmissionRateLimited, backgroundtaskruns.SourceHTTP, backgroundtaskworkflow.PriorityHigh, 60)
+			assertDeadLetterRun(ctx, t, client, run, backgroundtaskworkflow.ErrCodeAdmissionRateLimited, backgroundtaskruns.SourceHTTP, backgroundtaskworkflow.PriorityHigh, 60)
 			if len(ctrl.starts) != 0 {
 				t.Fatalf("rate-limited run must not start Temporal, got %+v", ctrl.starts)
 			}

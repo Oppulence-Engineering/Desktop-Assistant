@@ -57,6 +57,7 @@ func NewMCPHTTPClient(policy outbound.Policy) *MCPHTTPClient {
 	return &MCPHTTPClient{http: outbound.NewClient(policy)}
 }
 
+// ListTools returns the tools exposed by one MCP HTTP endpoint.
 func (c *MCPHTTPClient) ListTools(ctx context.Context, mcpURL, tokenType, accessToken string) (json.RawMessage, error) {
 	sessionID, err := c.initialize(ctx, mcpURL, tokenType, accessToken)
 	if err != nil {
@@ -67,6 +68,7 @@ func (c *MCPHTTPClient) ListTools(ctx context.Context, mcpURL, tokenType, access
 	return result, err
 }
 
+// CallTool invokes one MCP tool through the configured HTTP endpoint.
 func (c *MCPHTTPClient) CallTool(ctx context.Context, mcpURL, tokenType, accessToken, toolName string, args json.RawMessage) (json.RawMessage, error) {
 	sessionID, err := c.initialize(ctx, mcpURL, tokenType, accessToken)
 	if err != nil {
@@ -105,15 +107,15 @@ func (c *MCPHTTPClient) initialize(ctx context.Context, mcpURL, tokenType, acces
 			},
 		},
 	}
-	if _, sessionID, err := c.post(ctx, mcpURL, tokenType, accessToken, "", req, "initialize"); err != nil {
+	_, sessionID, err := c.post(ctx, mcpURL, tokenType, accessToken, "", req, "initialize")
+	if err != nil {
 		return "", err
-	} else {
-		notification := mcpRPCRequest{JSONRPC: "2.0", Method: "notifications/initialized"}
-		if _, _, err := c.post(ctx, mcpURL, tokenType, accessToken, sessionID, notification, ""); err != nil {
-			return "", err
-		}
-		return sessionID, nil
 	}
+	notification := mcpRPCRequest{JSONRPC: "2.0", Method: "notifications/initialized"}
+	if _, _, err := c.post(ctx, mcpURL, tokenType, accessToken, sessionID, notification, ""); err != nil {
+		return "", err
+	}
+	return sessionID, nil
 }
 
 type mcpRPCRequest struct {

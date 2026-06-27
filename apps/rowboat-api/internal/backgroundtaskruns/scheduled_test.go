@@ -156,7 +156,7 @@ func TestStartScheduledRunDeadLettersCreditPreflightVariants(t *testing.T) {
 			}
 
 			run := client.BackgroundTaskRun.Query().Where(backgroundtaskrun.RunIDEQ(out.RunID)).OnlyX(ctx)
-			assertDeadLetterRun(t, client, ctx, run, tc.wantCode, backgroundtaskruns.SourceTemporalSchedule, backgroundtaskworkflow.PriorityLow, 0)
+			assertDeadLetterRun(ctx, t, client, run, tc.wantCode, backgroundtaskruns.SourceTemporalSchedule, backgroundtaskworkflow.PriorityLow, 0)
 
 			afterLedger := client.CreditLedger.Query().
 				Where(creditledger.HasUserWith()).

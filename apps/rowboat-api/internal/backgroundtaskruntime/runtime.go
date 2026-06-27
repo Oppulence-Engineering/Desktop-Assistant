@@ -154,9 +154,13 @@ type Tool interface {
 }
 
 const (
-	TierRead        = "read"
-	TierWrite       = "write"
-	TierAct         = "act"
+	// TierRead marks a read-only tool operation.
+	TierRead = "read"
+	// TierWrite marks a mutating tool operation.
+	TierWrite = "write"
+	// TierAct marks an externally visible action.
+	TierAct = "act"
+	// TierMoneyMoving marks a financial or money-moving action.
 	TierMoneyMoving = "money-moving"
 )
 

@@ -10,8 +10,10 @@ import (
 )
 
 const (
+	// SlackScopeChannelsHistory allows reading Slack channel history.
 	SlackScopeChannelsHistory = "channels:history"
-	SlackScopeChatWrite       = "chat:write"
+	// SlackScopeChatWrite allows posting Slack messages.
+	SlackScopeChatWrite = "chat:write"
 )
 
 // SlackTeamTokenResolver resolves a connected Slack workspace token for a user.

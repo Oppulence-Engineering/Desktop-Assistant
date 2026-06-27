@@ -144,8 +144,8 @@ func (t *sandboxRunTool) Invoke(ctx context.Context, scope ToolScope, args json.
 	if script == "" {
 		return nil, fmt.Errorf("script is required")
 	}
-	if max := t.maxScriptBytes(); len([]byte(script)) > max {
-		return nil, fmt.Errorf("script is too large (%d bytes > %d)", len([]byte(script)), max)
+	if scriptLimit := t.maxScriptBytes(); len([]byte(script)) > scriptLimit {
+		return nil, fmt.Errorf("script is too large (%d bytes > %d)", len([]byte(script)), scriptLimit)
 	}
 	image := strings.TrimSpace(req.Image)
 	if image == "" {
@@ -164,8 +164,8 @@ func (t *sandboxRunTool) Invoke(ctx context.Context, scope ToolScope, args json.
 	if req.TimeoutSeconds > 0 {
 		timeout = time.Duration(req.TimeoutSeconds) * time.Second
 	}
-	if max := t.maxTimeout(); timeout > max {
-		return nil, fmt.Errorf("timeout %s exceeds max %s", timeout, max)
+	if timeoutLimit := t.maxTimeout(); timeout > timeoutLimit {
+		return nil, fmt.Errorf("timeout %s exceeds max %s", timeout, timeoutLimit)
 	}
 	env, err := t.validateEnv(req.Env)
 	if err != nil {
