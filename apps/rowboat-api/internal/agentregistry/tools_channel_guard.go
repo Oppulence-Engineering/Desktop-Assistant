@@ -27,6 +27,12 @@ func guardOwnerScopedToolInSlack(deps ToolDeps, inner backgroundtaskruntime.Tool
 func (t *channelGuardedTool) Name() string                { return t.inner.Name() }
 func (t *channelGuardedTool) Description() string         { return t.inner.Description() }
 func (t *channelGuardedTool) JSONSchema() json.RawMessage { return t.inner.JSONSchema() }
+func (t *channelGuardedTool) AuditInfo(args json.RawMessage) backgroundtaskruntime.ToolAudit {
+	if provider, ok := t.inner.(backgroundtaskruntime.ToolAuditProvider); ok {
+		return provider.AuditInfo(args)
+	}
+	return backgroundtaskruntime.ToolAudit{}
+}
 
 func (t *channelGuardedTool) Invoke(ctx context.Context, scope backgroundtaskruntime.ToolScope, args json.RawMessage) (json.RawMessage, error) {
 	blocked, err := isSlackSession(ctx, t.deps.Client, scope)

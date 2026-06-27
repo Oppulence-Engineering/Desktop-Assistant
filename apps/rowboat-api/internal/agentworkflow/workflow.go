@@ -17,6 +17,7 @@ package agentworkflow
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -78,13 +79,14 @@ type approvalGate struct {
 // thread a dozen parameters. state is mutated in place (workflow code is
 // single-threaded, so Updates/Signals and the loop share it without races).
 type exec struct {
-	state          *SessionState
-	ioCtx          workflow.Context // LLM/tool/child activities
-	projCtx        workflow.Context // projection + event activities
-	approvals      map[string]*approvalGate
-	closeRequested bool
-	closeReason    string
-	fanoutThisTurn int // subagent delegations in the current turn (fan-out cap)
+	state            *SessionState
+	ioCtx            workflow.Context // LLM/tool/child activities
+	projCtx          workflow.Context // projection + event activities
+	approvals        map[string]*approvalGate
+	pendingApprovals map[string]ApproveAction
+	closeRequested   bool
+	closeReason      string
+	fanoutThisTurn   int // subagent delegations in the current turn (fan-out cap)
 }
 
 // SessionWorkflow is the long-lived, idle-between-turns session (RFC 027
@@ -94,10 +96,11 @@ type exec struct {
 // workflow id the client's continuation token resolves.
 func SessionWorkflow(ctx workflow.Context, state SessionState) error {
 	e := &exec{
-		state:     &state,
-		ioCtx:     workflow.WithActivityOptions(ctx, ioActivityOptions()),
-		projCtx:   workflow.WithActivityOptions(ctx, projectionActivityOptions()),
-		approvals: map[string]*approvalGate{},
+		state:            &state,
+		ioCtx:            workflow.WithActivityOptions(ctx, ioActivityOptions()),
+		projCtx:          workflow.WithActivityOptions(ctx, projectionActivityOptions()),
+		approvals:        map[string]*approvalGate{},
+		pendingApprovals: map[string]ApproveAction{},
 	}
 	if err := e.registerHandlers(ctx); err != nil {
 		return err
@@ -204,24 +207,27 @@ func (e *exec) registerHandlers(ctx workflow.Context) error {
 
 	err = workflow.SetUpdateHandlerWithOptions(ctx, UpdateApproveAction,
 		func(_ workflow.Context, in ApproveAction) (TurnAck, error) {
-			gate := e.approvals[in.ApprovalID]
-			gate.resolved = true
-			gate.decision = in.Decision
-			gate.token = in.ApprovalToken
-			gate.resolvedBy = in.ResolvedBy
+			if gate, ok := e.approvals[in.ApprovalID]; ok {
+				applyApproval(gate, in)
+			} else {
+				e.pendingApprovals[in.ApprovalID] = in
+			}
 			return TurnAck{Accepted: true}, nil
 		},
 		workflow.UpdateHandlerOptions{
 			Validator: func(_ workflow.Context, in ApproveAction) error {
-				gate, ok := e.approvals[in.ApprovalID]
-				if !ok {
-					return fmt.Errorf("unknown approval %q", in.ApprovalID)
-				}
-				if gate.resolved {
-					return fmt.Errorf("approval %q already resolved", in.ApprovalID)
-				}
 				if in.Decision != "granted" && in.Decision != "denied" {
 					return errors.New("decision must be granted or denied")
+				}
+				if err := e.validateApprovalID(in.ApprovalID); err != nil {
+					return err
+				}
+				gate, ok := e.approvals[in.ApprovalID]
+				if ok && gate.resolved {
+					return fmt.Errorf("approval %q already resolved", in.ApprovalID)
+				}
+				if _, ok := e.pendingApprovals[in.ApprovalID]; ok {
+					return fmt.Errorf("approval %q already resolved", in.ApprovalID)
 				}
 				return nil
 			},
@@ -250,6 +256,48 @@ func (e *exec) registerHandlers(ctx workflow.Context) error {
 		}
 	})
 	return nil
+}
+
+func applyApproval(gate *approvalGate, in ApproveAction) {
+	gate.resolved = true
+	gate.decision = in.Decision
+	gate.token = in.ApprovalToken
+	gate.resolvedBy = in.ResolvedBy
+}
+
+func (e *exec) validateApprovalID(approvalID string) error {
+	turnSeq, callIndex, ok := parseApprovalID(e.state.Start.SessionID, approvalID)
+	if !ok {
+		return fmt.Errorf("approval %q does not belong to this session", approvalID)
+	}
+	if turnSeq < e.state.CompletedTurns || turnSeq >= e.state.EnqueuedTurns {
+		return fmt.Errorf("approval %q is not for an accepted turn", approvalID)
+	}
+	if maxTools := e.state.Start.Limits.MaxToolCallsPerTurn; maxTools > 0 && callIndex >= maxTools {
+		return fmt.Errorf("approval %q exceeds the per-turn tool limit", approvalID)
+	}
+	return nil
+}
+
+func parseApprovalID(sessionID, approvalID string) (int, int, bool) {
+	prefix := sessionID + "/turn/"
+	if sessionID == "" || !strings.HasPrefix(approvalID, prefix) {
+		return 0, 0, false
+	}
+	rest := strings.TrimPrefix(approvalID, prefix)
+	turnPart, callPart, ok := strings.Cut(rest, "/approval/")
+	if !ok || turnPart == "" || callPart == "" || strings.Contains(callPart, "/") {
+		return 0, 0, false
+	}
+	turnSeq, err := strconv.Atoi(turnPart)
+	if err != nil || turnSeq < 0 {
+		return 0, 0, false
+	}
+	callIndex, err := strconv.Atoi(callPart)
+	if err != nil || callIndex < 0 {
+		return 0, 0, false
+	}
+	return turnSeq, callIndex, true
 }
 
 // turnResult is the outcome of one reason→act turn.
@@ -417,6 +465,16 @@ func (e *exec) awaitApproval(ctx workflow.Context, turnSeq, callIndex int, tc ba
 	approvalID := ApprovalID(st.Start.SessionID, turnSeq, callIndex)
 	redacted := redactArgsJSON(tc.Arguments)
 
+	// Register the gate before any projection or delivery activity so approval
+	// Updates that race those activities resolve the gate instead of being
+	// rejected as "unknown approval".
+	gate := &approvalGate{}
+	e.approvals[approvalID] = gate
+	if pending, ok := e.pendingApprovals[approvalID]; ok {
+		applyApproval(gate, pending)
+		delete(e.pendingApprovals, approvalID)
+	}
+
 	_ = workflow.ExecuteActivity(e.projCtx, ActivityPersistApproval, ApprovalInput{
 		UserID: st.Start.UserID, SessionID: st.Start.SessionID, ApprovalID: approvalID,
 		TurnSeq: turnSeq, ToolCallIndex: callIndex, ToolName: tc.Name, TrustTier: meta.TrustTier, ArgsRedacted: redacted,
@@ -424,12 +482,6 @@ func (e *exec) awaitApproval(ctx workflow.Context, turnSeq, callIndex int, tc ba
 	_ = e.emit(ctx, &turnSeq, EventApprovalRequested, map[string]any{
 		"turn": turnSeq, "approvalId": approvalID, "tool": tc.Name, "trustTier": meta.TrustTier, "args": redactedMap(tc.Arguments),
 	})
-
-	// Register the gate BEFORE surfacing any approve UI, so a click/Update that
-	// races the delivery resolves the gate instead of being rejected as "unknown
-	// approval" (and so the HTTP approval path works during a Slack outage).
-	gate := &approvalGate{}
-	e.approvals[approvalID] = gate
 
 	// Surface the approval as Approve/Deny buttons in the originating Slack thread
 	// (RFC 027 HITL in Slack). Guarded on the channel; GetVersion keeps sessions
@@ -555,10 +607,11 @@ func SubagentWorkflow(ctx workflow.Context, in SubagentInput) (SubagentResult, e
 	}
 	state := SessionState{Start: start}
 	e := &exec{
-		state:     &state,
-		ioCtx:     workflow.WithActivityOptions(ctx, ioActivityOptions()),
-		projCtx:   projCtx,
-		approvals: map[string]*approvalGate{},
+		state:            &state,
+		ioCtx:            workflow.WithActivityOptions(ctx, ioActivityOptions()),
+		projCtx:          projCtx,
+		approvals:        map[string]*approvalGate{},
+		pendingApprovals: map[string]ApproveAction{},
 	}
 
 	info := workflow.GetInfo(ctx)

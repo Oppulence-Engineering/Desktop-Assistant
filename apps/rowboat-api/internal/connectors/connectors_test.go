@@ -141,6 +141,9 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	if !strings.Contains(listRec.Body.String(), `"connected":true`) {
 		t.Fatalf("list should show connected: %s", listRec.Body.String())
 	}
+	if !strings.Contains(listRec.Body.String(), `"mcpTools"`) || !strings.Contains(listRec.Body.String(), `"customer.lookup"`) {
+		t.Fatalf("list should expose connector MCP allowlists: %s", listRec.Body.String())
+	}
 
 	// 4. mcp-token refreshes via Ory.
 	tokRec := httptest.NewRecorder()
@@ -162,6 +165,88 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	}
 	if n := client.MCPConnection.Query().CountX(authed); n != 0 {
 		t.Fatalf("connection should be removed, got %d", n)
+	}
+}
+
+func TestDefaultRegistryDeclaresMCPToolAllowlists(t *testing.T) {
+	reg := connectors.DefaultRegistry()
+	names := map[string]bool{}
+	for _, connector := range reg.List() {
+		names[connector.Name] = true
+		if connector.MCPURL == "" {
+			continue
+		}
+		if len(connector.MCPTools) == 0 {
+			t.Fatalf("%s has an MCP URL but no upstream tool allowlist", connector.Name)
+		}
+		seen := map[string]bool{}
+		for _, tool := range connector.MCPTools {
+			if tool.Name == "" {
+				t.Fatalf("%s has an empty MCP tool name", connector.Name)
+			}
+			if seen[tool.Name] {
+				t.Fatalf("%s declares duplicate MCP tool %q", connector.Name, tool.Name)
+			}
+			seen[tool.Name] = true
+			switch tool.TrustTier {
+			case "read", "write", "act", "money-moving":
+			default:
+				t.Fatalf("%s/%s has invalid trust tier %q", connector.Name, tool.Name, tool.TrustTier)
+			}
+		}
+	}
+	for _, want := range []string{"canvas", "corinthian", "wispr", "hubspot", "github", "linear", "notion", "stripe"} {
+		if !names[want] {
+			t.Fatalf("default registry missing connector %q", want)
+		}
+	}
+	stripe, ok := reg.Get("stripe")
+	if !ok {
+		t.Fatal("missing stripe connector")
+	}
+	foundMoneyMoving := false
+	for _, tool := range stripe.MCPTools {
+		if tool.Name == "refund.create" && tool.TrustTier == "money-moving" {
+			foundMoneyMoving = true
+		}
+	}
+	if !foundMoneyMoving {
+		t.Fatalf("stripe refund.create must be explicitly money-moving: %+v", stripe.MCPTools)
+	}
+}
+
+func TestLoadRegistryRejectsInvalidMCPPolicies(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		body string
+		want string
+	}{
+		{
+			name: "mcp-url-without-allowlist",
+			body: `[{"name":"x","displayName":"X","mcpUrl":"https://mcp.test","authType":"api_key","audience":"x"}]`,
+			want: "has mcpUrl but no mcpTools allowlist",
+		},
+		{
+			name: "missing-trust-tier",
+			body: `[{"name":"x","displayName":"X","mcpUrl":"https://mcp.test","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read"}]}]`,
+			want: `invalid trustTier ""`,
+		},
+		{
+			name: "duplicate-tool",
+			body: `[{"name":"x","displayName":"X","mcpUrl":"https://mcp.test","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read","trustTier":"read"},{"name":"thing.read","trustTier":"read"}]}]`,
+			want: `duplicate MCP tool "thing.read"`,
+		},
+		{
+			name: "tools-without-url",
+			body: `[{"name":"x","displayName":"X","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read","trustTier":"read"}]}]`,
+			want: "declares mcpTools without mcpUrl",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := connectors.LoadRegistry([]byte(tc.body)); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("LoadRegistry err = %v, want containing %q", err, tc.want)
+			}
+		})
 	}
 }
 
@@ -209,5 +294,90 @@ func TestInvalidate(t *testing.T) {
 	}
 	if n := client.MCPConnection.Query().CountX(auth.WithInternal(context.Background())); n != 0 {
 		t.Fatalf("connection should be invalidated, got %d", n)
+	}
+}
+
+func TestMCPRuntimeResolverResolvesAPIKeyForExplicitUser(t *testing.T) {
+	reg, err := connectors.LoadRegistry([]byte(`[{"name":"wispr","displayName":"Wispr","mcpUrl":"https://mcp.test/mcp","authType":"api_key","audience":"wispr-api","mcpTools":[{"name":"transcript.get","trustTier":"read"}]}]`))
+	if err != nil {
+		t.Fatalf("registry: %v", err)
+	}
+	client, u, _ := setup(t, reg)
+	sealer, err := crypto.NewSealer("test-key")
+	if err != nil {
+		t.Fatalf("sealer: %v", err)
+	}
+	ctx := auth.WithInternal(context.Background())
+
+	other := client.User.Create().SetEmail("other@x.co").SetWorkosUserID("user_2").SaveX(ctx)
+	otherKey, _ := sealer.SealString("wrong-user-key")
+	client.MCPConnection.Create().
+		SetUser(other).
+		SetConnector("wispr").
+		SetAudience("wispr-api").
+		SetAPIKeyEncrypted(otherKey).
+		SaveX(ctx)
+
+	userKey, _ := sealer.SealString("vendor-key")
+	conn := client.MCPConnection.Create().
+		SetUser(u).
+		SetConnector("wispr").
+		SetAudience("wispr-api").
+		SetAPIKeyEncrypted(userKey).
+		SaveX(ctx)
+
+	resolver := connectors.NewMCPRuntimeResolver(client, sealer, reg, connectors.Config{})
+	mcpURL, tokenType, token, err := resolver.ResolveMCP(context.Background(), u.ID.String(), "wispr")
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	if mcpURL != "https://mcp.test/mcp" || tokenType != "Bearer" || token != "vendor-key" {
+		t.Fatalf("resolved url/type/token = %q/%q/%q", mcpURL, tokenType, token)
+	}
+	if updated := client.MCPConnection.GetX(ctx, conn.ID); updated.LastUsedAt.IsZero() {
+		t.Fatal("last_used_at should be updated")
+	}
+}
+
+func TestMCPRuntimeResolverRefreshesOAuthConnector(t *testing.T) {
+	ory := mockOry(t)
+	defer ory.Close()
+	reg, err := connectors.LoadRegistry([]byte(`[{"name":"canvas","displayName":"Canvas","mcpUrl":"https://canvas.test/mcp","authType":"oauth","audience":"canvas-api","scopes":["invoices:read"],"mcpTools":[{"name":"invoice.lookup","trustTier":"read"}]}]`))
+	if err != nil {
+		t.Fatalf("registry: %v", err)
+	}
+	client, u, _ := setup(t, reg)
+	sealer, err := crypto.NewSealer("test-key")
+	if err != nil {
+		t.Fatalf("sealer: %v", err)
+	}
+	ctx := auth.WithInternal(context.Background())
+	sealed, _ := sealer.SealString("rt-old")
+	conn := client.MCPConnection.Create().
+		SetUser(u).
+		SetConnector("canvas").
+		SetAudience("canvas-api").
+		SetRefreshTokenEncrypted(sealed).
+		SaveX(ctx)
+
+	resolver := connectors.NewMCPRuntimeResolver(client, sealer, reg, connectors.Config{
+		OryPublicURL:          ory.URL,
+		OryBrokerClientID:     "broker",
+		OryBrokerClientSecret: "secret",
+	})
+	mcpURL, tokenType, token, err := resolver.ResolveMCP(context.Background(), u.ID.String(), "canvas")
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	if mcpURL != "https://canvas.test/mcp" || tokenType != "Bearer" || token != "acc-refresh_token" {
+		t.Fatalf("resolved url/type/token = %q/%q/%q", mcpURL, tokenType, token)
+	}
+	updated := client.MCPConnection.GetX(ctx, conn.ID)
+	rotated, err := sealer.OpenString(updated.RefreshTokenEncrypted)
+	if err != nil {
+		t.Fatalf("open rotated token: %v", err)
+	}
+	if rotated != "rt-rotated" || updated.LastUsedAt.IsZero() {
+		t.Fatalf("rotated/lastUsed = %q/%v", rotated, updated.LastUsedAt)
 	}
 }

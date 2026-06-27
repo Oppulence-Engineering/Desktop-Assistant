@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -118,6 +119,49 @@ func TestCloudRunQueuedEventAndRetryLineage(t *testing.T) {
 	}
 	if len(temporal.starts) != 2 || temporal.starts[1].Trigger != "retry" {
 		t.Fatalf("expected 2 starts with retry trigger, got %+v", temporal.starts)
+	}
+}
+
+func TestTerminalRunCancelAndSignalDoNotCallTemporal(t *testing.T) {
+	u, router, temporal := setupTemporalTest(t)
+	createAPITask(t, router, u, "api-task")
+
+	createRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs", map[string]any{
+		"runId":              "finished-run",
+		"trigger":            "manual",
+		"status":             "succeeded",
+		"executor":           "api",
+		"temporalWorkflowId": "background-task/user/api-task/finished-run",
+		"temporalRunId":      "temporal-finished-run",
+		"temporalStatus":     "Completed",
+	})
+	if createRec.Code != http.StatusCreated {
+		t.Fatalf("create finished run: want 201, got %d: %s", createRec.Code, createRec.Body.String())
+	}
+
+	cancelRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs/finished-run/cancel", nil)
+	if cancelRec.Code != http.StatusAccepted {
+		t.Fatalf("cancel finished run: want 202, got %d: %s", cancelRec.Code, cancelRec.Body.String())
+	}
+	canceled := decodeBody[runView](t, cancelRec)
+	if canceled.Status != "succeeded" {
+		t.Fatalf("cancel finished run status = %q, want succeeded", canceled.Status)
+	}
+	if len(temporal.cancels) != 0 {
+		t.Fatalf("cancel finished run should not call Temporal, got %+v", temporal.cancels)
+	}
+
+	signalRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs/finished-run/signal", map[string]any{
+		"signal": "update_context",
+		"payload": map[string]any{
+			"qa": "terminal signal",
+		},
+	})
+	if signalRec.Code != http.StatusBadRequest || !strings.Contains(signalRec.Body.String(), "only queued or running runs can be signaled") {
+		t.Fatalf("signal finished run: want 400 terminal message, got %d: %s", signalRec.Code, signalRec.Body.String())
+	}
+	if len(temporal.signals) != 0 {
+		t.Fatalf("signal finished run should not call Temporal, got %+v", temporal.signals)
 	}
 }
 

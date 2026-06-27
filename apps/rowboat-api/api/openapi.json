@@ -1650,7 +1650,7 @@
           },
           "type": {
             "description": "Event type, either supplied explicitly or copied from event.type.",
-            "example": "completed",
+            "example": "temporal.completed",
             "nullable": true,
             "type": "string"
           }
@@ -1673,7 +1673,7 @@
           },
           "type": {
             "description": "Optional event type. If omitted, rowboat-api reads event.type when present.",
-            "example": "completed",
+            "example": "temporal.completed",
             "nullable": true,
             "type": "string"
           }
@@ -1713,10 +1713,10 @@
         "type": "object"
       },
       "BackgroundTaskRunEventsResponse": {
-        "description": "Ordered event list for a run.",
+        "description": "Ordered durable task log/progress event list for a run.",
         "properties": {
           "events": {
-            "description": "Run events ordered by seq.",
+            "description": "Run log/progress events ordered by seq.",
             "items": {
               "$ref": "#/components/schemas/BackgroundTaskRunEvent"
             },
@@ -2064,7 +2064,7 @@
         "properties": {
           "payload": {
             "additionalProperties": true,
-            "description": "Optional signal payload. update_context can carry replacement context.",
+            "description": "Optional signal payload. update_context can carry context/text/requestedContext for the next runtime checkpoint.",
             "type": "object"
           },
           "signal": {
@@ -2075,6 +2075,158 @@
           }
         },
         "required": ["signal"],
+        "type": "object"
+      },
+      "BackgroundTaskTemplate": {
+        "description": "Built-in starter template for creating API-target background tasks with safe defaults.",
+        "properties": {
+          "active": {
+            "description": "Whether instantiated tasks are active by default.",
+            "example": true,
+            "type": "boolean"
+          },
+          "description": {
+            "description": "Short explanation of what the template does.",
+            "example": "Summarize new priority email and produce a short follow-up plan.",
+            "type": "string"
+          },
+          "executionTarget": {
+            "description": "Default execution target.",
+            "enum": ["api", "desktop"],
+            "example": "api",
+            "type": "string"
+          },
+          "instructions": {
+            "description": "Default task instructions.",
+            "example": "Review recent important Gmail messages and produce a markdown digest.",
+            "type": "string"
+          },
+          "model": {
+            "description": "Desktop-facing LLM model id.",
+            "example": "openai/gpt-4.1-mini",
+            "nullable": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "Default task name.",
+            "example": "Inbox Digest",
+            "type": "string"
+          },
+          "provider": {
+            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+            "example": "openai",
+            "nullable": true,
+            "type": "string"
+          },
+          "requiredConnectors": {
+            "description": "Connectors this template expects for full fidelity.",
+            "items": {
+              "description": "Connector slug.",
+              "example": "google",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "slug": {
+            "description": "Stable template slug.",
+            "example": "inbox-digest",
+            "type": "string"
+          },
+          "tags": {
+            "description": "Template tags for UI grouping.",
+            "items": {
+              "description": "Tag.",
+              "example": "gmail",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "taskSlug": {
+            "description": "Default task slug used when instantiating this template.",
+            "example": "inbox-digest",
+            "type": "string"
+          },
+          "triggers": {
+            "description": "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
+            "example": {
+              "cronExpr": "0 9 * * *",
+              "timezone": "America/New_York"
+            },
+            "nullable": true
+          }
+        },
+        "required": [
+          "slug",
+          "taskSlug",
+          "name",
+          "description",
+          "instructions",
+          "active",
+          "executionTarget"
+        ],
+        "type": "object"
+      },
+      "BackgroundTaskTemplateInstantiateRequest": {
+        "description": "Overrides applied while creating a task from a built-in template. Omitted fields use template defaults.",
+        "properties": {
+          "active": {
+            "description": "Override active state.",
+            "example": true,
+            "type": "boolean"
+          },
+          "executionTarget": {
+            "description": "Execution target override.",
+            "enum": ["desktop", "api"],
+            "example": "api",
+            "type": "string"
+          },
+          "model": {
+            "description": "Desktop-facing LLM model id.",
+            "example": "openai/gpt-4.1-mini",
+            "nullable": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "Task name override.",
+            "example": "Executive Inbox Digest",
+            "nullable": true,
+            "type": "string"
+          },
+          "provider": {
+            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+            "example": "openai",
+            "nullable": true,
+            "type": "string"
+          },
+          "slug": {
+            "description": "Task slug override. Defaults to template.taskSlug.",
+            "example": "exec-inbox",
+            "nullable": true,
+            "type": "string"
+          },
+          "triggers": {
+            "description": "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
+            "example": {
+              "cronExpr": "0 9 * * *",
+              "timezone": "America/New_York"
+            },
+            "nullable": true
+          }
+        },
+        "type": "object"
+      },
+      "BackgroundTaskTemplatesResponse": {
+        "description": "Built-in background task templates available to the authenticated user.",
+        "properties": {
+          "templates": {
+            "description": "Available task templates.",
+            "items": {
+              "$ref": "#/components/schemas/BackgroundTaskTemplate"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["templates"],
         "type": "object"
       },
       "BackgroundTaskTriggerRequest": {
@@ -2212,7 +2364,18 @@
           },
           "source": {
             "description": "Event source.",
-            "enum": ["gmail", "google_calendar", "slack", "webhook", "internal"],
+            "enum": [
+              "gmail",
+              "google_calendar",
+              "google_drive",
+              "slack",
+              "webhook",
+              "mcp",
+              "github",
+              "linear",
+              "stripe",
+              "internal"
+            ],
             "example": "gmail",
             "type": "string"
           },
@@ -2271,7 +2434,18 @@
           },
           "source": {
             "description": "Event source.",
-            "enum": ["gmail", "google_calendar", "slack", "webhook", "internal"],
+            "enum": [
+              "gmail",
+              "google_calendar",
+              "google_drive",
+              "slack",
+              "webhook",
+              "mcp",
+              "github",
+              "linear",
+              "stripe",
+              "internal"
+            ],
             "example": "internal",
             "type": "string"
           },
@@ -2495,6 +2669,13 @@
             "example": "https://example.com/icon.png",
             "nullable": true,
             "type": "string"
+          },
+          "mcpTools": {
+            "description": "Allowlisted upstream MCP tools and trust tiers for cloud runtime calls.",
+            "items": {
+              "$ref": "#/components/schemas/MCPToolPolicy"
+            },
+            "type": "array"
           },
           "mcpUrl": {
             "description": "MCP endpoint the desktop should call after obtaining an MCP token.",
@@ -2750,6 +2931,71 @@
         "description": "Exa /search JSON response, proxied unchanged.",
         "type": "object"
       },
+      "GenericWebhookEventRequest": {
+        "description": "Signed generic webhook event ingestion. Defaults source=webhook; connector/provider gateways may send source=mcp, github, linear, or stripe. The receiver resolves the owner from userId.",
+        "properties": {
+          "dedupeKey": {
+            "description": "Optional idempotency anchor. If omitted, sourceEventId is required and derives \u003csource\u003e:\u003csourceAccountId\u003e:\u003csourceEventId\u003e.",
+            "example": "webhook:zapier-acme-ar:evt_123",
+            "nullable": true,
+            "type": "string"
+          },
+          "eventType": {
+            "description": "Provider-specific event type.",
+            "example": "invoice.disputed",
+            "nullable": true,
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "RFC3339 provider event time.",
+            "example": "2026-06-06T14:00:00Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "description": "Full provider object. Sealed at rest; returned only by the event detail endpoint.",
+            "type": "object"
+          },
+          "source": {
+            "description": "Webhook source.",
+            "enum": ["webhook", "mcp", "github", "linear", "stripe"],
+            "example": "webhook",
+            "type": "string"
+          },
+          "sourceAccountId": {
+            "description": "External account or webhook integration key.",
+            "example": "zapier-acme-ar",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceEventId": {
+            "description": "Provider-side event id. Used to derive dedupeKey when dedupeKey is omitted.",
+            "example": "evt_123",
+            "nullable": true,
+            "type": "string"
+          },
+          "subject": {
+            "description": "Short title used in UI and routing prompts. Defaults to eventType when omitted.",
+            "example": "Invoice #4821 dispute",
+            "nullable": true,
+            "type": "string"
+          },
+          "text": {
+            "description": "Human-readable gist used in routing prompts. Defaults to a compact payload summary when omitted.",
+            "example": "Acme disputed invoice #4821.",
+            "nullable": true,
+            "type": "string"
+          },
+          "userId": {
+            "description": "Rowboat user id (UUID) owning the event.",
+            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+            "type": "string"
+          }
+        },
+        "required": ["userId"],
+        "type": "object"
+      },
       "GoogleClaimRequest": {
         "description": "Redeems a one-time Google OAuth handoff ticket parked by /oauth/google/callback.",
         "properties": {
@@ -2904,7 +3150,18 @@
           },
           "source": {
             "description": "Event source.",
-            "enum": ["gmail", "google_calendar", "slack", "webhook", "internal"],
+            "enum": [
+              "gmail",
+              "google_calendar",
+              "google_drive",
+              "slack",
+              "webhook",
+              "mcp",
+              "github",
+              "linear",
+              "stripe",
+              "internal"
+            ],
             "example": "internal",
             "type": "string"
           },
@@ -3481,6 +3738,24 @@
           }
         },
         "required": ["access_token", "token_type", "mcpUrl"],
+        "type": "object"
+      },
+      "MCPToolPolicy": {
+        "description": "Allowlisted upstream MCP tool metadata.",
+        "properties": {
+          "name": {
+            "description": "Upstream MCP tool name.",
+            "example": "customer.lookup",
+            "type": "string"
+          },
+          "trustTier": {
+            "description": "Runtime trust tier for this tool.",
+            "enum": ["read", "write", "act", "money-moving"],
+            "example": "read",
+            "type": "string"
+          }
+        },
+        "required": ["name", "trustTier"],
         "type": "object"
       },
       "MeResponse": {
@@ -4527,6 +4802,12 @@
         "in": "header",
         "name": "X-Internal-Secret",
         "type": "apiKey"
+      },
+      "WebhookHMAC": {
+        "description": "HMAC-SHA256 over the raw request body, formatted as sha256=\u003chex\u003e.",
+        "in": "header",
+        "name": "X-Webhook-Signature",
+        "type": "apiKey"
       }
     }
   },
@@ -5220,6 +5501,227 @@
           }
         ],
         "summary": "List account background task runs",
+        "tags": ["Background Tasks"]
+      }
+    },
+    "/v1/background-task-templates": {
+      "get": {
+        "description": "Lists built-in API-target task templates that can be instantiated into normal background tasks. Templates provide known-good instructions, triggers, and execution defaults for common cloud task patterns.",
+        "operationId": "listBackgroundTaskTemplates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "templates": [
+                    {
+                      "active": true,
+                      "description": "Summarize new priority email and produce a short follow-up plan.",
+                      "executionTarget": "api",
+                      "instructions": "Review recent important Gmail messages and produce a markdown digest.",
+                      "model": "anthropic/claude-sonnet-4-5",
+                      "name": "Inbox Digest",
+                      "provider": "openrouter",
+                      "requiredConnectors": ["google"],
+                      "slug": "inbox-digest",
+                      "tags": ["gmail", "digest", "scheduled"],
+                      "taskSlug": "inbox-digest",
+                      "triggers": {
+                        "cronExpr": "0 8 * * 1-5",
+                        "timezone": "America/New_York"
+                      }
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundTaskTemplatesResponse"
+                }
+              }
+            },
+            "description": "Task templates."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List background task templates",
+        "tags": ["Background Tasks"]
+      }
+    },
+    "/v1/background-task-templates/{templateSlug}": {
+      "get": {
+        "description": "Fetches one built-in task template by slug so clients can preview the instructions, default trigger, and required connectors before instantiation.",
+        "operationId": "getBackgroundTaskTemplate",
+        "parameters": [
+          {
+            "description": "Background task template slug.",
+            "in": "path",
+            "name": "templateSlug",
+            "required": true,
+            "schema": {
+              "description": "Template slug.",
+              "example": "inbox-digest",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "active": true,
+                  "description": "Summarize new priority email and produce a short follow-up plan.",
+                  "executionTarget": "api",
+                  "instructions": "Review recent important Gmail messages and produce a markdown digest.",
+                  "model": "anthropic/claude-sonnet-4-5",
+                  "name": "Inbox Digest",
+                  "provider": "openrouter",
+                  "requiredConnectors": ["google"],
+                  "slug": "inbox-digest",
+                  "tags": ["gmail", "digest", "scheduled"],
+                  "taskSlug": "inbox-digest",
+                  "triggers": {
+                    "cronExpr": "0 8 * * 1-5",
+                    "timezone": "America/New_York"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundTaskTemplate"
+                }
+              }
+            },
+            "description": "Task template."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get background task template",
+        "tags": ["Background Tasks"]
+      }
+    },
+    "/v1/background-task-templates/{templateSlug}/instantiate": {
+      "post": {
+        "description": "Creates a normal background task from a built-in template. The resulting task is owned by the authenticated user and then follows the same trigger, admission, and Temporal execution path as tasks created directly.",
+        "operationId": "instantiateBackgroundTaskTemplate",
+        "parameters": [
+          {
+            "description": "Background task template slug.",
+            "in": "path",
+            "name": "templateSlug",
+            "required": true,
+            "schema": {
+              "description": "Template slug.",
+              "example": "inbox-digest",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "name": "Executive Inbox Digest",
+                "slug": "exec-inbox"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundTaskTemplateInstantiateRequest"
+              }
+            }
+          },
+          "description": "Optional template overrides.",
+          "required": false
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "active": true,
+                  "createdAt": "2026-06-04T20:38:00Z",
+                  "executionTarget": "desktop",
+                  "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+                  "instructions": "Summarize important account changes and draft follow-up notes.",
+                  "lastAttemptAt": "2026-06-04T21:00:00Z",
+                  "lastRunAt": "2026-06-04T21:02:00Z",
+                  "lastRunError": "",
+                  "lastRunId": "run-20260604-210000",
+                  "lastRunSummary": "No high-priority account changes.",
+                  "model": "openai/gpt-4.1-mini",
+                  "name": "Daily Account Summary",
+                  "provider": "openai",
+                  "revision": 2,
+                  "slug": "daily-summary",
+                  "triggers": {
+                    "cronExpr": "0 9 * * *",
+                    "timezone": "America/New_York"
+                  },
+                  "updatedAt": "2026-06-04T20:39:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundTask"
+                }
+              }
+            },
+            "description": "Created task."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "conflict",
+                  "detail": "background task already exists",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/conflict"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "A task with this slug already exists for the user."
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Instantiate background task template",
         "tags": ["Background Tasks"]
       }
     },
@@ -6288,7 +6790,7 @@
     },
     "/v1/background-tasks/{slug}/runs/{runId}/events": {
       "get": {
-        "description": "Returns mirrored JSONL events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.",
+        "description": "Returns durable log/progress events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.",
         "operationId": "listBackgroundTaskRunEvents",
         "parameters": [
           {
@@ -6334,12 +6836,12 @@
                     {
                       "event": {
                         "summary": "ok",
-                        "type": "completed"
+                        "type": "temporal.completed"
                       },
                       "id": "06227adb-924f-46f1-b324-1b10d080a660",
                       "receivedAt": "2026-06-04T21:02:05Z",
                       "seq": 1,
-                      "type": "completed"
+                      "type": "temporal.completed"
                     }
                   ]
                 },
@@ -6348,7 +6850,7 @@
                 }
               }
             },
-            "description": "Run events."
+            "description": "Run log/progress events."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -6365,11 +6867,11 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List task run events",
+        "summary": "List task run logs",
         "tags": ["Background Tasks"]
       },
       "post": {
-        "description": "Appends a batch of JSONL run events. The unique (run, seq) key makes retries idempotent: duplicate seq values are counted as skipped.",
+        "description": "Appends a batch of durable log/progress events. The unique (run, seq) key makes retries idempotent: duplicate seq values are counted as skipped.",
         "operationId": "appendBackgroundTaskRunEvents",
         "parameters": [
           {
@@ -6409,10 +6911,10 @@
                   {
                     "event": {
                       "summary": "ok",
-                      "type": "completed"
+                      "type": "temporal.completed"
                     },
                     "seq": 1,
-                    "type": "completed"
+                    "type": "temporal.completed"
                   }
                 ]
               },
@@ -6457,7 +6959,89 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Append task run events",
+        "summary": "Append task run logs",
+        "tags": ["Background Tasks"]
+      }
+    },
+    "/v1/background-tasks/{slug}/runs/{runId}/events/stream": {
+      "get": {
+        "description": "Streams durable task log/progress events as application/x-ndjson. The stream first backfills events with seq greater than afterSeq, then tails the run log until a terminal event or client disconnect.",
+        "operationId": "streamBackgroundTaskRunEvents",
+        "parameters": [
+          {
+            "description": "Background task slug, matching bg-tasks/\u003cslug\u003e locally.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "description": "Task slug.",
+              "example": "daily-summary",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Cloud-visible run id for a background task run.",
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "description": "Run id.",
+              "example": "run-20260604-210000",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional reconnect cursor. When provided, only events with seq greater than this value are streamed.",
+            "in": "query",
+            "name": "afterSeq",
+            "required": false,
+            "schema": {
+              "description": "Last seen event seq.",
+              "example": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/x-ndjson": {
+                "example": {
+                  "event": {
+                    "summary": "ok",
+                    "type": "temporal.completed"
+                  },
+                  "id": "06227adb-924f-46f1-b324-1b10d080a660",
+                  "receivedAt": "2026-06-04T21:02:05Z",
+                  "seq": 1,
+                  "type": "temporal.completed"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundTaskRunEvent"
+                }
+              }
+            },
+            "description": "NDJSON stream of BackgroundTaskRunEvent objects."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Stream task run progress",
         "tags": ["Background Tasks"]
       }
     },
@@ -6553,7 +7137,7 @@
     },
     "/v1/background-tasks/{slug}/runs/{runId}/signal": {
       "post": {
-        "description": "Sends a constrained control signal to the Temporal workflow. V1 accepts pause, resume, and update_context signals for workflow versions that know how to consume them.",
+        "description": "Sends a constrained control signal to the Temporal workflow. API-worker runs persist the signal as a durable run event and honor pause, resume, and update_context at cooperative runtime checkpoints between model steps.",
         "operationId": "signalBackgroundTaskRun",
         "parameters": [
           {
@@ -7356,6 +7940,12 @@
                       "connectedAt": "2026-06-04T20:38:00Z",
                       "description": "Banking, invoicing, dunning, transactions",
                       "displayName": "Canvas",
+                      "mcpTools": [
+                        {
+                          "name": "customer.lookup",
+                          "trustTier": "read"
+                        }
+                      ],
                       "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
                       "name": "canvas",
                       "scopes": ["invoices:read"]
@@ -8596,9 +9186,103 @@
         "tags": ["Voice"]
       }
     },
+    "/v1/webhooks/events": {
+      "post": {
+        "description": "Receives arbitrary normalized webhook events, verified via X-Webhook-Signature HMAC over the raw body using WEBHOOK_SIGNING_SECRET. The request names the owning userId; source defaults to webhook and may be mcp, github, linear, or stripe for connector/provider gateways. Payload is sealed, and routing uses the same cloud event router as provider webhooks.",
+        "operationId": "genericWebhook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "eventType": "invoice.disputed",
+                "payload": {
+                  "customer": "Acme",
+                  "invoice": "4821",
+                  "reason": "pricing mismatch"
+                },
+                "sourceAccountId": "zapier-acme-ar",
+                "sourceEventId": "evt_123",
+                "userId": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/GenericWebhookEventRequest"
+              }
+            }
+          },
+          "description": "Generic webhook event envelope.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": true,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "routed"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Duplicate dedupeKey: existing event returned."
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "deduped": false,
+                  "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+                  "routingStatus": "pending"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CloudEventIngestResponse"
+                }
+              }
+            },
+            "description": "Event ingested."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "request_body_too_large",
+                  "detail": "request body exceeds 327680 bytes",
+                  "requestId": "req-abc123",
+                  "status": 413,
+                  "title": "Request Entity Too Large",
+                  "type": "https://api.rowboat.dev/problems/request_body_too_large"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Payload exceeds the configured size cap."
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "WebhookHMAC": []
+          }
+        ],
+        "summary": "Generic signed webhook event",
+        "tags": ["Cloud Events"]
+      }
+    },
     "/v1/webhooks/google": {
       "post": {
-        "description": "Receives Gmail Pub/Sub pushes and Google Calendar channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for Calendar). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.",
+        "description": "Receives Gmail Pub/Sub pushes plus Google Calendar and Drive channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for channels). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.",
         "operationId": "googleWebhook",
         "parameters": [
           {
@@ -8629,7 +9313,7 @@
               }
             }
           },
-          "description": "Pub/Sub push envelope (Gmail). Calendar notifications carry no body.",
+          "description": "Pub/Sub push envelope (Gmail). Calendar and Drive notifications carry no body.",
           "required": false
         },
         "responses": {

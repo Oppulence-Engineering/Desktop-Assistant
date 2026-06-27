@@ -184,6 +184,30 @@ func (g *Gate) Reserve(ctx context.Context, op string, estimated int, requestID 
 	return &Charge{gate: g, user: u, op: op, requestID: requestID, reserved: estimated}, nil
 }
 
+// Preflight checks whether the current user could afford a reservation of
+// estimated credits without writing a ledger row. It is an admission guard for
+// deferred work; Reserve remains the authoritative billing operation.
+func (g *Gate) Preflight(ctx context.Context, estimated int, limits SpendLimits) error {
+	if _, ok := auth.UserFromCtx(ctx); !ok {
+		return ErrNoUser
+	}
+	if estimated < 0 {
+		estimated = 0
+	}
+	sanctioned, err := sanctionedCredits(ctx, g.client)
+	if err != nil {
+		return err
+	}
+	available, err := credits.Available(ctx, g.client, sanctioned)
+	if err != nil {
+		return err
+	}
+	if available < estimated {
+		return ErrInsufficientCredits
+	}
+	return checkSpendLimitsEstimate(ctx, g.client, limits, estimated)
+}
+
 // duplicateState classifies a duplicate request (same request_id):
 //   - finalized: a terminal ledger row exists — the original already settled or
 //     refunded. The duplicate must NOT re-call the upstream vendor: every
@@ -235,6 +259,34 @@ func checkSpendLimitsTx(ctx context.Context, txc *ent.Client, limits SpendLimits
 			return err
 		}
 		if spent > limits.Monthly {
+			return ErrMonthlyLimitExceeded
+		}
+	}
+	return nil
+}
+
+func checkSpendLimitsEstimate(ctx context.Context, client *ent.Client, limits SpendLimits, estimated int) error {
+	if limits.Daily <= 0 && limits.Monthly <= 0 {
+		return nil
+	}
+	now := time.Now().UTC()
+	if limits.Daily > 0 {
+		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+		spent, err := consumedSince(ctx, client, start)
+		if err != nil {
+			return err
+		}
+		if spent+estimated > limits.Daily {
+			return ErrDailyLimitExceeded
+		}
+	}
+	if limits.Monthly > 0 {
+		start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		spent, err := consumedSince(ctx, client, start)
+		if err != nil {
+			return err
+		}
+		if spent+estimated > limits.Monthly {
 			return ErrMonthlyLimitExceeded
 		}
 	}

@@ -1,0 +1,38 @@
+{{- if and .Values.worker.enabled .Values.sandbox.rbac.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}-sandbox
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: ["argoproj.io"]
+    resources: ["workflows"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: ["argoproj.io"]
+    resources: ["workflowtaskresults"]
+    verbs: ["create", "patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}-sandbox
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "rowboat-api.serviceAccountName" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "rowboat-api.fullname" . }}-sandbox
+{{- end }}

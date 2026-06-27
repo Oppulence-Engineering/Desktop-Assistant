@@ -139,6 +139,7 @@ export function SecuritySettings({ dialogOpen }: { dialogOpen: boolean }) {
               onChange={setCommands}
               placeholder="ls"
               addLabel="Add command"
+              itemLabel="Allowed command"
             />
           </SettingsSection>
 
@@ -175,7 +176,10 @@ export function SecuritySettings({ dialogOpen }: { dialogOpen: boolean }) {
                         )
                       }
                     >
-                      <SelectTrigger className="h-8 w-28 shrink-0">
+                      <SelectTrigger
+                        className="h-8 w-28 shrink-0"
+                        aria-label={`File access operation ${i + 1}`}
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -190,6 +194,7 @@ export function SecuritySettings({ dialogOpen }: { dialogOpen: boolean }) {
                       value={grant.pathPrefix}
                       placeholder="/path/to/folder"
                       className="h-8 flex-1 font-mono text-xs"
+                      aria-label={`File access path ${i + 1}`}
                       onChange={(e) =>
                         setAccess((p) =>
                           p.map((g, j) => (j === i ? { ...g, pathPrefix: e.target.value } : g)),
@@ -227,6 +232,7 @@ export function SecuritySettings({ dialogOpen }: { dialogOpen: boolean }) {
             onChange={(e) => setRawJson(e.target.value)}
             className="h-64 w-full resize-none rounded-none border bg-muted/40 p-3 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
             spellCheck={false}
+            aria-label="Security configuration JSON"
           />
         </CollapsibleContent>
       </Collapsible>

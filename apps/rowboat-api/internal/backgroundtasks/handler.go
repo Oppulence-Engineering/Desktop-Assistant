@@ -33,6 +33,7 @@ import (
 )
 
 const maxBody = 8 << 20 // mirrored task/run payloads can include JSONL batches
+const runEventStreamPage = 500
 
 type badRequestError struct{ message string }
 
@@ -46,6 +47,7 @@ type Handler struct {
 	log        *zap.Logger
 	temporal   backgroundtaskworkflow.Controller
 	runStarter *backgroundtaskruns.Starter
+	admission  backgroundtaskruns.AdmissionConfig
 	schedules  *backgroundtaskschedule.Syncer // nil ⇒ Temporal Schedules disabled
 }
 
@@ -63,6 +65,13 @@ func New(client *ent.Client, log *zap.Logger) *Handler {
 func (h *Handler) SetTemporal(temporal backgroundtaskworkflow.Controller) {
 	h.temporal = temporal
 	h.runStarter = backgroundtaskruns.New(h.client, temporal, h.log)
+	h.runStarter.SetAdmission(h.admission)
+}
+
+// SetAdmission enables run-start admission guardrails on the shared starter.
+func (h *Handler) SetAdmission(cfg backgroundtaskruns.AdmissionConfig) {
+	h.admission = cfg
+	h.runStarter.SetAdmission(cfg)
 }
 
 // SetSchedules enables Temporal Schedule sync for cron tasks (RFC 005). Left
@@ -337,27 +346,33 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &req) {
 		return
 	}
+	task, err := h.createTaskFromRequest(r.Context(), u, req)
+	if err != nil {
+		h.writeTaskCreateError(w, err, "create background task")
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, viewTask(task))
+}
+
+func (h *Handler) createTaskFromRequest(ctx context.Context, u *ent.User, req createTaskRequest) (*ent.BackgroundTask, error) {
 	req.Name = strings.TrimSpace(req.Name)
 	req.Instructions = strings.TrimSpace(req.Instructions)
 	if req.Name == "" || req.Instructions == "" {
-		httpx.Error(w, http.StatusBadRequest, "missing name or instructions", "bad_request")
-		return
+		return nil, badRequest("missing name or instructions")
 	}
 	slug := strings.TrimSpace(req.Slug)
 	if slug == "" {
 		slug = slugify(req.Name)
 	}
 	if slug == "" {
-		httpx.Error(w, http.StatusBadRequest, "missing slug", "bad_request")
-		return
+		return nil, badRequest("missing slug")
 	}
 	if strings.Contains(slug, "/") {
 		// Slugs are path segments in the REST routes and embed verbatim into
 		// the Temporal schedule/workflow id format
 		// background-task-schedule/{userID}/{slug}/cron — a slash would make
 		// those ids unparseable for the reconciler's orphan sweep.
-		httpx.Error(w, http.StatusBadRequest, "slug must not contain '/'", "bad_request")
-		return
+		return nil, badRequest("slug must not contain '/'")
 	}
 	active := true
 	if req.Active != nil {
@@ -370,8 +385,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		SetInstructions(req.Instructions).
 		SetActive(active)
 	if raw, present, clearValue, err := normalizeRawJSON(req.Triggers); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "triggers must be valid JSON", "bad_request")
-		return
+		return nil, badRequest("triggers must be valid JSON")
 	} else if present && !clearValue {
 		create = create.SetTriggersJSON(raw)
 	}
@@ -386,37 +400,42 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		executionTarget = "desktop"
 	}
 	if err := validateExecutionTarget(executionTarget); err != nil {
-		httpx.Error(w, http.StatusBadRequest, err.Error(), "bad_request")
-		return
+		return nil, badRequest(err.Error())
 	}
 	create = create.SetExecutionTarget(executionTarget)
 	if ts, ok, err := parseOptionalTime(req.CreatedAt); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "invalid createdAt", "bad_request")
-		return
+		return nil, badRequest("invalid createdAt")
 	} else if ok {
 		create = create.SetTaskCreatedAt(ts)
 	}
 	if err := applyCreateRuntimeFields(create, req); err != nil {
-		httpx.Error(w, http.StatusBadRequest, err.Error(), "bad_request")
-		return
+		return nil, err
 	}
 
-	task, err := create.Save(r.Context())
+	task, err := create.Save(ctx)
 	if err != nil {
-		if ent.IsConstraintError(err) {
-			httpx.Error(w, http.StatusConflict, "background task already exists", "conflict")
-			return
-		}
-		h.log.Error("create background task", zap.Error(err))
-		httpx.Error(w, http.StatusInternalServerError, "could not create background task", "internal_error")
-		return
+		return nil, err
 	}
 	if h.schedules != nil {
 		// Converge the Temporal Schedule (RFC 005) and respond with the
 		// post-sync state + revision. Never fails the request.
-		task = h.schedules.AfterWrite(r.Context(), u.ID.String(), nil, task)
+		task = h.schedules.AfterWrite(ctx, u.ID.String(), nil, task)
 	}
-	httpx.WriteJSON(w, http.StatusCreated, viewTask(task))
+	return task, nil
+}
+
+func (h *Handler) writeTaskCreateError(w http.ResponseWriter, err error, logMsg string) {
+	var bad badRequestError
+	if errors.As(err, &bad) {
+		httpx.Error(w, http.StatusBadRequest, bad.Error(), "bad_request")
+		return
+	}
+	if ent.IsConstraintError(err) {
+		httpx.Error(w, http.StatusConflict, "background task already exists", "conflict")
+		return
+	}
+	h.log.Error(logMsg, zap.Error(err))
+	httpx.Error(w, http.StatusInternalServerError, "could not create background task", "internal_error")
 }
 
 // Get handles GET /v1/background-tasks/{slug}.
@@ -972,6 +991,10 @@ func (h *Handler) CancelRun(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "run is not temporal-backed", "bad_request")
 		return
 	}
+	if isTerminalRunStatus(run.Status) {
+		httpx.WriteJSON(w, http.StatusAccepted, viewRun(task, run))
+		return
+	}
 	if h.temporal == nil {
 		httpx.Error(w, http.StatusServiceUnavailable, "temporal is not configured", "temporal_unavailable")
 		return
@@ -1093,6 +1116,10 @@ func (h *Handler) SignalRun(w http.ResponseWriter, r *http.Request) {
 	}
 	if run.Executor != "api" || run.TemporalWorkflowID == "" {
 		httpx.Error(w, http.StatusBadRequest, "run is not temporal-backed", "bad_request")
+		return
+	}
+	if isTerminalRunStatus(run.Status) {
+		httpx.Error(w, http.StatusBadRequest, "only queued or running runs can be signaled", "bad_request")
 		return
 	}
 	if h.temporal == nil {
@@ -1246,6 +1273,53 @@ func (h *Handler) ListRunEvents(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, resp)
 }
 
+// StreamRunEvents handles GET /v1/background-tasks/{slug}/runs/{runId}/events/stream.
+func (h *Handler) StreamRunEvents(w http.ResponseWriter, r *http.Request) {
+	_, run, ok := h.lookupRun(w, r)
+	if !ok {
+		return
+	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		httpx.Error(w, http.StatusInternalServerError, "streaming unsupported", "internal_error")
+		return
+	}
+	afterSeq := -1
+	if raw := r.URL.Query().Get("afterSeq"); raw != "" {
+		seq, err := strconv.Atoi(raw)
+		if err != nil || seq < 0 {
+			httpx.Error(w, http.StatusBadRequest, "invalid afterSeq", "bad_request")
+			return
+		}
+		afterSeq = seq
+	}
+
+	w.Header().Set("Content-Type", "application/x-ndjson")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+	w.WriteHeader(http.StatusOK)
+
+	ctx := r.Context()
+	lastSeq, terminal := h.flushRunEventStream(ctx, w, flusher, run, afterSeq)
+	if terminal {
+		return
+	}
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			lastSeq, terminal = h.flushRunEventStream(ctx, w, flusher, run, lastSeq)
+			if terminal {
+				return
+			}
+		}
+	}
+}
+
 // Trigger handles POST /v1/background-tasks/{slug}/trigger.
 func (h *Handler) Trigger(w http.ResponseWriter, r *http.Request) {
 	u, ok := auth.UserFromCtx(r.Context())
@@ -1315,6 +1389,7 @@ func (h *Handler) triggerAPIRun(w http.ResponseWriter, r *http.Request, u *ent.U
 // a Temporal start failure, and 202 with the run view on success.
 func (h *Handler) writeStartedRun(w http.ResponseWriter, task *ent.BackgroundTask, run *ent.BackgroundTaskRun, err error, logMsg string) {
 	var invalidParams *backgroundtaskruns.InvalidParamsError
+	var admissionRejected *backgroundtaskruns.AdmissionRejectedError
 	var startFailed *backgroundtaskruns.StartFailedError
 	var persistIDs *backgroundtaskruns.PersistIDsError
 	switch {
@@ -1324,6 +1399,16 @@ func (h *Handler) writeStartedRun(w http.ResponseWriter, task *ent.BackgroundTas
 		httpx.Error(w, http.StatusServiceUnavailable, "temporal is not configured", "temporal_unavailable")
 	case errors.As(err, &invalidParams):
 		httpx.Error(w, http.StatusBadRequest, err.Error(), "bad_request")
+	case errors.As(err, &admissionRejected):
+		switch admissionRejected.Code {
+		case backgroundtaskworkflow.ErrCodeInsufficientCredits:
+			httpx.Error(w, http.StatusPaymentRequired, admissionRejected.Message, admissionRejected.Code)
+		case backgroundtaskworkflow.ErrCodeDailyCreditLimit, backgroundtaskworkflow.ErrCodeMonthlyCreditLimit,
+			backgroundtaskworkflow.ErrCodeAdmissionRateLimited, backgroundtaskworkflow.ErrCodeAdmissionBackpressure:
+			httpx.Error(w, http.StatusTooManyRequests, admissionRejected.Message, admissionRejected.Code)
+		default:
+			httpx.Error(w, http.StatusServiceUnavailable, admissionRejected.Message, admissionRejected.Code)
+		}
 	case errors.As(err, &startFailed):
 		httpx.Error(w, http.StatusBadGateway, "could not start temporal workflow", "temporal_start_failed")
 	case errors.As(err, &persistIDs):
@@ -1656,6 +1741,44 @@ func viewEvent(ev *ent.BackgroundTaskRunEvent) eventView {
 		Type:       ev.EventType,
 		Event:      rawOrNil(ev.EventJSON),
 		ReceivedAt: ev.ReceivedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func (h *Handler) flushRunEventStream(ctx context.Context, w http.ResponseWriter, flusher http.Flusher, run *ent.BackgroundTaskRun, afterSeq int) (int, bool) {
+	enc := json.NewEncoder(w)
+	last := afterSeq
+	for {
+		events, err := h.client.BackgroundTaskRunEvent.Query().
+			Where(
+				backgroundtaskrunevent.HasRunWith(backgroundtaskrun.IDEQ(run.ID)),
+				backgroundtaskrunevent.SeqGT(last),
+			).
+			Order(backgroundtaskrunevent.BySeq()).
+			Limit(runEventStreamPage).
+			All(ctx)
+		if err != nil {
+			if ctx.Err() == nil {
+				h.log.Warn("stream background task run events", zap.String("runId", run.RunID), zap.Error(err))
+			}
+			return last, false
+		}
+		if len(events) == 0 {
+			return last, false
+		}
+		for _, ev := range events {
+			if err := enc.Encode(viewEvent(ev)); err != nil {
+				return last, true
+			}
+			last = ev.Seq
+			if isTerminalRunEventType(ev.EventType) {
+				flusher.Flush()
+				return last, true
+			}
+		}
+		flusher.Flush()
+		if len(events) < runEventStreamPage {
+			return last, false
+		}
 	}
 }
 
@@ -2084,6 +2207,24 @@ func validateRunStatus(status string) error {
 	}
 }
 
+func isTerminalRunStatus(status string) bool {
+	switch status {
+	case "succeeded", "failed", "stopped":
+		return true
+	default:
+		return false
+	}
+}
+
+func isTerminalRunEventType(eventType string) bool {
+	switch eventType {
+	case backgroundtaskworkflow.EventCompleted, backgroundtaskworkflow.EventFailed, backgroundtaskworkflow.EventStopped, backgroundtaskworkflow.EventDesktopStopped:
+		return true
+	default:
+		return false
+	}
+}
+
 func validateExecutionTarget(target string) error {
 	switch target {
 	case "desktop", "api":
@@ -2104,10 +2245,10 @@ func validateExecutor(executor string) error {
 
 func validateSignal(signal string) error {
 	switch signal {
-	case "pause", "resume", "update_context":
+	case "pause", "resume", "update_context", "approve_tool", "deny_tool":
 		return nil
 	default:
-		return badRequest("signal must be one of pause, resume, update_context")
+		return badRequest("signal must be one of pause, resume, update_context, approve_tool, deny_tool")
 	}
 }
 

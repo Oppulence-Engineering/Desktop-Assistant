@@ -5,9 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,6 +25,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectorcreds"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
@@ -151,6 +154,44 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		}
 	}
 
+	var sandboxExec backgroundtaskruntime.SandboxExecutor
+	if cfg.CloudRuntimeEnabled && cfg.CloudRuntimeSandboxEnabled {
+		ttlSeconds := cfg.CloudRuntimeSandboxTTLSeconds
+		if ttlSeconds > math.MaxInt32 {
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_TTL_SECONDS must be <= %d; got %d", math.MaxInt32, ttlSeconds)
+		}
+		sandboxCfg := backgroundtaskruntime.KubernetesSandboxConfig{
+			Namespace:          cfg.CloudRuntimeSandboxNamespace,
+			ServiceAccountName: cfg.CloudRuntimeSandboxServiceAccount,
+			PollInterval:       cfg.CloudRuntimeSandboxPollInterval,
+			TTLSeconds:         int32(ttlSeconds),
+			CPURequest:         cfg.CloudRuntimeSandboxCPURequest,
+			MemoryRequest:      cfg.CloudRuntimeSandboxMemoryRequest,
+			CPULimit:           cfg.CloudRuntimeSandboxCPULimit,
+			MemoryLimit:        cfg.CloudRuntimeSandboxMemoryLimit,
+			WorkspaceSizeLimit: cfg.CloudRuntimeSandboxWorkspaceSize,
+		}
+		var err error
+		backend := strings.TrimSpace(cfg.CloudRuntimeSandboxBackend)
+		switch backend {
+		case "kubernetes-job":
+			sandboxExec, err = backgroundtaskruntime.NewKubernetesSandboxExecutor(sandboxCfg)
+		case "argo-workflow":
+			sandboxExec, err = backgroundtaskruntime.NewArgoSandboxExecutor(sandboxCfg)
+		default:
+			return fmt.Errorf("unsupported sandbox backend %q", cfg.CloudRuntimeSandboxBackend)
+		}
+		if err != nil {
+			return fmt.Errorf("configure %s sandbox executor: %w", backend, err)
+		}
+		log.Info("cloud runtime sandbox enabled",
+			zap.String("backend", backend),
+			zap.String("image", cfg.CloudRuntimeSandboxImage),
+			zap.Strings("allowed_images", cfg.CloudRuntimeSandboxAllowedImages),
+			zap.Duration("max_duration", cfg.CloudRuntimeSandboxMaxDuration),
+			zap.Int("max_output_bytes", cfg.CloudRuntimeSandboxMaxOutputBytes))
+	}
+
 	// Durable agent runtime (RFC 027) worker-side deps, built once: the
 	// compiled-in capability catalog, the agent-definition loader, the approval
 	// token signer, and an optional Redis event bus for live streaming fan-out.
@@ -203,7 +244,34 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 			activities.Sealer = deps.Sealer
 			activities.Secrets = deps.Secrets
 			activities.Google = deps.Google
+			activities.Slack = slackclient.New(outbound.Policy{
+				Timeout:          15 * time.Second,
+				MaxConcurrent:    64,
+				MaxResponseBytes: 1 << 20,
+			})
+			activities.SlackTokens = slacktoken.New(client, deps.Sealer, deps.Secrets, cfg.SlackTokenURL, outbound.Policy{
+				Timeout:          15 * time.Second,
+				MaxConcurrent:    64,
+				MaxResponseBytes: 1 << 20,
+			})
+			activities.MCPResolver = deps.MCPResolver
+			activities.MCP = deps.MCP
+			activities.MCPConnectors = deps.MCPConnectors
+			activities.MCPPolicies = deps.MCPPolicies
+			activities.Web = websearch.New(cfg.WebSearchAPIURL, cfg.WebSearchAPIKey, outbound.Policy{Timeout: 20 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 4 << 20})
+			activities.Conduit = faculties.New("conduit", cfg.ConduitBaseURL, cfg.ServiceTokenIssuer, cfg.AgentSigningSecret(), outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20})
+			activities.Eigen = faculties.New("eigen", cfg.EigenBaseURL, cfg.ServiceTokenIssuer, cfg.AgentSigningSecret(), outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20})
 			activities.DefaultModel = cfg.CloudRuntimeModel
+			activities.Sandbox = sandboxExec
+			activities.SandboxTool = backgroundtaskruntime.SandboxToolConfig{
+				Backend:        cfg.CloudRuntimeSandboxBackend,
+				DefaultImage:   cfg.CloudRuntimeSandboxImage,
+				AllowedImages:  cfg.CloudRuntimeSandboxAllowedImages,
+				DefaultTimeout: cfg.CloudRuntimeSandboxMaxDuration,
+				MaxTimeout:     cfg.CloudRuntimeSandboxMaxDuration,
+				MaxScriptBytes: cfg.CloudRuntimeSandboxMaxScriptBytes,
+				MaxOutputBytes: cfg.CloudRuntimeSandboxMaxOutputBytes,
+			}
 			log.Info("cloud agent runtime enabled",
 				zap.String("model", cfg.CloudRuntimeModel),
 				zap.Duration("max_duration", cfg.CloudRuntimeMaxDuration),
@@ -220,6 +288,9 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		// The Starter is the one temporalClient-bound dependency, so it is
 		// built per successful dial rather than carried in deps.
 		starter := backgroundtaskruns.New(client, backgroundtaskworkflow.NewStarter(temporalClient, cfg), log)
+		if deps != nil {
+			starter.SetAdmission(backgroundtaskruns.AdmissionFromConfig(cfg, deps.Gate, deps.Prices))
+		}
 
 		// RFC 005: register the Temporal Schedule action workflow
 		// unconditionally — registration is inert with zero schedules, and
@@ -281,8 +352,8 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 				Secrets: deps.Secrets,
 				Google:  deps.Google,
 				Web:     websearch.New(cfg.WebSearchAPIURL, cfg.WebSearchAPIKey, outbound.Policy{Timeout: 20 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 4 << 20}),
-				Conduit: faculties.New("conduit", cfg.ConduitBaseURL, cfg.ConduitAPIKey, outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
-				Eigen:   faculties.New("eigen", cfg.EigenBaseURL, cfg.EigenAPIKey, outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
+				Conduit: faculties.New("conduit", cfg.ConduitBaseURL, cfg.ServiceTokenIssuer, cfg.AgentSigningSecret(), outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
+				Eigen:   faculties.New("eigen", cfg.EigenBaseURL, cfg.ServiceTokenIssuer, cfg.AgentSigningSecret(), outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
 				Log:     log,
 			})
 			// RFC 027 P5: the scheduled-session action runs on the worker and
@@ -327,10 +398,16 @@ var errInfisicalUnavailable = errors.New("infisical unavailable")
 // the Google API client. Built once per process — StartRefresh spawns a
 // process-lifetime goroutine, so this must NOT run inside the redial loop.
 type workerDeps struct {
-	Secrets *secrets.Store
-	LLM     *llm.Handler
-	Sealer  *crypto.Sealer
-	Google  *googleapi.Client
+	Secrets       *secrets.Store
+	LLM           *llm.Handler
+	Sealer        *crypto.Sealer
+	Google        *googleapi.Client
+	MCPResolver   *connectors.MCPRuntimeResolver
+	MCP           *backgroundtaskruntime.MCPHTTPClient
+	MCPConnectors []string
+	MCPPolicies   []backgroundtaskruntime.MCPConnectorPolicy
+	Prices        *pricing.Table
+	Gate          *quota.Gate
 }
 
 func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger, client *ent.Client) (*workerDeps, error) {
@@ -343,6 +420,20 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 	if err != nil {
 		return nil, err
 	}
+	connectorRegistry, err := connectors.LoadRegistry([]byte(cfg.ConnectorsJSON))
+	if err != nil {
+		return nil, fmt.Errorf("load connector registry: %w", err)
+	}
+	mcpResolver := connectors.NewMCPRuntimeResolver(client, sealer, connectorRegistry, connectors.Config{
+		OryPublicURL:          cfg.OryPublicURL,
+		OryBrokerClientID:     cfg.OryBrokerClientID,
+		OryBrokerClientSecret: cfg.OryBrokerClientSecret,
+	})
+	mcpResolver.SetOutboundPolicy(outbound.Policy{
+		Timeout:          15 * time.Second,
+		MaxConcurrent:    64,
+		MaxResponseBytes: 1 << 20,
+	})
 
 	sec := secrets.NewFromConfig(cfg)
 	if err := sec.LoadInfisical(ctx, cfg); err != nil {
@@ -371,12 +462,56 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 		Secrets: sec,
 		LLM:     llmH,
 		Sealer:  sealer,
+		Prices:  prices,
+		Gate:    gate,
 		Google: googleapi.New(googleapi.Config{
 			TokenURL:        cfg.GoogleTokenURL,
 			GmailBaseURL:    cfg.GmailAPIBaseURL,
 			CalendarBaseURL: cfg.CalendarAPIBaseURL,
+			DriveBaseURL:    cfg.DriveAPIBaseURL,
 		}),
+		MCPResolver:   mcpResolver,
+		MCP:           backgroundtaskruntime.NewMCPHTTPClient(outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 4 << 20}),
+		MCPConnectors: connectorNames(connectorRegistry),
+		MCPPolicies:   mcpPolicies(connectorRegistry),
 	}, nil
+}
+
+func connectorNames(registry *connectors.Registry) []string {
+	if registry == nil {
+		return nil
+	}
+	out := make([]string, 0, len(registry.List()))
+	for _, c := range registry.List() {
+		if c.Name == "" || c.MCPURL == "" {
+			continue
+		}
+		out = append(out, c.Name)
+	}
+	return out
+}
+
+func mcpPolicies(registry *connectors.Registry) []backgroundtaskruntime.MCPConnectorPolicy {
+	if registry == nil {
+		return nil
+	}
+	out := make([]backgroundtaskruntime.MCPConnectorPolicy, 0, len(registry.List()))
+	for _, c := range registry.List() {
+		if c.Name == "" || c.MCPURL == "" || len(c.MCPTools) == 0 {
+			continue
+		}
+		policy := backgroundtaskruntime.MCPConnectorPolicy{Name: c.Name, Tools: make([]backgroundtaskruntime.MCPToolPolicy, 0, len(c.MCPTools))}
+		for _, tool := range c.MCPTools {
+			if tool.Name == "" {
+				continue
+			}
+			policy.Tools = append(policy.Tools, backgroundtaskruntime.MCPToolPolicy{Name: tool.Name, TrustTier: tool.TrustTier})
+		}
+		if len(policy.Tools) > 0 {
+			out = append(out, policy)
+		}
+	}
+	return out
 }
 
 func waitForRetry(ctx context.Context, log *zap.Logger, operation string, err error, delay time.Duration) error {

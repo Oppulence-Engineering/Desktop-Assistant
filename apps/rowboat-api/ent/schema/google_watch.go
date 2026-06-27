@@ -12,10 +12,11 @@ import (
 )
 
 // GoogleWatch tracks one active Google push subscription per (user, kind):
-// the Gmail users.watch registration or the Calendar events channel that
+// the Gmail users.watch registration, Calendar events channel, or Drive changes
+// channel that
 // makes Google deliver pushes to /v1/webhooks/google (RFC 003). Rows are
 // created and renewed by the watch manager (internal/googlewatch); Google
-// expires both kinds within days, so unrenewed rows simply go quiet.
+// expires these registrations within days, so unrenewed rows simply go quiet.
 type GoogleWatch struct{ ent.Schema }
 
 // Mixin of the GoogleWatch.
@@ -33,15 +34,16 @@ func (GoogleWatch) Annotations() []schema.Annotation {
 func (GoogleWatch) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("kind").
-			Validate(oneOfBackgroundTask("kind", "gmail", "calendar")),
+			Validate(oneOfBackgroundTask("kind", "gmail", "calendar", "drive")),
 		// account_email mirrors the connection's external_account_id at watch
 		// time; webhook payloads resolve back through it.
 		field.String("account_email").NotEmpty(),
-		// channel_id / resource_id identify a Calendar channel (Rowboat mints
-		// channel_id as "gcal:{email}:{uuid}"); empty for Gmail.
+		// channel_id / resource_id identify Calendar and Drive channels (Rowboat
+		// mints channel_id as "gcal:{email}:{uuid}" or "gdrive:{email}:{uuid}");
+		// empty for Gmail.
 		field.String("channel_id").Optional(),
 		field.String("resource_id").Optional(),
-		// history_id is Gmail's mailbox cursor from the last watch response.
+		// history_id is Gmail's mailbox cursor or Drive's changes page token.
 		field.String("history_id").Optional(),
 		// expires_at is Google's expiration for the registration. The zero-ish
 		// past value on a fresh row marks it due for immediate (re)creation.

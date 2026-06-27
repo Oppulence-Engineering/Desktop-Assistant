@@ -67,6 +67,162 @@ func TestLoopToolCallThenFinal(t *testing.T) {
 	}
 }
 
+func TestLoopDispatchesSandboxRunToolResult(t *testing.T) {
+	store := &fakeArtifactStore{}
+	sink := &fakeEventSink{}
+	exec := &fakeSandboxExecutor{result: SandboxResult{
+		JobName: "rb-sandbox-sandbox-run-abc123", Status: "succeeded", Output: "sandbox-output\n", OutputTruncated: true,
+	}}
+	tool := NewSandboxRunTool(exec, SandboxToolConfig{
+		Backend:        "argo-workflow",
+		DefaultImage:   "python:3.12-slim",
+		AllowedImages:  []string{"python:3.12-slim"},
+		DefaultTimeout: time.Minute,
+		MaxTimeout:     2 * time.Minute,
+		MaxScriptBytes: 1024,
+		MaxOutputBytes: 2048,
+	})
+	llm := newFakeLLM(
+		toolCallTurn("sandbox-call-1", sandboxToolName, `{"script":"echo sandbox-output","timeoutSeconds":30}`),
+		assistantTurn("saw sandbox output"),
+	)
+
+	in := baseInput(llm, store, sink, tool)
+	in.Slug = "sandbox-task"
+	in.RunID = "sandbox-run"
+	out, err := NewDefault().Execute(context.Background(), in)
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if out.LLMCalls != 2 || out.ToolCalls != 1 {
+		t.Fatalf("out = %+v, want 2 llm / 1 tool", out)
+	}
+	if len(exec.runs) != 1 {
+		t.Fatalf("sandbox runs = %d, want 1", len(exec.runs))
+	}
+	run := exec.runs[0]
+	if run.UserID != "u1" || run.TaskSlug != "sandbox-task" || run.RunID != "sandbox-run" ||
+		run.ToolCallIndex != 1 || run.Image != "python:3.12-slim" || run.Timeout != 30*time.Second {
+		t.Fatalf("sandbox run = %+v", run)
+	}
+	lastRequest := llm.requests[len(llm.requests)-1]
+	foundToolResult := false
+	for _, msg := range lastRequest {
+		if msg.Role == "tool" && msg.ToolCallID == "sandbox-call-1" && strings.Contains(msg.Content, "sandbox-output") {
+			foundToolResult = true
+		}
+	}
+	if !foundToolResult {
+		t.Fatalf("sandbox result missing from transcript: %+v", lastRequest)
+	}
+	if !containsStr(sink.types(), eventToolCallStarted) || !containsStr(sink.types(), eventToolCallCompleted) {
+		t.Fatalf("missing sandbox tool events: %v", sink.types())
+	}
+	completed := lastEventPayload(sink.records, eventToolCallCompleted)
+	if completed["tool"] != sandboxToolName ||
+		completed["sandboxBackend"] != "argo-workflow" ||
+		completed["sandboxJobName"] != "rb-sandbox-sandbox-run-abc123" ||
+		completed["sandboxStatus"] != "succeeded" ||
+		completed["sandboxOutput"] != "sandbox-output\n" ||
+		completed["sandboxOutputBytes"] != len("sandbox-output\n") ||
+		completed["sandboxOutputTruncated"] != true {
+		t.Fatalf("sandbox completion payload = %+v", completed)
+	}
+}
+
+func TestLoopReturnsRuntimeErrorWhenSandboxExecutorFails(t *testing.T) {
+	store := &fakeArtifactStore{body: "old"}
+	sink := &fakeEventSink{}
+	exec := &fakeSandboxExecutor{err: fmt.Errorf("kubernetes unavailable")}
+	tool := NewSandboxRunTool(exec, SandboxToolConfig{
+		DefaultImage:   "python:3.12-slim",
+		AllowedImages:  []string{"python:3.12-slim"},
+		DefaultTimeout: time.Minute,
+		MaxTimeout:     2 * time.Minute,
+		MaxScriptBytes: 1024,
+		MaxOutputBytes: 2048,
+	})
+	llm := newFakeLLM(
+		toolCallTurn("sandbox-call-1", sandboxToolName, `{"script":"echo sandbox-output"}`),
+	)
+
+	out, err := NewDefault().Execute(context.Background(), baseInput(llm, store, sink, tool))
+	re, ok := AsRuntimeError(err)
+	if !ok || re.Code != CodeToolInvokeFailed || !strings.Contains(err.Error(), "kubernetes unavailable") {
+		t.Fatalf("err = %v, want tool_invoke_failed with executor cause", err)
+	}
+	if out.LLMCalls != 1 || out.ToolCalls != 1 {
+		t.Fatalf("out = %+v, want 1 llm / 1 tool", out)
+	}
+	if len(exec.runs) != 1 {
+		t.Fatalf("sandbox runs = %d, want 1", len(exec.runs))
+	}
+	if len(store.writes) != 0 {
+		t.Fatalf("failed sandbox run must not write artifact: %v", store.writes)
+	}
+	if !containsStr(sink.types(), eventToolCallStarted) {
+		t.Fatalf("missing tool started event: %v", sink.types())
+	}
+}
+
+func TestLoopFeedsSandboxValidationErrorBackToModel(t *testing.T) {
+	store := &fakeArtifactStore{}
+	sink := &fakeEventSink{}
+	exec := &fakeSandboxExecutor{result: SandboxResult{Status: "succeeded", Output: "should-not-run\n"}}
+	tool := NewSandboxRunTool(exec, SandboxToolConfig{
+		DefaultImage:   "python:3.12-slim",
+		AllowedImages:  []string{"python:3.12-slim"},
+		DefaultTimeout: time.Minute,
+		MaxTimeout:     2 * time.Minute,
+		MaxScriptBytes: 1024,
+		MaxOutputBytes: 2048,
+	})
+	llm := newFakeLLM(
+		toolCallTurn("sandbox-call-1", sandboxToolName, `{"script":"echo nope","image":"alpine:latest"}`),
+		assistantTurn("I will use the configured sandbox image next time."),
+	)
+
+	out, err := NewDefault().Execute(context.Background(), baseInput(llm, store, sink, tool))
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if out.LLMCalls != 2 || out.ToolCalls != 1 {
+		t.Fatalf("out = %+v, want 2 llm / 1 tool", out)
+	}
+	if len(exec.runs) != 0 {
+		t.Fatalf("sandbox executor should not run invalid request: %+v", exec.runs)
+	}
+	lastRequest := llm.requests[len(llm.requests)-1]
+	foundToolError := false
+	for _, msg := range lastRequest {
+		if msg.Role == "tool" && msg.ToolCallID == "sandbox-call-1" && strings.Contains(msg.Content, `image \"alpine:latest\" is not allowed`) {
+			foundToolError = true
+		}
+	}
+	if !foundToolError {
+		t.Fatalf("sandbox validation error missing from transcript: %+v", lastRequest)
+	}
+	if !containsStr(sink.types(), eventToolCallCompleted) {
+		t.Fatalf("missing tool completed event for validation error: %v", sink.types())
+	}
+}
+
+func TestSandboxResultEventFieldsCapsOutputPreview(t *testing.T) {
+	raw, err := json.Marshal(SandboxResult{
+		JobName: "wf", Status: "succeeded", Output: strings.Repeat("x", sandboxEventOutputCap+64),
+	})
+	if err != nil {
+		t.Fatalf("marshal sandbox result: %v", err)
+	}
+	fields := sandboxResultEventFields(raw)
+	output, _ := fields["sandboxOutput"].(string)
+	if fields["sandboxOutputBytes"] != sandboxEventOutputCap+64 ||
+		fields["sandboxOutputEventTruncated"] != true ||
+		len(output) > sandboxEventOutputCap+3 {
+		t.Fatalf("fields = %+v outputLen=%d", fields, len(output))
+	}
+}
+
 func TestLoopFinalWithoutArtifactWritePromotesContent(t *testing.T) {
 	store := &fakeArtifactStore{}
 	llm := newFakeLLM(assistantTurn("# Report\n\nEverything is fine."))
@@ -79,6 +235,57 @@ func TestLoopFinalWithoutArtifactWritePromotesContent(t *testing.T) {
 	}
 	if out.Summary != "Report" {
 		t.Fatalf("summary = %q (first non-empty line, markdown-stripped)", out.Summary)
+	}
+}
+
+func TestLoopAppliesContextUpdatesBeforeNextLLMCall(t *testing.T) {
+	store := &fakeArtifactStore{}
+	sink := &fakeEventSink{}
+	llm := newFakeLLM(assistantTurn("updated"))
+	in := baseInput(llm, store, sink)
+	in.Controls = &fakeControlSource{states: []ControlState{{
+		ContextUpdates: []string{"Use the corrected customer name."},
+	}}}
+
+	if _, err := NewDefault().Execute(context.Background(), in); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if len(llm.requests) == 0 {
+		t.Fatal("LLM was not called")
+	}
+	found := false
+	for _, msg := range llm.requests[0] {
+		if msg.Role == "user" && strings.Contains(msg.Content, "Use the corrected customer name.") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("context update missing from first LLM request: %+v", llm.requests[0])
+	}
+	if !hasProgressMessage(sink.records, "Context updated.") {
+		t.Fatalf("missing context progress event: %+v", sink.records)
+	}
+}
+
+func TestLoopPausesUntilResumeSignal(t *testing.T) {
+	oldInterval := controlPollInterval
+	controlPollInterval = time.Millisecond
+	t.Cleanup(func() { controlPollInterval = oldInterval })
+
+	store := &fakeArtifactStore{}
+	sink := &fakeEventSink{}
+	llm := newFakeLLM(assistantTurn("resumed"))
+	in := baseInput(llm, store, sink)
+	in.Controls = &fakeControlSource{states: []ControlState{
+		{Paused: true},
+		{Paused: false},
+	}}
+
+	if _, err := NewDefault().Execute(context.Background(), in); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if !hasProgressMessage(sink.records, "Run paused.") || !hasProgressMessage(sink.records, "Run resumed.") {
+		t.Fatalf("pause/resume progress missing: %+v", sink.records)
 	}
 }
 
@@ -206,6 +413,130 @@ func TestLoopPlainToolErrorContinues(t *testing.T) {
 	}
 }
 
+func TestLoopApprovalTierToolWaitsForApproval(t *testing.T) {
+	oldInterval := controlPollInterval
+	controlPollInterval = time.Millisecond
+	t.Cleanup(func() { controlPollInterval = oldInterval })
+
+	tool := &fakeTool{
+		name:   "connector.write.gmail_draft",
+		result: json.RawMessage(`{"draftId":"draft-1"}`),
+		audit:  ToolAudit{TrustTier: TierAct, Connector: "google", Operation: "gmail.draft.create", RequiredScopes: []string{ScopeGmailCompose}},
+	}
+	sink := &fakeEventSink{}
+	llm := newFakeLLM(
+		toolCallTurn("c1", "connector.write.gmail_draft", `{"to":"a@example.com","body":"hello"}`),
+		assistantTurn("draft created"),
+	)
+	in := baseInput(llm, &fakeArtifactStore{}, sink, tool)
+	in.Controls = &fakeControlSource{states: []ControlState{
+		{},
+		{ToolApprovals: map[string]ToolApprovalDecision{
+			"run-1/tool/1": {Approved: true, ResolvedBy: "tester"},
+		}},
+	}}
+
+	if _, err := NewDefault().Execute(context.Background(), in); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if len(tool.invokes) != 1 || len(tool.scopes) != 1 || tool.scopes[0].ApprovalID != "run-1/tool/1" {
+		t.Fatalf("invokes/scopes = %d/%+v", len(tool.invokes), tool.scopes)
+	}
+	if !containsStr(sink.types(), eventToolApprovalRequested) || !containsStr(sink.types(), eventToolApprovalResolved) {
+		t.Fatalf("missing approval events: %v", sink.types())
+	}
+	requested := lastEventPayload(sink.records, eventToolApprovalRequested)
+	if !hasScopeValue(requested["requiredScopes"], ScopeGmailCompose) {
+		t.Fatalf("approval request missing required scope %q: %+v", ScopeGmailCompose, requested)
+	}
+	completed := lastEventPayload(sink.records, eventToolCallCompleted)
+	if completed["connector"] != "google" || completed["operation"] != "gmail.draft.create" ||
+		completed["trustTier"] != TierAct || completed["approvalId"] != "run-1/tool/1" {
+		t.Fatalf("completed payload = %+v", completed)
+	}
+	if !hasScopeValue(completed["requiredScopes"], ScopeGmailCompose) {
+		t.Fatalf("completed payload missing required scope %q: %+v", ScopeGmailCompose, completed)
+	}
+	if _, ok := completed["latencyMs"]; !ok {
+		t.Fatalf("completed payload missing latencyMs: %+v", completed)
+	}
+}
+
+func TestLoopMoneyMovingToolWaitsForApproval(t *testing.T) {
+	oldInterval := controlPollInterval
+	controlPollInterval = time.Millisecond
+	t.Cleanup(func() { controlPollInterval = oldInterval })
+
+	tool := &fakeTool{
+		name:   "connector.mcp.call_tool",
+		result: json.RawMessage(`{"result":{"refund":"re_1"}}`),
+		audit:  ToolAudit{TrustTier: TierMoneyMoving, Connector: "stripe", Operation: "mcp.tool.refund.create"},
+	}
+	sink := &fakeEventSink{}
+	llm := newFakeLLM(
+		toolCallTurn("c1", "connector.mcp.call_tool", `{"connector":"stripe","tool":"refund.create","arguments":{"charge":"ch_1"}}`),
+		assistantTurn("refund queued"),
+	)
+	in := baseInput(llm, &fakeArtifactStore{}, sink, tool)
+	in.Controls = &fakeControlSource{states: []ControlState{{
+		ToolApprovals: map[string]ToolApprovalDecision{
+			"run-1/tool/1": {Approved: true, ResolvedBy: "finance-owner"},
+		},
+	}}}
+
+	if _, err := NewDefault().Execute(context.Background(), in); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if len(tool.invokes) != 1 || len(tool.scopes) != 1 || tool.scopes[0].ApprovalID != "run-1/tool/1" {
+		t.Fatalf("invokes/scopes = %d/%+v", len(tool.invokes), tool.scopes)
+	}
+	completed := lastEventPayload(sink.records, eventToolCallCompleted)
+	if completed["connector"] != "stripe" || completed["operation"] != "mcp.tool.refund.create" ||
+		completed["trustTier"] != TierMoneyMoving || completed["approvalId"] != "run-1/tool/1" {
+		t.Fatalf("completed payload = %+v", completed)
+	}
+}
+
+func TestLoopApprovalTierToolDeniedDoesNotInvoke(t *testing.T) {
+	oldInterval := controlPollInterval
+	controlPollInterval = time.Millisecond
+	t.Cleanup(func() { controlPollInterval = oldInterval })
+
+	tool := &fakeTool{
+		name:   "connector.write.slack_reply",
+		result: json.RawMessage(`{"posted":true}`),
+		audit:  ToolAudit{TrustTier: TierAct, Connector: "slack", Operation: "slack.thread.reply"},
+	}
+	sink := &fakeEventSink{}
+	llm := newFakeLLM(
+		toolCallTurn("c1", "connector.write.slack_reply", `{"text":"hello"}`),
+		assistantTurn("reply was not posted"),
+	)
+	in := baseInput(llm, &fakeArtifactStore{}, sink, tool)
+	in.Controls = &fakeControlSource{states: []ControlState{{
+		ToolApprovals: map[string]ToolApprovalDecision{
+			"run-1/tool/1": {Approved: false, ResolvedBy: "tester", Reason: "too risky"},
+		},
+	}}}
+
+	if _, err := NewDefault().Execute(context.Background(), in); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if len(tool.invokes) != 0 {
+		t.Fatalf("denied tool must not invoke, got %d invokes", len(tool.invokes))
+	}
+	last := llm.requests[len(llm.requests)-1]
+	found := false
+	for _, m := range last {
+		if m.Role == "tool" && strings.Contains(m.Content, "denied by human approval gate") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("denial missing from transcript: %+v", last)
+	}
+}
+
 // slowLLM blocks until ctx dies.
 type slowLLM struct{ delay time.Duration }
 
@@ -229,6 +560,42 @@ func containsStr(haystack []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+func hasScopeValue(raw any, want string) bool {
+	switch scopes := raw.(type) {
+	case []string:
+		for _, scope := range scopes {
+			if scope == want {
+				return true
+			}
+		}
+	case []any:
+		for _, scope := range scopes {
+			if s, ok := scope.(string); ok && s == want {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func hasProgressMessage(records []sinkRecord, message string) bool {
+	for _, rec := range records {
+		if rec.Kind == "progress" && rec.Message == message {
+			return true
+		}
+	}
+	return false
+}
+
+func lastEventPayload(records []sinkRecord, eventType string) map[string]any {
+	for i := len(records) - 1; i >= 0; i-- {
+		if records[i].Kind == "event" && records[i].EventType == eventType {
+			return records[i].Payload
+		}
+	}
+	return nil
 }
 
 // TestLoopEmptyFinalPreservesArtifact: a run that ends with no tool calls and

@@ -126,7 +126,7 @@ func CORS(cfg appconfig.Config) func(http.Handler) http.Handler {
 					h.Set("Access-Control-Allow-Origin", origin)
 					h.Set("Access-Control-Allow-Credentials", "true")
 					h.Set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
-					h.Set("Access-Control-Allow-Headers", "Authorization,Content-Type,Idempotency-Key,X-Hook-Signature,X-Internal-Secret")
+					h.Set("Access-Control-Allow-Headers", "Authorization,Content-Type,Idempotency-Key,X-Hook-Signature,X-Webhook-Signature,X-Internal-Secret")
 					h.Set("Access-Control-Max-Age", "600")
 				} else if r.Method == http.MethodOptions {
 					httpx.Error(w, http.StatusForbidden, "origin is not allowed", "cors_forbidden")
@@ -160,7 +160,8 @@ func RequestTimeout(timeout time.Duration) func(http.Handler) http.Handler {
 func skipRequestTimeout(path string) bool {
 	return strings.HasPrefix(path, "/v1/llm/") ||
 		strings.HasPrefix(path, "/v1/composio/") ||
-		strings.HasSuffix(path, "/events")
+		strings.HasSuffix(path, "/events") ||
+		strings.HasSuffix(path, "/events/stream")
 }
 
 // MaxRequestBody caps inbound request bodies before handlers read them.

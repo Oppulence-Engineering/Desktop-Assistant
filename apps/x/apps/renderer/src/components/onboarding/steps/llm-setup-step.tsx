@@ -173,7 +173,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
           <div className="flex-1 min-w-0">
             <p className="text-sm text-foreground">
               <span className="font-medium">Tip:</span> Hosted models recommended. Locally run LLMs
-              can struggle with {PRODUCT_NAME}'s parallel background agents. Bring your own API keys
+              can struggle with {PRODUCT_NAME}'s parallel background tasks. Bring your own API keys
               below, or sign in for instant access.
             </p>
             <button

@@ -1,11 +1,4 @@
-import {
-  ArrowUpRight,
-  Workflow,
-  Mail,
-  MessageSquare,
-  Sparkles,
-  ScanSearch,
-} from "@/lib/icons";
+import { ArrowUpRight, Workflow, Mail, MessageSquare, Sparkles, ScanSearch } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/relative-time";
@@ -40,9 +33,9 @@ const SUGGESTED_ACTIONS: {
   },
   {
     icon: Workflow,
-    title: "Set up a background agent",
+    title: "Set up a background task",
     sub: "that automates tasks",
-    prompt: "Set up a background agent that automates [task]",
+    prompt: "Set up a background task that automates [task]",
   },
   {
     icon: ScanSearch,
@@ -75,9 +68,7 @@ export function ChatEmptyState({
           <Sparkles className="size-[17px]" />
         </div>
         <div>
-          <div className="text-base font-semibold tracking-tight">
-            What are we working on?
-          </div>
+          <div className="text-base font-semibold tracking-tight">What are we working on?</div>
           <div className="text-xs text-muted-foreground">
             Ask anything, or pick up where you left off.
           </div>
@@ -135,9 +126,7 @@ export function ChatEmptyState({
               <action.icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
                 <div className="text-[12.8px] font-medium">{action.title}</div>
-                <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-                  {action.sub}
-                </div>
+                <div className="mt-0.5 text-[11.5px] text-muted-foreground">{action.sub}</div>
               </div>
             </button>
           ))}

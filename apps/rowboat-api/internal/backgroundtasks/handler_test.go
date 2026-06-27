@@ -1,6 +1,7 @@
 package backgroundtasks
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -10,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
@@ -37,6 +39,11 @@ func setupTest(t *testing.T) (*ent.Client, *ent.User, http.Handler) {
 func testRouter(h *Handler) http.Handler {
 	r := chi.NewRouter()
 	r.Get("/v1/background-task-runs", h.ListAllRuns)
+	r.Route("/v1/background-task-templates", func(r chi.Router) {
+		r.Get("/", h.ListTemplates)
+		r.Get("/{templateSlug}", h.GetTemplate)
+		r.Post("/{templateSlug}/instantiate", h.InstantiateTemplate)
+	})
 	r.Get("/v1/background-tasks", h.List)
 	r.Post("/v1/background-tasks", h.Create)
 	r.Route("/v1/background-tasks", func(r chi.Router) {
@@ -57,6 +64,7 @@ func testRouter(h *Handler) http.Handler {
 		r.Post("/{slug}/runs/{runId}/signal", h.SignalRun)
 		r.Get("/{slug}/runs/{runId}/events", h.ListRunEvents)
 		r.Post("/{slug}/runs/{runId}/events", h.AppendRunEvents)
+		r.Get("/{slug}/runs/{runId}/events/stream", h.StreamRunEvents)
 		r.Post("/{slug}/trigger", h.Trigger)
 		r.Get("/{slug}/schedule-state", h.GetScheduleState)
 	})
@@ -233,8 +241,8 @@ func TestBackgroundTaskLifecycle(t *testing.T) {
 	eventsRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/daily-summary/runs/run-1/events", map[string]any{
 		"events": []any{
 			map[string]any{"seq": 0, "event": map[string]any{"type": "started"}},
-			map[string]any{"seq": 1, "type": "completed", "event": map[string]any{"type": "completed", "summary": "ok"}},
-			map[string]any{"seq": 1, "event": map[string]any{"type": "completed"}},
+			map[string]any{"seq": 1, "type": backgroundtaskworkflow.EventCompleted, "event": map[string]any{"type": backgroundtaskworkflow.EventCompleted, "summary": "ok"}},
+			map[string]any{"seq": 1, "event": map[string]any{"type": backgroundtaskworkflow.EventCompleted}},
 		},
 	})
 	if eventsRec.Code != http.StatusOK {
@@ -267,6 +275,33 @@ func TestBackgroundTaskLifecycle(t *testing.T) {
 	}](t, eventsAfterRec)
 	if len(eventsAfter.Events) != 1 || eventsAfter.Events[0].Seq != 1 {
 		t.Fatalf("unexpected afterSeq event list: %+v", eventsAfter.Events)
+	}
+
+	streamRec := authedJSON(t, router, u, http.MethodGet, "/v1/background-tasks/daily-summary/runs/run-1/events/stream?afterSeq=0", nil)
+	if streamRec.Code != http.StatusOK {
+		t.Fatalf("stream events: want 200, got %d: %s", streamRec.Code, streamRec.Body.String())
+	}
+	if ct := streamRec.Header().Get("Content-Type"); ct != "application/x-ndjson" {
+		t.Fatalf("stream content-type = %q, want application/x-ndjson", ct)
+	}
+	var streamed []eventView
+	sc := bufio.NewScanner(strings.NewReader(streamRec.Body.String()))
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" {
+			continue
+		}
+		var ev eventView
+		if err := json.Unmarshal([]byte(line), &ev); err != nil {
+			t.Fatalf("stream line %q: %v", line, err)
+		}
+		streamed = append(streamed, ev)
+	}
+	if err := sc.Err(); err != nil {
+		t.Fatalf("scan stream: %v", err)
+	}
+	if len(streamed) != 1 || streamed[0].Seq != 1 || streamed[0].Type != backgroundtaskworkflow.EventCompleted {
+		t.Fatalf("stream afterSeq=0 returned %+v, want only seq 1 terminal event", streamed)
 	}
 
 	patchRunRec := authedJSON(t, router, u, http.MethodPatch, "/v1/background-tasks/daily-summary/runs/run-1", map[string]any{
@@ -336,6 +371,62 @@ func TestBackgroundTaskLifecycle(t *testing.T) {
 	}
 	if n := client.BackgroundTaskRunEvent.Query().CountX(ctx); n != 0 {
 		t.Fatalf("events after delete = %d, want 0", n)
+	}
+}
+
+func TestBackgroundTaskTemplatesInstantiate(t *testing.T) {
+	client, u, router := setupTest(t)
+
+	listRec := authedJSON(t, router, u, http.MethodGet, "/v1/background-task-templates/", nil)
+	if listRec.Code != http.StatusOK {
+		t.Fatalf("list templates: want 200, got %d: %s", listRec.Code, listRec.Body.String())
+	}
+	list := decodeBody[struct {
+		Templates []taskTemplateView `json:"templates"`
+	}](t, listRec)
+	if len(list.Templates) == 0 {
+		t.Fatal("expected built-in templates")
+	}
+	if list.Templates[0].ExecutionTarget != "api" {
+		t.Fatalf("template execution target = %q, want api", list.Templates[0].ExecutionTarget)
+	}
+
+	getRec := authedJSON(t, router, u, http.MethodGet, "/v1/background-task-templates/inbox-digest", nil)
+	if getRec.Code != http.StatusOK {
+		t.Fatalf("get template: want 200, got %d: %s", getRec.Code, getRec.Body.String())
+	}
+	template := decodeBody[taskTemplateView](t, getRec)
+	if template.Slug != "inbox-digest" || template.TaskSlug == "" || len(template.RequiredConnectors) == 0 {
+		t.Fatalf("unexpected template: %+v", template)
+	}
+
+	createRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-task-templates/inbox-digest/instantiate", map[string]any{
+		"slug": "exec-inbox",
+		"name": "Executive Inbox Digest",
+	})
+	if createRec.Code != http.StatusCreated {
+		t.Fatalf("instantiate template: want 201, got %d: %s", createRec.Code, createRec.Body.String())
+	}
+	task := decodeBody[taskView](t, createRec)
+	if task.Slug != "exec-inbox" || task.Name != "Executive Inbox Digest" || task.ExecutionTarget != "api" || task.Triggers == nil {
+		t.Fatalf("unexpected instantiated task: %+v", task)
+	}
+	ctx := auth.WithUser(context.Background(), u)
+	stored := client.BackgroundTask.Query().Where(backgroundtask.SlugEQ("exec-inbox")).OnlyX(ctx)
+	if stored.ExecutionTarget != "api" || stored.TriggersJSON == "" {
+		t.Fatalf("unexpected stored template task: %+v", stored)
+	}
+
+	duplicateRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-task-templates/inbox-digest/instantiate", map[string]any{
+		"slug": "exec-inbox",
+	})
+	if duplicateRec.Code != http.StatusConflict {
+		t.Fatalf("duplicate instantiate: want 409, got %d: %s", duplicateRec.Code, duplicateRec.Body.String())
+	}
+
+	missingRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-task-templates/nope/instantiate", map[string]any{})
+	if missingRec.Code != http.StatusNotFound {
+		t.Fatalf("missing template: want 404, got %d: %s", missingRec.Code, missingRec.Body.String())
 	}
 }
 
@@ -463,6 +554,26 @@ func TestAPITargetTaskStartsTemporalAndSupportsStatusControl(t *testing.T) {
 	}
 	if len(temporal.signals) != 1 || !strings.Contains(temporal.signals[0], "/pause") {
 		t.Fatalf("unexpected signals: %+v", temporal.signals)
+	}
+	approveRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs/"+run.RunID+"/signal", map[string]any{
+		"signal":  "approve_tool",
+		"payload": map[string]any{"approvalId": run.RunID + "/tool/1", "resolvedBy": "tester"},
+	})
+	if approveRec.Code != http.StatusAccepted {
+		t.Fatalf("approve signal: want 202, got %d: %s", approveRec.Code, approveRec.Body.String())
+	}
+	if len(temporal.signals) != 2 || !strings.Contains(temporal.signals[1], "/approve_tool") {
+		t.Fatalf("unexpected approval signals: %+v", temporal.signals)
+	}
+	signalEventsRec := authedJSON(t, router, u, http.MethodGet, "/v1/background-tasks/api-task/runs/"+run.RunID+"/events", nil)
+	if signalEventsRec.Code != http.StatusOK {
+		t.Fatalf("list signal events: want 200, got %d: %s", signalEventsRec.Code, signalEventsRec.Body.String())
+	}
+	signalEvents := decodeBody[struct {
+		Events []eventView `json:"events"`
+	}](t, signalEventsRec)
+	if !hasEventType(signalEvents.Events, backgroundtaskworkflow.EventSignal) {
+		t.Fatalf("expected durable signal event, got %+v", signalEvents.Events)
 	}
 
 	cancelRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs/"+run.RunID+"/cancel", nil)

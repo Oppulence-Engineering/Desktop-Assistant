@@ -49,7 +49,7 @@ func TestConduitToolForwardsRequest(t *testing.T) {
 		_, _ = w.Write([]byte(`{"disputes":[{"id":"d1"}]}`))
 	}))
 	defer srv.Close()
-	conduit := faculties.New("conduit", srv.URL, "k", outbound.Policy{})
+	conduit := faculties.New("conduit", srv.URL, "rowboat-internal", "signing-secret", outbound.Policy{})
 
 	capability, _ := DefaultCatalog().Get("conduit.read")
 	tool := capability.Build(ToolDeps{Conduit: conduit})
@@ -62,6 +62,10 @@ func TestConduitToolForwardsRequest(t *testing.T) {
 	}
 	if gotUser != "user-1" {
 		t.Fatalf("on-behalf-of = %q", gotUser)
+	}
+	audit := tool.(backgroundtaskruntime.ToolAuditProvider).AuditInfo(nil)
+	if audit.TrustTier != backgroundtaskruntime.TierRead || audit.Connector != "conduit" || audit.Operation != "read" {
+		t.Fatalf("audit = %+v, want conduit/read/read-tier", audit)
 	}
 	if !strings.Contains(string(out), `"disputes"`) {
 		t.Fatalf("passthrough = %s", out)
@@ -76,7 +80,7 @@ func TestFacultyToolsRejectSlackChannelSessions(t *testing.T) {
 	}))
 	defer srv.Close()
 	deps, scope := slackSessionToolDeps(t)
-	deps.Conduit = faculties.New("conduit", srv.URL, "k", outbound.Policy{})
+	deps.Conduit = faculties.New("conduit", srv.URL, "rowboat-internal", "signing-secret", outbound.Policy{})
 
 	capability, _ := DefaultCatalog().Get("conduit.read")
 	tool := capability.Build(deps)

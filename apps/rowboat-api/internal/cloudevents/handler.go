@@ -21,9 +21,10 @@ import (
 
 // Config tunes the ingestion surface.
 type Config struct {
-	MaxPayloadBytes    int
-	SlackSigningSecret string
-	GoogleWebhookToken string
+	MaxPayloadBytes      int
+	SlackSigningSecret   string
+	GoogleWebhookToken   string
+	WebhookSigningSecret string
 }
 
 // Handler serves /v1/events, /v1/internal/events, and /v1/webhooks/*.

@@ -157,6 +157,8 @@ import { useVoiceMode } from "@/hooks/useVoiceMode";
 import { useVoiceTTS } from "@/hooks/useVoiceTTS";
 import { useMeetingTranscription, type CalendarEventMeta } from "@/hooks/useMeetingTranscription";
 import { useAnalyticsIdentity } from "@/hooks/useAnalyticsIdentity";
+import { useSolomonAccount } from "@/hooks/useSolomonAccount";
+import { useBilling } from "@/hooks/useBilling";
 import * as analytics from "@/lib/analytics";
 import { useTheme } from "@/contexts/theme-context";
 
@@ -819,6 +821,14 @@ function App() {
   type MarkdownHistoryHandlers = { undo: () => boolean; redo: () => boolean };
 
   useAnalyticsIdentity();
+  const solomonAccount = useSolomonAccount();
+  const { isLoading: solomonBillingLoading, error: solomonBillingError } = useBilling(
+    solomonAccount.signedIn,
+  );
+  const shouldOfferBgTaskCopilot =
+    !solomonAccount.isLoading &&
+    (!solomonAccount.signedIn ||
+      (!solomonBillingLoading && solomonBillingError?.reason !== "auth_unavailable"));
 
   // File browser state (for Knowledge section)
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
@@ -6675,12 +6685,20 @@ function App() {
                   <BgTasksView
                     initialSlug={bgTaskInitialSlug}
                     slugVersion={bgTaskSlugVersion}
-                    onCreateWithCopilot={(description) => {
-                      submitFromPalette(buildBgTaskSetupPrompt(description), null);
-                    }}
-                    onEditWithCopilot={(slug) => {
-                      submitFromPalette(buildBgTaskEditPrompt(slug), null);
-                    }}
+                    onCreateWithCopilot={
+                      shouldOfferBgTaskCopilot
+                        ? (description) => {
+                            submitFromPalette(buildBgTaskSetupPrompt(description), null);
+                          }
+                        : undefined
+                    }
+                    onEditWithCopilot={
+                      shouldOfferBgTaskCopilot
+                        ? (slug) => {
+                            submitFromPalette(buildBgTaskEditPrompt(slug), null);
+                          }
+                        : undefined
+                    }
                   />
                 </div>
               ) : isEmailOpen ? (

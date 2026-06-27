@@ -21,9 +21,12 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
 	"github.com/google/uuid"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/activity"
@@ -49,6 +52,9 @@ const (
 
 	// SignalControl is the Temporal signal used to control an in-flight API task run.
 	SignalControl = "rowboat.background_tasks.control.v1"
+
+	executeAPITaskStartToCloseTimeout = 30 * time.Minute
+	shortActivityStartToCloseTimeout  = 5 * time.Minute
 )
 
 // StartInput is persisted in Temporal history and is intentionally small.
@@ -59,6 +65,7 @@ type StartInput struct {
 	RunID            string `json:"runId"`
 	Trigger          string `json:"trigger"`
 	RequestedContext string `json:"requestedContext,omitempty"`
+	PriorityKey      int    `json:"priorityKey,omitempty"`
 }
 
 // StartResult is returned to the HTTP handler after Temporal accepts the start.
@@ -127,10 +134,19 @@ func WorkflowID(userID, slug, runID string) string {
 // StartBackgroundTaskRun starts an API-native background task workflow.
 func (s *Starter) StartBackgroundTaskRun(ctx context.Context, in StartInput) (StartResult, error) {
 	workflowID := WorkflowID(in.UserID, in.Slug, in.RunID)
+	priorityKey := in.PriorityKey
+	if priorityKey <= 0 {
+		priorityKey = PriorityDefault
+	}
 	run, err := s.client.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 		ID:                    workflowID,
 		TaskQueue:             s.taskQueue,
 		WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE_FAILED_ONLY,
+		Priority: temporal.Priority{
+			PriorityKey:    priorityKey,
+			FairnessKey:    in.UserID,
+			FairnessWeight: 1,
+		},
 	}, WorkflowName, in)
 	if err != nil {
 		return StartResult{}, err
@@ -163,8 +179,18 @@ func Register(w worker.Worker, activities *Activities) {
 
 // BackgroundTaskWorkflow coordinates an API-native background task run.
 func BackgroundTaskWorkflow(ctx workflow.Context, in StartInput) error {
-	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		StartToCloseTimeout: 5 * time.Minute,
+	shortCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: shortActivityStartToCloseTimeout,
+		RetryPolicy: &temporal.RetryPolicy{
+			InitialInterval:    time.Second,
+			BackoffCoefficient: 2,
+			MaximumInterval:    time.Minute,
+			MaximumAttempts:    3,
+		},
+	})
+	executeCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: executeAPITaskStartToCloseTimeout,
+		HeartbeatTimeout:    time.Minute,
 		RetryPolicy: &temporal.RetryPolicy{
 			InitialInterval:    time.Second,
 			BackoffCoefficient: 2,
@@ -173,13 +199,11 @@ func BackgroundTaskWorkflow(ctx workflow.Context, in StartInput) error {
 		},
 	})
 
-	// Drain SignalControl so control signals (pause/resume/update_context) are
-	// actually received from workflow history instead of buffering unboundedly.
-	// This linear workflow does not yet act on them — but the HTTP SignalRun path
-	// returns 202 ("delivered"), and without this drain the signal was never read
-	// at all. The coroutine blocks on Receive for the life of the run and is
-	// reclaimed when the workflow completes.
-	workflow.Go(ctx, func(gctx workflow.Context) {
+	// Drain SignalControl so control signals are received from workflow history
+	// instead of buffering unboundedly. The HTTP layer also persists each signal
+	// as a run event; ExecuteAPITask polls those durable rows at safe runtime
+	// checkpoints to honor pause/resume/update_context cooperatively.
+	workflow.Go(shortCtx, func(gctx workflow.Context) {
 		ch := workflow.GetSignalChannel(gctx, SignalControl)
 		for {
 			var msg map[string]any
@@ -191,7 +215,7 @@ func BackgroundTaskWorkflow(ctx workflow.Context, in StartInput) error {
 		}
 	})
 
-	if err := workflow.ExecuteActivity(ctx, ActivityMarkRunRunning, in).Get(ctx, nil); err != nil {
+	if err := workflow.ExecuteActivity(shortCtx, ActivityMarkRunRunning, in).Get(shortCtx, nil); err != nil {
 		// Best-effort terminal write: without it the run row stays "queued"
 		// forever when the claim exhausts its retry budget (the scheduler's
 		// stale-heartbeat sweep is the backstop when this write fails too).
@@ -199,23 +223,23 @@ func BackgroundTaskWorkflow(ctx workflow.Context, in StartInput) error {
 		// already terminal (e.g. RunNotClaimable on a stopped run).
 		code, details := ClassifyRunError(err)
 		fail := CompleteInput{StartInput: in, Error: err.Error(), ErrorCode: code, ErrorDetails: details}
-		_ = workflow.ExecuteActivity(ctx, ActivityMarkRunFailed, fail).Get(ctx, nil)
+		_ = workflow.ExecuteActivity(shortCtx, ActivityMarkRunFailed, fail).Get(shortCtx, nil)
 		return err
 	}
 
 	var output RunOutput
-	if err := workflow.ExecuteActivity(ctx, ActivityExecuteAPITask, in).Get(ctx, &output); err != nil {
+	if err := workflow.ExecuteActivity(executeCtx, ActivityExecuteAPITask, in).Get(executeCtx, &output); err != nil {
 		// On cancellation ctx is already canceled, so MarkRunFailed is skipped and
 		// the run keeps the `stopped` status the cancel handler set. Genuine
 		// failures run on the live ctx and record a granular error code.
 		code, details := ClassifyRunError(err)
 		fail := CompleteInput{StartInput: in, Error: err.Error(), ErrorCode: code, ErrorDetails: details}
-		_ = workflow.ExecuteActivity(ctx, ActivityMarkRunFailed, fail).Get(ctx, nil)
+		_ = workflow.ExecuteActivity(shortCtx, ActivityMarkRunFailed, fail).Get(shortCtx, nil)
 		return err
 	}
 
 	done := CompleteInput{StartInput: in, Summary: output.Summary}
-	return workflow.ExecuteActivity(ctx, ActivityMarkRunDone, done).Get(ctx, nil)
+	return workflow.ExecuteActivity(shortCtx, ActivityMarkRunDone, done).Get(shortCtx, nil)
 }
 
 // Activities mutates the Rowboat database from worker executions.
@@ -228,15 +252,26 @@ type Activities struct {
 	// when CLOUD_RUNTIME_ENABLED=false, NewDefault() otherwise.
 	Runtime       backgroundtaskruntime.Runtime
 	RuntimeLimits backgroundtaskruntime.Limits
+	Sandbox       backgroundtaskruntime.SandboxExecutor
+	SandboxTool   backgroundtaskruntime.SandboxToolConfig
 
 	// DefaultRuntime dependencies (nil/zero on the Noop path): the LLM
 	// gateway, payload sealer, vendor secrets, Google API client, and the
 	// model used when the task carries none.
-	LLM          *llm.Handler
-	Sealer       *crypto.Sealer
-	Secrets      *secrets.Store
-	Google       *googleapi.Client
-	DefaultModel string
+	LLM           *llm.Handler
+	Sealer        *crypto.Sealer
+	Secrets       *secrets.Store
+	Google        *googleapi.Client
+	SlackTokens   backgroundtaskruntime.SlackTeamTokenResolver
+	Slack         *slackclient.Client
+	MCPResolver   backgroundtaskruntime.MCPConnectorResolver
+	MCP           backgroundtaskruntime.MCPConnectorClient
+	MCPConnectors []string
+	MCPPolicies   []backgroundtaskruntime.MCPConnectorPolicy
+	Web           *websearch.Client
+	Conduit       *faculties.Client
+	Eigen         *faculties.Client
+	DefaultModel  string
 }
 
 // MarkRunRunning claims a queued API run for execution.
@@ -367,6 +402,7 @@ func (a *Activities) ExecuteAPITask(ctx context.Context, in StartInput) (RunOutp
 		Provider:         task.Provider,
 		Artifacts:        &artifactStore{a: a, task: task, runID: in.RunID},
 		Events:           &eventSink{a: a, in: in, taskID: taskID},
+		Controls:         newRunControlSource(a, run),
 		Tools:            a.toolRegistry(ctx, task, run),
 		LLM:              llmClient,
 		Limits:           limits,

@@ -109,6 +109,27 @@ func (c *Client) CreateDraft(ctx context.Context, token, to, subject, body strin
 	return out.ID, nil
 }
 
+// SendMessage sends a plain-text Gmail message and returns the message id. The
+// caller supplies a token carrying gmail.send or gmail.compose. Header values
+// are sanitized to prevent CRLF header injection.
+func (c *Client) SendMessage(ctx context.Context, token, to, subject, body string) (string, error) {
+	if strings.TrimSpace(to) == "" {
+		return "", fmt.Errorf("message recipient is required")
+	}
+	msg := buildPlainTextMIME(encodeAddressHeader(sanitizeHeader(to)), encodeWord(sanitizeHeader(subject)), body)
+	raw := base64.URLEncoding.EncodeToString([]byte(msg))
+	reqBody := map[string]any{"raw": raw}
+
+	var out struct {
+		ID       string `json:"id"`
+		ThreadID string `json:"threadId"`
+	}
+	if err := c.PostJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages/send", reqBody, &out); err != nil {
+		return "", fmt.Errorf("gmail messages.send: %w", err)
+	}
+	return out.ID, nil
+}
+
 // buildPlainTextMIME assembles a minimal RFC 822 plain-text message.
 func buildPlainTextMIME(to, subject, body string) string {
 	var b strings.Builder

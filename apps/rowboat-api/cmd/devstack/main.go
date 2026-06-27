@@ -10,7 +10,9 @@
 //	GET  /authorize                              — auto-approves, redirects with a code (PKCE)
 //	POST /oauth2/token                           — authorization_code + refresh_token grants
 //	GET  /mint?workos_user_id=...                — shortcut: mint a token directly (curl tests)
-//	POST /chat/completions, /v1/chat/completions — mock OpenAI-compatible LLM (SSE + usage)
+//	POST /chat/completions, /v1/chat/completions — mock OpenAI-compatible chat LLM (SSE + usage)
+//	POST /completions, /v1/completions           — mock OpenAI-compatible legacy completions
+//	POST /embeddings, /v1/embeddings             — mock OpenAI-compatible embeddings
 //	POST /v1/google-oauth-mock/token             — mock Google token endpoint (refresh)
 //
 // All tokens are RS256-signed by an ephemeral key; the JWKS is published so
@@ -29,6 +31,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,6 +49,8 @@ var (
 	authCodes sync.Map // code -> authCode
 	refreshDB sync.Map // refresh_token -> session
 )
+
+var routeTaskIDRe = regexp.MustCompile(`(?m)^\d+\.\s+id:\s+([^\n]+)`)
 
 type authCode struct {
 	challenge   string
@@ -88,6 +94,10 @@ func main() {
 	mux.HandleFunc("/user_management/authenticate", handleWorkOSAuthenticate)
 	mux.HandleFunc("/chat/completions", mockChatCompletions)
 	mux.HandleFunc("/v1/chat/completions", mockChatCompletions)
+	mux.HandleFunc("/completions", mockCompletions)
+	mux.HandleFunc("/v1/completions", mockCompletions)
+	mux.HandleFunc("/embeddings", mockEmbeddings)
+	mux.HandleFunc("/v1/embeddings", mockEmbeddings)
 	mux.HandleFunc("/v1/google-oauth-mock/token", handleGoogleTokenMock)
 	// Google OAuth consent mock: auto-approves and redirects back with a code.
 	mux.HandleFunc("/o/oauth2/v2/auth", handleGoogleAuthorizeMock)
@@ -404,11 +414,22 @@ func handleGoogleAuthorizeMock(w http.ResponseWriter, r *http.Request) {
 func mockChatCompletions(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	var req struct {
-		Model  string `json:"model"`
-		Stream bool   `json:"stream"`
+		Model    string `json:"model"`
+		Stream   bool   `json:"stream"`
+		Messages []struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		} `json:"messages"`
+		ResponseFormat *struct {
+			Type string `json:"type"`
+		} `json:"response_format"`
 	}
 	_ = json.Unmarshal(body, &req)
 	usage := map[string]int{"prompt_tokens": 1200, "completion_tokens": 8, "total_tokens": 1208}
+	content := "Hello from the mock LLM."
+	if req.ResponseFormat != nil && req.ResponseFormat.Type == "json_object" {
+		content = mockJSONCompletion(req.Messages)
+	}
 
 	if req.Stream {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -436,10 +457,93 @@ func mockChatCompletions(w http.ResponseWriter, r *http.Request) {
 		"id": "mock", "object": "chat.completion", "model": req.Model,
 		"choices": []any{map[string]any{
 			"index": 0, "finish_reason": "stop",
-			"message": map[string]any{"role": "assistant", "content": "Hello from the mock LLM."},
+			"message": map[string]any{"role": "assistant", "content": content},
 		}},
 		"usage": usage,
 	})
+}
+
+func mockCompletions(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	var req struct {
+		Model  string `json:"model"`
+		Prompt any    `json:"prompt"`
+	}
+	_ = json.Unmarshal(body, &req)
+	writeJSON(w, map[string]any{
+		"id":      "mock-completion",
+		"object":  "text_completion",
+		"created": time.Now().Unix(),
+		"model":   req.Model,
+		"choices": []any{map[string]any{
+			"index":         0,
+			"text":          "Hello from the mock completion.",
+			"finish_reason": "stop",
+		}},
+		"usage": map[string]int{"prompt_tokens": 1200, "completion_tokens": 8, "total_tokens": 1208},
+	})
+}
+
+func mockEmbeddings(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	var req struct {
+		Model string `json:"model"`
+		Input any    `json:"input"`
+	}
+	_ = json.Unmarshal(body, &req)
+	inputCount := 1
+	if inputs, ok := req.Input.([]any); ok && len(inputs) > 0 {
+		inputCount = len(inputs)
+	}
+	data := make([]any, 0, inputCount)
+	for i := 0; i < inputCount; i++ {
+		data = append(data, map[string]any{
+			"object":    "embedding",
+			"index":     i,
+			"embedding": []float64{0.01, 0.02, 0.03, 0.04},
+		})
+	}
+	writeJSON(w, map[string]any{
+		"object": "list",
+		"model":  req.Model,
+		"data":   data,
+		"usage":  map[string]int{"prompt_tokens": 4 * inputCount, "total_tokens": 4 * inputCount},
+	})
+}
+
+func mockJSONCompletion(messages []struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}) string {
+	var prompt strings.Builder
+	for _, msg := range messages {
+		if msg.Content == "" {
+			continue
+		}
+		prompt.WriteString(msg.Content)
+		prompt.WriteByte('\n')
+	}
+	joined := prompt.String()
+	if strings.Contains(joined, "## Background tasks") {
+		matches := routeTaskIDRe.FindAllStringSubmatch(joined, -1)
+		ids := make([]string, 0, len(matches))
+		for _, match := range matches {
+			if len(match) > 1 {
+				ids = append(ids, strings.TrimSpace(match[1]))
+			}
+		}
+		raw, _ := json.Marshal(map[string]any{"ids": ids})
+		return string(raw)
+	}
+	if strings.Contains(joined, "## Task") && strings.Contains(joined, "## Event") {
+		raw, _ := json.Marshal(map[string]any{
+			"match":       true,
+			"confidence":  0.95,
+			"explanation": "The devstack JSON-mode mock deterministically routes matching smoke-test events.",
+		})
+		return string(raw)
+	}
+	return `{}`
 }
 
 // --- helpers ---------------------------------------------------------------
