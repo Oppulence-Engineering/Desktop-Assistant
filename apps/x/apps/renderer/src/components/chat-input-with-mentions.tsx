@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ArrowUp,
@@ -19,6 +19,7 @@ import {
   ImagePlus,
   LoaderIcon,
   Mic,
+  MoreHorizontal,
   Plus,
   ShieldCheck,
   Square,
@@ -29,6 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuRadioGroup,
@@ -333,6 +335,51 @@ function ChatInputInner({
   const [codeModeFeatureEnabled, setCodeModeFeatureEnabled] = useState(false);
   const [permissionMode, setPermissionMode] = useState<PermissionMode>("auto");
   const [recentWorkDirs, setRecentWorkDirs] = useState<RecentWorkDir[]>([]);
+
+  // Responsive toolbar: measure real overflow and progressively collapse items
+  // right→left until everything fits. Stages:
+  //   1 code→icon · 2 perm→icon · 3 search label hidden · 4 workDir→icon
+  //   5 code→menu · 6 perm→menu · 7 search→menu · 8 workDir→menu
+  // Once items move into the "⋯" overflow menu (≥5) no icon is ever hidden.
+  // overflow-hidden on the left group is the hard guarantee against any overlap.
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const leftGroupRef = useRef<HTMLDivElement>(null);
+  const lastWidthRef = useRef(0);
+  const [collapseLevel, setCollapseLevel] = useState(0);
+
+  // Re-evaluate from scratch (level 0) whenever the available width changes…
+  useEffect(() => {
+    const outer = toolbarRef.current;
+    if (!outer) return;
+    const ro = new ResizeObserver(() => {
+      const w = outer.clientWidth;
+      if (w !== lastWidthRef.current) {
+        lastWidthRef.current = w;
+        setCollapseLevel(0);
+      }
+    });
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, []);
+
+  // …or when the *set* of items changes (an item appears/disappears, or the model
+  // name width changes). Deliberately excludes the in-place toggles (searchEnabled,
+  // permissionMode, codeModeEnabled, codingAgent): those fire from the overflow menu
+  // for items already inside it, so resetting here would unmount the open menu. The
+  // no-dep effect below still re-collapses if any toggle happens to widen the row.
+  useLayoutEffect(() => {
+    setCollapseLevel(0);
+  }, [workDir, searchAvailable, codeModeFeatureEnabled, lockedModel, activeModelKey]);
+
+  // After each render, if the left group still overflows, collapse one more step.
+  // Runs before paint, so the intermediate (overflowing) state is never visible.
+  useLayoutEffect(() => {
+    const el = leftGroupRef.current;
+    if (!el) return;
+    if (el.scrollWidth > el.clientWidth + 1 && collapseLevel < 8) {
+      setCollapseLevel((l) => Math.min(8, l + 1));
+    }
+  });
 
   // When a run exists, freeze the dropdown to the run's resolved model+provider.
   useEffect(() => {
@@ -896,255 +943,360 @@ function ChatInputInner({
               className="min-h-6 rounded-none border-0 py-0 shadow-none focus-visible:ring-0"
             />
           </div>
-          <div className="flex items-center gap-2 px-4 pb-3">
-            <DropdownMenu>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      aria-label="Add"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  {workDir
-                    ? "Add files or change work directory"
-                    : "Add files or set work directory"}
-                </TooltipContent>
-              </Tooltip>
-              <DropdownMenuContent align="start" className="w-72 max-w-[calc(100vw-2rem)] p-2">
-                <div className="rounded-[14px] border border-border/80 bg-background p-1">
-                  <DropdownMenuItem
-                    onSelect={() => fileInputRef.current?.click()}
-                    className="h-9 rounded-[9px] px-2.5"
-                  >
-                    <ImagePlus className="size-4" />
-                    <span>Add files or photos</span>
-                  </DropdownMenuItem>
-
-                  {/* Working directory lives behind a submenu so the main menu stays to two
-                  items. One hover/click away for power users; out of the way otherwise. */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="h-9 rounded-[9px] px-2.5">
-                      <FolderCog className="size-4" />
-                      <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                        <span>Set working directory</span>
-                        <span className="min-w-0 max-w-[110px] truncate text-xs text-muted-foreground">
-                          {currentWorkDirLabel}
-                        </span>
-                      </span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="w-72 max-w-[calc(100vw-2rem)] p-1">
-                      {/* Current selection — shown for context only when one is set. */}
-                      {workDir && (
-                        <div
-                          title={workDir}
-                          className="mb-1 flex items-center gap-2 rounded-[9px] bg-blue-50/80 px-2.5 py-2 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300"
-                        >
-                          <FolderCheck className="size-4 shrink-0 text-blue-600 dark:text-blue-300" />
-                          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                            <span className="truncate text-sm font-medium">
-                              {currentWorkDirLabel}
-                            </span>
-                            <span className="truncate text-xs text-blue-700/70 dark:text-blue-300/70">
-                              {currentWorkDirPath}
-                            </span>
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Primary action: choose when unset, change when set. Always on top. */}
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          void handleSetWorkDir();
-                        }}
-                        className="h-9 rounded-[9px] px-2.5"
+          <div ref={toolbarRef} className="flex items-center gap-2 px-4 pb-3">
+            <div ref={leftGroupRef} className="flex min-w-0 items-center gap-2 overflow-hidden">
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        aria-label="Add"
                       >
-                        <FolderOpen className="size-4" />
-                        <span>{workDir ? "Change folder…" : "Choose a folder…"}</span>
-                      </DropdownMenuItem>
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {workDir
+                      ? "Add files or change work directory"
+                      : "Add files or set work directory"}
+                  </TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="start" className="w-72 max-w-[calc(100vw-2rem)] p-2">
+                  <div className="rounded-[14px] border border-border/80 bg-background p-1">
+                    <DropdownMenuItem
+                      onSelect={() => fileInputRef.current?.click()}
+                      className="h-9 rounded-[9px] px-2.5"
+                    >
+                      <ImagePlus className="size-4" />
+                      <span>Add files or photos</span>
+                    </DropdownMenuItem>
 
-                      {visibleRecentWorkDirs.length > 0 && (
-                        <>
-                          <div className="px-2.5 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Recent
-                          </div>
-                          {visibleRecentWorkDirs.map((entry) => {
-                            const name = basename(entry.path) || entry.path;
-                            const when = formatRecentWorkDirTime(entry.lastUsedAt);
-                            return (
-                              <DropdownMenuItem
-                                key={entry.path}
-                                title={entry.path}
-                                onSelect={() => {
-                                  void handleSelectRecentWorkDir(entry.path);
-                                }}
-                                className="h-8 rounded-[9px] px-2.5"
-                              >
-                                <FolderClock className="size-4" />
-                                <span className="min-w-0 flex-1 truncate">{name}</span>
-                                {when && (
-                                  <span className="shrink-0 text-xs text-muted-foreground">
-                                    {when}
-                                  </span>
-                                )}
-                              </DropdownMenuItem>
-                            );
-                          })}
-                        </>
-                      )}
-
-                      {/* Clear — only meaningful once a directory is set. Kept at the bottom. */}
-                      {workDir && (
-                        <>
-                          <div className="my-1 h-px bg-border/60" />
-                          <DropdownMenuItem
-                            onSelect={handleClearWorkDir}
-                            className="h-8 rounded-[9px] px-2.5 text-red-600 focus:bg-red-50 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-950/30"
+                    {/* Working directory lives behind a submenu so the main menu stays to two
+                  items. One hover/click away for power users; out of the way otherwise. */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="h-9 rounded-[9px] px-2.5">
+                        <FolderCog className="size-4" />
+                        <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                          <span>Set working directory</span>
+                          <span className="min-w-0 max-w-[110px] truncate text-xs text-muted-foreground">
+                            {currentWorkDirLabel}
+                          </span>
+                        </span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="w-72 max-w-[calc(100vw-2rem)] p-1">
+                        {/* Current selection — shown for context only when one is set. */}
+                        {workDir && (
+                          <div
+                            title={workDir}
+                            className="mb-1 flex items-center gap-2 rounded-[9px] bg-blue-50/80 px-2.5 py-2 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300"
                           >
-                            <X className="size-4" />
-                            <span>Clear folder</span>
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {workDir && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="group flex h-7 max-w-[180px] shrink-0 items-center rounded-none border border-border bg-muted/40 pl-2.5 pr-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                    <button
-                      type="button"
-                      onClick={handleSetWorkDir}
-                      className="flex min-w-0 items-center gap-1.5"
-                    >
-                      <FolderCog className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{basename(workDir) || workDir}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleClearWorkDir}
-                      aria-label="Remove work directory"
-                      className="flex h-3.5 w-0 shrink-0 items-center justify-center overflow-hidden opacity-0 transition-all duration-150 ease-out hover:text-red-500 group-hover:ml-1 group-hover:w-3.5 group-hover:opacity-100"
-                    >
-                      <X className="h-3.5 w-3.5 shrink-0" />
-                    </button>
+                            <FolderCheck className="size-4 shrink-0 text-blue-600 dark:text-blue-300" />
+                            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                              <span className="truncate text-sm font-medium">
+                                {currentWorkDirLabel}
+                              </span>
+                              <span className="truncate text-xs text-blue-700/70 dark:text-blue-300/70">
+                                {currentWorkDirPath}
+                              </span>
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Primary action: choose when unset, change when set. Always on top. */}
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            void handleSetWorkDir();
+                          }}
+                          className="h-9 rounded-[9px] px-2.5"
+                        >
+                          <FolderOpen className="size-4" />
+                          <span>{workDir ? "Change folder…" : "Choose a folder…"}</span>
+                        </DropdownMenuItem>
+                        {visibleRecentWorkDirs.length > 0 && (
+                          <>
+                            <div className="px-2.5 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              Recent
+                            </div>
+                            {visibleRecentWorkDirs.map((entry) => {
+                              const name = basename(entry.path) || entry.path;
+                              const when = formatRecentWorkDirTime(entry.lastUsedAt);
+                              return (
+                                <DropdownMenuItem
+                                  key={entry.path}
+                                  title={entry.path}
+                                  onSelect={() => {
+                                    void handleSelectRecentWorkDir(entry.path);
+                                  }}
+                                  className="h-8 rounded-[9px] px-2.5"
+                                >
+                                  <FolderClock className="size-4" />
+                                  <span className="min-w-0 flex-1 truncate">{name}</span>
+                                  {when && (
+                                    <span className="shrink-0 text-xs text-muted-foreground">
+                                      {when}
+                                    </span>
+                                  )}
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        {/* Clear — only meaningful once a directory is set. Kept at the bottom. */}
+                        {workDir && (
+                          <>
+                            <div className="my-1 h-px bg-border/60" />
+                            <DropdownMenuItem
+                              onSelect={handleClearWorkDir}
+                              className="h-8 rounded-[9px] px-2.5 text-red-600 focus:bg-red-50 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-950/30"
+                            >
+                              <X className="size-4" />
+                              <span>Clear folder</span>
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
                   </div>
-                </TooltipTrigger>
-                <TooltipContent side="top">Work directory: {workDir}</TooltipContent>
-              </Tooltip>
-            )}
-            {searchAvailable && (
-              <button
-                type="button"
-                onClick={() => setSearchEnabled((v) => !v)}
-                aria-label="Search"
-                aria-pressed={searchEnabled}
-                className={cn(
-                  "flex h-7 shrink-0 items-center rounded-none border px-1.5 transition-colors duration-150 ease-out",
-                  searchEnabled
-                    ? "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400 dark:hover:bg-blue-900"
-                    : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Globe className="h-4 w-4 shrink-0" />
-                <span
-                  className={cn(
-                    "overflow-hidden whitespace-nowrap text-xs font-medium transition-all duration-150 ease-out",
-                    searchEnabled ? "ml-1.5 max-w-[60px] opacity-100" : "max-w-0 opacity-0",
-                  )}
-                >
-                  Search
-                </span>
-              </button>
-            )}
-            <Tooltip>
-              <TooltipTrigger asChild>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {workDir && collapseLevel < 8 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className={cn(
+                        "group flex h-7 shrink-0 items-center rounded-none border border-border bg-muted/40 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                        collapseLevel >= 4 ? "w-7 justify-center" : "max-w-[180px] pl-2.5 pr-2",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={handleSetWorkDir}
+                        className="flex min-w-0 items-center gap-1.5"
+                      >
+                        <FolderCog className="h-3.5 w-3.5 shrink-0" />
+                        {collapseLevel < 4 && (
+                          <span className="truncate">{basename(workDir) || workDir}</span>
+                        )}
+                      </button>
+                      {collapseLevel < 4 && (
+                        <button
+                          type="button"
+                          onClick={handleClearWorkDir}
+                          aria-label="Remove work directory"
+                          className="flex h-3.5 w-0 shrink-0 items-center justify-center overflow-hidden opacity-0 transition-all duration-150 ease-out hover:text-red-500 group-hover:ml-1 group-hover:w-3.5 group-hover:opacity-100"
+                        >
+                          <X className="h-3.5 w-3.5 shrink-0" />
+                        </button>
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Work directory: {workDir}</TooltipContent>
+                </Tooltip>
+              )}
+              {searchAvailable && collapseLevel < 7 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (runId) return;
-                    setPermissionMode((mode) => (mode === "auto" ? "manual" : "auto"));
-                  }}
-                  disabled={Boolean(runId)}
+                  onClick={() => setSearchEnabled((v) => !v)}
+                  aria-label="Search"
+                  aria-pressed={searchEnabled}
                   className={cn(
-                    "flex h-7 shrink-0 items-center gap-1.5 rounded-none px-2.5 text-xs font-medium transition-colors",
-                    permissionMode === "auto"
-                      ? "bg-secondary text-foreground hover:bg-secondary/70"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    runId && "cursor-not-allowed opacity-70 hover:bg-secondary",
+                    "flex h-7 shrink-0 items-center rounded-none border px-1.5 transition-colors duration-150 ease-out",
+                    searchEnabled
+                      ? "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400 dark:hover:bg-blue-900"
+                      : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
-                  aria-label="Permission mode"
                 >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>{permissionMode === "auto" ? "Auto" : "Manual"}</span>
+                  <Globe className="h-4 w-4 shrink-0" />
+                  {searchEnabled && collapseLevel < 3 && (
+                    <span className="ml-1.5 whitespace-nowrap text-xs font-medium">Search</span>
+                  )}
                 </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {runId
-                  ? `Permission mode is fixed for this run: ${permissionMode === "auto" ? "Auto" : "Manual"}`
-                  : permissionMode === "auto"
-                    ? "Auto-permission on — click for manual approval prompts"
-                    : "Manual approval prompts — click for auto-permission"}
-              </TooltipContent>
-            </Tooltip>
-            {codeModeFeatureEnabled &&
-              (codeModeEnabled ? (
-                <div className="flex h-7 shrink-0 items-center rounded-none bg-secondary text-xs font-medium text-foreground">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => setCodeModeEnabled(false)}
-                        className="flex h-full items-center gap-1.5 rounded-l-lg pl-2.5 pr-2 transition-colors hover:bg-secondary/70"
-                      >
-                        <Terminal className="h-3.5 w-3.5" />
-                        <span>Code</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Code mode on — click to disable</TooltipContent>
-                  </Tooltip>
-                  <span className="text-foreground/30">·</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={handleToggleCodingAgent}
-                        className="flex h-full items-center rounded-r-lg pl-2 pr-2.5 transition-colors hover:bg-secondary/70"
-                      >
-                        <span>{codingAgent === "claude" ? "Claude" : "Codex"}</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      Coding agent: {codingAgent === "claude" ? "Claude Code" : "Codex"} — click to
-                      swap
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              ) : (
+              )}
+              {collapseLevel < 6 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      onClick={() => setCodeModeEnabled(true)}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      aria-label="Code mode"
+                      onClick={() => {
+                        if (runId) return;
+                        setPermissionMode((mode) => (mode === "auto" ? "manual" : "auto"));
+                      }}
+                      disabled={Boolean(runId)}
+                      className={cn(
+                        "flex h-7 shrink-0 items-center gap-1.5 rounded-none text-xs font-medium transition-colors",
+                        collapseLevel >= 2 ? "w-7 justify-center" : "px-2.5",
+                        permissionMode === "auto"
+                          ? "bg-secondary text-foreground hover:bg-secondary/70"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        runId && "cursor-not-allowed opacity-70 hover:bg-secondary",
+                      )}
+                      aria-label="Permission mode"
                     >
-                      <Terminal className="h-4 w-4" />
+                      <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                      {collapseLevel < 2 && (
+                        <span>{permissionMode === "auto" ? "Auto" : "Manual"}</span>
+                      )}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
-                    Use a coding agent (Claude Code or Codex)
+                    {runId
+                      ? `Permission mode is fixed for this run: ${permissionMode === "auto" ? "Auto" : "Manual"}`
+                      : permissionMode === "auto"
+                        ? "Auto-permission on — click for manual approval prompts"
+                        : "Manual approval prompts — click for auto-permission"}
                   </TooltipContent>
                 </Tooltip>
-              ))}
+              )}
+              {codeModeFeatureEnabled &&
+                collapseLevel < 5 &&
+                (codeModeEnabled ? (
+                  collapseLevel >= 1 ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => setCodeModeEnabled(false)}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none bg-secondary text-foreground transition-colors hover:bg-secondary/70"
+                        >
+                          <Terminal className="h-3.5 w-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        Code mode on ({codingAgent === "claude" ? "Claude Code" : "Codex"}) — click
+                        to disable
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <div className="flex h-7 shrink-0 items-center rounded-none bg-secondary text-xs font-medium text-foreground">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setCodeModeEnabled(false)}
+                            className="flex h-full items-center gap-1.5 rounded-none pl-2.5 pr-2 transition-colors hover:bg-secondary/70"
+                          >
+                            <Terminal className="h-3.5 w-3.5" />
+                            <span>Code</span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Code mode on — click to disable</TooltipContent>
+                      </Tooltip>
+                      <span className="text-foreground/30">·</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={handleToggleCodingAgent}
+                            className="flex h-full items-center rounded-none pl-2 pr-2.5 transition-colors hover:bg-secondary/70"
+                          >
+                            <span>{codingAgent === "claude" ? "Claude" : "Codex"}</span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          Coding agent: {codingAgent === "claude" ? "Claude Code" : "Codex"} — click
+                          to swap
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  )
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setCodeModeEnabled(true)}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        aria-label="Code mode"
+                      >
+                        <Terminal className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      Use a coding agent (Claude Code or Codex)
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+            </div>
+            {collapseLevel >= 5 && (
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="More options"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">More options</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="start" side="top" className="min-w-52">
+                  {workDir && collapseLevel >= 8 && (
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        void handleSetWorkDir();
+                      }}
+                    >
+                      <FolderCog className="size-4" />
+                      <span className="min-w-0 flex-1 truncate">
+                        {basename(workDir) || workDir}
+                      </span>
+                    </DropdownMenuItem>
+                  )}
+                  {searchAvailable && collapseLevel >= 7 && (
+                    <DropdownMenuCheckboxItem
+                      checked={searchEnabled}
+                      onSelect={(e) => e.preventDefault()}
+                      onCheckedChange={(checked) => setSearchEnabled(Boolean(checked))}
+                    >
+                      Web search
+                    </DropdownMenuCheckboxItem>
+                  )}
+                  {collapseLevel >= 6 && (
+                    <DropdownMenuCheckboxItem
+                      checked={permissionMode === "auto"}
+                      disabled={Boolean(runId)}
+                      onSelect={(e) => e.preventDefault()}
+                      onCheckedChange={(checked) => setPermissionMode(checked ? "auto" : "manual")}
+                    >
+                      Auto-approve actions
+                    </DropdownMenuCheckboxItem>
+                  )}
+                  {codeModeFeatureEnabled && collapseLevel >= 5 && (
+                    <>
+                      <DropdownMenuCheckboxItem
+                        checked={codeModeEnabled}
+                        onSelect={(e) => e.preventDefault()}
+                        onCheckedChange={(checked) => setCodeModeEnabled(Boolean(checked))}
+                      >
+                        Code mode
+                      </DropdownMenuCheckboxItem>
+                      {codeModeEnabled && (
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            void handleToggleCodingAgent();
+                          }}
+                        >
+                          <Terminal className="size-4" />
+                          <span className="min-w-0 flex-1">Coding agent</span>
+                          <span className="text-xs text-muted-foreground">
+                            {codingAgent === "claude" ? "Claude" : "Codex"}
+                          </span>
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <div className="flex-1" />
             {lockedModel ? (
               <span
