@@ -12,13 +12,14 @@ import (
 // human-readable specifics. Keep this list and the desktop's mirror in sync.
 const (
 	// Control-plane (handler) failures, set when a trigger/retry cannot start.
-	ErrCodeTemporalUnavailable   = "temporal_unavailable"   // Temporal not configured.
-	ErrCodeTemporalStartFailed   = "temporal_start_failed"  // ExecuteWorkflow rejected the start.
-	ErrCodeTemporalCancelFailed  = "temporal_cancel_failed" // CancelWorkflow failed.
-	ErrCodeTemporalSignalFailed  = "temporal_signal_failed" // SignalWorkflow failed.
-	ErrCodeAdmissionBackpressure = "admission_backpressure" // Queue depth guard rejected the run before Temporal start.
-	ErrCodeAdmissionRateLimited  = "admission_rate_limited" // Run-start rate guard rejected the run before Temporal start.
-	ErrCodeInsufficientCredits   = "insufficient_credits"   // Credit preflight found the user cannot afford the run.
+	ErrCodeTemporalUnavailable   = "temporal_unavailable"    // Temporal not configured.
+	ErrCodeTemporalStartFailed   = "temporal_start_failed"   // ExecuteWorkflow rejected the start.
+	ErrCodeTemporalCancelFailed  = "temporal_cancel_failed"  // CancelWorkflow failed.
+	ErrCodeTemporalSignalFailed  = "temporal_signal_failed"  // SignalWorkflow failed.
+	ErrCodeAdmissionBackpressure = "admission_backpressure"  // Queue depth guard rejected the run before Temporal start.
+	ErrCodeAdmissionRateLimited  = "admission_rate_limited"  // Run-start rate guard rejected the run before Temporal start.
+	ErrCodeInsufficientCredits   = "insufficient_credits"    // Credit preflight found the user cannot afford the run.
+	ErrCodeSubscriptionNotActive = "subscription_not_active" // Billing status must be fixed before cloud execution.
 	ErrCodeDailyCreditLimit      = "daily_credit_limit_exceeded"
 	ErrCodeMonthlyCreditLimit    = "monthly_credit_limit_exceeded"
 
@@ -57,6 +58,7 @@ var knownErrorCodes = map[string]struct{}{
 	ErrCodeAdmissionBackpressure: {},
 	ErrCodeAdmissionRateLimited:  {},
 	ErrCodeInsufficientCredits:   {},
+	ErrCodeSubscriptionNotActive: {},
 	ErrCodeDailyCreditLimit:      {},
 	ErrCodeMonthlyCreditLimit:    {},
 	ErrCodeWorkflowCanceled:      {},

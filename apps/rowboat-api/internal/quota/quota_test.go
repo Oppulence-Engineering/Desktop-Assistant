@@ -62,6 +62,21 @@ func TestReserveInsufficient(t *testing.T) {
 	}
 }
 
+func TestReserveRejectsInactiveSubscription(t *testing.T) {
+	client, ctx, u := setup(t)
+	client.Subscription.Update().
+		SetStatus("past_due").
+		ExecX(auth.WithUser(ctx, u))
+	g := quota.New(client, zap.NewNop())
+	_, err := g.Reserve(ctx, "llm_call", 1, uuid.New(), quota.SpendLimits{})
+	if !errors.Is(err, quota.ErrSubscriptionNotActive) {
+		t.Fatalf("want ErrSubscriptionNotActive, got %v", err)
+	}
+	if err := g.Preflight(ctx, 1, quota.SpendLimits{}); !errors.Is(err, quota.ErrSubscriptionNotActive) {
+		t.Fatalf("preflight err = %v, want ErrSubscriptionNotActive", err)
+	}
+}
+
 func TestRefundReturnsFullReservation(t *testing.T) {
 	client, ctx, _ := setup(t)
 	g := quota.New(client, zap.NewNop())

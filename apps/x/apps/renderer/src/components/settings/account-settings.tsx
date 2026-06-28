@@ -65,11 +65,12 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
   const [disconnecting, setDisconnecting] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
-  const [appUrl, setAppUrl] = useState<string | null>(null);
+  const [billingAction, setBillingAction] = useState<"checkout" | "portal" | null>(null);
   const {
     billing,
     isLoading: billingLoading,
     error: billingError,
+    refresh: refreshBilling,
   } = useBilling(isSolomonConnected);
   const hasPaidSubscription =
     billing?.subscriptionPlan === "starter" || billing?.subscriptionPlan === "pro";
@@ -95,15 +96,6 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
       setConfirmingLogout(false);
     }
   }, [dialogOpen, checkConnection]);
-
-  useEffect(() => {
-    if (isSolomonConnected) {
-      window.ipc
-        .invoke("account:getSolomon", null)
-        .then((account) => setAppUrl(account.config?.appUrl ?? null))
-        .catch(() => {});
-    }
-  }, [isSolomonConnected]);
 
   useEffect(() => {
     const cleanup = window.ipc.on("oauth:didConnect", (event) => {
@@ -149,6 +141,39 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
       setDisconnecting(false);
     }
   }, []);
+
+  const openCheckout = useCallback(async (plan: "starter" | "pro" = "starter") => {
+    try {
+      setBillingAction("checkout");
+      const { url } = await window.ipc.invoke("billing:getCheckoutUrl", { plan });
+      window.open(url);
+    } catch {
+      toast.error("Failed to open checkout");
+    } finally {
+      setBillingAction(null);
+    }
+  }, []);
+
+  const openPortal = useCallback(async () => {
+    try {
+      setBillingAction("portal");
+      const { url } = await window.ipc.invoke("billing:getPortalUrl", null);
+      window.open(url);
+    } catch {
+      toast.error("Failed to open billing portal");
+    } finally {
+      setBillingAction(null);
+    }
+  }, []);
+
+  const syncAndRefreshBilling = useCallback(async () => {
+    try {
+      await window.ipc.invoke("billing:sync", null);
+    } catch {
+      // A local refresh still helps when the webhook already processed.
+    }
+    await refreshBilling();
+  }, [refreshBilling]);
 
   if (connectionLoading) {
     return (
@@ -252,8 +277,19 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => appUrl && window.open(`${appUrl}?intent=upgrade`)}
+                disabled={billingAction !== null}
+                onClick={() => {
+                  if (
+                    billing.subscriptionPlan === "starter" ||
+                    billing.subscriptionPlan === "pro"
+                  ) {
+                    void openPortal();
+                  } else {
+                    void openCheckout("starter");
+                  }
+                }}
               >
+                {billingAction ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
                 {!billing.subscriptionPlan
                   ? "Subscribe"
                   : billing.subscriptionPlan === "free"
@@ -268,6 +304,9 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
                 bucket={billing.daily}
                 helper="Daily usage resets at 00:00 UTC"
               />
+              <Button variant="ghost" size="sm" onClick={() => void syncAndRefreshBilling()}>
+                Refresh
+              </Button>
             </div>
           </div>
         ) : billingNeedsReconnect ? (
@@ -304,10 +343,14 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
           variant="outline"
           size="sm"
           disabled={!hasPaidSubscription}
-          onClick={() => appUrl && window.open(appUrl)}
+          onClick={() => void openPortal()}
           className="gap-1.5"
         >
-          <ExternalLink className="size-3" />
+          {billingAction === "portal" ? (
+            <Loader2 className="size-3 animate-spin" />
+          ) : (
+            <ExternalLink className="size-3" />
+          )}
           Manage in Stripe
         </Button>
         {!hasPaidSubscription && (

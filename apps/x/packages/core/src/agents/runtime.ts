@@ -694,8 +694,22 @@ function formatLlmStreamError(rawError: unknown): string {
     const err = rawError as Record<string, unknown>;
     const nested =
       err.error && typeof err.error === "object" ? (err.error as Record<string, unknown>) : null;
+    const lastError =
+      err.lastError && typeof err.lastError === "object"
+        ? (err.lastError as Record<string, unknown>)
+        : null;
+    const retryErrors = Array.isArray(err.errors)
+      ? (err.errors.filter((item) => item && typeof item === "object") as Record<string, unknown>[])
+      : [];
     const pick = (key: string): string | undefined => {
-      const value = err[key] ?? nested?.[key];
+      const value =
+        err[key] ??
+        nested?.[key] ??
+        lastError?.[key] ??
+        retryErrors
+          .slice()
+          .reverse()
+          .find((item) => item[key] !== undefined)?.[key];
       return value === undefined || value === null || value === "" ? undefined : String(value);
     };
     name = pick("name");
@@ -703,6 +717,13 @@ function formatLlmStreamError(rawError: unknown): string {
     responseBody = pick("responseBody");
   } else if (typeof rawError === "string") {
     message = rawError;
+  }
+
+  const billingCode = responseBody?.match(
+    /\b(subscription_not_active|insufficient_credits|upgrade_required)\b/i,
+  )?.[1];
+  if (billingCode) {
+    return billingCode;
   }
 
   // Compose a sentence the user can act on — a bare identifier (the old

@@ -10,11 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import {
   PromptInput,
   PromptInputBody,
@@ -32,15 +28,8 @@ import {
   PromptInputHeader,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from "@/components/ai-elements/message";
-import {
-  Conversation,
-  ConversationContent,
-} from "@/components/ai-elements/conversation";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { Conversation, ConversationContent } from "@/components/ai-elements/conversation";
 import {
   Tool,
   ToolContent,
@@ -48,11 +37,7 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
-import {
-  Reasoning,
-  ReasoningTrigger,
-  ReasoningContent,
-} from "@/components/ai-elements/reasoning";
+import { Reasoning, ReasoningTrigger, ReasoningContent } from "@/components/ai-elements/reasoning";
 import {
   Artifact,
   ArtifactAction,
@@ -63,13 +48,7 @@ import {
   ArtifactHeader,
   ArtifactTitle,
 } from "@/components/ai-elements/artifact";
-import {
-  useState,
-  useEffect,
-  useRef,
-  type ReactNode,
-  useCallback,
-} from "react";
+import { useState, useEffect, useRef, type ReactNode, useCallback } from "react";
 import { MicIcon, Save, Loader2, Lock } from "lucide-react";
 import {
   Select,
@@ -135,23 +114,19 @@ function PageBody() {
   const streamUrl = "/api/stream";
   const [text, setText] = useState<string>("");
   const [useMicrophone, setUseMicrophone] = useState<boolean>(false);
-  const [status, setStatus] = useState<
-    "submitted" | "streaming" | "ready" | "error"
-  >("ready");
+  const [status, setStatus] = useState<"submitted" | "streaming" | "ready" | "error">("ready");
 
   // Chat state
   const [runId, setRunId] = useState<string | null>(null);
   const [isRunProcessing, setIsRunProcessing] = useState(false);
   const [conversation, setConversation] = useState<ConversationItem[]>([]);
-  const [currentAssistantMessage, setCurrentAssistantMessage] =
-    useState<string>("");
+  const [currentAssistantMessage, setCurrentAssistantMessage] = useState<string>("");
   const [currentReasoning, setCurrentReasoning] = useState<string>("");
   const eventSourceRef = useRef<EventSource | null>(null);
   const committedMessageIds = useRef<Set<string>>(new Set());
   const isEmptyConversation =
     conversation.length === 0 && !currentAssistantMessage && !currentReasoning;
-  const [selectedResource, setSelectedResource] =
-    useState<SelectedResource | null>(null);
+  const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
   const [artifactTitle, setArtifactTitle] = useState("");
   const [artifactSubtitle, setArtifactSubtitle] = useState("");
   const [artifactText, setArtifactText] = useState("");
@@ -159,9 +134,7 @@ function PageBody() {
   const [artifactLoading, setArtifactLoading] = useState(false);
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [artifactReadOnly, setArtifactReadOnly] = useState(false);
-  const [artifactFileType, setArtifactFileType] = useState<"json" | "markdown">(
-    "json",
-  );
+  const [artifactFileType, setArtifactFileType] = useState<"json" | "markdown">("json");
   const [agentOptions, setAgentOptions] = useState<string[]>(["copilot"]);
   const [selectedAgent, setSelectedAgent] = useState<string>("copilot");
 
@@ -171,14 +144,13 @@ function PageBody() {
     name.toLowerCase().match(/\.(md|markdown)$/) ? "markdown" : "json";
 
   useEffect(() => {
-    setApiBase(window.config.apiBase);
+    if (window.config?.apiBase) {
+      setApiBase(window.config.apiBase);
+    }
   }, []);
 
   const requestJson = useCallback(
-    async (
-      url: string,
-      options?: (RequestInit & { allow404?: boolean }) | undefined,
-    ) => {
+    async (url: string, options?: (RequestInit & { allow404?: boolean }) | undefined) => {
       const fullUrl = new URL(url, apiBase).toString();
       console.log("fullUrl", fullUrl);
       const { allow404, ...rest } = options || {};
@@ -203,9 +175,7 @@ function PageBody() {
               typeof errObj === "string"
                 ? errObj
                 : errObj?.message || errObj?.error || JSON.stringify(errObj);
-            throw new Error(
-              errMsg || `Request failed: ${res.status} ${res.statusText}`,
-            );
+            throw new Error(errMsg || `Request failed: ${res.status} ${res.statusText}`);
           } catch {
             /* fall through to generic error */
           }
@@ -257,10 +227,7 @@ function PageBody() {
             <MicIcon size={16} />
             <span className="sr-only">Microphone</span>
           </PromptInputButton>
-          <Select
-            value={selectedAgent}
-            onValueChange={(value) => setSelectedAgent(value)}
-          >
+          <Select value={selectedAgent} onValueChange={(value) => setSelectedAgent(value)}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Agent" />
             </SelectTrigger>
@@ -407,8 +374,7 @@ function PageBody() {
 
       case "message": {
         console.log("MESSAGE event received:", event);
-        const message =
-          (event.message as { role?: string; content?: unknown }) || {};
+        const message = (event.message as { role?: string; content?: unknown }) || {};
         if (message.role !== "assistant") {
           break;
         }
@@ -422,9 +388,7 @@ function PageBody() {
             setConversation((prev) => {
               let updated: ConversationItem[] = prev.map((item) => {
                 if (item.type !== "tool") return item;
-                const match = toolCalls.find(
-                  (part) => part.toolCallId === item.id,
-                );
+                const match = toolCalls.find((part) => part.toolCallId === item.id);
                 return match
                   ? {
                       ...item,
@@ -459,9 +423,7 @@ function PageBody() {
         }
 
         const messageId =
-          typeof event.messageId === "string"
-            ? event.messageId
-            : `assistant-${Date.now()}`;
+          typeof event.messageId === "string" ? event.messageId : `assistant-${Date.now()}`;
 
         if (committedMessageIds.current.has(messageId)) {
           console.log("⚠️ Message already committed, skipping:", messageId);
@@ -476,10 +438,7 @@ function PageBody() {
             setConversation((prev) => {
               const exists = prev.some((m) => m.id === messageId);
               if (exists) {
-                console.log(
-                  "⚠️ Message ID already in array, skipping:",
-                  messageId,
-                );
+                console.log("⚠️ Message ID already in array, skipping:", messageId);
                 return prev;
               }
               return [
@@ -504,8 +463,7 @@ function PageBody() {
       case "tool-invocation":
         setConversation((prev) =>
           prev.map((item) =>
-            item.type === "tool" &&
-            (item.id === event.toolCallId || item.name === event.toolName)
+            item.type === "tool" && (item.id === event.toolCallId || item.name === event.toolName)
               ? { ...item, status: "running" as const }
               : item,
           ),
@@ -515,8 +473,7 @@ function PageBody() {
       case "tool-result":
         setConversation((prev) =>
           prev.map((item) =>
-            item.type === "tool" &&
-            (item.id === event.toolCallId || item.name === event.toolName)
+            item.type === "tool" && (item.id === event.toolCallId || item.name === event.toolName)
               ? { ...item, result: event.result, status: "completed" as const }
               : item,
           ),
@@ -621,16 +578,12 @@ function PageBody() {
 
           if (isMarkdown) {
             subtitle = "Agent (Markdown)";
-            const response = await fetch(
-              `/api/rowboat/agent?file=${encodeURIComponent(raw)}`,
-            );
+            const response = await fetch(`/api/rowboat/agent?file=${encodeURIComponent(raw)}`);
             if (!response.ok) {
               if (response.status === 404) {
                 text = "";
               } else {
-                throw new Error(
-                  `Failed to load agent file: ${response.status}`,
-                );
+                throw new Error(`Failed to load agent file: ${response.status}`);
               }
             } else {
               const data = await response.json();
@@ -658,9 +611,7 @@ function PageBody() {
                   // File doesn't exist, start with empty content
                   text = "";
                 } else {
-                  throw new Error(
-                    `Failed to load markdown file: ${response.status}`,
-                  );
+                  throw new Error(`Failed to load markdown file: ${response.status}`);
                 }
               } else {
                 const data = await response.json();
@@ -824,25 +775,18 @@ function PageBody() {
             const newProviders = parsed.providers || {};
             const oldProviders = previous.providers || {};
             const toDelete = Object.keys(oldProviders).filter(
-              (name) =>
-                !Object.prototype.hasOwnProperty.call(newProviders, name),
+              (name) => !Object.prototype.hasOwnProperty.call(newProviders, name),
             );
             for (const name of toDelete) {
-              await requestJson(
-                `/models/providers/${encodeURIComponent(name)}`,
-                {
-                  method: "DELETE",
-                },
-              );
+              await requestJson(`/models/providers/${encodeURIComponent(name)}`, {
+                method: "DELETE",
+              });
             }
             for (const name of Object.keys(newProviders)) {
-              await requestJson(
-                `/models/providers/${encodeURIComponent(name)}`,
-                {
-                  method: "PUT",
-                  body: JSON.stringify(newProviders[name]),
-                },
-              );
+              await requestJson(`/models/providers/${encodeURIComponent(name)}`, {
+                method: "PUT",
+                body: JSON.stringify(newProviders[name]),
+              });
             }
             if (parsed.defaults) {
               await requestJson("/models/default", {
@@ -888,14 +832,11 @@ function PageBody() {
         <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
+            <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">RowboatX</BreadcrumbLink>
+                  <BreadcrumbLink href="#">Oppulence</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
@@ -932,10 +873,7 @@ function PageBody() {
                     } else if (item.type === "tool") {
                       const stateMap: Record<
                         ToolCall["status"],
-                        | "input-streaming"
-                        | "input-available"
-                        | "output-available"
-                        | "output-error"
+                        "input-streaming" | "input-available" | "output-available" | "output-error"
                       > = {
                         pending: "input-streaming",
                         running: "input-available",
@@ -990,9 +928,7 @@ function PageBody() {
                   {currentAssistantMessage && (
                     <Message from="assistant">
                       <MessageContent>
-                        <MessageResponse>
-                          {currentAssistantMessage}
-                        </MessageResponse>
+                        <MessageResponse>{currentAssistantMessage}</MessageResponse>
                         <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
                       </MessageContent>
                     </Message>
@@ -1005,17 +941,13 @@ function PageBody() {
             {isEmptyConversation ? (
               <div className="absolute inset-0 flex items-center justify-center px-4 pb-16">
                 <div className="w-full max-w-3xl space-y-3 text-center">
-                  <h2 className="text-4xl font-semibold text-foreground/80">
-                    RowboatX
-                  </h2>
+                  <h2 className="text-4xl font-semibold text-foreground/80">Oppulence</h2>
                   {renderPromptInput()}
                 </div>
               </div>
             ) : (
               <div className="w-full px-4 pb-5 pt-2">
-                <div className="w-full max-w-3xl mx-auto">
-                  {renderPromptInput()}
-                </div>
+                <div className="w-full max-w-3xl mx-auto">{renderPromptInput()}</div>
               </div>
             )}
           </div>
@@ -1025,9 +957,7 @@ function PageBody() {
               <Artifact className="flex-1 min-h-0 h-full">
                 <ArtifactHeader>
                   <div className="flex flex-col">
-                    <ArtifactTitle className="truncate">
-                      {artifactTitle}
-                    </ArtifactTitle>
+                    <ArtifactTitle className="truncate">{artifactTitle}</ArtifactTitle>
                     <ArtifactDescription className="text-xs">
                       {artifactSubtitle || selectedResource.kind}
                       {artifactReadOnly && (
@@ -1089,8 +1019,7 @@ function PageBody() {
                       )}
                       {artifactReadOnly && (
                         <p className="text-xs text-muted-foreground">
-                          Runs are read-only; use the API to replay or inspect
-                          in detail.
+                          Runs are read-only; use the API to replay or inspect in detail.
                         </p>
                       )}
                     </div>

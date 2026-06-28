@@ -27,6 +27,8 @@ type Handler struct {
 	dailyCreditLimit int // 0 → no daily spend cap modeled
 	cache            CacheFunc
 	log              *zap.Logger
+	stripe           StripeConfig
+	stripeHTTP       *http.Client
 }
 
 // New builds the billing handler. cache may be nil (no caching). dailyCreditLimit
@@ -78,8 +80,9 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 
-	// The plan/status rarely change → cache the subscription read for 5 min.
-	sub, err := h.subscriptionFor(h.cache(ctx, 5*time.Minute), u)
+	// Plan/status can change from Stripe webhooks while the desktop is open, so
+	// this read stays fresh. Credit usage is also uncached below.
+	sub, err := h.subscriptionFor(ctx, u)
 	if err != nil {
 		h.log.Error("load subscription", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not load billing", "internal_error")

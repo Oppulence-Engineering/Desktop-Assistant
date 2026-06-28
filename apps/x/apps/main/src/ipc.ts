@@ -90,7 +90,12 @@ import {
   classifySchedule,
   processSolomonInstruction,
 } from "@x/core/dist/knowledge/inline_tasks.js";
-import { getBillingInfo } from "@x/core/dist/billing/billing.js";
+import {
+  createBillingCheckoutSession,
+  getBillingInfo,
+  getBillingPortalUrl,
+  syncBilling,
+} from "@x/core/dist/billing/billing.js";
 import { submitFeedback } from "@x/core/dist/feedback/feedback.js";
 import { AuthUnavailableError } from "@x/core/dist/auth/refresh-errors.js";
 import { summarizeMeeting } from "@x/core/dist/knowledge/summarize_meeting.js";
@@ -1718,6 +1723,18 @@ export function setupIpcHandlers() {
     // Billing handler
     "billing:getInfo": async () => {
       return await getBillingInfo();
+    },
+    "billing:getCheckoutUrl": async (_event, args) => {
+      const url = await createBillingCheckoutSession(args.plan);
+      return { url };
+    },
+    "billing:getPortalUrl": async () => {
+      const url = await getBillingPortalUrl();
+      return { url };
+    },
+    "billing:sync": async () => {
+      await syncBilling();
+      return { success: true };
     },
     // Feedback handler (relayed to Plain via the backend)
     "feedback:submit": async (_event, args) => {

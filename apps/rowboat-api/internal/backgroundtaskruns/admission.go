@@ -186,6 +186,8 @@ func quotaRejection(err error) (code, message string) {
 	switch {
 	case errors.Is(err, quota.ErrInsufficientCredits):
 		return backgroundtaskworkflow.ErrCodeInsufficientCredits, "insufficient credits for cloud run preflight"
+	case errors.Is(err, quota.ErrSubscriptionNotActive):
+		return backgroundtaskworkflow.ErrCodeSubscriptionNotActive, "subscription not active for cloud run preflight"
 	case errors.Is(err, quota.ErrDailyLimitExceeded):
 		return backgroundtaskworkflow.ErrCodeDailyCreditLimit, "daily credit limit exceeded for cloud run preflight"
 	case errors.Is(err, quota.ErrMonthlyLimitExceeded):

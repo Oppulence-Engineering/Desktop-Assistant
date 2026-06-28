@@ -5,6 +5,7 @@
 .env.local
 coverage.txt
 /tmp/
+/rowboat-dev.db*
 
 # Stray cmd binaries built at the module root (e.g. `go build ./cmd/scheduler`
 # emits ./scheduler). The Makefile builds into /bin; these are accidents.

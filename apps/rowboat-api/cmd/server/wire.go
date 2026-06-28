@@ -155,6 +155,17 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	configH := config.New(cfg)
 	docsH := docs.New()
 	billingH := billing.New(client, cfg.FreeTierCredits, cfg.DailyCreditLimit, database.Cached, log)
+	billingH.ConfigureStripe(billing.StripeConfig{
+		SecretKey:      cfg.StripeSecretKey,
+		WebhookSecret:  cfg.StripeWebhookSecret,
+		StarterPriceID: cfg.StripeStarterPriceID,
+		ProPriceID:     cfg.StripeProPriceID,
+		SuccessURL:     cfg.StripeSuccessURL,
+		CancelURL:      cfg.StripeCancelURL,
+		APIBaseURL:     cfg.StripeAPIBaseURL,
+		StarterCredits: cfg.StripeStarterCredits,
+		ProCredits:     cfg.StripeProCredits,
+	})
 	backgroundTasksH := backgroundtasks.New(client, log)
 	backgroundTasksH.SetAdmission(backgroundtaskruns.AdmissionFromConfig(cfg, gate, prices))
 	// temporalClient outlives this block: the cloud-events route starter below
@@ -381,6 +392,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		Post("/v1/webhooks/slack", cloudEventsH.SlackWebhook)
 	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
 		Post("/v1/webhooks/events", cloudEventsH.GenericWebhook)
+	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
+		Post("/v1/billing/stripe/webhook", billingH.StripeWebhook)
 
 	// Agent channel inbound (RFC 027 P5). Slack Events API has a single request
 	// URL, so /v1/webhooks/slack owns verification, durable event storage, and
@@ -427,6 +440,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		r.Use(rl.PerUser(ratelimit.GroupDefault, 600)) // sanity bucket
 
 		r.Get("/v1/me", billingH.Me)
+		r.Post("/v1/billing/checkout-session", billingH.CheckoutSession)
+		r.Post("/v1/billing/portal-session", billingH.PortalSession)
+		r.Post("/v1/billing/sync", billingH.Sync)
 
 		// Feedback relay to Plain. Tight per-user window: it's a human-driven form.
 		r.With(rl.PerUserWindow(ratelimit.GroupFeedback, 5, time.Minute)).

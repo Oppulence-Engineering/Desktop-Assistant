@@ -1485,6 +1485,26 @@ const ipcSchemas = {
     req: z.null(),
     res: BillingInfoSchema,
   },
+  "billing:getCheckoutUrl": {
+    req: z.object({
+      plan: z.enum(["starter", "pro"]),
+    }),
+    res: z.object({
+      url: z.string(),
+    }),
+  },
+  "billing:getPortalUrl": {
+    req: z.null(),
+    res: z.object({
+      url: z.string(),
+    }),
+  },
+  "billing:sync": {
+    req: z.null(),
+    res: z.object({
+      success: z.boolean(),
+    }),
+  },
   // Feedback (relayed to Plain via the backend; signed-in only)
   "feedback:submit": {
     req: z.object({
