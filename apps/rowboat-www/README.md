@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# rowboat-www
+
+Marketing site plus the authenticated Oppulence dashboard.
 
 ## Getting Started
 
-First, run the development server:
+First, run rowboat-api with WorkOS configured, then start the web app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The marketing site is
+public; `/app` redirects through WorkOS when there is no dashboard session.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Authentication
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+rowboat-www authenticates through rowboat-api's WorkOS AuthKit broker:
 
-## Learn More
+1. `/api/auth/workos/login` creates a PKCE verifier/challenge and asks
+   rowboat-api for `/v1/auth/workos/login-url`.
+2. WorkOS redirects back to `/api/auth/workos/callback`.
+3. rowboat-www validates the sealed PKCE state cookie, posts the code verifier
+   to rowboat-api `/v1/auth/workos/exchange`, and stores the returned token
+   bundle in a sealed HTTP-only cookie.
+4. Dashboard calls go to `/api/rowboat/v1/...`. The Next route verifies the
+   sealed session, refreshes via `/v1/auth/workos/refresh` when needed, attaches
+   `Authorization: Bearer ...`, and proxies to rowboat-api.
+5. `/api/auth/session` calls rowboat-api `/v1/me`, which performs first-sight
+   onboarding and returns local user/billing state.
 
-To learn more about Next.js, take a look at the following resources:
+This follows WorkOS AuthKit guidance to use authorization-code + PKCE and keep
+session tokens in secure HTTP-only cookies rather than browser storage:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- https://workos.com/docs/authkit/nextjs
+- https://workos.com/docs/authkit/sessions
+- https://workos.com/docs/reference/authkit/authentication/get-authorization-url
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Required production env:
 
-## Deploy on Vercel
+```bash
+ROWBOAT_WWW_API_PROXY_URL=https://api.oppulence.io
+ROWBOAT_WWW_PUBLIC_API_BASE_URL=https://api.oppulence.io
+ROWBOAT_WWW_SESSION_SECRET=<32+ random characters>
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Local development uses an insecure fallback session secret. Production refuses
+to seal or verify auth cookies without `ROWBOAT_WWW_SESSION_SECRET`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Verification
+
+```bash
+ROWBOAT_WWW_SESSION_SECRET=dev-only-rowboat-www-session-secret-change-me npm run build
+```

@@ -34,8 +34,8 @@ export const JobFiltersSchema = z.object({
     // Filter by recurring job rule ID
     recurringJobRuleId: z.string().optional(),
     
-    // Filter by composio trigger deployment ID
-    composioTriggerDeploymentId: z.string().optional(),
+    // Filter by integration trigger deployment ID
+    integrationTriggerDeploymentId: z.string().optional(),
     
     // Filter by date range
     createdAfter: z.string().datetime().optional(),

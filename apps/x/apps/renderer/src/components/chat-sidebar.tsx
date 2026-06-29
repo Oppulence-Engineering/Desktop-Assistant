@@ -29,7 +29,7 @@ import {
 } from "@/components/ai-elements/tool";
 import { WebSearchResult } from "@/components/ai-elements/web-search-result";
 import { MemorySearchSources } from "@/components/ai-elements/memory-search-result";
-import { ComposioConnectCard } from "@/components/ai-elements/composio-connect-card";
+import { IntegrationConnectCard } from "@/components/ai-elements/integration-connect-card";
 import { PermissionRequest } from "@/components/ai-elements/permission-request";
 import { AutoPermissionDecision } from "@/components/ai-elements/auto-permission-decision";
 import { TerminalOutput } from "@/components/terminal-output";
@@ -59,7 +59,7 @@ import {
   createEmptyChatTabViewState,
   getWebSearchCardData,
   getAppActionCardData,
-  getComposioConnectCardData,
+  getIntegrationConnectCardData,
   getToolDisplayName,
   groupConversationItems,
   isChatMessage,
@@ -205,7 +205,7 @@ interface ChatSidebarProps {
   ttsMode?: "summary" | "full";
   onToggleTts?: () => void;
   onTtsModeChange?: (mode: "summary" | "full") => void;
-  onComposioConnected?: (toolkitSlug: string) => void;
+  onIntegrationConnected?: (connectorName: string, displayName: string) => void;
 }
 
 export function ChatSidebar({
@@ -266,7 +266,7 @@ export function ChatSidebar({
   ttsMode,
   onToggleTts,
   onTtsModeChange,
-  onComposioConnected,
+  onIntegrationConnected,
 }: ChatSidebarProps) {
   const { state: sidebarState } = useSidebar();
   const [width, setWidth] = useState(() => getInitialPaneWidth(defaultWidth));
@@ -491,17 +491,18 @@ export function ChatSidebar({
           />
         );
       }
-      const composioConnectData = getComposioConnectCardData(item);
-      if (composioConnectData) {
-        if (composioConnectData.hidden) return null;
+      const integrationConnectData = getIntegrationConnectCardData(item);
+      if (integrationConnectData) {
+        if (integrationConnectData.hidden) return null;
         return (
-          <ComposioConnectCard
+          <IntegrationConnectCard
             key={item.id}
-            toolkitSlug={composioConnectData.toolkitSlug}
-            toolkitDisplayName={composioConnectData.toolkitDisplayName}
+            connectorName={integrationConnectData.connectorName}
+            displayName={integrationConnectData.displayName}
+            authType={integrationConnectData.authType}
             status={item.status}
-            alreadyConnected={composioConnectData.alreadyConnected}
-            onConnected={onComposioConnected}
+            alreadyConnected={integrationConnectData.alreadyConnected}
+            onConnected={onIntegrationConnected}
           />
         );
       }

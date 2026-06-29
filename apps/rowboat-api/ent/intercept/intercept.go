@@ -22,7 +22,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/composioaccount"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -474,33 +473,6 @@ func (f TraverseCloudEvent) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.CloudEventQuery", q)
 }
 
-// The ComposioAccountFunc type is an adapter to allow the use of ordinary function as a Querier.
-type ComposioAccountFunc func(context.Context, *ent.ComposioAccountQuery) (ent.Value, error)
-
-// Query calls f(ctx, q).
-func (f ComposioAccountFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
-	if q, ok := q.(*ent.ComposioAccountQuery); ok {
-		return f(ctx, q)
-	}
-	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ComposioAccountQuery", q)
-}
-
-// The TraverseComposioAccount type is an adapter to allow the use of ordinary function as Traverser.
-type TraverseComposioAccount func(context.Context, *ent.ComposioAccountQuery) error
-
-// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
-func (f TraverseComposioAccount) Intercept(next ent.Querier) ent.Querier {
-	return next
-}
-
-// Traverse calls f(ctx, q).
-func (f TraverseComposioAccount) Traverse(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.ComposioAccountQuery); ok {
-		return f(ctx, q)
-	}
-	return fmt.Errorf("unexpected query type %T. expect *ent.ComposioAccountQuery", q)
-}
-
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary function as a Querier.
 type CreditLedgerFunc func(context.Context, *ent.CreditLedgerQuery) (ent.Value, error)
 
@@ -910,8 +882,6 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.BackgroundTaskScheduleStateQuery, predicate.BackgroundTaskScheduleState, backgroundtaskschedulestate.OrderOption]{typ: ent.TypeBackgroundTaskScheduleState, tq: q}, nil
 	case *ent.CloudEventQuery:
 		return &query[*ent.CloudEventQuery, predicate.CloudEvent, cloudevent.OrderOption]{typ: ent.TypeCloudEvent, tq: q}, nil
-	case *ent.ComposioAccountQuery:
-		return &query[*ent.ComposioAccountQuery, predicate.ComposioAccount, composioaccount.OrderOption]{typ: ent.TypeComposioAccount, tq: q}, nil
 	case *ent.CreditLedgerQuery:
 		return &query[*ent.CreditLedgerQuery, predicate.CreditLedger, creditledger.OrderOption]{typ: ent.TypeCreditLedger, tq: q}, nil
 	case *ent.GoogleWatchQuery:

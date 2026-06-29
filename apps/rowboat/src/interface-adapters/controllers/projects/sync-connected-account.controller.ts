@@ -1,7 +1,7 @@
 import { BadRequestError } from "@/src/entities/errors/common";
 import z from "zod";
 import { ISyncConnectedAccountUseCase } from "@/src/application/use-cases/projects/sync-connected-account.use-case";
-import { ComposioConnectedAccount } from "@/src/entities/models/project";
+import { IntegrationConnectedAccount } from "@/src/entities/models/project";
 
 const inputSchema = z.object({
     caller: z.enum(["user", "api"]),
@@ -13,7 +13,7 @@ const inputSchema = z.object({
 });
 
 export interface ISyncConnectedAccountController {
-    execute(request: z.infer<typeof inputSchema>): Promise<z.infer<typeof ComposioConnectedAccount>>;
+    execute(request: z.infer<typeof inputSchema>): Promise<z.infer<typeof IntegrationConnectedAccount>>;
 }
 
 export class SyncConnectedAccountController implements ISyncConnectedAccountController {
@@ -23,7 +23,7 @@ export class SyncConnectedAccountController implements ISyncConnectedAccountCont
         this.syncConnectedAccountUseCase = syncConnectedAccountUseCase;
     }
 
-    async execute(request: z.infer<typeof inputSchema>): Promise<z.infer<typeof ComposioConnectedAccount>> {
+    async execute(request: z.infer<typeof inputSchema>): Promise<z.infer<typeof IntegrationConnectedAccount>> {
         const result = inputSchema.safeParse(request);
         if (!result.success) {
             throw new BadRequestError(`Invalid request: ${JSON.stringify(result.error)}`);

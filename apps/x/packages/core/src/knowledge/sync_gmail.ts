@@ -1058,7 +1058,7 @@ async function fullSync(auth: OAuth2Client, syncDir: string, attachmentsDir: str
     const gmail = google.gmail({ version: 'v1', auth });
 
     // If the state file holds a last_sync timestamp (e.g. left over from a
-    // prior Composio sync, or from a previous successful native sync that
+    // prior legacy connector sync, or from a previous successful native sync that
     // we're falling back to after a history.list 404), use that as the
     // floor — but never reach back further than lookbackDays. This caps the
     // window at "1 week at most": if last_sync is within the lookback window

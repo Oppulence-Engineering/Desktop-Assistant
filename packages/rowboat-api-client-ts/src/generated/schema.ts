@@ -592,42 +592,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/composio/{path}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Proxy Composio v3 Get
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
-     */
-    get: operations["proxyComposioGet"];
-    /**
-     * Proxy Composio v3 Put
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
-     */
-    put: operations["proxyComposioPut"];
-    /**
-     * Proxy Composio v3 Post
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
-     */
-    post: operations["proxyComposioPost"];
-    /**
-     * Proxy Composio v3 Delete
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
-     */
-    delete: operations["proxyComposioDelete"];
-    options?: never;
-    head?: never;
-    /**
-     * Proxy Composio v3 Patch
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
-     */
-    patch: operations["proxyComposioPatch"];
-    trace?: never;
-  };
   "/v1/config": {
     parameters: {
       query?: never;
@@ -668,6 +632,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/connections/{name}/api-key": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Connect API-key connector
+     * @description Stores a vendor-issued API key for an api_key connector. The key is sealed at rest and later minted back only through the connector MCP token endpoint.
+     */
+    post: operations["setConnectionAPIKey"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/connections/{name}/callback": {
     parameters: {
       query?: never;
@@ -682,6 +666,26 @@ export interface paths {
     get: operations["handleConnectionCallback"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/connections/{name}/claim": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Claim connector OAuth flow
+     * @description Redeems the connector grant parked by the browser callback. Persistence is bound to the authenticated user that started the flow.
+     */
+    post: operations["claimConnection"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1027,6 +1031,86 @@ export interface paths {
      */
     post: operations["claimSlackOAuth"];
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/slack-oauth/thread/post": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Post Slack thread reply
+     * @description Posts an explicitly approved reply into a connected managed Slack thread using the server-held Slack app token. The token and message text are never returned.
+     */
+    post: operations["postSlackThreadReply"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/slack-oauth/thread/read": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Read Slack thread
+     * @description Reads messages from a connected managed Slack workspace using the server-held Slack app token. The token is never returned to the desktop.
+     */
+    post: operations["readSlackThread"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/slack-oauth/workspaces": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Slack workspace connections
+     * @description Returns the authenticated user's managed Slack workspace connections. Bot tokens are never returned.
+     */
+    get: operations["listSlackWorkspaces"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/slack-oauth/workspaces/{teamId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Disconnect Slack workspace
+     * @description Idempotently deletes the authenticated user's managed Slack workspace connection for the given team id.
+     */
+    delete: operations["deleteSlackWorkspace"];
     options?: never;
     head?: never;
     patch?: never;
@@ -2767,10 +2851,6 @@ export interface components {
       /** @description Linked runs. */
       runs: components["schemas"]["CloudEventRun"][];
     };
-    /** @description Composio v3 response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-    ComposioProxyResponse: {
-      [key: string]: unknown;
-    };
     /** @description Public bootstrap values consumed by the desktop before sign-in. */
     ConfigResponse: {
       /**
@@ -2798,6 +2878,30 @@ export interface components {
        * @example
        */
       websocketApiUrl: string;
+    };
+    /** @description Stores a vendor-issued API key for an api_key connector. */
+    ConnectionAPIKeyRequest: {
+      /**
+       * @description Vendor API key. Stored sealed at rest and never returned by connector list endpoints.
+       * @example sk_vendor_abc123
+       */
+      apiKey: string;
+    };
+    /** @description Redeems a one-time connector OAuth ticket parked by /v1/connections/{name}/callback. */
+    ConnectionClaimRequest: {
+      /**
+       * @description Opaque one-time OAuth state/session ticket.
+       * @example state_abc123
+       */
+      state: string;
+    };
+    /** @description Connector connection result. */
+    ConnectionConnectedResponse: {
+      /**
+       * @description Whether the connector is now connected.
+       * @example true
+       */
+      connected: boolean;
     };
     /** @description OAuth authorize URL for a connector. */
     ConnectionStartResponse: {
@@ -2860,6 +2964,8 @@ export interface components {
        *     ]
        */
       scopes?: string[];
+      /** @description Onboarding capability blocks shown when a user browses or connects this integration. */
+      templateBlocks?: components["schemas"]["IntegrationTemplateBlock"][];
     };
     /** @description Connector registry plus per-user connection state. */
     ConnectorsResponse: {
@@ -3178,6 +3284,44 @@ export interface components {
        * @enum {string}
        */
       status: "ok";
+    };
+    /** @description User-facing integration onboarding capability block. Blocks describe what an integration unlocks; they are not executable workflow nodes. */
+    IntegrationTemplateBlock: {
+      /**
+       * @description UI grouping category.
+       * @example finance
+       */
+      category: string;
+      /**
+       * @description Human-readable capability description.
+       * @example Look up invoices, customers, balances, and current payment status.
+       */
+      description: string;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** @description Connector MCP tools backing this capability. */
+      mcpTools?: string[];
+      /** @description OAuth scopes required by this capability. */
+      requiredScopes?: string[];
+      /**
+       * @description Optional prompt example for the onboarding UI.
+       * @example Show me the current invoice status for Acme.
+       */
+      samplePrompt?: string | null;
+      /**
+       * @description Short block title.
+       * @example Invoice context
+       */
+      title: string;
+      /**
+       * @description Highest trust tier needed by this capability.
+       * @example read
+       * @enum {string}
+       */
+      trustTier: "read" | "write" | "act" | "money-moving";
     };
     /** @description Server-to-server cloud event ingestion: the caller names the event owner explicitly. */
     InternalCloudEventIngestRequest: {
@@ -4063,6 +4207,150 @@ export interface components {
        * @example Acme
        */
       teamName?: string | null;
+    };
+    /** @description Slack thread message metadata returned to desktop chat. */
+    SlackThreadMessage: {
+      /**
+       * @description Slack bot id when present.
+       * @example B01234567
+       */
+      bot_id?: string | null;
+      /**
+       * @description Slack message text.
+       * @example Can you summarize this?
+       */
+      text?: string | null;
+      /**
+       * @description Usage or ledger event timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      ts?: string | null;
+      /**
+       * @description User that owns this row.
+       * @example U01234567
+       */
+      user?: string | null;
+    };
+    /** @description Post an approved Slack reply into a connected managed thread. */
+    SlackThreadPostRequest: {
+      /**
+       * @description Slack channel id.
+       * @example C01234567
+       */
+      channel: string;
+      /**
+       * @description Slack workspace/team id.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Slack message text to post.
+       * @example I can take this one.
+       */
+      text: string;
+      /**
+       * @description Slack thread timestamp. The reply is posted under this thread.
+       * @example 1700000000.000100
+       */
+      threadTs: string;
+    };
+    /** @description Slack reply post result. The bot token and message text are never returned. */
+    SlackThreadPostResponse: {
+      /**
+       * @description Slack channel id.
+       * @example C01234567
+       */
+      channel: string;
+      /**
+       * @description Whether Slack accepted the post.
+       * @example true
+       */
+      ok: boolean;
+      /**
+       * @description Slack workspace/team id.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Slack thread timestamp.
+       * @example 1700000000.000100
+       */
+      threadTs: string;
+    };
+    /** @description Read a Slack thread from a connected managed workspace. */
+    SlackThreadReadRequest: {
+      /**
+       * @description Slack channel id.
+       * @example C01234567
+       */
+      channel: string;
+      /**
+       * @description Max messages to return. Defaults to 50, max 200.
+       * @example 50
+       */
+      limit?: number | null;
+      /**
+       * @description Slack workspace/team id.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Slack thread timestamp. For a top-level message, use the message ts.
+       * @example 1700000000.000100
+       */
+      threadTs: string;
+    };
+    /** @description Slack thread messages read through the server-held Slack app token. */
+    SlackThreadReadResponse: {
+      /**
+       * @description Slack channel id.
+       * @example C01234567
+       */
+      channel: string;
+      /** @description Slack thread messages. */
+      messages: components["schemas"]["SlackThreadMessage"][];
+      /**
+       * @description Slack workspace/team id.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Slack thread timestamp.
+       * @example 1700000000.000100
+       */
+      threadTs: string;
+    };
+    /** @description Connected Slack workspace metadata. Credentials are server-held and never returned. */
+    SlackWorkspace: {
+      /**
+       * Format: date-time
+       * @description Connection creation time.
+       * @example 2026-06-04T20:38:00Z
+       */
+      connectedAt?: string;
+      /**
+       * @description OAuth scopes granted or requested.
+       * @example [
+       *       "invoices:read",
+       *       "customers:read"
+       *     ]
+       */
+      scopes?: string[];
+      /**
+       * @description Slack workspace (team) id — the key Events API deliveries resolve against.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Workspace display name when available.
+       * @example Acme
+       */
+      teamName?: string | null;
+    };
+    /** @description Connected Slack workspaces for the authenticated user. */
+    SlackWorkspacesResponse: {
+      /** @description Connected Slack workspaces. */
+      workspaces: components["schemas"]["SlackWorkspace"][];
     };
     /** @description User billing plan, status, trial expiry, Stripe identifiers, and credit grant. */
     Subscription: {
@@ -6477,166 +6765,6 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
-  proxyComposioGet: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard. */
-        path: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "items": []
-           *     }
-           */
-          "application/json": components["schemas"]["ComposioProxyResponse"];
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
-  proxyComposioPut: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard. */
-        path: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "items": []
-           *     }
-           */
-          "application/json": components["schemas"]["ComposioProxyResponse"];
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
-  proxyComposioPost: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard. */
-        path: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "items": []
-           *     }
-           */
-          "application/json": components["schemas"]["ComposioProxyResponse"];
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
-  proxyComposioDelete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard. */
-        path: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "items": []
-           *     }
-           */
-          "application/json": components["schemas"]["ComposioProxyResponse"];
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
-  proxyComposioPatch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard. */
-        path: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "items": []
-           *     }
-           */
-          "application/json": components["schemas"]["ComposioProxyResponse"];
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
   getConfig: {
     parameters: {
       query?: never;
@@ -6690,6 +6818,49 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
+  setConnectionAPIKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Connector slug, for example canvas, corinthian, or wispr. */
+        name: string;
+      };
+      cookie?: never;
+    };
+    /** @description Connector API key. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "apiKey": "sk_vendor_abc123"
+         *     }
+         */
+        "application/json": components["schemas"]["ConnectionAPIKeyRequest"];
+      };
+    };
+    responses: {
+      /** @description Connector connected. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "connected": true
+           *     }
+           */
+          "application/json": components["schemas"]["ConnectionConnectedResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+      503: components["responses"]["503"];
+    };
+  };
   handleConnectionCallback: {
     parameters: {
       query: {
@@ -6720,6 +6891,52 @@ export interface operations {
       };
       400: components["responses"]["400"];
       500: components["responses"]["500"];
+    };
+  };
+  claimConnection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Connector slug, for example canvas, corinthian, or wispr. */
+        name: string;
+      };
+      cookie?: never;
+    };
+    /** @description Connector claim ticket. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "state": "state_abc123"
+         *     }
+         */
+        "application/json": components["schemas"]["ConnectionClaimRequest"];
+      };
+    };
+    responses: {
+      /** @description Connector connected. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "connected": true
+           *     }
+           */
+          "application/json": components["schemas"]["ConnectionConnectedResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+      410: components["responses"]["410"];
+      500: components["responses"]["500"];
+      503: components["responses"]["503"];
     };
   };
   createMCPToken: {
@@ -6825,6 +7042,21 @@ export interface operations {
            *           "name": "canvas",
            *           "scopes": [
            *             "invoices:read"
+           *           ],
+           *           "templateBlocks": [
+           *             {
+           *               "category": "finance",
+           *               "description": "Look up invoices and customers.",
+           *               "id": "invoice-context",
+           *               "mcpTools": [
+           *                 "invoice.lookup"
+           *               ],
+           *               "requiredScopes": [
+           *                 "invoices:read"
+           *               ],
+           *               "title": "Invoice context",
+           *               "trustTier": "read"
+           *             }
            *           ]
            *         }
            *       ]
@@ -7599,6 +7831,164 @@ export interface operations {
         };
       };
       410: components["responses"]["410"];
+      500: components["responses"]["500"];
+    };
+  };
+  postSlackThreadReply: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Slack reply target and text. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "channel": "C01234567",
+         *       "teamId": "T0EXAMPLE",
+         *       "text": "I can take this one.",
+         *       "threadTs": "1700000000.000100"
+         *     }
+         */
+        "application/json": components["schemas"]["SlackThreadPostRequest"];
+      };
+    };
+    responses: {
+      /** @description Slack post accepted. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "channel": "C01234567",
+           *       "ok": true,
+           *       "teamId": "T0EXAMPLE",
+           *       "threadTs": "1700000000.000100"
+           *     }
+           */
+          "application/json": components["schemas"]["SlackThreadPostResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
+    };
+  };
+  readSlackThread: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Slack thread target. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "channel": "C01234567",
+         *       "limit": 25,
+         *       "teamId": "T0EXAMPLE",
+         *       "threadTs": "1700000000.000100"
+         *     }
+         */
+        "application/json": components["schemas"]["SlackThreadReadRequest"];
+      };
+    };
+    responses: {
+      /** @description Slack thread messages. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "channel": "C01234567",
+           *       "messages": [
+           *         {
+           *           "text": "Can you summarize this?",
+           *           "ts": "1700000000.000100",
+           *           "user": "U01234567"
+           *         }
+           *       ],
+           *       "teamId": "T0EXAMPLE",
+           *       "threadTs": "1700000000.000100"
+           *     }
+           */
+          "application/json": components["schemas"]["SlackThreadReadResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
+    };
+  };
+  listSlackWorkspaces: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Connected Slack workspaces. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "workspaces": [
+           *         {
+           *           "connectedAt": "2026-06-04T20:38:00Z",
+           *           "scopes": [
+           *             "channels:history",
+           *             "chat:write"
+           *           ],
+           *           "teamId": "T0EXAMPLE"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": components["schemas"]["SlackWorkspacesResponse"];
+        };
+      };
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  deleteSlackWorkspace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slack workspace/team id. */
+        teamId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Workspace disconnected or was already absent. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
       500: components["responses"]["500"];
     };
   };

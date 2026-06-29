@@ -5,8 +5,8 @@ import { BuiltinTools } from "../lib/builtin-tools.js";
 
 /**
  * Build the CopilotAgent dynamically.
- * Tools are derived from the current BuiltinTools (which include Composio meta-tools),
- * and instructions include the live Composio connection status.
+ * Tools are derived from the current BuiltinTools, and instructions include
+ * live connector status from the user's workspace.
  */
 export async function buildCopilotAgent(): Promise<z.infer<typeof Agent>> {
     const tools: Record<string, z.infer<typeof ToolAttachment>> = {};

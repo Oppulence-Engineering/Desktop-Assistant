@@ -3,7 +3,7 @@ import { tool, Tool } from "@openai/agents";
 import { createOpenAI } from "@ai-sdk/openai";
 import { embed, generateText } from "ai";
 import { z } from "zod";
-import { composio } from "@/src/application/lib/composio/composio";
+import { integration } from "@/src/application/lib/integration/integration";
 import { SignJWT } from "jose";
 import crypto from "crypto";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -384,21 +384,21 @@ export async function invokeMcpTool(
     return result;
 }
 
-// Helper to handle composio tool calls
-export async function invokeComposioTool(
+// Helper to handle integration tool calls
+export async function invokeIntegrationTool(
     logger: PrefixLogger,
     usageTracker: UsageTracker,
     projectId: string,
     name: string,
-    composioData: z.infer<typeof WorkflowTool>['composioData'] & {},
+    integrationData: z.infer<typeof WorkflowTool>['integrationData'] & {},
     input: any,
 ) {
-    logger = logger.child(`invokeComposioTool`);
+    logger = logger.child(`invokeIntegrationTool`);
     logger.log(`projectId: ${projectId}`);
     logger.log(`name: ${name}`);
     logger.log(`input: ${JSON.stringify(input)}`);
 
-    const { slug, toolkitSlug, noAuth } = composioData;
+    const { slug, toolkitSlug, noAuth } = integrationData;
 
     let connectedAccountId: string | undefined = undefined;
     if (!noAuth) {
@@ -407,24 +407,24 @@ export async function invokeComposioTool(
         if (!project) {
             throw new Error(`project ${projectId} not found`);
         }
-        connectedAccountId = project.composioConnectedAccounts?.[toolkitSlug]?.id;
+        connectedAccountId = project.integrationConnectedAccounts?.[toolkitSlug]?.id;
         if (!connectedAccountId) {
             throw new Error(`connected account id not found for project ${projectId} and toolkit ${toolkitSlug}`);
         }
     }
 
-    const result = await composio.tools.execute(slug, {
+    const result = await integration.tools.execute(slug, {
         userId: projectId,
         arguments: input,
         connectedAccountId: connectedAccountId,
     });
-    logger.log(`composio tool result: ${JSON.stringify(result)}`);
+    logger.log(`integration tool result: ${JSON.stringify(result)}`);
 
     // track usage
     usageTracker.track({
-        type: "COMPOSIO_TOOL_USAGE",
+        type: "INTEGRATION_TOOL_USAGE",
         toolSlug: slug,
-        context: "agents_runtime.composio_tool",
+        context: "agents_runtime.integration_tool",
     });
 
     return result.data;
@@ -573,17 +573,17 @@ export function createMcpTool(
     });
 }
 
-// Helper to create a composio tool
-export function createComposioTool(
+// Helper to create a integration tool
+export function createIntegrationTool(
     logger: PrefixLogger,
     usageTracker: UsageTracker,
     config: z.infer<typeof WorkflowTool>,
     projectId: string
 ): Tool {
-    const { name, description, parameters, composioData } = config;
+    const { name, description, parameters, integrationData } = config;
 
-    if (!composioData) {
-        throw new Error(`composio data not found for tool ${name}`);
+    if (!integrationData) {
+        throw new Error(`integration data not found for tool ${name}`);
     }
 
     return tool({
@@ -598,12 +598,12 @@ export function createComposioTool(
         },
         async execute(input: any) {
             try {
-                const result = await invokeComposioTool(logger, usageTracker, projectId, name, composioData, input);
+                const result = await invokeIntegrationTool(logger, usageTracker, projectId, name, integrationData, input);
                 return JSON.stringify({
                     result,
                 });
             } catch (error) {
-                logger.log(`Error executing composio tool ${name}:`, error);
+                logger.log(`Error executing integration tool ${name}:`, error);
                 return JSON.stringify({
                     error: "Tool execution failed!",
                 });
@@ -727,7 +727,7 @@ export function createTools(
     toolLogger.log(`=== CREATING ${Object.keys(toolConfig).length} TOOLS ===`);
 
     for (const [toolName, config] of Object.entries(toolConfig)) {
-        toolLogger.log(`creating tool: ${toolName} (type: ${config.mockTool ? 'mock' : config.isMcp ? 'mcp' : config.isComposio ? 'composio' : config.isGeminiImage ? 'gemini-image' : 'webhook'})`);
+        toolLogger.log(`creating tool: ${toolName} (type: ${config.mockTool ? 'mock' : config.isMcp ? 'mcp' : config.isIntegration ? 'integration' : config.isGeminiImage ? 'gemini-image' : 'webhook'})`);
         
         if (config.mockTool) {
             tools[toolName] = createMockTool(logger, usageTracker, config);
@@ -735,9 +735,9 @@ export function createTools(
         } else if (config.isMcp) {
             tools[toolName] = createMcpTool(logger, usageTracker, config, projectId);
             toolLogger.log(`✓ created mcp tool: ${toolName} (server: ${config.mcpServerName || 'unknown'})`);
-        } else if (config.isComposio) {
-            tools[toolName] = createComposioTool(logger, usageTracker, config, projectId);
-            toolLogger.log(`✓ created composio tool: ${toolName}`);
+        } else if (config.isIntegration) {
+            tools[toolName] = createIntegrationTool(logger, usageTracker, config, projectId);
+            toolLogger.log(`✓ created integration tool: ${toolName}`);
         } else if (config.isGeminiImage) {
             tools[toolName] = createGenerateImageTool(logger, usageTracker, config, projectId);
             toolLogger.log(`✓ created gemini image tool: ${toolName}`);

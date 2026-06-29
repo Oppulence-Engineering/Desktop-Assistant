@@ -4,7 +4,7 @@ import { Message } from "@/app/lib/types/types";
 import { DataSource } from "@/src/entities/models/data-source";
 import { ScheduledJobRule } from "@/src/entities/models/scheduled-job-rule";
 import { RecurringJobRule } from "@/src/entities/models/recurring-job-rule";
-import { ComposioTriggerDeployment } from "@/src/entities/models/composio-trigger-deployment";
+import { IntegrationTriggerDeployment } from "@/src/entities/models/integration-trigger-deployment";
 
 export const DataSourceSchemaForCopilot = DataSource.pick({
     id: true,
@@ -34,7 +34,7 @@ export const RecurringJobRuleSchemaForCopilot = RecurringJobRule.pick({
     name: z.string(),
 });
 
-export const ComposioTriggerDeploymentSchemaForCopilot = ComposioTriggerDeployment.pick({
+export const IntegrationTriggerDeploymentSchemaForCopilot = IntegrationTriggerDeployment.pick({
     id: true,
     triggerTypeName: true,
     toolkitSlug: true,
@@ -47,7 +47,7 @@ export const ComposioTriggerDeploymentSchemaForCopilot = ComposioTriggerDeployme
 export const TriggerSchemaForCopilot = z.union([
     ScheduledJobRuleSchemaForCopilot,
     RecurringJobRuleSchemaForCopilot,
-    ComposioTriggerDeploymentSchemaForCopilot,
+    IntegrationTriggerDeploymentSchemaForCopilot,
 ]);
 
 export const CopilotUserMessage = z.object({

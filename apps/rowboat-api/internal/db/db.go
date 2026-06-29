@@ -86,6 +86,10 @@ func Open(ctx context.Context, cfg appconfig.Config, log *zap.Logger) (*DB, erro
 	// query results to *sql.Rows, which entcache wraps in a recorder. Running
 	// migration before/outside entcache avoids that panic entirely.
 	if cfg.AutoMigrate {
+		if err := dropLegacyOAuthProviderUserIndex(ctx, sqlDB); err != nil {
+			_ = sqlDB.Close()
+			return nil, fmt.Errorf("db: drop legacy oauth index: %w", err)
+		}
 		raw := ent.NewClient(ent.Driver(base))
 		if err := raw.Schema.Create(ctx); err != nil {
 			_ = sqlDB.Close()
@@ -109,6 +113,11 @@ func Open(ctx context.Context, cfg appconfig.Config, log *zap.Logger) (*DB, erro
 
 	log.Info("database connected", zap.String("dialect", dlct), zap.String("driver", driverName))
 	return d, nil
+}
+
+func dropLegacyOAuthProviderUserIndex(ctx context.Context, sqlDB *sql.DB) error {
+	_, err := sqlDB.ExecContext(ctx, `DROP INDEX IF EXISTS oauthconnection_provider_user_oauth_connections`)
+	return err
 }
 
 // buildCacheLevels assembles the shared cache tiers: an in-process LRU L1 (per

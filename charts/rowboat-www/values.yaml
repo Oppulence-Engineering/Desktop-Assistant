@@ -48,6 +48,10 @@ config:
   ROWBOAT_WWW_PUBLIC_API_BASE_URL: https://api.oppulence.io
   ROWBOAT_WWW_API_PROXY_URL: https://api.oppulence.io
 
+secrets: {}
+# secrets:
+#   ROWBOAT_WWW_SESSION_SECRET: "" # 32+ random chars, set per environment.
+
 resources:
   requests:
     cpu: 50m

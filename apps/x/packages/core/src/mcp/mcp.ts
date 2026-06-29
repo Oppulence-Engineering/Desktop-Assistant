@@ -41,12 +41,16 @@ async function getClient(serverName: string): Promise<Client> {
       });
       await client.connect(transport);
     } else {
+      const requestInit = config.headers ? { headers: config.headers } : undefined;
       // Try Streamable HTTP first; if the *connection* fails (e.g. the
       // server only speaks the older SSE transport), fall back to SSE.
       // The fallback must wrap client.connect, not just the transport
       // constructor (which only throws on a malformed URL). See ERRORS.md E41.
       try {
-        transport = new StreamableHTTPClientTransport(new URL(config.url));
+        transport = new StreamableHTTPClientTransport(
+          new URL(config.url),
+          requestInit ? { requestInit } : undefined,
+        );
         await client.connect(transport);
       } catch {
         try {
@@ -54,7 +58,10 @@ async function getClient(serverName: string): Promise<Client> {
         } catch {
           // ignore close errors on the failed HTTP transport
         }
-        transport = new SSEClientTransport(new URL(config.url));
+        transport = new SSEClientTransport(
+          new URL(config.url),
+          requestInit ? { requestInit } : undefined,
+        );
         await client.connect(transport);
       }
     }
@@ -97,6 +104,16 @@ export async function forceCloseAllMcpClients(): Promise<void> {
     } catch {
       // Ignore errors during force close
     }
+    delete clients[serverName];
+  }
+}
+
+export async function closeMcpClient(serverName: string): Promise<void> {
+  const state = clients[serverName];
+  if (!state) return;
+  try {
+    await state.client?.close();
+  } finally {
     delete clients[serverName];
   }
 }

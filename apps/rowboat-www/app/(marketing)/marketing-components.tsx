@@ -1,33 +1,33 @@
 import {
-  ArrowRight,
-  Bot,
-  BrainCircuit,
-  BriefcaseBusiness,
-  CalendarClock,
-  CheckCircle2,
-  ChevronDown,
-  CircleDot,
-  Code2,
-  DatabaseZap,
-  FileText,
-  Github,
-  Globe2,
-  HardDrive,
-  Inbox,
-  Layers3,
-  Mail,
-  MessageSquareText,
-  Network,
-  Play,
-  PlugZap,
-  Radar,
-  Route,
-  SearchCheck,
-  ShieldCheck,
-  Sparkles,
-  Workflow,
-  type LucideIcon,
-} from "lucide-react";
+  ArrowRightIcon,
+  BrainIcon,
+  BriefcaseIcon,
+  CalendarDotsIcon,
+  CaretDownIcon,
+  ChartLineIcon,
+  CheckCircleIcon,
+  CircleIcon,
+  CodeIcon,
+  DatabaseIcon,
+  EnvelopeIcon,
+  FileTextIcon,
+  FlowArrowIcon,
+  GithubLogoIcon,
+  GlobeIcon,
+  HardDrivesIcon,
+  HeadsetIcon,
+  MagnifyingGlassIcon,
+  MonitorIcon,
+  NetworkIcon,
+  PathIcon,
+  PlayIcon,
+  PlugsConnectedIcon,
+  SealCheckIcon,
+  SparkleIcon,
+  StackIcon,
+  TrayIcon,
+} from "@phosphor-icons/react/ssr";
+import type { Icon as PhosphorIcon, IconWeight } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -61,6 +61,13 @@ const integrationGroups = [
   "Custom MCP",
 ];
 
+const mobileNavLinks = [
+  { label: "Docs", href: "/blog" },
+  { label: "Plans", href: "/pricing" },
+  { label: "Product", href: "/api-documentation-software" },
+  { label: "Dashboard", href: "/app" },
+];
+
 type IconTone = "neutral" | "blue" | "green" | "orange" | "yellow";
 
 const iconToneClasses: Record<IconTone, string> = {
@@ -75,11 +82,13 @@ function MarketingIcon({
   className,
   compact = false,
   icon: Icon,
+  weight,
   tone = "neutral",
 }: {
   className?: string;
   compact?: boolean;
-  icon: LucideIcon;
+  icon: PhosphorIcon;
+  weight?: IconWeight;
   tone?: IconTone;
 }) {
   return (
@@ -91,28 +100,35 @@ function MarketingIcon({
         className,
       )}
     >
-      <Icon className={compact ? "size-3.5" : "size-4"} strokeWidth={2.25} />
+      <Icon
+        className={compact ? "size-3.5" : "size-4"}
+        weight={weight ?? (compact ? "regular" : "duotone")}
+      />
     </span>
   );
 }
 
-function iconForLink(item: LinkItem): { icon: LucideIcon; tone?: IconTone } {
+function iconForLink(item: LinkItem): { icon: PhosphorIcon; tone?: IconTone } {
   const key = `${item.href} ${item.label} ${item.description ?? ""}`.toLowerCase();
 
   if (key.includes("gmail") || key.includes("email") || key.includes("inbox")) {
-    return { icon: Mail, tone: "blue" };
+    return { icon: EnvelopeIcon, tone: "blue" };
   }
 
   if (key.includes("calendar") || key.includes("meeting") || key.includes("fireflies")) {
-    return { icon: CalendarClock, tone: "yellow" };
+    return { icon: CalendarDotsIcon, tone: "yellow" };
   }
 
   if (key.includes("api") || key.includes("sdk") || key.includes("code")) {
-    return { icon: Code2, tone: "green" };
+    return { icon: CodeIcon, tone: "green" };
+  }
+
+  if (key.includes("github")) {
+    return { icon: GithubLogoIcon, tone: "neutral" };
   }
 
   if (key.includes("widget") || key.includes("chat") || key.includes("support")) {
-    return { icon: MessageSquareText, tone: "blue" };
+    return { icon: HeadsetIcon, tone: "blue" };
   }
 
   if (
@@ -123,103 +139,103 @@ function iconForLink(item: LinkItem): { icon: LucideIcon; tone?: IconTone } {
     key.includes("linear") ||
     key.includes("mcp")
   ) {
-    return { icon: PlugZap, tone: "orange" };
+    return { icon: PlugsConnectedIcon, tone: "orange" };
   }
 
   if (key.includes("browser") || key.includes("chrome") || key.includes("multilingual")) {
-    return { icon: Globe2, tone: "blue" };
+    return { icon: GlobeIcon, tone: "blue" };
   }
 
   if (key.includes("customer") || key.includes("company")) {
-    return { icon: BriefcaseBusiness, tone: "yellow" };
+    return { icon: BriefcaseIcon, tone: "yellow" };
   }
 
   if (key.includes("tool") || key.includes("validator") || key.includes("privacy")) {
-    return { icon: ShieldCheck, tone: "green" };
+    return { icon: SealCheckIcon, tone: "green" };
   }
 
   if (key.includes("docs") || key.includes("blog") || key.includes("article")) {
-    return { icon: FileText, tone: "neutral" };
+    return { icon: FileTextIcon, tone: "neutral" };
   }
 
   if (key.includes("knowledge") || key.includes("help") || key.includes("memory")) {
-    return { icon: BrainCircuit, tone: "green" };
+    return { icon: BrainIcon, tone: "green" };
   }
 
-  return { icon: Sparkles, tone: "neutral" };
+  return { icon: SparkleIcon, tone: "neutral" };
 }
 
-function iconForTitle(title: string): { icon: LucideIcon; tone?: IconTone } {
+function iconForTitle(title: string): { icon: PhosphorIcon; tone?: IconTone } {
   const key = title.toLowerCase();
 
   if (key.includes("help") || key.includes("answer") || key.includes("docs")) {
-    return { icon: SearchCheck, tone: "green" };
+    return { icon: MagnifyingGlassIcon, tone: "green" };
   }
 
   if (key.includes("widget") || key.includes("agent") || key.includes("assistant")) {
-    return { icon: Bot, tone: "blue" };
+    return { icon: HeadsetIcon, tone: "blue" };
   }
 
   if (key.includes("gmail") || key.includes("email") || key.includes("inbox")) {
-    return { icon: Inbox, tone: "blue" };
+    return { icon: TrayIcon, tone: "blue" };
   }
 
   if (key.includes("calendar") || key.includes("meeting")) {
-    return { icon: CalendarClock, tone: "yellow" };
+    return { icon: CalendarDotsIcon, tone: "yellow" };
   }
 
   if (key.includes("api") || key.includes("code") || key.includes("platform")) {
-    return { icon: Code2, tone: "green" };
+    return { icon: CodeIcon, tone: "green" };
   }
 
   if (key.includes("private") || key.includes("zero downtime")) {
-    return { icon: HardDrive, tone: "neutral" };
+    return { icon: HardDrivesIcon, tone: "neutral" };
   }
 
   if (key.includes("translation") || key.includes("source")) {
-    return { icon: Network, tone: "orange" };
+    return { icon: NetworkIcon, tone: "orange" };
   }
 
   if (key.includes("analytic") || key.includes("trail")) {
-    return { icon: Route, tone: "yellow" };
+    return { icon: PathIcon, tone: "yellow" };
   }
 
-  return { icon: Layers3, tone: "neutral" };
+  return { icon: StackIcon, tone: "neutral" };
 }
 
-function iconForPage(page: MarketingPage): { icon: LucideIcon; tone?: IconTone } {
+function iconForPage(page: MarketingPage): { icon: PhosphorIcon; tone?: IconTone } {
   const fromLink = iconForLink({
     href: page.path,
     label: page.title,
     description: `${page.eyebrow} ${page.description}`,
   });
 
-  if (fromLink.icon !== Sparkles) {
+  if (fromLink.icon !== SparkleIcon) {
     return fromLink;
   }
 
   if (page.category === "blog") {
-    return { icon: FileText, tone: "neutral" };
+    return { icon: FileTextIcon, tone: "neutral" };
   }
 
   if (page.category === "customer") {
-    return { icon: BriefcaseBusiness, tone: "yellow" };
+    return { icon: BriefcaseIcon, tone: "yellow" };
   }
 
   if (page.category === "demo") {
-    return { icon: Play, tone: "orange" };
+    return { icon: PlayIcon, tone: "orange" };
   }
 
   if (page.category === "legal") {
-    return { icon: ShieldCheck, tone: "green" };
+    return { icon: SealCheckIcon, tone: "green" };
   }
 
   if (page.category === "tool") {
-    return { icon: Workflow, tone: "orange" };
+    return { icon: FlowArrowIcon, tone: "orange" };
   }
 
   if (page.category === "landing") {
-    return { icon: Radar, tone: "blue" };
+    return { icon: MonitorIcon, tone: "blue" };
   }
 
   return iconForTitle(page.title);
@@ -233,13 +249,13 @@ function EyebrowPill({
 }: {
   children: ReactNode;
   className?: string;
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   tone?: IconTone;
 }) {
   return (
     <p
       className={cn(
-        "inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-primary/15 bg-primary/5 py-1 pr-3 pl-1.5 font-mono text-[10px] text-primary/75 uppercase tracking-wider",
+        "marketing-eyebrow inline-flex w-fit max-w-full items-center gap-2 rounded-full py-1 pr-3 pl-1.5 font-mono text-[10px] uppercase tracking-wider",
         className,
       )}
     >
@@ -290,7 +306,7 @@ function screenshotForPage(page: MarketingPage) {
     path.includes("github") ||
     path.includes("linear") ||
     path.includes("exa") ||
-    path.includes("composio") ||
+    path.includes("integrations") ||
     path.includes("migration") ||
     path.includes("localization")
   ) {
@@ -383,7 +399,7 @@ function MenuLink({ item }: { item: LinkItem }) {
   if (item.external) {
     return (
       <a
-        className="flex gap-3 rounded-sm px-2 py-2 transition-colors hover:bg-background-200"
+        className="group/menu flex gap-3 rounded-md border border-transparent px-2.5 py-2.5 transition-colors hover:border-primary/10 hover:bg-background-100/80"
         href={item.href}
         rel="noopener noreferrer"
         target="_blank"
@@ -395,7 +411,7 @@ function MenuLink({ item }: { item: LinkItem }) {
 
   return (
     <Link
-      className="flex gap-3 rounded-sm px-2 py-2 transition-colors hover:bg-background-200"
+      className="group/menu flex gap-3 rounded-md border border-transparent px-2.5 py-2.5 transition-colors hover:border-primary/10 hover:bg-background-100/80"
       href={item.href}
     >
       {content}
@@ -415,20 +431,20 @@ function DropdownMenu({
   return (
     <div className="group relative">
       <button
-        className="inline-flex h-8 items-center gap-1 px-2 py-1 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+        className="inline-flex h-8 items-center gap-1 rounded px-2.5 py-1 text-sm font-medium text-foreground/78 transition-colors hover:bg-background-100/80 hover:text-foreground"
         type="button"
       >
         {label}
-        <ChevronDown className="size-3.5 transition-transform group-hover:rotate-180" />
+        <CaretDownIcon className="size-3.5 transition-transform group-hover:rotate-180" />
       </button>
       <div className="invisible absolute top-full left-0 z-50 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100">
         <div
           className={cn(
-            "marketing-surface-strong border border-primary/10 bg-background p-4 shadow-xl shadow-black/20",
+            "marketing-surface-strong rounded-md border border-primary/10 bg-background p-3 shadow-xl shadow-black/30",
             width,
           )}
         >
-          <div className="mb-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             {label}
           </div>
           <div className="grid grid-cols-2 gap-1">
@@ -442,14 +458,42 @@ function DropdownMenu({
   );
 }
 
+function MobileMenu() {
+  return (
+    <details className="group/mobile-menu relative md:hidden">
+      <summary className="marketing-cta-secondary inline-flex h-9 cursor-pointer list-none items-center gap-1 rounded-md border border-primary/10 px-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
+        Menu
+        <CaretDownIcon className="size-3.5 transition-transform group-open/mobile-menu:rotate-180" />
+      </summary>
+      <div className="marketing-surface-strong absolute top-11 right-0 z-50 w-48 border p-2">
+        {mobileNavLinks.map((item) => (
+          <Link
+            className="flex items-center justify-between rounded px-3 py-2 text-sm text-foreground/80 transition-colors hover:bg-background-100/80 hover:text-foreground"
+            href={item.href}
+            key={item.href}
+          >
+            {item.label}
+            <ArrowRightIcon className="size-3.5 text-muted-foreground" />
+          </Link>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export function TopBar() {
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 border-grid-x border-b bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
+    <header className="marketing-topbar fixed top-0 right-0 left-0 z-50 border-grid-x border-b bg-background/90 shadow-xl shadow-black/20 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
       <div className="container-wrapper mx-auto">
         <div className="container mx-auto flex items-center justify-between gap-4 py-3">
           <div className="flex min-w-0 flex-1 items-center">
             <Link aria-label="Oppulence home" className="flex items-center" href="/">
-              <InlineLogo />
+              <span className="inline-flex max-[359px]:hidden">
+                <InlineLogo />
+              </span>
+              <span className="hidden max-[359px]:inline-flex">
+                <InlineLogo compact />
+              </span>
             </Link>
             <p className="ml-4 hidden border-primary/10 border-l pl-4 font-mono text-[10px] text-foreground/50 uppercase tracking-wider xl:block">
               Local-first AI coworker + agent platform
@@ -466,7 +510,7 @@ export function TopBar() {
               ["Company", "/customers"],
             ].map(([label, href]) => (
               <Link
-                className="px-2.5 py-1.5 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+                className="rounded px-2.5 py-1.5 text-sm font-medium text-foreground/78 transition-colors hover:bg-background-100/80 hover:text-foreground"
                 href={href}
                 key={href}
               >
@@ -477,13 +521,13 @@ export function TopBar() {
 
           <div className="hidden items-center gap-1 md:flex xl:hidden">
             <Link
-              className="px-2 py-1 text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
+              className="rounded px-2 py-1 text-sm font-medium text-foreground/75 transition-colors hover:bg-background-100/80 hover:text-foreground"
               href="/blog"
             >
               Docs
             </Link>
             <Link
-              className="px-2 py-1 text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
+              className="rounded px-2 py-1 text-sm font-medium text-foreground/75 transition-colors hover:bg-background-100/80 hover:text-foreground"
               href="/pricing"
             >
               Plans
@@ -491,15 +535,19 @@ export function TopBar() {
           </div>
 
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+            <MobileMenu />
             <Button
               asChild
-              className="hidden h-9 border border-primary/10 px-4 font-medium md:inline-flex"
+              className="marketing-cta-secondary hidden h-9 border border-primary/10 px-4 font-medium md:inline-flex"
               variant="ghost"
             >
               <Link href="/app">Dashboard</Link>
             </Button>
-            <Button asChild className="h-9 border border-transparent px-4 font-medium">
-              <Link href="/book-a-demo">Book a demo</Link>
+            <Button asChild className="marketing-cta-primary h-9 border border-transparent px-4 font-medium">
+              <Link href="/book-a-demo">
+                <span className="hidden sm:inline">Book a demo</span>
+                <span className="sm:hidden">Demo</span>
+              </Link>
             </Button>
           </div>
         </div>
@@ -537,7 +585,7 @@ export function Footer() {
               {socialLinks.map((item) => (
                 <Button asChild key={item.href} size="sm" variant="secondary">
                   <a href={item.href} rel="noopener noreferrer" target="_blank">
-                    <MarketingIcon compact icon={Github} />
+                    <MarketingIcon compact icon={GithubLogoIcon} />
                     {item.label}
                   </a>
                 </Button>
@@ -674,82 +722,310 @@ const homeIncludedFeatures = [
 const homeHeroCards: {
   label: string;
   value: string;
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   tone: IconTone;
 }[] = [
   {
     label: "Data Plane",
     value: "Gmail, Calendar, meetings, files, and tools.",
-    icon: DatabaseZap,
+    icon: DatabaseIcon,
     tone: "blue",
   },
   {
     label: "Intelligence",
     value: "Briefs, live notes, runbooks, and source-linked answers.",
-    icon: BrainCircuit,
+    icon: BrainIcon,
     tone: "green",
   },
   {
     label: "Execution",
     value: "MCP actions with review and audit boundaries.",
-    icon: Workflow,
+    icon: FlowArrowIcon,
     tone: "orange",
   },
 ];
 
-const homeProblemIcons: {
-  icon: LucideIcon;
+const homeContextRows: {
+  source: string;
+  detail: string;
+  state: string;
+  icon: PhosphorIcon;
   tone: IconTone;
 }[] = [
-  { icon: Radar, tone: "yellow" },
-  { icon: Bot, tone: "blue" },
-  { icon: PlugZap, tone: "orange" },
+  {
+    source: "Inbox",
+    detail: "Security notes before the pilot reply",
+    state: "2 new",
+    icon: EnvelopeIcon,
+    tone: "blue",
+  },
+  {
+    source: "Meetings",
+    detail: "Renewal call summary attached",
+    state: "live",
+    icon: CalendarDotsIcon,
+    tone: "yellow",
+  },
+  {
+    source: "Knowledge",
+    detail: "Acme account brief updated",
+    state: "synced",
+    icon: FileTextIcon,
+    tone: "green",
+  },
+];
+
+const homeContextStats = [
+  { label: "Sources", value: "9" },
+  { label: "Boundary", value: "MCP" },
+  { label: "Memory", value: "MD" },
+];
+
+const homeProblemIcons: {
+  icon: PhosphorIcon;
+  tone: IconTone;
+}[] = [
+  { icon: ChartLineIcon, tone: "yellow" },
+  { icon: HeadsetIcon, tone: "blue" },
+  { icon: PlugsConnectedIcon, tone: "orange" },
 ];
 
 const bulletIconCycle: {
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   tone: IconTone;
 }[] = [
-  { icon: Sparkles, tone: "yellow" },
-  { icon: Workflow, tone: "orange" },
-  { icon: ShieldCheck, tone: "green" },
-  { icon: BrainCircuit, tone: "blue" },
+  { icon: SparkleIcon, tone: "yellow" },
+  { icon: FlowArrowIcon, tone: "orange" },
+  { icon: SealCheckIcon, tone: "green" },
+  { icon: BrainIcon, tone: "blue" },
 ];
 
 const pricingPlanIcons: {
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   tone: IconTone;
 }[] = [
-  { icon: HardDrive, tone: "blue" },
-  { icon: Workflow, tone: "orange" },
-  { icon: ShieldCheck, tone: "green" },
+  { icon: HardDrivesIcon, tone: "blue" },
+  { icon: FlowArrowIcon, tone: "orange" },
+  { icon: SealCheckIcon, tone: "green" },
 ];
 
 const customerStoryIcons: {
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   tone: IconTone;
 }[] = [
-  { icon: Radar, tone: "yellow" },
-  { icon: Workflow, tone: "blue" },
-  { icon: CheckCircle2, tone: "green" },
+  { icon: ChartLineIcon, tone: "yellow" },
+  { icon: FlowArrowIcon, tone: "blue" },
+  { icon: CheckCircleIcon, tone: "green" },
 ];
+
+function PlanCtaButton({ plan }: { plan: (typeof pricingPlans)[number] }) {
+  const isDesktop = plan.name === "Desktop";
+  const href = isDesktop ? "/app" : "/book-a-demo";
+  const label = isDesktop ? "Open dashboard" : plan.recommended ? "Plan rollout" : "Book a demo";
+
+  return (
+    <Button
+      asChild
+      className={cn(
+        "mt-7 h-10 w-full justify-between px-4 font-medium",
+        plan.recommended ? "marketing-cta-primary" : "marketing-cta-secondary",
+      )}
+      variant={plan.recommended ? "default" : "ghost"}
+    >
+      <Link href={href}>
+        {label}
+        <ArrowRightIcon className="size-4" />
+      </Link>
+    </Button>
+  );
+}
+
+function HomeContextPanel() {
+  return (
+    <aside className="marketing-surface-strong hidden border p-5 lg:block">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <MarketingIcon icon={NetworkIcon} tone="green" />
+          <div>
+            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              Live context
+            </p>
+            <h2 className="mt-1 font-semibold text-lg">Operations graph</h2>
+          </div>
+        </div>
+        <span className="rounded border border-oppulence-green/25 bg-oppulence-green/10 px-2 py-1 font-mono text-[10px] text-oppulence-green uppercase tracking-wider">
+          Online
+        </span>
+      </div>
+
+      <div className="mt-5 divide-y divide-primary/10 border-y border-primary/10">
+        {homeContextRows.map(({ detail, icon, source, state, tone }) => (
+          <div className="flex items-center gap-3 py-3" key={source}>
+            <MarketingIcon compact icon={icon} tone={tone} />
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10px] text-foreground/55 uppercase tracking-wider">
+                {source}
+              </p>
+              <p className="mt-1 truncate text-sm text-foreground/80">{detail}</p>
+            </div>
+            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              {state}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-5 grid grid-cols-3 gap-4">
+        {homeContextStats.map((item) => (
+          <div key={item.label}>
+            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              {item.label}
+            </p>
+            <p className="mt-1 text-xl font-semibold">{item.value}</p>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function heroPanelForPage(page: MarketingPage): {
+  eyebrow: string;
+  heading: string;
+  icon: PhosphorIcon;
+  items: string[];
+  tone: IconTone;
+} {
+  if (page.path === "pricing") {
+    return {
+      eyebrow: "Plan fit",
+      heading: "Buyer paths",
+      icon: HardDrivesIcon,
+      items: page.bullets,
+      tone: "blue",
+    };
+  }
+
+  if (page.category === "blog") {
+    return {
+      eyebrow: "Reading paths",
+      heading: "Resource map",
+      icon: FileTextIcon,
+      items: page.bullets,
+      tone: "neutral",
+    };
+  }
+
+  if (page.category === "customer") {
+    return {
+      eyebrow: "Customer fit",
+      heading: "Operator stories",
+      icon: BriefcaseIcon,
+      items: page.bullets,
+      tone: "yellow",
+    };
+  }
+
+  if (page.category === "demo") {
+    return {
+      eyebrow: "Demo path",
+      heading: "What we cover",
+      icon: PlayIcon,
+      items: page.bullets,
+      tone: "orange",
+    };
+  }
+
+  if (page.category === "tool") {
+    return {
+      eyebrow: "Tool path",
+      heading: "Workflow checks",
+      icon: SealCheckIcon,
+      items: page.bullets,
+      tone: "green",
+    };
+  }
+
+  return {
+    eyebrow: "Capability path",
+    heading: page.eyebrow,
+    icon: iconForPage(page).icon,
+    items: page.bullets.length > 0 ? page.bullets : page.proof,
+    tone: iconForPage(page).tone ?? "green",
+  };
+}
+
+function HeroProofPanel({ page }: { page: MarketingPage }) {
+  const panel = heroPanelForPage(page);
+
+  return (
+    <aside className="marketing-surface hidden border p-5 lg:block">
+      <div className="flex items-center gap-3">
+        <MarketingIcon icon={panel.icon} tone={panel.tone} />
+        <div>
+          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+            {panel.eyebrow}
+          </p>
+          <h2 className="mt-1 font-semibold text-lg">{panel.heading}</h2>
+        </div>
+      </div>
+      <div className="mt-5 divide-y divide-primary/10 border-y border-primary/10">
+        {panel.items.slice(0, 3).map((item, index) => (
+          <div className="flex gap-3 py-3 text-sm leading-relaxed" key={item}>
+            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              0{index + 1}
+            </span>
+            <p className="text-foreground/78">{item}</p>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+}
 
 export function HomePage() {
   return (
-    <div className="flex flex-col gap-8 pt-36 lg:min-h-screen xl:pt-40">
+    <div className="flex flex-col gap-8 pt-28 lg:min-h-screen xl:pt-32">
       <div className="flex flex-1 flex-col gap-6">
-        <div className="flex flex-col items-start gap-5 px-4 pb-8">
-          <EyebrowPill icon={DatabaseZap} tone="blue">
-            Local-first AI coworker + self-hosted agent platform
-          </EyebrowPill>
-          <h1 className="max-w-6xl text-balance text-left font-display text-5xl leading-[1.03] font-normal md:text-6xl xl:text-7xl">
-            Give every operator live work context before they write, meet, or act.
-          </h1>
-          <p className="max-w-3xl text-balance text-left text-base text-muted-foreground leading-relaxed md:text-xl">
-            Mirror email, calendar, meetings, files, and tools into an owned operations graph, then
-            let agents brief, draft, update, and execute through reviewable workflows.
-          </p>
-          <div className="grid w-full grid-cols-1 gap-3 py-2 sm:grid-cols-3">
+        <div className="px-4 pb-8">
+          <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,390px)] lg:items-center">
+            <div className="flex w-full min-w-0 flex-col items-start gap-5">
+              <EyebrowPill icon={DatabaseIcon} tone="blue">
+                Local-first AI coworker + self-hosted agent platform
+              </EyebrowPill>
+              <h1 className="marketing-hero-title w-full min-w-0 max-w-5xl text-balance text-left font-display text-5xl leading-[1.03] font-normal md:text-6xl xl:text-[4.1rem]">
+                Give every operator live work context before they write, meet, or act.
+              </h1>
+              <p className="max-w-3xl text-balance text-left text-base text-muted-foreground leading-relaxed md:text-xl">
+                Mirror email, calendar, meetings, files, and tools into an owned operations graph,
+                then let agents brief, draft, update, and execute through reviewable workflows.
+              </p>
+              <div className="mt-2 flex w-full flex-col gap-3 md:max-w-[75%] md:gap-4 lg:max-w-full lg:flex-row lg:items-center">
+                <Button
+                  asChild
+                  className="marketing-cta-primary h-12 border border-transparent px-6 font-medium text-md has-[>svg]:px-4 lg:w-[250px]"
+                >
+                  <Link href="/book-a-demo">
+                    Start with Oppulence
+                    <ArrowRightIcon className="size-4" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  className="marketing-cta-secondary h-12 justify-between border border-primary/10 px-4 font-medium text-md"
+                  variant="ghost"
+                >
+                  <Link href="/ai-help-center">
+                    Explore the graph
+                    <ArrowRightIcon className="size-4" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+            <HomeContextPanel />
+          </div>
+
+          <div className="mt-6 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
             {homeHeroCards.map(({ icon, label, tone, value }) => (
               <div
                 className="marketing-surface flex items-start gap-3 rounded-md border px-4 py-3"
@@ -765,32 +1041,11 @@ export function HomePage() {
               </div>
             ))}
           </div>
-          <div className="mt-3 flex w-full flex-col gap-3 md:max-w-[75%] md:gap-4 lg:max-w-full lg:flex-row lg:items-center">
-            <Button
-              asChild
-              className="h-12 border border-transparent px-6 font-medium text-md has-[>svg]:px-4 lg:w-[250px]"
-            >
-              <Link href="/book-a-demo">
-                Start with Oppulence
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              className="h-12 justify-between border border-primary/10 px-4 font-medium text-md"
-              variant="ghost"
-            >
-              <Link href="/ai-help-center">
-                Explore the graph
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-          </div>
         </div>
 
         <DesktopScreenshotPreview
           alt="Oppulence desktop home screen with work context, tasks, and chat"
-          className="hidden w-full rounded-md border border-primary/10 bg-background/50 lg:block"
+          className="hidden w-full lg:block"
           src={desktopScreenshots.home}
         />
 
@@ -802,7 +1057,7 @@ export function HomePage() {
 
               return (
                 <span
-                  className="inline-flex items-center gap-1.5 rounded border border-primary/10 bg-background-100 py-1 pr-2 pl-1 font-mono text-[10px] text-foreground/60"
+                  className="marketing-chip inline-flex items-center gap-1.5 rounded border py-1 pr-2 pl-1 font-mono text-[10px] text-foreground/65"
                   key={item}
                 >
                   <MarketingIcon className="size-5 rounded-[3px]" compact icon={icon} tone={tone} />
@@ -825,7 +1080,7 @@ export function HomePage() {
             key={card.title}
           >
             <MarketingIcon
-              icon={homeProblemIcons[index]?.icon ?? Radar}
+              icon={homeProblemIcons[index]?.icon ?? ChartLineIcon}
               tone={homeProblemIcons[index]?.tone ?? "neutral"}
             />
             <h2 className="mt-5 font-semibold text-xl">{card.title}</h2>
@@ -893,11 +1148,12 @@ export function HomePage() {
                 <ul className="mt-6 space-y-3 text-foreground/80 text-sm leading-relaxed">
                   {plan.features.map((feature) => (
                     <li className="flex gap-3" key={feature}>
-                      <MarketingIcon compact icon={CheckCircle2} tone="green" />
+                      <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
                       <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
+                <PlanCtaButton plan={plan} />
               </article>
             );
           })}
@@ -918,13 +1174,29 @@ function DesktopScreenshotPreview({
 }) {
   return (
     <div
-      className={cn("relative flex w-full items-center justify-center overflow-hidden", className)}
+      className={cn(
+        "marketing-preview relative flex w-full flex-col items-stretch justify-center overflow-hidden border border-primary/10 bg-background/50",
+        className,
+      )}
     >
       <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--background-50),var(--background)_58%,var(--background-100))]" />
+      <div className="relative z-10 flex items-center justify-between border-primary/10 border-b px-3 py-2">
+        <div className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-oppulence-orange/70" />
+          <span className="size-2 rounded-full bg-oppulence-yellow/70" />
+          <span className="size-2 rounded-full bg-oppulence-green/70" />
+        </div>
+        <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+          Oppulence Desktop
+        </span>
+        <span className="hidden font-mono text-[10px] text-muted-foreground uppercase tracking-wider sm:inline">
+          Local graph
+        </span>
+      </div>
       <div className="relative z-10 flex min-w-0 flex-1 items-center justify-center p-2 sm:p-6">
         <Image
           alt={alt}
-          className="w-full min-w-0 max-w-6xl rounded-lg border border-primary/10 bg-background object-cover shadow-2xl shadow-black/30"
+          className="marketing-preview-image w-full min-w-0 max-w-6xl rounded-md border border-primary/10 bg-background object-cover shadow-2xl shadow-black/30"
           height={1000}
           priority={src === desktopScreenshots.home}
           sizes="(max-width: 768px) 100vw, 1120px"
@@ -979,19 +1251,24 @@ function FeatureMirrorPage({
   details: (typeof featureDetails)[string];
 }) {
   return (
-    <div className="flex flex-col pt-40 pb-20">
+    <div className="flex flex-col pt-32 pb-20">
       <div className="mx-auto w-full max-w-6xl px-4">
-        <header className="max-w-4xl">
-          <EyebrowPill {...iconForPage(page)}>
-            {page.eyebrow}
-          </EyebrowPill>
-          <h1 className="mt-5 text-balance font-display text-5xl leading-none font-normal md:text-7xl">
-            {page.title}
-          </h1>
-          <p className="mt-6 max-w-3xl text-lg text-muted-foreground">{page.description}</p>
-          <FeatureActionButtons
-            primary={page.path === "ai-help-center" ? "Create your knowledge graph" : "Book a demo"}
-          />
+        <header className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+          <div className="min-w-0 max-w-4xl">
+            <EyebrowPill {...iconForPage(page)}>
+              {page.eyebrow}
+            </EyebrowPill>
+            <h1 className="marketing-hero-title mt-5 w-full min-w-0 text-balance font-display text-5xl leading-[1.03] font-normal md:text-6xl xl:text-[4rem]">
+              {page.title}
+            </h1>
+            <p className="mt-6 max-w-3xl text-lg text-muted-foreground">{page.description}</p>
+            <FeatureActionButtons
+              primary={
+                page.path === "ai-help-center" ? "Create your knowledge graph" : "Book a demo"
+              }
+            />
+          </div>
+          <HeroProofPanel page={page} />
         </header>
 
         <section className="mt-12 grid gap-3 sm:grid-cols-3">
@@ -1017,7 +1294,7 @@ function FeatureMirrorPage({
 
         <DesktopScreenshotPreview
           alt={`Oppulence desktop app screenshot for ${page.eyebrow}`}
-          className="mt-10 rounded-md border border-primary/10 bg-background/50"
+          className="mt-10"
           src={screenshotForPage(page)}
         />
 
@@ -1059,7 +1336,7 @@ function FeatureMirrorPage({
               <div className="mt-4 grid gap-3">
                 {details.outcomes.map((outcome) => (
                   <div className="flex gap-3 text-sm leading-relaxed" key={outcome}>
-                    <MarketingIcon compact icon={CheckCircle2} tone="green" />
+                    <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
                     <span className="text-foreground/75">{outcome}</span>
                   </div>
                 ))}
@@ -1071,10 +1348,10 @@ function FeatureMirrorPage({
         <ProofGrid page={page} />
         {page.path === "integrations" ? <IntegrationsPanel /> : null}
         <section className="mt-14 flex flex-wrap gap-3">
-          <Button asChild>
+          <Button asChild className="marketing-cta-primary">
             <Link href={page.ctaHref ?? "/book-a-demo"}>{page.ctaLabel ?? "Book a demo"}</Link>
           </Button>
-          <Button asChild variant="ghost">
+          <Button asChild className="marketing-cta-secondary" variant="ghost">
             <Link href="/app">Open dashboard</Link>
           </Button>
         </section>
@@ -1094,16 +1371,16 @@ function FeatureActionButtons({
     <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
       <Button
         asChild
-        className="h-12 border border-transparent px-6 font-medium text-md has-[>svg]:px-4"
+        className="marketing-cta-primary h-12 border border-transparent px-6 font-medium text-md has-[>svg]:px-4"
       >
         <Link href="/book-a-demo">
           {primary}
-          <ArrowRight className="size-4" />
+          <ArrowRightIcon className="size-4" />
         </Link>
       </Button>
       <Button
         asChild
-        className="h-12 justify-between border border-primary/10 px-4 font-medium text-md"
+        className="marketing-cta-secondary h-12 justify-between border border-primary/10 px-4 font-medium text-md"
         variant="ghost"
       >
         <Link href="/blog">{secondary}</Link>
@@ -1114,27 +1391,30 @@ function FeatureActionButtons({
 
 function PageShell({ page, children }: { page: MarketingPage; children: ReactNode }) {
   return (
-    <div className="flex flex-col pt-40 pb-20">
+    <div className="flex flex-col pt-32 pb-20">
       <div className="mx-auto w-full max-w-5xl px-6">
-        <header className="max-w-4xl">
-          <EyebrowPill {...iconForPage(page)}>
-            {page.eyebrow}
-          </EyebrowPill>
-          <h1 className="mt-3 text-balance font-display text-5xl leading-none font-normal md:text-7xl">
-            {page.title}
-          </h1>
-          <p className="mt-6 max-w-3xl text-lg text-muted-foreground">{page.description}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild>
-              <Link href={page.ctaHref ?? "/book-a-demo"}>
-                {page.ctaLabel ?? "Book a demo"}
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/app">Open dashboard</Link>
-            </Button>
+        <header className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+          <div className="min-w-0 max-w-4xl">
+            <EyebrowPill {...iconForPage(page)}>
+              {page.eyebrow}
+            </EyebrowPill>
+            <h1 className="marketing-hero-title mt-3 w-full min-w-0 text-balance font-display text-5xl leading-[1.03] font-normal md:text-6xl xl:text-[4rem]">
+              {page.title}
+            </h1>
+            <p className="mt-6 max-w-3xl text-lg text-muted-foreground">{page.description}</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild className="marketing-cta-primary">
+                <Link href={page.ctaHref ?? "/book-a-demo"}>
+                  {page.ctaLabel ?? "Book a demo"}
+                  <ArrowRightIcon className="size-4" />
+                </Link>
+              </Button>
+              <Button asChild className="marketing-cta-secondary" variant="outline">
+                <Link href="/app">Open dashboard</Link>
+              </Button>
+            </div>
           </div>
+          <HeroProofPanel page={page} />
         </header>
         <div className="mt-14 space-y-14">{children}</div>
       </div>
@@ -1145,12 +1425,29 @@ function PageShell({ page, children }: { page: MarketingPage; children: ReactNod
 function ProofGrid({ page }: { page: MarketingPage }) {
   return (
     <section className="border-y border-primary/10 py-10">
-      <div className="grid gap-4 md:grid-cols-3">
-        {page.proof.map((item) => (
-          <div className="flex gap-3" key={item}>
-            <MarketingIcon compact icon={CheckCircle2} tone="green" />
-            <p className="text-sm leading-relaxed text-foreground/72">{item}</p>
-          </div>
+      <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
+            Operational proof
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold">Built for owned context.</h2>
+        </div>
+        <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+          {page.eyebrow} routes keep the same standards: portable memory, reviewable actions, and
+          static deployment paths.
+        </p>
+      </div>
+      <div className="mt-6 grid gap-3 md:grid-cols-3">
+        {page.proof.map((item, index) => (
+          <article className="marketing-surface flex gap-3 border p-4" key={item}>
+            <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
+            <div className="min-w-0">
+              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+                0{index + 1}
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-foreground/72">{item}</p>
+            </div>
+          </article>
         ))}
       </div>
     </section>
@@ -1160,8 +1457,18 @@ function ProofGrid({ page }: { page: MarketingPage }) {
 function IntegrationsPanel() {
   return (
     <section>
-      <h2 className="text-2xl font-semibold">Connector surface</h2>
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
+            Connector surface
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold">Sources stay visible and reviewable.</h2>
+        </div>
+        <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+          Oppulence keeps each connected source legible while agents work across the graph.
+        </p>
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
         {integrationGroups.map((item) => {
           const { icon, tone } = iconForLink({ href: item, label: item });
 
@@ -1184,7 +1491,10 @@ function ToolPanel({ page }: { page: MarketingPage }) {
   return (
     <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
       <div>
-        <h2 className="text-2xl font-semibold">Tool workflow</h2>
+        <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
+          Tool workflow
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold">A clear path from check to action.</h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           This is a static marketing representation of the tool route. The production validator or
           quiz logic can be wired behind the same URL when ready.
@@ -1192,13 +1502,16 @@ function ToolPanel({ page }: { page: MarketingPage }) {
       </div>
       <div className="marketing-surface border p-5">
         <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-          <MarketingIcon compact icon={CircleDot} tone="orange" />
+          <MarketingIcon compact icon={CircleIcon} tone="orange" />
           {page.path}
         </div>
         <div className="mt-5 space-y-3">
           {page.bullets.map((bullet) => (
-            <div className="flex gap-3 border border-primary/10 bg-background px-4 py-3 text-sm" key={bullet}>
-              <MarketingIcon compact icon={ShieldCheck} tone="green" />
+            <div
+              className="marketing-chip flex gap-3 border px-4 py-3 text-sm"
+              key={bullet}
+            >
+              <MarketingIcon compact icon={SealCheckIcon} tone="green" />
               <span>{bullet}</span>
             </div>
           ))}
@@ -1236,11 +1549,12 @@ export function PricingPage({ page }: { page: MarketingPage }) {
               <ul className="mt-8 space-y-3">
                 {plan.features.map((feature) => (
                   <li className="flex gap-3 text-sm" key={feature}>
-                    <MarketingIcon compact icon={CheckCircle2} tone="green" />
+                    <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
+              <PlanCtaButton plan={plan} />
             </article>
           );
         })}
@@ -1253,17 +1567,26 @@ export function BlogIndexPage({ page }: { page: MarketingPage }) {
   return (
     <PageShell page={page}>
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {blogPages.slice(0, 18).map((post) => (
+        {blogPages.slice(0, 18).map((post, index) => (
           <Link
-            className="marketing-surface border p-5 transition-colors hover:bg-background-200"
+            className="marketing-surface flex min-h-56 flex-col border p-5 transition-colors hover:bg-background-200"
             href={`/${post.path}`}
             key={post.path}
           >
-            <MarketingIcon icon={FileText} tone="orange" />
+            <div className="flex items-start justify-between gap-3">
+              <MarketingIcon icon={FileTextIcon} tone="orange" />
+              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+                Guide {String(index + 1).padStart(2, "0")}
+              </span>
+            </div>
             <h2 className="mt-4 line-clamp-2 font-semibold">{post.title}</h2>
             <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
               {post.description}
             </p>
+            <div className="mt-auto flex items-center justify-between border-primary/10 border-t pt-4 font-mono text-[10px] text-foreground/60 uppercase tracking-wider">
+              <span>Read guide</span>
+              <ArrowRightIcon className="size-3.5" />
+            </div>
           </Link>
         ))}
       </section>
@@ -1302,15 +1625,24 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
       <section className="grid gap-4 md:grid-cols-2">
         {customerPages.map((story) => (
           <Link
-            className="marketing-surface border p-6 transition-colors hover:bg-background-200"
+            className="marketing-surface flex min-h-48 flex-col border p-6 transition-colors hover:bg-background-200"
             href={`/${story.path}`}
             key={story.path}
           >
-            <MarketingIcon icon={Github} tone="blue" />
+            <div className="flex items-start justify-between gap-3">
+              <MarketingIcon icon={GithubLogoIcon} tone="blue" />
+              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+                Story
+              </span>
+            </div>
             <h2 className="mt-4 text-xl font-semibold">{story.title}</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               {story.description}
             </p>
+            <div className="mt-auto flex items-center justify-between border-primary/10 border-t pt-4 font-mono text-[10px] text-foreground/60 uppercase tracking-wider">
+              <span>Open story</span>
+              <ArrowRightIcon className="size-3.5" />
+            </div>
           </Link>
         ))}
       </section>
@@ -1324,10 +1656,15 @@ export function CustomerStoryPage({ page }: { page: MarketingPage }) {
       <section className="grid gap-6 md:grid-cols-3">
         {["Before Oppulence", "With Oppulence", "Operational result"].map((title, index) => (
           <article className="marketing-surface border p-5" key={title}>
-            <MarketingIcon
-              icon={customerStoryIcons[index]?.icon ?? BriefcaseBusiness}
-              tone={customerStoryIcons[index]?.tone ?? "neutral"}
-            />
+            <div className="flex items-start justify-between gap-3">
+              <MarketingIcon
+                icon={customerStoryIcons[index]?.icon ?? BriefcaseIcon}
+                tone={customerStoryIcons[index]?.tone ?? "neutral"}
+              />
+              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+                0{index + 1}
+              </span>
+            </div>
             <p className="mt-5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
               {title}
             </p>
@@ -1351,24 +1688,27 @@ export function DemoPage({ page }: { page: MarketingPage }) {
           <ul className="mt-6 space-y-4">
             {page.bullets.map((bullet) => (
               <li className="flex gap-3 text-sm leading-relaxed" key={bullet}>
-                <MarketingIcon compact icon={Play} tone="orange" />
+                <MarketingIcon compact icon={PlayIcon} tone="orange" />
                 <span>{bullet}</span>
               </li>
             ))}
           </ul>
         </div>
-        <div className="border border-primary/10 bg-background p-6">
+        <div className="marketing-surface-strong border p-6">
           <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
             Request form placeholder
           </p>
           <div className="mt-5 grid gap-3">
             {["Work email", "Company", "Primary workflow"].map((field) => (
-              <div className="marketing-surface border px-4 py-3 text-sm text-muted-foreground" key={field}>
+              <div
+                className="marketing-chip border px-4 py-3 text-sm text-muted-foreground"
+                key={field}
+              >
                 {field}
               </div>
             ))}
           </div>
-          <Button asChild className="mt-5">
+          <Button asChild className="marketing-cta-primary mt-5">
             <Link href="/book-a-demo/success">Submit request</Link>
           </Button>
         </div>

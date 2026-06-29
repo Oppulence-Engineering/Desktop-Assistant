@@ -115,7 +115,7 @@ function tryBindPort(
  *
  * Defaults to fixed-port behaviour: only `port` is tried, and a clear error is
  * thrown if it cannot be bound. This is the right behaviour for any provider
- * whose redirect URI is pre-registered (Google BYOK, Composio, etc.) — those
+ * whose redirect URI is pre-registered (Google BYOK, managed connectors, etc.) — those
  * callers must keep using the exact port they've handed to the provider.
  *
  * Opt into `{ fallback: true }` only when the caller is prepared to use the

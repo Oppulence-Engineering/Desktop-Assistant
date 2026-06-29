@@ -15,11 +15,11 @@ Defects found by tracing every user story in `FEATURE_AUDIT.csv` through rendere
 - **Evidence:** apps/x/apps/renderer/src/components/editor-toolbar.tsx:48,66-73,415-420; apps/x/apps/renderer/src/components/markdown-editor.tsx:1807
 - **Proposed fix:** Add onOpenRelated to the destructured props in EditorToolbar.
 
-### E40 — Composio: Migration qualification · Logistical · _Verified_
+### E40 — legacy integration vendor: Migration qualification · Logistical · _Verified_
 
 - **Feature rows:** F412
-- **Issue:** The "already migrated" early-out checks the legacy literal mode==='rowboat', but native managed Google connects stamp mode='solomon'; a signed-in native-Google user who still has a Composio Gmail/Calendar account falls through and has it silently deleted plus a spurious reconnect modal.
-- **Evidence:** apps/x/packages/core/src/migrations/composio-google-migration.ts:110; apps/x/apps/main/src/oauth-handler.ts:579
+- **Issue:** The "already migrated" early-out checks the legacy literal mode==='rowboat', but native managed Google connects stamp mode='solomon'; a signed-in native-Google user who still has a legacy integration vendor Gmail/Calendar account falls through and has it silently deleted plus a spurious reconnect modal.
+- **Evidence:** apps/x/packages/core/src/migrations/legacy-integration-vendor-google-migration.ts:110; apps/x/apps/main/src/oauth-handler.ts:579
 - **Proposed fix:** Replace the literal check with isManagedAuthMode(googleConnection.mode) so both solomon and legacy rowboat early-out.
 
 ### E55 — Voice Commands: Voice command mode flow · Logistical · _Deferred_
@@ -390,19 +390,19 @@ Defects found by tracing every user story in `FEATURE_AUDIT.csv` through rendere
 - **Evidence:** apps/x/apps/renderer/src/components/settings/mcp-settings.tsx:80-88; apps/x/packages/shared/src/mcp.ts:3-14
 - **Proposed fix:** Validate non-empty command (stdio)/url (http) before save with an inline error.
 
-### E47 — Connectors: Legacy Composio Gmail/Calendar · Logistical · _Deferred_
+### E47 — Connectors: Legacy legacy integration vendor Gmail/Calendar · Logistical · _Deferred_
 
 - **Feature rows:** F388
-- **Issue:** useComposioForGoogle/useComposioForGoogleCalendar are hardcoded false with no IPC to flip them, so the Gmail/Calendar rows, the ComposioApiKeyModal, and handleConnect/Disconnect Gmail/Calendar are permanently dead branches.
+- **Issue:** uselegacy integration vendorForGoogle/uselegacy integration vendorForGoogleCalendar are hardcoded false with no IPC to flip them, so the Gmail/Calendar rows, the legacy integration vendorApiKeyModal, and handleConnect/Disconnect Gmail/Calendar are permanently dead branches.
 - **Evidence:** apps/x/apps/renderer/src/hooks/useConnectors.ts:42-57; apps/x/apps/renderer/src/components/connectors-popover.tsx:236-334
-- **Proposed fix:** Prune the dead flags and Composio Gmail/Calendar UI branches (or re-enable per TODO).
+- **Proposed fix:** Prune the dead flags and legacy integration vendor Gmail/Calendar UI branches (or re-enable per TODO).
 
-### E48 — Composio: Composio API key entry modal · Logistical · _Deferred_
+### E48 — legacy integration vendor: legacy integration vendor API key entry modal · Logistical · _Deferred_
 
 - **Feature rows:** F400
-- **Issue:** Latent bug (masked by the dead path): handleComposioApiKeySubmit always calls startGmailConnect regardless of composioApiKeyTarget, and handleConnectGoogleCalendar sets target to gmail.
+- **Issue:** Latent bug (masked by the dead path): handlelegacy integration vendorApiKeySubmit always calls startGmailConnect regardless of legacy-integration-vendorApiKeyTarget, and handleConnectGoogleCalendar sets target to gmail.
 - **Evidence:** apps/x/apps/renderer/src/hooks/useConnectors.ts:264-272,293-303
-- **Proposed fix:** Branch on composioApiKeyTarget after saving the key and set the correct target.
+- **Proposed fix:** Branch on legacy-integration-vendorApiKeyTarget after saving the key and set the correct target.
 
 ### E49 — OAuth: Google managed-credentials connect · UX · _Verified_
 

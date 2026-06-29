@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -23,7 +22,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composio"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/config"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
@@ -43,6 +41,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/server"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slack"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slacktoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/transcription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/voice"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
@@ -262,10 +261,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		slackRedirect = strings.TrimRight(cfg.AppURL, "/") + "/oauth/slack/callback"
 	}
 	slackH.SetOAuthFlow(cfg.SlackAuthorizeURL, cfg.SlackTokenURL, slackRedirect, cfg.DesktopDeepLinkScheme, cfg.SlackOAuthScopes)
-	composioH := composio.New(client, sec, log)
-	composioPolicy := vendorPolicy
-	composioPolicy.MaxResponseBytes = cfg.ComposioResponseMaxBytes
-	composioH.SetOutboundPolicy(composioPolicy)
+	slackH.SetRuntimeClients(
+		slacktoken.New(client, sealer, sec, cfg.SlackTokenURL, vendorPolicy),
+		slackclient.New(vendorPolicy),
+	)
 
 	// Cloud event ingestion (RFC 003). The route controller is wired only when
 	// routing is enabled (it needs Temporal); without it events are stored with
@@ -543,11 +542,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Post("/refresh", googleH.Refresh)
 		})
 
-		r.With(rl.PerUserWindow(ratelimit.GroupConnections, 30, time.Minute)).
-			Post("/v1/slack-oauth/claim", slackH.Claim)
-
-		r.With(rl.PerUser(ratelimit.GroupComposio, 120)).
-			Handle("/v1/composio/*", http.HandlerFunc(composioH.Proxy))
+		r.Route("/v1/slack-oauth", func(r chi.Router) {
+			r.Use(rl.PerUserWindow(ratelimit.GroupConnections, 30, time.Minute))
+			r.Post("/claim", slackH.Claim)
+			r.Get("/workspaces", slackH.ListWorkspaces)
+			r.Delete("/workspaces/{teamId}", slackH.DeleteWorkspace)
+			r.Post("/thread/read", slackH.ReadThread)
+			r.Post("/thread/post", slackH.PostThread)
+		})
 
 		// Cloud event ingestion + audit reads (RFC 003).
 		r.Route("/v1/events", func(r chi.Router) {
@@ -564,6 +566,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Use(rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second))
 			r.Post("/{name}/start", connectorsH.Start)
 			r.Post("/{name}/claim", connectorsH.Claim)
+			r.Post("/{name}/api-key", connectorsH.SetAPIKey)
 			r.Post("/{name}/mcp-token", connectorsH.MCPToken)
 			r.Delete("/{name}", connectorsH.Delete)
 		})

@@ -75,16 +75,17 @@ type connectPending struct {
 }
 
 type connectorView struct {
-	Name        string          `json:"name"`
-	DisplayName string          `json:"displayName"`
-	Description string          `json:"description"`
-	MCPURL      string          `json:"mcpUrl"`
-	AuthType    string          `json:"authType"`
-	Scopes      []string        `json:"scopes,omitempty"`
-	IconURL     string          `json:"iconUrl,omitempty"`
-	MCPTools    []MCPToolPolicy `json:"mcpTools,omitempty"`
-	Connected   bool            `json:"connected"`
-	ConnectedAt string          `json:"connectedAt,omitempty"`
+	Name           string                     `json:"name"`
+	DisplayName    string                     `json:"displayName"`
+	Description    string                     `json:"description"`
+	MCPURL         string                     `json:"mcpUrl"`
+	AuthType       string                     `json:"authType"`
+	Scopes         []string                   `json:"scopes,omitempty"`
+	IconURL        string                     `json:"iconUrl,omitempty"`
+	MCPTools       []MCPToolPolicy            `json:"mcpTools,omitempty"`
+	TemplateBlocks []IntegrationTemplateBlock `json:"templateBlocks,omitempty"`
+	Connected      bool                       `json:"connected"`
+	ConnectedAt    string                     `json:"connectedAt,omitempty"`
 }
 
 // List handles GET /v1/connectors.
@@ -108,7 +109,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for _, c := range h.registry.List() {
 		v := connectorView{
 			Name: c.Name, DisplayName: c.DisplayName, Description: c.Description,
-			MCPURL: c.MCPURL, AuthType: c.AuthType, Scopes: c.Scopes, IconURL: c.IconURL, MCPTools: c.MCPTools,
+			MCPURL: c.MCPURL, AuthType: c.AuthType, Scopes: c.Scopes, IconURL: c.IconURL, MCPTools: c.MCPTools, TemplateBlocks: c.TemplateBlocks,
 		}
 		if mc, ok := connected[c.Name]; ok {
 			v.Connected = true
@@ -318,6 +319,42 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"connected": true})
 }
 
+// SetAPIKey handles POST /v1/connections/{name}/api-key for connectors that
+// use a vendor-issued API key instead of the OAuth broker.
+func (h *Handler) SetAPIKey(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+		return
+	}
+	name := chi.URLParam(r, "name")
+	c, ok := h.registry.Get(name)
+	if !ok {
+		httpx.Error(w, http.StatusNotFound, "unknown connector", "not_found")
+		return
+	}
+	if c.AuthType != "api_key" {
+		httpx.Error(w, http.StatusBadRequest, "connector does not use api key auth", "unsupported_auth_type")
+		return
+	}
+	var req struct {
+		APIKey string `json:"apiKey"`
+	}
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
+		return
+	}
+	if strings.TrimSpace(req.APIKey) == "" {
+		httpx.Error(w, http.StatusBadRequest, "missing apiKey", "bad_request")
+		return
+	}
+	if err := h.upsertAPIKeyConnection(auth.WithUser(r.Context(), u), u, c, strings.TrimSpace(req.APIKey)); err != nil {
+		h.log.Error("persist api key connector", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"connected": true})
+}
+
 // deleteTicket consumes a single-use pending ticket on a detached, time-bounded
 // context (so a stalled DB can't block the response or hang on a stripped
 // deadline).
@@ -354,6 +391,35 @@ func (h *Handler) upsertConnection(ctx context.Context, u *ent.User, c Connector
 			SetAudience(c.Audience).
 			SetScopes(scopes).
 			SetRefreshTokenEncrypted(sealed).
+			SetConnectedAt(time.Now()).
+			Exec(ctx)
+	default:
+		return err
+	}
+}
+
+func (h *Handler) upsertAPIKeyConnection(ctx context.Context, u *ent.User, c Connector, apiKey string) error {
+	sealed, err := h.sealer.SealString(apiKey)
+	if err != nil {
+		return err
+	}
+	existing, err := h.client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(c.Name)).Only(ctx)
+	switch {
+	case err == nil:
+		return existing.Update().
+			SetAPIKeyEncrypted(sealed).
+			ClearRefreshTokenEncrypted().
+			SetScopes(c.Scopes).
+			SetAudience(c.Audience).
+			SetConnectedAt(time.Now()).
+			Exec(ctx)
+	case ent.IsNotFound(err):
+		return h.client.MCPConnection.Create().
+			SetUser(u).
+			SetConnector(c.Name).
+			SetAudience(c.Audience).
+			SetScopes(c.Scopes).
+			SetAPIKeyEncrypted(sealed).
 			SetConnectedAt(time.Now()).
 			Exec(ctx)
 	default:

@@ -85,7 +85,7 @@ import { getDefaultTools } from "@/app/lib/default_tools";
 import { DataSourceIcon } from "../../../lib/components/datasource-icon";
 import { deleteDataSource } from "../../../actions/data-source.actions";
 import { ToolkitAuthModal } from "../tools/components/ToolkitAuthModal";
-import { deleteConnectedAccount } from "@/app/actions/composio.actions";
+import { deleteConnectedAccount } from "@/app/actions/integration.actions";
 import { ProjectWideChangeConfirmationModal } from "@/components/common/project-wide-change-confirmation-modal";
 import {
   SHOW_PROMPTS_SECTION,
@@ -394,7 +394,7 @@ const ServerCard = ({
   );
 };
 
-type ComposioToolkit = {
+type IntegrationToolkit = {
   slug: string;
   name: string;
   logo: string;
@@ -686,19 +686,19 @@ export const EntityList = forwardRef<
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState<number>(0);
 
-  // collect composio tools
-  const composioTools: Record<string, ComposioToolkit> = {};
+  // collect integration tools
+  const integrationTools: Record<string, IntegrationToolkit> = {};
   for (const tool of tools) {
-    if (tool.isComposio) {
-      if (!composioTools[tool.composioData?.toolkitSlug || ""]) {
-        composioTools[tool.composioData?.toolkitSlug || ""] = {
-          name: tool.composioData?.toolkitName || "",
-          slug: tool.composioData?.toolkitSlug || "",
-          logo: tool.composioData?.logo || "",
+    if (tool.isIntegration) {
+      if (!integrationTools[tool.integrationData?.toolkitSlug || ""]) {
+        integrationTools[tool.integrationData?.toolkitSlug || ""] = {
+          name: tool.integrationData?.toolkitName || "",
+          slug: tool.integrationData?.toolkitSlug || "",
+          logo: tool.integrationData?.logo || "",
           tools: [],
         };
       }
-      composioTools[tool.composioData?.toolkitSlug || ""].tools.push(tool);
+      integrationTools[tool.integrationData?.toolkitSlug || ""].tools.push(tool);
     }
   }
 
@@ -1130,9 +1130,9 @@ export const EntityList = forwardRef<
                         <div className="space-y-1">
                           {/* Group tools by server */}
                           {(() => {
-                            // Get custom tools (non-MCP, non-Composio)
+                            // Get custom tools (non-MCP, non-Integration)
                             const customTools = toolsForDisplay.filter(
-                              (tool) => !tool.isMcp && !tool.isComposio,
+                              (tool) => !tool.isMcp && !tool.isIntegration,
                             );
 
                             // Group MCP tools by server
@@ -1151,9 +1151,9 @@ export const EntityList = forwardRef<
 
                             return (
                               <>
-                                {/* Show composio cards - ordered by status */}
-                                {Object.values(composioTools).map((card) => (
-                                  <ComposioCard
+                                {/* Show integration cards - ordered by status */}
+                                {Object.values(integrationTools).map((card) => (
+                                  <IntegrationCard
                                     key={card.slug}
                                     card={card}
                                     selectedEntity={selectedEntity}
@@ -1705,8 +1705,8 @@ function EntityDropdown({
   );
 }
 
-interface ComposioCardProps {
-  card: ComposioToolkit;
+interface IntegrationCardProps {
+  card: IntegrationToolkit;
   selectedEntity: {
     type: "agent" | "tool" | "prompt" | "datasource" | "pipeline" | "visualise";
     name: string;
@@ -1720,7 +1720,7 @@ interface ComposioCardProps {
   onProjectToolsUpdated?: () => void;
 }
 
-const ComposioCard = ({
+const IntegrationCard = ({
   card,
   selectedEntity,
   onSelectTool,
@@ -1732,7 +1732,7 @@ const ComposioCard = ({
   onProjectToolsUpdated,
   setSelectedToolkitSlug,
   setShowToolsModal,
-}: ComposioCardProps & {
+}: IntegrationCardProps & {
   setSelectedToolkitSlug: (slug: string) => void;
   setShowToolsModal: (open: boolean) => void;
 }) => {
@@ -1745,12 +1745,12 @@ const ComposioCard = ({
 
   // Check if the toolkit requires authentication
   const hasToolkitWithAuth = card.tools.some(
-    (tool) => tool.composioData && !tool.composioData.noAuth,
+    (tool) => tool.integrationData && !tool.integrationData.noAuth,
   );
   // Check if toolkit is connected
   const isToolkitConnected =
     !hasToolkitWithAuth ||
-    projectConfig?.composioConnectedAccounts?.[card.slug]?.status === "ACTIVE";
+    projectConfig?.integrationConnectedAccounts?.[card.slug]?.status === "ACTIVE";
 
   // Remove all tools from this toolkit
   const handleRemoveToolkit = async () => {
@@ -1758,7 +1758,7 @@ const ComposioCard = ({
     // Disconnect if needed
     if (hasToolkitWithAuth && isToolkitConnected) {
       const connectedAccountId =
-        projectConfig?.composioConnectedAccounts?.[card.slug]?.id;
+        projectConfig?.integrationConnectedAccounts?.[card.slug]?.id;
       try {
         if (connectedAccountId) {
           await deleteConnectedAccount(projectId, card.slug);
@@ -1780,7 +1780,7 @@ const ComposioCard = ({
   const handleDisconnect = () => setShowDisconnectModal(true);
   const handleConfirmDisconnect = async () => {
     const connectedAccountId =
-      projectConfig?.composioConnectedAccounts?.[card.slug]?.id;
+      projectConfig?.integrationConnectedAccounts?.[card.slug]?.id;
     setIsProcessingAuth(true);
     try {
       if (connectedAccountId) {
@@ -1942,7 +1942,7 @@ const ComposioCard = ({
           <div className="ml-7 mt-0.5 space-y-0.5 border-l border-gray-200 dark:border-gray-700 pl-3">
             {card.tools.map((tool, index) => (
               <div
-                key={`composio-tool-${index}`}
+                key={`integration-tool-${index}`}
                 className={clsx(
                   "group/tool flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded",
                   selectedEntity?.type === "tool" &&

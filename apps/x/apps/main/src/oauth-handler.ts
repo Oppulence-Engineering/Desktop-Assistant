@@ -20,6 +20,7 @@ import {
 } from "@x/core/dist/analytics/posthog.js";
 import { isSignedIn } from "@x/core/dist/account/account.js";
 import { getWebappUrl } from "@x/core/dist/config/remote-config.js";
+import { invalidateCopilotInstructionsCache } from "@x/core/dist/application/assistant/instructions.js";
 import { claimTokensViaBackend } from "@x/core/dist/auth/google-backend-oauth.js";
 import {
   startConnectorViaBackend,
@@ -705,6 +706,7 @@ export async function completeConnectorConnect(connector: string, state: string)
   try {
     console.log(`[Connectors] claiming ${connector} grant...`);
     await claimConnectorViaBackend(connector, state);
+    invalidateCopilotInstructionsCache();
     emitOAuthEvent({ provider: connector, success: true });
     console.log(`[Connectors] ${connector} connect complete`);
   } catch (error) {
@@ -750,6 +752,7 @@ export async function completeSolomonSlackConnect(state: string): Promise<void> 
   try {
     console.log("[Slack] claiming workspace connection...");
     const workspace = await claimSlackWorkspaceViaBackend(state);
+    invalidateCopilotInstructionsCache();
     emitOAuthEvent({ provider: "slack", success: true });
     console.log(`[Slack] workspace connected: ${workspace.teamName ?? workspace.teamId}`);
   } catch (error) {

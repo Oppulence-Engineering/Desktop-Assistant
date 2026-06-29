@@ -44,6 +44,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "rowboat-www.fullname" . }}-config
+            {{- if .Values.secrets }}
+            - secretRef:
+                name: {{ include "rowboat-www.fullname" . }}-secrets
+            {{- end }}
           env:
             - name: ROWBOAT_WWW_PORT
               value: {{ .Values.ports.http | quote }}

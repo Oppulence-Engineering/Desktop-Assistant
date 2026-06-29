@@ -127,7 +127,6 @@ type Config struct {
 	GoogleAPIKey            string
 	ElevenLabsAPIKey        string
 	ExaAPIKey               string
-	ComposioAPIKey          string
 	GoogleOAuthClientID     string
 	GoogleOAuthClientSecret string
 	// PlainAPIKey is optional: when unset, POST /v1/feedback returns
@@ -146,7 +145,6 @@ type Config struct {
 	VendorMaxConcurrent         int
 	LLMMaxConcurrent            int
 	UpstreamResponseMaxBytes    int64
-	ComposioResponseMaxBytes    int64
 
 	// GoogleTokenURL overrides Google's OAuth token endpoint. Empty → the
 	// real endpoint (oauth2.googleapis.com/token). Set in dev to a local mock.
@@ -493,7 +491,6 @@ func Load() Config {
 		GoogleAPIKey:                getenv("GOOGLE_API_KEY", ""),
 		ElevenLabsAPIKey:            getenv("ELEVENLABS_API_KEY", ""),
 		ExaAPIKey:                   getenv("EXA_API_KEY", ""),
-		ComposioAPIKey:              getenv("COMPOSIO_API_KEY", ""),
 		GoogleOAuthClientID:         getenv("GOOGLE_OAUTH_CLIENT_ID", ""),
 		GoogleOAuthClientSecret:     getenv("GOOGLE_OAUTH_CLIENT_SECRET", ""),
 		PlainAPIKey:                 getenv("PLAIN_API_KEY", ""),
@@ -505,7 +502,6 @@ func Load() Config {
 		VendorMaxConcurrent:         getint("VENDOR_MAX_CONCURRENT", 64),
 		LLMMaxConcurrent:            getint("LLM_MAX_CONCURRENT", 32),
 		UpstreamResponseMaxBytes:    getint64("UPSTREAM_RESPONSE_MAX_BYTES", 64<<20),
-		ComposioResponseMaxBytes:    getint64("COMPOSIO_RESPONSE_MAX_BYTES", 64<<20),
 		GoogleTokenURL:              getenv("GOOGLE_TOKEN_URL", ""),
 		GoogleAuthorizeURL:          getenv("GOOGLE_AUTHORIZE_URL", ""),
 		GoogleRedirectURI:           getenv("GOOGLE_REDIRECT_URI", ""),
@@ -716,7 +712,7 @@ func (c Config) Validate() error {
 	if c.VendorMaxConcurrent <= 0 || c.LLMMaxConcurrent <= 0 {
 		return fmt.Errorf("vendor concurrency limits must be > 0")
 	}
-	if c.UpstreamResponseMaxBytes <= 0 || c.ComposioResponseMaxBytes <= 0 {
+	if c.UpstreamResponseMaxBytes <= 0 {
 		return fmt.Errorf("upstream response byte limits must be > 0")
 	}
 	if c.GraphQLMaxComplexity <= 0 || c.GraphQLMaxDepth <= 0 {
@@ -981,7 +977,6 @@ func (c Config) validateProduction() error {
 	for key, value := range map[string]string{
 		"ELEVENLABS_API_KEY":         c.ElevenLabsAPIKey,
 		"EXA_API_KEY":                c.ExaAPIKey,
-		"COMPOSIO_API_KEY":           c.ComposioAPIKey,
 		"GOOGLE_OAUTH_CLIENT_ID":     c.GoogleOAuthClientID,
 		"GOOGLE_OAUTH_CLIENT_SECRET": c.GoogleOAuthClientSecret,
 	} {

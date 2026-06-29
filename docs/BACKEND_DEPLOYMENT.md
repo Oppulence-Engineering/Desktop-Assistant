@@ -39,7 +39,7 @@ identifiers into the cluster Secrets below.
    consent app's `/callback` instead.)
 4. **Infisical** — workspace/project holding the vendor key pool
    (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `GOOGLE_API_KEY`,
-   `ELEVENLABS_API_KEY`, `EXA_API_KEY`, `COMPOSIO_API_KEY`,
+   `ELEVENLABS_API_KEY`, `EXA_API_KEY`,
    `GOOGLE_OAUTH_CLIENT_ID/SECRET`). Record a machine token + project id.
 5. **DNS** — `api.x.solomon-ai.co` (rowboat-api). The issuer `auth.solomon-ai.co`
    is WorkOS's custom domain (they serve it). cert-manager issues TLS for the api.

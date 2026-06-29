@@ -11,7 +11,7 @@ import { IFetchProjectController } from "@/src/interface-adapters/controllers/pr
 import { IListDataSourcesController } from "@/src/interface-adapters/controllers/data-sources/list-data-sources.controller";
 import { IListScheduledJobRulesController } from "@/src/interface-adapters/controllers/scheduled-job-rules/list-scheduled-job-rules.controller";
 import { IListRecurringJobRulesController } from "@/src/interface-adapters/controllers/recurring-job-rules/list-recurring-job-rules.controller";
-import { IListComposioTriggerDeploymentsController } from "@/src/interface-adapters/controllers/composio-trigger-deployments/list-composio-trigger-deployments.controller";
+import { IListIntegrationTriggerDeploymentsController } from "@/src/interface-adapters/controllers/integration-trigger-deployments/list-integration-trigger-deployments.controller";
 import { z } from "zod";
 import { transformTriggersForCopilot, DEFAULT_TRIGGER_FETCH_LIMIT } from "./trigger-transform";
 
@@ -19,7 +19,7 @@ const fetchProjectController = container.resolve<IFetchProjectController>('fetch
 const listDataSourcesController = container.resolve<IListDataSourcesController>('listDataSourcesController');
 const listScheduledJobRulesController = container.resolve<IListScheduledJobRulesController>('listScheduledJobRulesController');
 const listRecurringJobRulesController = container.resolve<IListRecurringJobRulesController>('listRecurringJobRulesController');
-const listComposioTriggerDeploymentsController = container.resolve<IListComposioTriggerDeploymentsController>('listComposioTriggerDeploymentsController');
+const listIntegrationTriggerDeploymentsController = container.resolve<IListIntegrationTriggerDeploymentsController>('listIntegrationTriggerDeploymentsController');
 
 const DEFAULT_MODEL = process.env.PROVIDER_DEFAULT_MODEL || "gpt-4.1";
 
@@ -46,7 +46,7 @@ export default async function Page(
         notFound();
     }
 
-    const [sources, scheduledTriggers, recurringTriggers, composioTriggers] = await Promise.all([
+    const [sources, scheduledTriggers, recurringTriggers, integrationTriggers] = await Promise.all([
         listDataSourcesController.execute({
             caller: "user",
             userId: user.id,
@@ -64,7 +64,7 @@ export default async function Page(
             projectId: params.projectId,
             limit: DEFAULT_TRIGGER_FETCH_LIMIT,
         }),
-        listComposioTriggerDeploymentsController.execute({
+        listIntegrationTriggerDeploymentsController.execute({
             caller: "user",
             userId: user.id,
             projectId: params.projectId,
@@ -80,7 +80,7 @@ export default async function Page(
     const triggers = transformTriggersForCopilot({
         scheduled: scheduledTriggers.items ?? [],
         recurring: recurringTriggers.items ?? [],
-        composio: composioTriggers.items ?? [],
+        integration: integrationTriggers.items ?? [],
     });
 
     console.log('/workflow page.tsx serve');

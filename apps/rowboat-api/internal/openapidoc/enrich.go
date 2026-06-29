@@ -40,7 +40,7 @@ func Enrich(spec obj) {
 		"version": "0.1.0",
 		"description": "Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, " +
 			"OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, " +
-			"Composio proxying, internal webhooks, and admin GraphQL. The ent-generated entity models " +
+			"internal webhooks, and admin GraphQL. The ent-generated entity models " +
 			"remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.",
 	}
 	spec["externalDocs"] = obj{
@@ -61,7 +61,6 @@ func Enrich(spec obj) {
 		obj{"name": "Search", "description": "Credit-gated Exa search proxy."},
 		obj{"name": "Google OAuth", "description": "Browser and desktop handoff endpoints for Google OAuth tokens."},
 		obj{"name": "Connectors", "description": "Connector registry, OAuth start/callback, MCP token minting, and disconnect flows."},
-		obj{"name": "Composio", "description": "Authenticated reverse proxy to the Composio v3 API."},
 		obj{"name": "Webhooks", "description": "Shared-secret webhooks from OAuth infrastructure."},
 		obj{"name": "Internal", "description": "Server-to-server APIs guarded by X-Internal-Secret."},
 		obj{"name": "GraphQL", "description": "Internal admin GraphQL over the ent graph."},
@@ -74,7 +73,6 @@ func Enrich(spec obj) {
 	addCommonResponses(responses)
 	addRuntimeSchemas(schemas)
 	enrichEntitySchemas(schemas)
-	hideInternalEntitySchemas(schemas)
 
 	paths := obj{}
 	addRuntimePaths(paths)
@@ -106,35 +104,6 @@ func addSecuritySchemes(schemes obj) {
 		"name":        "X-Internal-Secret",
 		"description": "Static shared secret for server-to-server internal APIs.",
 	}
-}
-
-func hideInternalEntitySchemas(schemas obj) {
-	delete(schemas, "ComposioAccount")
-	userSchema, ok := schemas["User"].(obj)
-	if !ok {
-		return
-	}
-	props, ok := userSchema["properties"].(obj)
-	if !ok {
-		return
-	}
-	delete(props, "composio_accounts")
-	removeRequiredField(userSchema, "composio_accounts")
-}
-
-func removeRequiredField(schema obj, field string) {
-	required, ok := schema["required"].([]any)
-	if !ok {
-		return
-	}
-	next := required[:0]
-	for _, item := range required {
-		if name, ok := item.(string); ok && name == field {
-			continue
-		}
-		next = append(next, item)
-	}
-	schema["required"] = next
 }
 
 func addRuntimeSchemas(schemas obj) {
@@ -544,7 +513,6 @@ func addVendorProxySchemas(schemas obj) {
 	}, "query")
 	schemas["ExaSearchRequest"].(obj)["additionalProperties"] = true
 	schemas["ExaSearchResponse"] = freeFormSchema("Exa /search JSON response, proxied unchanged.")
-	schemas["ComposioProxyResponse"] = freeFormSchema("Composio v3 response body. Connected-account list responses are filtered to the caller's mapped accounts.")
 }
 
 func addOAuthSchemas(schemas obj) {
@@ -572,10 +540,24 @@ func addConnectorSchemas(schemas obj) {
 		"authType":    stringEnum("Connector credential flow.", "oauth", "oauth", "api_key"),
 		"scopes":      arraySchema("OAuth scopes requested for this connector.", stringSchema("Scope.", "invoices:read")),
 		"mcpTools":    arraySchema("Allowlisted upstream MCP tools and trust tiers for cloud runtime calls.", ref("MCPToolPolicy")),
+		"templateBlocks": arraySchema(
+			"Onboarding capability blocks shown when a user browses or connects this integration.",
+			ref("IntegrationTemplateBlock"),
+		),
 		"iconUrl":     stringSchema("Optional icon URL for UI display.", "https://example.com/icon.png", nullable()),
 		"connected":   boolSchema("Whether the authenticated user has an active connection.", true),
 		"connectedAt": stringSchema("RFC3339 connection timestamp when connected.", "2026-06-04T20:38:00Z", nullable()),
 	}, "name", "displayName", "description", "mcpUrl", "authType", "connected")
+	schemas["IntegrationTemplateBlock"] = objectSchema("User-facing integration onboarding capability block. Blocks describe what an integration unlocks; they are not executable workflow nodes.", obj{
+		"id":             stringSchema("Stable block id within the connector.", "invoice-context"),
+		"title":          stringSchema("Short block title.", "Invoice context"),
+		"description":    stringSchema("Human-readable capability description.", "Look up invoices, customers, balances, and current payment status."),
+		"category":       stringSchema("UI grouping category.", "finance"),
+		"requiredScopes": arraySchema("OAuth scopes required by this capability.", stringSchema("Scope.", "invoices:read")),
+		"mcpTools":       arraySchema("Connector MCP tools backing this capability.", stringSchema("MCP tool name.", "invoice.lookup")),
+		"trustTier":      stringEnum("Highest trust tier needed by this capability.", "read", "read", "write", "act", "money-moving"),
+		"samplePrompt":   stringSchema("Optional prompt example for the onboarding UI.", "Show me the current invoice status for Acme.", nullable()),
+	}, "id", "title", "description", "category", "trustTier")
 	schemas["MCPToolPolicy"] = objectSchema("Allowlisted upstream MCP tool metadata.", obj{
 		"name":      stringSchema("Upstream MCP tool name.", "customer.lookup"),
 		"trustTier": stringEnum("Runtime trust tier for this tool.", "read", "read", "write", "act", "money-moving"),
@@ -586,6 +568,15 @@ func addConnectorSchemas(schemas obj) {
 	schemas["ConnectionStartResponse"] = objectSchema("OAuth authorize URL for a connector.", obj{
 		"authorize_url": stringSchema("Browser URL the desktop opens to start the connector OAuth flow.", "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api&state=..."),
 	}, "authorize_url")
+	schemas["ConnectionClaimRequest"] = objectSchema("Redeems a one-time connector OAuth ticket parked by /v1/connections/{name}/callback.", obj{
+		"state": stringSchema("Opaque state/session ticket returned to the desktop deep link.", "state_abc123"),
+	}, "state")
+	schemas["ConnectionAPIKeyRequest"] = objectSchema("Stores a vendor-issued API key for an api_key connector.", obj{
+		"apiKey": stringSchema("Vendor API key. Stored sealed at rest and never returned by connector list endpoints.", "sk_vendor_abc123"),
+	}, "apiKey")
+	schemas["ConnectionConnectedResponse"] = objectSchema("Connector connection result.", obj{
+		"connected": boolSchema("Whether the connector is now connected.", true),
+	}, "connected")
 	schemas["MCPTokenResponse"] = objectSchema("Short-lived credential and target URL for calling a connector MCP endpoint.", obj{
 		"access_token": stringSchema("Bearer token or API key for the connector's MCP endpoint.", "mcp_access_token"),
 		"token_type":   stringSchema("Token type, usually Bearer.", "Bearer"),
@@ -605,6 +596,45 @@ func addSlackOAuthSchemas(schemas obj) {
 		"scope":     stringSchema("Granted bot scopes, comma-separated.", "channels:history,channels:read", nullable()),
 		"botUserId": stringSchema("Bot user id in the workspace.", "U0BOT", nullable()),
 	}, "connected", "teamId")
+	schemas["SlackWorkspace"] = objectSchema("Connected Slack workspace metadata. Credentials are server-held and never returned.", obj{
+		"teamId":      stringSchema("Slack workspace (team) id — the key Events API deliveries resolve against.", "T0EXAMPLE"),
+		"teamName":    stringSchema("Workspace display name when available.", "Acme", nullable()),
+		"scopes":      arraySchema("Granted bot scopes.", stringSchema("Slack OAuth scope.", "channels:history")),
+		"connectedAt": stringSchema("Connection creation time.", "2026-06-04T20:38:00Z", obj{"format": "date-time"}),
+	}, "teamId")
+	schemas["SlackWorkspacesResponse"] = objectSchema("Connected Slack workspaces for the authenticated user.", obj{
+		"workspaces": arraySchema("Connected Slack workspaces.", ref("SlackWorkspace")),
+	}, "workspaces")
+	schemas["SlackThreadReadRequest"] = objectSchema("Read a Slack thread from a connected managed workspace.", obj{
+		"teamId":   stringSchema("Slack workspace/team id.", "T0EXAMPLE"),
+		"channel":  stringSchema("Slack channel id.", "C01234567"),
+		"threadTs": stringSchema("Slack thread timestamp. For a top-level message, use the message ts.", "1700000000.000100"),
+		"limit":    intSchema("Max messages to return. Defaults to 50, max 200.", 50, nullable()),
+	}, "teamId", "channel", "threadTs")
+	schemas["SlackThreadMessage"] = objectSchema("Slack thread message metadata returned to desktop chat.", obj{
+		"user":   stringSchema("Slack user id when present.", "U01234567", nullable()),
+		"bot_id": stringSchema("Slack bot id when present.", "B01234567", nullable()),
+		"text":   stringSchema("Slack message text.", "Can you summarize this?", nullable()),
+		"ts":     stringSchema("Slack message timestamp.", "1700000000.000100", nullable()),
+	})
+	schemas["SlackThreadReadResponse"] = objectSchema("Slack thread messages read through the server-held Slack app token.", obj{
+		"teamId":   stringSchema("Slack workspace/team id.", "T0EXAMPLE"),
+		"channel":  stringSchema("Slack channel id.", "C01234567"),
+		"threadTs": stringSchema("Slack thread timestamp.", "1700000000.000100"),
+		"messages": arraySchema("Slack thread messages.", ref("SlackThreadMessage")),
+	}, "teamId", "channel", "threadTs", "messages")
+	schemas["SlackThreadPostRequest"] = objectSchema("Post an approved Slack reply into a connected managed thread.", obj{
+		"teamId":   stringSchema("Slack workspace/team id.", "T0EXAMPLE"),
+		"channel":  stringSchema("Slack channel id.", "C01234567"),
+		"threadTs": stringSchema("Slack thread timestamp. The reply is posted under this thread.", "1700000000.000100"),
+		"text":     stringSchema("Slack message text to post.", "I can take this one."),
+	}, "teamId", "channel", "threadTs", "text")
+	schemas["SlackThreadPostResponse"] = objectSchema("Slack reply post result. The bot token and message text are never returned.", obj{
+		"ok":       boolSchema("Whether Slack accepted the post.", true),
+		"teamId":   stringSchema("Slack workspace/team id.", "T0EXAMPLE"),
+		"channel":  stringSchema("Slack channel id.", "C01234567"),
+		"threadTs": stringSchema("Slack thread timestamp.", "1700000000.000100"),
+	}, "ok", "teamId", "channel", "threadTs")
 }
 
 func addCloudEventSchemas(schemas obj) {
@@ -1145,19 +1175,6 @@ func addVendorProxyPaths(paths obj) {
 		"502": responseRef("502"),
 		"503": responseRef("503"),
 	})}
-	composioOps := obj{}
-	for _, method := range []string{"get", "post", "put", "patch", "delete"} {
-		composioOps[method] = operation("Composio", "Proxy Composio v3 "+methodName(method), "Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.", "proxyComposio"+methodName(method), bearer(), []any{
-			pathParam("path", "Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard.", stringSchema("Composio path.", "toolkits")),
-		}, nil, obj{
-			"200": jsonResponse("Composio response body. Connected-account list responses are filtered to the caller's mapped accounts.", ref("ComposioProxyResponse"), obj{"items": []any{}}),
-			"401": responseRef("401"),
-			"404": responseRef("404"),
-			"502": responseRef("502"),
-			"503": responseRef("503"),
-		})
-	}
-	paths["/v1/composio/{path}"] = composioOps
 }
 
 func addGoogleOAuthPaths(paths obj) {
@@ -1217,11 +1234,40 @@ func addSlackOAuthPaths(paths obj) {
 		"410": responseRef("410"),
 		"500": responseRef("500"),
 	})}
+	paths["/v1/slack-oauth/workspaces"] = obj{"get": operation("Slack OAuth", "List Slack workspace connections", "Returns the authenticated user's managed Slack workspace connections. Bot tokens are never returned.", "listSlackWorkspaces", bearer(), nil, nil, obj{
+		"200": jsonResponse("Connected Slack workspaces.", ref("SlackWorkspacesResponse"), obj{"workspaces": []any{obj{"teamId": "T0EXAMPLE", "scopes": []any{"channels:history", "chat:write"}, "connectedAt": "2026-06-04T20:38:00Z"}}}),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/slack-oauth/workspaces/{teamId}"] = obj{"delete": operation("Slack OAuth", "Disconnect Slack workspace", "Idempotently deletes the authenticated user's managed Slack workspace connection for the given team id.", "deleteSlackWorkspace", bearer(), []any{
+		pathParam("teamId", "Slack workspace/team id.", stringSchema("Slack team id.", "T0EXAMPLE")),
+	}, nil, obj{
+		"204": obj{"description": "Workspace disconnected or was already absent."},
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/slack-oauth/thread/read"] = obj{"post": operation("Slack OAuth", "Read Slack thread", "Reads messages from a connected managed Slack workspace using the server-held Slack app token. The token is never returned to the desktop.", "readSlackThread", bearer(), nil, jsonRequest("Slack thread target.", ref("SlackThreadReadRequest"), obj{"teamId": "T0EXAMPLE", "channel": "C01234567", "threadTs": "1700000000.000100", "limit": 25}), obj{
+		"200": jsonResponse("Slack thread messages.", ref("SlackThreadReadResponse"), obj{"teamId": "T0EXAMPLE", "channel": "C01234567", "threadTs": "1700000000.000100", "messages": []any{obj{"user": "U01234567", "text": "Can you summarize this?", "ts": "1700000000.000100"}}}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"502": responseRef("502"),
+		"503": responseRef("503"),
+	})}
+	paths["/v1/slack-oauth/thread/post"] = obj{"post": operation("Slack OAuth", "Post Slack thread reply", "Posts an explicitly approved reply into a connected managed Slack thread using the server-held Slack app token. The token and message text are never returned.", "postSlackThreadReply", bearer(), nil, jsonRequest("Slack reply target and text.", ref("SlackThreadPostRequest"), obj{"teamId": "T0EXAMPLE", "channel": "C01234567", "threadTs": "1700000000.000100", "text": "I can take this one."}), obj{
+		"200": jsonResponse("Slack post accepted.", ref("SlackThreadPostResponse"), obj{"ok": true, "teamId": "T0EXAMPLE", "channel": "C01234567", "threadTs": "1700000000.000100"}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"502": responseRef("502"),
+		"503": responseRef("503"),
+	})}
 }
 
 func addConnectorPaths(paths obj) {
 	paths["/v1/connectors"] = obj{"get": operation("Connectors", "List connectors", "Returns the configured connector registry plus the authenticated user's connection state for each connector.", "listConnectors", bearer(), nil, nil, obj{
-		"200": jsonResponse("Connector registry with connection state.", ref("ConnectorsResponse"), obj{"connectors": []any{obj{"name": "canvas", "displayName": "Canvas", "description": "Banking, invoicing, dunning, transactions", "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp", "authType": "oauth", "scopes": []any{"invoices:read"}, "mcpTools": []any{obj{"name": "customer.lookup", "trustTier": "read"}}, "connected": true, "connectedAt": "2026-06-04T20:38:00Z"}}}),
+		"200": jsonResponse("Connector registry with connection state.", ref("ConnectorsResponse"), obj{"connectors": []any{obj{"name": "canvas", "displayName": "Canvas", "description": "Banking, invoicing, dunning, transactions", "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp", "authType": "oauth", "scopes": []any{"invoices:read"}, "mcpTools": []any{obj{"name": "customer.lookup", "trustTier": "read"}}, "templateBlocks": []any{obj{"id": "invoice-context", "title": "Invoice context", "description": "Look up invoices and customers.", "category": "finance", "requiredScopes": []any{"invoices:read"}, "mcpTools": []any{"invoice.lookup"}, "trustTier": "read"}}, "connected": true, "connectedAt": "2026-06-04T20:38:00Z"}}}),
 		"401": responseRef("401"),
 		"500": responseRef("500"),
 		"503": responseRef("503"),
@@ -1242,6 +1288,25 @@ func addConnectorPaths(paths obj) {
 		"302": redirectResponse("Redirect to solomon-ai://connection-complete with connector and status."),
 		"400": responseRef("400"),
 		"500": responseRef("500"),
+	})}
+	paths["/v1/connections/{name}/claim"] = obj{"post": operation("Connectors", "Claim connector OAuth flow", "Redeems the connector grant parked by the browser callback. Persistence is bound to the authenticated user that started the flow.", "claimConnection", bearer(), connectorNameParam(), jsonRequest("Connector claim ticket.", ref("ConnectionClaimRequest"), obj{"state": "state_abc123"}), obj{
+		"200": jsonResponse("Connector connected.", ref("ConnectionConnectedResponse"), obj{"connected": true}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"403": responseRef("403"),
+		"404": responseRef("404"),
+		"409": responseRef("409"),
+		"410": responseRef("410"),
+		"500": responseRef("500"),
+		"503": responseRef("503"),
+	})}
+	paths["/v1/connections/{name}/api-key"] = obj{"post": operation("Connectors", "Connect API-key connector", "Stores a vendor-issued API key for an api_key connector. The key is sealed at rest and later minted back only through the connector MCP token endpoint.", "setConnectionAPIKey", bearer(), connectorNameParam(), jsonRequest("Connector API key.", ref("ConnectionAPIKeyRequest"), obj{"apiKey": "sk_vendor_abc123"}), obj{
+		"200": jsonResponse("Connector connected.", ref("ConnectionConnectedResponse"), obj{"connected": true}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"500": responseRef("500"),
+		"503": responseRef("503"),
 	})}
 	paths["/v1/connections/{name}/mcp-token"] = obj{"post": operation("Connectors", "Mint connector MCP token", "Returns a short-lived MCP access token and target MCP URL for a connected connector. OAuth connectors refresh through Ory; api_key connectors return the sealed vendor key directly.", "createMCPToken", bearer(), connectorNameParam(), nil, obj{
 		"200": jsonResponse("MCP token and endpoint.", ref("MCPTokenResponse"), obj{"access_token": "mcp_access_token", "token_type": "Bearer", "expires_at": 1790784000, "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp"}),
@@ -1866,21 +1931,4 @@ func asObj(v any) obj {
 		return m
 	}
 	return nil
-}
-
-func methodName(method string) string {
-	switch method {
-	case "get":
-		return "Get"
-	case "post":
-		return "Post"
-	case "put":
-		return "Put"
-	case "patch":
-		return "Patch"
-	case "delete":
-		return "Delete"
-	default:
-		return method
-	}
 }

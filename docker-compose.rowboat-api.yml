@@ -59,7 +59,7 @@ services:
     image: rowboat-api:local
     ports:
       # Host ports offset to 18080/18081/19090 so the desktop's own loopback
-      # OAuth/Composio callback servers (localhost:8080 / :8081) don't collide.
+      # OAuth callback servers (localhost:8080 / :8081) don't collide.
       - "18080:8080" # HTTP + SSE
       - "18081:8081" # gRPC
       - "19090:9090" # metrics

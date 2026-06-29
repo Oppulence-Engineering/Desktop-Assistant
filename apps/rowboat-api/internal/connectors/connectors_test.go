@@ -144,6 +144,9 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	if !strings.Contains(listRec.Body.String(), `"mcpTools"`) || !strings.Contains(listRec.Body.String(), `"customer.lookup"`) {
 		t.Fatalf("list should expose connector MCP allowlists: %s", listRec.Body.String())
 	}
+	if !strings.Contains(listRec.Body.String(), `"templateBlocks"`) || !strings.Contains(listRec.Body.String(), `"invoice-context"`) {
+		t.Fatalf("list should expose connector template blocks: %s", listRec.Body.String())
+	}
 
 	// 4. mcp-token refreshes via Ory.
 	tokRec := httptest.NewRecorder()
@@ -194,6 +197,28 @@ func TestDefaultRegistryDeclaresMCPToolAllowlists(t *testing.T) {
 				t.Fatalf("%s/%s has invalid trust tier %q", connector.Name, tool.Name, tool.TrustTier)
 			}
 		}
+		if len(connector.TemplateBlocks) == 0 {
+			t.Fatalf("%s has no onboarding template blocks", connector.Name)
+		}
+		blockIDs := map[string]bool{}
+		tools := map[string]bool{}
+		for _, tool := range connector.MCPTools {
+			tools[tool.Name] = true
+		}
+		for _, block := range connector.TemplateBlocks {
+			if block.ID == "" || block.Title == "" || block.Description == "" || block.Category == "" {
+				t.Fatalf("%s has an incomplete template block: %+v", connector.Name, block)
+			}
+			if blockIDs[block.ID] {
+				t.Fatalf("%s declares duplicate template block %q", connector.Name, block.ID)
+			}
+			blockIDs[block.ID] = true
+			for _, tool := range block.MCPTools {
+				if !tools[tool] {
+					t.Fatalf("%s template block %q references unknown tool %q", connector.Name, block.ID, tool)
+				}
+			}
+		}
 	}
 	for _, want := range []string{"canvas", "corinthian", "wispr", "hubspot", "github", "linear", "notion", "stripe"} {
 		if !names[want] {
@@ -241,12 +266,65 @@ func TestLoadRegistryRejectsInvalidMCPPolicies(t *testing.T) {
 			body: `[{"name":"x","displayName":"X","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read","trustTier":"read"}]}]`,
 			want: "declares mcpTools without mcpUrl",
 		},
+		{
+			name: "template-blocks-without-url",
+			body: `[{"name":"x","displayName":"X","authType":"api_key","audience":"x","templateBlocks":[{"id":"b","title":"B","description":"D","category":"c","trustTier":"read"}]}]`,
+			want: "declares templateBlocks without mcpUrl",
+		},
+		{
+			name: "duplicate-template-block",
+			body: `[{"name":"x","displayName":"X","mcpUrl":"https://mcp.test","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read","trustTier":"read"}],"templateBlocks":[{"id":"b","title":"B","description":"D","category":"c","mcpTools":["thing.read"],"trustTier":"read"},{"id":"b","title":"B","description":"D","category":"c","mcpTools":["thing.read"],"trustTier":"read"}]}]`,
+			want: `duplicate template block "b"`,
+		},
+		{
+			name: "template-unknown-tool",
+			body: `[{"name":"x","displayName":"X","mcpUrl":"https://mcp.test","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read","trustTier":"read"}],"templateBlocks":[{"id":"b","title":"B","description":"D","category":"c","mcpTools":["thing.write"],"trustTier":"read"}]}]`,
+			want: `references unknown MCP tool "thing.write"`,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if _, err := connectors.LoadRegistry([]byte(tc.body)); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("LoadRegistry err = %v, want containing %q", err, tc.want)
 			}
 		})
+	}
+}
+
+func TestAPIKeyConnectorFlow(t *testing.T) {
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	authed := auth.WithUser(context.Background(), u)
+
+	rec := httptest.NewRecorder()
+	h.SetAPIKey(rec, httptest.NewRequest(http.MethodPost, "/v1/connections/github/api-key", strings.NewReader(`{"apiKey":"ghp_test"}`)).
+		WithContext(withParam(authed, "name", "github")))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("set api key: want 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if n := client.MCPConnection.Query().CountX(authed); n != 1 {
+		t.Fatalf("expected 1 mcp connection after api key save, got %d", n)
+	}
+
+	listRec := httptest.NewRecorder()
+	h.List(listRec, httptest.NewRequest(http.MethodGet, "/v1/connectors", nil).WithContext(authed))
+	if !strings.Contains(listRec.Body.String(), `"github"`) || !strings.Contains(listRec.Body.String(), `"connected":true`) {
+		t.Fatalf("list should show api-key connector connected: %s", listRec.Body.String())
+	}
+
+	tokRec := httptest.NewRecorder()
+	h.MCPToken(tokRec, httptest.NewRequest(http.MethodPost, "/v1/connections/github/mcp-token", nil).
+		WithContext(withParam(authed, "name", "github")))
+	if tokRec.Code != http.StatusOK {
+		t.Fatalf("mcp-token: want 200, got %d: %s", tokRec.Code, tokRec.Body.String())
+	}
+	if !strings.Contains(tokRec.Body.String(), "ghp_test") {
+		t.Fatalf("mcp-token should return stored api key: %s", tokRec.Body.String())
+	}
+
+	badRec := httptest.NewRecorder()
+	h.SetAPIKey(badRec, httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/api-key", strings.NewReader(`{"apiKey":"x"}`)).
+		WithContext(withParam(authed, "name", "canvas")))
+	if badRec.Code != http.StatusBadRequest {
+		t.Fatalf("set api key on oauth connector: want 400, got %d: %s", badRec.Code, badRec.Body.String())
 	}
 }
 

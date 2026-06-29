@@ -47,8 +47,8 @@ I'll add the suggested tools for Google Calendar, web search, and email:
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -73,8 +73,8 @@ I'll add the suggested tools for Google Calendar, web search, and email:
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -99,8 +99,8 @@ I'll add the suggested tools for Google Calendar, web search, and email:
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -274,8 +274,8 @@ I'm adding the "Get document by id" tool to fetch the content of a Google Doc by
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -354,8 +354,8 @@ Here are the tool additions:
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -380,8 +380,8 @@ Here are the tool additions:
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -406,8 +406,8 @@ Here are the tool additions:
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -432,8 +432,8 @@ Here are the tool additions:
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -487,8 +487,8 @@ I'll add the suggested tools for Google Sheets and Gmail:
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -513,8 +513,8 @@ I'll add the suggested tools for Google Sheets and Gmail:
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -685,8 +685,8 @@ I'll add the necessary tools for web search and sending a Slack message.
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -711,8 +711,8 @@ I'll add the necessary tools for web search and sending a Slack message.
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -853,8 +853,8 @@ First, I'll add the necessary tools for web research (Firecrawl) and sending Sla
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,
@@ -879,8 +879,8 @@ First, I'll add the necessary tools for web research (Firecrawl) and sending Sla
       "properties": < get this from the searchRelevantTools output>,
       "required": < get this from the searchRelevantTools output>
     },
-    "isComposio": true,
-    "composioData": {
+    "isIntegration": true,
+    "integrationData": {
       "slug": < get this from the searchRelevantTools output>,
       "noAuth": false,
       "toolkitName": < get this from the searchRelevantTools output>,

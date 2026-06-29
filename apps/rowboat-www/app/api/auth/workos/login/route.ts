@@ -1,0 +1,30 @@
+import { NextRequest, NextResponse } from "next/server";
+
+import { setPKCECookie } from "@/lib/auth/cookies";
+import { createPKCECookie, safeReturnTo } from "@/lib/auth/pkce";
+import { getWorkOSLoginURL } from "@/lib/auth/rowboat-api";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
+  const returnTo = safeReturnTo(request.nextUrl.searchParams.get("return_to"));
+  const pkce = createPKCECookie(returnTo);
+  const redirectURI = new URL("/api/auth/workos/callback", request.nextUrl.origin).toString();
+
+  try {
+    const url = await getWorkOSLoginURL({
+      redirectURI,
+      state: pkce.state,
+      codeChallenge: pkce.codeChallenge,
+    });
+    const response = NextResponse.redirect(url);
+    setPKCECookie(response, pkce);
+    return response;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "sign-in unavailable";
+    const fallback = new URL("/sign-in", request.nextUrl.origin);
+    fallback.searchParams.set("error", message);
+    return NextResponse.redirect(fallback);
+  }
+}

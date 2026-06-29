@@ -20,6 +20,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { dashboardFetch } from "@/lib/auth/client";
 
 function OppulenceLogo({ className }: { className?: string }) {
   return <img alt="" className={className} src="/marketing/oppulence-icon.png" />;
@@ -102,9 +103,14 @@ type SidebarSelect = (item: { kind: ResourceKind; name: string }) => void;
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   onSelectResource?: SidebarSelect;
+  user?: {
+    name: string;
+    email: string;
+    avatar: string;
+  };
 };
 
-export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
+export function AppSidebar({ onSelectResource, user, ...props }: AppSidebarProps) {
   const { state: sidebarState } = useSidebar();
   const [summary, setSummary] = React.useState<OppulenceSummary>({
     agents: [],
@@ -116,13 +122,20 @@ export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
   React.useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/rowboat/summary");
+        const res = await dashboardFetch("/api/rowboat/v1/agents");
         if (!res.ok) return;
         const data = await res.json();
+        const agents = Array.isArray(data.agents)
+          ? data.agents
+              .map((agent: { slug?: string } | string) =>
+                typeof agent === "string" ? agent : agent.slug,
+              )
+              .filter((agent: string | undefined): agent is string => Boolean(agent))
+          : [];
         setSummary({
-          agents: data.agents || [],
-          config: data.config || [],
-          runs: data.runs || [],
+          agents,
+          config: [],
+          runs: [],
         });
       } catch (error) {
         console.error("Failed to load Oppulence summary", error);
@@ -344,7 +357,7 @@ export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
         <NavProjects projects={data.chatHistory} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user || data.user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

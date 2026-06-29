@@ -7,19 +7,19 @@ import { Panel } from '@/components/common/panel-common';
 import { Plus, Trash2, ZapIcon, ChevronDown, ChevronUp, ArrowLeftIcon } from 'lucide-react';
 import Image from 'next/image';
 import { z } from 'zod';
-import { ComposioTriggerDeployment } from '@/src/entities/models/composio-trigger-deployment';
-import { ComposioTriggerType } from '@/src/entities/models/composio-trigger-type';
+import { IntegrationTriggerDeployment } from '@/src/entities/models/integration-trigger-deployment';
+import { IntegrationTriggerType } from '@/src/entities/models/integration-trigger-type';
 import { isToday, isThisWeek, isThisMonth } from '@/lib/utils/date';
-import { listComposioTriggerDeployments, deleteComposioTriggerDeployment, createComposioTriggerDeployment } from '@/app/actions/composio.actions';
-import { SelectComposioToolkit } from '../../tools/components/SelectComposioToolkit';
-import { ComposioTriggerTypesPanel } from '../../workflow/components/ComposioTriggerTypesPanel';
+import { listIntegrationTriggerDeployments, deleteIntegrationTriggerDeployment, createIntegrationTriggerDeployment } from '@/app/actions/integration.actions';
+import { SelectIntegrationToolkit } from '../../tools/components/SelectIntegrationToolkit';
+import { IntegrationTriggerTypesPanel } from '../../workflow/components/IntegrationTriggerTypesPanel';
 import { TriggerConfigForm } from '../../workflow/components/TriggerConfigForm';
 import { ToolkitAuthModal } from '../../tools/components/ToolkitAuthModal';
-import { ZToolkit } from "@/src/application/lib/composio/types";
+import { ZToolkit } from "@/src/application/lib/integration/types";
 import { Project } from "@/src/entities/models/project";
 import { fetchProject } from '@/app/actions/project.actions';
 
-type TriggerDeployment = z.infer<typeof ComposioTriggerDeployment>;
+type TriggerDeployment = z.infer<typeof IntegrationTriggerDeployment>;
 
 // Removed friendly name computation; backend now provides friendly trigger name
 
@@ -29,7 +29,7 @@ export function TriggersTab({ projectId }: { projectId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [showCreateFlow, setShowCreateFlow] = useState(false);
   const [selectedToolkit, setSelectedToolkit] = useState<z.infer<typeof ZToolkit> | null>(null);
-  const [selectedTriggerType, setSelectedTriggerType] = useState<z.infer<typeof ComposioTriggerType> | null>(null);
+  const [selectedTriggerType, setSelectedTriggerType] = useState<z.infer<typeof IntegrationTriggerType> | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSubmittingTrigger, setIsSubmittingTrigger] = useState(false);
   const [deletingTrigger, setDeletingTrigger] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export function TriggersTab({ projectId }: { projectId: string }) {
     try {
       setLoading(true);
       setError(null);
-      const response = await listComposioTriggerDeployments({ projectId });
+      const response = await listIntegrationTriggerDeployments({ projectId });
       setTriggers(response.items);
       setCursor(response.nextCursor);
       setHasMore(Boolean(response.nextCursor));
@@ -85,7 +85,7 @@ export function TriggersTab({ projectId }: { projectId: string }) {
     if (!cursor) return;
     setLoadingMore(true);
     try {
-      const response = await listComposioTriggerDeployments({ projectId, cursor });
+      const response = await listIntegrationTriggerDeployments({ projectId, cursor });
       setTriggers(prev => [...prev, ...response.items]);
       setCursor(response.nextCursor);
       setHasMore(Boolean(response.nextCursor));
@@ -103,7 +103,7 @@ export function TriggersTab({ projectId }: { projectId: string }) {
 
     try {
       setDeletingTrigger(deploymentId);
-      await deleteComposioTriggerDeployment({ projectId, deploymentId });
+      await deleteIntegrationTriggerDeployment({ projectId, deploymentId });
       await loadTriggers(); // Reload the list
     } catch (err: any) {
       console.error('Error deleting trigger:', err);
@@ -137,14 +137,14 @@ export function TriggersTab({ projectId }: { projectId: string }) {
     setIsSubmittingTrigger(false);
   };
 
-  const handleSelectTriggerType = (triggerType: z.infer<typeof ComposioTriggerType>) => {
+  const handleSelectTriggerType = (triggerType: z.infer<typeof IntegrationTriggerType>) => {
     if (!selectedToolkit) return;
     
     setSelectedTriggerType(triggerType);
     
     // Check if toolkit requires auth and if connected account exists
     const needsAuth = !selectedToolkit.no_auth;
-    const hasConnection = projectConfig?.composioConnectedAccounts?.[selectedToolkit.slug]?.status === 'ACTIVE';
+    const hasConnection = projectConfig?.integrationConnectedAccounts?.[selectedToolkit.slug]?.status === 'ACTIVE';
     
     if (needsAuth && !hasConnection) {
       // Show auth modal
@@ -167,14 +167,14 @@ export function TriggersTab({ projectId }: { projectId: string }) {
       setIsSubmittingTrigger(true);
       
       // Get the connected account ID for this toolkit
-      const connectedAccountId = projectConfig?.composioConnectedAccounts?.[selectedToolkit.slug]?.id;
+      const connectedAccountId = projectConfig?.integrationConnectedAccounts?.[selectedToolkit.slug]?.id;
       
       if (!connectedAccountId) {
         throw new Error('No connected account found for this toolkit');
       }
 
       // Create the trigger deployment
-      await createComposioTriggerDeployment({
+      await createIntegrationTriggerDeployment({
         projectId,
         triggerTypeSlug: selectedTriggerType.slug,
         connectedAccountId,
@@ -440,7 +440,7 @@ export function TriggersTab({ projectId }: { projectId: string }) {
     // If trigger type is selected and auth is complete, show config
     if (selectedToolkit && selectedTriggerType && !showAuthModal) {
       const needsAuth = !selectedToolkit.no_auth;
-      const hasConnection = projectConfig?.composioConnectedAccounts?.[selectedToolkit.slug]?.status === 'ACTIVE';
+      const hasConnection = projectConfig?.integrationConnectedAccounts?.[selectedToolkit.slug]?.status === 'ACTIVE';
       
       if (!needsAuth || hasConnection) {
         return (
@@ -480,7 +480,7 @@ export function TriggersTab({ projectId }: { projectId: string }) {
             )}
           </div>
 
-          <SelectComposioToolkit
+          <SelectIntegrationToolkit
             projectId={projectId}
             tools={[]} // Empty array since we're not using this for tools
             onSelectToolkit={handleSelectToolkit}
@@ -494,7 +494,7 @@ export function TriggersTab({ projectId }: { projectId: string }) {
     // If toolkit selected, show trigger types
     return (
       <div className="space-y-4">
-        <ComposioTriggerTypesPanel
+        <IntegrationTriggerTypesPanel
           toolkit={selectedToolkit}
           onBack={handleBackToToolkitSelection}
           onSelectTriggerType={handleSelectTriggerType}

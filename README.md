@@ -74,7 +74,7 @@ To use Exa research search (optional), add the Exa API key in `~/.rowboat/config
 
 ### External tools
 
-To enable external tools (optional), you can add any MCP server or use Composio tools by adding an API key in `~/.rowboat/config/composio.json`
+To enable external tools (optional), add MCP servers or connect Rowboat managed integrations from the app.
 
 All API key files use the same format:
 ```
@@ -99,7 +99,7 @@ Rowboat builds memory from the work you already do, including:
 - **Google Calendar** 
 - **Rowboat meeting notes** or **Fireflies**
 
-It also contains a library of product integrations through Composio.dev
+It also contains a library of product integrations through Rowboat managed integrations and MCP servers.
 
 ## How it’s different
 
@@ -217,7 +217,7 @@ Commented-out but pre-wired: `rowboat_agents:3001`, `copilot:3002`, `tools_webho
 
 Three roles share one image: the `Dockerfile` runs the long-running Next server; `scripts.Dockerfile` runs the same bundle with `npm run jobs-worker` / `rag-worker` / `setupQdrant` / `deleteQdrant`. **The worker containers are the same Node bundle running a different `package.json` script**, not separate codebases.
 
-`start.sh` is the dev entry point: sets `USE_RAG=true`, `USE_KLAVIS_TOOLS=true`, toggles `USE_COMPOSIO_TOOLS` if `COMPOSIO_API_KEY` is set, then runs `docker compose --profile setup_qdrant --profile qdrant --profile rag-worker up --build`.
+`start.sh` is the dev entry point: sets `USE_RAG=true`, `USE_KLAVIS_TOOLS=true`, then runs `docker compose --profile setup_qdrant --profile qdrant --profile rag-worker up --build`.
 
 ### Request flow
 
@@ -272,7 +272,7 @@ End-to-end: ~6 minutes from merging the release PR to installers on the Releases
 | `USE_RAG`, `USE_RAG_UPLOADS`, `USE_RAG_S3_UPLOADS` | Enables vector store, file uploads, S3 ingestion. |
 | `USE_RAG_SCRAPING` + `FIRECRAWL_API_KEY` | Web ingestion. |
 | `USE_CHAT_WIDGET` + `CHAT_WIDGET_HOST` | Mounts the widget endpoints. |
-| `USE_KLAVIS_TOOLS`, `USE_COMPOSIO_TOOLS` | Tool integrations. |
+| `USE_KLAVIS_TOOLS` | Tool integrations. |
 | `USE_BILLING` + `BILLING_API_URL` / `BILLING_API_KEY` | Talks to an external billing service. |
 | `USE_AUTH` | Auth0-gated SSR. |
 

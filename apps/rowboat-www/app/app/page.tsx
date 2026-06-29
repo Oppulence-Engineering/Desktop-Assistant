@@ -1,6 +1,7 @@
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import { AuthGate, useAuthSession } from "@/components/auth-gate";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -61,6 +62,7 @@ import {
 import { JsonEditor } from "@/components/json-editor";
 import { TiptapMarkdownEditor } from "@/components/tiptap-markdown-editor";
 import { MarkdownViewer } from "@/components/markdown-viewer";
+import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 
 interface ChatMessage {
   id: string;
@@ -110,14 +112,16 @@ type RunEvent = {
 };
 
 function PageBody() {
-  const [apiBase, setApiBase] = useState<string>("http://localhost:3000");
-  const streamUrl = "/api/stream";
+  const session = useAuthSession();
   const [text, setText] = useState<string>("");
   const [useMicrophone, setUseMicrophone] = useState<boolean>(false);
   const [status, setStatus] = useState<"submitted" | "streaming" | "ready" | "error">("ready");
 
   // Chat state
   const [runId, setRunId] = useState<string | null>(null);
+  const streamUrl = runId
+    ? `/api/rowboat/v1/agent-sessions/${encodeURIComponent(runId)}/stream`
+    : null;
   const [isRunProcessing, setIsRunProcessing] = useState(false);
   const [conversation, setConversation] = useState<ConversationItem[]>([]);
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<string>("");
@@ -135,26 +139,19 @@ function PageBody() {
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [artifactReadOnly, setArtifactReadOnly] = useState(false);
   const [artifactFileType, setArtifactFileType] = useState<"json" | "markdown">("json");
-  const [agentOptions, setAgentOptions] = useState<string[]>(["copilot"]);
-  const [selectedAgent, setSelectedAgent] = useState<string>("copilot");
+  const [agentOptions, setAgentOptions] = useState<string[]>(["assistant"]);
+  const [selectedAgent, setSelectedAgent] = useState<string>("assistant");
 
   const artifactDirty = !artifactReadOnly && artifactText !== artifactOriginal;
   const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, "");
   const detectFileType = (name: string): "json" | "markdown" =>
     name.toLowerCase().match(/\.(md|markdown)$/) ? "markdown" : "json";
 
-  useEffect(() => {
-    if (window.config?.apiBase) {
-      setApiBase(window.config.apiBase);
-    }
-  }, []);
-
   const requestJson = useCallback(
     async (url: string, options?: (RequestInit & { allow404?: boolean }) | undefined) => {
-      const fullUrl = new URL(url, apiBase).toString();
-      console.log("fullUrl", fullUrl);
+      const fullUrl = toDashboardAPIPath(url);
       const { allow404, ...rest } = options || {};
-      const res = await fetch(fullUrl, {
+      const res = await dashboardFetch(fullUrl, {
         ...rest,
         headers: {
           "Content-Type": "application/json",
@@ -194,7 +191,7 @@ function PageBody() {
         return null;
       }
     },
-    [apiBase],
+    [],
   );
 
   const renderPromptInput = () => (
@@ -250,54 +247,8 @@ function PageBody() {
     </PromptInput>
   );
 
-  // Connect to SSE stream
-  useEffect(() => {
-    // Prevent multiple connections
-    if (eventSourceRef.current) {
-      console.log("⚠️ EventSource already exists, not creating new one");
-      return;
-    }
-
-    console.log("🔌 Creating new EventSource connection");
-    const eventSource = new EventSource(streamUrl);
-    eventSourceRef.current = eventSource;
-
-    const handleMessage = (e: MessageEvent) => {
-      try {
-        const event: RunEvent = JSON.parse(e.data);
-        handleEvent(event);
-      } catch (error) {
-        console.error("Failed to parse event:", error);
-      }
-    };
-
-    const handleError = (e: Event) => {
-      const target = e.target as EventSource;
-
-      // Only log if it's not a normal close
-      if (target.readyState === EventSource.CLOSED) {
-        console.log("SSE connection closed, will reconnect on next message");
-      } else if (target.readyState === EventSource.CONNECTING) {
-        console.log("SSE reconnecting...");
-      } else {
-        console.error("SSE error:", e);
-      }
-    };
-
-    eventSource.addEventListener("message", handleMessage);
-    eventSource.addEventListener("error", handleError);
-
-    return () => {
-      console.log("🔌 Closing EventSource connection");
-      eventSource.removeEventListener("message", handleMessage);
-      eventSource.removeEventListener("error", handleError);
-      eventSource.close();
-      eventSourceRef.current = null;
-    };
-  }, [streamUrl]);
-
   // Handle different event types from the copilot
-  const handleEvent = (event: RunEvent) => {
+  const handleEvent = useCallback((event: RunEvent) => {
     console.log("Event received:", event.type, event);
 
     switch (event.type) {
@@ -498,7 +449,54 @@ function PageBody() {
       default:
         console.log("Unhandled event type:", event.type);
     }
-  };
+  }, []);
+
+  // Connect to SSE stream
+  useEffect(() => {
+    if (!streamUrl) return;
+    // Prevent multiple connections
+    if (eventSourceRef.current) {
+      console.log("⚠️ EventSource already exists, not creating new one");
+      return;
+    }
+
+    console.log("🔌 Creating new EventSource connection");
+    const eventSource = new EventSource(streamUrl);
+    eventSourceRef.current = eventSource;
+
+    const handleMessage = (e: MessageEvent) => {
+      try {
+        const event: RunEvent = JSON.parse(e.data);
+        handleEvent(event);
+      } catch (error) {
+        console.error("Failed to parse event:", error);
+      }
+    };
+
+    const handleError = (e: Event) => {
+      const target = e.target as EventSource;
+
+      // Only log if it's not a normal close
+      if (target.readyState === EventSource.CLOSED) {
+        console.log("SSE connection closed, will reconnect on next message");
+      } else if (target.readyState === EventSource.CONNECTING) {
+        console.log("SSE reconnecting...");
+      } else {
+        console.error("SSE error:", e);
+      }
+    };
+
+    eventSource.addEventListener("message", handleMessage);
+    eventSource.addEventListener("error", handleError);
+
+    return () => {
+      console.log("🔌 Closing EventSource connection");
+      eventSource.removeEventListener("message", handleMessage);
+      eventSource.removeEventListener("error", handleError);
+      eventSource.close();
+      eventSourceRef.current = null;
+    };
+  }, [handleEvent, streamUrl]);
 
   const handleSubmit = async (message: PromptInputMessage) => {
     const hasText = Boolean(message.text);
@@ -529,26 +527,24 @@ function PageBody() {
     try {
       let nextRunId = runId;
       if (!nextRunId) {
-        const runData = await requestJson("/runs/new", {
+        const runData = await requestJson("/agent-sessions/", {
           method: "POST",
           body: JSON.stringify({
-            agentId: selectedAgent,
+            agent: selectedAgent,
+            input: userMessage,
+            channel: "web",
           }),
         });
-        nextRunId = runData?.id;
+        nextRunId = runData?.sessionId || runData?.id;
         setRunId(nextRunId);
+      } else {
+        await requestJson(`/agent-sessions/${encodeURIComponent(nextRunId)}/turns`, {
+          method: "POST",
+          body: JSON.stringify({
+            input: userMessage,
+          }),
+        });
       }
-
-      if (!nextRunId) {
-        throw new Error("Run ID unavailable after creation");
-      }
-
-      await requestJson(`/runs/${encodeURIComponent(nextRunId)}/messages/new`, {
-        method: "POST",
-        body: JSON.stringify({
-          message: userMessage,
-        }),
-      });
 
       setStatus("streaming");
     } catch (error) {
@@ -578,7 +574,9 @@ function PageBody() {
 
           if (isMarkdown) {
             subtitle = "Agent (Markdown)";
-            const response = await fetch(`/api/rowboat/agent?file=${encodeURIComponent(raw)}`);
+            const response = await dashboardFetch(
+              `/api/rowboat/v1/agents/${encodeURIComponent(stripExtension(raw) || raw)}?format=yaml`,
+            );
             if (!response.ok) {
               if (response.status === 404) {
                 text = "";
@@ -603,7 +601,7 @@ function PageBody() {
           if (lower.endsWith(".md") || lower.endsWith(".markdown")) {
             // Load markdown file as plain text from local API
             try {
-              const response = await fetch(
+              const response = await dashboardFetch(
                 `/api/rowboat/config?file=${encodeURIComponent(selectedResource.name)}`,
               );
               if (!response.ok) {
@@ -695,13 +693,17 @@ function PageBody() {
   useEffect(() => {
     const loadAgents = async () => {
       try {
-        const res = await fetch("/api/rowboat/summary");
+        const res = await dashboardFetch("/api/rowboat/v1/agents");
         if (!res.ok) return;
         const data = await res.json();
         const agents = Array.isArray(data.agents)
-          ? data.agents.map((a: string) => stripExtension(a))
+          ? data.agents
+              .map((a: { slug?: string } | string) =>
+                typeof a === "string" ? stripExtension(a) : a.slug,
+              )
+              .filter((agent: string | undefined): agent is string => Boolean(agent))
           : [];
-        const merged = Array.from(new Set(["copilot", ...agents]));
+        const merged = Array.from(new Set(["assistant", ...agents]));
         setAgentOptions(merged);
       } catch (e) {
         console.error("Failed to load agent list", e);
@@ -726,7 +728,7 @@ function PageBody() {
     try {
       if (selectedResource.kind === "agent") {
         if (artifactFileType === "markdown") {
-          const response = await fetch(
+          const response = await dashboardFetch(
             `/api/rowboat/agent?file=${encodeURIComponent(selectedResource.name)}`,
             {
               method: "PUT",
@@ -754,7 +756,7 @@ function PageBody() {
 
         if (lower.endsWith(".md") || lower.endsWith(".markdown")) {
           // Save markdown file as plain text via local API
-          const response = await fetch(
+          const response = await dashboardFetch(
             `/api/rowboat/config?file=${encodeURIComponent(selectedResource.name)}`,
             {
               method: "PUT",
@@ -827,7 +829,14 @@ function PageBody() {
 
   return (
     <>
-      <AppSidebar onSelectResource={setSelectedResource} />
+      <AppSidebar
+        onSelectResource={setSelectedResource}
+        user={{
+          name: session.user.email || session.user.workosUserId || "User",
+          email: session.user.email || session.user.workosUserId || "",
+          avatar: "",
+        }}
+      />
       <SidebarInset className="h-svh">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
@@ -1036,8 +1045,10 @@ function PageBody() {
 
 export default function HomePage() {
   return (
-    <SidebarProvider>
-      <PageBody />
-    </SidebarProvider>
+    <AuthGate>
+      <SidebarProvider>
+        <PageBody />
+      </SidebarProvider>
+    </AuthGate>
   );
 }

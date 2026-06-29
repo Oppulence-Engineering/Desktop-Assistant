@@ -1,4 +1,13 @@
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Mail, ShieldCheck } from "@/lib/icons";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Link2,
+  Loader2,
+  Mail,
+  Plug,
+  ShieldCheck,
+} from "@/lib/icons";
 import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
 import { MinimalOnboardingLayout } from "../minimal-layout";
 import type { OnboardingState } from "../use-onboarding-state";
@@ -24,6 +33,72 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
       footer="Connected data is used to build your private context graph on this desktop."
     >
       <div className="grid gap-3">
+        {state.integrationsLoading ? (
+          <div className="flex items-center justify-center border border-white/10 bg-white/[0.045] p-5 text-white/45">
+            <Loader2 className="size-4 animate-spin" />
+          </div>
+        ) : (
+          state.integrations.slice(0, 4).map((integration) => {
+            const isBusy = state.integrationConnecting[integration.name] ?? false;
+            const blocks = integration.templateBlocks ?? [];
+            return (
+              <div key={integration.name} className="border border-white/10 bg-white/[0.045] p-3">
+                <div className="flex items-start gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center bg-sky-400/12 text-sky-200">
+                    <Plug className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="font-medium text-white/86">{integration.displayName}</div>
+                      {integration.connected && (
+                        <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs leading-5 text-white/40">
+                      {integration.description}
+                    </p>
+                    {blocks.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {blocks.slice(0, 2).map((block) => (
+                          <span
+                            key={block.id}
+                            className="border border-white/10 px-1.5 py-0.5 text-[10px] leading-4 text-white/38"
+                          >
+                            {block.title}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => state.handleConnectIntegration(integration)}
+                      disabled={integration.connected || isBusy}
+                      className="mt-3 flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.055] px-3 text-sm font-medium text-white/82 hover:border-white/18 hover:bg-white/[0.085] disabled:pointer-events-none disabled:opacity-60"
+                    >
+                      {isBusy ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          Connecting
+                        </>
+                      ) : integration.connected ? (
+                        <>
+                          <CheckCircle2 className="size-4 text-emerald-400" />
+                          Connected
+                        </>
+                      ) : (
+                        <>
+                          <Link2 className="size-4" />
+                          Connect
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+
         <div className="border border-white/10 bg-white/[0.045] p-3">
           <div className="flex items-start gap-3">
             <span className="flex size-9 shrink-0 items-center justify-center bg-red-500/15 text-red-300">

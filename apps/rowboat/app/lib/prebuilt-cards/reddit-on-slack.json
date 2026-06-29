@@ -131,13 +131,13 @@
           "search_query"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "REDDIT_SEARCH_ACROSS_SUBREDDITS",
         "noAuth": false,
         "toolkitName": "reddit",
         "toolkitSlug": "reddit",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/reddit.svg"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/reddit.svg"
       }
     },
     {
@@ -268,13 +268,13 @@
           "channel"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "SLACK_SEND_MESSAGE",
         "noAuth": false,
         "toolkitName": "slack",
         "toolkitSlug": "slack",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/slack.svg"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/slack.svg"
       }
     }
   ],

@@ -87,7 +87,7 @@ Accepted by rowboat-api:
 WorkOS-direct is sufficient for:
 
 - Account and billing surfaces.
-- LLM/voice/search/Composio proxying.
+- LLM/voice/search/legacy integration vendor proxying.
 - Google OAuth refresh.
 - Background-task API routes.
 - Local kind/devstack validation.

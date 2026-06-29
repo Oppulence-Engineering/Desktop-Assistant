@@ -56,9 +56,7 @@ import {
   isOnboardingComplete,
   markOnboardingComplete,
 } from "@x/core/dist/config/note_creation_config.js";
-import * as composioHandler from "./composio-handler.js";
 import { consumePendingDeepLink } from "./deeplink.js";
-import { qualifyAndDisconnectComposioGoogle } from "@x/core/dist/migrations/composio-google-migration.js";
 import { IAgentScheduleRepo } from "@x/core/dist/agent-schedule/repo.js";
 import { IAgentScheduleStateRepo } from "@x/core/dist/agent-schedule/state-repo.js";
 import {
@@ -98,6 +96,16 @@ import {
 } from "@x/core/dist/billing/billing.js";
 import { submitFeedback } from "@x/core/dist/feedback/feedback.js";
 import { AuthUnavailableError } from "@x/core/dist/auth/refresh-errors.js";
+import {
+  deleteConnectorViaBackend,
+  listConnectorsViaBackend,
+  saveConnectorAPIKeyViaBackend,
+} from "@x/core/dist/connectors/connectors-backend.js";
+import {
+  deleteSlackWorkspaceViaBackend,
+  listSlackWorkspacesViaBackend,
+  postSlackThreadReplyViaBackend,
+} from "@x/core/dist/auth/slack-backend-oauth.js";
 import { summarizeMeeting } from "@x/core/dist/knowledge/summarize_meeting.js";
 import { getAccessToken } from "@x/core/dist/auth/tokens.js";
 import { getSolomonConfig } from "@x/core/dist/config/solomon.js";
@@ -939,6 +947,34 @@ export function setupIpcHandlers() {
       // the grant via the connector /claim endpoint (see deeplink.ts).
       return await connectConnector(args.connector);
     },
+    "connectors:list": async () => {
+      try {
+        return await listConnectorsViaBackend();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to list integrations";
+        return { connectors: [], error: message };
+      }
+    },
+    "connectors:saveApiKey": async (_event, args) => {
+      try {
+        await saveConnectorAPIKeyViaBackend(args.connector, args.apiKey);
+        invalidateCopilotInstructionsCache();
+        return { success: true };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to save integration API key";
+        return { success: false, error: message };
+      }
+    },
+    "connectors:disconnect": async (_event, args) => {
+      try {
+        await deleteConnectorViaBackend(args.connector);
+        invalidateCopilotInstructionsCache();
+        return { success: true };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to disconnect integration";
+        return { success: false, error: message };
+      }
+    },
     "slack:connectWorkspace": async () => {
       // Opens the api's Slack install front door; the deep-link dispatcher
       // redeems the parked bundle via /v1/slack-oauth/claim (see deeplink.ts).
@@ -988,13 +1024,70 @@ export function setupIpcHandlers() {
     },
     "slack:getConfig": async () => {
       const repo = container.resolve<ISlackConfigRepo>("slackConfigRepo");
+      let managedError: string | undefined;
+      try {
+        const managed = await listSlackWorkspacesViaBackend();
+        if (managed.workspaces.length > 0) {
+          return {
+            enabled: true,
+            workspaces: managed.workspaces.map((workspace) => ({
+              teamId: workspace.teamId,
+              name: workspace.teamName || workspace.teamId,
+              scopes: workspace.scopes,
+              connectedAt: workspace.connectedAt,
+              source: "managed" as const,
+            })),
+          };
+        }
+      } catch (err: unknown) {
+        managedError = err instanceof Error ? err.message : "Failed to load managed Slack workspaces";
+      }
       const config = await repo.getConfig();
-      return { enabled: config.enabled, workspaces: config.workspaces };
+      return {
+        enabled: config.enabled,
+        workspaces: config.workspaces.map((workspace) => ({ ...workspace, source: "local" as const })),
+        error: managedError,
+      };
     },
     "slack:setConfig": async (_event, args) => {
       const repo = container.resolve<ISlackConfigRepo>("slackConfigRepo");
       await repo.setConfig({ enabled: args.enabled, workspaces: args.workspaces });
+      invalidateCopilotInstructionsCache();
       return { success: true };
+    },
+    "slack:disconnectWorkspace": async (_event, args) => {
+      try {
+        if (args.teamId) {
+          await deleteSlackWorkspaceViaBackend(args.teamId);
+        } else {
+          const repo = container.resolve<ISlackConfigRepo>("slackConfigRepo");
+          await repo.setConfig({ enabled: false, workspaces: [] });
+        }
+        invalidateCopilotInstructionsCache();
+        return { success: true };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to disconnect Slack";
+        return { success: false, error: message };
+      }
+    },
+    "slack:sendReplyDraft": async (_event, args) => {
+      try {
+        const response = await postSlackThreadReplyViaBackend({
+          teamId: args.teamId,
+          channel: args.channel,
+          threadTs: args.threadTs,
+          text: args.text,
+        });
+        return {
+          success: response.ok,
+          teamId: response.teamId,
+          channel: response.channel,
+          threadTs: response.threadTs,
+        };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to send Slack reply";
+        return { success: false, error: message };
+      }
     },
     "slack:listWorkspaces": async () => {
       try {
@@ -1021,35 +1114,6 @@ export function setupIpcHandlers() {
     "onboarding:markComplete": async () => {
       markOnboardingComplete();
       return { success: true };
-    },
-    // Composio integration handlers
-    "composio:is-configured": async () => {
-      return composioHandler.isConfigured();
-    },
-    "composio:set-api-key": async (_event, args) => {
-      return composioHandler.setApiKey(args.apiKey);
-    },
-    "composio:initiate-connection": async (_event, args) => {
-      return composioHandler.initiateConnection(args.toolkitSlug);
-    },
-    "composio:get-connection-status": async (_event, args) => {
-      return composioHandler.getConnectionStatus(args.toolkitSlug);
-    },
-    "composio:sync-connection": async (_event, args) => {
-      return composioHandler.syncConnection(args.toolkitSlug, args.connectedAccountId);
-    },
-    "composio:disconnect": async (_event, args) => {
-      return composioHandler.disconnect(args.toolkitSlug);
-    },
-    "composio:list-connected": async () => {
-      return composioHandler.listConnected();
-    },
-    // Composio Tools Library handlers
-    "composio:list-toolkits": async () => {
-      return composioHandler.listToolkits();
-    },
-    "migration:check-composio-google": async () => {
-      return qualifyAndDisconnectComposioGoogle();
     },
     // Agent schedule handlers
     "agent-schedule:getConfig": async () => {

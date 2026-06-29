@@ -2,8 +2,8 @@
 
 The Rowboat desktop backend. Replaces the closed hosted backend
 (`https://api.x.rowboatlabs.com`) that the Electron desktop (`apps/x`) calls.
-It owns billing/credits, the LLM gateway, vendor proxies (voice, search,
-Composio), the Google OAuth broker, and the connector OAuth handshake.
+It owns billing/credits, the LLM gateway, vendor proxies (voice, search), the
+Google OAuth broker, and the managed connector handshake.
 
 See [RFC 010](../../apps/rfc/010-rowboat-api-service-plane.md) for the service-plane
 design, [RFC 011](../../apps/rfc/complete-011-identity-and-authorization-plane.md) for auth
@@ -170,5 +170,5 @@ GraphQL/gRPC surfaces.
 ## Milestone status
 
 All plan milestones implemented (config, identity, LLM gateway, voice/exa,
-Google OAuth, Composio, connectors) plus the full ent extension toolchain. See
-the repo task list / commit history for details.
+Google OAuth, managed connectors) plus the full ent extension toolchain. See the
+repo task list / commit history for details.

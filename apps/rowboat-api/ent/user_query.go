@@ -25,7 +25,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/composioaccount"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -51,7 +50,6 @@ type UserQuery struct {
 	withLlmUsages                         *LLMUsageQuery
 	withOauthConnections                  *OAuthConnectionQuery
 	withMcpConnections                    *MCPConnectionQuery
-	withComposioAccounts                  *ComposioAccountQuery
 	withBackgroundTasks                   *BackgroundTaskQuery
 	withBackgroundTaskArtifacts           *BackgroundTaskArtifactQuery
 	withBackgroundTaskRuns                *BackgroundTaskRunQuery
@@ -73,7 +71,6 @@ type UserQuery struct {
 	withNamedLlmUsages                    map[string]*LLMUsageQuery
 	withNamedOauthConnections             map[string]*OAuthConnectionQuery
 	withNamedMcpConnections               map[string]*MCPConnectionQuery
-	withNamedComposioAccounts             map[string]*ComposioAccountQuery
 	withNamedBackgroundTasks              map[string]*BackgroundTaskQuery
 	withNamedBackgroundTaskArtifacts      map[string]*BackgroundTaskArtifactQuery
 	withNamedBackgroundTaskRuns           map[string]*BackgroundTaskRunQuery
@@ -249,28 +246,6 @@ func (_q *UserQuery) QueryMcpConnections() *MCPConnectionQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(mcpconnection.Table, mcpconnection.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.McpConnectionsTable, user.McpConnectionsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryComposioAccounts chains the current query on the "composio_accounts" edge.
-func (_q *UserQuery) QueryComposioAccounts() *ComposioAccountQuery {
-	query := (&ComposioAccountClient{config: _q.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := _q.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(composioaccount.Table, composioaccount.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.ComposioAccountsTable, user.ComposioAccountsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -784,7 +759,6 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withLlmUsages:                    _q.withLlmUsages.Clone(),
 		withOauthConnections:             _q.withOauthConnections.Clone(),
 		withMcpConnections:               _q.withMcpConnections.Clone(),
-		withComposioAccounts:             _q.withComposioAccounts.Clone(),
 		withBackgroundTasks:              _q.withBackgroundTasks.Clone(),
 		withBackgroundTaskArtifacts:      _q.withBackgroundTaskArtifacts.Clone(),
 		withBackgroundTaskRuns:           _q.withBackgroundTaskRuns.Clone(),
@@ -868,17 +842,6 @@ func (_q *UserQuery) WithMcpConnections(opts ...func(*MCPConnectionQuery)) *User
 		opt(query)
 	}
 	_q.withMcpConnections = query
-	return _q
-}
-
-// WithComposioAccounts tells the query-builder to eager-load the nodes that are connected to
-// the "composio_accounts" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *UserQuery) WithComposioAccounts(opts ...func(*ComposioAccountQuery)) *UserQuery {
-	query := (&ComposioAccountClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	_q.withComposioAccounts = query
 	return _q
 }
 
@@ -1114,14 +1077,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [21]bool{
+		loadedTypes = [20]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
 			_q.withLlmUsages != nil,
 			_q.withOauthConnections != nil,
 			_q.withMcpConnections != nil,
-			_q.withComposioAccounts != nil,
 			_q.withBackgroundTasks != nil,
 			_q.withBackgroundTaskArtifacts != nil,
 			_q.withBackgroundTaskRuns != nil,
@@ -1199,13 +1161,6 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadMcpConnections(ctx, query, nodes,
 			func(n *User) { n.Edges.McpConnections = []*MCPConnection{} },
 			func(n *User, e *MCPConnection) { n.Edges.McpConnections = append(n.Edges.McpConnections, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := _q.withComposioAccounts; query != nil {
-		if err := _q.loadComposioAccounts(ctx, query, nodes,
-			func(n *User) { n.Edges.ComposioAccounts = []*ComposioAccount{} },
-			func(n *User, e *ComposioAccount) { n.Edges.ComposioAccounts = append(n.Edges.ComposioAccounts, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1351,13 +1306,6 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadMcpConnections(ctx, query, nodes,
 			func(n *User) { n.appendNamedMcpConnections(name) },
 			func(n *User, e *MCPConnection) { n.appendNamedMcpConnections(name, e) }); err != nil {
-			return nil, err
-		}
-	}
-	for name, query := range _q.withNamedComposioAccounts {
-		if err := _q.loadComposioAccounts(ctx, query, nodes,
-			func(n *User) { n.appendNamedComposioAccounts(name) },
-			func(n *User, e *ComposioAccount) { n.appendNamedComposioAccounts(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1645,37 +1593,6 @@ func (_q *UserQuery) loadMcpConnections(ctx context.Context, query *MCPConnectio
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_mcp_connections" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (_q *UserQuery) loadComposioAccounts(ctx context.Context, query *ComposioAccountQuery, nodes []*User, init func(*User), assign func(*User, *ComposioAccount)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	query.Where(predicate.ComposioAccount(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(user.ComposioAccountsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.user_composio_accounts
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "user_composio_accounts" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "user_composio_accounts" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -2267,20 +2184,6 @@ func (_q *UserQuery) WithNamedMcpConnections(name string, opts ...func(*MCPConne
 		_q.withNamedMcpConnections = make(map[string]*MCPConnectionQuery)
 	}
 	_q.withNamedMcpConnections[name] = query
-	return _q
-}
-
-// WithNamedComposioAccounts tells the query-builder to eager-load the nodes that are connected to the "composio_accounts"
-// edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *UserQuery) WithNamedComposioAccounts(name string, opts ...func(*ComposioAccountQuery)) *UserQuery {
-	query := (&ComposioAccountClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	if _q.withNamedComposioAccounts == nil {
-		_q.withNamedComposioAccounts = make(map[string]*ComposioAccountQuery)
-	}
-	_q.withNamedComposioAccounts[name] = query
 	return _q
 }
 

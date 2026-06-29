@@ -61,7 +61,7 @@ function loadRecentCalendarEvents(meetingTime: string): string {
 
     const files = fs
       .readdirSync(CALENDAR_SYNC_DIR)
-      .filter((f) => f.endsWith(".json") && f !== "sync_state.json" && f !== "composio_state.json");
+      .filter((f) => f.endsWith(".json") && f !== "sync_state.json");
     if (files.length === 0) return "";
 
     const meetingDate = new Date(meetingTime);

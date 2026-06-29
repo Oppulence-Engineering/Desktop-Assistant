@@ -13,9 +13,9 @@ import { Label } from "../../../../lib/components/label";
 import { sectionHeaderStyles, sectionDescriptionStyles } from './shared-styles';
 import { clsx } from "clsx";
 import { InputField } from "../../../../lib/components/input-field";
-import { ComposioConnectedAccount } from "@/src/entities/models/project";
-import { getToolkit, listComposioTriggerDeployments, deleteComposioTriggerDeployment } from "../../../../actions/composio.actions";
-import { deleteConnectedAccount } from "../../../../actions/composio.actions";
+import { IntegrationConnectedAccount } from "@/src/entities/models/project";
+import { getToolkit, listIntegrationTriggerDeployments, deleteIntegrationTriggerDeployment } from "../../../../actions/integration.actions";
+import { deleteConnectedAccount } from "../../../../actions/integration.actions";
 import { PictureImg } from "@/components/ui/picture-img";
 import { UnlinkIcon, AlertTriangle, Trash2 } from "lucide-react";
 import { ProjectWideChangeConfirmationModal } from "@/components/common/project-wide-change-confirmation-modal";
@@ -420,7 +420,7 @@ interface ConnectedToolkit {
     slug: string;
     name: string;
     logo: string;
-    connectedAccount: z.infer<typeof ComposioConnectedAccount> | null;
+    connectedAccount: z.infer<typeof IntegrationConnectedAccount> | null;
 }
 
 function DisconnectToolkitsSection({ projectId, onProjectConfigUpdated }: { 
@@ -437,18 +437,18 @@ function DisconnectToolkitsSection({ projectId, onProjectConfigUpdated }: {
         setLoading(true);
         try {
             const project = await fetchProject(projectId);
-            const connectedAccounts = project.composioConnectedAccounts || {};
+            const connectedAccounts = project.integrationConnectedAccounts || {};
             const workflow = project.draftWorkflow;
             
             // Get all connected accounts (both active and inactive)
             const allConnections = Object.entries(connectedAccounts);
             
-            // Get all Composio toolkits used in workflow tools (even if not connected)
+            // Get all Integration toolkits used in workflow tools (even if not connected)
             const workflowToolkitSlugs = new Set<string>();
             if (workflow?.tools) {
                 workflow.tools.forEach(tool => {
-                    if (tool.isComposio && tool.composioData?.toolkitSlug) {
-                        workflowToolkitSlugs.add(tool.composioData.toolkitSlug);
+                    if (tool.isIntegration && tool.integrationData?.toolkitSlug) {
+                        workflowToolkitSlugs.add(tool.integrationData.toolkitSlug);
                     }
                 });
             }
@@ -509,7 +509,7 @@ function DisconnectToolkitsSection({ projectId, onProjectConfigUpdated }: {
             if (currentWorkflow) {
                 // Step 2: Remove all tools from this toolkit from the workflow
                 const updatedTools = currentWorkflow.tools.filter(tool => 
-                    !tool.isComposio || tool.composioData?.toolkitSlug !== selectedToolkit.slug
+                    !tool.isIntegration || tool.integrationData?.toolkitSlug !== selectedToolkit.slug
                 );
                 
                 // Step 3: Update the workflow
@@ -522,12 +522,12 @@ function DisconnectToolkitsSection({ projectId, onProjectConfigUpdated }: {
             }
             
             // Step 4: Delete all triggers for this toolkit
-            const triggers = await listComposioTriggerDeployments({ projectId });
+            const triggers = await listIntegrationTriggerDeployments({ projectId });
             const toolkitTriggers = triggers.items.filter(trigger => trigger.toolkitSlug === selectedToolkit.slug);
             
             for (const trigger of toolkitTriggers) {
                 try {
-                    await deleteComposioTriggerDeployment({
+                    await deleteIntegrationTriggerDeployment({
                         projectId,
                         deploymentId: trigger.id
                     });
@@ -566,8 +566,8 @@ function DisconnectToolkitsSection({ projectId, onProjectConfigUpdated }: {
     return (
         <>
             <Section 
-                title="Composio Toolkits"
-                description="Manage your Composio toolkits. Shows all toolkits added to your project, whether connected or not. Disconnect to remove all tools, triggers, and connections."
+                title="Integration Toolkits"
+                description="Manage your Integration toolkits. Shows all toolkits added to your project, whether connected or not. Disconnect to remove all tools, triggers, and connections."
             >
                 <div className="space-y-4">
                     {loading ? (

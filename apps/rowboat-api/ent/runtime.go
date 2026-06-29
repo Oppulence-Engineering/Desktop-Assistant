@@ -19,7 +19,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/composioaccount"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -744,29 +743,6 @@ func init() {
 	cloudeventDescID := cloudeventMixinFields0[0].Descriptor()
 	// cloudevent.DefaultID holds the default value on creation for the id field.
 	cloudevent.DefaultID = cloudeventDescID.Default.(func() uuid.UUID)
-	composioaccountMixin := schema.ComposioAccount{}.Mixin()
-	composioaccountMixinFields0 := composioaccountMixin[0].Fields()
-	_ = composioaccountMixinFields0
-	composioaccountFields := schema.ComposioAccount{}.Fields()
-	_ = composioaccountFields
-	// composioaccountDescCreatedAt is the schema descriptor for created_at field.
-	composioaccountDescCreatedAt := composioaccountMixinFields0[1].Descriptor()
-	// composioaccount.DefaultCreatedAt holds the default value on creation for the created_at field.
-	composioaccount.DefaultCreatedAt = composioaccountDescCreatedAt.Default.(func() time.Time)
-	// composioaccountDescUpdatedAt is the schema descriptor for updated_at field.
-	composioaccountDescUpdatedAt := composioaccountMixinFields0[2].Descriptor()
-	// composioaccount.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	composioaccount.DefaultUpdatedAt = composioaccountDescUpdatedAt.Default.(func() time.Time)
-	// composioaccount.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	composioaccount.UpdateDefaultUpdatedAt = composioaccountDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// composioaccountDescAccountID is the schema descriptor for account_id field.
-	composioaccountDescAccountID := composioaccountFields[0].Descriptor()
-	// composioaccount.AccountIDValidator is a validator for the "account_id" field. It is called by the builders before save.
-	composioaccount.AccountIDValidator = composioaccountDescAccountID.Validators[0].(func(string) error)
-	// composioaccountDescID is the schema descriptor for id field.
-	composioaccountDescID := composioaccountMixinFields0[0].Descriptor()
-	// composioaccount.DefaultID holds the default value on creation for the id field.
-	composioaccount.DefaultID = composioaccountDescID.Default.(func() uuid.UUID)
 	creditledgerFields := schema.CreditLedger{}.Fields()
 	_ = creditledgerFields
 	// creditledgerDescTs is the schema descriptor for ts field.

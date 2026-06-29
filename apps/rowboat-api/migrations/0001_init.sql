@@ -45,8 +45,6 @@ CREATE TABLE `cloud_events` (`id` uuid NOT NULL, `created_at` datetime NOT NULL,
 CREATE UNIQUE INDEX `cloudevent_source_dedupe_key_user_cloud_events` ON `cloud_events` (`source`, `dedupe_key`, `user_cloud_events`);
 CREATE INDEX `cloudevent_routing_status` ON `cloud_events` (`routing_status`);
 CREATE INDEX `cloudevent_received_at` ON `cloud_events` (`received_at`);
-CREATE TABLE `composio_accounts` (`id` uuid NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `account_id` text NOT NULL, `toolkit` text NULL, `user_composio_accounts` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `composio_accounts_users_composio_accounts` FOREIGN KEY (`user_composio_accounts`) REFERENCES `users` (`id`) ON DELETE NO ACTION);
-CREATE UNIQUE INDEX `composioaccount_account_id` ON `composio_accounts` (`account_id`);
 CREATE TABLE `credit_ledgers` (`id` uuid NOT NULL, `delta` integer NOT NULL, `reason` text NOT NULL, `request_id` uuid NOT NULL, `ts` datetime NOT NULL, `user_ledger_entries` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `credit_ledgers_users_ledger_entries` FOREIGN KEY (`user_ledger_entries`) REFERENCES `users` (`id`) ON DELETE NO ACTION);
 CREATE UNIQUE INDEX `creditledger_request_id_reason` ON `credit_ledgers` (`request_id`, `reason`);
 CREATE INDEX `creditledger_user_ledger_entries` ON `credit_ledgers` (`user_ledger_entries`);
@@ -66,8 +64,7 @@ CREATE INDEX `mcpconnectionhistory_history_time` ON `mcp_connection_histories` (
 CREATE TABLE `meeting_minute_usages` (`id` uuid NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `period` text NOT NULL, `used_seconds` integer NOT NULL DEFAULT (0), `reserved_seconds` integer NOT NULL DEFAULT (0), `user_meeting_minute_usages` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `meeting_minute_usages_users_meeting_minute_usages` FOREIGN KEY (`user_meeting_minute_usages`) REFERENCES `users` (`id`) ON DELETE NO ACTION);
 CREATE UNIQUE INDEX `meetingminuteusage_period_user_meeting_minute_usages` ON `meeting_minute_usages` (`period`, `user_meeting_minute_usages`);
 CREATE TABLE `oauth_connections` (`id` uuid NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `provider` text NOT NULL, `refresh_token_encrypted` blob NOT NULL, `scopes` json NULL, `external_account_id` text NULL, `user_oauth_connections` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `oauth_connections_users_oauth_connections` FOREIGN KEY (`user_oauth_connections`) REFERENCES `users` (`id`) ON DELETE NO ACTION);
-CREATE UNIQUE INDEX `oauthconnection_provider_user_oauth_connections` ON `oauth_connections` (`provider`, `user_oauth_connections`);
-CREATE INDEX `oauthconnection_provider_external_account_id` ON `oauth_connections` (`provider`, `external_account_id`);
+CREATE UNIQUE INDEX `oauthconnection_provider_external_account_id_user_oauth_connections` ON `oauth_connections` (`provider`, `external_account_id`, `user_oauth_connections`);
 CREATE TABLE `oauth_connection_histories` (`id` uuid NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `history_time` datetime NOT NULL, `operation` text NOT NULL, `ref` uuid NULL, `provider` text NOT NULL, `refresh_token_encrypted` blob NOT NULL, `scopes` json NULL, `external_account_id` text NULL, PRIMARY KEY (`id`));
 CREATE INDEX `oauthconnectionhistory_history_time` ON `oauth_connection_histories` (`history_time`);
 CREATE TABLE `oauth_pendings` (`id` uuid NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `state` text NOT NULL, `provider` text NOT NULL, `payload_encrypted` blob NOT NULL, `expires_at` datetime NOT NULL, PRIMARY KEY (`id`));

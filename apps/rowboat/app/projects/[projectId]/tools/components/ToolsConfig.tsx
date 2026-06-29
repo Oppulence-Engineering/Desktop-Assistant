@@ -3,17 +3,17 @@
 import { useState } from 'react';
 import { Tabs, Tab } from '@/components/ui/tabs';
 import { CustomMcpServers } from './CustomMcpServer';
-import { SelectComposioToolkit } from './SelectComposioToolkit';
-import { ComposioToolsPanel } from './ComposioToolsPanel';
+import { SelectIntegrationToolkit } from './SelectIntegrationToolkit';
+import { IntegrationToolsPanel } from './IntegrationToolsPanel';
 import { AddWebhookTool } from './AddWebhookTool';
 import type { Key } from 'react';
 import { Workflow, WorkflowTool } from '@/app/lib/types/workflow_types';
-import { ZToolkit } from "@/src/application/lib/composio/types";
+import { ZToolkit } from "@/src/application/lib/integration/types";
 import { z } from 'zod';
 
 interface ToolsConfigProps {
   projectId: string;
-  useComposioTools: boolean;
+  useIntegrationTools: boolean;
   tools: z.infer<typeof Workflow.shape.tools>;
   onAddTool: (tool: Partial<z.infer<typeof WorkflowTool>>) => void;
   initialToolkitSlug?: string | null;
@@ -23,14 +23,14 @@ type ToolkitType = z.infer<typeof ZToolkit>;
 
 export function ToolsConfig({
   projectId,
-  useComposioTools,
+  useIntegrationTools,
   tools,
   onAddTool,
   initialToolkitSlug
 }: ToolsConfigProps) {
   let defaultActiveTab = 'mcp';
-  if (useComposioTools) {
-    defaultActiveTab = 'composio';
+  if (useIntegrationTools) {
+    defaultActiveTab = 'integration';
   }
   const [activeTab, setActiveTab] = useState(defaultActiveTab);
   const [selectedToolkit, setSelectedToolkit] = useState<ToolkitType | null>(null);
@@ -65,10 +65,10 @@ export function ToolsConfig({
         className="w-full"
         fullWidth
       >
-        {useComposioTools && (
-          <Tab key="composio" title="Library">
+        {useIntegrationTools && (
+          <Tab key="integration" title="Library">
             <div className="mt-4 p-6">
-              <SelectComposioToolkit
+              <SelectIntegrationToolkit
                 projectId={projectId}
                 tools={tools}
                 onSelectToolkit={handleSelectToolkit}
@@ -98,7 +98,7 @@ export function ToolsConfig({
       
       {/* Tools Panel */}
       {selectedToolkit && (
-        <ComposioToolsPanel
+        <IntegrationToolsPanel
           toolkit={selectedToolkit}
           isOpen={isToolsPanelOpen}
           onClose={handleCloseToolsPanel}
