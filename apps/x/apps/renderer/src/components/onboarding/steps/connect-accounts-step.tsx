@@ -1,225 +1,110 @@
-import { Loader2, CheckCircle2, Calendar, FileText } from "@/lib/icons";
-import { motion } from "motion/react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { GmailIcon, FirefliesIcon } from "../provider-icons";
-import type { OnboardingState, ProviderState } from "../use-onboarding-state";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Mail, ShieldCheck } from "@/lib/icons";
 import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { MinimalOnboardingLayout } from "../minimal-layout";
+import type { OnboardingState } from "../use-onboarding-state";
 
 interface ConnectAccountsStepProps {
   state: OnboardingState;
 }
 
-function ProviderCard({
-  name,
-  description,
-  icon,
-  iconBg,
-  iconColor,
-  providerState,
-  onConnect,
-  rightSlot,
-  index,
-}: {
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  iconBg: string;
-  iconColor: string;
-  providerState?: ProviderState;
-  onConnect?: () => void;
-  rightSlot?: React.ReactNode;
-  index: number;
-}) {
-  const isConnected = providerState?.isConnected ?? false;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06 }}
-      className={cn(
-        "flex items-center justify-between gap-4 rounded-none border p-4 transition-colors",
-        isConnected
-          ? "border-green-200 bg-green-50/50 dark:border-green-800/50 dark:bg-green-900/10"
-          : "hover:bg-muted/50",
-      )}
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        <div
-          className={cn("size-10 rounded-none flex items-center justify-center shrink-0", iconBg)}
-        >
-          <span className={iconColor}>{icon}</span>
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-semibold">{name}</div>
-          <div className="text-xs text-muted-foreground truncate">{description}</div>
-        </div>
-      </div>
-      <div className="shrink-0">
-        {rightSlot ??
-          (providerState?.isLoading ? (
-            <Loader2 className="size-4 animate-spin text-muted-foreground" />
-          ) : isConnected ? (
-            <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-              <CheckCircle2 className="size-4" />
-              <span className="font-medium">Connected</span>
-            </div>
-          ) : (
-            <Button
-              size="sm"
-              onClick={onConnect}
-              disabled={providerState?.isConnecting}
-              aria-label={`Connect ${name}`}
-            >
-              {providerState?.isConnecting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                "Connect"
-              )}
-            </Button>
-          ))}
-      </div>
-    </motion.div>
-  );
-}
-
 export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
-  const {
-    providers,
-    providersLoading,
-    providerStates,
-    handleConnect,
-    useComposioForGoogle,
-    gmailConnected,
-    gmailLoading,
-    gmailConnecting,
-    handleConnectGmail,
-    useComposioForGoogleCalendar,
-    googleCalendarConnected,
-    googleCalendarLoading,
-    googleCalendarConnecting,
-    handleConnectGoogleCalendar,
-  } = state;
-
-  let cardIndex = 0;
+  const googleState = state.providerStates.google || {
+    isConnected: false,
+    isLoading: false,
+    isConnecting: false,
+  };
 
   return (
-    <div className="flex flex-col flex-1">
-      {/* Title */}
-      <h2 className="text-3xl font-bold tracking-tight text-center mb-2">Connect Your Accounts</h2>
-      <p className="text-base text-muted-foreground text-center leading-relaxed mb-8">
-        {PRODUCT_NAME} gets smarter the more it knows about your work. Connect your accounts to get
-        started. You can find more tools in Settings.
-      </p>
-
-      {providersLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* Email & Calendar */}
-          {(useComposioForGoogle ||
-            useComposioForGoogleCalendar ||
-            providers.includes("google")) && (
-            <div className="space-y-3">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Email & Calendar
-              </span>
-              {useComposioForGoogle ? (
-                <ProviderCard
-                  name="Gmail"
-                  description="Read emails for context and drafts."
-                  icon={<GmailIcon />}
-                  iconBg="bg-red-500/10"
-                  iconColor="text-red-500"
-                  providerState={{
-                    isConnected: gmailConnected,
-                    isLoading: gmailLoading,
-                    isConnecting: gmailConnecting,
-                  }}
-                  onConnect={handleConnectGmail}
-                  index={cardIndex++}
-                />
-              ) : (
-                <ProviderCard
-                  name="Google"
-                  description={`${PRODUCT_NAME} uses your email and calendar to provide personalized, context-aware assistance`}
-                  icon={<GmailIcon />}
-                  iconBg="bg-red-500/10"
-                  iconColor="text-red-500"
-                  providerState={providerStates["google"]}
-                  onConnect={() => handleConnect("google")}
-                  index={cardIndex++}
-                />
-              )}
-              {useComposioForGoogleCalendar && (
-                <ProviderCard
-                  name="Google Calendar"
-                  description="Read meetings and your schedule."
-                  icon={<Calendar className="size-5" />}
-                  iconBg="bg-blue-500/10"
-                  iconColor="text-blue-500"
-                  providerState={{
-                    isConnected: googleCalendarConnected,
-                    isLoading: googleCalendarLoading,
-                    isConnecting: googleCalendarConnecting,
-                  }}
-                  onConnect={handleConnectGoogleCalendar}
-                  index={cardIndex++}
-                />
-              )}
-            </div>
-          )}
-
-          {/* Meeting Notes */}
-          <div className="space-y-3">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Meeting Notes
+    <MinimalOnboardingLayout
+      title={`Connect the work surfaces ${PRODUCT_NAME} should remember.`}
+      description="Email, calendar, and meeting notes give memory enough context to answer with history."
+      chips={["Step 03 / 04", "Local memory"]}
+      panelTitle="Sources"
+      panelDescription="Connect now or add more sources later."
+      footer="Connected data is used to build your private context graph on this desktop."
+    >
+      <div className="grid gap-3">
+        <div className="border border-white/10 bg-white/[0.045] p-3">
+          <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center bg-red-500/15 text-red-300">
+              <Mail className="size-4" />
             </span>
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: cardIndex++ * 0.06 }}
-              className="flex items-center justify-between gap-4 rounded-none border border-green-200 bg-green-50/50 dark:border-green-800/50 dark:bg-green-900/10 p-4"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="size-10 rounded-none flex items-center justify-center shrink-0 bg-green-500/10">
-                  <span className="text-green-500">
-                    <FileText className="size-5" />
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold">{PRODUCT_NAME} Meeting Notes</div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    Built in. Ready to use.
-                  </div>
-                </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <div className="font-medium text-white/86">Google</div>
+                {googleState.isConnected && <CheckCircle2 className="size-4 text-emerald-400" />}
               </div>
-              <div className="shrink-0">
-                <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="size-4" />
-                </div>
-              </div>
-            </motion.div>
-            {providers.includes("fireflies-ai") && (
-              <ProviderCard
-                name="Fireflies"
-                description="Import existing notes."
-                icon={<FirefliesIcon />}
-                iconBg="bg-amber-500/10"
-                iconColor="text-amber-500"
-                providerState={providerStates["fireflies-ai"]}
-                onConnect={() => handleConnect("fireflies-ai")}
-                index={cardIndex++}
-              />
-            )}
+              <p className="mt-1 text-xs leading-5 text-white/40">
+                Email and calendar context for personalized assistance.
+              </p>
+              <button
+                type="button"
+                onClick={() => state.handleConnect("google")}
+                disabled={googleState.isConnecting}
+                className="mt-3 flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.055] px-3 text-sm font-medium text-white/82 hover:border-white/18 hover:bg-white/[0.085] disabled:pointer-events-none disabled:opacity-60"
+              >
+                {googleState.isConnecting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Connecting
+                  </>
+                ) : googleState.isConnected ? (
+                  <>
+                    <CheckCircle2 className="size-4 text-emerald-400" />
+                    Connected
+                  </>
+                ) : (
+                  "Connect Google"
+                )}
+              </button>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Footer (Back / Skip / Continue) lives in the shared OnboardingFooter. */}
-    </div>
+        <div className="border border-emerald-400/24 bg-emerald-400/[0.055] p-3">
+          <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center bg-emerald-400/12 text-emerald-300">
+              <ShieldCheck className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <div className="font-medium text-white/86">{PRODUCT_NAME} Meeting Notes</div>
+                <span className="text-xs font-medium text-emerald-300">Ready</span>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-white/40">
+                Capture and summaries are ready once setup is complete.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-[auto_1fr] gap-2 pt-1">
+          <button
+            type="button"
+            onClick={state.handleBack}
+            className="flex h-11 items-center gap-2 border border-white/10 px-3 text-sm font-medium text-white/64 hover:border-white/18 hover:text-white"
+          >
+            <ArrowLeft className="size-4" />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={state.handleNext}
+            className="flex h-11 items-center justify-center gap-2 bg-white px-3 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+          >
+            Continue
+            <ArrowRight className="size-4" />
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={state.handleNext}
+          className="text-xs text-white/34 hover:text-white/58"
+        >
+          Skip source connections for now
+        </button>
+      </div>
+    </MinimalOnboardingLayout>
   );
 }

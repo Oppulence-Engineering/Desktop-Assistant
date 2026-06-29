@@ -1,0 +1,22 @@
+# Production overrides. Apply with:
+#   helm upgrade --install rowboat-www charts/rowboat-www \
+#     -f charts/rowboat-www/values-production.yaml -n rowboat
+
+replicaCount: 2
+
+image:
+  tag: "" # set by CI to the released git SHA / tag
+
+imagePullSecrets:
+  - name: ghcr-pull
+
+ingress:
+  host: oppulence.io
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  tls:
+    secretName: rowboat-www-tls
+
+config:
+  ROWBOAT_WWW_PUBLIC_API_BASE_URL: https://api.oppulence.io
+  ROWBOAT_WWW_API_PROXY_URL: https://api.oppulence.io

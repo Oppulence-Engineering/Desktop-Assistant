@@ -82,7 +82,7 @@ are incremental.
 | **Perf gate not in per-PR signal** (nightly/manual only) | Regressions found a day late, not on the PR | 🟡 Low |
 
 > Repo nuance that shapes tooling choice: **there is no root `package.json`** — the monorepo root
-> is polyglot (Go `apps/rowboat-api` + `tools/desktop-perf`, Next.js `apps/rowboat`/`rowboatx`,
+> is polyglot (Go `apps/rowboat-api` + `tools/desktop-perf`, Next.js `apps/rowboat`/`rowboat-www`,
 > and the nested pnpm workspace `apps/x`). Git hooks install at the **git root**, but the JS
 > toolchain lives under `apps/x`. This matters for the hook-tool decision (§5).
 
@@ -178,7 +178,7 @@ are incremental.
 ### Layer 1 — Pre-commit hook (fast, staged-only) — **P0**
 - [ ] Install **lefthook** at the git root with a `lefthook.yml`:
   - `apps/x/**/*.{ts,tsx}` (staged) → `eslint --fix` + `prettier --write`
-  - `apps/rowboat/**`, `apps/rowboatx/**` `*.{ts,tsx}` (staged) → prettier/eslint as configured there
+  - `apps/rowboat/**`, `apps/rowboat-www/**` `*.{ts,tsx}` (staged) → prettier/eslint as configured there
   - `**/*.go` (staged) → `gofmt -w` + `go vet` (scoped to the changed module)
   - Keep total hook time **< ~2s on a typical change**; never run `tsc` or tests here.
 - [ ] Document `git commit --no-verify` as the documented escape hatch.

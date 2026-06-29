@@ -1,4 +1,33 @@
-import { ArrowRight, Check, ChevronDown, CircleDot, FileText, Github, Play } from "lucide-react";
+import {
+  ArrowRight,
+  Bot,
+  BrainCircuit,
+  BriefcaseBusiness,
+  CalendarClock,
+  CheckCircle2,
+  ChevronDown,
+  CircleDot,
+  Code2,
+  DatabaseZap,
+  FileText,
+  Github,
+  Globe2,
+  HardDrive,
+  Inbox,
+  Layers3,
+  Mail,
+  MessageSquareText,
+  Network,
+  Play,
+  PlugZap,
+  Radar,
+  Route,
+  SearchCheck,
+  ShieldCheck,
+  Sparkles,
+  Workflow,
+  type LucideIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -31,6 +60,194 @@ const integrationGroups = [
   "Composio",
   "Custom MCP",
 ];
+
+type IconTone = "neutral" | "blue" | "green" | "orange" | "yellow";
+
+const iconToneClasses: Record<IconTone, string> = {
+  neutral: "text-foreground/78",
+  blue: "text-oppulence-blue",
+  green: "text-oppulence-green",
+  orange: "text-oppulence-orange",
+  yellow: "text-oppulence-yellow",
+};
+
+function MarketingIcon({
+  className,
+  compact = false,
+  icon: Icon,
+  tone = "neutral",
+}: {
+  className?: string;
+  compact?: boolean;
+  icon: LucideIcon;
+  tone?: IconTone;
+}) {
+  return (
+    <span
+      className={cn(
+        "marketing-icon-frame",
+        compact ? "size-7 rounded" : "size-9 rounded-md",
+        iconToneClasses[tone],
+        className,
+      )}
+    >
+      <Icon className={compact ? "size-3.5" : "size-4"} strokeWidth={2.25} />
+    </span>
+  );
+}
+
+function iconForLink(item: LinkItem): { icon: LucideIcon; tone?: IconTone } {
+  const key = `${item.href} ${item.label} ${item.description ?? ""}`.toLowerCase();
+
+  if (key.includes("gmail") || key.includes("email") || key.includes("inbox")) {
+    return { icon: Mail, tone: "blue" };
+  }
+
+  if (key.includes("calendar") || key.includes("meeting") || key.includes("fireflies")) {
+    return { icon: CalendarClock, tone: "yellow" };
+  }
+
+  if (key.includes("api") || key.includes("sdk") || key.includes("code")) {
+    return { icon: Code2, tone: "green" };
+  }
+
+  if (key.includes("widget") || key.includes("chat") || key.includes("support")) {
+    return { icon: MessageSquareText, tone: "blue" };
+  }
+
+  if (
+    key.includes("integration") ||
+    key.includes("connect") ||
+    key.includes("slack") ||
+    key.includes("github") ||
+    key.includes("linear") ||
+    key.includes("mcp")
+  ) {
+    return { icon: PlugZap, tone: "orange" };
+  }
+
+  if (key.includes("browser") || key.includes("chrome") || key.includes("multilingual")) {
+    return { icon: Globe2, tone: "blue" };
+  }
+
+  if (key.includes("customer") || key.includes("company")) {
+    return { icon: BriefcaseBusiness, tone: "yellow" };
+  }
+
+  if (key.includes("tool") || key.includes("validator") || key.includes("privacy")) {
+    return { icon: ShieldCheck, tone: "green" };
+  }
+
+  if (key.includes("docs") || key.includes("blog") || key.includes("article")) {
+    return { icon: FileText, tone: "neutral" };
+  }
+
+  if (key.includes("knowledge") || key.includes("help") || key.includes("memory")) {
+    return { icon: BrainCircuit, tone: "green" };
+  }
+
+  return { icon: Sparkles, tone: "neutral" };
+}
+
+function iconForTitle(title: string): { icon: LucideIcon; tone?: IconTone } {
+  const key = title.toLowerCase();
+
+  if (key.includes("help") || key.includes("answer") || key.includes("docs")) {
+    return { icon: SearchCheck, tone: "green" };
+  }
+
+  if (key.includes("widget") || key.includes("agent") || key.includes("assistant")) {
+    return { icon: Bot, tone: "blue" };
+  }
+
+  if (key.includes("gmail") || key.includes("email") || key.includes("inbox")) {
+    return { icon: Inbox, tone: "blue" };
+  }
+
+  if (key.includes("calendar") || key.includes("meeting")) {
+    return { icon: CalendarClock, tone: "yellow" };
+  }
+
+  if (key.includes("api") || key.includes("code") || key.includes("platform")) {
+    return { icon: Code2, tone: "green" };
+  }
+
+  if (key.includes("private") || key.includes("zero downtime")) {
+    return { icon: HardDrive, tone: "neutral" };
+  }
+
+  if (key.includes("translation") || key.includes("source")) {
+    return { icon: Network, tone: "orange" };
+  }
+
+  if (key.includes("analytic") || key.includes("trail")) {
+    return { icon: Route, tone: "yellow" };
+  }
+
+  return { icon: Layers3, tone: "neutral" };
+}
+
+function iconForPage(page: MarketingPage): { icon: LucideIcon; tone?: IconTone } {
+  const fromLink = iconForLink({
+    href: page.path,
+    label: page.title,
+    description: `${page.eyebrow} ${page.description}`,
+  });
+
+  if (fromLink.icon !== Sparkles) {
+    return fromLink;
+  }
+
+  if (page.category === "blog") {
+    return { icon: FileText, tone: "neutral" };
+  }
+
+  if (page.category === "customer") {
+    return { icon: BriefcaseBusiness, tone: "yellow" };
+  }
+
+  if (page.category === "demo") {
+    return { icon: Play, tone: "orange" };
+  }
+
+  if (page.category === "legal") {
+    return { icon: ShieldCheck, tone: "green" };
+  }
+
+  if (page.category === "tool") {
+    return { icon: Workflow, tone: "orange" };
+  }
+
+  if (page.category === "landing") {
+    return { icon: Radar, tone: "blue" };
+  }
+
+  return iconForTitle(page.title);
+}
+
+function EyebrowPill({
+  children,
+  className,
+  icon,
+  tone = "neutral",
+}: {
+  children: ReactNode;
+  className?: string;
+  icon: LucideIcon;
+  tone?: IconTone;
+}) {
+  return (
+    <p
+      className={cn(
+        "inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-primary/15 bg-primary/5 py-1 pr-3 pl-1.5 font-mono text-[10px] text-primary/75 uppercase tracking-wider",
+        className,
+      )}
+    >
+      <MarketingIcon className="size-5 rounded-[3px]" compact icon={icon} tone={tone} />
+      <span className="min-w-0 truncate">{children}</span>
+    </p>
+  );
+}
 
 const desktopScreenshots = {
   chat: "/marketing/desktop-chat.png",
@@ -133,34 +350,40 @@ function InlineLogo({ compact = false }: { compact?: boolean }) {
     <span className="flex items-center gap-2">
       <Image
         alt=""
-        className={cn("rounded-[3px]", compact ? "size-5" : "size-6")}
+        className={cn("rounded-[3px] dark:invert", compact ? "size-5" : "size-6")}
         height={24}
         src="/marketing/oppulence-icon.png"
         width={24}
       />
       {!compact ? (
-        <span className="font-f37-stout text-[24px] leading-[24px] text-primary">oppulence</span>
+        <span className="font-display text-[24px] leading-[24px] font-semibold text-primary">
+          oppulence
+        </span>
       ) : null}
     </span>
   );
 }
 
 function MenuLink({ item }: { item: LinkItem }) {
+  const { icon, tone } = iconForLink(item);
   const content = (
     <>
-      <span className="text-sm font-medium text-foreground">{item.label}</span>
-      {item.description ? (
-        <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
-          {item.description}
-        </span>
-      ) : null}
+      <MarketingIcon compact icon={icon} tone={tone} />
+      <span className="min-w-0">
+        <span className="text-sm font-medium text-foreground">{item.label}</span>
+        {item.description ? (
+          <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
+            {item.description}
+          </span>
+        ) : null}
+      </span>
     </>
   );
 
   if (item.external) {
     return (
       <a
-        className="block px-2 py-2 transition-colors hover:bg-background-200"
+        className="flex gap-3 rounded-sm px-2 py-2 transition-colors hover:bg-background-200"
         href={item.href}
         rel="noopener noreferrer"
         target="_blank"
@@ -171,7 +394,10 @@ function MenuLink({ item }: { item: LinkItem }) {
   }
 
   return (
-    <Link className="block px-2 py-2 transition-colors hover:bg-background-200" href={item.href}>
+    <Link
+      className="flex gap-3 rounded-sm px-2 py-2 transition-colors hover:bg-background-200"
+      href={item.href}
+    >
       {content}
     </Link>
   );
@@ -198,7 +424,7 @@ function DropdownMenu({
       <div className="invisible absolute top-full left-0 z-50 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100">
         <div
           className={cn(
-            "border border-primary/10 border-dashed bg-background p-4 shadow-xl",
+            "marketing-surface-strong border border-primary/10 bg-background p-4 shadow-xl shadow-black/20",
             width,
           )}
         >
@@ -218,7 +444,7 @@ function DropdownMenu({
 
 export function TopBar() {
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 border-grid-x border-b border-dashed bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="fixed top-0 right-0 left-0 z-50 border-grid-x border-b bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
       <div className="container-wrapper mx-auto">
         <div className="container mx-auto flex items-center justify-between gap-4 py-3">
           <div className="flex min-w-0 flex-1 items-center">
@@ -284,7 +510,7 @@ export function TopBar() {
 
 export function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative flex min-h-svh flex-col overflow-clip border-grid-x bg-background text-foreground">
+    <div className="marketing-polar dark relative flex min-h-svh flex-col overflow-clip border-grid-x bg-background text-foreground">
       <TopBar />
       <main className="flex flex-1 flex-col">
         <div className="container-wrapper mx-auto">{children}</div>
@@ -296,7 +522,7 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
 
 export function Footer() {
   return (
-    <footer className="mt-16 flex-col border-primary/10 border-t border-dashed md:mt-0 md:border-transparent">
+    <footer className="mt-16 flex-col border-primary/10 border-t md:mt-0 md:border-transparent">
       <div className="container-wrapper z-0 mx-auto px-2 py-12 md:pt-36 lg:px-0">
         <div className="container grid grid-cols-1 gap-8 px-2 md:grid-cols-4 md:px-4">
           <div className="col-span-1 md:col-span-2">
@@ -311,7 +537,7 @@ export function Footer() {
               {socialLinks.map((item) => (
                 <Button asChild key={item.href} size="sm" variant="secondary">
                   <a href={item.href} rel="noopener noreferrer" target="_blank">
-                    <Github className="size-4 text-muted-foreground" />
+                    <MarketingIcon compact icon={Github} />
                     {item.label}
                   </a>
                 </Button>
@@ -332,14 +558,14 @@ export function Footer() {
           />
         </div>
       </div>
-      <div className="flex flex-col items-center justify-between border-primary/10 border-t border-dashed md:items-start">
+      <div className="flex flex-col items-center justify-between border-primary/10 border-t md:items-start">
         <div className="container-wrapper mx-auto flex flex-col items-center justify-between gap-6 px-4 pt-4 pb-20 md:flex-row md:items-start md:gap-0">
           <p className="px-6 text-center font-mono text-foreground/60 text-sm md:text-left lg:px-0">
             © 2026 oppulence. Open source under the MIT license.
           </p>
         </div>
         <div className="container-wrapper mx-auto w-full px-4 pb-16">
-          <div className="flex items-center justify-center border-primary/10 border-t border-dashed pt-6 md:justify-start">
+          <div className="flex items-center justify-center border-primary/10 border-t pt-6 md:justify-start">
             <p className="font-mono text-[11px] text-foreground/45 uppercase tracking-wider">
               Oppulence — local-first AI coworker and agent platform
             </p>
@@ -355,27 +581,37 @@ function FooterGroup({ title, items }: { title: string; items: LinkItem[] }) {
     <div>
       <h3 className="mb-4 font-mono font-semibold text-foreground text-sm">{title}</h3>
       <ul className="space-y-2">
-        {items.map((item) => (
-          <li key={`${title}-${item.href}`}>
-            {item.external ? (
-              <a
-                className="font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
-                href={item.href}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {item.label}
-              </a>
-            ) : (
-              <Link
-                className="font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
-                href={item.href}
-              >
-                {item.label}
-              </Link>
-            )}
-          </li>
-        ))}
+        {items.map((item) => {
+          const { icon, tone } = iconForLink(item);
+          const content = (
+            <>
+              <MarketingIcon className="size-5 rounded-[3px]" compact icon={icon} tone={tone} />
+              <span className="min-w-0">{item.label}</span>
+            </>
+          );
+
+          return (
+            <li key={`${title}-${item.href}`}>
+              {item.external ? (
+                <a
+                  className="flex items-center gap-2 font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
+                  href={item.href}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {content}
+                </a>
+              ) : (
+                <Link
+                  className="flex items-center gap-2 font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
+                  href={item.href}
+                >
+                  {content}
+                </Link>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -435,35 +671,97 @@ const homeIncludedFeatures = [
   },
 ];
 
+const homeHeroCards: {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  tone: IconTone;
+}[] = [
+  {
+    label: "Data Plane",
+    value: "Gmail, Calendar, meetings, files, and tools.",
+    icon: DatabaseZap,
+    tone: "blue",
+  },
+  {
+    label: "Intelligence",
+    value: "Briefs, live notes, runbooks, and source-linked answers.",
+    icon: BrainCircuit,
+    tone: "green",
+  },
+  {
+    label: "Execution",
+    value: "MCP actions with review and audit boundaries.",
+    icon: Workflow,
+    tone: "orange",
+  },
+];
+
+const homeProblemIcons: {
+  icon: LucideIcon;
+  tone: IconTone;
+}[] = [
+  { icon: Radar, tone: "yellow" },
+  { icon: Bot, tone: "blue" },
+  { icon: PlugZap, tone: "orange" },
+];
+
+const bulletIconCycle: {
+  icon: LucideIcon;
+  tone: IconTone;
+}[] = [
+  { icon: Sparkles, tone: "yellow" },
+  { icon: Workflow, tone: "orange" },
+  { icon: ShieldCheck, tone: "green" },
+  { icon: BrainCircuit, tone: "blue" },
+];
+
+const pricingPlanIcons: {
+  icon: LucideIcon;
+  tone: IconTone;
+}[] = [
+  { icon: HardDrive, tone: "blue" },
+  { icon: Workflow, tone: "orange" },
+  { icon: ShieldCheck, tone: "green" },
+];
+
+const customerStoryIcons: {
+  icon: LucideIcon;
+  tone: IconTone;
+}[] = [
+  { icon: Radar, tone: "yellow" },
+  { icon: Workflow, tone: "blue" },
+  { icon: CheckCircle2, tone: "green" },
+];
+
 export function HomePage() {
   return (
     <div className="flex flex-col gap-8 pt-36 lg:min-h-screen xl:pt-40">
       <div className="flex flex-1 flex-col gap-6">
         <div className="flex flex-col items-start gap-5 px-4 pb-8">
-          <p className="inline-flex w-fit max-w-full rounded-full border border-primary/15 bg-primary/5 px-3 py-1 font-mono text-[10px] text-primary/75 uppercase tracking-wider">
+          <EyebrowPill icon={DatabaseZap} tone="blue">
             Local-first AI coworker + self-hosted agent platform
-          </p>
-          <h1 className="max-w-5xl text-balance text-left font-f37-stout text-4xl leading-tight md:text-5xl xl:text-6xl">
+          </EyebrowPill>
+          <h1 className="max-w-6xl text-balance text-left font-display text-5xl leading-[1.03] font-normal md:text-6xl xl:text-7xl">
             Give every operator live work context before they write, meet, or act.
           </h1>
-          <p className="max-w-3xl text-balance text-left text-base text-primary/70 leading-relaxed md:text-lg">
+          <p className="max-w-3xl text-balance text-left text-base text-muted-foreground leading-relaxed md:text-xl">
             Mirror email, calendar, meetings, files, and tools into an owned operations graph, then
             let agents brief, draft, update, and execute through reviewable workflows.
           </p>
           <div className="grid w-full grid-cols-1 gap-3 py-2 sm:grid-cols-3">
-            {[
-              ["Data Plane", "Gmail, Calendar, meetings, files, and tools."],
-              ["Intelligence", "Briefs, live notes, runbooks, and source-linked answers."],
-              ["Execution", "MCP actions with review and audit boundaries."],
-            ].map(([label, value]) => (
+            {homeHeroCards.map(({ icon, label, tone, value }) => (
               <div
-                className="rounded-md border border-primary/10 bg-background/60 px-4 py-3"
+                className="marketing-surface flex items-start gap-3 rounded-md border px-4 py-3"
                 key={label}
               >
-                <p className="font-mono text-[10px] text-foreground/55 uppercase tracking-wider">
-                  {label}
-                </p>
-                <p className="mt-1 text-sm text-foreground/75">{value}</p>
+                <MarketingIcon compact icon={icon} tone={tone} />
+                <div className="min-w-0">
+                  <p className="font-mono text-[10px] text-foreground/55 uppercase tracking-wider">
+                    {label}
+                  </p>
+                  <p className="mt-1 text-sm text-foreground/75">{value}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -472,35 +770,46 @@ export function HomePage() {
               asChild
               className="h-12 border border-transparent px-6 font-medium text-md has-[>svg]:px-4 lg:w-[250px]"
             >
-              <Link href="/book-a-demo">Start with Oppulence</Link>
+              <Link href="/book-a-demo">
+                Start with Oppulence
+                <ArrowRight className="size-4" />
+              </Link>
             </Button>
             <Button
               asChild
               className="h-12 justify-between border border-primary/10 px-4 font-medium text-md"
               variant="ghost"
             >
-              <Link href="/ai-help-center">Explore the graph</Link>
+              <Link href="/ai-help-center">
+                Explore the graph
+                <ArrowRight className="size-4" />
+              </Link>
             </Button>
           </div>
         </div>
 
         <DesktopScreenshotPreview
           alt="Oppulence desktop home screen with work context, tasks, and chat"
-          className="hidden w-full rounded-sm border border-primary/10 bg-background/50 lg:block"
+          className="hidden w-full rounded-md border border-primary/10 bg-background/50 lg:block"
           src={desktopScreenshots.home}
         />
 
         <div className="mt-10 flex w-full flex-col-reverse items-center justify-center gap-8 px-6 lg:mt-auto lg:flex-row lg:justify-between lg:px-4">
           <div className="flex flex-wrap items-center justify-center gap-2">
             <p className="font-mono text-foreground/60 text-xs">Works well with</p>
-            {integrationGroups.slice(0, 6).map((item) => (
-              <span
-                className="rounded border border-primary/10 bg-background-100 px-2 py-1 font-mono text-[10px] text-foreground/60"
-                key={item}
-              >
-                {item}
-              </span>
-            ))}
+            {integrationGroups.slice(0, 6).map((item) => {
+              const { icon, tone } = iconForLink({ href: item, label: item });
+
+              return (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded border border-primary/10 bg-background-100 py-1 pr-2 pl-1 font-mono text-[10px] text-foreground/60"
+                  key={item}
+                >
+                  <MarketingIcon className="size-5 rounded-[3px]" compact icon={icon} tone={tone} />
+                  {item}
+                </span>
+              );
+            })}
           </div>
           <div className="flex items-center gap-2 font-mono text-[10px] text-foreground/45 uppercase tracking-wider">
             <span className="size-2 rounded-full bg-oppulence-green" />
@@ -509,13 +818,17 @@ export function HomePage() {
         </div>
       </div>
 
-      <section className="grid border-primary/10 border-y border-dashed md:grid-cols-3">
-        {homeProblemCards.map((card) => (
+      <section className="grid border-primary/10 border-y md:grid-cols-3">
+        {homeProblemCards.map((card, index) => (
           <article
-            className="border-primary/10 border-b border-dashed bg-background-100/40 p-6 last:border-b-0 md:border-r md:border-b-0 md:last:border-r-0"
+            className="marketing-surface border-primary/10 border-b p-6 last:border-b-0 md:border-r md:border-b-0 md:last:border-r-0"
             key={card.title}
           >
-            <h2 className="font-semibold text-xl">{card.title}</h2>
+            <MarketingIcon
+              icon={homeProblemIcons[index]?.icon ?? Radar}
+              tone={homeProblemIcons[index]?.tone ?? "neutral"}
+            />
+            <h2 className="mt-5 font-semibold text-xl">{card.title}</h2>
             <p className="mt-3 text-foreground/80 text-sm leading-relaxed">{card.body}</p>
           </article>
         ))}
@@ -527,7 +840,7 @@ export function HomePage() {
             <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
               Product surface
             </p>
-            <h2 className="mt-3 max-w-3xl font-f37-stout text-3xl leading-tight md:text-5xl">
+            <h2 className="mt-3 max-w-3xl font-display text-4xl leading-tight font-normal md:text-6xl">
               One graph for desktop, API, widgets, and background agents.
             </h2>
             <p className="mt-5 text-base leading-relaxed text-muted-foreground">
@@ -536,41 +849,58 @@ export function HomePage() {
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {homeIncludedFeatures.slice(0, 6).map((item) => (
-              <article
-                className="border border-primary/10 border-dashed bg-background-100/40 p-5"
-                key={item.title}
-              >
-                <h3 className="font-semibold">{item.title}</h3>
-                <p className="mt-2 text-muted-foreground text-sm leading-relaxed">{item.body}</p>
-              </article>
-            ))}
+            {homeIncludedFeatures.slice(0, 6).map((item) => {
+              const { icon, tone } = iconForTitle(item.title);
+
+              return (
+                <article className="marketing-surface border p-5" key={item.title}>
+                  <MarketingIcon icon={icon} tone={tone} />
+                  <h3 className="mt-5 font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-muted-foreground text-sm leading-relaxed">{item.body}</p>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      <section className="border-primary/10 border-t border-dashed px-4 py-16 md:py-24">
+      <section className="border-primary/10 border-t px-4 py-16 md:py-24">
         <div className="grid gap-6 md:grid-cols-3">
-          {pricingPlans.map((plan) => (
-            <article
-              className={cn(
-                "border border-primary/10 border-dashed bg-background-100/40 p-6",
-                plan.recommended && "bg-oppulence-yellow-100/30",
-              )}
-              key={plan.name}
-            >
-              <h2 className="font-semibold text-xl">{plan.name}</h2>
-              <p className="mt-5 text-3xl font-semibold">{plan.price}</p>
-              <p className="mt-3 min-h-16 text-muted-foreground text-sm leading-relaxed">
-                {plan.description}
-              </p>
-              <ul className="mt-6 space-y-2 text-foreground/80 text-sm leading-relaxed">
-                {plan.features.map((feature) => (
-                  <li key={feature}>- {feature}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
+          {pricingPlans.map((plan, index) => {
+            const { icon, tone } = pricingPlanIcons[index % pricingPlanIcons.length];
+
+            return (
+              <article
+                className={cn(
+                  "marketing-surface border p-6",
+                  plan.recommended && "marketing-surface-strong",
+                )}
+                key={plan.name}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <MarketingIcon icon={icon} tone={tone} />
+                  {plan.recommended ? (
+                    <span className="rounded border border-oppulence-orange/30 bg-oppulence-orange/10 px-2 py-1 font-mono text-[10px] text-oppulence-orange uppercase tracking-wider">
+                      Recommended
+                    </span>
+                  ) : null}
+                </div>
+                <h2 className="mt-5 font-semibold text-xl">{plan.name}</h2>
+                <p className="mt-5 text-3xl font-semibold">{plan.price}</p>
+                <p className="mt-3 min-h-16 text-muted-foreground text-sm leading-relaxed">
+                  {plan.description}
+                </p>
+                <ul className="mt-6 space-y-3 text-foreground/80 text-sm leading-relaxed">
+                  {plan.features.map((feature) => (
+                    <li className="flex gap-3" key={feature}>
+                      <MarketingIcon compact icon={CheckCircle2} tone="green" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            );
+          })}
         </div>
       </section>
     </div>
@@ -590,11 +920,11 @@ function DesktopScreenshotPreview({
     <div
       className={cn("relative flex w-full items-center justify-center overflow-hidden", className)}
     >
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,var(--background-100),transparent_34%,var(--background-300)),radial-gradient(circle_at_18%_22%,var(--oppulence-yellow)_0,transparent_18%),radial-gradient(circle_at_84%_76%,var(--oppulence-blue)_0,transparent_22%)] opacity-55" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--background-50),var(--background)_58%,var(--background-100))]" />
       <div className="relative z-10 flex min-w-0 flex-1 items-center justify-center p-2 sm:p-6">
         <Image
           alt={alt}
-          className="w-full min-w-0 max-w-6xl rounded-lg border border-primary/10 bg-background object-cover shadow-2xl"
+          className="w-full min-w-0 max-w-6xl rounded-lg border border-primary/10 bg-background object-cover shadow-2xl shadow-black/30"
           height={1000}
           priority={src === desktopScreenshots.home}
           sizes="(max-width: 768px) 100vw, 1120px"
@@ -618,17 +948,21 @@ export function GenericPage({ page }: { page: MarketingPage }) {
   return (
     <PageShell page={page}>
       <section className="grid gap-6 md:grid-cols-3">
-        {page.bullets.map((bullet, index) => (
-          <article
-            className="border border-dashed border-primary/10 bg-background-100/40 p-5"
-            key={bullet}
-          >
-            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-              0{index + 1}
-            </span>
-            <p className="mt-4 text-sm leading-relaxed text-foreground/78">{bullet}</p>
-          </article>
-        ))}
+        {page.bullets.map((bullet, index) => {
+          const { icon, tone } = bulletIconCycle[index % bulletIconCycle.length];
+
+          return (
+            <article className="marketing-surface border p-5" key={bullet}>
+              <div className="flex items-center justify-between gap-3">
+                <MarketingIcon icon={icon} tone={tone} />
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  0{index + 1}
+                </span>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-foreground/78">{bullet}</p>
+            </article>
+          );
+        })}
       </section>
       <ProofGrid page={page} />
       {page.path === "integrations" ? <IntegrationsPanel /> : null}
@@ -648,10 +982,10 @@ function FeatureMirrorPage({
     <div className="flex flex-col pt-40 pb-20">
       <div className="mx-auto w-full max-w-6xl px-4">
         <header className="max-w-4xl">
-          <p className="w-fit max-w-full rounded-full border border-primary/15 bg-primary/5 px-3 py-1 font-mono text-[10px] text-primary/75 uppercase tracking-wider">
+          <EyebrowPill {...iconForPage(page)}>
             {page.eyebrow}
-          </p>
-          <h1 className="mt-5 text-balance font-f37-stout text-4xl leading-tight md:text-6xl">
+          </EyebrowPill>
+          <h1 className="mt-5 text-balance font-display text-5xl leading-none font-normal md:text-7xl">
             {page.title}
           </h1>
           <p className="mt-6 max-w-3xl text-lg text-muted-foreground">{page.description}</p>
@@ -661,27 +995,34 @@ function FeatureMirrorPage({
         </header>
 
         <section className="mt-12 grid gap-3 sm:grid-cols-3">
-          {page.bullets.slice(0, 3).map((bullet, index) => (
-            <article
-              className="rounded-md border border-primary/10 bg-background/60 px-4 py-3"
-              key={bullet}
-            >
-              <p className="font-mono text-[10px] text-foreground/55 uppercase tracking-wider">
-                0{index + 1}
-              </p>
-              <p className="mt-1 text-sm text-foreground/75">{bullet}</p>
-            </article>
-          ))}
+          {page.bullets.slice(0, 3).map((bullet, index) => {
+            const { icon, tone } = bulletIconCycle[index % bulletIconCycle.length];
+
+            return (
+              <article
+                className="marketing-surface flex gap-3 rounded-md border px-4 py-3"
+                key={bullet}
+              >
+                <MarketingIcon compact icon={icon} tone={tone} />
+                <div className="min-w-0">
+                  <p className="font-mono text-[10px] text-foreground/55 uppercase tracking-wider">
+                    0{index + 1}
+                  </p>
+                  <p className="mt-1 text-sm text-foreground/75">{bullet}</p>
+                </div>
+              </article>
+            );
+          })}
         </section>
 
         <DesktopScreenshotPreview
           alt={`Oppulence desktop app screenshot for ${page.eyebrow}`}
-          className="mt-10 rounded-sm border border-primary/10 bg-background/50"
+          className="mt-10 rounded-md border border-primary/10 bg-background/50"
           src={screenshotForPage(page)}
         />
 
         <section className="mt-14 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <article className="border border-primary/10 border-dashed bg-background-100/40 p-6">
+          <article className="marketing-surface border p-6">
             <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
               Capability detail
             </p>
@@ -690,7 +1031,7 @@ function FeatureMirrorPage({
             <ol className="mt-4 space-y-3">
               {details.workflow.map((step, index) => (
                 <li className="flex gap-3 text-sm leading-relaxed" key={step}>
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded border border-primary/10 bg-background font-mono text-[10px] text-muted-foreground">
+                  <span className="marketing-icon-frame size-7 rounded font-mono text-[10px] text-muted-foreground">
                     {index + 1}
                   </span>
                   <span className="text-foreground/75">{step}</span>
@@ -700,21 +1041,25 @@ function FeatureMirrorPage({
           </article>
 
           <div className="grid gap-4">
-            {details.sections.map((section) => (
-              <article
-                className="border border-primary/10 border-dashed bg-background-100/40 p-6"
-                key={section.title}
-              >
-                <h2 className="font-semibold text-xl">{section.title}</h2>
-                <p className="mt-3 text-muted-foreground text-sm leading-relaxed">{section.body}</p>
-              </article>
-            ))}
-            <article className="border border-primary/10 border-dashed bg-background p-6">
+            {details.sections.map((section) => {
+              const { icon, tone } = iconForTitle(section.title);
+
+              return (
+                <article className="marketing-surface border p-6" key={section.title}>
+                  <MarketingIcon icon={icon} tone={tone} />
+                  <h2 className="mt-5 font-semibold text-xl">{section.title}</h2>
+                  <p className="mt-3 text-muted-foreground text-sm leading-relaxed">
+                    {section.body}
+                  </p>
+                </article>
+              );
+            })}
+            <article className="marketing-surface-strong border p-6">
               <h2 className="font-semibold text-xl">Operational outcomes</h2>
               <div className="mt-4 grid gap-3">
                 {details.outcomes.map((outcome) => (
                   <div className="flex gap-3 text-sm leading-relaxed" key={outcome}>
-                    <Check className="mt-0.5 size-4 shrink-0 text-oppulence-green" />
+                    <MarketingIcon compact icon={CheckCircle2} tone="green" />
                     <span className="text-foreground/75">{outcome}</span>
                   </div>
                 ))}
@@ -772,10 +1117,10 @@ function PageShell({ page, children }: { page: MarketingPage; children: ReactNod
     <div className="flex flex-col pt-40 pb-20">
       <div className="mx-auto w-full max-w-5xl px-6">
         <header className="max-w-4xl">
-          <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
+          <EyebrowPill {...iconForPage(page)}>
             {page.eyebrow}
-          </p>
-          <h1 className="mt-3 text-balance font-f37-stout text-4xl leading-tight md:text-6xl">
+          </EyebrowPill>
+          <h1 className="mt-3 text-balance font-display text-5xl leading-none font-normal md:text-7xl">
             {page.title}
           </h1>
           <p className="mt-6 max-w-3xl text-lg text-muted-foreground">{page.description}</p>
@@ -799,11 +1144,11 @@ function PageShell({ page, children }: { page: MarketingPage; children: ReactNod
 
 function ProofGrid({ page }: { page: MarketingPage }) {
   return (
-    <section className="border-y border-dashed border-primary/10 py-10">
+    <section className="border-y border-primary/10 py-10">
       <div className="grid gap-4 md:grid-cols-3">
         {page.proof.map((item) => (
           <div className="flex gap-3" key={item}>
-            <Check className="mt-0.5 size-4 text-oppulence-green" />
+            <MarketingIcon compact icon={CheckCircle2} tone="green" />
             <p className="text-sm leading-relaxed text-foreground/72">{item}</p>
           </div>
         ))}
@@ -817,14 +1162,19 @@ function IntegrationsPanel() {
     <section>
       <h2 className="text-2xl font-semibold">Connector surface</h2>
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        {integrationGroups.map((item) => (
-          <div
-            className="border border-dashed border-primary/10 bg-background-100/40 px-4 py-3 font-mono text-sm"
-            key={item}
-          >
-            {item}
-          </div>
-        ))}
+        {integrationGroups.map((item) => {
+          const { icon, tone } = iconForLink({ href: item, label: item });
+
+          return (
+            <div
+              className="marketing-surface flex items-center gap-3 border px-4 py-3 font-mono text-sm"
+              key={item}
+            >
+              <MarketingIcon compact icon={icon} tone={tone} />
+              {item}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -840,15 +1190,16 @@ function ToolPanel({ page }: { page: MarketingPage }) {
           quiz logic can be wired behind the same URL when ready.
         </p>
       </div>
-      <div className="border border-dashed border-primary/10 bg-background-100/50 p-5">
+      <div className="marketing-surface border p-5">
         <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-          <CircleDot className="size-3 text-oppulence-orange" />
+          <MarketingIcon compact icon={CircleDot} tone="orange" />
           {page.path}
         </div>
         <div className="mt-5 space-y-3">
           {page.bullets.map((bullet) => (
-            <div className="border border-primary/10 bg-background px-4 py-3 text-sm" key={bullet}>
-              {bullet}
+            <div className="flex gap-3 border border-primary/10 bg-background px-4 py-3 text-sm" key={bullet}>
+              <MarketingIcon compact icon={ShieldCheck} tone="green" />
+              <span>{bullet}</span>
             </div>
           ))}
         </div>
@@ -860,32 +1211,39 @@ function ToolPanel({ page }: { page: MarketingPage }) {
 export function PricingPage({ page }: { page: MarketingPage }) {
   return (
     <PageShell page={page}>
-      <section className="grid border-y border-dashed border-primary/10 md:grid-cols-3">
-        {pricingPlans.map((plan) => (
-          <article
-            className="border-b border-dashed border-primary/10 p-6 last:border-b-0 md:border-r md:border-b-0 md:last:border-r-0"
-            key={plan.name}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-semibold">{plan.name}</h2>
-              {plan.recommended ? (
-                <span className="font-mono text-xs text-oppulence-orange">Recommended</span>
-              ) : null}
-            </div>
-            <p className="mt-5 text-3xl font-semibold">{plan.price}</p>
-            <p className="mt-3 min-h-16 text-sm leading-relaxed text-muted-foreground">
-              {plan.description}
-            </p>
-            <ul className="mt-8 space-y-3">
-              {plan.features.map((feature) => (
-                <li className="flex gap-2 text-sm" key={feature}>
-                  <Check className="mt-0.5 size-4 text-oppulence-green" />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
+      <section className="grid border-y border-primary/10 md:grid-cols-3">
+        {pricingPlans.map((plan, index) => {
+          const { icon, tone } = pricingPlanIcons[index % pricingPlanIcons.length];
+
+          return (
+            <article
+              className="marketing-surface border-b border-primary/10 p-6 last:border-b-0 md:border-r md:border-b-0 md:last:border-r-0"
+              key={plan.name}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <MarketingIcon icon={icon} tone={tone} />
+                {plan.recommended ? (
+                  <span className="rounded border border-oppulence-orange/30 bg-oppulence-orange/10 px-2 py-1 font-mono text-[10px] text-oppulence-orange uppercase tracking-wider">
+                    Recommended
+                  </span>
+                ) : null}
+              </div>
+              <h2 className="mt-5 text-2xl font-semibold">{plan.name}</h2>
+              <p className="mt-5 text-3xl font-semibold">{plan.price}</p>
+              <p className="mt-3 min-h-16 text-sm leading-relaxed text-muted-foreground">
+                {plan.description}
+              </p>
+              <ul className="mt-8 space-y-3">
+                {plan.features.map((feature) => (
+                  <li className="flex gap-3 text-sm" key={feature}>
+                    <MarketingIcon compact icon={CheckCircle2} tone="green" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          );
+        })}
       </section>
     </PageShell>
   );
@@ -897,11 +1255,11 @@ export function BlogIndexPage({ page }: { page: MarketingPage }) {
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {blogPages.slice(0, 18).map((post) => (
           <Link
-            className="border border-dashed border-primary/10 bg-background-100/40 p-5 transition-colors hover:bg-background-200"
+            className="marketing-surface border p-5 transition-colors hover:bg-background-200"
             href={`/${post.path}`}
             key={post.path}
           >
-            <FileText className="size-4 text-oppulence-orange" />
+            <MarketingIcon icon={FileText} tone="orange" />
             <h2 className="mt-4 line-clamp-2 font-semibold">{post.title}</h2>
             <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
               {post.description}
@@ -944,11 +1302,11 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
       <section className="grid gap-4 md:grid-cols-2">
         {customerPages.map((story) => (
           <Link
-            className="border border-dashed border-primary/10 bg-background-100/40 p-6 transition-colors hover:bg-background-200"
+            className="marketing-surface border p-6 transition-colors hover:bg-background-200"
             href={`/${story.path}`}
             key={story.path}
           >
-            <Github className="size-4 text-oppulence-blue" />
+            <MarketingIcon icon={Github} tone="blue" />
             <h2 className="mt-4 text-xl font-semibold">{story.title}</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               {story.description}
@@ -965,8 +1323,12 @@ export function CustomerStoryPage({ page }: { page: MarketingPage }) {
     <PageShell page={page}>
       <section className="grid gap-6 md:grid-cols-3">
         {["Before Oppulence", "With Oppulence", "Operational result"].map((title, index) => (
-          <article className="border border-dashed border-primary/10 p-5" key={title}>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          <article className="marketing-surface border p-5" key={title}>
+            <MarketingIcon
+              icon={customerStoryIcons[index]?.icon ?? BriefcaseBusiness}
+              tone={customerStoryIcons[index]?.tone ?? "neutral"}
+            />
+            <p className="mt-5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
               {title}
             </p>
             <p className="mt-4 text-sm leading-relaxed text-foreground/76">
@@ -984,12 +1346,12 @@ export function DemoPage({ page }: { page: MarketingPage }) {
   return (
     <PageShell page={page}>
       <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="border border-dashed border-primary/10 bg-background-100/40 p-6">
+        <div className="marketing-surface border p-6">
           <h2 className="text-2xl font-semibold">Demo agenda</h2>
           <ul className="mt-6 space-y-4">
             {page.bullets.map((bullet) => (
               <li className="flex gap-3 text-sm leading-relaxed" key={bullet}>
-                <Play className="mt-0.5 size-4 text-oppulence-orange" />
+                <MarketingIcon compact icon={Play} tone="orange" />
                 <span>{bullet}</span>
               </li>
             ))}
@@ -1001,10 +1363,7 @@ export function DemoPage({ page }: { page: MarketingPage }) {
           </p>
           <div className="mt-5 grid gap-3">
             {["Work email", "Company", "Primary workflow"].map((field) => (
-              <div
-                className="border border-dashed border-primary/10 bg-background-100 px-4 py-3 text-sm text-muted-foreground"
-                key={field}
-              >
+              <div className="marketing-surface border px-4 py-3 text-sm text-muted-foreground" key={field}>
                 {field}
               </div>
             ))}
@@ -1037,7 +1396,9 @@ export function LegalPage({ page }: { page: MarketingPage }) {
 export function NotFoundMarketingPage() {
   return (
     <div className="px-6 pt-40 pb-20 md:px-8">
-      <h1 className="font-f37-stout text-4xl leading-tight md:text-6xl">Page not found</h1>
+      <h1 className="font-display text-5xl leading-none font-normal md:text-7xl">
+        Page not found
+      </h1>
       <p className="mt-4 max-w-xl text-muted-foreground">
         This route is not in the Oppulence marketing surface.
       </p>
@@ -1050,7 +1411,7 @@ export function NotFoundMarketingPage() {
 
 export function RouteMapSummary() {
   return (
-    <section className="border-t border-dashed border-primary/10 px-4 py-12 md:px-8">
+    <section className="border-t border-primary/10 px-4 py-12 md:px-8">
       <div className="grid gap-8 md:grid-cols-3">
         <FooterGroup items={toolLinks} title="Tools" />
         <FooterGroup items={alternativeLinks} title="Alternatives" />

@@ -10,17 +10,12 @@ interface VerticalStepperProps {
 
 /** One-line context under each step label; keyed by the step's label. */
 const SUBLABELS: Record<string, string> = {
-  Welcome: "Sign in or bring a key",
-  Model: "Pick a provider",
-  Connect: "Email, calendar, notes",
-  Done: "Ready to go",
+  Access: "Account or API key",
+  Model: "Provider validation",
+  Sources: "Work context",
+  Ready: "First run",
 };
 
-/**
- * Vertical progress rail for the full-page onboarding. Shares the same step
- * arrays as the horizontal {@link StepIndicator} so the two never drift, and
- * reuses the same done/current/upcoming node treatment.
- */
 export function VerticalStepper({ currentStep, path }: VerticalStepperProps) {
   const steps = path === "byok" ? BYOK_STEPS : ROWBOAT_STEPS;
   const currentIndex = steps.findIndex((s) => s.step === currentStep);
@@ -36,19 +31,22 @@ export function VerticalStepper({ currentStep, path }: VerticalStepperProps) {
             <div className="flex flex-col items-center">
               <div
                 className={cn(
-                  "size-7 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300",
-                  done && "bg-primary text-primary-foreground",
-                  current && "bg-primary text-primary-foreground ring-4 ring-primary/20",
-                  !done && !current && "bg-muted text-muted-foreground",
+                  "flex size-8 items-center justify-center border font-mono text-[11px] font-medium transition-all duration-300",
+                  done && "border-emerald-500/30 bg-emerald-500/10 text-emerald-500",
+                  current &&
+                    "border-foreground bg-foreground text-background ring-4 ring-foreground/10",
+                  !done &&
+                    !current &&
+                    "border-[var(--onboarding-border)] bg-[var(--onboarding-card)] text-muted-foreground",
                 )}
               >
-                {done ? <CheckCircle2 className="size-4" /> : i + 1}
+                {done ? <CheckCircle2 className="size-4" /> : String(i + 1).padStart(2, "0")}
               </div>
               {!isLast && (
                 <div
                   className={cn(
-                    "w-px h-8 my-1 transition-colors duration-500",
-                    i < currentIndex ? "bg-primary" : "bg-border",
+                    "my-1 h-8 w-px transition-colors duration-500",
+                    i < currentIndex ? "bg-emerald-500/60" : "bg-[var(--onboarding-border)]",
                   )}
                 />
               )}

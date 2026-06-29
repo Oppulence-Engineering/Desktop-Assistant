@@ -462,6 +462,19 @@ const seed: Seed = SeedSchema.parse({
         )}\n`,
       },
       {
+        path: "config/note_creation.json",
+        mtime: t.now,
+        body: `${JSON.stringify(
+          {
+            strictness: "medium",
+            configured: false,
+            onboardingComplete: true,
+          },
+          null,
+          2,
+        )}\n`,
+      },
+      {
         path: "knowledge/Customers/Acme Capital.md",
         mtime: t.now,
         body: `---
@@ -1561,9 +1574,29 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
-function printResult(label: string, result: unknown): void {
+function printDesktopSummary(label: string, workspaceDir: string, data: Seed): void {
   console.log(`${label}:`);
-  console.log(JSON.stringify(result, null, 2));
+  console.log(`  workspaceDir: ${workspaceDir}`);
+  console.log(
+    `  files: ${
+      data.workspace.files.length +
+      data.workspace.tasks.length * 3 +
+      data.workspace.runs.length +
+      data.workspace.gmailThreads.length
+    }`,
+  );
+  console.log(`  tasks: ${data.workspace.tasks.length}`);
+  console.log(`  gmailThreads: ${data.workspace.gmailThreads.length}`);
+  console.log(`  runs: ${data.workspace.runs.length}`);
+}
+
+function printApiSummary(label: string, apiDb: string, data: Seed): void {
+  const dialect =
+    apiDb.startsWith("postgres://") || apiDb.startsWith("postgresql://") ? "postgres" : "sqlite";
+  console.log(`${label}:`);
+  console.log(`  dialect: ${dialect}`);
+  console.log(`  tasks: ${data.api.tasks.length}`);
+  console.log(`  runs: ${data.api.runs.length}`);
 }
 
 async function main() {
@@ -1578,10 +1611,12 @@ async function main() {
   );
 
   if (!args.skipDesktop) {
-    printResult("desktop workspace", writeDesktopWorkspace(args.workspaceDir, seed, args.dryRun));
+    writeDesktopWorkspace(args.workspaceDir, seed, args.dryRun);
+    printDesktopSummary("desktop workspace", args.workspaceDir, seed);
   }
   if (!args.skipApi) {
-    printResult("rowboat api db", seedApiDb(args.apiDb, seed, args.dryRun));
+    seedApiDb(args.apiDb, seed, args.dryRun);
+    printApiSummary("rowboat api db", args.apiDb, seed);
   }
 }
 

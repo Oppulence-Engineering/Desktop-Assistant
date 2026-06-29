@@ -21,7 +21,7 @@ rowboat/
 ├── apps/
 │   ├── x/                 # Electron desktop app (focus of this doc)
 │   ├── rowboat/           # Next.js web dashboard
-│   ├── rowboatx/          # Next.js frontend
+│   ├── rowboat-www/       # Oppulence marketing and desktop companion web app
 │   ├── rowboat-api/       # Go desktop backend (billing, LLM gateway, OAuth broker)
 │   ├── oauth-consent/     # Ory Hydra login + consent UI (TS/Express) — DEFERRED (see rowboat-api/AUTH.md)
 │   ├── cli/               # CLI tool

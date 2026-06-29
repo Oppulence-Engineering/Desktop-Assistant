@@ -1,421 +1,182 @@
-import { Loader2, X, Lightbulb } from "@/lib/icons";
-import { motion } from "motion/react";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ArrowLeft, ArrowRight, CheckCircle2, KeyRound, Loader2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import {
-  OpenAIIcon,
-  AnthropicIcon,
-  GoogleIcon,
-  OllamaIcon,
-  OpenRouterIcon,
-  VercelIcon,
-  GenericApiIcon,
-} from "../provider-icons";
-import type { OnboardingState, LlmProviderFlavor } from "../use-onboarding-state";
 import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { MinimalOnboardingLayout } from "../minimal-layout";
+import type { LlmProviderFlavor, OnboardingState } from "../use-onboarding-state";
 
 interface LlmSetupStepProps {
   state: OnboardingState;
 }
 
-const primaryProviders: Array<{
-  id: LlmProviderFlavor;
-  name: string;
-  description: string;
-  color: string;
-  icon: React.ReactNode;
-}> = [
-  {
-    id: "openai",
-    name: "OpenAI",
-    description: "GPT models",
-    color: "bg-green-500/10 text-green-600 dark:text-green-400",
-    icon: <OpenAIIcon />,
-  },
-  {
-    id: "anthropic",
-    name: "Anthropic",
-    description: "Claude models",
-    color: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-    icon: <AnthropicIcon />,
-  },
-  {
-    id: "google",
-    name: "Gemini",
-    description: "Google AI Studio",
-    color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    icon: <GoogleIcon />,
-  },
-  {
-    id: "ollama",
-    name: "Ollama",
-    description: "Local models",
-    color: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
-    icon: <OllamaIcon />,
-  },
-];
-
-const moreProviders: Array<{
-  id: LlmProviderFlavor;
-  name: string;
-  description: string;
-  color: string;
-  icon: React.ReactNode;
-}> = [
-  {
-    id: "openrouter",
-    name: "OpenRouter",
-    description: "Multiple models, one key",
-    color: "bg-pink-500/10 text-pink-600 dark:text-pink-400",
-    icon: <OpenRouterIcon />,
-  },
-  {
-    id: "aigateway",
-    name: "AI Gateway",
-    description: "Vercel AI Gateway",
-    color: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
-    icon: <VercelIcon />,
-  },
-  {
-    id: "openai-compatible",
-    name: "OpenAI-Compatible",
-    description: "Custom endpoint",
-    color: "bg-gray-500/10 text-gray-600 dark:text-gray-400",
-    icon: <GenericApiIcon />,
-  },
+const PROVIDERS: Array<{ id: LlmProviderFlavor; label: string; sublabel: string }> = [
+  { id: "openai", label: "OpenAI", sublabel: "GPT models" },
+  { id: "anthropic", label: "Anthropic", sublabel: "Claude models" },
+  { id: "google", label: "Gemini", sublabel: "Google AI Studio" },
+  { id: "ollama", label: "Ollama", sublabel: "Local models" },
+  { id: "openrouter", label: "OpenRouter", sublabel: "Model router" },
+  { id: "openai-compatible", label: "Compatible", sublabel: "Custom endpoint" },
 ];
 
 export function LlmSetupStep({ state }: LlmSetupStepProps) {
-  const {
-    llmProvider,
-    setLlmProvider,
-    modelsCatalog,
-    modelsLoading,
-    modelsError,
-    activeConfig,
-    setTestState,
-    showApiKey,
-    showBaseURL,
-    isLocalProvider,
-    showMoreProviders,
-    setShowMoreProviders,
-    updateProviderConfig,
-    upsellDismissed,
-    setUpsellDismissed,
-    handleSwitchToRowboat,
-  } = state;
-
-  const isMoreProvider = moreProviders.some((p) => p.id === llmProvider);
-  const modelsForProvider = modelsCatalog[llmProvider] || [];
-  const showModelInput = isLocalProvider || modelsForProvider.length === 0;
-
-  const renderProviderCard = (provider: (typeof primaryProviders)[0], index: number) => {
-    const isSelected = llmProvider === provider.id;
-    return (
-      <motion.button
-        key={provider.id}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.05 }}
-        onClick={() => {
-          setLlmProvider(provider.id);
-          setTestState({ status: "idle" });
-        }}
-        className={cn(
-          "rounded-none border-2 p-4 text-left transition-all",
-          isSelected
-            ? "border-primary bg-primary/5 shadow-sm"
-            : "border-transparent bg-muted/50 hover:bg-muted",
-        )}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "size-10 rounded-none flex items-center justify-center shrink-0",
-              provider.color,
-            )}
-          >
-            {provider.icon}
-          </div>
-          <div>
-            <div className="text-sm font-semibold">{provider.name}</div>
-            <div className="text-xs text-muted-foreground">{provider.description}</div>
-          </div>
-        </div>
-      </motion.button>
-    );
-  };
+  const models = state.modelsCatalog[state.llmProvider] || [];
+  const selectedProvider = PROVIDERS.find((provider) => provider.id === state.llmProvider);
 
   return (
-    <div className="flex flex-col flex-1">
-      {/* Title */}
-      <h2 className="text-3xl font-bold tracking-tight text-center mb-2">Choose your model</h2>
-      <p className="text-base text-muted-foreground text-center mb-6">
-        Select a provider and configure your API key
-      </p>
-
-      {/* Inline Solomon AI upsell callout */}
-      {!upsellDismissed && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, height: 0 }}
-          className="rounded-none bg-primary/5 border border-primary/20 p-4 mb-6 flex items-start gap-3"
+    <MinimalOnboardingLayout
+      title={`Connect a model provider that can keep up with ${PRODUCT_NAME}.`}
+      description="Provider, model routing, and credentials stay together in one small setup panel."
+      chips={["Step 02 / 04", selectedProvider?.label || "Provider"]}
+      panelTitle="Model access"
+      panelDescription="Pick a provider and test the connection."
+      footer={
+        <button
+          type="button"
+          onClick={state.handleSwitchToRowboat}
+          className="text-white/46 underline-offset-4 hover:text-white/72 hover:underline"
         >
-          <Lightbulb className="size-5 text-primary shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-foreground">
-              <span className="font-medium">Tip:</span> Hosted models recommended. Locally run LLMs
-              can struggle with {PRODUCT_NAME}'s parallel background tasks. Bring your own API keys
-              below, or sign in for instant access.
-            </p>
+          Use managed access instead
+        </button>
+      }
+    >
+      <div className="grid gap-4">
+        <div>
+          <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
+            Provider
+          </div>
+          <div className="grid gap-2">
+            {PROVIDERS.slice(0, state.showMoreProviders ? PROVIDERS.length : 4).map((provider) => {
+              const isSelected = provider.id === state.llmProvider;
+              return (
+                <button
+                  key={provider.id}
+                  type="button"
+                  onClick={() => state.setLlmProvider(provider.id)}
+                  className={cn(
+                    "group flex min-h-12 items-center justify-between border border-white/10 bg-white/[0.045] px-3 text-left transition-colors hover:border-white/18 hover:bg-white/[0.075] focus-visible:border-white/40 focus-visible:outline-none",
+                    isSelected && "border-white/45 bg-white/[0.09]",
+                  )}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-white/86">
+                      {provider.label}
+                    </span>
+                    <span className="block truncate text-xs text-white/38">{provider.sublabel}</span>
+                  </span>
+                  {isSelected ? (
+                    <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
+                  ) : (
+                    <ArrowRight className="size-4 shrink-0 text-white/28 transition-transform group-hover:translate-x-0.5 group-hover:text-white/58" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {!state.showMoreProviders && (
             <button
-              onClick={handleSwitchToRowboat}
-              className="text-sm text-primary font-medium hover:underline mt-1 inline-block"
+              type="button"
+              onClick={() => state.setShowMoreProviders(true)}
+              className="mt-2 text-xs text-white/38 hover:text-white/62"
             >
-              Sign in instead
+              Show more providers
             </button>
-          </div>
-          <button
-            onClick={() => setUpsellDismissed(true)}
-            className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          >
-            <X className="size-4" />
-          </button>
-        </motion.div>
-      )}
-
-      {/* Provider selection */}
-      <div className="space-y-3 mb-4">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Provider
-        </span>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {primaryProviders.map((p, i) => renderProviderCard(p, i))}
-        </div>
-        {showMoreProviders || isMoreProvider ? (
-          <div className="grid gap-2 sm:grid-cols-2 mt-2">
-            {moreProviders.map((p, i) => renderProviderCard(p, i + 4))}
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowMoreProviders(true)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
-          >
-            More providers...
-          </button>
-        )}
-      </div>
-
-      {/* Separator */}
-      <div className="h-px bg-border my-4" />
-
-      {/* Model configuration */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold">Model Configuration</h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2 min-w-0">
-            <label className="text-xs font-medium text-muted-foreground">Assistant Model</label>
-            {modelsLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Loading...
-              </div>
-            ) : showModelInput ? (
-              <Input
-                value={activeConfig.model}
-                onChange={(e) => updateProviderConfig(llmProvider, { model: e.target.value })}
-                placeholder="Enter model"
-              />
-            ) : (
-              <Select
-                value={activeConfig.model}
-                onValueChange={(value) => updateProviderConfig(llmProvider, { model: value })}
-              >
-                <SelectTrigger className="w-full truncate">
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {modelsForProvider.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.name || model.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            {modelsError && <div className="text-xs text-destructive">{modelsError}</div>}
-          </div>
-
-          <div className="space-y-2 min-w-0">
-            <label className="text-xs font-medium text-muted-foreground">
-              Knowledge Graph Model
-            </label>
-            {modelsLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Loading...
-              </div>
-            ) : showModelInput ? (
-              <Input
-                value={activeConfig.knowledgeGraphModel}
-                onChange={(e) =>
-                  updateProviderConfig(llmProvider, {
-                    knowledgeGraphModel: e.target.value,
-                  })
-                }
-                placeholder={activeConfig.model || "Enter model"}
-              />
-            ) : (
-              <Select
-                value={activeConfig.knowledgeGraphModel || "__same__"}
-                onValueChange={(value) =>
-                  updateProviderConfig(llmProvider, {
-                    knowledgeGraphModel: value === "__same__" ? "" : value,
-                  })
-                }
-              >
-                <SelectTrigger className="w-full truncate">
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__same__">Same as assistant</SelectItem>
-                  {modelsForProvider.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.name || model.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          <div className="space-y-2 min-w-0">
-            <label className="text-xs font-medium text-muted-foreground">Meeting Notes Model</label>
-            {modelsLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Loading...
-              </div>
-            ) : showModelInput ? (
-              <Input
-                value={activeConfig.meetingNotesModel}
-                onChange={(e) =>
-                  updateProviderConfig(llmProvider, {
-                    meetingNotesModel: e.target.value,
-                  })
-                }
-                placeholder={activeConfig.model || "Enter model"}
-              />
-            ) : (
-              <Select
-                value={activeConfig.meetingNotesModel || "__same__"}
-                onValueChange={(value) =>
-                  updateProviderConfig(llmProvider, {
-                    meetingNotesModel: value === "__same__" ? "" : value,
-                  })
-                }
-              >
-                <SelectTrigger className="w-full truncate">
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__same__">Same as assistant</SelectItem>
-                  {modelsForProvider.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.name || model.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          <div className="space-y-2 min-w-0">
-            <label className="text-xs font-medium text-muted-foreground">Track Block Model</label>
-            {modelsLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Loading...
-              </div>
-            ) : showModelInput ? (
-              <Input
-                value={activeConfig.liveNoteAgentModel}
-                onChange={(e) =>
-                  updateProviderConfig(llmProvider, {
-                    liveNoteAgentModel: e.target.value,
-                  })
-                }
-                placeholder={activeConfig.model || "Enter model"}
-              />
-            ) : (
-              <Select
-                value={activeConfig.liveNoteAgentModel || "__same__"}
-                onValueChange={(value) =>
-                  updateProviderConfig(llmProvider, {
-                    liveNoteAgentModel: value === "__same__" ? "" : value,
-                  })
-                }
-              >
-                <SelectTrigger className="w-full truncate">
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__same__">Same as assistant</SelectItem>
-                  {modelsForProvider.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.name || model.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+          )}
         </div>
 
-        {showApiKey && (
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">
-              API Key {!state.requiresApiKey && "(optional)"}
-            </label>
-            <Input
-              type="password"
-              value={activeConfig.apiKey}
-              onChange={(e) => updateProviderConfig(llmProvider, { apiKey: e.target.value })}
-              placeholder="Paste your API key"
-              className="font-mono"
-            />
-          </div>
-        )}
+        <label className="grid gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
+            Assistant model
+          </span>
+          <select
+            value={state.activeConfig.model}
+            onChange={(event) =>
+              state.updateProviderConfig(state.llmProvider, { model: event.target.value })
+            }
+            className="h-11 border border-white/10 bg-white/[0.055] px-3 text-sm text-white outline-none focus:border-white/38"
+          >
+            {state.modelsLoading && <option value="">Loading models...</option>}
+            {!state.modelsLoading && models.length === 0 && (
+              <option value="">Enter a model in settings later</option>
+            )}
+            {models.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name || model.id}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        {showBaseURL && (
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Base URL</label>
-            <Input
-              value={activeConfig.baseURL}
-              onChange={(e) => updateProviderConfig(llmProvider, { baseURL: e.target.value })}
-              placeholder={
-                llmProvider === "ollama"
-                  ? "http://localhost:11434"
-                  : llmProvider === "openai-compatible"
-                    ? "http://localhost:1234/v1"
-                    : "https://ai-gateway.vercel.sh/v1"
+        {state.showBaseURL && (
+          <label className="grid gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
+              Endpoint
+            </span>
+            <input
+              value={state.activeConfig.baseURL}
+              onChange={(event) =>
+                state.updateProviderConfig(state.llmProvider, { baseURL: event.target.value })
               }
-              className="font-mono"
+              placeholder="https://api.example.com/v1"
+              className="h-11 border border-white/10 bg-white/[0.055] px-3 font-mono text-sm text-white outline-none placeholder:text-white/26 focus:border-white/38"
             />
-          </div>
+          </label>
         )}
-      </div>
 
-      {/* Footer (Back / Test & Continue) lives in the shared OnboardingFooter. */}
-    </div>
+        {state.showApiKey && (
+          <label className="grid gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
+              API key
+            </span>
+            <input
+              type="password"
+              value={state.activeConfig.apiKey}
+              onChange={(event) =>
+                state.updateProviderConfig(state.llmProvider, { apiKey: event.target.value })
+              }
+              placeholder="Paste your API key"
+              className="h-11 border border-white/10 bg-white/[0.055] px-3 font-mono text-sm text-white outline-none placeholder:text-white/26 focus:border-white/38"
+            />
+          </label>
+        )}
+
+        {state.modelsError && <div className="text-xs leading-5 text-red-300">{state.modelsError}</div>}
+        {state.testState.status === "error" && (
+          <div className="text-xs leading-5 text-red-300">{state.testState.error}</div>
+        )}
+
+        <div className="grid grid-cols-[auto_1fr] gap-2 pt-1">
+          <button
+            type="button"
+            onClick={state.handleBack}
+            className="flex h-11 items-center gap-2 border border-white/10 px-3 text-sm font-medium text-white/64 hover:border-white/18 hover:text-white"
+          >
+            <ArrowLeft className="size-4" />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={state.handleTestAndSaveLlmConfig}
+            disabled={!state.canTest || state.testState.status === "testing"}
+            className="flex h-11 items-center justify-center gap-2 bg-white px-3 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {state.testState.status === "testing" ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Testing
+              </>
+            ) : state.testState.status === "success" ? (
+              <>
+                <CheckCircle2 className="size-4" />
+                Connected
+              </>
+            ) : (
+              <>
+                <KeyRound className="size-4" />
+                Test & Continue
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </MinimalOnboardingLayout>
   );
 }

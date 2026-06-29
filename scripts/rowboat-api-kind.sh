@@ -18,6 +18,7 @@ DEPS_FILE="${ROOT_DIR}/deploy/kind/rowboat-api/dependencies.yaml"
 KIND_CONFIG_FILE="${ROOT_DIR}/deploy/kind/rowboat-api/kind-config.yaml"
 VALUES_FILE="${ROOT_DIR}/charts/rowboat-api/values-kind.yaml"
 CHART_DIR="${ROOT_DIR}/charts/rowboat-api"
+WWW_CHART_DIR="${ROOT_DIR}/charts/rowboat-www"
 INFISICAL_PROJECT_ID="${INFISICAL_PROJECT_ID:-}"
 INFISICAL_TOKEN="${INFISICAL_TOKEN:-}"
 INFISICAL_ENVIRONMENT="${INFISICAL_ENVIRONMENT:-dev}"
@@ -1101,6 +1102,63 @@ helm_validate() {
         echo "${env} values must not render the scheduler (scheduler.enabled should be false)" >&2
         exit 1
       fi
+    fi
+    echo "ok"
+  done
+
+  echo
+  echo "helm lint: rowboat-www values"
+  helm lint "$WWW_CHART_DIR" --values "${WWW_CHART_DIR}/values.yaml"
+  echo
+
+  for env in default staging production; do
+    local values
+    local expected_api_base
+    local expected_host
+    local expected_issuer
+    local expected_tls_secret
+    case "$env" in
+      default)
+        values="${WWW_CHART_DIR}/values.yaml"
+        expected_api_base="https://api.oppulence.io"
+        expected_host="oppulence.io"
+        expected_issuer="letsencrypt-prod"
+        expected_tls_secret="rowboat-www-tls"
+        ;;
+      staging)
+        values="${WWW_CHART_DIR}/values-staging.yaml"
+        expected_api_base="https://api.x.staging.oppulence.io"
+        expected_host="x.staging.oppulence.io"
+        expected_issuer="letsencrypt-staging"
+        expected_tls_secret="rowboat-www-staging-tls"
+        ;;
+      production)
+        values="${WWW_CHART_DIR}/values-production.yaml"
+        expected_api_base="https://api.oppulence.io"
+        expected_host="oppulence.io"
+        expected_issuer="letsencrypt"
+        expected_tls_secret="rowboat-www-tls"
+        ;;
+    esac
+
+    echo "helm template: rowboat-www ${env} values"
+    helm template rowboat-www "$WWW_CHART_DIR" --namespace "$NAMESPACE" --values "$values" >"${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q 'kind: Deployment' "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q 'kind: Service' "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q 'kind: HorizontalPodAutoscaler' "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q 'minReplicas: 2' "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q 'maxReplicas: 4' "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q 'averageUtilization: 70' "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q '/healthz' "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q '/readyz' "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q "host: \"${expected_host}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q "cert-manager.io/cluster-issuer: ${expected_issuer}" "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q "secretName: ${expected_tls_secret}" "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q "ROWBOAT_WWW_PUBLIC_API_BASE_URL: \"${expected_api_base}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q "ROWBOAT_WWW_API_PROXY_URL: \"${expected_api_base}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
+    if grep -q 'kind: PodDisruptionBudget' "${rendered_dir}/rowboat-www-${env}.yaml"; then
+      echo "rowboat-www ${env} values must not render a PDB" >&2
+      exit 1
     fi
     echo "ok"
   done

@@ -1,12 +1,12 @@
-import { Loader2, CheckCircle2 } from "@/lib/icons";
-import { motion } from "motion/react";
-import { Button } from "@/components/ui/button";
-import type { OnboardingState } from "../use-onboarding-state";
+import { ArrowRight, CheckCircle2, KeyRound, Loader2 } from "@/lib/icons";
+import { cn } from "@/lib/utils";
 import {
   PRODUCT_NAME,
   PRODUCT_PROVIDER_ID,
   getProductProviderState,
 } from "@x/shared/dist/branding.js";
+import { MinimalOnboardingLayout } from "../minimal-layout";
+import type { OnboardingState } from "../use-onboarding-state";
 
 interface WelcomeStepProps {
   state: OnboardingState;
@@ -20,97 +20,59 @@ export function WelcomeStep({ state }: WelcomeStepProps) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center text-center flex-1">
-      {/* Logo + tagline live in the persistent brand rail now (full-page shell). */}
-      {/* Main heading */}
-      <motion.h1
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="text-3xl font-bold tracking-tight mb-3"
-      >
-        Welcome to {PRODUCT_NAME}
-      </motion.h1>
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="text-base text-muted-foreground leading-relaxed max-w-sm mb-10"
-      >
-        {PRODUCT_NAME} connects to your work, builds a knowledge graph, and uses that context to
-        help you get things done. Private and on your machine.
-      </motion.p>
-
-      {/* Sign in / connected state */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="w-full max-w-xs"
-      >
-        {solomonState.isConnected ? (
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-              <CheckCircle2 className="size-5" />
-              <span className="text-sm font-medium">Connected to {PRODUCT_NAME}</span>
-            </div>
-            <Button
-              onClick={() => {
-                state.setOnboardingPath("rowboat");
-                state.setCurrentStep(2);
-              }}
-              size="lg"
-              className="w-full h-12 text-base font-medium"
-            >
-              Continue
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-4">
-            <Button
-              onClick={() => {
-                state.setOnboardingPath("rowboat");
-                state.startConnect(PRODUCT_PROVIDER_ID);
-              }}
-              size="lg"
-              className="w-full h-12 text-base font-medium"
-              disabled={solomonState.isConnecting}
-            >
-              {solomonState.isConnecting ? (
-                <>
-                  <Loader2 className="size-5 animate-spin mr-2" />
-                  Waiting for sign in...
-                </>
-              ) : (
-                `Sign in with ${PRODUCT_NAME}`
-              )}
-            </Button>
-            {solomonState.isConnecting && (
-              <p className="text-xs text-muted-foreground animate-pulse">
-                Complete sign in in your browser, then return here.
-              </p>
-            )}
-          </div>
-        )}
-      </motion.div>
-
-      {/* BYOK link */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="mt-8"
-      >
+    <MinimalOnboardingLayout
+      title="You're 2 clicks away from a workspace that remembers."
+      description="Private local memory for the work you already do."
+      chips={["Local-first context", "Change anytime"]}
+      panelTitle={`Set up ${PRODUCT_NAME}`}
+      panelDescription="Choose how the app should access models."
+      footer="Sources and memory are configured after model access."
+    >
+      <div className="grid gap-2">
         <button
+          type="button"
+          onClick={() => {
+            state.setOnboardingPath("rowboat");
+            if (solomonState.isConnected) {
+              state.setCurrentStep(2);
+              return;
+            }
+            state.startConnect(PRODUCT_PROVIDER_ID);
+          }}
+          disabled={solomonState.isConnecting}
+          className={cn(
+            "group flex h-11 items-center justify-between border border-white/10 bg-white/[0.055] px-3 text-left text-sm font-medium text-white/82 transition-colors hover:border-white/18 hover:bg-white/[0.085] focus-visible:border-white/40 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-70",
+            solomonState.isConnected && "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-100",
+          )}
+        >
+          <span className="flex min-w-0 items-center gap-2.5">
+            <img src="/logo-only.png" alt="" className="size-4 shrink-0 invert" />
+            <span className="truncate">Continue with {PRODUCT_NAME}</span>
+          </span>
+          {solomonState.isConnected ? (
+            <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
+          ) : solomonState.isConnecting ? (
+            <Loader2 className="size-4 shrink-0 animate-spin text-white/48" />
+          ) : (
+            <ArrowRight className="size-4 shrink-0 text-white/42 transition-transform group-hover:translate-x-0.5 group-hover:text-white/72" />
+          )}
+        </button>
+
+        <button
+          type="button"
           onClick={() => {
             state.setOnboardingPath("byok");
             state.setCurrentStep(1);
           }}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4 decoration-muted-foreground/30 hover:decoration-foreground/50"
+          className="group flex h-11 items-center justify-between border border-white/10 bg-white/[0.055] px-3 text-left text-sm font-medium text-white/82 transition-colors hover:border-white/18 hover:bg-white/[0.085] focus-visible:border-white/40 focus-visible:outline-none"
         >
-          I want to bring my own API key
+          <span className="flex min-w-0 items-center gap-2.5">
+            <KeyRound className="size-4 shrink-0 text-white/78" />
+            <span className="truncate">Bring your own provider</span>
+          </span>
+          <ArrowRight className="size-4 shrink-0 text-white/42 transition-transform group-hover:translate-x-0.5 group-hover:text-white/72" />
         </button>
-      </motion.div>
-    </div>
+      </div>
+    </MinimalOnboardingLayout>
   );
 }

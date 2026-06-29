@@ -190,7 +190,7 @@ Plus Next.js routes under `app/api/` — `app/api/widget/v1/*` is what the chat 
 
 | Path | What it is |
 |------|-----------|
-| `apps/rowboatx` | Second Next.js frontend (newer UI exploration). |
+| `apps/rowboat-www` | Oppulence marketing site and desktop companion web app. |
 | `apps/cli` | CLI tool. |
 | `apps/python-sdk` | The `rowboat` PyPI client (used by `simulation_runner`). |
 | `apps/docs` | Docs site, shipped on port 8000 via the `docs` profile. |
