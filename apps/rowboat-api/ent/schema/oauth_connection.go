@@ -51,10 +51,10 @@ func (OAuthConnection) Edges() []ent.Edge {
 // Indexes of the OAuthConnection.
 func (OAuthConnection) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("provider").Edges("user").Unique(),
-		// Webhook user resolution: (provider, external_account_id) lookups run
-		// under the internal context. Non-unique: nothing prevents two Rowboat
-		// users from connecting the same provider account.
-		index.Fields("provider", "external_account_id"),
+		// One user can connect multiple accounts for the same provider when the
+		// provider exposes a stable external account id (Slack team id, Google
+		// email, etc.). Reconnecting the same account should update the row,
+		// while connecting a second Slack workspace should create a second row.
+		index.Fields("provider", "external_account_id").Edges("user").Unique(),
 	}
 }

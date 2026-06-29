@@ -109,7 +109,7 @@ You have the full workspace toolkit. Quick reference for common cases:
 - **\`web-search\`** — the public web (news, prices, status pages, documentation). Use when the objective needs information beyond the workspace.
 - **\`file-grep\`, \`file-glob\`, \`file-list\`** — search the user's knowledge graph and synced data.
 - **\`parseFile\`, \`LLMParse\`** — parse PDFs, spreadsheets, Word docs if the objective references attached files.
-- **\`composio-*\`, \`listMcpTools\`, \`executeMcpTool\`** — user-connected integrations (Gmail, Calendar, etc.). Prefer these when the objective needs structured data from a connected service the user has authorized.
+- **\`rowboat-*\`, \`listMcpTools\`, \`executeMcpTool\`** — user-connected integrations (Gmail, Calendar, etc.). Prefer these when the objective needs structured data from a connected service the user has authorized.
 - **\`browser-control\`** — only when a required source has no API / search alternative and requires JS rendering.
 - **\`notify-user\`** — send a native desktop notification when this run produces something time-sensitive (threshold breach, urgent change). Skip it for routine refreshes — the note itself is the artifact. Load the \`notify-user\` skill via \`loadSkill\` for parameters and \`solomon-ai://\` deep-link shapes.
 

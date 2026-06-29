@@ -204,13 +204,13 @@
           "repo"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "GITHUB_GET_PAGE_VIEWS",
         "noAuth": false,
         "toolkitName": "GitHub",
         "toolkitSlug": "github",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/github.png"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/github.png"
       }
     },
     {
@@ -359,13 +359,13 @@
           "values"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND",
         "noAuth": false,
         "toolkitName": "Googlesheets",
         "toolkitSlug": "googlesheets",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/google-sheets.svg"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/google-sheets.svg"
       }
     },
     {
@@ -413,13 +413,13 @@
           "repo"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "GITHUB_GET_REPOSITORY_CLONES",
         "noAuth": false,
         "toolkitName": "GitHub",
         "toolkitSlug": "github",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/github.png"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/github.png"
       }
     },
     {
@@ -550,13 +550,13 @@
           "channel"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL",
         "noAuth": false,
         "toolkitName": "Slack",
         "toolkitSlug": "slack",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/slack.svg"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/slack.svg"
       }
     }
   ],

@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { GoogleClientIdModal } from "@/components/google-client-id-modal";
-import { ComposioApiKeyModal } from "@/components/composio-api-key-modal";
+import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 import { useOnboardingState } from "./use-onboarding-state";
 import { WelcomeStep } from "./steps/welcome-step";
 import { LlmSetupStep } from "./steps/llm-setup-step";
@@ -45,11 +45,12 @@ export function FullPageOnboarding({ open, onComplete }: FullPageOnboardingProps
         onSubmit={state.handleGoogleClientIdSubmit}
         isSubmitting={state.providerStates.google?.isConnecting ?? false}
       />
-      <ComposioApiKeyModal
-        open={state.composioApiKeyOpen}
-        onOpenChange={state.setComposioApiKeyOpen}
-        onSubmit={state.handleComposioApiKeySubmit}
-        isSubmitting={state.gmailConnecting}
+      <IntegrationApiKeyModal
+        open={state.integrationApiKeyOpen}
+        onOpenChange={state.setIntegrationApiKeyOpen}
+        onSubmit={state.handleIntegrationApiKeySubmit}
+        isSubmitting={state.integrationApiKeySubmitting}
+        integrationName={state.integrationApiKeyTarget?.displayName}
       />
 
       <div

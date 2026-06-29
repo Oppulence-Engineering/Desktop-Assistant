@@ -108,10 +108,10 @@ export function JobsList({
   };
 
   const getReasonDisplay = (reason: any) => {
-    if (reason.type === "composio_trigger") {
+    if (reason.type === "integration_trigger") {
       return {
-        type: "Composio Trigger",
-        display: `Composio: ${reason.triggerTypeSlug}`,
+        type: "Integration Trigger",
+        display: `Integration: ${reason.triggerTypeSlug}`,
         link: reason.triggerDeploymentId
           ? `/projects/${projectId}/manage-triggers/triggers/${reason.triggerDeploymentId}`
           : null,

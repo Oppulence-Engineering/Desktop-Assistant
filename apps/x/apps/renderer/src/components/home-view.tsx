@@ -74,9 +74,9 @@ type RawCalEvent = {
 type EmailThread = { threadId: string; subject: string; from: string };
 type ToolkitPreview = {
   slug: string;
-  logo: string;
   name: string;
   description: string;
+  connected: boolean;
 };
 
 function greeting(): string {
@@ -189,44 +189,20 @@ let cachedToolkitLogosLoaded = false;
 
 function ToolkitPreviewIcon({
   toolkit,
-  onInvalid,
 }: {
   toolkit: ToolkitPreview;
-  onInvalid: (slug: string) => void;
 }) {
-  const [loaded, setLoaded] = useState(false);
-
-  if (!loaded) {
-    return (
-      <img
-        src={toolkit.logo}
-        alt=""
-        className="hidden"
-        onLoad={(event) => {
-          const img = event.currentTarget;
-          if (img.naturalWidth > 1 && img.naturalHeight > 1) {
-            setLoaded(true);
-          } else {
-            onInvalid(toolkit.slug);
-          }
-        }}
-        onError={() => onInvalid(toolkit.slug)}
-      />
-    );
-  }
-
   return (
     <div
       title={`${toolkit.name}: ${toolkit.description}`}
       aria-label={toolkit.name}
-      className="flex size-6 shrink-0 items-center justify-center rounded-md border border-border bg-muted/60"
+      className={`flex size-6 shrink-0 items-center justify-center rounded-md border text-[10px] font-semibold ${
+        toolkit.connected
+          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+          : "border-border bg-muted/60 text-muted-foreground"
+      }`}
     >
-      <img
-        src={toolkit.logo}
-        alt=""
-        className="size-5 shrink-0 object-contain"
-        onError={() => onInvalid(toolkit.slug)}
-      />
+      {toolkit.name.slice(0, 1).toUpperCase()}
     </div>
   );
 }
@@ -308,17 +284,14 @@ export function HomeView({
   const loadConnectorLogos = useCallback(async () => {
     if (cachedToolkitLogosLoaded) return;
     try {
-      const configured = await window.ipc.invoke("composio:is-configured", null);
-      if (!configured.configured) return;
-      const toolkits = await window.ipc.invoke("composio:list-toolkits", {});
-      const previews = toolkits.items
-        .filter((toolkit) => Boolean(toolkit.meta.logo))
+      const result = await window.ipc.invoke("connectors:list", null);
+      const previews = (result.connectors || [])
         .slice(0, TOOLKIT_PREVIEW_LIMIT)
-        .map((toolkit) => ({
-          slug: toolkit.slug,
-          logo: toolkit.meta.logo,
-          name: toolkit.name,
-          description: toolkit.meta.description,
+        .map((connector) => ({
+          slug: connector.name,
+          name: connector.displayName,
+          description: connector.description,
+          connected: connector.connected,
         }));
       cachedToolkitPreviews = previews;
       setToolkitPreviews(previews);
@@ -328,14 +301,6 @@ export function HomeView({
       cachedToolkitLogosLoaded = true;
       setToolkitLogosLoaded(true);
     }
-  }, []);
-
-  const removeToolkitPreview = useCallback((slug: string) => {
-    setToolkitPreviews((prev) => {
-      const next = prev.filter((toolkit) => toolkit.slug !== slug);
-      cachedToolkitPreviews = next;
-      return next;
-    });
   }, []);
 
   useEffect(() => {
@@ -664,7 +629,6 @@ export function HomeView({
                       <ToolkitPreviewIcon
                         key={toolkit.slug}
                         toolkit={toolkit}
-                        onInvalid={removeToolkitPreview}
                       />
                     ))}
                   <button

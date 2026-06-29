@@ -1,5 +1,5 @@
 // Package proxyutil holds small helpers shared by the vendor-proxy handlers
-// (voice, search, composio).
+// (voice and search).
 package proxyutil
 
 import "net/http"

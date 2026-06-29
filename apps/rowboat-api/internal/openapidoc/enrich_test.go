@@ -57,12 +57,17 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/oauth/slack/start",
 		"/oauth/slack/callback",
 		"/v1/slack-oauth/claim",
+		"/v1/slack-oauth/workspaces",
+		"/v1/slack-oauth/workspaces/{teamId}",
+		"/v1/slack-oauth/thread/read",
+		"/v1/slack-oauth/thread/post",
 		"/v1/connectors",
 		"/v1/connections/{name}/start",
 		"/v1/connections/{name}/callback",
+		"/v1/connections/{name}/claim",
+		"/v1/connections/{name}/api-key",
 		"/v1/connections/{name}/mcp-token",
 		"/v1/connections/{name}",
-		"/v1/composio/{path}",
 		"/v1/events",
 		"/v1/events/{eventId}",
 		"/v1/events/{eventId}/runs",
@@ -104,7 +109,7 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	}
 
 	schemas := asObj(components["schemas"])
-	for _, name := range []string{"MeResponse", "BackgroundTask", "BackgroundTaskTemplate", "BackgroundTaskTemplatesResponse", "BackgroundTaskRun", "BackgroundTaskRunEventsAppendRequest", "RevisionConflictEnvelope", "LLMChatCompletionsRequest", "Connector", "GraphQLRequest"} {
+	for _, name := range []string{"MeResponse", "BackgroundTask", "BackgroundTaskTemplate", "BackgroundTaskTemplatesResponse", "BackgroundTaskRun", "BackgroundTaskRunEventsAppendRequest", "RevisionConflictEnvelope", "LLMChatCompletionsRequest", "Connector", "IntegrationTemplateBlock", "ConnectionAPIKeyRequest", "ConnectionClaimRequest", "SlackWorkspace", "SlackWorkspacesResponse", "SlackThreadReadRequest", "SlackThreadReadResponse", "SlackThreadPostRequest", "SlackThreadPostResponse", "GraphQLRequest"} {
 		if schemas[name] == nil {
 			t.Fatalf("missing runtime schema %s", name)
 		}
@@ -126,14 +131,14 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("parse checked-in openapi json: %v", err)
 	}
 	paths := asObj(spec["paths"])
-	if paths["/v1/me"] == nil || paths["/v1/background-task-templates"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil {
+	if paths["/v1/me"] == nil || paths["/v1/background-task-templates"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil || paths["/v1/connections/{name}/api-key"] == nil || paths["/v1/slack-oauth/workspaces"] == nil || paths["/v1/slack-oauth/thread/read"] == nil {
 		t.Fatal("checked-in openapi json is missing mounted runtime API paths")
 	}
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("checked-in openapi json still contains unmounted ent CRUD paths")
 	}
 	schemas := asObj(asObj(spec["components"])["schemas"])
-	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil {
+	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
 	}
 }

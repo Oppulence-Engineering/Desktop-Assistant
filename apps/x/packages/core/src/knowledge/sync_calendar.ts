@@ -183,7 +183,7 @@ function cleanUpOldFiles(currentEventIds: Set<string>, syncDir: string): string[
     const files = fs.readdirSync(syncDir);
     const deleted: string[] = [];
     for (const filename of files) {
-        if (filename === 'sync_state.json' || filename === 'composio_state.json') continue;
+        if (filename === 'sync_state.json') continue;
 
         // We expect files like:
         // {eventId}.json

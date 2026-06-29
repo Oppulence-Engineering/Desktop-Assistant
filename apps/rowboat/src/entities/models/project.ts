@@ -1,7 +1,7 @@
 import { Workflow } from "@/app/lib/types/workflow_types";
 import { z } from "zod";
 
-export const ComposioConnectedAccount = z.object({
+export const IntegrationConnectedAccount = z.object({
     id: z.string(),
     authConfigId: z.string(),
     status: z.enum([
@@ -27,6 +27,6 @@ export const Project = z.object({
     draftWorkflow: Workflow,
     liveWorkflow: Workflow,
     webhookUrl: z.string().optional(),
-    composioConnectedAccounts: z.record(z.string(), ComposioConnectedAccount).optional(),
+    integrationConnectedAccounts: z.record(z.string(), IntegrationConnectedAccount).optional(),
     customMcpServers: z.record(z.string(), CustomMcpServer).optional(),
 });

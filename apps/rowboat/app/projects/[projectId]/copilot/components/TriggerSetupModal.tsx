@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, ModalBody, ModalContent, ModalHeader } from '@heroui/react';
 import { z } from 'zod';
-import { ZToolkit } from '@/src/application/lib/composio/types';
-import { ComposioTriggerType } from '@/src/entities/models/composio-trigger-type';
+import { ZToolkit } from '@/src/application/lib/integration/types';
+import { IntegrationTriggerType } from '@/src/entities/models/integration-trigger-type';
 import { Project } from '@/src/entities/models/project';
-import { SelectComposioToolkit } from '../../tools/components/SelectComposioToolkit';
-import { ComposioTriggerTypesPanel } from '../../workflow/components/ComposioTriggerTypesPanel';
+import { SelectIntegrationToolkit } from '../../tools/components/SelectIntegrationToolkit';
+import { IntegrationTriggerTypesPanel } from '../../workflow/components/IntegrationTriggerTypesPanel';
 import { TriggerConfigForm } from '../../workflow/components/TriggerConfigForm';
 import { ToolkitAuthModal } from '../../tools/components/ToolkitAuthModal';
 import { fetchProject } from '@/app/actions/project.actions';
-import { createComposioTriggerDeployment } from '@/app/actions/composio.actions';
+import { createIntegrationTriggerDeployment } from '@/app/actions/integration.actions';
 import { Button, Spinner } from '@heroui/react';
 
 interface TriggerSetupModalProps {
@@ -25,7 +25,7 @@ interface TriggerSetupModalProps {
 }
 
 type Toolkit = z.infer<typeof ZToolkit>;
-type TriggerType = z.infer<typeof ComposioTriggerType>;
+type TriggerType = z.infer<typeof IntegrationTriggerType>;
 type ProjectConfig = z.infer<typeof Project>;
 
 export function TriggerSetupModal({
@@ -79,7 +79,7 @@ export function TriggerSetupModal({
 
   const hasActiveConnection = useMemo(() => {
     if (!selectedToolkit) return false;
-    const status = projectConfig?.composioConnectedAccounts?.[selectedToolkit.slug]?.status;
+    const status = projectConfig?.integrationConnectedAccounts?.[selectedToolkit.slug]?.status;
     return status === 'ACTIVE';
   }, [projectConfig, selectedToolkit]);
 
@@ -117,13 +117,13 @@ export function TriggerSetupModal({
       setIsSubmitting(true);
       setError(null);
 
-      const connectedAccountId = projectConfig?.composioConnectedAccounts?.[selectedToolkit.slug]?.id;
+      const connectedAccountId = projectConfig?.integrationConnectedAccounts?.[selectedToolkit.slug]?.id;
       if (!connectedAccountId) {
         setShowAuthModal(true);
         throw new Error('Connect this toolkit before creating a trigger.');
       }
 
-      await createComposioTriggerDeployment({
+      await createIntegrationTriggerDeployment({
         projectId,
         triggerTypeSlug: selectedTriggerType.slug,
         connectedAccountId,
@@ -167,7 +167,7 @@ export function TriggerSetupModal({
           </ModalHeader>
           <ModalBody className="pb-6">
             {!selectedToolkit && (
-              <SelectComposioToolkit
+              <SelectIntegrationToolkit
                 key={isOpen ? 'toolkit-selector' : 'toolkit-selector-hidden'}
                 projectId={projectId}
                 tools={[]}
@@ -178,7 +178,7 @@ export function TriggerSetupModal({
             )}
 
             {selectedToolkit && !selectedTriggerType && (
-              <ComposioTriggerTypesPanel
+              <IntegrationTriggerTypesPanel
                 key={selectedToolkit.slug}
                 toolkit={selectedToolkit}
                 onBack={() => setSelectedToolkit(null)}

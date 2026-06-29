@@ -4,12 +4,12 @@ import { useState, useCallback, useEffect } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Spinner, Button as HeroButton, Input } from "@heroui/react";
 import { PictureImg } from '@/components/ui/picture-img';
 import { Wrench, Shield, Key, Globe, ArrowLeft } from "lucide-react";
-import { getToolkit, createComposioManagedOauth2ConnectedAccount, syncConnectedAccount, listToolkits, createCustomConnectedAccount } from '@/app/actions/composio.actions';
+import { getToolkit, createIntegrationManagedOauth2ConnectedAccount, syncConnectedAccount, listToolkits, createCustomConnectedAccount } from '@/app/actions/integration.actions';
 import { z } from 'zod';
-import { ZGetToolkitResponse } from "@/src/application/lib/composio/types";
-import { ZComposioField } from "@/src/application/lib/composio/types";
-import { ZToolkit } from "@/src/application/lib/composio/types";
-import { ZAuthScheme } from "@/src/application/lib/composio/types";
+import { ZGetToolkitResponse } from "@/src/application/lib/integration/types";
+import { ZIntegrationField } from "@/src/application/lib/integration/types";
+import { ZToolkit } from "@/src/application/lib/integration/types";
+import { ZAuthScheme } from "@/src/application/lib/integration/types";
 
 interface ToolkitAuthModalProps {
   isOpen: boolean;
@@ -19,19 +19,19 @@ interface ToolkitAuthModalProps {
   onComplete: () => void;
 }
 
-export function ToolkitAuthModal({ 
-  isOpen, 
-  onClose, 
-  toolkitSlug, 
+export function ToolkitAuthModal({
+  isOpen,
+  onClose,
+  toolkitSlug,
   projectId,
-  onComplete 
+  onComplete
 }: ToolkitAuthModalProps) {
   const [toolkit, setToolkit] = useState<z.infer<typeof ZGetToolkitResponse> | null>(null);
   const [toolkitDetails, setToolkitDetails] = useState<z.infer<typeof ZToolkit> | null>(null);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Form state
   const [showForm, setShowForm] = useState(false);
   const [selectedAuthScheme, setSelectedAuthScheme] = useState<z.infer<typeof ZAuthScheme> | null>(null);
@@ -42,11 +42,11 @@ export function ToolkitAuthModal({
     if (isOpen && toolkitSlug) {
       setLoading(true);
       setError(null);
-      
+
       // Fetch both toolkit auth details and full toolkit info
       Promise.all([
         getToolkit(projectId, toolkitSlug),
-        listToolkits(projectId).then(response => 
+        listToolkits(projectId).then(response =>
           response.items.find(t => t.slug === toolkitSlug) || null
         )
       ])
@@ -76,7 +76,7 @@ export function ToolkitAuthModal({
     try {
       // Sync the connected account to get the latest status
       await syncConnectedAccount(projectId, toolkitSlug, connectedAccountId);
-      
+
       // Call completion callback
       onComplete();
       onClose();
@@ -86,20 +86,20 @@ export function ToolkitAuthModal({
     }
   }, [projectId, toolkitSlug, onComplete, onClose]);
 
-  const handleComposioOAuth2 = useCallback(async () => {
+  const handleIntegrationOAuth2 = useCallback(async () => {
     setError(null);
     setProcessing(true);
 
     try {
       // Start OAuth flow
-      const returnUrl = `${window.location.origin}/composio/oauth2/callback`;
-      const response = await createComposioManagedOauth2ConnectedAccount(projectId, toolkitSlug, returnUrl);
+      const returnUrl = `${window.location.origin}/integration/oauth2/callback`;
+      const response = await createIntegrationManagedOauth2ConnectedAccount(projectId, toolkitSlug, returnUrl);
       console.log('OAuth response:', JSON.stringify(response, null, 2));
 
       // if error, set error
       if ('error' in response) {
         if (response.error === 'CUSTOM_OAUTH2_CONFIG_REQUIRED') {
-          setError('Please set up a custom OAuth2 configuration for this toolkit in the Composio dashboard');
+          setError('Please set up a custom OAuth2 configuration for this toolkit in the Integration dashboard');
         } else {
           setError('Failed to connect to toolkit');
         }
@@ -120,12 +120,12 @@ export function ToolkitAuthModal({
           if (event.origin !== window.location.origin) {
             return;
           }
-          
+
           // Check if this is an OAuth completion message
           if (event.data && event.data.type === 'OAUTH_COMPLETE') {
             window.removeEventListener('message', handleMessage);
             clearInterval(checkInterval);
-            
+
             if (event.data.success) {
               // Handle successful OAuth completion
               handleOAuthCompletion(response.id);
@@ -136,16 +136,16 @@ export function ToolkitAuthModal({
             }
           }
         };
-        
+
         // Listen for postMessage from our callback page
         window.addEventListener('message', handleMessage);
-        
+
         // Minimal fallback: check if window closes without message
         const checkInterval = setInterval(() => {
           if (authWindow.closed) {
             clearInterval(checkInterval);
             window.removeEventListener('message', handleMessage);
-            
+
             // If we didn't get a postMessage, still try to sync
             // (in case the message was missed for some reason)
             handleOAuthCompletion(response.id);
@@ -166,50 +166,50 @@ export function ToolkitAuthModal({
 
   const handleCustomAuth = useCallback((authScheme: z.infer<typeof ZAuthScheme>) => {
     setSelectedAuthScheme(authScheme);
-    
+
     // Initialize form data with default values
     const authConfig = toolkit?.auth_config_details?.find(config => config.mode === authScheme);
-    
+
     if (authConfig) {
       const initialData: Record<string, string> = {};
-      
+
       // Try connected_account_initiation first, fallback to auth_config_creation
-      const requiredFields = authConfig.fields.connected_account_initiation.required.length > 0 
-        ? authConfig.fields.connected_account_initiation.required 
+      const requiredFields = authConfig.fields.connected_account_initiation.required.length > 0
+        ? authConfig.fields.connected_account_initiation.required
         : authConfig.fields.auth_config_creation.required;
-        
-      const optionalFields = authConfig.fields.connected_account_initiation.optional.length > 0 
-        ? authConfig.fields.connected_account_initiation.optional 
+
+      const optionalFields = authConfig.fields.connected_account_initiation.optional.length > 0
+        ? authConfig.fields.connected_account_initiation.optional
         : authConfig.fields.auth_config_creation.optional;
-      
+
       // Add defaults for required fields
       requiredFields.forEach(field => {
         if (field.default) {
           initialData[field.name] = field.default;
         }
       });
-      
+
       // Add defaults for optional fields
       optionalFields.forEach(field => {
         if (field.default) {
           initialData[field.name] = field.default;
         }
       });
-      
+
       setFormData(initialData);
     }
-    
+
     setShowForm(true);
   }, [toolkit]);
 
   const handleFormSubmit = useCallback(async () => {
     if (!selectedAuthScheme || !toolkit) return;
-    
+
     setError(null);
     setProcessing(true);
 
     try {
-      const callbackUrl = `${window.location.origin}/composio/oauth2/callback`;
+      const callbackUrl = `${window.location.origin}/integration/oauth2/callback`;
       const response = await createCustomConnectedAccount(projectId, {
         toolkitSlug: toolkit.slug,
         authConfig: {
@@ -222,11 +222,11 @@ export function ToolkitAuthModal({
       console.log('Custom auth response:', JSON.stringify(response, null, 2));
 
       // Check if we need to open a popup window (OAuth2 flow)
-      if ('connectionData' in response && 
-          response.connectionData.val && 
-          'redirectUrl' in response.connectionData.val && 
+      if ('connectionData' in response &&
+          response.connectionData.val &&
+          'redirectUrl' in response.connectionData.val &&
           response.connectionData.val.redirectUrl) {
-        
+
         // Open OAuth window for custom OAuth2
         const authWindow = window.open(
           response.connectionData.val.redirectUrl as string,
@@ -235,16 +235,16 @@ export function ToolkitAuthModal({
         );
 
         if (authWindow) {
-          // Use the same postMessage logic as Composio OAuth2
+          // Use the same postMessage logic as Integration OAuth2
           const handleMessage = (event: MessageEvent) => {
             if (event.origin !== window.location.origin) {
               return;
             }
-            
+
             if (event.data && event.data.type === 'OAUTH_COMPLETE') {
               window.removeEventListener('message', handleMessage);
               clearInterval(checkInterval);
-              
+
               if (event.data.success) {
                 handleOAuthCompletion(response.id);
               } else {
@@ -253,9 +253,9 @@ export function ToolkitAuthModal({
               }
             }
           };
-          
+
           window.addEventListener('message', handleMessage);
-          
+
           const checkInterval = setInterval(() => {
             if (authWindow.closed) {
               clearInterval(checkInterval);
@@ -320,8 +320,8 @@ export function ToolkitAuthModal({
   };
 
   return (
-    <Modal 
-      isOpen={isOpen} 
+    <Modal
+      isOpen={isOpen}
       onOpenChange={onClose}
       size="lg"
       classNames={{
@@ -344,8 +344,8 @@ export function ToolkitAuthModal({
             </HeroButton>
           )}
           {toolkitDetails?.meta?.logo ? (
-            <PictureImg 
-              src={toolkitDetails.meta.logo} 
+            <PictureImg
+              src={toolkitDetails.meta.logo}
               alt={`${toolkitSlug} logo`}
               className="w-8 h-8 rounded-none object-cover"
             />
@@ -353,8 +353,8 @@ export function ToolkitAuthModal({
             <Wrench className="w-5 h-5 text-blue-500" />
           )}
           <span>
-            {showForm 
-              ? `Configure ${getAuthMethodName(selectedAuthScheme || '')}` 
+            {showForm
+              ? `Configure ${getAuthMethodName(selectedAuthScheme || '')}`
               : `Connect to ${toolkitSlug}`
             }
           </span>
@@ -375,20 +375,20 @@ export function ToolkitAuthModal({
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   Enter your credentials for {getAuthMethodName(selectedAuthScheme || '')} authentication:
                 </div>
-                
+
                 {(() => {
                   const authConfig = toolkit.auth_config_details?.find(config => config.mode === selectedAuthScheme);
-                  
+
                   if (!authConfig) {
                     return <div>No configuration found for {selectedAuthScheme}</div>;
                   }
-                  
+
                   // Try connected_account_initiation first, fallback to auth_config_creation
                   const allFields = [
                     ...authConfig.fields.connected_account_initiation.required.map(field => ({ ...field, required: true })),
                     ...authConfig.fields.connected_account_initiation.optional.map(field => ({ ...field, required: false }))
                   ];
-                  
+
                   // If no fields in connected_account_initiation, try auth_config_creation
                   if (allFields.length === 0) {
                     allFields.push(
@@ -396,7 +396,7 @@ export function ToolkitAuthModal({
                       ...authConfig.fields.auth_config_creation.optional.map(field => ({ ...field, required: false }))
                     );
                   }
-                  
+
                   return (
                     <div className="space-y-4">
                       {allFields.map(field => (
@@ -423,14 +423,14 @@ export function ToolkitAuthModal({
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-4 mt-2">
                   Choose how you&apos;d like to authenticate with this toolkit:
                 </div>
-                
+
                 <div className="space-y-6">
-                  {/* OAuth2 Composio Managed */}
-                  {toolkit.composio_managed_auth_schemes.includes('OAUTH2') && (
+                  {/* OAuth2 Integration Managed */}
+                  {toolkit.integration_managed_auth_schemes.includes('OAUTH2') && (
                     <HeroButton
                       className="w-full justify-start gap-3 h-auto py-5 px-5 border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                       variant="bordered"
-                      onPress={handleComposioOAuth2}
+                      onPress={handleIntegrationOAuth2}
                       isDisabled={processing}
                       size="lg"
                     >
@@ -443,7 +443,7 @@ export function ToolkitAuthModal({
                           <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-blue-500 text-white font-semibold">Most popular</span>
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Secure authentication managed by Composio
+                          Secure authentication managed by Integration
                         </div>
                       </div>
                       {processing && <Spinner size="sm" className="ml-auto" />}
@@ -451,7 +451,7 @@ export function ToolkitAuthModal({
                   )}
 
                   {/* Custom OAuth2 - always show if OAuth2 is supported */}
-                  {(toolkit.composio_managed_auth_schemes.includes('OAUTH2') || 
+                  {(toolkit.integration_managed_auth_schemes.includes('OAUTH2') ||
                     toolkit.auth_config_details?.some(config => config.mode === 'OAUTH2')) && (
                     <HeroButton
                       className="w-full justify-start gap-3 h-auto py-5 px-5"
@@ -504,9 +504,9 @@ export function ToolkitAuthModal({
               <HeroButton variant="bordered" onPress={handleBackToOptions} isDisabled={processing}>
                 Back
               </HeroButton>
-              <HeroButton 
-                variant="solid" 
-                color="primary" 
+              <HeroButton
+                variant="solid"
+                color="primary"
                 onPress={handleFormSubmit}
                 isDisabled={processing}
                 isLoading={processing}

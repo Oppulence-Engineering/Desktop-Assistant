@@ -40,8 +40,6 @@ type Tx struct {
 	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
 	// CloudEvent is the client for interacting with the CloudEvent builders.
 	CloudEvent *CloudEventClient
-	// ComposioAccount is the client for interacting with the ComposioAccount builders.
-	ComposioAccount *ComposioAccountClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
 	// GoogleWatch is the client for interacting with the GoogleWatch builders.
@@ -215,7 +213,6 @@ func (tx *Tx) init() {
 	tx.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(tx.config)
 	tx.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(tx.config)
 	tx.CloudEvent = NewCloudEventClient(tx.config)
-	tx.ComposioAccount = NewComposioAccountClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
 	tx.GoogleWatch = NewGoogleWatchClient(tx.config)
 	tx.LLMUsage = NewLLMUsageClient(tx.config)

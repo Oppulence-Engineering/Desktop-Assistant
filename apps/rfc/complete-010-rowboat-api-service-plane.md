@@ -3,7 +3,7 @@
 |                  |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **RFC**          | 010                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| **Status**       | Complete — deployed via `charts/rowboat-api`: WorkOS-direct auth, append-only credit ledger (reserve/settle/refund), LLM gateway, Google/Exa/voice/Composio proxies, tenant-scoped ent (with negative tests), and kind+Helm gates. All acceptance criteria met. Post-RFC hardening (this pass): per-dependency `/readyz` checks (incl. optional `workos_jwks`), `retryable` on the error envelope, Composio `Idempotency-Key` propagation, and `user_id` on access logs. Route/response shapes follow the **deployed contract** (the service-boundary table + RFC 9457 errors), which supersedes the illustrative route-contract/JSON examples below. |
+| **Status**       | Complete — deployed via `charts/rowboat-api`: WorkOS-direct auth, append-only credit ledger (reserve/settle/refund), LLM gateway, Google/Exa/voice/legacy integration vendor proxies, tenant-scoped ent (with negative tests), and kind+Helm gates. All acceptance criteria met. Post-RFC hardening (this pass): per-dependency `/readyz` checks (incl. optional `workos_jwks`), `retryable` on the error envelope, legacy integration vendor `Idempotency-Key` propagation, and `user_id` on access logs. Route/response shapes follow the **deployed contract** (the service-boundary table + RFC 9457 errors), which supersedes the illustrative route-contract/JSON examples below. |
 | **Track**        | Backend service plane                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | **Owners**       | `apps/rowboat-api`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **Created**      | 2026-06-06                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -17,7 +17,7 @@
 `apps/rowboat-api` is the hosted service plane for Rowboat Desktop. It replaces the
 legacy hosted `API_URL` dependency with a Go service that owns account identity
 verification, billing/credits, vendor key access, LLM/voice/search proxying, Google
-OAuth token refresh, Composio proxying, and the backend half of cloud background
+OAuth token refresh, legacy integration vendor proxying, and the backend half of cloud background
 workflows.
 
 This RFC defines the service boundary and rollout contract for the API itself. It
@@ -73,7 +73,7 @@ The API owns:
 | Voice TTS proxy                 | `POST /v1/voice/text-to-speech/{voiceId}`                      |
 | Search proxy                    | `POST /v1/search/exa`                                          |
 | Google OAuth refresh            | `POST /v1/google-oauth/claim`, `POST /v1/google-oauth/refresh` |
-| Composio proxy                  | `* /v1/composio/*`                                             |
+| legacy integration vendor proxy                  | `* /v1/legacy-integration-vendor/*`                                             |
 | Background task cloud execution | `/v1/background-tasks`, `/v1/background-task-runs`             |
 | Connector registry/broker       | `/v1/connectors`, `/v1/connections/*` after RFC 012            |
 | Internal invalidation/hooks     | `/v1/internal/*`, `/oauth-hooks/*` after RFC 012               |
@@ -102,7 +102,7 @@ exact generated code shape.
 | `OAuthPending`    | Short-lived handoff tickets for Google and connector callback flows.               |
 | `OAuthConnection` | Long-lived user OAuth tokens for external providers such as Google.                |
 | `MCPConnection`   | Cross-product connector refresh tokens and granted scopes after RFC 012.           |
-| `ComposioLink`    | Mapping between Rowboat user identity and Composio tenancy, if required.           |
+| `legacy integration vendorLink`    | Mapping between Rowboat user identity and legacy integration vendor tenancy, if required.           |
 
 All user-owned rows must have a user edge and be covered by the same tenant-scoping
 interceptors used by background-task entities.
@@ -143,7 +143,7 @@ the desktop. The API may use them for signed-in users on:
 - LLM providers.
 - ElevenLabs TTS.
 - Exa Search.
-- Composio.
+- legacy integration vendor.
 - Google OAuth client secret during refresh.
 
 When the user is signed out or supplies BYO keys locally, the desktop may continue

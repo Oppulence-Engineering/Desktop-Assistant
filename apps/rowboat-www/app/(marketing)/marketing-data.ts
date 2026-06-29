@@ -697,7 +697,7 @@ export const primaryPages: MarketingPage[] = [
     bullets: [
       "Gmail and Calendar ingestion for relationship and schedule context.",
       "Meeting-note and Fireflies workflows for decisions and commitments.",
-      "MCP and Composio paths for Slack, Linear, GitHub, CRMs, databases, and more.",
+      "MCP and managed integration paths for Slack, Linear, GitHub, CRMs, databases, and more.",
     ],
     proof: [
       "Provider keys stay user-controlled.",

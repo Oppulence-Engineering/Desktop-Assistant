@@ -4,7 +4,7 @@
       "name": "Tweet Assistant",
       "type": "conversation",
       "description": "Assists users in creating and posting tweets, including crafting tweet text, finding information, and posting to Twitter.",
-      "instructions": "## 🧑‍💼 Role:\nYou are a helpful assistant that helps users create and post tweets. You can assist with crafting the tweet text, finding information, and finally posting the tweet to Twitter.\n\n---\n## ⚙️ Operating Procedure:\n1. Greet the user and ask for the text they want to include in the tweet. Offer to help them craft it or find information about a topic.\n2. If the user asks for help with a topic, use [@tool:Composio DuckDuckGo Search](#mention) and [@tool:Exa Answer](#mention) to find relevant information and present it to the user.\n3. Once the tweet text is finalized, confirm with the user that they are ready to post it.\n4. Use [@tool:Create a post](#mention) with the tweet text to post the tweet to Twitter.\n5. Inform the user when the tweet has been successfully posted.\n\n---\n## 🎯 Scope:\n✅ In Scope:\n- Interacting with the user to get tweet text.\n- Offering assistance in crafting tweets and finding information.\n- Posting tweets to Twitter.\n\n---\n## 📋 Guidelines:\n✔️ Dos:\n- Always confirm the tweet text with the user before posting.\n- Be proactive in offering help and suggestions for tweet content.\n- Ensure the tweet text is correctly posted.\n\n🚫 Don'ts:\n- Do not fabricate information.\n",
+      "instructions": "## 🧑‍💼 Role:\nYou are a helpful assistant that helps users create and post tweets. You can assist with crafting the tweet text, finding information, and finally posting the tweet to Twitter.\n\n---\n## ⚙️ Operating Procedure:\n1. Greet the user and ask for the text they want to include in the tweet. Offer to help them craft it or find information about a topic.\n2. If the user asks for help with a topic, use [@tool:Integration DuckDuckGo Search](#mention) and [@tool:Exa Answer](#mention) to find relevant information and present it to the user.\n3. Once the tweet text is finalized, confirm with the user that they are ready to post it.\n4. Use [@tool:Create a post](#mention) with the tweet text to post the tweet to Twitter.\n5. Inform the user when the tweet has been successfully posted.\n\n---\n## 🎯 Scope:\n✅ In Scope:\n- Interacting with the user to get tweet text.\n- Offering assistance in crafting tweets and finding information.\n- Posting tweets to Twitter.\n\n---\n## 📋 Guidelines:\n✔️ Dos:\n- Always confirm the tweet text with the user before posting.\n- Be proactive in offering help and suggestions for tweet content.\n- Ensure the tweet text is correctly posted.\n\n🚫 Don'ts:\n- Do not fabricate information.\n",
       "examples": "\n",
       "model": "",
       "toggleAble": true,
@@ -200,13 +200,13 @@
         },
         "required": []
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "TWITTER_CREATION_OF_A_POST",
         "noAuth": false,
         "toolkitName": "twitter",
         "toolkitSlug": "twitter",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/twitter.png"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/twitter.png"
       }
     },
     {
@@ -229,24 +229,24 @@
           "content"
         ]
       },
-      "isComposio": true,
-      "composioData": {
-        "slug": "COMPOSIO_SEARCH_EXA_ANSWER",
+      "isIntegration": true,
+      "integrationData": {
+        "slug": "INTEGRATION_SEARCH_EXA_ANSWER",
         "noAuth": true,
-        "toolkitName": "composio_search",
-        "toolkitSlug": "composio_search",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master//composio-logo.png"
+        "toolkitName": "integration_search",
+        "toolkitSlug": "integration_search",
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master//integration-logo.png"
       }
     },
     {
-      "name": "Composio DuckDuckGo Search",
-      "description": "The duckduckgosearch class utilizes the composio duckduckgo search api to perform searches, focusing on web information and details. it leverages the duckduckgo search engine via the composio duckduckgo search api to retrieve relevant web data based on the provided query.",
+      "name": "Integration DuckDuckGo Search",
+      "description": "The duckduckgosearch class utilizes the integration duckduckgo search api to perform searches, focusing on web information and details. it leverages the duckduckgo search engine via the integration duckduckgo search api to retrieve relevant web data based on the provided query.",
       "mockTool": false,
       "parameters": {
         "type": "object",
         "properties": {
           "query": {
-            "description": "The search query for the Composio DuckDuckGo Search API, specifying the search topic.",
+            "description": "The search query for the Integration DuckDuckGo Search API, specifying the search topic.",
             "examples": [
               "Python programming"
             ],
@@ -258,13 +258,13 @@
           "query"
         ]
       },
-      "isComposio": true,
-      "composioData": {
-        "slug": "COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH",
+      "isIntegration": true,
+      "integrationData": {
+        "slug": "INTEGRATION_SEARCH_DUCK_DUCK_GO_SEARCH",
         "noAuth": true,
-        "toolkitName": "Composio search",
-        "toolkitSlug": "composio_search",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master//composio-logo.png"
+        "toolkitName": "Integration search",
+        "toolkitSlug": "integration_search",
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master//integration-logo.png"
       }
     }
   ],

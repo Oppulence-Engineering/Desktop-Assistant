@@ -23,6 +23,57 @@ import { getAccessToken } from "../auth/tokens.js";
  * locally on claim.
  */
 
+export interface ConnectorMCPToolPolicy {
+    name: string;
+    trustTier?: "read" | "write" | "act" | "money-moving";
+}
+
+export interface IntegrationTemplateBlock {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    requiredScopes?: string[];
+    mcpTools?: string[];
+    trustTier: "read" | "write" | "act" | "money-moving";
+    samplePrompt?: string;
+}
+
+export interface ConnectorView {
+    name: string;
+    displayName: string;
+    description: string;
+    mcpUrl: string;
+    authType: "oauth" | "api_key";
+    scopes?: string[];
+    iconUrl?: string;
+    mcpTools?: ConnectorMCPToolPolicy[];
+    templateBlocks?: IntegrationTemplateBlock[];
+    connected: boolean;
+    connectedAt?: string;
+}
+
+export interface ConnectorsListResponse {
+    connectors: ConnectorView[];
+}
+
+export interface ConnectorMCPTokenResponse {
+    access_token: string;
+    token_type?: string;
+    expires_at?: number;
+    mcpUrl: string;
+}
+
+async function getWithBearer(path: string): Promise<Response> {
+    const bearer = await getAccessToken();
+    return fetch(`${API_URL}${path}`, {
+        method: "GET",
+        headers: {
+            authorization: `Bearer ${bearer}`,
+        },
+    });
+}
+
 async function postWithBearer(path: string, body: unknown): Promise<Response> {
     const bearer = await getAccessToken();
     return fetch(`${API_URL}${path}`, {
@@ -45,6 +96,16 @@ async function readError(res: Response): Promise<string> {
     }
 }
 
+async function deleteWithBearer(path: string): Promise<Response> {
+    const bearer = await getAccessToken();
+    return fetch(`${API_URL}${path}`, {
+        method: "DELETE",
+        headers: {
+            authorization: `Bearer ${bearer}`,
+        },
+    });
+}
+
 /** Begin a connector OAuth connect; returns the provider authorize URL to open. */
 export async function startConnectorViaBackend(connector: string): Promise<string> {
     const res = await postWithBearer(`/v1/connections/${encodeURIComponent(connector)}/start`, {});
@@ -58,6 +119,32 @@ export async function startConnectorViaBackend(connector: string): Promise<strin
     return body.authorize_url;
 }
 
+/** List available Rowboat integrations and the user's connection state. */
+export async function listConnectorsViaBackend(): Promise<ConnectorsListResponse> {
+    const res = await getWithBearer("/v1/connectors");
+    if (!res.ok) {
+        throw new Error(`connector list failed: ${res.status} ${await readError(res)}`.trim());
+    }
+    return (await res.json()) as ConnectorsListResponse;
+}
+
+/** Save a vendor API key for an api_key connector. */
+export async function saveConnectorAPIKeyViaBackend(connector: string, apiKey: string): Promise<void> {
+    const res = await postWithBearer(`/v1/connections/${encodeURIComponent(connector)}/api-key`, { apiKey });
+    if (!res.ok) {
+        throw new Error(`connector api key save failed: ${res.status} ${await readError(res)}`.trim());
+    }
+}
+
+/** Mint a short-lived credential for a connected integration MCP endpoint. */
+export async function getConnectorMCPTokenViaBackend(connector: string): Promise<ConnectorMCPTokenResponse> {
+    const res = await postWithBearer(`/v1/connections/${encodeURIComponent(connector)}/mcp-token`, {});
+    if (!res.ok) {
+        throw new Error(`connector mcp token failed: ${res.status} ${await readError(res)}`.trim());
+    }
+    return (await res.json()) as ConnectorMCPTokenResponse;
+}
+
 /**
  * Redeem the connector grant parked under `state` by the browser callback. The
  * api persists the connection server-side; there is no local token to store.
@@ -66,5 +153,13 @@ export async function claimConnectorViaBackend(connector: string, state: string)
     const res = await postWithBearer(`/v1/connections/${encodeURIComponent(connector)}/claim`, { state });
     if (!res.ok) {
         throw new Error(`connector claim failed: ${res.status} ${await readError(res)}`.trim());
+    }
+}
+
+/** Disconnect a Rowboat integration. */
+export async function deleteConnectorViaBackend(connector: string): Promise<void> {
+    const res = await deleteWithBearer(`/v1/connections/${encodeURIComponent(connector)}`);
+    if (!res.ok && res.status !== 204) {
+        throw new Error(`connector delete failed: ${res.status} ${await readError(res)}`.trim());
     }
 }

@@ -205,13 +205,6 @@ const ApiSeedSchema = z.object({
       lastUsedAt: IsoDate,
     }),
   ),
-  composioAccounts: z.array(
-    z.object({
-      id: z.string().uuid(),
-      accountId: z.string(),
-      toolkit: z.string(),
-    }),
-  ),
   llmUsage: z.array(
     z.object({
       id: z.string().uuid(),
@@ -901,18 +894,6 @@ Create a background task that scans customer emails and meeting notes for unreso
         lastUsedAt: t.morning,
       },
     ],
-    composioAccounts: [
-      {
-        id: uuid("composio:gmail:demo"),
-        accountId: "ca_oppulence_demo_gmail",
-        toolkit: "gmail",
-      },
-      {
-        id: uuid("composio:slack:demo"),
-        accountId: "ca_oppulence_demo_slack",
-        toolkit: "slack",
-      },
-    ],
     llmUsage: [
       {
         id: uuid("llm:followup"),
@@ -1440,7 +1421,6 @@ DELETE FROM background_tasks WHERE user_background_tasks = ${userRef};
 DELETE FROM cloud_events WHERE user_cloud_events = ${userRef};
 DELETE FROM oauth_connections WHERE user_oauth_connections = ${userRef};
 DELETE FROM mcp_connections WHERE user_mcp_connections = ${userRef};
-DELETE FROM composio_accounts WHERE user_composio_accounts = ${userRef};
 DELETE FROM llm_usages WHERE user_llm_usages = ${userRef};
 DELETE FROM meeting_minute_usages WHERE user_meeting_minute_usages = ${userRef};
 DELETE FROM credit_ledgers WHERE user_ledger_entries = ${userRef};
@@ -1470,13 +1450,6 @@ VALUES (${q(connection.id)}, ${q(t.week)}, ${q(t.now)}, ${q(connection.provider)
     lines.push(`
 INSERT INTO mcp_connections (id, created_at, updated_at, connector, audience, scopes, api_key_encrypted, connected_at, last_used_at, user_mcp_connections)
 VALUES (${q(connection.id)}, ${q(connection.connectedAt)}, ${q(connection.lastUsedAt)}, ${q(connection.connector)}, ${q(connection.audience)}, ${json(connection.scopes)}, ${bytes(`demo-api-key:${connection.connector}`)}, ${q(connection.connectedAt)}, ${q(connection.lastUsedAt)}, ${userRef});
-`);
-  }
-
-  for (const account of api.composioAccounts) {
-    lines.push(`
-INSERT INTO composio_accounts (id, created_at, updated_at, account_id, toolkit, user_composio_accounts)
-VALUES (${q(account.id)}, ${q(t.week)}, ${q(t.now)}, ${q(account.accountId)}, ${q(account.toolkit)}, ${userRef});
 `);
   }
 

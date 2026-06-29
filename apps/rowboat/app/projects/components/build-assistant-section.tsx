@@ -106,14 +106,14 @@ export function BuildAssistantSection() {
     const uniqueToolsMap = new Map();
     template.tools.forEach((tool: any) => {
       if (!uniqueToolsMap.has(tool.name)) {
-        // Include all tools, following the same pattern as Composio toolkit cards
+        // Include all tools, following the same pattern as Integration toolkit cards
         const toolData = {
           name: tool.name,
-          isComposio: tool.isComposio,
+          isIntegration: tool.isIntegration,
           isLibrary: tool.isLibrary,
           logo:
-            tool.isComposio && tool.composioData?.logo
-              ? tool.composioData.logo
+            tool.isIntegration && tool.integrationData?.logo
+              ? tool.integrationData.logo
               : null,
         };
 

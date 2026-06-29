@@ -2,14 +2,24 @@
 
 import * as React from "react";
 import { useState } from "react";
-import { AlertTriangle, Loader2, Mic, Mail, Calendar, User } from "@/lib/icons";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Link2,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Mic,
+  Plug,
+  User,
+} from "@/lib/icons";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { GoogleClientIdModal } from "@/components/google-client-id-modal";
-import { ComposioApiKeyModal } from "@/components/composio-api-key-modal";
+import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 import { useConnectors } from "@/hooks/useConnectors";
 import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/dist/branding.js";
 
@@ -122,18 +132,10 @@ export function ConnectorsPopover({
     );
   };
 
-  // Check if Gmail is unconnected (for filtering in unconnected mode)
-  const isGmailUnconnected = c.useComposioForGoogle ? !c.gmailConnected && !c.gmailLoading : true;
-  const isGoogleCalendarUnconnected = c.useComposioForGoogleCalendar
-    ? !c.googleCalendarConnected && !c.googleCalendarLoading
-    : true;
-
   // For unconnected mode, check if there's anything to show
   const hasUnconnectedEmailCalendar = (() => {
     if (!isUnconnectedMode) return true;
-    if (c.useComposioForGoogle && isGmailUnconnected) return true;
-    if (c.useComposioForGoogleCalendar && isGoogleCalendarUnconnected) return true;
-    if (!c.useComposioForGoogle && c.providers.includes("google")) {
+    if (c.providers.includes("google")) {
       const googleState = c.providerStates["google"];
       if (!googleState?.isConnected || c.providerStatus["google"]?.error) return true;
     }
@@ -149,6 +151,12 @@ export function ConnectorsPopover({
     return false;
   })();
 
+  const visibleIntegrations = c.integrations.filter(
+    (integration) => !isUnconnectedMode || !integration.connected,
+  );
+  const hasUnconnectedIntegrations = !isUnconnectedMode || visibleIntegrations.length > 0;
+  const hasUnconnectedSlack = !isUnconnectedMode || c.slackLoading || !c.slackEnabled;
+
   const isSolomonUnconnected = (() => {
     if (!c.providers.includes(PRODUCT_PROVIDER_ID)) return false;
     const solomonState = c.providerStates[PRODUCT_PROVIDER_ID];
@@ -159,7 +167,9 @@ export function ConnectorsPopover({
     isUnconnectedMode &&
     !isSolomonUnconnected &&
     !hasUnconnectedEmailCalendar &&
-    !hasUnconnectedMeetingNotes;
+    !hasUnconnectedMeetingNotes &&
+    !hasUnconnectedIntegrations &&
+    !hasUnconnectedSlack;
 
   return (
     <>
@@ -174,6 +184,13 @@ export function ConnectorsPopover({
         onSubmit={c.handleGoogleClientIdSubmit}
         isSubmitting={c.providerStates.google?.isConnecting ?? false}
         description={c.googleClientIdDescription}
+      />
+      <IntegrationApiKeyModal
+        open={c.integrationApiKeyOpen}
+        onOpenChange={c.setIntegrationApiKeyOpen}
+        onSubmit={c.handleIntegrationApiKeySubmit}
+        isSubmitting={c.integrationApiKeySubmitting}
+        integrationName={c.integrationApiKeyTarget?.displayName}
       />
       <Popover open={open} onOpenChange={setOpen}>
         {tooltip ? (
@@ -237,128 +254,164 @@ export function ConnectorsPopover({
                     );
                   })()}
 
+                {/* Managed Integrations */}
+                {hasUnconnectedIntegrations && (
+                  <>
+                    <div className="px-2 py-1.5">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Integrations
+                      </span>
+                    </div>
+                    {c.integrationsLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : (
+                      visibleIntegrations.slice(0, 6).map((integration) => {
+                        const isConnecting = c.integrationConnecting[integration.name] ?? false;
+                        return (
+                          <div
+                            key={integration.name}
+                            className="flex items-center justify-between gap-3 rounded-none px-3 py-2 hover:bg-accent"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="flex size-8 items-center justify-center rounded-none bg-muted">
+                                <Plug className="size-4" />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-medium truncate">
+                                  {integration.displayName}
+                                </span>
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {integration.description}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="shrink-0">
+                              {integration.connected ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => c.handleDisconnectIntegration(integration)}
+                                  disabled={isConnecting}
+                                  className="h-7 px-2 text-xs"
+                                  aria-label={`Disconnect ${integration.displayName}`}
+                                >
+                                  {isConnecting ? (
+                                    <Loader2 className="size-3 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <CheckCircle2 className="mr-1 size-3" />
+                                      Connected
+                                    </>
+                                  )}
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => c.handleConnectIntegration(integration)}
+                                  disabled={isConnecting}
+                                  className="h-7 px-2 text-xs"
+                                  aria-label={`Connect ${integration.displayName}`}
+                                >
+                                  {isConnecting ? (
+                                    <Loader2 className="size-3 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <Link2 className="mr-1 size-3" />
+                                      Connect
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                    <Separator className="my-2" />
+                  </>
+                )}
+
+                {/* Messaging */}
+                {hasUnconnectedSlack && (
+                  <>
+                    <div className="px-2 py-1.5">
+                      <span className="text-xs font-medium text-muted-foreground">Messaging</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 rounded-none px-3 py-2 hover:bg-accent">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex size-8 items-center justify-center rounded-none bg-muted">
+                          <MessageSquare className="size-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-medium truncate">Slack</span>
+                          {c.slackLoading ? (
+                            <span className="text-xs text-muted-foreground">Checking...</span>
+                          ) : c.slackEnabled ? (
+                            <span className="text-xs text-muted-foreground truncate">
+                              {c.slackWorkspaces
+                                .map((workspace) => workspace.name)
+                                .filter(Boolean)
+                                .join(", ") || "Connected"}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground truncate">
+                              Workspace connection
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="shrink-0">
+                        {c.slackLoading ? (
+                          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                        ) : c.slackEnabled ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={c.handleSlackDisable}
+                            className="h-7 px-2 text-xs"
+                            aria-label="Disconnect Slack"
+                          >
+                            Disconnect
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={c.handleSlackEnable}
+                            disabled={c.slackDiscovering}
+                            className="h-7 px-2 text-xs"
+                            aria-label="Connect Slack"
+                          >
+                            {c.slackDiscovering ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              "Connect"
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <Separator className="my-2" />
+                  </>
+                )}
+
                 {/* Email & Calendar Section */}
-                {(c.useComposioForGoogle ||
-                  c.useComposioForGoogleCalendar ||
-                  c.providers.includes("google")) &&
-                  hasUnconnectedEmailCalendar && (
+                {c.providers.includes("google") && hasUnconnectedEmailCalendar && (
                     <>
                       <div className="px-2 py-1.5">
                         <span className="text-xs font-medium text-muted-foreground">
                           Email & Calendar
                         </span>
                       </div>
-                      {c.useComposioForGoogle ? (
-                        // In unconnected mode, only show if not connected
-                        !isUnconnectedMode || isGmailUnconnected ? (
-                          <div className="flex items-center justify-between gap-3 rounded-none px-3 py-2 hover:bg-accent">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="flex size-8 items-center justify-center rounded-none bg-muted">
-                                <Mail className="size-4" />
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-medium truncate">Gmail</span>
-                                {c.gmailLoading ? (
-                                  <span className="text-xs text-muted-foreground">Checking...</span>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground truncate">
-                                    Sync emails
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="shrink-0">
-                              {c.gmailLoading ? (
-                                <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                              ) : c.gmailConnected ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={c.handleDisconnectGmail}
-                                  className="h-7 px-2 text-xs"
-                                  aria-label="Disconnect Gmail"
-                                >
-                                  Disconnect
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={c.handleConnectGmail}
-                                  disabled={c.gmailConnecting}
-                                  className="h-7 px-2 text-xs"
-                                  aria-label="Connect Gmail"
-                                >
-                                  {c.gmailConnecting ? (
-                                    <Loader2 className="size-3 animate-spin" />
-                                  ) : (
-                                    "Connect"
-                                  )}
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ) : null
-                      ) : (
-                        renderOAuthProvider(
-                          "google",
-                          "Google",
-                          <Mail className="size-4" />,
-                          "Sync emails and calendar",
-                        )
+                      {renderOAuthProvider(
+                        "google",
+                        "Google",
+                        <Mail className="size-4" />,
+                        "Sync emails and calendar",
                       )}
-                      {c.useComposioForGoogleCalendar &&
-                        (!isUnconnectedMode || isGoogleCalendarUnconnected) && (
-                          <div className="flex items-center justify-between gap-3 rounded-none px-3 py-2 hover:bg-accent">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="flex size-8 items-center justify-center rounded-none bg-muted">
-                                <Calendar className="size-4" />
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-medium truncate">
-                                  Google Calendar
-                                </span>
-                                {c.googleCalendarLoading ? (
-                                  <span className="text-xs text-muted-foreground">Checking...</span>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground truncate">
-                                    Sync calendar events
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="shrink-0">
-                              {c.googleCalendarLoading ? (
-                                <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                              ) : c.googleCalendarConnected ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={c.handleDisconnectGoogleCalendar}
-                                  className="h-7 px-2 text-xs"
-                                  aria-label="Disconnect Google Calendar"
-                                >
-                                  Disconnect
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={c.handleConnectGoogleCalendar}
-                                  disabled={c.googleCalendarConnecting}
-                                  className="h-7 px-2 text-xs"
-                                  aria-label="Connect Google Calendar"
-                                >
-                                  {c.googleCalendarConnecting ? (
-                                    <Loader2 className="size-3 animate-spin" />
-                                  ) : (
-                                    "Connect"
-                                  )}
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        )}
                       <Separator className="my-2" />
                     </>
                   )}
@@ -389,12 +442,6 @@ export function ConnectorsPopover({
           </div>
         </PopoverContent>
       </Popover>
-      <ComposioApiKeyModal
-        open={c.composioApiKeyOpen}
-        onOpenChange={c.setComposioApiKeyOpen}
-        onSubmit={c.handleComposioApiKeySubmit}
-        isSubmitting={c.gmailConnecting}
-      />
     </>
   );
 }

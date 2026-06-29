@@ -4,12 +4,12 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Button, Input, Card, CardBody, CardHeader } from '@heroui/react';
 import { ArrowLeft, ZapIcon, CheckCircleIcon } from 'lucide-react';
 import { z } from 'zod';
-import { ZToolkit } from "@/src/application/lib/composio/types";
-import { ComposioTriggerType } from '@/src/entities/models/composio-trigger-type';
+import { ZToolkit } from "@/src/application/lib/integration/types";
+import { IntegrationTriggerType } from '@/src/entities/models/integration-trigger-type';
 
 interface TriggerConfigFormProps {
   toolkit: z.infer<typeof ZToolkit>;
-  triggerType: z.infer<typeof ComposioTriggerType>;
+  triggerType: z.infer<typeof IntegrationTriggerType>;
   onBack: () => void;
   onSubmit: (config: Record<string, unknown>) => void;
   isSubmitting?: boolean;

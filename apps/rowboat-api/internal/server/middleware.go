@@ -159,7 +159,6 @@ func RequestTimeout(timeout time.Duration) func(http.Handler) http.Handler {
 
 func skipRequestTimeout(path string) bool {
 	return strings.HasPrefix(path, "/v1/llm/") ||
-		strings.HasPrefix(path, "/v1/composio/") ||
 		strings.HasSuffix(path, "/events") ||
 		strings.HasSuffix(path, "/events/stream")
 }
@@ -198,8 +197,8 @@ func methodWithBody(method string) bool {
 	return method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch
 }
 
-func skipJSONContentType(path string) bool {
-	return strings.HasPrefix(path, "/v1/composio/")
+func skipJSONContentType(_ string) bool {
+	return false
 }
 
 // NoCache marks authenticated, internal, OAuth, and GraphQL surfaces as

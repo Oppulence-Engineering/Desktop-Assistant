@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ComposioConnectedAccount, CustomMcpServer, Project } from "@/src/entities/models/project";
+import { IntegrationConnectedAccount, CustomMcpServer, Project } from "@/src/entities/models/project";
 import { Workflow } from "@/app/lib/types/workflow_types";
 import { PaginatedList } from "@/src/entities/common/paginated-list";
 
@@ -17,12 +17,12 @@ export const CreateSchema = Project
     });
 
 /**
- * Schema for adding a Composio connected account to a project.
+ * Schema for adding a Integration connected account to a project.
  * Contains the toolkit slug and account data.
  */
-export const AddComposioConnectedAccountSchema = z.object({
+export const AddIntegrationConnectedAccountSchema = z.object({
     toolkitSlug: z.string(),
-    data: ComposioConnectedAccount,
+    data: IntegrationConnectedAccount,
 });
 
 /**
@@ -67,20 +67,20 @@ export interface IProjectsRepository {
     listProjects(userId: string, cursor?: string, limit?: number): Promise<z.infer<ReturnType<typeof PaginatedList<typeof Project>>>>;
 
     /**
-     * Adds a Composio connected account to a project.
+     * Adds a Integration connected account to a project.
      * @param projectId - The project ID.
      * @param data - The connected account data.
      * @returns The updated Project object.
      */
-    addComposioConnectedAccount(projectId: string, data: z.infer<typeof AddComposioConnectedAccountSchema>): Promise<z.infer<typeof Project>>;
+    addIntegrationConnectedAccount(projectId: string, data: z.infer<typeof AddIntegrationConnectedAccountSchema>): Promise<z.infer<typeof Project>>;
 
     /**
-     * Deletes a Composio connected account from a project.
+     * Deletes a Integration connected account from a project.
      * @param projectId - The project ID.
      * @param toolkitSlug - The toolkit slug to remove.
      * @returns True if the account was deleted, false otherwise.
      */
-    deleteComposioConnectedAccount(projectId: string, toolkitSlug: string): Promise<boolean>;
+    deleteIntegrationConnectedAccount(projectId: string, toolkitSlug: string): Promise<boolean>;
 
     /**
      * Adds a custom MCP server to a project.

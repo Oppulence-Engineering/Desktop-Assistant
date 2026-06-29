@@ -19,8 +19,8 @@ export const SubscriptionPlan = z.enum(["free", "starter", "pro"]);
 export const UsageTypeKey = z.enum([
     "LLM_USAGE",
     "EMBEDDING_MODEL_USAGE",
-    "COMPOSIO_TOOL_USAGE",
-    "COMPOSIO_TRIGGER_USAGE",
+    "INTEGRATION_TOOL_USAGE",
+    "INTEGRATION_TRIGGER_USAGE",
     "FIRECRAWL_SCRAPE_USAGE",
 ]);
 
@@ -39,14 +39,14 @@ export const EmbeddingModelUsage = z.object({
     context: z.string(),
 });
 
-export const ComposioToolUsage = z.object({
-    type: z.literal(UsageTypeKey.enum.COMPOSIO_TOOL_USAGE),
+export const IntegrationToolUsage = z.object({
+    type: z.literal(UsageTypeKey.enum.INTEGRATION_TOOL_USAGE),
     toolSlug: z.string(),
     context: z.string(),
 });
 
-export const ComposioTriggerUsage = z.object({
-    type: z.literal(UsageTypeKey.enum.COMPOSIO_TRIGGER_USAGE),
+export const IntegrationTriggerUsage = z.object({
+    type: z.literal(UsageTypeKey.enum.INTEGRATION_TRIGGER_USAGE),
     triggerSlug: z.string(),
     context: z.string(),
 });
@@ -59,8 +59,8 @@ export const FirecrawlScrapeUsage = z.object({
 export const UsageItem = z.discriminatedUnion("type", [
     LLMUsage,
     EmbeddingModelUsage,
-    ComposioToolUsage,
-    ComposioTriggerUsage,
+    IntegrationToolUsage,
+    IntegrationTriggerUsage,
     FirecrawlScrapeUsage,
 ]);
 

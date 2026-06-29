@@ -8,7 +8,7 @@ import { DATA_SOURCE_DOCS_COLLECTION } from "../repositories/mongodb.data-source
 import { PROJECT_MEMBERS_COLLECTION } from "../repositories/mongodb.project-members.indexes";
 import { RECURRING_JOB_RULES_COLLECTION } from "../repositories/mongodb.recurring-job-rules.indexes";
 import { SCHEDULED_JOB_RULES_COLLECTION } from "../repositories/mongodb.scheduled-job-rules.indexes";
-import { COMPOSIO_TRIGGER_DEPLOYMENTS_COLLECTION } from "../repositories/mongodb.composio-trigger-deployments.indexes";
+import { INTEGRATION_TRIGGER_DEPLOYMENTS_COLLECTION } from "../repositories/mongodb.integration-trigger-deployments.indexes";
 import { USERS_COLLECTION } from "../repositories/mongodb.users.indexes";
 
 export async function dropAllIndexes(database: Db): Promise<void> {
@@ -22,7 +22,7 @@ export async function dropAllIndexes(database: Db): Promise<void> {
         PROJECT_MEMBERS_COLLECTION,
         RECURRING_JOB_RULES_COLLECTION,
         SCHEDULED_JOB_RULES_COLLECTION,
-        COMPOSIO_TRIGGER_DEPLOYMENTS_COLLECTION,
+        INTEGRATION_TRIGGER_DEPLOYMENTS_COLLECTION,
         USERS_COLLECTION,
     ];
 

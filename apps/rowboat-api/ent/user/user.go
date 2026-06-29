@@ -37,8 +37,6 @@ const (
 	EdgeOauthConnections = "oauth_connections"
 	// EdgeMcpConnections holds the string denoting the mcp_connections edge name in mutations.
 	EdgeMcpConnections = "mcp_connections"
-	// EdgeComposioAccounts holds the string denoting the composio_accounts edge name in mutations.
-	EdgeComposioAccounts = "composio_accounts"
 	// EdgeBackgroundTasks holds the string denoting the background_tasks edge name in mutations.
 	EdgeBackgroundTasks = "background_tasks"
 	// EdgeBackgroundTaskArtifacts holds the string denoting the background_task_artifacts edge name in mutations.
@@ -111,13 +109,6 @@ const (
 	McpConnectionsInverseTable = "mcp_connections"
 	// McpConnectionsColumn is the table column denoting the mcp_connections relation/edge.
 	McpConnectionsColumn = "user_mcp_connections"
-	// ComposioAccountsTable is the table that holds the composio_accounts relation/edge.
-	ComposioAccountsTable = "composio_accounts"
-	// ComposioAccountsInverseTable is the table name for the ComposioAccount entity.
-	// It exists in this package in order to avoid circular dependency with the "composioaccount" package.
-	ComposioAccountsInverseTable = "composio_accounts"
-	// ComposioAccountsColumn is the table column denoting the composio_accounts relation/edge.
-	ComposioAccountsColumn = "user_composio_accounts"
 	// BackgroundTasksTable is the table that holds the background_tasks relation/edge.
 	BackgroundTasksTable = "background_tasks"
 	// BackgroundTasksInverseTable is the table name for the BackgroundTask entity.
@@ -361,20 +352,6 @@ func ByMcpConnections(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByComposioAccountsCount orders the results by composio_accounts count.
-func ByComposioAccountsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newComposioAccountsStep(), opts...)
-	}
-}
-
-// ByComposioAccounts orders the results by composio_accounts terms.
-func ByComposioAccounts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newComposioAccountsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByBackgroundTasksCount orders the results by background_tasks count.
 func ByBackgroundTasksCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -610,13 +587,6 @@ func newMcpConnectionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(McpConnectionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, McpConnectionsTable, McpConnectionsColumn),
-	)
-}
-func newComposioAccountsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ComposioAccountsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ComposioAccountsTable, ComposioAccountsColumn),
 	)
 }
 func newBackgroundTasksStep() *sqlgraph.Step {

@@ -166,7 +166,7 @@ Each WP is independently shippable; suggested order WP4 → WP3 → WP1 → WP2 
 ## Alternatives considered
 
 - **One RFC per primitive** — rejected: each is too small; grouping keeps the "finish what's started" intent legible and lets them ship piecemeal.
-- **Slack as a Composio/MCP connector instead of a native producer** — rejected for triggering: the live-note/bg-task event model needs a `RowboatEvent` producer; Composio remains available for Slack **actions**.
+- **Slack as a legacy integration vendor/MCP connector instead of a native producer** — rejected for triggering: the live-note/bg-task event model needs a `RowboatEvent` producer; legacy integration vendor remains available for Slack **actions**.
 - **General code sandbox (containers)** — deferred; the ACP gating is sufficient for the defined finance scripts at desktop scope.
 
 ## Decisions

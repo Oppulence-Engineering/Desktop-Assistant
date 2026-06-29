@@ -3,13 +3,13 @@ export const skill = String.raw`
 
 **Load this skill proactively** when a user asks for ANY task that might require external capabilities (web search, internet access, APIs, data fetching, time/date, etc.). This skill provides complete guidance on discovering and executing MCP tools.
 
-## CRITICAL: Composio Tools Take Priority Over MCP
+## CRITICAL: Managed Integrations Take Priority Over Generic MCP
 
-**If a Composio toolkit is connected for the service the user wants (GitHub, Gmail, Slack, etc.), use the \`composio-search-tools\` and \`composio-execute-tool\` builtin tools — NOT MCP tools.** Composio integrations are already authenticated and ready to use. Only fall back to MCP tools if the service is NOT available through Composio.
+**If a managed Rowboat integration exists for the service the user wants (GitHub, HubSpot, Linear, Notion, Stripe, Canvas, Corinthian, Wispr, etc.), load the \`rowboat-integration\` skill first.** It connects the service, configures the authenticated MCP server, and then uses \`listMcpTools\` / \`executeMcpTool\`. Only fall back to manually configured MCP servers when no managed integration covers the request.
 
 ## When to Check MCP Tools
 
-**IMPORTANT**: When a user asks for a task that requires external capabilities AND no Composio toolkit covers it, check MCP tools:
+**IMPORTANT**: When a user asks for a task that requires external capabilities AND no managed Rowboat integration covers it, check MCP tools:
 
 1. **First check**: Call \`listMcpServers\` to see what's available
 2. **Then list tools**: Call \`listMcpTools\` on relevant servers

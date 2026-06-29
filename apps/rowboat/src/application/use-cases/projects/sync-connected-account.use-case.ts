@@ -2,9 +2,9 @@ import { z } from "zod";
 import { IProjectsRepository } from "../../repositories/projects.repository.interface";
 import { IProjectActionAuthorizationPolicy } from "../../policies/project-action-authorization.policy";
 import { IUsageQuotaPolicy } from "../../policies/usage-quota.policy.interface";
-import { ComposioConnectedAccount } from "@/src/entities/models/project";
-import { getConnectedAccount } from "@/src/application/lib/composio/composio";
-import { ZConnectedAccount } from "../../lib/composio/types";
+import { IntegrationConnectedAccount } from "@/src/entities/models/project";
+import { getConnectedAccount } from "@/src/application/lib/integration/integration";
+import { ZConnectedAccount } from "../../lib/integration/types";
 
 export const InputSchema = z.object({
     caller: z.enum(["user", "api"]),
@@ -16,7 +16,7 @@ export const InputSchema = z.object({
 });
 
 export interface ISyncConnectedAccountUseCase {
-    execute(request: z.infer<typeof InputSchema>): Promise<z.infer<typeof ComposioConnectedAccount>>;
+    execute(request: z.infer<typeof InputSchema>): Promise<z.infer<typeof IntegrationConnectedAccount>>;
 }
 
 export class SyncConnectedAccountUseCase implements ISyncConnectedAccountUseCase {
@@ -38,7 +38,7 @@ export class SyncConnectedAccountUseCase implements ISyncConnectedAccountUseCase
         this.usageQuotaPolicy = usageQuotaPolicy;
     }
 
-    async execute(request: z.infer<typeof InputSchema>): Promise<z.infer<typeof ComposioConnectedAccount>> {
+    async execute(request: z.infer<typeof InputSchema>): Promise<z.infer<typeof IntegrationConnectedAccount>> {
         const { caller, userId, apiKey, projectId, toolkitSlug, connectedAccountId } = request;
 
         await this.projectActionAuthorizationPolicy.authorize({ caller, userId, apiKey, projectId });
@@ -49,7 +49,7 @@ export class SyncConnectedAccountUseCase implements ISyncConnectedAccountUseCase
         if (!project) {
             throw new Error('Project not found');
         }
-        const account = project.composioConnectedAccounts?.[toolkitSlug];
+        const account = project.integrationConnectedAccounts?.[toolkitSlug];
         if (!account || account.id !== connectedAccountId) {
             // Log detailed mismatch context to aid debugging
             try {
@@ -57,13 +57,13 @@ export class SyncConnectedAccountUseCase implements ISyncConnectedAccountUseCase
                 // Include both expected and stored IDs, toolkit slug, and available toolkits
                 // so we can quickly spot wrong slug or race conditions.
                 // Note: This is server-side logging only.
-                console.error('[Composio] Connected account mismatch', {
+                console.error('[Integration] Connected account mismatch', {
                     projectId,
                     toolkitSlug,
                     expectedConnectedAccountId: connectedAccountId,
                     storedAccountId: account?.id ?? null,
                     storedStatus: account?.status ?? null,
-                    availableToolkits: Object.keys(project.composioConnectedAccounts || {}),
+                    availableToolkits: Object.keys(project.integrationConnectedAccounts || {}),
                 });
             } catch {}
 
@@ -74,10 +74,10 @@ export class SyncConnectedAccountUseCase implements ISyncConnectedAccountUseCase
             return account;
         }
 
-        // get latest status from Composio
+        // get latest status from Integration
         const response = await getConnectedAccount(connectedAccountId);
 
-        const updated: z.infer<typeof ComposioConnectedAccount> = {
+        const updated: z.infer<typeof IntegrationConnectedAccount> = {
             ...account,
             status: (() => {
                 switch (response.status) {
@@ -93,7 +93,7 @@ export class SyncConnectedAccountUseCase implements ISyncConnectedAccountUseCase
             lastUpdatedAt: new Date().toISOString(),
         };
 
-        await this.projectsRepository.addComposioConnectedAccount(projectId, {
+        await this.projectsRepository.addIntegrationConnectedAccount(projectId, {
             toolkitSlug,
             data: updated,
         });

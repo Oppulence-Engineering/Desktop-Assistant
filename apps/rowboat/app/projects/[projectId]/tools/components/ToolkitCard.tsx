@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { PictureImg } from "@/components/ui/picture-img";
 import clsx from "clsx";
 import { z } from "zod";
-import { ZToolkit } from "@/src/application/lib/composio/types";
+import { ZToolkit } from "@/src/application/lib/integration/types";
 import { Chip } from "@heroui/react";
 import { LinkIcon } from "lucide-react";
 import { Workflow } from "@/app/lib/types/workflow_types";
@@ -47,7 +47,7 @@ export function ToolkitCard({
   // Calculate selected tools count for this toolkit
   const selectedToolsCount = workflowTools.filter(
     (tool) =>
-      tool.isComposio && tool.composioData?.toolkitSlug === toolkit.slug,
+      tool.isIntegration && tool.integrationData?.toolkitSlug === toolkit.slug,
   ).length;
 
   return (

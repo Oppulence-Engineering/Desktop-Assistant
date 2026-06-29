@@ -20,20 +20,20 @@ import { ProjectActionAuthorizationPolicy } from "@/src/application/policies/pro
 import { MongoDBProjectMembersRepository } from "@/src/infrastructure/repositories/mongodb.project-members.repository";
 import { MongoDBApiKeysRepository } from "@/src/infrastructure/repositories/mongodb.api-keys.repository";
 import { MongodbProjectsRepository } from "@/src/infrastructure/repositories/mongodb.projects.repository";
-import { MongodbComposioTriggerDeploymentsRepository } from "@/src/infrastructure/repositories/mongodb.composio-trigger-deployments.repository";
-import { CreateComposioTriggerDeploymentUseCase } from "@/src/application/use-cases/composio-trigger-deployments/create-composio-trigger-deployment.use-case";
-import { ListComposioTriggerDeploymentsUseCase } from "@/src/application/use-cases/composio-trigger-deployments/list-composio-trigger-deployments.use-case";
-import { FetchComposioTriggerDeploymentUseCase } from "@/src/application/use-cases/composio-trigger-deployments/fetch-composio-trigger-deployment.use-case";
-import { DeleteComposioTriggerDeploymentUseCase } from "@/src/application/use-cases/composio-trigger-deployments/delete-composio-trigger-deployment.use-case";
-import { ListComposioTriggerTypesUseCase } from "@/src/application/use-cases/composio-trigger-deployments/list-composio-trigger-types.use-case";
-import { HandleCompsioWebhookRequestUseCase } from "@/src/application/use-cases/composio/webhook/handle-composio-webhook-request.use-case";
+import { MongodbIntegrationTriggerDeploymentsRepository } from "@/src/infrastructure/repositories/mongodb.integration-trigger-deployments.repository";
+import { CreateIntegrationTriggerDeploymentUseCase } from "@/src/application/use-cases/integration-trigger-deployments/create-integration-trigger-deployment.use-case";
+import { ListIntegrationTriggerDeploymentsUseCase } from "@/src/application/use-cases/integration-trigger-deployments/list-integration-trigger-deployments.use-case";
+import { FetchIntegrationTriggerDeploymentUseCase } from "@/src/application/use-cases/integration-trigger-deployments/fetch-integration-trigger-deployment.use-case";
+import { DeleteIntegrationTriggerDeploymentUseCase } from "@/src/application/use-cases/integration-trigger-deployments/delete-integration-trigger-deployment.use-case";
+import { ListIntegrationTriggerTypesUseCase } from "@/src/application/use-cases/integration-trigger-deployments/list-integration-trigger-types.use-case";
+import { HandleIntegrationWebhookRequestUseCase } from "@/src/application/use-cases/integration/webhook/handle-integration-webhook-request.use-case";
 import { MongoDBJobsRepository } from "@/src/infrastructure/repositories/mongodb.jobs.repository";
-import { CreateComposioTriggerDeploymentController } from "@/src/interface-adapters/controllers/composio-trigger-deployments/create-composio-trigger-deployment.controller";
-import { DeleteComposioTriggerDeploymentController } from "@/src/interface-adapters/controllers/composio-trigger-deployments/delete-composio-trigger-deployment.controller";
-import { ListComposioTriggerDeploymentsController } from "@/src/interface-adapters/controllers/composio-trigger-deployments/list-composio-trigger-deployments.controller";
-import { FetchComposioTriggerDeploymentController } from "@/src/interface-adapters/controllers/composio-trigger-deployments/fetch-composio-trigger-deployment.controller";
-import { ListComposioTriggerTypesController } from "@/src/interface-adapters/controllers/composio-trigger-deployments/list-composio-trigger-types.controller";
-import { HandleComposioWebhookRequestController } from "@/src/interface-adapters/controllers/composio/webhook/handle-composio-webhook-request.controller";
+import { CreateIntegrationTriggerDeploymentController } from "@/src/interface-adapters/controllers/integration-trigger-deployments/create-integration-trigger-deployment.controller";
+import { DeleteIntegrationTriggerDeploymentController } from "@/src/interface-adapters/controllers/integration-trigger-deployments/delete-integration-trigger-deployment.controller";
+import { ListIntegrationTriggerDeploymentsController } from "@/src/interface-adapters/controllers/integration-trigger-deployments/list-integration-trigger-deployments.controller";
+import { FetchIntegrationTriggerDeploymentController } from "@/src/interface-adapters/controllers/integration-trigger-deployments/fetch-integration-trigger-deployment.controller";
+import { ListIntegrationTriggerTypesController } from "@/src/interface-adapters/controllers/integration-trigger-deployments/list-integration-trigger-types.controller";
+import { HandleIntegrationWebhookRequestController } from "@/src/interface-adapters/controllers/integration/webhook/handle-integration-webhook-request.controller";
 import { JobsWorker } from "@/src/application/workers/jobs.worker";
 import { JobRulesWorker } from "@/src/application/workers/job-rules.worker";
 import { ListJobsUseCase } from "@/src/application/use-cases/jobs/list-jobs.use-case";
@@ -48,22 +48,22 @@ import { FetchConversationController } from "@/src/interface-adapters/controller
 // Projects
 import { CreateProjectUseCase } from "@/src/application/use-cases/projects/create-project.use-case";
 import { CreateProjectController } from "@/src/interface-adapters/controllers/projects/create-project.controller";
-import { DeleteComposioConnectedAccountUseCase } from "@/src/application/use-cases/projects/delete-composio-connected-account.use-case";
-import { DeleteComposioConnectedAccountController } from "@/src/interface-adapters/controllers/projects/delete-composio-connected-account.controller";
-import { CreateComposioManagedConnectedAccountUseCase } from "@/src/application/use-cases/projects/create-composio-managed-connected-account.use-case";
+import { DeleteIntegrationConnectedAccountUseCase } from "@/src/application/use-cases/projects/delete-integration-connected-account.use-case";
+import { DeleteIntegrationConnectedAccountController } from "@/src/interface-adapters/controllers/projects/delete-integration-connected-account.controller";
+import { CreateIntegrationManagedConnectedAccountUseCase } from "@/src/application/use-cases/projects/create-integration-managed-connected-account.use-case";
 import { CreateCustomConnectedAccountUseCase } from "@/src/application/use-cases/projects/create-custom-connected-account.use-case";
 import { SyncConnectedAccountUseCase } from "@/src/application/use-cases/projects/sync-connected-account.use-case";
-import { ListComposioToolkitsUseCase } from "@/src/application/use-cases/projects/list-composio-toolkits.use-case";
-import { GetComposioToolkitUseCase } from "@/src/application/use-cases/projects/get-composio-toolkit.use-case";
-import { ListComposioToolsUseCase } from "@/src/application/use-cases/projects/list-composio-tools.use-case";
+import { ListIntegrationToolkitsUseCase } from "@/src/application/use-cases/projects/list-integration-toolkits.use-case";
+import { GetIntegrationToolkitUseCase } from "@/src/application/use-cases/projects/get-integration-toolkit.use-case";
+import { ListIntegrationToolsUseCase } from "@/src/application/use-cases/projects/list-integration-tools.use-case";
 import { AddCustomMcpServerUseCase } from "@/src/application/use-cases/projects/add-custom-mcp-server.use-case";
 import { RemoveCustomMcpServerUseCase } from "@/src/application/use-cases/projects/remove-custom-mcp-server.use-case";
-import { CreateComposioManagedConnectedAccountController } from "@/src/interface-adapters/controllers/projects/create-composio-managed-connected-account.controller";
+import { CreateIntegrationManagedConnectedAccountController } from "@/src/interface-adapters/controllers/projects/create-integration-managed-connected-account.controller";
 import { CreateCustomConnectedAccountController } from "@/src/interface-adapters/controllers/projects/create-custom-connected-account.controller";
 import { SyncConnectedAccountController } from "@/src/interface-adapters/controllers/projects/sync-connected-account.controller";
-import { ListComposioToolkitsController } from "@/src/interface-adapters/controllers/projects/list-composio-toolkits.controller";
-import { GetComposioToolkitController } from "@/src/interface-adapters/controllers/projects/get-composio-toolkit.controller";
-import { ListComposioToolsController } from "@/src/interface-adapters/controllers/projects/list-composio-tools.controller";
+import { ListIntegrationToolkitsController } from "@/src/interface-adapters/controllers/projects/list-integration-toolkits.controller";
+import { GetIntegrationToolkitController } from "@/src/interface-adapters/controllers/projects/get-integration-toolkit.controller";
+import { ListIntegrationToolsController } from "@/src/interface-adapters/controllers/projects/list-integration-tools.controller";
 import { AddCustomMcpServerController } from "@/src/interface-adapters/controllers/projects/add-custom-mcp-server.controller";
 import { RemoveCustomMcpServerController } from "@/src/interface-adapters/controllers/projects/remove-custom-mcp-server.controller";
 
@@ -288,43 +288,43 @@ container.register({
     revertToLiveWorkflowController: asClass(RevertToLiveWorkflowController).singleton(),
     deleteProjectUseCase: asClass(DeleteProjectUseCase).singleton(),
     deleteProjectController: asClass(DeleteProjectController).singleton(),      
-    deleteComposioConnectedAccountController: asClass(DeleteComposioConnectedAccountController).singleton(),
-    deleteComposioConnectedAccountUseCase: asClass(DeleteComposioConnectedAccountUseCase).singleton(),
-    createComposioManagedConnectedAccountUseCase: asClass(CreateComposioManagedConnectedAccountUseCase).singleton(),
-    createComposioManagedConnectedAccountController: asClass(CreateComposioManagedConnectedAccountController).singleton(),
+    deleteIntegrationConnectedAccountController: asClass(DeleteIntegrationConnectedAccountController).singleton(),
+    deleteIntegrationConnectedAccountUseCase: asClass(DeleteIntegrationConnectedAccountUseCase).singleton(),
+    createIntegrationManagedConnectedAccountUseCase: asClass(CreateIntegrationManagedConnectedAccountUseCase).singleton(),
+    createIntegrationManagedConnectedAccountController: asClass(CreateIntegrationManagedConnectedAccountController).singleton(),
     createCustomConnectedAccountUseCase: asClass(CreateCustomConnectedAccountUseCase).singleton(),
     createCustomConnectedAccountController: asClass(CreateCustomConnectedAccountController).singleton(),
     syncConnectedAccountUseCase: asClass(SyncConnectedAccountUseCase).singleton(),
     syncConnectedAccountController: asClass(SyncConnectedAccountController).singleton(),
-    listComposioToolkitsUseCase: asClass(ListComposioToolkitsUseCase).singleton(),
-    listComposioToolkitsController: asClass(ListComposioToolkitsController).singleton(),
-    getComposioToolkitUseCase: asClass(GetComposioToolkitUseCase).singleton(),
-    getComposioToolkitController: asClass(GetComposioToolkitController).singleton(),
-    listComposioToolsUseCase: asClass(ListComposioToolsUseCase).singleton(),
-    listComposioToolsController: asClass(ListComposioToolsController).singleton(),
+    listIntegrationToolkitsUseCase: asClass(ListIntegrationToolkitsUseCase).singleton(),
+    listIntegrationToolkitsController: asClass(ListIntegrationToolkitsController).singleton(),
+    getIntegrationToolkitUseCase: asClass(GetIntegrationToolkitUseCase).singleton(),
+    getIntegrationToolkitController: asClass(GetIntegrationToolkitController).singleton(),
+    listIntegrationToolsUseCase: asClass(ListIntegrationToolsUseCase).singleton(),
+    listIntegrationToolsController: asClass(ListIntegrationToolsController).singleton(),
     addCustomMcpServerUseCase: asClass(AddCustomMcpServerUseCase).singleton(),
     addCustomMcpServerController: asClass(AddCustomMcpServerController).singleton(),
     removeCustomMcpServerUseCase: asClass(RemoveCustomMcpServerUseCase).singleton(),
     removeCustomMcpServerController: asClass(RemoveCustomMcpServerController).singleton(),
 
-    // composio
+    // integration
     // ---
-    handleCompsioWebhookRequestUseCase: asClass(HandleCompsioWebhookRequestUseCase).singleton(),
-    handleComposioWebhookRequestController: asClass(HandleComposioWebhookRequestController).singleton(),
+    handleIntegrationWebhookRequestUseCase: asClass(HandleIntegrationWebhookRequestUseCase).singleton(),
+    handleIntegrationWebhookRequestController: asClass(HandleIntegrationWebhookRequestController).singleton(),
 
-    // composio trigger deployments
+    // integration trigger deployments
     // ---
-    composioTriggerDeploymentsRepository: asClass(MongodbComposioTriggerDeploymentsRepository).singleton(),
-    listComposioTriggerTypesUseCase: asClass(ListComposioTriggerTypesUseCase).singleton(),
-    createComposioTriggerDeploymentUseCase: asClass(CreateComposioTriggerDeploymentUseCase).singleton(),
-    listComposioTriggerDeploymentsUseCase: asClass(ListComposioTriggerDeploymentsUseCase).singleton(),
-    fetchComposioTriggerDeploymentUseCase: asClass(FetchComposioTriggerDeploymentUseCase).singleton(),
-    deleteComposioTriggerDeploymentUseCase: asClass(DeleteComposioTriggerDeploymentUseCase).singleton(),
-    createComposioTriggerDeploymentController: asClass(CreateComposioTriggerDeploymentController).singleton(),
-    deleteComposioTriggerDeploymentController: asClass(DeleteComposioTriggerDeploymentController).singleton(),
-    listComposioTriggerDeploymentsController: asClass(ListComposioTriggerDeploymentsController).singleton(),
-    fetchComposioTriggerDeploymentController: asClass(FetchComposioTriggerDeploymentController).singleton(),
-    listComposioTriggerTypesController: asClass(ListComposioTriggerTypesController).singleton(),
+    integrationTriggerDeploymentsRepository: asClass(MongodbIntegrationTriggerDeploymentsRepository).singleton(),
+    listIntegrationTriggerTypesUseCase: asClass(ListIntegrationTriggerTypesUseCase).singleton(),
+    createIntegrationTriggerDeploymentUseCase: asClass(CreateIntegrationTriggerDeploymentUseCase).singleton(),
+    listIntegrationTriggerDeploymentsUseCase: asClass(ListIntegrationTriggerDeploymentsUseCase).singleton(),
+    fetchIntegrationTriggerDeploymentUseCase: asClass(FetchIntegrationTriggerDeploymentUseCase).singleton(),
+    deleteIntegrationTriggerDeploymentUseCase: asClass(DeleteIntegrationTriggerDeploymentUseCase).singleton(),
+    createIntegrationTriggerDeploymentController: asClass(CreateIntegrationTriggerDeploymentController).singleton(),
+    deleteIntegrationTriggerDeploymentController: asClass(DeleteIntegrationTriggerDeploymentController).singleton(),
+    listIntegrationTriggerDeploymentsController: asClass(ListIntegrationTriggerDeploymentsController).singleton(),
+    fetchIntegrationTriggerDeploymentController: asClass(FetchIntegrationTriggerDeploymentController).singleton(),
+    listIntegrationTriggerTypesController: asClass(ListIntegrationTriggerTypesController).singleton(),
 
     // conversations
     // ---

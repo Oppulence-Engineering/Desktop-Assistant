@@ -187,7 +187,7 @@ export function ToolConfig({
   const params = useParams();
   const projectId = params.projectId as string;
   const [selectedParams, setSelectedParams] = useState(new Set([]));
-  const isReadOnly = tool.isMcp || tool.isComposio;
+  const isReadOnly = tool.isMcp || tool.isIntegration;
   const [nameError, setNameError] = useState<string | null>(null);
   const [showSavedBanner, setShowSavedBanner] = useState(false);
   const [localToolName, setLocalToolName] = useState(tool.name);
@@ -580,7 +580,7 @@ export function ToolConfig({
               <div className="flex-shrink-0 mt-1">
                 {tool.isMcp ? (
                   <ImportIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                ) : tool.isComposio ? (
+                ) : tool.isIntegration ? (
                   <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 ) : (
                   <Globe className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -601,18 +601,18 @@ export function ToolConfig({
                     </p>
                   </div>
                 )}
-                {tool.isComposio && (
+                {tool.isIntegration && (
                   <div className="text-sm text-gray-700 dark:text-gray-300">
                     <div className="flex items-center gap-2 mb-1">
                       <p>
                         This tool is powered by{" "}
                         <span className="font-medium text-purple-700 dark:text-purple-300">
-                          Composio
+                          Integration
                         </span>
                       </p>
-                      {tool.composioData?.toolkitName && (
+                      {tool.integrationData?.toolkitName && (
                         <span className="text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
-                          {tool.composioData.toolkitName}
+                          {tool.integrationData.toolkitName}
                         </span>
                       )}
                     </div>
@@ -633,7 +633,7 @@ export function ToolConfig({
                     </div>
                   </div>
                 )}
-                {!tool.isMcp && !tool.isComposio && !tool.isWebhook && (
+                {!tool.isMcp && !tool.isIntegration && !tool.isWebhook && (
                   <div className="text-sm text-gray-700 dark:text-gray-300">
                     <p>This is a placeholder tool that should be mocked.</p>
                   </div>

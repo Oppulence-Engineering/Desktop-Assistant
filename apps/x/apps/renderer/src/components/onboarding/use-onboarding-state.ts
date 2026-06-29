@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { setGoogleCredentials } from "@/lib/google-credentials-store"
 import { toast } from "sonner"
 import { getProductProviderState, isProductProvider } from "@x/shared/dist/branding.js"
+import type { IntegrationConnector } from "@/hooks/useConnectors"
 
 export interface ProviderState {
   isConnected: boolean
@@ -49,6 +50,12 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
   const [providersLoading, setProvidersLoading] = useState(true)
   const [providerStates, setProviderStates] = useState<Record<string, ProviderState>>({})
   const [googleClientIdOpen, setGoogleClientIdOpen] = useState(false)
+  const [integrations, setIntegrations] = useState<IntegrationConnector[]>([])
+  const [integrationsLoading, setIntegrationsLoading] = useState(true)
+  const [integrationConnecting, setIntegrationConnecting] = useState<Record<string, boolean>>({})
+  const [integrationApiKeyOpen, setIntegrationApiKeyOpen] = useState(false)
+  const [integrationApiKeyTarget, setIntegrationApiKeyTarget] = useState<IntegrationConnector | null>(null)
+  const [integrationApiKeySubmitting, setIntegrationApiKeySubmitting] = useState(false)
 
   // Granola state
   const [granolaEnabled, setGranolaEnabled] = useState(false)
@@ -66,20 +73,6 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
 
   // Inline upsell callout dismissed
   const [upsellDismissed, setUpsellDismissed] = useState(false)
-
-  // Composio Gmail/Calendar sync was removed — flags are seeded false and
-  // never flipped. Kept here so legacy gating expressions still type-check.
-  const [useComposioForGoogle] = useState(false)
-  const [gmailConnected, setGmailConnected] = useState(false)
-  const [gmailLoading, setGmailLoading] = useState(true)
-  const [gmailConnecting, setGmailConnecting] = useState(false)
-  const [composioApiKeyOpen, setComposioApiKeyOpen] = useState(false)
-  const [composioApiKeyTarget, setComposioApiKeyTarget] = useState<'slack' | 'gmail'>('gmail')
-
-  const [useComposioForGoogleCalendar] = useState(false)
-  const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false)
-  const [googleCalendarLoading, setGoogleCalendarLoading] = useState(true)
-  const [googleCalendarConnecting, setGoogleCalendarConnecting] = useState(false)
 
   const updateProviderConfig = useCallback(
     (provider: LlmProviderFlavor, updates: Partial<{ apiKey: string; baseURL: string; model: string; knowledgeGraphModel: string; meetingNotesModel: string; liveNoteAgentModel: string }>) => {
@@ -107,8 +100,9 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
   const connectedProviders = Object.entries(providerStates)
     .filter(([, state]) => state.isConnected)
     .map(([provider]) => provider)
+  const googleConnected = providerStates.google?.isConnected ?? false
 
-  // Load available providers and composio-for-google flag on mount
+  // Load available providers on mount
   useEffect(() => {
     if (!open) return
 
@@ -124,9 +118,30 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
         setProvidersLoading(false)
       }
     }
-    // (Composio Gmail/Calendar flag fetches removed — sync was deleted; flags stay false.)
     loadProviders()
   }, [open])
+
+  const refreshIntegrations = useCallback(async () => {
+    try {
+      setIntegrationsLoading(true)
+      const result = await window.ipc.invoke("connectors:list", null)
+      setIntegrations(result.connectors || [])
+      if (result.error) {
+        console.warn("Failed to list integrations:", result.error)
+      }
+    } catch (error) {
+      console.error("Failed to list integrations:", error)
+      setIntegrations([])
+    } finally {
+      setIntegrationsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (open) {
+      refreshIntegrations()
+    }
+  }, [open, refreshIntegrations])
 
   // Load LLM models catalog on open
   useEffect(() => {
@@ -213,7 +228,11 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
       setSlackLoading(true)
       const result = await window.ipc.invoke('slack:getConfig', null)
       setSlackEnabled(result.enabled)
-      setSlackWorkspaces(result.workspaces || [])
+      setSlackWorkspaces(
+        (result.workspaces || []).flatMap((workspace) =>
+          workspace.url ? [{ url: workspace.url, name: workspace.name }] : [],
+        ),
+      )
     } catch (error) {
       console.error('Failed to load Slack config:', error)
       setSlackEnabled(false)
@@ -281,101 +300,6 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
       setSlackLoading(false)
     }
   }, [])
-
-  // Load Gmail connection status (Composio)
-  const refreshGmailStatus = useCallback(async () => {
-    try {
-      setGmailLoading(true)
-      const result = await window.ipc.invoke('composio:get-connection-status', { toolkitSlug: 'gmail' })
-      setGmailConnected(result.isConnected)
-    } catch (error) {
-      console.error('Failed to load Gmail status:', error)
-      setGmailConnected(false)
-    } finally {
-      setGmailLoading(false)
-    }
-  }, [])
-
-  // Connect to Gmail via Composio
-  const startGmailConnect = useCallback(async () => {
-    try {
-      setGmailConnecting(true)
-      const result = await window.ipc.invoke('composio:initiate-connection', { toolkitSlug: 'gmail' })
-      if (!result.success) {
-        toast.error(result.error || 'Failed to connect to Gmail')
-        setGmailConnecting(false)
-      }
-    } catch (error) {
-      console.error('Failed to connect to Gmail:', error)
-      toast.error('Failed to connect to Gmail')
-      setGmailConnecting(false)
-    }
-  }, [])
-
-  // Handle Gmail connect button click (checks Composio config first)
-  const handleConnectGmail = useCallback(async () => {
-    const configResult = await window.ipc.invoke('composio:is-configured', null)
-    if (!configResult.configured) {
-      setComposioApiKeyTarget('gmail')
-      setComposioApiKeyOpen(true)
-      return
-    }
-    await startGmailConnect()
-  }, [startGmailConnect])
-
-  // Handle Composio API key submission
-  const handleComposioApiKeySubmit = useCallback(async (apiKey: string) => {
-    try {
-      await window.ipc.invoke('composio:set-api-key', { apiKey })
-      setComposioApiKeyOpen(false)
-      toast.success('Composio API key saved')
-      await startGmailConnect()
-    } catch (error) {
-      console.error('Failed to save Composio API key:', error)
-      toast.error('Failed to save API key')
-    }
-  }, [startGmailConnect])
-
-  // Load Google Calendar connection status (Composio)
-  const refreshGoogleCalendarStatus = useCallback(async () => {
-    try {
-      setGoogleCalendarLoading(true)
-      const result = await window.ipc.invoke('composio:get-connection-status', { toolkitSlug: 'googlecalendar' })
-      setGoogleCalendarConnected(result.isConnected)
-    } catch (error) {
-      console.error('Failed to load Google Calendar status:', error)
-      setGoogleCalendarConnected(false)
-    } finally {
-      setGoogleCalendarLoading(false)
-    }
-  }, [])
-
-  // Connect to Google Calendar via Composio
-  const startGoogleCalendarConnect = useCallback(async () => {
-    try {
-      setGoogleCalendarConnecting(true)
-      const result = await window.ipc.invoke('composio:initiate-connection', { toolkitSlug: 'googlecalendar' })
-      if (!result.success) {
-        toast.error(result.error || 'Failed to connect to Google Calendar')
-        setGoogleCalendarConnecting(false)
-      }
-    } catch (error) {
-      console.error('Failed to connect to Google Calendar:', error)
-      toast.error('Failed to connect to Google Calendar')
-      setGoogleCalendarConnecting(false)
-    }
-  }, [])
-
-  // Handle Google Calendar connect button click
-  const handleConnectGoogleCalendar = useCallback(async () => {
-    const configResult = await window.ipc.invoke('composio:is-configured', null)
-    if (!configResult.configured) {
-      setComposioApiKeyTarget('gmail')
-      setComposioApiKeyOpen(true)
-      return
-    }
-    await startGoogleCalendarConnect()
-  }, [startGoogleCalendarConnect])
 
   // New step flow:
   // Rowboat path: 0 (welcome) → 2 (connect) → 3 (done)
@@ -454,16 +378,6 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     refreshGranolaConfig()
     refreshSlackConfig()
 
-    // Refresh Gmail Composio status if enabled
-    if (useComposioForGoogle) {
-      refreshGmailStatus()
-    }
-
-    // Refresh Google Calendar Composio status if enabled
-    if (useComposioForGoogleCalendar) {
-      refreshGoogleCalendarStatus()
-    }
-
     if (providers.length === 0) return
 
     const newStates: Record<string, ProviderState> = {}
@@ -490,7 +404,7 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     }
 
     setProviderStates(newStates)
-  }, [providers, refreshGranolaConfig, refreshSlackConfig, refreshGmailStatus, useComposioForGoogle, refreshGoogleCalendarStatus, useComposioForGoogleCalendar])
+  }, [providers, refreshGranolaConfig, refreshSlackConfig])
 
   // Refresh statuses when modal opens or providers list changes
   useEffect(() => {
@@ -503,6 +417,8 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
   useEffect(() => {
     const cleanup = window.ipc.on('oauth:didConnect', (event) => {
       const { provider, success } = event
+      setIntegrationConnecting(prev => ({ ...prev, [provider]: false }))
+      refreshIntegrations()
 
       setProviderStates(prev => ({
         ...prev,
@@ -515,7 +431,7 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     })
 
     return cleanup
-  }, [])
+  }, [refreshIntegrations])
 
   // Auto-advance from Solomon AI sign-in step when OAuth completes
   useEffect(() => {
@@ -523,36 +439,12 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
 
     const cleanup = window.ipc.on('oauth:didConnect', async (event) => {
       if (isProductProvider(event.provider) && event.success) {
-        // (Composio Gmail/Calendar flag re-check removed — sync was deleted.)
         setCurrentStep(2) // Go to Connect Accounts
       }
     })
 
     return cleanup
   }, [onboardingPath, currentStep])
-
-  // Listen for Composio connection events (state updates only — toasts handled by ConnectorsPopover)
-  useEffect(() => {
-    const cleanup = window.ipc.on('composio:didConnect', (event) => {
-      const { toolkitSlug, success } = event
-
-      if (toolkitSlug === 'slack') {
-        setSlackEnabled(success)
-      }
-
-      if (toolkitSlug === 'gmail') {
-        setGmailConnected(success)
-        setGmailConnecting(false)
-      }
-
-      if (toolkitSlug === 'googlecalendar') {
-        setGoogleCalendarConnected(success)
-        setGoogleCalendarConnecting(false)
-      }
-    })
-
-    return cleanup
-  }, [])
 
   const startConnect = useCallback(async (provider: string, credentials?: { clientId: string; clientSecret: string }) => {
     setProviderStates(prev => ({
@@ -604,6 +496,52 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     startConnect('google', { clientId, clientSecret })
   }, [startConnect])
 
+  const handleConnectIntegration = useCallback(async (integration: IntegrationConnector) => {
+    if (integration.connected) return
+    if (integration.authType === "api_key") {
+      setIntegrationApiKeyTarget(integration)
+      setIntegrationApiKeyOpen(true)
+      return
+    }
+
+    try {
+      setIntegrationConnecting(prev => ({ ...prev, [integration.name]: true }))
+      const result = await window.ipc.invoke("connectors:connect", { connector: integration.name })
+      if (!result.success) {
+        toast.error(result.error || `Failed to connect ${integration.displayName}`)
+        setIntegrationConnecting(prev => ({ ...prev, [integration.name]: false }))
+      }
+    } catch (error) {
+      console.error("Failed to connect integration:", error)
+      toast.error(`Failed to connect ${integration.displayName}`)
+      setIntegrationConnecting(prev => ({ ...prev, [integration.name]: false }))
+    }
+  }, [])
+
+  const handleIntegrationApiKeySubmit = useCallback(async (apiKey: string) => {
+    if (!integrationApiKeyTarget) return
+    try {
+      setIntegrationApiKeySubmitting(true)
+      const result = await window.ipc.invoke("connectors:saveApiKey", {
+        connector: integrationApiKeyTarget.name,
+        apiKey,
+      })
+      if (!result.success) {
+        toast.error(result.error || `Failed to connect ${integrationApiKeyTarget.displayName}`)
+        return
+      }
+      toast.success(`Connected to ${integrationApiKeyTarget.displayName}`)
+      setIntegrationApiKeyOpen(false)
+      setIntegrationApiKeyTarget(null)
+      await refreshIntegrations()
+    } catch (error) {
+      console.error("Failed to save integration API key:", error)
+      toast.error(`Failed to connect ${integrationApiKeyTarget.displayName}`)
+    } finally {
+      setIntegrationApiKeySubmitting(false)
+    }
+  }, [integrationApiKeyTarget, refreshIntegrations])
+
   // Switch to Solomon AI path from BYOK inline callout
   const handleSwitchToRowboat = useCallback(() => {
     setOnboardingPath('rowboat')
@@ -642,12 +580,26 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     providers,
     providersLoading,
     providerStates,
+    gmailConnected: googleConnected,
+    googleCalendarConnected: googleConnected,
     googleClientIdOpen,
     setGoogleClientIdOpen,
     connectedProviders,
     handleConnect,
     handleGoogleClientIdSubmit,
     startConnect,
+
+    // Rowboat integrations
+    integrations,
+    integrationsLoading,
+    integrationConnecting,
+    integrationApiKeyOpen,
+    setIntegrationApiKeyOpen,
+    integrationApiKeyTarget,
+    integrationApiKeySubmitting,
+    handleConnectIntegration,
+    handleIntegrationApiKeySubmit,
+    refreshIntegrations,
 
     // Granola state
     granolaEnabled,
@@ -671,24 +623,6 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     // Upsell
     upsellDismissed,
     setUpsellDismissed,
-
-    // Composio/Gmail state
-    useComposioForGoogle,
-    gmailConnected,
-    gmailLoading,
-    gmailConnecting,
-    composioApiKeyOpen,
-    setComposioApiKeyOpen,
-    composioApiKeyTarget,
-    handleConnectGmail,
-    handleComposioApiKeySubmit,
-
-    // Composio/Google Calendar state
-    useComposioForGoogleCalendar,
-    googleCalendarConnected,
-    googleCalendarLoading,
-    googleCalendarConnecting,
-    handleConnectGoogleCalendar,
 
     // Navigation
     handleNext,

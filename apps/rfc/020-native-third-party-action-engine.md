@@ -1,4 +1,4 @@
-# RFC 020: Native Third-Party Tool & Connector Engine (Composio Replacement)
+# RFC 020: Native Third-Party Tool & Connector Engine (legacy integration vendor Replacement)
 
 |                  |                                                                                                                                                                               |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -9,20 +9,20 @@
 | **Created**      | 2026-06-09                                                                                                                                                                    |
 | **Last updated** | 2026-06-09                                                                                                                                                                    |
 | **Depends on**   | [RFC 010](./complete-010-rowboat-api-service-plane.md), [RFC 011](./complete-011-identity-and-authorization-plane.md), [RFC 012](./012-connector-suite-and-consent-broker.md) |
-| **Enables**      | Composio decommission; cheaper unit economics on agent tool use; [RFC 008](./008-conduit-eigen-faculties.md) cloud tool surface                                               |
-| **Refs**         | Generalizes the native pattern in `internal/google` + `internal/connectors`; replaces `internal/composio` proxy.                                                              |
+| **Enables**      | legacy integration vendor decommission; cheaper unit economics on agent tool use; [RFC 008](./008-conduit-eigen-faculties.md) cloud tool surface                                               |
+| **Refs**         | Generalizes the native pattern in `internal/google` + `internal/connectors`; replaces `internal/legacy-integration-vendor` proxy.                                                              |
 
 ## Summary
 
 Today the agent's third-party actions (Gmail, GitHub, Slack, Notion, Calendar,
-Asana, …) are served by **Composio**: `apps/rowboat-api/internal/composio/handler.go`
-is a reverse proxy to `backend.composio.dev`, and the desktop calls it through
-`apps/x/packages/core/src/composio/client.ts`. Composio bills per
+Asana, …) are served by **legacy integration vendor**: `apps/rowboat-api/internal/legacy-integration-vendor/handler.go`
+is a reverse proxy to `backend.legacy-integration-vendor.dev`, and the desktop calls it through
+`apps/x/packages/core/src/legacy-integration-vendor/client.ts`. legacy integration vendor bills per
 seat/MAU/action, the cost scales with usage, and the entire tool-execution path
 depends on a third party that also sees per-user request metadata.
 
 This RFC defines a **native tool & connector engine inside `rowboat-api`** that
-reproduces the five capabilities Composio actually provides — **catalog**,
+reproduces the five capabilities legacy integration vendor actually provides — **catalog**,
 **auth-config**, **connected accounts**, **tool discovery**, and **tool
 execution** — for arbitrary third-party SaaS providers, and exposes them to the
 agent over **MCP** (the tool transport the desktop and RFC 012/013 already
@@ -40,12 +40,12 @@ the codebase.
 
 ## Motivation
 
-- **Cost.** Composio pricing scales with usage (seats / monthly active users /
+- **Cost.** legacy integration vendor pricing scales with usage (seats / monthly active users /
   tool calls). As agent tool use grows, this becomes a per-call tax on the core
   product loop. A native engine has high fixed build cost but ~zero marginal
   cost per call.
 - **Control & privacy.** Today every tool search and execution round-trips
-  through `backend.composio.dev` carrying `X-Solomon-User` (per-user isolation
+  through `backend.legacy-integration-vendor.dev` carrying `X-Solomon-User` (per-user isolation
   tag). Bringing this in-house keeps user action metadata on our infrastructure
   and removes a third-party availability dependency from the hot path.
 - **It is already a thin shim.** The backend integration is a ~100-line reverse
@@ -61,12 +61,12 @@ the codebase.
 
 | Capability                      | Today                                                                               | Source                                           |
 | ------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Third-party tool catalog        | Composio `/toolkits`, `/tools`                                                      | `internal/composio/handler.go` (proxy)           |
-| Third-party OAuth (connect)     | Composio managed auth (`/auth_configs`, `/connected_accounts`)                      | `composio-handler.ts` (`:8081` local callback)   |
-| Third-party token storage       | Held by Composio; desktop stores only account **metadata**                          | `core/src/composio/repo.ts`                      |
-| Tool discovery                  | Composio `/tools?query=` (returns input schemas)                                    | `core/src/composio/client.ts:297`                |
-| Tool execution                  | Composio `/tools/execute/{slug}`                                                    | `core/src/composio/client.ts:329`                |
-| Agent tool surface              | 4 builtin tools: `composio-list-toolkits/search-tools/execute-tool/connect-toolkit` | `core/src/application/lib/builtin-tools.ts:1306` |
+| Third-party tool catalog        | legacy integration vendor `/toolkits`, `/tools`                                                      | `internal/legacy-integration-vendor/handler.go` (proxy)           |
+| Third-party OAuth (connect)     | legacy integration vendor managed auth (`/auth_configs`, `/connected_accounts`)                      | `legacy-integration-vendor-handler.ts` (`:8081` local callback)   |
+| Third-party token storage       | Held by legacy integration vendor; desktop stores only account **metadata**                          | `core/src/legacy-integration-vendor/repo.ts`                      |
+| Tool discovery                  | legacy integration vendor `/tools?query=` (returns input schemas)                                    | `core/src/legacy-integration-vendor/client.ts:297`                |
+| Tool execution                  | legacy integration vendor `/tools/execute/{slug}`                                                    | `core/src/legacy-integration-vendor/client.ts:329`                |
+| Agent tool surface              | 4 builtin tools: `legacy-integration-vendor-list-toolkits/search-tools/execute-tool/connect-toolkit` | `core/src/application/lib/builtin-tools.ts:1306` |
 | Native OAuth (template)         | Google: start/callback/claim/refresh, encrypted refresh token                       | `internal/google/handler.go`, `oauthflow.go`     |
 | First-party connector broker    | Ory-brokered OAuth + `mcp-token` mint + `MCPConnection`                             | `internal/connectors/handler.go`                 |
 | Token-at-rest encryption        | AES-256-GCM `Seal`/`Open`, key from `DB_ENCRYPTION_KEY`                             | `internal/crypto/crypto.go`                      |
@@ -80,25 +80,25 @@ the agent over MCP. Everything else already exists in some form.
 
 ## Goals
 
-- Replace Composio for a defined set of high-value providers with **no loss of
+- Replace legacy integration vendor for a defined set of high-value providers with **no loss of
   agent capability** (connect, discover, execute).
 - Represent providers and their actions as **declarative manifests** (data, not
   code) so adding a provider/action is a config + review task, not an engineering
   project.
 - **Bootstrap manifests from OpenAPI** specs where providers publish them.
 - Serve native tools to the agent over **MCP**, reusing the desktop's existing
-  MCP client and collapsing the bespoke `composio-*` builtin tools.
+  MCP client and collapsing the bespoke `legacy-integration-vendor-*` builtin tools.
 - Reuse RFC 012's broker: encrypted refresh tokens, `OAuthPending` handoff, PKCE,
   revocation, audit.
 - **MCP-first**: for apps that ship a good MCP server, mount it rather than
   hand-maintaining a manifest.
-- Keep Composio available as an **optional, key-gated fallback** during migration
+- Keep legacy integration vendor available as an **optional, key-gated fallback** during migration
   so we can move provider-by-provider and never regress.
 - Per-user token isolation, egress allowlisting, and full audit of tool calls.
 
 ## Non-Goals
 
-- Re-implementing Composio's _entire_ catalog (hundreds of apps) on day one. We
+- Re-implementing legacy integration vendor's _entire_ catalog (hundreds of apps) on day one. We
   cover a prioritized set and grow it.
 - A visual no-code action builder. Manifests are reviewed config.
 - Replacing first-party product connectors (RFC 012/013 own Canvas/Cadence/
@@ -144,17 +144,17 @@ result.
 
 ## Capability parity matrix
 
-Every Composio surface the desktop uses today maps to a native equivalent:
+Every legacy integration vendor surface the desktop uses today maps to a native equivalent:
 
-| Composio (today)                                          | Native engine (this RFC)                                                               | Notes                                    |
+| legacy integration vendor (today)                                          | Native engine (this RFC)                                                               | Notes                                    |
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `GET /toolkits`, `/toolkits/{slug}` (`client.ts:213,226`) | `GET /v1/tools/providers` + catalog service                                            | Backed by manifests                      |
 | `GET /tools?query=` (`client.ts:297`)                     | `POST /v1/tools/search` (per-provider action search)                                   | Returns JSON-Schema input params         |
 | `POST /tools/execute/{slug}` (`client.ts:329`)            | `POST /v1/tools/execute` → execution engine                                            | Server injects user token                |
 | `POST /auth_configs` (`client.ts:253`)                    | Static per-provider OAuth client config in `secrets` + manifest                        | We register the OAuth apps               |
 | `POST/GET/DELETE /connected_accounts` (`client.ts:265+`)  | `POST /v1/connections/{provider}/start` + callback + `DELETE` (RFC 012 broker)         | New `ProviderConnection` ent             |
-| 4 `composio-*` builtin tools (`builtin-tools.ts:1306`)    | One MCP mount exposing `list_providers/search_actions/execute_action/connect_provider` | Drop-in replacement of the builtin block |
-| Local account metadata (`composio/repo.ts`)               | `GET /v1/connections` status (server-authoritative)                                    | Removes the local JSON cache             |
+| 4 `legacy-integration-vendor-*` builtin tools (`builtin-tools.ts:1306`)    | One MCP mount exposing `list_providers/search_actions/execute_action/connect_provider` | Drop-in replacement of the builtin block |
+| Local account metadata (`legacy-integration-vendor/repo.ts`)               | `GET /v1/connections` status (server-authoritative)                                    | Removes the local JSON cache             |
 
 ## Design
 
@@ -210,8 +210,8 @@ The **execution engine** is a generic interpreter of these manifests: bind input
 (JSONPath-style). No per-action Go code.
 
 `Decision:` manifests are the unit of breadth. Adding an action is a reviewed PR
-to a YAML file, not a code change — this is the only way to approach Composio's
-catalog size without Composio's headcount.
+to a YAML file, not a code change — this is the only way to approach legacy integration vendor's
+catalog size without legacy integration vendor's headcount.
 
 ### 2. OpenAPI bootstrap
 
@@ -234,7 +234,7 @@ manifests" into "review N generated manifests."
 
 Dynamic search (not "list all tools") is deliberate: a provider has dozens of
 actions and dumping them all into the prompt is token-expensive. This mirrors
-today's `composio-search-tools` → `composio-execute-tool` pattern.
+today's `legacy-integration-vendor-search-tools` → `legacy-integration-vendor-execute-tool` pattern.
 
 ### 4. Connect flow (reuse RFC 012 broker)
 
@@ -249,7 +249,7 @@ providers:
 - `DELETE /v1/connections/{provider}` → revoke + tombstone.
 
 This removes the desktop's local `:8081` OAuth callback server
-(`composio-handler.ts`) and the local `connected_accounts.json` cache: the server
+(`legacy-integration-vendor-handler.ts`) and the local `connected_accounts.json` cache: the server
 becomes authoritative, exactly like the Google path.
 
 ### 5. Execution engine
@@ -267,7 +267,7 @@ becomes authoritative, exactly like the Google path.
 
 ### 6. Expose to the agent over MCP
 
-Rather than keep four bespoke `composio-*` builtin tools, the engine hosts an
+Rather than keep four bespoke `legacy-integration-vendor-*` builtin tools, the engine hosts an
 **internal MCP server** at `/v1/tools/mcp` (streamable-HTTP, the transport
 `core/src/mcp/mcp.ts` already supports) exposing meta-tools:
 
@@ -309,7 +309,7 @@ token ever leaves the server unencrypted or appears in a redirect/log.
 | `GET`    | `/v1/connections`                     | JWT          | Connection status (replaces local cache) |
 
 All mounted behind the existing JWT auth + `ratelimit.PerUser` middleware (see
-`cmd/server/wire.go:295` for the Composio precedent).
+`cmd/server/wire.go:295` for the legacy integration vendor precedent).
 
 ## Security
 
@@ -329,7 +329,7 @@ All mounted behind the existing JWT auth + `ratelimit.PerUser` middleware (see
 
 ## Rollout & migration
 
-Migrate provider-by-provider with Composio as a fallback, so capability never
+Migrate provider-by-provider with legacy integration vendor as a fallback, so capability never
 regresses:
 
 1. Build `internal/toolengine` (catalog + execution interpreter) + manifest
@@ -339,21 +339,21 @@ regresses:
 3. Onboard **GitHub** and **Slack** first (clean OAuth, good OpenAPI, high value)
    as the reference manifests. Register our own OAuth apps; store client
    creds in `secrets`.
-4. **Shadow mode:** in dev/staging, run native search/execute alongside Composio
+4. **Shadow mode:** in dev/staging, run native search/execute alongside legacy integration vendor
    for the onboarded providers and diff results (correctness gate).
-5. Desktop: add a feature flag in `core/src/composio/client.ts` (and the
+5. Desktop: add a feature flag in `core/src/legacy-integration-vendor/client.ts` (and the
    `builtin-tools.ts` block) to route onboarded providers to the native MCP
-   mount; leave others on Composio.
+   mount; leave others on legacy integration vendor.
 6. Onboard the next tranche (Gmail/Calendar — note Google already has stored
    tokens via RFC 010; the engine can execute Gmail/Calendar _actions_ on the
    existing connection), Notion, Linear, Asana, etc.
 7. For any app with a high-quality first-party MCP server, **mount it directly**
    instead of writing manifests (MCP-first).
 8. When parity is reached for the priority set, flip the default to native; keep
-   Composio key-gated for the long tail.
-9. Decommission `internal/composio` when no provider depends on it.
+   legacy integration vendor key-gated for the long tail.
+9. Decommission `internal/legacy-integration-vendor` when no provider depends on it.
 
-`Decision:` Composio is demoted to an **optional, key-gated long-tail fallback**,
+`Decision:` legacy integration vendor is demoted to an **optional, key-gated long-tail fallback**,
 not deleted on day one. `provider_unconfigured` already degrades gracefully
 (today's "integrations disabled" state), so running with it off is safe.
 
@@ -361,13 +361,13 @@ not deleted on day one. `provider_unconfigured` already degrades gracefully
 
 | Path                       | Fixed cost                            | Marginal cost / call | When it wins                   |
 | -------------------------- | ------------------------------------- | -------------------- | ------------------------------ |
-| Composio (today)           | low                                   | per seat/MAU/action  | tiny usage, broad catalog need |
+| legacy integration vendor (today)           | low                                   | per seat/MAU/action  | tiny usage, broad catalog need |
 | Native engine (this RFC)   | high (engine + per-provider manifest) | ≈ outbound API only  | at scale; core providers       |
 | MCP-first (mount existing) | ~zero (point at a server)             | ≈ outbound API only  | apps with good MCP servers     |
 
 The native engine trades a one-time build + ongoing **manifest maintenance per
 provider** for the elimination of per-call vendor fees. MCP-first minimizes the
-maintenance tail. The decision is the classic build-vs-buy crossover: Composio is
+maintenance tail. The decision is the classic build-vs-buy crossover: legacy integration vendor is
 cheaper until tool usage (or provider count we care about) is large enough that
 its per-use fees exceed our maintenance cost — which is the cost concern that
 prompted this RFC.
@@ -382,7 +382,7 @@ prompted this RFC.
   `search` returns schemas; `execute` performs a real call against a **mock
   provider** in devstack.
 - **Contract / shadow:** for GitHub + Slack, native `execute` results match
-  Composio results on a fixture corpus (the migration gate).
+  legacy integration vendor results on a fixture corpus (the migration gate).
 - **MCP:** the desktop MCP client lists + calls the engine's meta-tools; an
   agent end-to-end "create a GitHub issue" succeeds via the native path.
 - **Security:** SSRF attempt to a non-allowed host is blocked; expired/rotated
@@ -391,15 +391,15 @@ prompted this RFC.
 ## Acceptance criteria
 
 - A user can connect a third-party provider, and the agent can discover and
-  execute its actions, with **no Composio dependency** for the onboarded set.
+  execute its actions, with **no legacy integration vendor dependency** for the onboarded set.
 - Adding a new action is a reviewed manifest change, not a code change; OpenAPI
   import produces usable drafts.
 - Third-party tools reach the agent over the **same MCP path** as first-party and
-  BYO MCP servers; the `composio-*` builtin tools are removed for migrated
+  BYO MCP servers; the `legacy-integration-vendor-*` builtin tools are removed for migrated
   providers.
 - All third-party tokens are encrypted at rest, refreshed server-side, and never
   exposed to the client or logs; every tool call is audited.
-- Composio can be fully disabled for the priority providers with no loss of
+- legacy integration vendor can be fully disabled for the priority providers with no loss of
   capability (verified in shadow mode before flipping the default).
 
 ## Decisions
@@ -414,13 +414,13 @@ prompted this RFC.
   `connected_accounts.json`; status comes from `/v1/connections`.
 - **MCP-first** — mount a provider's existing MCP server when one is good enough;
   only write manifests when there isn't one.
-- **Composio stays as an optional, key-gated long-tail fallback** during and
+- **legacy integration vendor stays as an optional, key-gated long-tail fallback** during and
   after migration; decommission the proxy only when nothing depends on it.
 
 ## Open questions
 
 - **Catalog breadth target.** Which 15–25 providers constitute "parity for us"?
-  (Drive the rollout tranches from real tool-call telemetry, not Composio's full
+  (Drive the rollout tranches from real tool-call telemetry, not legacy integration vendor's full
   list.)
 - **Action search ranking.** Is keyword/BM25 enough for v1, or do we need
   embeddings immediately for recall on large providers?

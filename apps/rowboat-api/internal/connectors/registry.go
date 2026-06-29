@@ -17,23 +17,38 @@ var defaultConnectorsJSON []byte
 
 // Connector is one entry in the registry the desktop reads from /v1/connectors.
 type Connector struct {
-	Name         string          `json:"name"`
-	DisplayName  string          `json:"displayName"`
-	Description  string          `json:"description"`
-	MCPURL       string          `json:"mcpUrl"`
-	AuthType     string          `json:"authType"` // "oauth" | "api_key"
-	Audience     string          `json:"audience"` // Ory token audience (e.g. canvas-api)
-	Scopes       []string        `json:"scopes,omitempty"`
-	IconURL      string          `json:"iconUrl,omitempty"`
-	PolicyURL    string          `json:"policyUrl,omitempty"`
-	RequiredPlan string          `json:"requiredPlan,omitempty"` // "" = available on all plans
-	MCPTools     []MCPToolPolicy `json:"mcpTools,omitempty"`     // explicit upstream MCP allowlist
+	Name           string                     `json:"name"`
+	DisplayName    string                     `json:"displayName"`
+	Description    string                     `json:"description"`
+	MCPURL         string                     `json:"mcpUrl"`
+	AuthType       string                     `json:"authType"` // "oauth" | "api_key"
+	Audience       string                     `json:"audience"` // Ory token audience (e.g. canvas-api)
+	Scopes         []string                   `json:"scopes,omitempty"`
+	IconURL        string                     `json:"iconUrl,omitempty"`
+	PolicyURL      string                     `json:"policyUrl,omitempty"`
+	RequiredPlan   string                     `json:"requiredPlan,omitempty"`   // "" = available on all plans
+	MCPTools       []MCPToolPolicy            `json:"mcpTools,omitempty"`       // explicit upstream MCP allowlist
+	TemplateBlocks []IntegrationTemplateBlock `json:"templateBlocks,omitempty"` // onboarding capability blocks
 }
 
 // MCPToolPolicy allowlists one upstream tool exposed by a connector MCP server.
 type MCPToolPolicy struct {
 	Name      string `json:"name"`
 	TrustTier string `json:"trustTier,omitempty"` // read | write | act | money-moving
+}
+
+// IntegrationTemplateBlock is the user-facing onboarding block shown for a
+// connector before or during connection. It describes capabilities; it is not a
+// workflow execution node.
+type IntegrationTemplateBlock struct {
+	ID             string   `json:"id"`
+	Title          string   `json:"title"`
+	Description    string   `json:"description"`
+	Category       string   `json:"category"`
+	RequiredScopes []string `json:"requiredScopes,omitempty"`
+	MCPTools       []string `json:"mcpTools,omitempty"`
+	TrustTier      string   `json:"trustTier"`
+	SamplePrompt   string   `json:"samplePrompt,omitempty"`
 }
 
 // Registry is an ordered, name-indexed connector set.
@@ -93,12 +108,18 @@ func validateRegistry(list []Connector) error {
 			if len(c.MCPTools) > 0 {
 				return fmt.Errorf("connector %q declares mcpTools without mcpUrl", name)
 			}
+			if len(c.TemplateBlocks) > 0 {
+				return fmt.Errorf("connector %q declares templateBlocks without mcpUrl", name)
+			}
 			continue
 		}
 		if len(c.MCPTools) == 0 {
 			return fmt.Errorf("connector %q has mcpUrl but no mcpTools allowlist", name)
 		}
 		if err := validateMCPTools(name, c.MCPTools); err != nil {
+			return err
+		}
+		if err := validateTemplateBlocks(c); err != nil {
 			return err
 		}
 	}
@@ -130,6 +151,51 @@ func validMCPTrustTier(tier string) bool {
 	default:
 		return false
 	}
+}
+
+func validateTemplateBlocks(c Connector) error {
+	seen := map[string]struct{}{}
+	scopes := map[string]struct{}{}
+	for _, scope := range c.Scopes {
+		scopes[scope] = struct{}{}
+	}
+	tools := map[string]struct{}{}
+	for _, tool := range c.MCPTools {
+		tools[tool.Name] = struct{}{}
+	}
+	for i, block := range c.TemplateBlocks {
+		id := strings.TrimSpace(block.ID)
+		if id == "" {
+			return fmt.Errorf("connector %q templateBlocks[%d].id is required", c.Name, i)
+		}
+		if _, ok := seen[id]; ok {
+			return fmt.Errorf("connector %q declares duplicate template block %q", c.Name, id)
+		}
+		seen[id] = struct{}{}
+		if strings.TrimSpace(block.Title) == "" {
+			return fmt.Errorf("connector %q template block %q title is required", c.Name, id)
+		}
+		if strings.TrimSpace(block.Description) == "" {
+			return fmt.Errorf("connector %q template block %q description is required", c.Name, id)
+		}
+		if strings.TrimSpace(block.Category) == "" {
+			return fmt.Errorf("connector %q template block %q category is required", c.Name, id)
+		}
+		if !validMCPTrustTier(block.TrustTier) {
+			return fmt.Errorf("connector %q template block %q has invalid trustTier %q", c.Name, id, block.TrustTier)
+		}
+		for _, scope := range block.RequiredScopes {
+			if _, ok := scopes[scope]; !ok {
+				return fmt.Errorf("connector %q template block %q references unknown scope %q", c.Name, id, scope)
+			}
+		}
+		for _, tool := range block.MCPTools {
+			if _, ok := tools[tool]; !ok {
+				return fmt.Errorf("connector %q template block %q references unknown MCP tool %q", c.Name, id, tool)
+			}
+		}
+	}
+	return nil
 }
 
 func newRegistry(list []Connector) *Registry {

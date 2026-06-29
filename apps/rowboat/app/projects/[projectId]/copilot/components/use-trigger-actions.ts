@@ -7,7 +7,7 @@ import { Message } from "@/app/lib/types/types";
 
 type ScheduledJobActionsModule = typeof import('@/app/actions/scheduled-job-rules.actions');
 type RecurringJobActionsModule = typeof import('@/app/actions/recurring-job-rules.actions');
-type ComposioActionsModule = typeof import('@/app/actions/composio.actions');
+type IntegrationActionsModule = typeof import('@/app/actions/integration.actions');
 
 type CopilotTrigger = z.infer<typeof TriggerSchemaForCopilot>;
 type CopilotAction = z.infer<typeof CopilotAssistantMessageActionPart>['content'];
@@ -38,7 +38,7 @@ interface UseCopilotTriggerActionsResult {
 
 let scheduledJobActionsPromise: Promise<ScheduledJobActionsModule> | null = null;
 let recurringJobActionsPromise: Promise<RecurringJobActionsModule> | null = null;
-let composioActionsPromise: Promise<ComposioActionsModule> | null = null;
+let integrationActionsPromise: Promise<IntegrationActionsModule> | null = null;
 
 function loadScheduledJobActions(): Promise<ScheduledJobActionsModule> {
     if (!scheduledJobActionsPromise) {
@@ -54,11 +54,11 @@ function loadRecurringJobActions(): Promise<RecurringJobActionsModule> {
     return recurringJobActionsPromise;
 }
 
-function loadComposioActions(): Promise<ComposioActionsModule> {
-    if (!composioActionsPromise) {
-        composioActionsPromise = import('@/app/actions/composio.actions');
+function loadIntegrationActions(): Promise<IntegrationActionsModule> {
+    if (!integrationActionsPromise) {
+        integrationActionsPromise = import('@/app/actions/integration.actions');
     }
-    return composioActionsPromise;
+    return integrationActionsPromise;
 }
 
 const hasOwn = (obj: Record<string, unknown> | undefined, key: string) =>
@@ -419,8 +419,8 @@ export function useCopilotTriggerActions({
                 return false;
             }
 
-            const { deleteComposioTriggerDeployment } = await loadComposioActions();
-            await deleteComposioTriggerDeployment({ projectId, deploymentId: target.id });
+            const { deleteIntegrationTriggerDeployment } = await loadIntegrationActions();
+            await deleteIntegrationTriggerDeployment({ projectId, deploymentId: target.id });
             return true;
         }
 

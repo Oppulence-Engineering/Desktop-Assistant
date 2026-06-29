@@ -74,13 +74,13 @@
           "content"
         ]
       },
-      "isComposio": true,
-      "composioData": {
-        "slug": "COMPOSIO_SEARCH_EXA_ANSWER",
+      "isIntegration": true,
+      "integrationData": {
+        "slug": "INTEGRATION_SEARCH_EXA_ANSWER",
         "noAuth": true,
-        "toolkitName": "composio_search",
-        "toolkitSlug": "composio_search",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master//composio-logo.png"
+        "toolkitName": "integration_search",
+        "toolkitSlug": "integration_search",
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master//integration-logo.png"
       }
     },
     {
@@ -213,13 +213,13 @@
           "body"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "GMAIL_SEND_EMAIL",
         "noAuth": false,
         "toolkitName": "gmail",
         "toolkitSlug": "gmail",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/gmail.svg"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/gmail.svg"
       }
     }
   ],

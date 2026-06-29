@@ -6,7 +6,6 @@ import {
   LEGACY_DEEP_LINK_SCHEME,
   PRODUCT_NAME,
   getProductProviderState,
-  isProductProvider,
 } from "@x/shared/dist/branding.js";
 import { RunEvent, ListRunsResponse } from "@x/shared/src/runs.js";
 import type { LanguageModelUsage, ToolUIPart } from "ai";
@@ -76,7 +75,8 @@ import {
 } from "@/components/ai-elements/tool";
 import { WebSearchResult } from "@/components/ai-elements/web-search-result";
 import { AppActionCard } from "@/components/ai-elements/app-action-card";
-import { ComposioConnectCard } from "@/components/ai-elements/composio-connect-card";
+import { IntegrationConnectCard } from "@/components/ai-elements/integration-connect-card";
+import { SlackReplyDraftCard } from "@/components/ai-elements/slack-reply-draft-card";
 import { PermissionRequest } from "@/components/ai-elements/permission-request";
 import { AutoPermissionDecision } from "@/components/ai-elements/auto-permission-decision";
 import { TerminalOutput } from "@/components/terminal-output";
@@ -111,7 +111,6 @@ import {
 import { splitFrontmatter, joinFrontmatter } from "@/lib/frontmatter";
 import { extractConferenceLink } from "@/lib/calendar-event";
 import { FullPageOnboarding } from "@/components/onboarding";
-import { ComposioGoogleMigrationModal } from "@/components/composio-google-migration-modal";
 import {
   CommandPalette,
   type CommandPaletteMention,
@@ -136,7 +135,8 @@ import {
   createEmptyChatTabViewState,
   getWebSearchCardData,
   getAppActionCardData,
-  getComposioConnectCardData,
+  getIntegrationConnectCardData,
+  getSlackReplyDraftCardData,
   getToolDisplayName,
   groupConversationItems,
   inferRunTitleFromMessage,
@@ -149,7 +149,6 @@ import {
   parseAttachedFiles,
   toToolState,
 } from "@/lib/chat-conversation";
-import { COMPOSIO_DISPLAY_NAMES as composioDisplayNames } from "@x/shared/src/composio.js";
 import { AgentScheduleConfig } from "@x/shared/dist/agent-schedule.js";
 import { AgentScheduleState } from "@x/shared/dist/agent-schedule-state.js";
 import { toast } from "sonner";
@@ -1057,30 +1056,6 @@ function App() {
     });
   }, []);
 
-  // One-time Composio→native Google migration check. Runs on mount and again
-  // after the user signs in to Solomon AI (so we catch users who weren't signed
-  // in at startup). The IPC is idempotent — once `dismissed_at` is set on the
-  // main side, every subsequent call returns `{shouldShow: false}`.
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const result = await window.ipc.invoke("migration:check-composio-google", null);
-        if (result.shouldShow) {
-          setShowComposioGoogleMigration(true);
-        }
-      } catch (error) {
-        console.error("[migration] check-composio-google failed:", error);
-      }
-    };
-    void run();
-    const cleanup = window.ipc.on("oauth:didConnect", (event) => {
-      if (isProductProvider(event.provider) && event.success) {
-        void run();
-      }
-    });
-    return cleanup;
-  }, []);
-
   const handleStartRecording = useCallback(() => {
     console.log("[voice] start recording requested");
     setIsRecording(true);
@@ -1463,9 +1438,6 @@ function App() {
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
-
-  // One-time Composio→native Google migration modal
-  const [showComposioGoogleMigration, setShowComposioGoogleMigration] = useState(false);
 
   // Search state
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -3079,9 +3051,8 @@ function App() {
   };
   handlePromptSubmitRef.current = handlePromptSubmit;
 
-  const handleComposioConnected = useCallback((toolkitSlug: string) => {
-    // Auto-send a continuation message when a Composio toolkit connects
-    const name = composioDisplayNames[toolkitSlug] || toolkitSlug;
+  const handleIntegrationConnected = useCallback((connectorName: string, displayName: string) => {
+    const name = displayName || connectorName;
     handlePromptSubmitRef.current?.({
       text: `${name} connected successfully.`,
       files: [],
@@ -6231,18 +6202,31 @@ function App() {
           />
         );
       }
-      const composioConnectData = getComposioConnectCardData(item);
-      if (composioConnectData) {
-        // Skip rendering if this is a duplicate "already connected" card
-        if (composioConnectData.hidden) return null;
+      const integrationConnectData = getIntegrationConnectCardData(item);
+      if (integrationConnectData) {
+        if (integrationConnectData.hidden) return null;
         return (
-          <ComposioConnectCard
+          <IntegrationConnectCard
             key={item.id}
-            toolkitSlug={composioConnectData.toolkitSlug}
-            toolkitDisplayName={composioConnectData.toolkitDisplayName}
+            connectorName={integrationConnectData.connectorName}
+            displayName={integrationConnectData.displayName}
+            authType={integrationConnectData.authType}
             status={item.status}
-            alreadyConnected={composioConnectData.alreadyConnected}
-            onConnected={handleComposioConnected}
+            alreadyConnected={integrationConnectData.alreadyConnected}
+            onConnected={handleIntegrationConnected}
+          />
+        );
+      }
+      const slackReplyDraftData = getSlackReplyDraftCardData(item);
+      if (slackReplyDraftData) {
+        return (
+          <SlackReplyDraftCard
+            key={item.id}
+            teamId={slackReplyDraftData.teamId}
+            channel={slackReplyDraftData.channel}
+            threadTs={slackReplyDraftData.threadTs}
+            text={slackReplyDraftData.text}
+            status={item.status}
           />
         );
       }
@@ -7485,7 +7469,7 @@ function App() {
                 ttsMode={ttsMode}
                 onToggleTts={handleToggleTts}
                 onTtsModeChange={handleTtsModeChange}
-                onComposioConnected={handleComposioConnected}
+                onIntegrationConnected={handleIntegrationConnected}
               />
             )}
             {/* Rendered last so its no-drag region paints over the sidebar drag region */}
@@ -7510,17 +7494,6 @@ function App() {
         open={billingErrorOpen}
         match={billingErrorMatch}
         onOpenChange={setBillingErrorOpen}
-      />
-      <ComposioGoogleMigrationModal
-        open={showComposioGoogleMigration}
-        onOpenChange={setShowComposioGoogleMigration}
-        onReconnect={() => {
-          // Trigger the Solomon AI-managed Google connect flow. With no credentials
-          // and the user signed in to Solomon AI, the main process opens the
-          // webapp `/oauth/google/start` URL. The deep link returns and
-          // completeSolomonGoogleConnect persists the tokens.
-          void window.ipc.invoke("oauth:connect", { provider: "google" });
-        }}
       />
       <Dialog open={showMeetingPermissions} onOpenChange={setShowMeetingPermissions}>
         <DialogContent showCloseButton={false}>
