@@ -45,6 +45,17 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system")
+  const fallback = (user.name || user.email || "U").slice(0, 2).toUpperCase()
+
+  function applyTheme(value: "light" | "dark" | "system") {
+    const resolved =
+      value === "system"
+        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        : value
+    const root = document.documentElement
+    root.classList.toggle("dark", resolved === "dark")
+    localStorage.setItem("theme", value)
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -61,16 +72,6 @@ export function NavUser({
     media.addEventListener("change", listener)
     return () => media.removeEventListener("change", listener)
   }, [theme])
-
-  const applyTheme = (value: "light" | "dark" | "system") => {
-    const resolved =
-      value === "system"
-        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-        : value
-    const root = document.documentElement
-    root.classList.toggle("dark", resolved === "dark")
-    localStorage.setItem("theme", value)
-  }
 
   const handleTheme = (value: "light" | "dark" | "system") => {
     setTheme(value)
@@ -90,7 +91,7 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-none">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-none">CN</AvatarFallback>
+                <AvatarFallback className="rounded-none">{fallback}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
@@ -109,7 +110,7 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-none">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-none">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-none">{fallback}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -165,7 +166,12 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault()
+                window.location.assign("/api/auth/logout")
+              }}
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>

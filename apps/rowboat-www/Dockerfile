@@ -11,13 +11,19 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY . .
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.29-alpine AS runtime
+FROM node:22-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV ROWBOAT_WWW_PUBLIC_API_BASE_URL=https://api.oppulence.io
 ENV ROWBOAT_WWW_API_PROXY_URL=https://api.oppulence.io
 ENV ROWBOAT_WWW_PORT=8080
 
-COPY --from=build --chown=101:101 /app/out /usr/share/nginx/html
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY --from=deps --chown=101:101 /app/node_modules ./node_modules
+COPY --from=build --chown=101:101 /app/.next ./.next
+COPY --from=build --chown=101:101 /app/public ./public
+COPY --from=build --chown=101:101 /app/package.json ./package.json
+COPY --chown=101:101 docker-entrypoint.sh /docker-entrypoint.sh
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
