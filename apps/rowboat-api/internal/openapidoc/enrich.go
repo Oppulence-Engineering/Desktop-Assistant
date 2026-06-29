@@ -1932,20 +1932,3 @@ func asObj(v any) obj {
 	}
 	return nil
 }
-
-func methodName(method string) string {
-	switch method {
-	case "get":
-		return "Get"
-	case "post":
-		return "Post"
-	case "put":
-		return "Put"
-	case "patch":
-		return "Patch"
-	case "delete":
-		return "Delete"
-	default:
-		return method
-	}
-}
