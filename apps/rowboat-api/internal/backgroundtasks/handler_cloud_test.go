@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"go.uber.org/zap"
@@ -188,6 +190,21 @@ func TestCloudRunStartFailureSetsErrorCode(t *testing.T) {
 	}
 	if got.ErrorDetails == "" {
 		t.Fatalf("expected errorDetails to be populated, got empty")
+	}
+}
+
+func TestCloudRunSubscriptionNotActiveReturnsPaymentRequired(t *testing.T) {
+	h := &Handler{log: zap.NewNop()}
+	rec := httptest.NewRecorder()
+	h.writeStartedRun(rec, nil, nil, &backgroundtaskruns.AdmissionRejectedError{
+		Code:    backgroundtaskworkflow.ErrCodeSubscriptionNotActive,
+		Message: "subscription not active for cloud run preflight",
+	}, "test admission rejection")
+	if rec.Code != http.StatusPaymentRequired {
+		t.Fatalf("want 402, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), backgroundtaskworkflow.ErrCodeSubscriptionNotActive) {
+		t.Fatalf("response missing code %q: %s", backgroundtaskworkflow.ErrCodeSubscriptionNotActive, rec.Body.String())
 	}
 }
 

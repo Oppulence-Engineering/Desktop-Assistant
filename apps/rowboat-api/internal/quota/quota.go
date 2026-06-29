@@ -35,6 +35,10 @@ var ErrDailyLimitExceeded = errors.New("daily_credit_limit_exceeded")
 // metered spend cap.
 var ErrMonthlyLimitExceeded = errors.New("monthly_credit_limit_exceeded")
 
+// ErrSubscriptionNotActive is returned when billing exists but the subscription
+// status cannot use paid/metered cloud features until payment is fixed.
+var ErrSubscriptionNotActive = errors.New("subscription_not_active")
+
 // SpendLimits caps net consumed credits for the current UTC day/month.
 type SpendLimits struct {
 	Daily   int
@@ -121,10 +125,14 @@ func (g *Gate) Reserve(ctx context.Context, op string, estimated int, requestID 
 	// subscription row. The transaction + SQLite's single-writer model serialize
 	// reservations here; the residual cross-request race on Postgres is tiny and
 	// at worst permits a small transient overspend.
-	sanctioned, err := sanctionedCredits(ctx, txc)
+	sanctioned, status, err := subscriptionState(ctx, txc)
 	if err != nil {
 		_ = tx.Rollback()
 		return nil, err
+	}
+	if !subscriptionAllowsUsage(status) {
+		_ = tx.Rollback()
+		return nil, ErrSubscriptionNotActive
 	}
 	available, err := credits.Available(ctx, txc, sanctioned)
 	if err != nil {
@@ -194,9 +202,12 @@ func (g *Gate) Preflight(ctx context.Context, estimated int, limits SpendLimits)
 	if estimated < 0 {
 		estimated = 0
 	}
-	sanctioned, err := sanctionedCredits(ctx, g.client)
+	sanctioned, status, err := subscriptionState(ctx, g.client)
 	if err != nil {
 		return err
+	}
+	if !subscriptionAllowsUsage(status) {
+		return ErrSubscriptionNotActive
 	}
 	available, err := credits.Available(ctx, g.client, sanctioned)
 	if err != nil {
@@ -383,15 +394,19 @@ func consumedSince(ctx context.Context, client *ent.Client, start time.Time) (in
 	return consumed, nil
 }
 
-// sanctionedCredits returns the viewer's sanctioned credit grant (0 if none).
-func sanctionedCredits(ctx context.Context, client *ent.Client) (int, error) {
+// subscriptionState returns the viewer's sanctioned credit grant and status.
+func subscriptionState(ctx context.Context, client *ent.Client) (sanctioned int, status string, err error) {
 	sub, err := client.Subscription.Query().Only(ctx)
 	switch {
 	case err == nil:
-		return sub.SanctionedCredits, nil
+		return sub.SanctionedCredits, sub.Status, nil
 	case ent.IsNotFound(err):
-		return 0, nil
+		return 0, "active", nil
 	default:
-		return 0, err
+		return 0, "", err
 	}
+}
+
+func subscriptionAllowsUsage(status string) bool {
+	return status == "" || status == "active" || status == "trialing"
 }

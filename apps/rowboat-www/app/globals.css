@@ -1,0 +1,319 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+  --font-f37-stout: var(--font-f37-stout);
+  --color-background: var(--background);
+  --color-background-50: var(--background-50);
+  --color-background-100: var(--background-100);
+  --color-background-200: var(--background-200);
+  --color-background-300: var(--background-300);
+  --color-background-400: var(--background-400);
+  --color-background-500: var(--background-500);
+  --color-background-600: var(--background-600);
+  --color-background-700: var(--background-700);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-oppulence-pink: var(--oppulence-pink);
+  --color-oppulence-yellow: var(--oppulence-yellow);
+  --color-oppulence-yellow-100: var(--oppulence-yellow-100);
+  --color-oppulence-yellow-600: var(--oppulence-yellow-600);
+  --color-oppulence-blue: var(--oppulence-blue);
+  --color-oppulence-orange: var(--oppulence-orange);
+  --color-oppulence-green: var(--oppulence-green);
+  --color-code: var(--code);
+  --color-code-foreground: var(--code-foreground);
+  --color-code-highlight: var(--code-highlight);
+  --color-code-number: var(--code-number);
+  --color-selection: var(--selection);
+  --color-selection-foreground: var(--selection-foreground);
+  --radius: var(--radius);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --polar-50: #d7d8da;
+  --polar-100: #c7c8cc;
+  --polar-200: #aaabb1;
+  --polar-300: #9a9ba2;
+  --polar-400: #808189;
+  --polar-500: #71727a;
+  --polar-600: #27282a;
+  --polar-700: #1d1e20;
+  --polar-800: #171719;
+  --polar-900: #101011;
+  --polar-950: #090909;
+  --background: #f9fafb;
+  --background-50: #f7f8f9;
+  --background-100: #f3f4f6;
+  --background-200: #edeef1;
+  --background-300: #e5e7eb;
+  --background-400: #d7d8da;
+  --background-500: #c7c8cc;
+  --background-600: #aaabb1;
+  --background-700: #9a9ba2;
+  --foreground: oklch(14.5% 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(14.5% 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(14.5% 0 0);
+  --primary: oklch(20.5% 0 0);
+  --primary-foreground: oklch(98.5% 0 0);
+  --secondary: var(--background-100);
+  --secondary-foreground: oklch(20.5% 0 0);
+  --muted: var(--background-100);
+  --muted-foreground: #6a7282;
+  --accent: var(--background-200);
+  --accent-foreground: oklch(20.5% 0 0);
+  --destructive: oklch(80% 0.22 31);
+  --destructive-foreground: oklch(80% 0.22 31);
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: oklch(70.8% 0 0);
+  --radius: 0.25rem;
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --oppulence-pink: hsla(314, 100%, 80%, 1);
+  --oppulence-yellow: hsla(58, 93%, 72%, 1);
+  --oppulence-yellow-100: hsla(45, 70%, 88%, 1);
+  --oppulence-yellow-600: hsla(40, 90%, 28%, 1);
+  --oppulence-blue: hsla(218, 92%, 72%, 1);
+  --oppulence-orange: hsla(19, 99%, 44%, 1);
+  --oppulence-green: hsla(156, 86%, 40%, 1);
+  --surface: oklch(0.98 0 0);
+  --surface-foreground: var(--foreground);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.96 0 0);
+  --code-number: oklch(0.56 0 0);
+  --selection: oklch(0.145 0 0);
+  --selection-foreground: oklch(1 0 0);
+}
+
+.dark {
+  --background: var(--polar-950);
+  --background-50: var(--polar-900);
+  --background-100: var(--polar-800);
+  --background-200: var(--polar-700);
+  --background-300: var(--polar-600);
+  --background-400: #303134;
+  --background-500: #3c3d41;
+  --background-600: #4c4d53;
+  --background-700: #606168;
+  --foreground: #f7f7f8;
+  --card: var(--polar-900);
+  --card-foreground: var(--polar-50);
+  --popover: var(--polar-900);
+  --popover-foreground: var(--polar-50);
+  --primary: #ffffff;
+  --primary-foreground: var(--polar-950);
+  --secondary: var(--polar-800);
+  --secondary-foreground: var(--polar-50);
+  --muted: var(--polar-800);
+  --muted-foreground: var(--polar-300);
+  --accent: var(--polar-700);
+  --accent-foreground: var(--polar-50);
+  --destructive: oklch(80% 0.22 31);
+  --destructive-foreground: oklch(80% 0.22 31);
+  --border: var(--polar-700);
+  --input: var(--polar-700);
+  --ring: var(--polar-500);
+  --sidebar: var(--polar-950);
+  --sidebar-foreground: var(--polar-50);
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: var(--polar-950);
+  --sidebar-accent: var(--polar-800);
+  --sidebar-accent-foreground: var(--polar-50);
+  --sidebar-border: var(--polar-700);
+  --sidebar-ring: var(--polar-500);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --oppulence-pink: hsla(314, 100%, 85%, 1);
+  --oppulence-yellow: hsla(58, 92%, 79%, 1);
+  --oppulence-yellow-100: hsla(58, 70%, 20%, 1);
+  --oppulence-yellow-600: hsla(58, 92%, 79%, 1);
+  --oppulence-blue: hsla(218, 91%, 78%, 1);
+  --oppulence-orange: hsla(19, 99%, 50%, 1);
+  --oppulence-green: hsla(156, 86%, 64%, 1);
+  --surface: oklch(0.2 0 0);
+  --surface-foreground: oklch(0.708 0 0);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.27 0 0);
+  --code-number: oklch(0.72 0 0);
+  --selection: oklch(0.922 0 0);
+  --selection-foreground: oklch(0.205 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@layer utilities {
+  .border-grid-x {
+    @apply border-x border-primary/10;
+  }
+
+  .container-wrapper {
+    @apply mx-auto w-full max-w-[1400px] border-x border-primary/10 min-[1800px]:max-w-screen-2xl;
+  }
+
+  .container {
+    @apply mx-auto max-w-screen-2xl px-4;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .marketing-polar {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--foreground) 3%, transparent),
+        transparent 360px
+      ),
+      var(--background);
+  }
+
+  .marketing-polar .border-dashed {
+    border-style: solid;
+  }
+
+  .marketing-polar .container-wrapper,
+  .marketing-polar.border-grid-x,
+  .marketing-polar .border-grid-x {
+    border-color: color-mix(in oklab, var(--border) 72%, transparent);
+  }
+
+  .marketing-surface {
+    background: color-mix(in oklab, var(--background) 96%, var(--foreground) 4%);
+    border-color: color-mix(in oklab, var(--border) 78%, transparent);
+  }
+
+  .marketing-surface-strong {
+    background: color-mix(in oklab, var(--background) 90%, var(--foreground) 10%);
+    border-color: color-mix(in oklab, var(--border) 88%, transparent);
+  }
+
+  .marketing-icon-frame {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in oklab, currentColor 34%, var(--border));
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, currentColor 13%, var(--background-100)),
+        color-mix(in oklab, var(--background) 92%, currentColor 8%)
+      ),
+      var(--background);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--foreground) 12%, transparent),
+      0 10px 30px color-mix(in oklab, black 18%, transparent);
+    transition:
+      transform 180ms ease,
+      border-color 180ms ease,
+      background 180ms ease,
+      box-shadow 180ms ease,
+      color 180ms ease;
+  }
+
+  .marketing-icon-frame svg {
+    stroke: currentColor;
+  }
+
+  .marketing-polar :is(a, article, button):hover .marketing-icon-frame {
+    transform: translateY(-1px);
+    border-color: currentColor;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, currentColor 18%, var(--background-100)),
+        color-mix(in oklab, var(--background) 88%, currentColor 12%)
+      ),
+      var(--background);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--foreground) 16%, transparent),
+      0 14px 34px color-mix(in oklab, black 24%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marketing-icon-frame {
+      transition: none;
+    }
+
+    .marketing-polar :is(a, article, button):hover .marketing-icon-frame {
+      transform: none;
+    }
+  }
+}

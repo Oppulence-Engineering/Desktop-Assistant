@@ -1403,6 +1403,8 @@ func (h *Handler) writeStartedRun(w http.ResponseWriter, task *ent.BackgroundTas
 		switch admissionRejected.Code {
 		case backgroundtaskworkflow.ErrCodeInsufficientCredits:
 			httpx.Error(w, http.StatusPaymentRequired, admissionRejected.Message, admissionRejected.Code)
+		case backgroundtaskworkflow.ErrCodeSubscriptionNotActive:
+			httpx.Error(w, http.StatusPaymentRequired, admissionRejected.Message, admissionRejected.Code)
 		case backgroundtaskworkflow.ErrCodeDailyCreditLimit, backgroundtaskworkflow.ErrCodeMonthlyCreditLimit,
 			backgroundtaskworkflow.ErrCodeAdmissionRateLimited, backgroundtaskworkflow.ErrCodeAdmissionBackpressure:
 			httpx.Error(w, http.StatusTooManyRequests, admissionRejected.Message, admissionRejected.Code)

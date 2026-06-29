@@ -445,7 +445,26 @@ function formatBytes(bytes: number | null): string | null {
 function formatMs(ms: number | null): string | null {
   if (ms === null) return null;
   if (ms < 1000) return `${ms} ms`;
-  return `${(ms / 1000).toFixed(1)} s`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)} s`;
+  if (ms < 60 * 60_000) return `${(ms / 60_000).toFixed(1)} min`;
+  if (ms < 24 * 60 * 60_000) return `${(ms / (60 * 60_000)).toFixed(1)} h`;
+  return `${(ms / (24 * 60 * 60_000)).toFixed(1)} d`;
+}
+
+function durationAcrossEvents(events: BackgroundTaskCloudRunEventType[]): string | null {
+  const times = events
+    .map((event) => new Date(event.receivedAt).getTime())
+    .filter((time) => Number.isFinite(time));
+  if (times.length < 2) return null;
+  return formatMs(Math.max(...times) - Math.min(...times));
+}
+
+function firstEventTimestamp(events: BackgroundTaskCloudRunEventType[]): string | null {
+  const times = events
+    .map((event) => new Date(event.receivedAt).getTime())
+    .filter((time) => Number.isFinite(time));
+  if (times.length === 0) return null;
+  return new Date(Math.min(...times)).toISOString();
 }
 
 function cloudEventTitle(type: string | undefined, payload: EventPayload): string {
@@ -469,6 +488,14 @@ function cloudEventTitle(type: string | undefined, payload: EventPayload): strin
       return "Runtime limit exceeded";
     case "runtime.final_artifact_ready":
       return "Final artifact ready";
+    case "run_started":
+      return "Run started";
+    case "artifact_updated":
+      return "Artifact updated";
+    case "run_completed":
+      return "Run completed";
+    case "run_failed":
+      return "Run failed";
     case "temporal.progress":
       return "Progress";
     case "temporal.artifact_updated":
@@ -484,6 +511,126 @@ function cloudEventTitle(type: string | undefined, payload: EventPayload): strin
     default:
       return eventType;
   }
+}
+
+function durationBetween(startIso: string | null | undefined, endIso: string | null | undefined) {
+  if (!startIso) return null;
+  const start = new Date(startIso).getTime();
+  const end = endIso ? new Date(endIso).getTime() : Date.now();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+  return formatMs(Math.round(end - start));
+}
+
+function formatTraceOffset(firstIso: string | null | undefined, currentIso: string): string | null {
+  if (!firstIso) return null;
+  const first = new Date(firstIso).getTime();
+  const current = new Date(currentIso).getTime();
+  if (!Number.isFinite(first) || !Number.isFinite(current) || current < first) return null;
+  return `T+${formatMs(Math.round(current - first))}`;
+}
+
+function compactPayloadText(value: string | null, max = 220): string | null {
+  if (!value) return null;
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return null;
+  return normalized.length > max ? `${normalized.slice(0, max - 3)}...` : normalized;
+}
+
+function cloudEventStageLabel(type: string | undefined, payload: EventPayload): string {
+  const eventType = type ?? payloadString(payload, "type") ?? "";
+  if (payloadString(payload, "tool") === sandboxToolNameForUI) return "Sandbox";
+  if (eventType.startsWith("runtime.tool")) return "Tool";
+  if (eventType.startsWith("runtime.llm")) return "LLM";
+  if (eventType.startsWith("temporal.") || eventType.startsWith("run_")) return "Workflow";
+  if (eventType.startsWith("desktop.")) return "Desktop";
+  if (eventType.includes("artifact")) return "Artifact";
+  return "Event";
+}
+
+function cloudEventOutcome(
+  type: string | undefined,
+  payload: EventPayload,
+): {
+  label: string;
+  className: string;
+  nodeClassName: string;
+} {
+  const eventType = type ?? payloadString(payload, "type") ?? "";
+  if (
+    eventType.includes("failed") ||
+    eventType.includes("error") ||
+    payloadString(payload, "error")
+  ) {
+    return {
+      label: "error",
+      className: "border-destructive/30 bg-destructive/10 text-destructive",
+      nodeClassName: "border-destructive/40 bg-destructive/10",
+    };
+  }
+  if (
+    eventType.includes("completed") ||
+    eventType.includes("artifact_updated") ||
+    payloadString(payload, "status") === "succeeded"
+  ) {
+    return {
+      label: "ok",
+      className: "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+      nodeClassName: "border-emerald-500/35 bg-emerald-500/10",
+    };
+  }
+  if (
+    eventType.includes("started") ||
+    eventType.includes("running") ||
+    eventType.includes("queued")
+  ) {
+    return {
+      label: "active",
+      className: "border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-400",
+      nodeClassName: "border-sky-500/35 bg-sky-500/10",
+    };
+  }
+  return {
+    label: "event",
+    className: "border-border bg-muted/40 text-muted-foreground",
+    nodeClassName: "border-border bg-background",
+  };
+}
+
+function cloudEventSummary(
+  type: string | undefined,
+  payload: EventPayload,
+  event: BackgroundTaskCloudRunEventType["event"],
+): string | null {
+  const eventType = type ?? payloadString(payload, "type") ?? "";
+  const direct =
+    payloadString(payload, "error") ??
+    payloadString(payload, "message") ??
+    payloadString(payload, "summary") ??
+    payloadString(payload, "reason");
+  if (direct) return compactPayloadText(direct);
+
+  if (eventType.startsWith("runtime.llm")) {
+    const model = payloadString(payload, "model");
+    const latency = formatMs(payloadNumber(payload, "latencyMs"));
+    const input = payloadString(payload, "inputTokens");
+    const output = payloadString(payload, "outputTokens");
+    return [model, latency, input && output ? `${input} in / ${output} out` : null]
+      .filter(Boolean)
+      .join(" · ");
+  }
+
+  if (eventType.startsWith("runtime.tool")) {
+    const tool = payloadString(payload, "tool");
+    const operation = payloadString(payload, "operation");
+    const latency = formatMs(payloadNumber(payload, "latencyMs"));
+    return [tool, operation, latency].filter(Boolean).join(" · ");
+  }
+
+  const sandboxOutput = compactPayloadText(payloadString(payload, "sandboxOutput"));
+  if (sandboxOutput) return sandboxOutput;
+
+  if (typeof event === "string") return compactPayloadText(event);
+  return null;
 }
 
 function cloudEventTone(type: string | undefined, payload: EventPayload): string {
@@ -712,27 +859,243 @@ function CloudRunEventDetails({
   if (known) {
     return <RawEventDetails event={event} />;
   }
+  return <RawEventDetails event={event} />;
+}
+
+function TraceStat({
+  icon,
+  label,
+  value,
+  title,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+  title?: string;
+}) {
   return (
-    <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-foreground/80">
-      {eventBodyText(event)}
-    </pre>
+    <div className="min-w-0 border-t border-border px-3 py-2.5 sm:border-t-0 sm:border-l">
+      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <div className="mt-1 min-w-0 truncate text-xs text-foreground" title={title}>
+        {value}
+      </div>
+    </div>
   );
 }
 
-function CloudRunEventCard({ event }: { event: BackgroundTaskCloudRunEventType }) {
+function CloudRunTraceOverview({
+  runId,
+  status,
+  run,
+  events,
+}: {
+  runId: string;
+  status: BackgroundTaskCloudRunStatusType | null;
+  run: BackgroundTaskCloudRunType | null;
+  events: BackgroundTaskCloudRunEventType[];
+}) {
+  const startedAt = status?.startedAt ?? run?.startedAt ?? null;
+  const completedAt = status?.completedAt ?? run?.completedAt ?? null;
+  const eventCount = events.length;
+  const duration = durationBetween(startedAt, completedAt) ?? durationAcrossEvents(events);
+  const durationLabel =
+    duration ?? (status && isTerminalCloudStatus(status.status) ? "unknown" : "pending");
+  const statusLabel = status?.status ?? "loading";
+  const trigger = run ? triggeredByLabel(run) : "loading";
+  const workflowId = status?.temporalWorkflowId ?? run?.temporalWorkflowId;
+  const workflowTitle = workflowId
+    ? status?.temporalRunId
+      ? `${workflowId} / ${status.temporalRunId}`
+      : workflowId
+    : undefined;
+
+  return (
+    <section className="overflow-hidden rounded-md border border-border bg-background">
+      <div className="flex items-start gap-3 px-3 py-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30">
+          <Workflow className="size-4 text-muted-foreground" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              Cloud trace
+            </span>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded border px-1.5 py-0.5 text-[10px] font-medium ${cloudStatusTone(status?.status)}`}
+            >
+              <span className={`size-1.5 rounded-full ${cloudStatusDot(status?.status)}`} />
+              {statusLabel}
+              {status?.temporalStatus ? ` · ${status.temporalStatus}` : ""}
+            </span>
+          </div>
+          <div className="mt-1 truncate font-mono text-xs text-foreground" title={runId}>
+            {runId}
+          </div>
+          {status?.progressMessage && (
+            <div
+              className="mt-1 truncate text-[11px] text-muted-foreground"
+              title={status.progressMessage}
+            >
+              {status.progressMessage}
+            </div>
+          )}
+        </div>
+        <div className="shrink-0 text-right">
+          <div className="text-lg font-semibold leading-none text-foreground">{eventCount}</div>
+          <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+            events
+          </div>
+        </div>
+      </div>
+
+      <div className="grid bg-muted/10 sm:grid-cols-4">
+        <TraceStat
+          icon={<Zap className="size-3" />}
+          label="Trigger"
+          value={trigger}
+          title={trigger}
+        />
+        <TraceStat icon={<Clock className="size-3" />} label="Duration" value={durationLabel} />
+        <TraceStat
+          icon={<Play className="size-3" />}
+          label="Started"
+          value={startedAt ? formatRunAt(startedAt) : "pending"}
+          title={startedAt ?? undefined}
+        />
+        <TraceStat
+          icon={<CheckCircle2 className="size-3" />}
+          label="Workflow"
+          value={workflowId ?? "not linked"}
+          title={workflowTitle}
+        />
+      </div>
+    </section>
+  );
+}
+
+function CloudRunTraceEvent({
+  event,
+  firstReceivedAt,
+  isFirst,
+  isLast,
+}: {
+  event: BackgroundTaskCloudRunEventType;
+  firstReceivedAt: string | null;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
   const payload = eventPayload(event.event);
   const eventType = event.type ?? payloadString(payload, "type") ?? undefined;
+  const title = cloudEventTitle(eventType, payload);
+  const stage = cloudEventStageLabel(eventType, payload);
+  const outcome = cloudEventOutcome(eventType, payload);
+  const summary = cloudEventSummary(eventType, payload, event.event);
+  const offset = formatTraceOffset(firstReceivedAt, event.receivedAt);
+  const latency = formatMs(payloadNumber(payload, "latencyMs"));
+  const bytes =
+    formatBytes(payloadNumber(payload, "artifactBytes")) ??
+    formatBytes(payloadNumber(payload, "resultBytes")) ??
+    formatBytes(payloadNumber(payload, "sandboxOutputBytes"));
+  const chipValues = [
+    `#${event.seq}`,
+    stage,
+    offset,
+    latency,
+    bytes,
+    payloadString(payload, "tool"),
+    payloadString(payload, "model"),
+  ].filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+
   return (
-    <div className="rounded-none border border-border bg-background px-3 py-2">
-      <div className="mb-2 flex items-center gap-2 text-[10.5px] text-muted-foreground">
-        <CloudEventIcon type={eventType} payload={payload} />
-        <span className={`min-w-0 truncate font-medium ${cloudEventTone(eventType, payload)}`}>
-          {cloudEventTitle(eventType, payload)}
-        </span>
-        <span className="shrink-0 font-mono">#{event.seq}</span>
-        <span className="ml-auto shrink-0">{formatRunAt(event.receivedAt)}</span>
+    <div className="grid grid-cols-[34px_minmax(0,1fr)] gap-3">
+      <div className="relative flex justify-center">
+        {!isFirst && <span className="absolute top-0 h-3 w-px bg-border" aria-hidden />}
+        {!isLast && <span className="absolute bottom-0 top-9 w-px bg-border" aria-hidden />}
+        <div
+          className={`relative z-10 mt-2 flex size-7 items-center justify-center rounded-full border ${outcome.nodeClassName}`}
+        >
+          <CloudEventIcon type={eventType} payload={payload} />
+        </div>
       </div>
-      <CloudRunEventDetails type={eventType} payload={payload} event={event.event} />
+
+      <div className="min-w-0 pb-3">
+        <div className="rounded-md border border-border/80 bg-background px-3 py-2.5">
+          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className={`min-w-0 truncate text-xs font-medium ${cloudEventTone(eventType, payload)}`}
+                >
+                  {title}
+                </span>
+                <span
+                  className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${outcome.className}`}
+                >
+                  {outcome.label}
+                </span>
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {chipValues.map((value) => (
+                  <span
+                    key={value}
+                    className="max-w-[180px] truncate rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+                    title={value}
+                  >
+                    {value}
+                  </span>
+                ))}
+                {eventType && (
+                  <span
+                    className="max-w-[220px] truncate rounded bg-muted/30 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+                    title={eventType}
+                  >
+                    {eventType}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div
+              className="shrink-0 font-mono text-[10px] text-muted-foreground"
+              title={event.receivedAt}
+            >
+              {formatRunAt(event.receivedAt)}
+            </div>
+          </div>
+
+          {summary && (
+            <div
+              className="mt-2 truncate text-[11px] leading-relaxed text-foreground/75"
+              title={summary}
+            >
+              {summary}
+            </div>
+          )}
+
+          <div className="mt-2 border-t border-border/60 pt-2">
+            <CloudRunEventDetails type={eventType} payload={payload} event={event.event} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CloudRunTraceTimeline({ events }: { events: BackgroundTaskCloudRunEventType[] }) {
+  const firstReceivedAt = firstEventTimestamp(events);
+  return (
+    <div>
+      {events.map((event, index) => (
+        <CloudRunTraceEvent
+          key={event.id}
+          event={event}
+          firstReceivedAt={firstReceivedAt}
+          isFirst={index === 0}
+          isLast={index === events.length - 1}
+        />
+      ))}
     </div>
   );
 }
@@ -2264,36 +2627,14 @@ function CloudRunTranscriptView({
           </div>
         )}
 
-        {status?.progressMessage && (
-          <div className="rounded-none border border-border bg-background px-3 py-2 text-xs text-foreground/80">
-            {status.progressMessage}
-          </div>
-        )}
-
-        {run && (
-          <div className="rounded-none border border-border bg-background px-3 py-2 text-[10.5px] text-muted-foreground">
-            <span className="truncate">Triggered by: {triggeredByLabel(run)}</span>
-          </div>
-        )}
-
-        {status?.temporalWorkflowId && (
-          <div className="space-y-1 rounded-none border border-border bg-background px-3 py-2 font-mono text-[10.5px] text-muted-foreground">
-            <div className="truncate" title={status.temporalWorkflowId}>
-              workflow: {status.temporalWorkflowId}
-            </div>
-            {status.temporalRunId && (
-              <div className="truncate" title={status.temporalRunId}>
-                run: {status.temporalRunId}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="border-t border-sidebar-border" />
+        <CloudRunTraceOverview runId={runId} status={status} run={run} events={events} />
 
         <div>
-          <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Events
+          <div className="mb-3 flex items-center gap-2">
+            <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              Trace events
+            </div>
+            <div className="h-px flex-1 bg-sidebar-border" />
           </div>
           {loading && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -2308,13 +2649,7 @@ function CloudRunTranscriptView({
           {!loading && events.length === 0 && !error && (
             <p className="text-xs italic text-muted-foreground">No mirrored events recorded.</p>
           )}
-          {!loading && events.length > 0 && (
-            <div className="space-y-2">
-              {events.map((event) => (
-                <CloudRunEventCard key={event.id} event={event} />
-              ))}
-            </div>
-          )}
+          {!loading && events.length > 0 && <CloudRunTraceTimeline events={events} />}
         </div>
       </div>
     </div>

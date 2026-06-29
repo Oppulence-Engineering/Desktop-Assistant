@@ -51,5 +51,14 @@ export function useBilling(isRowboatConnected: boolean) {
     fetchBilling();
   }, [fetchBilling]);
 
+  useEffect(() => {
+    if (!isRowboatConnected) return;
+    const handleFocus = () => {
+      void fetchBilling();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [fetchBilling, isRowboatConnected]);
+
   return { billing, isLoading, error, refresh: fetchBilling };
 }

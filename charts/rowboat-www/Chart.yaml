@@ -1,0 +1,12 @@
+apiVersion: v2
+name: rowboat-www
+description: Oppulence marketing and desktop companion web app.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+icon: https://raw.githubusercontent.com/Oppulence-Engineering/rowboat/main/assets/rb-logo.png
+maintainers:
+  - name: Oppulence Engineering
+home: https://github.com/Oppulence-Engineering/rowboat
+sources:
+  - https://github.com/Oppulence-Engineering/rowboat/tree/main/apps/rowboat-www

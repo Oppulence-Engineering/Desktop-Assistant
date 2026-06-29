@@ -117,6 +117,8 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case quota.ErrInsufficientCredits:
 			httpx.Error(w, http.StatusPaymentRequired, "insufficient_credits", "insufficient_credits")
+		case quota.ErrSubscriptionNotActive:
+			httpx.Error(w, http.StatusPaymentRequired, "subscription not active", "subscription_not_active")
 		case quota.ErrDailyLimitExceeded, quota.ErrMonthlyLimitExceeded, quota.ErrNoUser:
 			writeQuotaError(w, err)
 		default:
@@ -194,6 +196,8 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 
 func writeQuotaError(w http.ResponseWriter, err error) {
 	switch err {
+	case quota.ErrSubscriptionNotActive:
+		httpx.Error(w, http.StatusPaymentRequired, "subscription not active", "subscription_not_active")
 	case quota.ErrDailyLimitExceeded:
 		httpx.Error(w, http.StatusTooManyRequests, "daily credit limit exceeded", "daily_credit_limit_exceeded")
 	case quota.ErrMonthlyLimitExceeded:

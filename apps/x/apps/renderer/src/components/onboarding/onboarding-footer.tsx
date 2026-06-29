@@ -8,45 +8,43 @@ interface OnboardingFooterProps {
   state: OnboardingState;
 }
 
-/**
- * Sticky action bar for the full-page onboarding. The primary action differs per
- * step, so this is config-driven rather than a single button. Step 0 (Welcome)
- * has no footer — its CTA (sign in / continue) lives in the step body. All
- * handlers come straight off {@link OnboardingState}; no new logic here.
- */
 export function OnboardingFooter({ state }: OnboardingFooterProps) {
   const { currentStep } = state;
   if (currentStep === 0) return null;
 
   return (
-    <div className="sticky bottom-0 z-10 border-t border-border bg-background/80 px-8 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-14">
-      <div className="mx-auto flex w-full max-w-[520px] items-center justify-between gap-3">
+    <div className="sticky bottom-0 z-10 border-t border-[var(--onboarding-border)] bg-[var(--onboarding-bg)]/90 px-5 py-4 backdrop-blur supports-[backdrop-filter]:bg-[var(--onboarding-bg)]/78 sm:px-8 lg:px-12 xl:px-14">
+      <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {currentStep === 1 && (
           <>
-            <Button variant="ghost" onClick={state.handleBack} className="gap-1">
+            <Button
+              variant="ghost"
+              onClick={state.handleBack}
+              className="h-10 justify-start gap-1 sm:justify-center"
+            >
               <ArrowLeft className="size-4" />
               Back
             </Button>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               {state.testState.status === "success" && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400"
+                  className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400"
                 >
                   <CheckCircle2 className="size-4" />
                   Connected
                 </motion.div>
               )}
               {state.testState.status === "error" && (
-                <span className="max-w-[200px] truncate text-sm text-destructive">
+                <span className="max-w-full truncate text-sm text-destructive sm:max-w-[260px]">
                   {state.testState.error}
                 </span>
               )}
               <Button
                 onClick={state.handleTestAndSaveLlmConfig}
                 disabled={!state.canTest || state.testState.status === "testing"}
-                className="min-w-[150px]"
+                className="h-10 min-w-[168px]"
               >
                 {state.testState.status === "testing" ? (
                   <>
@@ -63,15 +61,23 @@ export function OnboardingFooter({ state }: OnboardingFooterProps) {
 
         {currentStep === 2 && (
           <>
-            <Button variant="ghost" onClick={state.handleBack} className="gap-1">
+            <Button
+              variant="ghost"
+              onClick={state.handleBack}
+              className="h-10 justify-start gap-1 sm:justify-center"
+            >
               <ArrowLeft className="size-4" />
               Back
             </Button>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={state.handleNext} className="text-muted-foreground">
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={state.handleNext}
+                className="h-10 text-muted-foreground"
+              >
                 Skip for now
               </Button>
-              <Button onClick={state.handleNext} className="group">
+              <Button onClick={state.handleNext} className="group h-10 min-w-[128px]">
                 Continue
                 <ArrowRight className="ml-1.5 size-4 transition-transform group-hover:translate-x-0.5" />
               </Button>
@@ -80,11 +86,11 @@ export function OnboardingFooter({ state }: OnboardingFooterProps) {
         )}
 
         {currentStep === 3 && (
-          <div className="flex w-full justify-center">
+          <div className="flex w-full justify-end">
             <Button
               onClick={state.handleComplete}
               size="lg"
-              className="h-12 min-w-[240px] text-base font-medium"
+              className="h-11 min-w-[220px] text-sm font-semibold"
             >
               Start Using {PRODUCT_NAME}
             </Button>

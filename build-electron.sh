@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# build rowboatx next.js app
-(cd apps/rowboatx && \
+# build rowboat-www Next.js app
+(cd apps/rowboat-www && \
     npm install && \
     npm run build)
 

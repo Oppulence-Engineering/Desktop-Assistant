@@ -165,6 +165,19 @@ type Config struct {
 	// Free-tier credit grant minted on first sign-in.
 	FreeTierCredits int
 
+	// Stripe billing. When StripeSecretKey is empty, checkout/portal endpoints
+	// return provider_unconfigured while /v1/me and free-tier metering keep
+	// working for local development.
+	StripeSecretKey      string
+	StripeWebhookSecret  string
+	StripeStarterPriceID string
+	StripeProPriceID     string
+	StripeSuccessURL     string
+	StripeCancelURL      string
+	StripeAPIBaseURL     string
+	StripeStarterCredits int
+	StripeProCredits     int
+
 	// Free cloud meeting-transcription seconds per UTC month for non-paid plans
 	// (RFC 009 §16). Exhausted → the desktop falls back to on-device transcription.
 	FreeMeetingSecondsPerMonth int
@@ -499,6 +512,15 @@ func Load() Config {
 
 		DesktopDeepLinkScheme: getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
 		FreeTierCredits:       getint("FREE_TIER_CREDITS", 10000),
+		StripeSecretKey:       getenv("STRIPE_SECRET_KEY", ""),
+		StripeWebhookSecret:   getenv("STRIPE_WEBHOOK_SECRET", ""),
+		StripeStarterPriceID:  getenv("STRIPE_STARTER_PRICE_ID", ""),
+		StripeProPriceID:      getenv("STRIPE_PRO_PRICE_ID", ""),
+		StripeSuccessURL:      getenv("STRIPE_SUCCESS_URL", getenv("APP_URL", "https://app.solomon-ai.co")+"/billing/success"),
+		StripeCancelURL:       getenv("STRIPE_CANCEL_URL", getenv("APP_URL", "https://app.solomon-ai.co")+"/billing/cancel"),
+		StripeAPIBaseURL:      getenv("STRIPE_API_BASE_URL", "https://api.stripe.com"),
+		StripeStarterCredits:  getint("STRIPE_STARTER_CREDITS", 200000),
+		StripeProCredits:      getint("STRIPE_PRO_CREDITS", 2000000),
 
 		FreeMeetingSecondsPerMonth:  getint("FREE_MEETING_SECONDS_PER_MONTH", 10800), // 180 min
 		TranscriptionVoiceDefault:   getenv("TRANSCRIPTION_VOICE_DEFAULT", "whisper-local"),

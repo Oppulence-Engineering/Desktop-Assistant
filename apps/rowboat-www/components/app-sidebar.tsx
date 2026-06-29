@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { ChevronRight, Clock3, FileText, Folder, Play, Plug, Rocket, Users } from "lucide-react"
+import * as React from "react";
+import { ChevronRight, Clock3, FileText, Folder, Play, Plug, Rocket } from "lucide-react";
 
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
-import { NavProjects } from "@/components/nav-projects"
+import { NavUser } from "@/components/nav-user";
+import { TeamSwitcher } from "@/components/team-switcher";
+import { NavProjects } from "@/components/nav-projects";
 import {
   Sidebar,
   SidebarContent,
@@ -18,8 +18,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+} from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+function OppulenceLogo({ className }: { className?: string }) {
+  return <img alt="" className={className} src="/marketing/oppulence-icon.png" />;
+}
 
 // This is sample data.
 const data = {
@@ -30,8 +34,8 @@ const data = {
   },
   teams: [
     {
-      name: "RowboatX",
-      logo: Users,
+      name: "Oppulence",
+      logo: OppulenceLogo,
       plan: "Workspace",
     },
   ],
@@ -84,92 +88,92 @@ const data = {
       ],
     },
   ],
-}
+};
 
-type RowboatSummary = {
-  agents: string[]
-  config: string[]
-  runs: string[]
-}
+type OppulenceSummary = {
+  agents: string[];
+  config: string[];
+  runs: string[];
+};
 
-type ResourceKind = "agent" | "config" | "run"
+type ResourceKind = "agent" | "config" | "run";
 
-type SidebarSelect = (item: { kind: ResourceKind; name: string }) => void
+type SidebarSelect = (item: { kind: ResourceKind; name: string }) => void;
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
-  onSelectResource?: SidebarSelect
-}
+  onSelectResource?: SidebarSelect;
+};
 
 export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
-  const { state: sidebarState } = useSidebar()
-  const [summary, setSummary] = React.useState<RowboatSummary>({
+  const { state: sidebarState } = useSidebar();
+  const [summary, setSummary] = React.useState<OppulenceSummary>({
     agents: [],
     config: [],
     runs: [],
-  })
-  const [loading, setLoading] = React.useState(true)
+  });
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/rowboat/summary")
-        if (!res.ok) return
-        const data = await res.json()
+        const res = await fetch("/api/rowboat/summary");
+        if (!res.ok) return;
+        const data = await res.json();
         setSummary({
           agents: data.agents || [],
           config: data.config || [],
           runs: data.runs || [],
-        })
+        });
       } catch (error) {
-        console.error("Failed to load rowboat summary", error)
+        console.error("Failed to load Oppulence summary", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    load()
-  }, [])
+    };
+    load();
+  }, []);
 
   // Limit runs shown and provide "View more" affordance similar to chat history.
-  const runsLimit = 8
-  const visibleRuns = summary.runs.slice(0, runsLimit)
-  const hasMoreRuns = summary.runs.length > runsLimit
+  const runsLimit = 8;
+  const visibleRuns = summary.runs.slice(0, runsLimit);
+  const hasMoreRuns = summary.runs.length > runsLimit;
 
   const handleSelect = (kind: ResourceKind, name: string) => {
-    onSelectResource?.({ kind, name })
-  }
+    onSelectResource?.({ kind, name });
+  };
 
   const navInitial = React.useMemo(
     () =>
       data.navMain.reduce<Record<string, boolean>>((acc, item) => {
-        acc[item.title] = false
-        return acc
+        acc[item.title] = false;
+        return acc;
       }, {}),
-    []
-  )
+    [],
+  );
 
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({
     agents: false,
     config: false,
     runs: false,
     ...navInitial,
-  })
+  });
 
-  const isCollapsed = sidebarState === "collapsed"
+  const isCollapsed = sidebarState === "collapsed";
 
   React.useEffect(() => {
     if (isCollapsed) {
       setOpenGroups((prev) => {
-        const closed: Record<string, boolean> = {}
-        for (const key of Object.keys(prev)) closed[key] = false
-        return closed
-      })
+        const closed: Record<string, boolean> = {};
+        for (const key of Object.keys(prev)) closed[key] = false;
+        return closed;
+      });
     }
-  }, [isCollapsed])
+  }, [isCollapsed]);
 
   const handleOpenChange = (key: string, next: boolean) => {
-    if (isCollapsed) return
-    setOpenGroups((prev) => ({ ...prev, [key]: next }))
-  }
+    if (isCollapsed) return;
+    setOpenGroups((prev) => ({ ...prev, [key]: next }));
+  };
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -303,37 +307,37 @@ export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
             {data.navMain.map((item) => (
               <Collapsible
                 key={item.title}
-              className="group/collapsible"
-              open={openGroups[item.title]}
-              onOpenChange={(open) => handleOpenChange(item.title, open)}
-            >
-              <SidebarMenuItem>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="h-9">
-                    {item.title === "Scheduled" ? (
-                      <Clock3 className="mr-2 h-4 w-4" />
-                    ) : item.title === "Applets" ? (
-                      <Rocket className="mr-2 h-4 w-4" />
-                    ) : (
-                      <Folder className="mr-2 h-4 w-4" />
-                    )}
-                    <span className="truncate">{item.title}</span>
-                    <ChevronRight className="ml-auto h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent asChild>
-                  <SidebarMenu className="pl-2">
-                    {item.items?.map((sub) => (
-                      <SidebarMenuItem key={sub.title}>
-                        <SidebarMenuButton className="pl-8 h-8">
-                          <span className="truncate">{sub.title}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </CollapsibleContent>
-              </SidebarMenuItem>
-            </Collapsible>
+                className="group/collapsible"
+                open={openGroups[item.title]}
+                onOpenChange={(open) => handleOpenChange(item.title, open)}
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton className="h-9">
+                      {item.title === "Scheduled" ? (
+                        <Clock3 className="mr-2 h-4 w-4" />
+                      ) : item.title === "Applets" ? (
+                        <Rocket className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Folder className="mr-2 h-4 w-4" />
+                      )}
+                      <span className="truncate">{item.title}</span>
+                      <ChevronRight className="ml-auto h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent asChild>
+                    <SidebarMenu className="pl-2">
+                      {item.items?.map((sub) => (
+                        <SidebarMenuItem key={sub.title}>
+                          <SidebarMenuButton className="pl-8 h-8">
+                            <span className="truncate">{sub.title}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             ))}
           </SidebarMenu>
         </SidebarGroup>
@@ -344,5 +348,5 @@ export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }
