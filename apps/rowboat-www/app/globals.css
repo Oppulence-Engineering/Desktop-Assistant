@@ -4,8 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-inter);
+  --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-f37-stout);
   --font-mono: var(--font-geist-mono);
   --font-f37-stout: var(--font-f37-stout);
   --color-background: var(--background);
@@ -55,6 +55,8 @@
   --color-oppulence-blue: var(--oppulence-blue);
   --color-oppulence-orange: var(--oppulence-orange);
   --color-oppulence-green: var(--oppulence-green);
+  --color-brand: var(--brand);
+  --color-brand-bar: var(--brand-bar);
   --color-code: var(--code);
   --color-code-foreground: var(--code-foreground);
   --color-code-highlight: var(--code-highlight);
@@ -122,12 +124,14 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --oppulence-pink: hsla(314, 100%, 80%, 1);
-  --oppulence-yellow: hsla(58, 93%, 72%, 1);
+  --oppulence-yellow: hsla(38, 92%, 50%, 1);
   --oppulence-yellow-100: hsla(45, 70%, 88%, 1);
   --oppulence-yellow-600: hsla(40, 90%, 28%, 1);
-  --oppulence-blue: hsla(218, 92%, 72%, 1);
-  --oppulence-orange: hsla(19, 99%, 44%, 1);
-  --oppulence-green: hsla(156, 86%, 40%, 1);
+  --oppulence-blue: hsla(214, 72%, 51%, 1);
+  --oppulence-orange: hsla(19, 90%, 48%, 1);
+  --oppulence-green: hsla(96, 48%, 38%, 1);
+  --brand: hsla(96, 48%, 38%, 1);
+  --brand-bar: hsla(86, 52%, 64%, 1);
   --surface: oklch(0.98 0 0);
   --surface-foreground: var(--foreground);
   --code: var(--surface);
@@ -214,11 +218,11 @@
 
 @layer utilities {
   .border-grid-x {
-    @apply border-x border-primary/10;
+    @apply border-x border-dashed border-primary/10;
   }
 
   .container-wrapper {
-    @apply mx-auto w-full max-w-[1400px] border-x border-primary/10 min-[1800px]:max-w-screen-2xl;
+    @apply mx-auto w-full max-w-[1400px] border-x border-dashed border-primary/10 min-[1800px]:max-w-screen-2xl;
   }
 
   .container {
@@ -234,90 +238,50 @@
     scrollbar-width: none;
   }
 
+  /* Clean neutral light theme — matches the Oppulence web-app (Geist + F37 Stout, grayscale). */
   .marketing-polar {
-    background:
-      radial-gradient(
-        circle at 18% 0%,
-        color-mix(in oklab, var(--oppulence-blue) 8%, transparent),
-        transparent 340px
-      ),
-      radial-gradient(
-        circle at 86% 14%,
-        color-mix(in oklab, var(--oppulence-green) 7%, transparent),
-        transparent 380px
-      ),
-      linear-gradient(
-        90deg,
-        color-mix(in oklab, var(--border) 36%, transparent) 1px,
-        transparent 1px
-      )
-      50% 0 / 96px 96px,
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--border) 30%, transparent) 1px,
-        transparent 1px
-      )
-      50% 0 / 96px 96px,
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--foreground) 4%, transparent),
-        transparent 420px
-      ),
-      var(--background);
+    --background: #ffffff;
+    background: #ffffff;
+    color: var(--foreground);
   }
 
-  .marketing-polar > header {
-    box-shadow: 0 1px 0 color-mix(in oklab, var(--foreground) 5%, transparent);
+  .marketing-panel {
+    background: linear-gradient(180deg, var(--background-50), var(--background-100));
+  }
+
+  /* dub-style dotted background texture for showcase sections. */
+  .marketing-dots {
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--foreground) 9%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 18px 18px;
+    background-position: -9px -9px;
   }
 
   .marketing-topbar {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--background-50) 82%, transparent),
-        color-mix(in oklab, var(--background) 92%, transparent)
-      ),
-      color-mix(in oklab, var(--background) 92%, transparent);
-    border-bottom-color: color-mix(in oklab, var(--border) 76%, transparent);
-    box-shadow:
-      0 1px 0 color-mix(in oklab, var(--foreground) 6%, transparent),
-      0 18px 56px color-mix(in oklab, black 28%, transparent);
-  }
-
-  .marketing-polar .border-dashed {
-    border-style: solid;
+    background: color-mix(in oklab, var(--background) 88%, transparent);
+    border-bottom-color: var(--border);
   }
 
   .marketing-polar .container-wrapper,
   .marketing-polar.border-grid-x,
   .marketing-polar .border-grid-x {
-    border-color: color-mix(in oklab, var(--border) 72%, transparent);
+    border-color: color-mix(in oklab, var(--primary) 10%, transparent);
   }
 
   .marketing-eyebrow {
-    border: 1px solid color-mix(in oklab, var(--foreground) 16%, transparent);
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--foreground) 8%, transparent),
-        color-mix(in oklab, var(--background-100) 70%, transparent)
-      );
-    color: color-mix(in oklab, var(--foreground) 72%, var(--oppulence-blue));
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--foreground) 12%, transparent),
-      0 10px 28px color-mix(in oklab, black 22%, transparent);
-    backdrop-filter: blur(14px);
+    border: 1px solid color-mix(in oklab, var(--primary) 15%, transparent);
+    background: color-mix(in oklab, var(--primary) 5%, transparent);
+    color: color-mix(in oklab, var(--primary) 75%, transparent);
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   .marketing-chip {
-    border-color: color-mix(in oklab, var(--border) 82%, transparent);
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--background-100) 88%, var(--foreground) 12%),
-        color-mix(in oklab, var(--background) 92%, var(--foreground) 8%)
-      );
-    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent);
+    border-color: var(--border);
+    background: var(--background-50);
+    box-shadow: none;
   }
 
   .marketing-hero-title {
@@ -325,56 +289,34 @@
   }
 
   .marketing-cta-primary {
-    border-radius: var(--radius-lg);
-    border-color: color-mix(in oklab, var(--foreground) 14%, transparent);
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, white 96%, var(--oppulence-yellow) 4%),
-        color-mix(in oklab, white 86%, var(--background-400) 14%)
-      );
-    color: var(--primary-foreground);
+    border-radius: var(--radius);
+    border-color: #161616;
+    background: #161616;
+    color: #ffffff;
     box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 70%, transparent),
-      0 16px 36px color-mix(in oklab, black 22%, transparent);
+      0 1px 2px color-mix(in oklab, var(--foreground) 20%, transparent),
+      0 2px 8px color-mix(in oklab, var(--foreground) 10%, transparent);
   }
 
   .marketing-cta-primary:hover {
-    border-color: color-mix(in oklab, var(--foreground) 22%, transparent);
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, white 100%, var(--oppulence-yellow) 0%),
-        color-mix(in oklab, white 90%, var(--background-300) 10%)
-      );
+    border-color: #000000;
+    background: #000000;
     box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 80%, transparent),
-      0 20px 44px color-mix(in oklab, black 28%, transparent);
+      0 2px 4px color-mix(in oklab, var(--foreground) 24%, transparent),
+      0 8px 20px color-mix(in oklab, var(--foreground) 14%, transparent);
   }
 
   .marketing-cta-secondary {
-    border-radius: var(--radius-lg);
-    border-color: color-mix(in oklab, var(--border) 90%, transparent);
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--background-100) 88%, var(--foreground) 12%),
-        color-mix(in oklab, var(--background) 92%, var(--foreground) 8%)
-      );
-    color: color-mix(in oklab, var(--foreground) 88%, transparent);
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--foreground) 9%, transparent),
-      0 12px 30px color-mix(in oklab, black 18%, transparent);
+    border-radius: var(--radius);
+    border-color: color-mix(in oklab, var(--border) 90%, var(--foreground) 4%);
+    background: #ffffff;
+    color: color-mix(in oklab, var(--foreground) 90%, transparent);
+    box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 6%, transparent);
   }
 
   .marketing-cta-secondary:hover {
-    border-color: color-mix(in oklab, var(--foreground) 18%, var(--border));
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--background-100) 76%, var(--foreground) 24%),
-        color-mix(in oklab, var(--background-50) 86%, var(--foreground) 14%)
-      );
+    border-color: color-mix(in oklab, var(--foreground) 20%, var(--border));
+    background: var(--background-50);
     color: var(--foreground);
   }
 
@@ -383,132 +325,86 @@
   .marketing-preview {
     position: relative;
     overflow: hidden;
-    border-radius: var(--radius-lg);
-  }
-
-  .marketing-surface::before,
-  .marketing-surface-strong::before,
-  .marketing-preview::before {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    height: 1px;
-    content: "";
-    background: linear-gradient(
-      90deg,
-      transparent,
-      color-mix(in oklab, var(--oppulence-blue) 34%, var(--foreground) 16%),
-      color-mix(in oklab, var(--oppulence-green) 28%, transparent),
-      transparent
-    );
-    pointer-events: none;
+    border-radius: var(--radius);
   }
 
   .marketing-surface {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--background-50) 84%, var(--foreground) 16%),
-        color-mix(in oklab, var(--background) 90%, var(--foreground) 10%)
-      );
-    border-color: color-mix(in oklab, var(--border) 82%, transparent);
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent),
-      0 16px 42px color-mix(in oklab, black 18%, transparent);
+    background: color-mix(in oklab, var(--background) 70%, transparent);
+    border-color: var(--border);
+    box-shadow: none;
   }
 
   .marketing-surface-strong {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--background-100) 76%, var(--foreground) 24%),
-        color-mix(in oklab, var(--background-50) 84%, var(--foreground) 16%)
-      );
-    border-color: color-mix(in oklab, var(--border) 92%, transparent);
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--foreground) 12%, transparent),
-      0 22px 52px color-mix(in oklab, black 22%, transparent);
+    background: var(--card);
+    border-color: var(--border);
+    box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 5%, transparent);
   }
 
   .marketing-preview {
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent),
-      0 22px 70px color-mix(in oklab, black 26%, transparent);
+    background: color-mix(in oklab, var(--background) 60%, transparent);
+    box-shadow: 0 8px 30px color-mix(in oklab, var(--foreground) 8%, transparent);
   }
 
   .marketing-preview-image {
     box-shadow:
-      0 18px 50px color-mix(in oklab, black 30%, transparent),
+      0 6px 20px color-mix(in oklab, var(--foreground) 9%, transparent),
       0 0 0 1px color-mix(in oklab, var(--foreground) 5%, transparent);
   }
 
+  /* dub.co-style tactile icon chips: bottom-weighted tonal gradient, crisp inner
+     top-highlight, hairline tonal border, and a soft lift shadow. */
   .marketing-icon-frame {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    border: 1px solid color-mix(in oklab, currentColor 34%, var(--border));
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, currentColor 18%, var(--background-100)),
-        color-mix(in oklab, var(--background) 82%, currentColor 18%)
-      ),
-      var(--background);
+    border: 1px solid color-mix(in oklab, currentColor 26%, var(--border));
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, currentColor 6%, var(--card)),
+      color-mix(in oklab, currentColor 18%, var(--card))
+    );
     box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--foreground) 14%, transparent),
-      0 10px 24px color-mix(in oklab, black 22%, transparent);
+      inset 0 1px 0 color-mix(in oklab, white 72%, transparent),
+      inset 0 -1px 0 color-mix(in oklab, currentColor 12%, transparent),
+      0 1px 2px color-mix(in oklab, var(--foreground) 7%, transparent);
     transition:
-      transform 180ms ease,
-      border-color 180ms ease,
-      background 180ms ease,
-      box-shadow 180ms ease,
-      color 180ms ease;
+      transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      border-color 200ms ease,
+      background 200ms ease,
+      box-shadow 200ms ease;
   }
 
   .marketing-icon-frame svg {
     color: currentColor;
+    transition: transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
   .marketing-polar :is(a, article).marketing-surface {
     transition:
-      transform 180ms ease,
       border-color 180ms ease,
-      background 180ms ease,
-      box-shadow 180ms ease;
-  }
-
-  .marketing-polar :is(a, article).marketing-surface::before {
-    opacity: 0.72;
-    transition: opacity 180ms ease;
+      background 180ms ease;
   }
 
   .marketing-polar :is(a, article).marketing-surface:hover {
-    transform: translateY(-1px);
-    border-color: color-mix(in oklab, var(--foreground) 18%, var(--border));
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--foreground) 12%, transparent),
-      0 22px 58px color-mix(in oklab, black 28%, transparent);
-  }
-
-  .marketing-polar :is(a, article).marketing-surface:hover::before {
-    opacity: 1;
+    border-color: color-mix(in oklab, var(--foreground) 14%, var(--border));
+    background: var(--background-50);
   }
 
   .marketing-polar :is(a, article, button):hover .marketing-icon-frame {
-    transform: translateY(-1px);
-    border-color: currentColor;
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, currentColor 18%, var(--background-100)),
-        color-mix(in oklab, var(--background) 88%, currentColor 12%)
-      ),
-      var(--background);
+    border-color: color-mix(in oklab, currentColor 52%, var(--border));
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, currentColor 10%, var(--card)),
+      color-mix(in oklab, currentColor 26%, var(--card))
+    );
     box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--foreground) 16%, transparent),
-      0 14px 34px color-mix(in oklab, black 24%, transparent);
+      inset 0 1px 0 color-mix(in oklab, white 82%, transparent),
+      0 2px 8px color-mix(in oklab, currentColor 22%, transparent);
+  }
+
+  .marketing-polar :is(a, article, button):hover .marketing-icon-frame svg {
+    transform: scale(1.1);
   }
 
   @media (max-width: 379px) {
@@ -529,6 +425,12 @@
     }
 
     .marketing-polar :is(a, article, button):hover .marketing-icon-frame {
+      transform: none;
+    }
+
+    .marketing-icon-frame svg,
+    .marketing-polar :is(a, article, button):hover .marketing-icon-frame svg {
+      transition: none;
       transform: none;
     }
 

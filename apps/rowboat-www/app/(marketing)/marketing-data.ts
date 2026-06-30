@@ -19,105 +19,140 @@ export type MarketingPage = {
 
 export type FeatureDetail = {
   summary: string;
+  heroProof?: string[];
+  capabilities?: {
+    title: string;
+    body: string;
+  }[];
   sections: {
     title: string;
     body: string;
   }[];
   workflow: string[];
+  useCases?: {
+    title: string;
+    body: string;
+  }[];
   outcomes: string[];
+  relatedPages?: LinkItem[];
 };
 
 export const featureLinks: LinkItem[] = [
   {
-    label: "Knowledge graph",
+    label: "Living work graph",
     href: "/ai-help-center",
-    description: "Self-updating corpus for email, calendar, and meetings",
+    description: "People, projects, decisions, and commitments in one owned graph",
   },
   {
-    label: "AI coworker",
+    label: "Briefs and drafts",
     href: "/ai-documentation-agent",
-    description: "Agents that write, brief, and act with owned context",
+    description: "Agents write from the graph instead of manual prompt prep",
   },
   {
     label: "Live notes",
     href: "/automated-screenshots-for-docs",
-    description: "Scheduled and event-triggered notes that keep themselves current",
+    description: "Notes that refresh when work changes",
   },
   {
-    label: "Embeddable widget",
+    label: "Embedded agents",
     href: "/self-service-help-widget",
-    description: "Drop grounded agents into a product or internal tool",
+    description: "Put graph-backed help inside products and internal tools",
   },
   {
-    label: "Code to agents",
+    label: "Workflow design",
     href: "/code-to-docs",
-    description: "Turn specs, APIs, and MCP tools into working workflows",
+    description: "Model agent roles, tools, handoffs, and simulations",
   },
   {
-    label: "Platform API",
+    label: "Runtime and API",
     href: "/api-documentation-software",
-    description: "Self-hosted API, SDK, RAG, and workflow runtime",
+    description: "Self-hosted projects, RAG, widgets, workers, and APIs",
   },
   {
     label: "Source federation",
     href: "/multilingual-knowledge-base",
-    description: "Bring Gmail, Calendar, Fireflies, Slack, Linear, GitHub, and MCP together",
+    description: "Turn communication, meetings, files, and tools into graph context",
   },
   {
-    label: "Internal memory",
+    label: "Team memory",
     href: "/internal-knowledge-base",
-    description: "Private Markdown knowledge bases for teams and operators",
+    description: "Private Markdown memory agents can inspect and update",
   },
   {
-    label: "Operator agents",
+    label: "Customer operations",
     href: "/generative-ai-customer-service",
-    description: "Grounded support, revenue, and ops agents with reviewable actions",
+    description: "Support and success agents with relationship history",
   },
   {
     label: "Integrations",
     href: "/integrations",
-    description: "Connect tools through native connectors and MCP servers",
+    description: "Connect sources for context and tools for action",
   },
   {
-    label: "Browser context",
+    label: "Research capture",
     href: "/chrome-extension-for-documentation",
-    description: "Capture useful web context into the graph without losing provenance",
+    description: "Save web context with provenance before agents use it",
   },
 ];
 
 export const productLinks: LinkItem[] = [
-  { label: "How it works", href: "/" },
-  { label: "Integrations", href: "/integrations" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Book a demo", href: "/book-a-demo" },
-  { label: "Dashboard", href: "/app" },
+  {
+    label: "Product overview",
+    href: "/product",
+    description: "See how Oppulence turns work traces into an owned graph for agents",
+  },
+  {
+    label: "Runtime and API",
+    href: "/api-documentation-software",
+    description: "Run graph-backed workflows with projects, RAG, widgets, workers, and APIs",
+  },
+  {
+    label: "Integrations",
+    href: "/integrations",
+    description: "Connect inboxes, calendars, meetings, files, tools, and action surfaces",
+  },
+  {
+    label: "Pricing",
+    href: "/pricing",
+    description: "Pick the plan for your team, deployment model, and graph usage",
+  },
+  {
+    label: "Book a demo",
+    href: "/book-a-demo",
+    description: "Walk through your sources, workflows, and agent action boundaries",
+  },
+  {
+    label: "Dashboard",
+    href: "/app",
+    description: "Open the product workspace",
+  },
 ];
 
 export const resourceLinks: LinkItem[] = [
-  { label: "Blog", href: "/blog", description: "Guides and comparisons" },
-  { label: "Customers", href: "/customers", description: "Use-case stories" },
+  { label: "Docs", href: "/blog", description: "Guides for graph-backed agents" },
+  { label: "Customers", href: "/customers", description: "Early operator stories" },
   {
-    label: "Self-updating graph",
+    label: "Compounding memory",
     href: "/self-updating-help-center",
-    description: "Why memory should stay alive",
+    description: "Why useful context should update between sessions",
   },
   {
-    label: "API docs",
+    label: "Runtime API",
     href: "/api-documentation-software",
-    description: "Platform surface and SDK",
+    description: "Platform surface for graph-backed workflows",
   },
 ];
 
 export const toolLinks: LinkItem[] = [
   {
-    label: "MCP manifest validator",
+    label: "Tool contract validator",
     href: "/tools/openapi-validator",
-    description: "Check agent-tool schemas before wiring them into workflows",
+    description: "Check action contracts before agents depend on them",
   },
   {
-    label: "Memory debt quiz",
+    label: "Context debt quiz",
     href: "/tools/docs-debt-quiz",
-    description: "Estimate how much context work is still manual",
+    description: "Find where important work still lives outside the graph",
   },
 ];
 
@@ -146,85 +181,138 @@ export const socialLinks: LinkItem[] = [
 ];
 
 const baseProof = [
-  "Local-first storage for sensitive operator context.",
-  "Reviewable tool actions before they land.",
-  "Static deployment friendly marketing pages in Oppulence.",
+  "Context stays inspectable before it becomes agent input.",
+  "Actions can be drafted, reviewed, or executed behind clear boundaries.",
+  "The same graph can power desktop workflows, hosted agents, and embedded surfaces.",
 ];
 
 export const featureDetails: Record<string, FeatureDetail> = {
   "ai-help-center": {
     summary:
-      "Oppulence treats the knowledge base as a living operating graph, not a folder of static articles. Every useful source becomes structured, editable memory that agents can inspect before they answer or act.",
+      "Oppulence turns work traces into an owned graph that agents can inspect before they brief, draft, update, or act. The graph is organized around people, projects, companies, decisions, commitments, and open questions instead of static articles.",
+    heroProof: [
+      "Built from inbox, calendar, meetings, local notes, and connected tools.",
+      "Stored as readable context users can inspect and correct.",
+      "Used by agents before they generate drafts or propose actions.",
+    ],
     sections: [
       {
-        title: "Durable relationship memory",
-        body: "People, projects, companies, decisions, commitments, and open questions become durable Markdown nodes with backlinks. The result is a work graph that survives across meetings, inbox threads, and agent sessions.",
+        title: "Capture work traces",
+        body: "Email, meetings, calendar events, files, and tool activity become source material for the graph instead of disappearing into separate apps.",
       },
       {
-        title: "Inspectable source trails",
-        body: "Generated context stays tied to the material it came from. Operators can open, correct, delete, or extend the notes instead of trusting an opaque model memory layer.",
+        title: "Structure real relationships",
+        body: "People, projects, accounts, decisions, commitments, and open questions become linked context that agents can retrieve across sessions.",
       },
       {
-        title: "Shared substrate for agents",
-        body: "The same corpus can feed the desktop coworker, platform workflows, RAG-backed widgets, and background jobs, so teams do not rebuild context for every surface.",
+        title: "Keep provenance visible",
+        body: "Users can inspect where context came from, correct stale assumptions, and keep the graph useful without trusting opaque model memory.",
       },
     ],
     workflow: [
-      "Connect inbox, calendar, meeting-note, document, and tool sources.",
-      "Normalize source material into entity and project notes.",
-      "Attach provenance so each note can be audited and edited.",
-      "Let agents retrieve from the graph before drafting, briefing, or acting.",
+      "Connect the sources that create the most important work traces.",
+      "Normalize those traces into graph notes and relationships.",
+      "Attach source references so claims can be reviewed.",
+      "Let agents retrieve graph context before briefing, drafting, or acting.",
+    ],
+    useCases: [
+      {
+        title: "Meeting prep",
+        body: "See the person, project history, last commitments, and unresolved questions before a call starts.",
+      },
+      {
+        title: "Account continuity",
+        body: "Carry relationship context across email threads, meetings, notes, and follow-up work.",
+      },
+      {
+        title: "Agent grounding",
+        body: "Give every draft or workflow stable graph context before the model starts writing.",
+      },
     ],
     outcomes: [
       "Less repeated context-setting before every AI task.",
-      "A portable memory layer that operators own.",
-      "More accurate briefs because relationships and decisions accumulate over time.",
+      "Portable graph context operators can own and inspect.",
+      "Better briefs because relationships and decisions accumulate over time.",
+    ],
+    relatedPages: [
+      { label: "Live notes", href: "/automated-screenshots-for-docs" },
+      { label: "Source federation", href: "/multilingual-knowledge-base" },
+      { label: "Team memory", href: "/internal-knowledge-base" },
     ],
   },
   "ai-documentation-agent": {
     summary:
-      "Oppulence agents start from the work graph. They can draft, brief, summarize, plan, and execute workflows with the context of past decisions, communication history, and connected tools.",
+      "Oppulence agents start from the living work graph, so briefs and drafts can carry prior decisions, relationship history, source references, and connected-tool context without another round of manual prompt prep.",
+    heroProof: [
+      "Briefs pull from real relationship and project history.",
+      "Drafts keep source context visible for review.",
+      "Actions stay separated from generation until the user approves the path.",
+    ],
     sections: [
       {
-        title: "Briefs before meetings",
-        body: "Agents can assemble the relevant people, prior promises, unresolved decisions, recent emails, and meeting history into a focused prep document or voice-ready summary.",
+        title: "Brief before the work",
+        body: "Agents can assemble people, promises, decisions, emails, and meeting history into a prep document before a call or follow-up.",
       },
       {
-        title: "Drafts with continuity",
-        body: "Email replies, docs, decks, and runbooks are generated from the user's own corpus, making them less generic and easier to verify before sending.",
+        title: "Draft with continuity",
+        body: "Replies, summaries, notes, and internal docs can reuse the user's own graph instead of sounding like generic assistant output.",
       },
       {
-        title: "Action with review",
-        body: "Tool calls can be routed through MCP servers and platform APIs, but sensitive work remains visible and reviewable before it lands in external systems.",
+        title: "Act after review",
+        body: "When a draft implies a next step, the workflow can propose a tool action while keeping sensitive execution visible.",
       },
     ],
     workflow: [
-      "Choose the person, project, account, or objective.",
-      "Pull the relevant graph context and source references.",
-      "Generate a brief, draft, plan, or artifact.",
-      "Review any proposed action before external tools are called.",
+      "Pick the person, project, account, or objective.",
+      "Retrieve graph context and source references.",
+      "Generate the brief, draft, plan, or artifact.",
+      "Review any proposed action before it touches another system.",
+    ],
+    useCases: [
+      {
+        title: "Executive briefs",
+        body: "Prepare for meetings from the latest emails, prior calls, and unresolved commitments.",
+      },
+      {
+        title: "Follow-up drafts",
+        body: "Draft replies and recap notes from what actually happened, with the user still in control.",
+      },
+      {
+        title: "Decision support",
+        body: "Bring the relevant history into planning instead of hunting through tools mid-task.",
+      },
     ],
     outcomes: [
       "Faster meeting prep and follow-up creation.",
       "Drafts that preserve commitments and relationship context.",
       "A safer path from assistant output to real operational action.",
     ],
+    relatedPages: [
+      { label: "Living work graph", href: "/ai-help-center" },
+      { label: "Live notes", href: "/automated-screenshots-for-docs" },
+      { label: "Integrations", href: "/integrations" },
+    ],
   },
   "automated-screenshots-for-docs": {
     summary:
-      "Live notes are Oppulence's delegated-awareness primitive. A note can track a person, account, project, competitor, or operational risk and refresh itself on a schedule or event.",
+      "Live notes are the way Oppulence keeps the graph current. A note can track a person, account, project, topic, or risk and refresh when a schedule or event says the context may have changed.",
+    heroProof: [
+      "Track long-lived subjects without starting a new chat.",
+      "Refresh from schedules, events, or matching source changes.",
+      "Write updates back into the owned graph for future agents.",
+    ],
     sections: [
       {
         title: "Scheduled awareness",
-        body: "Daily, weekly, or time-windowed refreshes keep important notes current without requiring the user to remember to ask for updates.",
+        body: "Daily, weekly, or time-windowed refreshes keep important notes alive without relying on a user to remember another check-in.",
       },
       {
-        title: "Event-triggered updates",
-        body: "Incoming emails, webhook events, platform activity, or matching tool signals can wake the responsible agent and update the relevant note.",
+        title: "Event-triggered context",
+        body: "Incoming emails, calendar changes, webhooks, or platform events can wake the right workflow and update the relevant subject.",
       },
       {
-        title: "File-backed continuity",
-        body: "Updates are written back into the local Markdown corpus, so the result is durable operational memory rather than a transient chat answer.",
+        title: "Graph-backed results",
+        body: "The output becomes durable memory for the next brief, draft, or workflow instead of a transient answer in a chat window.",
       },
     ],
     workflow: [
@@ -233,27 +321,51 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Let the live note gather fresh context and rewrite itself.",
       "Review the updated note and any proposed follow-up actions.",
     ],
+    useCases: [
+      {
+        title: "Deal watching",
+        body: "Track the state of a relationship as messages, meetings, and next steps change.",
+      },
+      {
+        title: "Project status",
+        body: "Keep project notes aligned with decisions, risks, owners, and open work.",
+      },
+      {
+        title: "Market research",
+        body: "Refresh a topic note when new research or connected-source context appears.",
+      },
+    ],
     outcomes: [
       "Ongoing awareness for deals, projects, relationships, and market topics.",
       "Less manual status-checking across email and meetings.",
       "A clear history of what changed and when.",
     ],
+    relatedPages: [
+      { label: "Research capture", href: "/chrome-extension-for-documentation" },
+      { label: "Compounding memory", href: "/self-updating-help-center" },
+      { label: "Briefs and drafts", href: "/ai-documentation-agent" },
+    ],
   },
   "self-service-help-widget": {
     summary:
-      "The Oppulence widget gives teams a product-embedded agent surface backed by the same project, source, workflow, and tool configuration as the platform.",
+      "The Oppulence widget exposes a graph-backed agent inside a product, portal, or internal tool. It uses configured projects, sources, workflows, and tool boundaries instead of a separate support bot memory.",
+    heroProof: [
+      "Embed a conversation surface backed by the same project graph.",
+      "Route answers and escalations through configured workflows.",
+      "Keep action boundaries consistent with the rest of the platform.",
+    ],
     sections: [
       {
-        title: "Embedded support surface",
-        body: "Teams can add a grounded agent to a product, portal, or internal tool without rebuilding conversation state, source retrieval, or workflow routing from scratch.",
+        title: "Embedded graph access",
+        body: "Customers or teammates can ask questions from inside the product while the answer path stays tied to the configured graph.",
       },
       {
         title: "Project-aware routing",
-        body: "Widget sessions can connect to configured projects and workflows so the answer path matches the domain, customer, or operational process.",
+        body: "Sessions can route to the right project, workflow, and source set so answers match the domain instead of a generic assistant.",
       },
       {
-        title: "Tool-ready escalation",
-        body: "When answers are not enough, the platform can propose actions, handoffs, or tool calls under the same review model used elsewhere.",
+        title: "Escalation-ready",
+        body: "When an answer is not enough, the same workflow can propose a handoff, draft, ticket, or tool call with review boundaries intact.",
       },
     ],
     workflow: [
@@ -262,27 +374,51 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Bootstrap sessions against the widget API.",
       "Route conversations to the right workflow and escalation path.",
     ],
+    useCases: [
+      {
+        title: "In-product help",
+        body: "Answer product questions from a graph that can include docs, support context, and known workflows.",
+      },
+      {
+        title: "Internal tools",
+        body: "Give operators a focused agent inside the system where they already do the work.",
+      },
+      {
+        title: "Assisted resolution",
+        body: "Move from answer to proposed next step when the workflow requires action.",
+      },
+    ],
     outcomes: [
       "A faster path to product-embedded AI support.",
       "Consistent answers across product and internal operator tools.",
       "Room to grow from Q&A into controlled action workflows.",
     ],
+    relatedPages: [
+      { label: "Runtime and API", href: "/api-documentation-software" },
+      { label: "Customer operations", href: "/generative-ai-customer-service" },
+      { label: "Workflow design", href: "/code-to-docs" },
+    ],
   },
   "code-to-docs": {
     summary:
-      "Oppulence turns technical context into agent workflows: specs, API contracts, MCP tools, webhook handlers, and simulations all become part of the execution substrate.",
+      "Oppulence turns technical context into reviewable workflows. Specs, prompts, roles, tool contracts, MCP servers, webhook actions, and simulations become part of the agent system instead of living in disconnected docs.",
+    heroProof: [
+      "Model roles, handoffs, sources, and tools in one place.",
+      "Use contracts before agents call external systems.",
+      "Test workflows before exposing them through APIs, widgets, or jobs.",
+    ],
     sections: [
       {
         title: "Workflow modeling",
-        body: "The visual builder lets teams define agent roles, handoffs, prompts, tools, and test scenarios as an operational system rather than an ad hoc prompt chain.",
+        body: "Define agent responsibilities, handoffs, prompts, tools, and test cases as an operational flow instead of a pile of prompts.",
       },
       {
         title: "Tool contracts",
-        body: "Agents can call MCP servers, signed tool webhooks, and API-backed actions when inputs, outputs, and failure behavior are clear enough to review.",
+        body: "MCP servers, webhooks, and API-backed actions can be attached only where inputs, outputs, and failure behavior are explicit enough to review.",
       },
       {
         title: "Simulation before launch",
-        body: "Role-played test runs help validate whether a workflow responds correctly before it is exposed in a widget or background job.",
+        body: "Role-played runs help validate behavior before a workflow is exposed through the widget, API, or background execution.",
       },
     ],
     workflow: [
@@ -291,23 +427,47 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Run simulated conversations or task scenarios.",
       "Deploy to API, widget, or background execution once the behavior is stable.",
     ],
+    useCases: [
+      {
+        title: "Support workflows",
+        body: "Model answer, escalation, and follow-up paths before exposing a customer-facing surface.",
+      },
+      {
+        title: "Ops automation",
+        body: "Connect recurring work to tools while keeping review policy explicit.",
+      },
+      {
+        title: "Internal agent systems",
+        body: "Reuse the same workflow through desktop, API, widget, or scheduled execution.",
+      },
+    ],
     outcomes: [
       "Less custom glue code for every new agent.",
       "Clearer review of tool behavior before production use.",
       "Reusable workflows across support, operations, and internal automation.",
     ],
+    relatedPages: [
+      { label: "Tool contract validator", href: "/tools/openapi-validator" },
+      { label: "Runtime and API", href: "/api-documentation-software" },
+      { label: "Embedded agents", href: "/self-service-help-widget" },
+    ],
   },
   "api-documentation-software": {
     summary:
-      "Oppulence exposes the platform as self-hosted agent infrastructure: projects, workflows, RAG, widget sessions, workers, and APIs run together as one deployment.",
+      "Oppulence exposes the living work graph through a platform runtime: projects, workflows, RAG, widget sessions, workers, and APIs run together for teams that need owned infrastructure instead of a closed assistant.",
+    heroProof: [
+      "Self-host projects, sources, workflows, and widget sessions.",
+      "Run ingestion and jobs outside the request lifecycle.",
+      "Keep provider keys, storage, and runtime boundaries under deployment control.",
+    ],
     sections: [
       {
         title: "Project and workflow APIs",
-        body: "Teams can manage sources, workflows, conversations, test runs, and widget sessions without coupling every integration to the desktop app.",
+        body: "Teams can manage projects, sources, workflows, conversations, test runs, and widget sessions without coupling every integration to the desktop app.",
       },
       {
         title: "Async worker model",
-        body: "Jobs and ingestion run outside the request lifecycle, with Mongo, Redis, and Qdrant supporting state, queues, and vector search.",
+        body: "Ingestion and long-running jobs run outside the request lifecycle, with Mongo, Redis, and Qdrant supporting state, queues, and vector search.",
       },
       {
         title: "Self-hosted control",
@@ -320,27 +480,51 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Define workflows and tool boundaries.",
       "Expose agents through the public API, widget, or scheduled jobs.",
     ],
+    useCases: [
+      {
+        title: "Embedded agents",
+        body: "Expose graph-backed conversations inside products and internal portals.",
+      },
+      {
+        title: "Background workflows",
+        body: "Run scheduled or event-triggered jobs that update context or propose actions.",
+      },
+      {
+        title: "Controlled deployment",
+        body: "Match stricter environments with owned storage, queues, vector search, and provider configuration.",
+      },
+    ],
     outcomes: [
       "A complete starting point for owned agent infrastructure.",
       "Clear separation between request handling and long-running work.",
       "A deployment posture that can match stricter customer environments.",
     ],
+    relatedPages: [
+      { label: "Workflow design", href: "/code-to-docs" },
+      { label: "Embedded agents", href: "/self-service-help-widget" },
+      { label: "Integrations", href: "/integrations" },
+    ],
   },
   "multilingual-knowledge-base": {
     summary:
-      "Oppulence is designed for source federation: communication, documents, meetings, local files, and tool events can become one graph even when they originate in different systems or languages.",
+      "Oppulence is designed for source federation: communication, documents, meetings, local files, and tool events can become one work graph even when they start in different systems.",
+    heroProof: [
+      "Unify communication, meetings, files, and tool events.",
+      "Keep source links available for review.",
+      "Let agents synthesize across tools without copy-paste.",
+    ],
     sections: [
       {
         title: "Source-normalized context",
-        body: "The graph abstracts over where a fact came from while preserving enough provenance for a user to inspect the original source.",
+        body: "The graph abstracts over where a fact came from while preserving the original reference for inspection.",
       },
       {
         title: "Cross-tool continuity",
-        body: "A project can span Gmail, Calendar, Fireflies, Slack, GitHub, Linear, web search, and custom MCP servers without asking the user to paste context between tools.",
+        body: "A project can span Gmail, Calendar, Fireflies, Slack, GitHub, Linear, web search, and custom MCP servers without manual context transfer.",
       },
       {
         title: "Model flexibility",
-        body: "Teams can bring hosted or local models and still keep the graph as the stable memory layer above provider-specific capabilities.",
+        body: "Teams can bring hosted or local models and still keep the graph as the stable context layer above provider-specific capabilities.",
       },
     ],
     workflow: [
@@ -349,15 +533,39 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Keep original references attached for review.",
       "Use agents to synthesize across source boundaries.",
     ],
+    useCases: [
+      {
+        title: "Relationship context",
+        body: "Connect emails, meetings, and notes around a person or account.",
+      },
+      {
+        title: "Engineering context",
+        body: "Bring GitHub, Linear, docs, and discussions into one project memory.",
+      },
+      {
+        title: "Research context",
+        body: "Combine captured web material with internal history before agents summarize or act.",
+      },
+    ],
     outcomes: [
       "Less siloed memory across teams and tools.",
       "Better context for cross-functional workflows.",
       "A more portable knowledge layer than vendor-specific AI memory.",
     ],
+    relatedPages: [
+      { label: "Integrations", href: "/integrations" },
+      { label: "Research capture", href: "/chrome-extension-for-documentation" },
+      { label: "Living work graph", href: "/ai-help-center" },
+    ],
   },
   "internal-knowledge-base": {
     summary:
-      "Oppulence internal memory is private, editable, and operational. It is built for teams that need knowledge bases agents can update, not just pages employees can search.",
+      "Oppulence internal memory is private, editable, and operational. It is built for teams that need a graph agents can update and inspect, not another static page library.",
+    heroProof: [
+      "Store operational context in readable notes.",
+      "Make relationships explicit across people, projects, and decisions.",
+      "Let workflows refresh notes when facts change.",
+    ],
     sections: [
       {
         title: "Private operational memory",
@@ -378,15 +586,39 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Create live notes for high-change workflows.",
       "Review updates and correct the corpus directly.",
     ],
+    useCases: [
+      {
+        title: "Team runbooks",
+        body: "Keep procedures tied to the decisions, owners, and systems behind them.",
+      },
+      {
+        title: "Account memory",
+        body: "Preserve customer context across operators without hiding it in private chats.",
+      },
+      {
+        title: "Incident context",
+        body: "Attach people, systems, decisions, and open follow-ups to the same graph.",
+      },
+    ],
     outcomes: [
       "Internal knowledge that stays closer to the actual work.",
       "A safer way for agents to rely on team-specific context.",
       "Fewer hidden assumptions trapped in chat transcripts or private inboxes.",
     ],
+    relatedPages: [
+      { label: "Living work graph", href: "/ai-help-center" },
+      { label: "Live notes", href: "/automated-screenshots-for-docs" },
+      { label: "Source federation", href: "/multilingual-knowledge-base" },
+    ],
   },
   "generative-ai-customer-service": {
     summary:
-      "Oppulence customer-facing agents can answer with relationship history, product context, billing or operational records, and controlled action paths instead of only static docs.",
+      "Oppulence customer-facing agents can answer from relationship history, product context, support knowledge, and controlled action paths instead of only static help docs.",
+    heroProof: [
+      "Use customer and product history before answering.",
+      "Escalate into drafts, tickets, or handoffs when needed.",
+      "Keep sensitive actions inside review boundaries.",
+    ],
     sections: [
       {
         title: "Relationship-aware responses",
@@ -407,15 +639,39 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Expose the workflow through the widget or operator dashboard.",
       "Review suggested actions before they touch external systems.",
     ],
+    useCases: [
+      {
+        title: "Support answers",
+        body: "Answer from product and customer context without losing the relationship history.",
+      },
+      {
+        title: "Success follow-up",
+        body: "Draft the next message or task using commitments from prior conversations.",
+      },
+      {
+        title: "Operational escalation",
+        body: "Propose a ticket, handoff, or tool call when the answer is not enough.",
+      },
+    ],
     outcomes: [
       "More grounded customer answers.",
       "Less context switching for support and success teams.",
       "A path from assistance to safe operational automation.",
     ],
+    relatedPages: [
+      { label: "Embedded agents", href: "/self-service-help-widget" },
+      { label: "Support memory", href: "/help-center-software" },
+      { label: "Workflow design", href: "/code-to-docs" },
+    ],
   },
   integrations: {
     summary:
-      "Oppulence integrations are the intake and action layer for the graph. Sources feed durable memory, while MCP and API tools give agents controlled ways to act.",
+      "Oppulence integrations are both the intake layer and the action layer for the living work graph. Sources feed durable context; MCP and API tools give agents controlled ways to act.",
+    heroProof: [
+      "Connect high-value sources before adding action tools.",
+      "Preserve source visibility as context becomes graph memory.",
+      "Use MCP and APIs for controlled execution paths.",
+    ],
     sections: [
       {
         title: "Communication sources",
@@ -436,15 +692,39 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Use live notes and workflows to keep important state current.",
       "Audit agent runs and source updates as usage expands.",
     ],
+    useCases: [
+      {
+        title: "Context intake",
+        body: "Bring inbox, calendar, meeting, file, and tool context into the graph.",
+      },
+      {
+        title: "Action targets",
+        body: "Attach tools only where the workflow and review boundary are clear.",
+      },
+      {
+        title: "Custom systems",
+        body: "Use MCP or API-backed tools when first-party integrations do not cover the work.",
+      },
+    ],
     outcomes: [
       "A practical path from read-only context to controlled execution.",
       "Fewer one-off integrations for each agent workflow.",
       "A clearer boundary between source ingestion and external action.",
     ],
+    relatedPages: [
+      { label: "Source federation", href: "/multilingual-knowledge-base" },
+      { label: "Runtime and API", href: "/api-documentation-software" },
+      { label: "Tool contract validator", href: "/tools/openapi-validator" },
+    ],
   },
   "chrome-extension-for-documentation": {
     summary:
       "Oppulence browser context capture helps users bring useful web material into the graph without losing where it came from or why it mattered.",
+    heroProof: [
+      "Capture research while it is still fresh.",
+      "Attach web context to people, projects, accounts, or topics.",
+      "Keep provenance visible for later synthesis.",
+    ],
     sections: [
       {
         title: "Capture in flow",
@@ -465,15 +745,39 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Let agents synthesize across captured context and existing memory.",
       "Refresh live research notes when the topic changes.",
     ],
+    useCases: [
+      {
+        title: "Competitive research",
+        body: "Attach web findings to a topic note that can keep tracking the market.",
+      },
+      {
+        title: "Customer research",
+        body: "Save company or account context before a meeting, follow-up, or support workflow.",
+      },
+      {
+        title: "Technical references",
+        body: "Bring relevant docs or examples into the graph with their source trail intact.",
+      },
+    ],
     outcomes: [
       "Research that becomes reusable operational memory.",
       "Less source ambiguity in generated summaries.",
       "A smoother path from web discovery to agent action.",
     ],
+    relatedPages: [
+      { label: "Live notes", href: "/automated-screenshots-for-docs" },
+      { label: "Source federation", href: "/multilingual-knowledge-base" },
+      { label: "Living work graph", href: "/ai-help-center" },
+    ],
   },
   "ai-faq-generator": {
     summary:
-      "Oppulence turns repeated answers into living operational artifacts. A frequently asked question can become a source-linked note, a runbook, or a live workflow that keeps improving.",
+      "Oppulence turns repeated answers into living operational artifacts. A recurring explanation can become a source-linked note, a runbook, or a live workflow that keeps improving.",
+    heroProof: [
+      "Promote repeated answers into graph notes.",
+      "Keep generated artifacts editable and source-linked.",
+      "Refresh high-change answers through live notes.",
+    ],
     sections: [
       {
         title: "From answer to artifact",
@@ -494,15 +798,39 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Assign refresh criteria where the answer changes often.",
       "Let agents reuse the artifact in future workflows.",
     ],
+    useCases: [
+      {
+        title: "Support runbooks",
+        body: "Turn repeated support explanations into source-linked internal artifacts.",
+      },
+      {
+        title: "Team FAQs",
+        body: "Move recurring internal questions out of chat history and into maintained memory.",
+      },
+      {
+        title: "Policy answers",
+        body: "Refresh answers when the underlying project, customer, or policy context changes.",
+      },
+    ],
     outcomes: [
       "Less duplicate explanation work.",
       "Reusable answers that remain inspectable.",
       "A bridge from Q&A to maintained operational memory.",
     ],
+    relatedPages: [
+      { label: "Team memory", href: "/internal-knowledge-base" },
+      { label: "Compounding memory", href: "/self-updating-help-center" },
+      { label: "Support memory", href: "/help-center-software" },
+    ],
   },
   "help-center-software": {
     summary:
-      "Oppulence reframes help-center software as agent memory infrastructure. The published answer is only one output of a graph that can also brief operators and trigger workflows.",
+      "Oppulence reframes help-center software as graph-backed operations infrastructure. The published answer is one output of a living graph that can also brief operators, power widgets, and trigger workflows.",
+    heroProof: [
+      "Start from the graph, not the article surface.",
+      "Use the same memory for customer and operator workflows.",
+      "Move from answer to next action when the process requires it.",
+    ],
     sections: [
       {
         title: "Beyond static publishing",
@@ -518,20 +846,44 @@ export const featureDetails: Record<string, FeatureDetail> = {
       },
     ],
     workflow: [
-      "Model the knowledge graph before designing the public article surface.",
+      "Model the living work graph before designing the public article surface.",
       "Connect support sources, product docs, and internal runbooks.",
       "Expose customer-facing and operator-facing views.",
       "Add tool actions once policies and review boundaries are clear.",
+    ],
+    useCases: [
+      {
+        title: "Self-service support",
+        body: "Answer customer questions from a graph that can include docs and operational context.",
+      },
+      {
+        title: "Operator assist",
+        body: "Help support teams understand the customer, issue, and next step in one place.",
+      },
+      {
+        title: "Workflow handoff",
+        body: "Draft or route the follow-up instead of ending at a static answer.",
+      },
     ],
     outcomes: [
       "Answers that improve as the operating graph improves.",
       "Less duplication between customer docs and internal runbooks.",
       "A path from self-service to assisted resolution.",
     ],
+    relatedPages: [
+      { label: "Embedded agents", href: "/self-service-help-widget" },
+      { label: "Customer operations", href: "/generative-ai-customer-service" },
+      { label: "Runtime and API", href: "/api-documentation-software" },
+    ],
   },
   "self-updating-help-center": {
     summary:
-      "Oppulence memory compounds because important notes can update themselves. That makes the graph useful for long-running relationships, projects, and operational risks.",
+      "Oppulence memory compounds because important notes can update between user sessions. That makes the graph useful for long-running relationships, projects, and operational risks.",
+    heroProof: [
+      "Track subjects that matter longer than one chat.",
+      "Refresh notes from schedules and source changes.",
+      "Give future agents fresher context before they start.",
+    ],
     sections: [
       {
         title: "Long-lived subjects",
@@ -552,294 +904,349 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "Let the agent update the note from the source graph.",
       "Use the refreshed state in future workflows.",
     ],
+    useCases: [
+      {
+        title: "Relationship tracking",
+        body: "Keep the state of a person, account, or deal current as new work happens.",
+      },
+      {
+        title: "Project memory",
+        body: "Refresh owners, decisions, risks, and open questions as a project evolves.",
+      },
+      {
+        title: "Operational watchlists",
+        body: "Track topics or risks without remembering to ask for another summary.",
+      },
+    ],
     outcomes: [
       "Less stale context around high-value work.",
       "A graph that improves between user sessions.",
       "Better long-horizon agent performance.",
+    ],
+    relatedPages: [
+      { label: "Live notes", href: "/automated-screenshots-for-docs" },
+      { label: "Living work graph", href: "/ai-help-center" },
+      { label: "Briefs and drafts", href: "/ai-documentation-agent" },
     ],
   },
 };
 
 export const primaryPages: MarketingPage[] = [
   {
-    path: "ai-documentation-agent",
-    eyebrow: "AI Coworker",
-    title: "An AI coworker that writes from the work graph, not an empty prompt.",
+    path: "product",
+    eyebrow: "Product",
+    title: "One living work graph for every agent workflow.",
     description:
-      "Oppulence can brief meetings, draft replies, create artifacts, and run workflows using the context accumulated from email, calendar, meeting notes, and local files.",
-    category: "feature",
+      "Oppulence connects email, calendar, meetings, files, and tools into an owned graph that agents can inspect before they brief, draft, update, or act.",
+    category: "product",
     bullets: [
-      "Generate meeting briefs from prior decisions, commitments, and open threads.",
-      "Draft email and documents in a voice grounded in your own corpus.",
-      "Route actions through MCP tools with reviewable execution boundaries.",
+      "Build durable context around people, projects, decisions, commitments, and open questions.",
+      "Let agents use the same graph from desktop workflows, embedded surfaces, APIs, and background jobs.",
+      "Keep sources inspectable and external actions reviewable before work leaves the system.",
     ],
     proof: baseProof,
+    ctaLabel: "Book a demo",
+    ctaHref: "/book-a-demo",
+  },
+  {
+    path: "ai-documentation-agent",
+    eyebrow: "Briefs and Drafts",
+    title: "Brief, draft, and decide from the same living work graph.",
+    description:
+      "Oppulence agents start with the people, projects, decisions, and commitments already in your graph, so every brief or draft has the context that usually gets pasted by hand.",
+    category: "feature",
+    bullets: [
+      "Build meeting prep from recent emails, calendar history, notes, and commitments.",
+      "Draft replies and summaries with the relevant relationship context in view.",
+      "Separate generation from external action until the user reviews the next step.",
+    ],
+    proof: baseProof,
+    ctaLabel: "Book a demo",
   },
   {
     path: "ai-faq-generator",
-    eyebrow: "Runbook Generation",
-    title: "Turn repeated questions into living notes, briefs, and runbooks.",
+    eyebrow: "Reusable Answers",
+    title: "Turn repeated answers into living notes and runbooks.",
     description:
-      "Instead of a static FAQ, Oppulence produces editable Markdown that can keep tracking the people, projects, and decisions behind the answer.",
+      "Oppulence helps recurring explanations become source-linked graph artifacts, so the next agent or operator can reuse them instead of starting from another chat transcript.",
     category: "feature",
     bullets: [
-      "Capture recurring answers as source-linked notes.",
-      "Promote important notes into live notes with schedules or event triggers.",
-      "Keep generated artifacts inspectable and editable in plain files.",
+      "Capture recurring answers as editable graph notes.",
+      "Keep runbooks tied to source context, owners, and decisions.",
+      "Promote high-change answers into live notes that refresh over time.",
     ],
     proof: baseProof,
+    ctaLabel: "Explore the graph",
+    ctaHref: "/ai-help-center",
   },
   {
     path: "ai-help-center",
-    eyebrow: "Knowledge Graph",
-    title: "A self-updating knowledge graph for the work you already do.",
+    eyebrow: "Living Work Graph",
+    title: "The living work graph for people, projects, decisions, and commitments.",
     description:
-      "Oppulence ingests Gmail, Calendar, meetings, and notes into one Obsidian-compatible vault so every agent starts with durable context.",
+      "Oppulence turns the traces of work across inboxes, calendars, meetings, files, and tools into an owned graph agents can inspect before they answer or act.",
     category: "feature",
     bullets: [
-      "Build people, project, company, decision, and commitment files automatically.",
-      "Keep sources visible so claims can be opened, corrected, or extended.",
-      "Use the same corpus from the desktop app and the self-hosted platform.",
+      "Create durable context around people, projects, companies, decisions, and open questions.",
+      "Keep source trails visible so context can be checked and corrected.",
+      "Use the same graph from desktop workflows, platform agents, and embedded surfaces.",
     ],
     proof: baseProof,
+    ctaLabel: "Create the graph",
   },
   {
     path: "api-documentation-software",
-    eyebrow: "Platform API",
-    title: "Self-hosted agent infrastructure with APIs, RAG, and a widget surface.",
+    eyebrow: "Runtime and API",
+    title: "Ship agents on the same graph your team can inspect.",
     description:
-      "The Oppulence platform hosts projects, workflows, the visual agent builder, RAG, and chat widget APIs for teams that need agents inside their own product or internal tools.",
+      "The Oppulence platform hosts projects, workflows, RAG, widgets, workers, and APIs for teams that need graph-backed agents inside products or internal tools.",
     category: "product",
     bullets: [
-      "Next.js platform runtime backed by Mongo, Redis, and Qdrant.",
-      "Public API and SDK surface for project, workflow, and widget use cases.",
-      "Workers for background jobs and ingestion outside request lifecycles.",
+      "Self-host the project, source, workflow, and widget runtime.",
+      "Run ingestion and background jobs outside request lifecycles.",
+      "Keep model providers, storage, and integration boundaries deployment-owned.",
     ],
     proof: baseProof,
+    ctaLabel: "Plan a rollout",
   },
   {
     path: "automated-screenshots-for-docs",
     eyebrow: "Live Notes",
-    title: "Notes that refresh on a schedule, event, or trigger.",
+    title: "Notes that update when work changes.",
     description:
-      "Live notes are Oppulence's primitive for delegated awareness: a note can track a person, deal, competitor, project, or topic and rewrite itself as new context appears.",
+      "Live notes keep the graph current by tracking people, deals, projects, topics, and risks on schedules or events.",
     category: "feature",
     bullets: [
-      "Use cron windows for daily, weekly, or time-bound context refreshes.",
-      "Wake agents from matching email, calendar, webhook, or platform events.",
-      "Write every update back to the local Markdown vault.",
+      "Refresh high-value notes daily, weekly, or on a defined time window.",
+      "Wake workflows from matching emails, calendar changes, webhooks, or source events.",
+      "Write updates back into durable graph memory for future agents.",
     ],
     proof: baseProof,
+    ctaLabel: "See live notes",
   },
   {
     path: "chrome-extension-for-documentation",
-    eyebrow: "Browser Context",
-    title: "Capture web context without losing source provenance.",
+    eyebrow: "Research Capture",
+    title: "Bring web research into the graph with its source trail intact.",
     description:
-      "Oppulence is designed around source-aware memory. Browser and web-search context can become editable notes that keep references attached for later review.",
+      "Oppulence treats external research as source material for the work graph, not disposable browsing context.",
     category: "feature",
     bullets: [
-      "Attach web findings to projects, people, and live notes.",
-      "Use Exa or MCP-powered search providers where configured.",
-      "Keep citations and context in files the user owns.",
+      "Attach web findings to projects, people, accounts, and topics.",
+      "Keep provenance attached before agents summarize or reuse the material.",
+      "Seed live research notes that can refresh as the topic changes.",
     ],
     proof: baseProof,
+    ctaLabel: "Capture research",
   },
   {
     path: "code-to-docs",
-    eyebrow: "Code To Agents",
-    title: "Convert specs, APIs, and tool definitions into agent workflows.",
+    eyebrow: "Workflow Design",
+    title: "Turn roles, tools, and contracts into reviewable agent workflows.",
     description:
-      "Oppulence's platform side exposes the workflow builder, tool webhooks, simulation harness, and SDK surface needed to turn implementation context into usable agents.",
+      "Oppulence gives teams a place to model prompts, handoffs, tools, simulations, and action boundaries before agents run in a product or process.",
     category: "feature",
     bullets: [
-      "Model workflows visually and test them against role-played scenarios.",
-      "Attach MCP servers and signed tool webhooks to agent actions.",
-      "Ship an embeddable widget or API-backed internal agent.",
+      "Model agent roles, prompts, handoffs, source access, and tools.",
+      "Attach MCP servers, API actions, and signed webhooks where contracts are clear.",
+      "Test behavior before exposing workflows through widgets, APIs, or jobs.",
     ],
     proof: baseProof,
+    ctaLabel: "Design a workflow",
   },
   {
     path: "generative-ai-customer-service",
-    eyebrow: "Operator Agents",
-    title: "Ground customer-facing agents in the real operating corpus.",
+    eyebrow: "Customer Operations",
+    title: "Give customer agents the history behind every answer.",
     description:
-      "Support, success, revenue, and operations teams can deploy agents that know the relationship history and execute through controlled tool paths.",
+      "Support and success workflows can answer with relationship history, product context, source-backed memory, and reviewable escalation paths.",
     category: "feature",
     bullets: [
-      "Answer from email, meeting notes, product docs, and connected systems.",
-      "Escalate or draft actions with human review before sending.",
-      "Use the widget API for product-embedded support experiences.",
+      "Answer from docs, customer context, email, meetings, and connected systems.",
+      "Draft follow-ups, tickets, or handoffs when an answer is not enough.",
+      "Keep sensitive actions gated by explicit review boundaries.",
     ],
     proof: baseProof,
+    ctaLabel: "Map a customer workflow",
   },
   {
     path: "help-center-software",
-    eyebrow: "Agent Platform",
-    title: "Help-center patterns rebuilt as an owned agent memory layer.",
+    eyebrow: "Support Memory",
+    title: "A help surface is only useful when the memory behind it stays alive.",
     description:
-      "Oppulence is not only a help center. It is the owned graph and runtime that lets support and product teams answer, act, and keep institutional memory current.",
+      "Oppulence starts below the help center: the source-linked graph that powers customer answers, operator briefs, and controlled follow-up workflows.",
     category: "product",
     bullets: [
-      "Use the embeddable chat widget for product support.",
-      "Back answers with RAG over owned documents and synced sources.",
-      "Keep operational knowledge in a portable Markdown layer.",
+      "Back customer-facing answers with owned documents and synced operational context.",
+      "Use the same graph for product widgets and internal operator workflows.",
+      "Move from self-service answers to assisted resolution when the process needs action.",
     ],
     proof: baseProof,
+    ctaLabel: "Explore support memory",
   },
   {
     path: "integrations",
     eyebrow: "Integrations",
-    title: "Connect the systems where work actually happens.",
+    title: "Connect the systems that create context and carry out actions.",
     description:
-      "Oppulence builds context from Gmail, Google Calendar, meeting notes, Fireflies, local files, web search, and any tool exposed through MCP.",
+      "Oppulence builds the graph from Gmail, Calendar, meetings, files, Slack, GitHub, Linear, web search, and tools exposed through MCP or APIs.",
     category: "product",
     bullets: [
-      "Gmail and Calendar ingestion for relationship and schedule context.",
-      "Meeting-note and Fireflies workflows for decisions and commitments.",
-      "MCP and managed integration paths for Slack, Linear, GitHub, CRMs, databases, and more.",
+      "Use communication and meeting sources for relationship and decision context.",
+      "Use operational systems as both context sources and controlled action targets.",
+      "Extend with MCP and API-backed tools where first-party integrations stop.",
     ],
     proof: [
       "Provider keys stay user-controlled.",
-      "External tool execution can be reviewed.",
+      "External tool execution can stay reviewable.",
       "Platform workers support ingestion and long-running jobs.",
     ],
+    ctaLabel: "Connect sources",
   },
   {
     path: "internal-knowledge-base",
-    eyebrow: "Internal Memory",
-    title: "Private knowledge bases that agents can inspect and update.",
+    eyebrow: "Team Memory",
+    title: "Private team memory that agents can inspect and update.",
     description:
-      "Teams can keep internal memory in transparent notes instead of opaque model memory or scattered SaaS search results.",
+      "Oppulence keeps operational knowledge in transparent notes and graph relationships instead of opaque model memory or scattered SaaS search results.",
     category: "feature",
     bullets: [
-      "Store important context in plain Markdown.",
-      "Use backlinks to make relationships explicit.",
-      "Let agents update notes when new events arrive.",
+      "Store important context in readable, portable notes.",
+      "Make relationships explicit across people, projects, decisions, incidents, and policies.",
+      "Let workflows refresh high-change notes as new context arrives.",
     ],
     proof: baseProof,
+    ctaLabel: "Build team memory",
   },
   {
     path: "lp/ai-help-center",
-    eyebrow: "Landing Page",
-    title: "Launch a grounded AI support surface without renting your memory layer.",
+    eyebrow: "Living Work Graph",
+    title: "Launch graph-backed agents without renting your context layer.",
     description:
-      "This campaign page positions Oppulence around owned memory, agent workflows, and self-hosted runtime.",
+      "Oppulence gives teams an owned context layer for agents: source-fed, inspectable, and ready for workflows that need more than a prompt.",
     category: "landing",
     bullets: [
-      "Start with the knowledge graph.",
-      "Expose answers through the widget or API.",
-      "Scale into event-triggered agents and workflow automation.",
+      "Start with the living work graph.",
+      "Expose graph-backed answers through widgets, API, or desktop workflows.",
+      "Scale into live notes, triggers, and controlled tool actions.",
     ],
     proof: baseProof,
+    ctaLabel: "Book a demo",
   },
   {
     path: "multilingual-knowledge-base",
     eyebrow: "Source Federation",
-    title: "One corpus across the tools, teams, and languages around the work.",
+    title: "One graph across the tools and teams around the work.",
     description:
-      "Oppulence's graph model is built for federation: source-specific context becomes one editable corpus with provenance intact.",
+      "Oppulence federates communication, documents, meetings, files, and tool events into one editable graph with provenance intact.",
     category: "feature",
     bullets: [
-      "Normalize context from communication, documents, and tool events.",
-      "Keep source links available for review and correction.",
-      "Let teams bring their own model providers and deployment posture.",
+      "Normalize context from communication, documents, meetings, and tool events.",
+      "Keep original references available for review and correction.",
+      "Let agents synthesize across source boundaries without manual copy-paste.",
     ],
     proof: baseProof,
+    ctaLabel: "Federate sources",
   },
   {
     path: "self-service-help-widget",
-    eyebrow: "Embeddable Widget",
-    title: "Put a grounded agent inside your product or internal tool.",
+    eyebrow: "Embedded Agents",
+    title: "Put graph-backed help inside your product or internal tool.",
     description:
-      "The Oppulence platform includes widget APIs for product-embedded conversations backed by projects, workflows, sources, and tools.",
+      "The Oppulence widget lets product and operations teams expose conversations backed by configured projects, sources, workflows, and tool boundaries.",
     category: "feature",
     bullets: [
       "Bootstrap sessions through the widget API.",
-      "Route conversations to configured project workflows.",
+      "Route conversations to the right graph, workflow, and escalation path.",
       "Use RAG and tool calls without rebuilding the agent stack.",
     ],
     proof: baseProof,
+    ctaLabel: "Embed an agent",
   },
   {
     path: "self-updating-help-center",
-    eyebrow: "Self-Updating Graph",
-    title: "Memory that compounds instead of resetting on every prompt.",
+    eyebrow: "Compounding Memory",
+    title: "Context that improves between sessions instead of resetting on every prompt.",
     description:
-      "Oppulence's durable graph keeps the important context alive, editable, and ready for the next agent run.",
+      "Oppulence keeps important subjects alive through live notes and source-fed updates, so future agents start from fresher context.",
     category: "feature",
     bullets: [
-      "Turn sources into durable notes instead of temporary retrieval results.",
-      "Track people, projects, deals, and topics over time.",
-      "Use scheduled and evented agents to keep important notes fresh.",
+      "Track people, projects, deals, topics, and risks over time.",
+      "Refresh notes from schedules, events, and source changes.",
+      "Use the updated graph in future briefs, drafts, and workflows.",
     ],
     proof: baseProof,
+    ctaLabel: "See compounding memory",
   },
   {
     path: "pricing",
     eyebrow: "Pricing",
-    title: "Start locally, then scale into self-hosted platform workflows.",
+    title: "Start with owned context. Scale into agents when the graph is useful.",
     description:
-      "Oppulence is open source. The marketing pricing surface frames the buyer paths for Desktop, Platform, and enterprise deployment discussions.",
+      "Oppulence is open source. Start with the desktop graph, then move into self-hosted workflows, widgets, and deployment support when the use case is clear.",
     category: "product",
     bullets: [
-      "Desktop for individuals who want an owned AI coworker.",
-      "Platform for teams embedding grounded agents.",
-      "Enterprise for deployment, controls, and integration support.",
+      "Desktop for individuals building an owned work graph.",
+      "Platform for teams exposing graph-backed agents through APIs and widgets.",
+      "Enterprise for deployment controls, rollout planning, and integration support.",
     ],
     proof: baseProof,
   },
   {
     path: "tools/docs-debt-quiz",
     eyebrow: "Tool",
-    title: "Measure how much of your operating context still lives in people's heads.",
+    title: "Find the context debt blocking useful agents.",
     description:
-      "Use the memory debt quiz as a planning artifact for deciding where live notes, source ingestion, and agents should start.",
+      "Use the context debt quiz to decide which sources, notes, and workflows should enter the graph first.",
     category: "tool",
     bullets: [
-      "Score sources that are scattered across inboxes, calls, and docs.",
-      "Identify workflows where agents lack enough durable context.",
-      "Prioritize the first live notes and integrations to configure.",
+      "Score the work traces scattered across inboxes, calls, docs, and tools.",
+      "Identify where agents lack enough durable context to be useful.",
+      "Prioritize the first sources, live notes, and integrations to configure.",
     ],
     proof: baseProof,
+    ctaLabel: "Start the quiz",
   },
   {
     path: "tools/openapi-validator",
     eyebrow: "Tool",
-    title: "Validate tool contracts before agents depend on them.",
+    title: "Validate action contracts before agents depend on them.",
     description:
-      "This validator route focuses on Oppulence's need for clear MCP, webhook, and API contracts around agent action paths.",
+      "This validator route frames the need for clear MCP, webhook, and API contracts around reviewable agent action paths.",
     category: "tool",
     bullets: [
       "Check that tools expose clear inputs, outputs, and failure modes.",
-      "Keep agent actions reviewable and auditable.",
+      "Keep action paths reviewable before agents call external systems.",
       "Use stable contracts across platform and desktop workflows.",
     ],
     proof: baseProof,
+    ctaLabel: "Validate a contract",
   },
   {
     path: "book-a-demo",
     eyebrow: "Demo",
-    title: "See how Oppulence turns scattered work into an agent-ready graph.",
-    description: "Use this page as the demo request route for the platform marketing site.",
+    title: "See how Oppulence turns scattered work into a living graph.",
+    description:
+      "Use this page to plan a demo around your sources, graph shape, workflows, and review boundaries.",
     category: "demo",
     bullets: [
-      "Walk through Desktop knowledge graph workflows.",
-      "Review platform agent, RAG, and widget deployment paths.",
-      "Identify first integrations and success criteria.",
+      "Map the sources that should feed the graph first.",
+      "Review desktop, platform, widget, and live-note workflows.",
+      "Identify review boundaries before agents act through tools.",
     ],
     proof: baseProof,
+    ctaLabel: "Submit request",
   },
   {
     path: "book-a-demo/success",
     eyebrow: "Demo Request",
     title: "Demo request received.",
     description:
-      "This static success page keeps the demo flow in place while the form backend is wired separately.",
+      "This static success page keeps the demo flow in place while the request backend is wired separately.",
     category: "demo",
     bullets: [
-      "Review the knowledge graph and platform API pages while waiting.",
-      "Prepare a few source systems and workflows to discuss.",
+      "Review the living work graph and runtime pages while waiting.",
+      "Prepare the source systems and workflows worth mapping first.",
       "Bring deployment constraints, model preferences, and tool requirements.",
     ],
     proof: baseProof,
@@ -849,7 +1256,7 @@ export const primaryPages: MarketingPage[] = [
     eyebrow: "Legal",
     title: "Privacy policy",
     description:
-      "Oppulence is designed around user-owned data, local-first storage, and explicit tool connections. This page provides the public privacy route expected from the marketing site.",
+      "Oppulence is designed around user-owned context, local-first storage, and explicit tool connections. This page provides the public privacy route expected from the marketing site.",
     category: "legal",
     bullets: [
       "User data should remain portable and inspectable.",
@@ -940,18 +1347,9 @@ const blogSlugs = [
   "user-manual-software",
 ];
 
-const customerSlugs = [
-  "cap",
-  "client-portal",
-  "gummysearch",
-  "isms-copilot",
-  "mallow",
-  "metricool",
-  "pixelflow",
-  "rightmessage",
-  "seogets",
-  "we-are-distributed",
-];
+// No customer stories yet — we won't ship fabricated testimonials. Add real slugs here
+// once there are real stories to tell.
+const customerSlugs: string[] = [];
 
 function titleFromSlug(slug: string) {
   return slug
@@ -976,31 +1374,31 @@ function titleFromSlug(slug: string) {
 export const blogPages: MarketingPage[] = blogSlugs.map((slug) => ({
   path: `blog/${slug}`,
   eyebrow: "Oppulence Blog",
-  title: `${titleFromSlug(slug)} through the Oppulence lens`,
+  title: `${titleFromSlug(slug)} through the living work graph lens`,
   description:
-    "An Oppulence-oriented page focused on owned memory, source federation, and agent workflows instead of static documentation software.",
+    "An Oppulence-oriented guide about moving from static knowledge and scattered work traces to an owned graph agents can inspect and use.",
   category: "blog",
   bullets: [
-    "What breaks when operational context stays scattered across tools.",
-    "How an owned Markdown graph changes the buyer and operator workflow.",
-    "Where self-hosted agents, MCP tools, and reviewable actions fit.",
+    "What breaks when work context stays scattered across tools.",
+    "How a living graph changes the operator and buyer workflow.",
+    "Where widgets, MCP tools, live notes, and reviewable actions fit.",
   ],
   proof: baseProof,
-  ctaLabel: "Explore the knowledge graph",
+  ctaLabel: "Explore the graph",
   ctaHref: "/ai-help-center",
 }));
 
 export const customerPages: MarketingPage[] = customerSlugs.map((slug) => ({
   path: `customers/${slug}`,
   eyebrow: "Customer Story",
-  title: `${titleFromSlug(slug)}: a Oppulence-style agent memory story`,
+  title: `${titleFromSlug(slug)}: a living work graph story`,
   description:
-    "A mapped customer-story route showing how a team could use Oppulence to connect relationship context, internal knowledge, and agent action paths.",
+    "A mapped customer-story route showing how a team could use Oppulence to connect relationship context, internal memory, and reviewable action paths.",
   category: "customer",
   bullets: [
     "Unify source material across conversations, meetings, and project notes.",
-    "Create live notes for the people, accounts, and workflows that matter.",
-    "Use the platform runtime for embedded or always-on agent workflows.",
+    "Create live notes for the people, accounts, and workflows that change often.",
+    "Use the platform runtime for embedded or background agent workflows.",
   ],
   proof: [
     "Faster brief creation from durable context.",
@@ -1015,28 +1413,28 @@ export const indexPages: MarketingPage[] = [
   {
     path: "blog",
     eyebrow: "Resources",
-    title: "Guides for owned memory, knowledge graphs, and practical agents.",
+    title: "Guides for living work graphs and practical agents.",
     description:
-      "The blog index collects Oppulence-oriented pages for comparisons, guides, and implementation themes.",
+      "The blog index collects Oppulence-oriented pages about owned context, source federation, live notes, and agent workflows.",
     category: "blog",
     bullets: [
       "Alternatives and comparison pages.",
-      "Knowledge-base and documentation strategy.",
-      "Agent, API, and widget implementation ideas.",
+      "Knowledge-base and context strategy.",
+      "Agent, API, widget, and integration implementation ideas.",
     ],
     proof: baseProof,
   },
   {
     path: "customers",
     eyebrow: "Customers",
-    title: "Stories for teams turning scattered work into agent-ready memory.",
+    title: "Customer stories are on the way.",
     description:
-      "The customer index frames the Oppulence product story: build the graph, keep it alive, and let agents act.",
+      "Oppulence is early. We're working with our first operators and teams now. Real stories will land here when there is something concrete to show.",
     category: "customer",
     bullets: [
       "Founders and EAs preparing executive context.",
       "Sales and revenue teams tracking commitments.",
-      "Operators who need local-first and portable knowledge.",
+      "Operators who want owned, inspectable work memory.",
     ],
     proof: baseProof,
   },
@@ -1054,20 +1452,20 @@ export const pricingPlans = [
   {
     name: "Desktop",
     price: "Open source",
-    description: "For individuals who want an owned AI coworker on their machine.",
-    features: ["Local Markdown vault", "Gmail and Calendar context", "BYO model providers"],
+    description: "For individuals building a private living graph of their own work.",
+    features: ["Local Markdown graph", "Gmail and Calendar context", "BYO model providers"],
   },
   {
     name: "Platform",
     price: "Self-hosted",
-    description: "For teams embedding grounded agents into products and internal tools.",
-    features: ["Visual workflow builder", "RAG and widget APIs", "Mongo, Redis, Qdrant stack"],
+    description: "For teams exposing graph-backed agents through products and internal tools.",
+    features: ["Workflow builder", "RAG and widget APIs", "Mongo, Redis, Qdrant stack"],
     recommended: true,
   },
   {
     name: "Enterprise",
     price: "Talk to us",
-    description: "For deployment support, connector strategy, and controlled agent rollout.",
+    description: "For deployment support, connector strategy, and controlled graph rollout.",
     features: ["Integration planning", "Security and rollout support", "Custom workflow design"],
   },
 ];
