@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Oppulence - Local-first AI coworker and agent platform",
+  title: "Oppulence — The living work graph for agents",
   description:
-    "Oppulence turns email, calendar, meetings, and operational context into an owned knowledge graph that agents can reason over and act on.",
+    "Oppulence turns email, calendar, meetings, files, and tools into an owned graph that agents can inspect before they brief, draft, update, or act.",
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
   },
 };
 
-const inter = Inter({
-  variable: "--font-inter",
+const geist = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "swap",
 });
@@ -56,7 +56,7 @@ export default function RootLayout({
         <Script src="/config.js" strategy="beforeInteractive" />
       </head>
       <body
-        className={`${inter.variable} ${geistMono.variable} ${f37Stout.variable} antialiased`}
+        className={`${geist.variable} ${geistMono.variable} ${f37Stout.variable} antialiased`}
         suppressHydrationWarning
       >
         {children}
