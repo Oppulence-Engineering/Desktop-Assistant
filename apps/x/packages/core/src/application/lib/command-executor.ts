@@ -5,11 +5,131 @@ import { getExecutionShell } from "../assistant/runtime-context.js";
 
 const execPromise = promisify(exec);
 
-// Split on real command separators while leaving ampersand redirections
-// (`2>&1`, `>&2`, `<&0`, `&>out.log`) attached to their command.
-const COMMAND_SPLIT_REGEX = /(?:\|\||&&|(?<![<>])&(?!>)|;|\||\n|`|\$\(|\(|\))/;
 const ENV_ASSIGNMENT_REGEX = /^[A-Za-z_][A-Za-z0-9_]*=.*/;
 const WRAPPER_COMMANDS = new Set(["sudo", "env", "time", "command"]);
+type Quote = "'" | "\"" | null;
+
+function isAmpersandSeparator(command: string, index: number): boolean {
+  const previous = command[index - 1];
+  const next = command[index + 1];
+  return previous !== "<" && previous !== ">" && next !== ">" && next !== "&";
+}
+
+function isCommandGroupStart(command: string, index: number): boolean {
+  const before = command.slice(0, index).trimEnd();
+  if (!before) return true;
+
+  const previous = before[before.length - 1];
+  return previous === ";" || previous === "|" || previous === "&" || previous === "(" || previous === "\n";
+}
+
+function splitCommandSegments(command: string): string[] {
+  const segments: string[] = [];
+  const quoteStack: Quote[] = [];
+  let current = "";
+  let quote: Quote = null;
+  let escaped = false;
+  let parenDepth = 0;
+  let inBacktick = false;
+  let backtickOuterQuote: Quote = null;
+
+  const push = () => {
+    if (current.trim()) {
+      segments.push(current);
+    }
+    current = "";
+  };
+
+  for (let index = 0; index < command.length; index++) {
+    const char = command[index];
+    const next = command[index + 1];
+
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\" && quote !== "'") {
+      current += char;
+      escaped = true;
+      continue;
+    }
+
+    if (char === "'" && quote !== "\"") {
+      quote = quote === "'" ? null : "'";
+      current += char;
+      continue;
+    }
+
+    if (char === "\"" && quote !== "'") {
+      quote = quote === "\"" ? null : "\"";
+      current += char;
+      continue;
+    }
+
+    if (quote !== "'" && char === "$" && next === "(") {
+      push();
+      quoteStack.push(quote);
+      quote = null;
+      parenDepth++;
+      index++;
+      continue;
+    }
+
+    if (quote !== "'" && char === "`") {
+      push();
+      if (inBacktick) {
+        quote = backtickOuterQuote;
+        backtickOuterQuote = null;
+        inBacktick = false;
+      } else {
+        backtickOuterQuote = quote;
+        quote = null;
+        inBacktick = true;
+      }
+      continue;
+    }
+
+    if (quote === null) {
+      if (char === "&" && next === "&") {
+        push();
+        index++;
+        continue;
+      }
+      if (char === "|" && next === "|") {
+        push();
+        index++;
+        continue;
+      }
+      if (char === ";" || char === "|" || char === "\n") {
+        push();
+        continue;
+      }
+      if (char === "&" && isAmpersandSeparator(command, index)) {
+        push();
+        continue;
+      }
+      if (char === "(" && isCommandGroupStart(command, index)) {
+        push();
+        quoteStack.push(null);
+        parenDepth++;
+        continue;
+      }
+      if (char === ")" && parenDepth > 0) {
+        push();
+        parenDepth--;
+        quote = quoteStack.pop() ?? null;
+        continue;
+      }
+    }
+
+    current += char;
+  }
+
+  push();
+  return segments;
+}
 
 function sanitizeToken(token: string): string {
   return token.trim().replace(/^['"()]+|['"()]+$/g, "");
@@ -17,7 +137,7 @@ function sanitizeToken(token: string): string {
 
 export function extractCommandNames(command: string): string[] {
   const discovered = new Set<string>();
-  const segments = command.split(COMMAND_SPLIT_REGEX);
+  const segments = splitCommandSegments(command);
 
   for (const segment of segments) {
     const tokens = segment.trim().split(/\s+/).filter(Boolean);

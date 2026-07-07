@@ -15,6 +15,61 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
+export function renderOAuthSuccessPage(): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Return to Solomon AI</title>
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+          .shell { max-width: 520px; margin: 0 auto; }
+          .eyebrow { color: #64748b; font-size: 14px; }
+          .status { color: #047857; }
+        </style>
+      </head>
+      <body>
+        <main class="shell">
+          <p class="eyebrow">Solomon AI</p>
+          <h1 class="status">Connected to Solomon AI</h1>
+          <p>Your AI coworker, with memory</p>
+          <p>Private · on your machine</p>
+          <p>Return to Solomon AI.</p>
+        </main>
+        <script>setTimeout(() => window.close(), 2000);</script>
+      </body>
+    </html>
+  `;
+}
+
+export function renderOAuthErrorPage(error: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Return to Solomon AI</title>
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+          .shell { max-width: 520px; margin: 0 auto; }
+          .eyebrow { color: #64748b; font-size: 14px; }
+          .error { color: #b91c1c; }
+        </style>
+      </head>
+      <body>
+        <main class="shell">
+          <p class="eyebrow">Solomon AI</p>
+          <h1 class="error">Sign-in could not be completed</h1>
+          <p>Your AI coworker, with memory</p>
+          <p>Private · on your machine</p>
+          <p>Error: ${escapeHtml(error)}</p>
+          <p>Return to Solomon AI.</p>
+        </main>
+        <script>setTimeout(() => window.close(), 3000);</script>
+      </body>
+    </html>
+  `;
+}
+
 export interface AuthServerResult {
   server: Server;
   port: number;
@@ -44,24 +99,7 @@ function tryBindPort(
           // Swallow rejections — the callback reports failure via its own channel.
           Promise.resolve(onCallback(url)).catch(() => {});
           res.writeHead(200, { "Content-Type": "text/html" });
-          res.end(`
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <title>OAuth Error</title>
-                <style>
-                  body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                  .error { color: #d32f2f; }
-                </style>
-              </head>
-              <body>
-                <h1 class="error">Authorization Failed</h1>
-                <p>Error: ${escapeHtml(error)}</p>
-                <p>You can close this window.</p>
-                <script>setTimeout(() => window.close(), 3000);</script>
-              </body>
-            </html>
-          `);
+          res.end(renderOAuthErrorPage(error));
           return;
         }
 
@@ -72,22 +110,7 @@ function tryBindPort(
         // after this responds, so we must not assert "Authorization Successful" —
         // it may still fail. The app surfaces the real outcome.
         res.writeHead(200, { "Content-Type": "text/html" });
-        res.end(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Return to the app</title>
-              <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-              </style>
-            </head>
-            <body>
-              <h1>You can return to the app.</h1>
-              <p>You can close this window.</p>
-              <script>setTimeout(() => window.close(), 2000);</script>
-            </body>
-          </html>
-        `);
+        res.end(renderOAuthSuccessPage());
       } else {
         res.writeHead(404);
         res.end("Not Found");

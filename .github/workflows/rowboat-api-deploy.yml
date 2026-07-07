@@ -278,7 +278,7 @@ jobs:
 
           infisical export \
             --silent \
-            --format=dotenv \
+            --format=json \
             --projectId="${INFISICAL_PROJECT_ID}" \
             --env="${INFISICAL_ENVIRONMENT}" \
             --path="${INFISICAL_PATH}" \

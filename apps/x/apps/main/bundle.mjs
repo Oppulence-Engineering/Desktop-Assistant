@@ -17,6 +17,26 @@ import { readFile } from "node:fs/promises";
 // and we use define to replace all import.meta.url references with it.
 const cjsBanner = `var __import_meta_url = require('url').pathToFileURL(__filename).href;`;
 const pkg = JSON.parse(await readFile(new URL("./package.json", import.meta.url), "utf8"));
+const productionApiUrl = new URL("https://api.oppulence.io");
+
+function bundleContainsUrlLiteral(bundle, expectedUrl) {
+  for (const match of bundle.matchAll(/["'`](https?:\/\/[^"'`\\]+)["'`]/g)) {
+    try {
+      const candidate = new URL(match[1]);
+      if (
+        candidate.protocol === expectedUrl.protocol &&
+        candidate.hostname === expectedUrl.hostname &&
+        candidate.pathname === expectedUrl.pathname
+      ) {
+        return true;
+      }
+    } catch {
+      // Ignore non-URL string literals matched by the broad scan.
+    }
+  }
+
+  return false;
+}
 
 await esbuild.build({
   entryPoints: ["./dist/main.js"],
@@ -45,7 +65,7 @@ await esbuild.build({
 });
 
 const mainBundle = await readFile("./.package/dist/main.cjs", "utf8");
-if (!mainBundle.includes("https://api.oppulence.io")) {
+if (!bundleContainsUrlLiteral(mainBundle, productionApiUrl)) {
   throw new Error("Packaged main bundle is missing the production API URL.");
 }
 if (

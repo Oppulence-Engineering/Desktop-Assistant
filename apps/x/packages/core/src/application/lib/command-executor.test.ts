@@ -15,6 +15,14 @@ describe("extractCommandNames", () => {
   it("still splits background commands and command substitution", () => {
     expect(extractCommandNames("echo ok & rm -rf /tmp/nope")).toEqual(["echo", "rm"]);
     expect(extractCommandNames("echo $(rm -rf /tmp/nope)")).toEqual(["echo", "rm"]);
+    expect(extractCommandNames('echo "$(rm -rf /tmp/nope)"')).toEqual(["echo", "rm"]);
     expect(extractCommandNames("echo `rm -rf /tmp/nope`")).toEqual(["echo", "rm"]);
+    expect(extractCommandNames("(rm -rf /tmp/nope)")).toEqual(["rm"]);
+  });
+
+  it("does not treat quoted or word-local parentheses as command separators", () => {
+    expect(extractCommandNames('echo "hello (world)"')).toEqual(["echo"]);
+    expect(extractCommandNames("printf '%s (value)'")).toEqual(["printf"]);
+    expect(extractCommandNames("echo foo(bar)")).toEqual(["echo"]);
   });
 });
