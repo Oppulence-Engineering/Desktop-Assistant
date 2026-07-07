@@ -20,9 +20,19 @@ describe("extractCommandNames", () => {
     expect(extractCommandNames("(rm -rf /tmp/nope)")).toEqual(["rm"]);
   });
 
+  it("splits process substitution commands", () => {
+    expect(extractCommandNames("cat <(rm -rf /tmp/nope)")).toEqual(["cat", "rm"]);
+    expect(extractCommandNames("diff <(echo left) >(sed s/left/right/)")).toEqual([
+      "diff",
+      "echo",
+      "sed",
+    ]);
+  });
+
   it("does not treat quoted or word-local parentheses as command separators", () => {
     expect(extractCommandNames('echo "hello (world)"')).toEqual(["echo"]);
     expect(extractCommandNames("printf '%s (value)'")).toEqual(["printf"]);
+    expect(extractCommandNames("printf '<(literal)'")).toEqual(["printf"]);
     expect(extractCommandNames("echo foo(bar)")).toEqual(["echo"]);
   });
 });

@@ -68,7 +68,11 @@ function splitCommandSegments(command: string): string[] {
       continue;
     }
 
-    if (quote !== "'" && char === "$" && next === "(") {
+    if (
+      quote !== "'" &&
+      ((char === "$" && next === "(") ||
+        ((char === "<" || char === ">") && next === "("))
+    ) {
       push();
       quoteStack.push(quote);
       quote = null;
