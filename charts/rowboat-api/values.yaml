@@ -6,6 +6,11 @@ replicaCount: 2
 worker:
   enabled: false
   replicaCount: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
   resources:
     requests:
       cpu: 100m
@@ -13,6 +18,13 @@ worker:
     limits:
       cpu: "1"
       memory: 512Mi
+
+sandbox:
+  # Grants the worker service account namespaced access to create/read/delete
+  # Kubernetes Jobs and read their Pod logs for the cloud runtime sandbox.run
+  # tool. Keep disabled unless CLOUD_RUNTIME_SANDBOX_ENABLED is also true.
+  rbac:
+    enabled: false
 
 # API-owned scheduler (RFC 001). Disabled by default; enable per-environment.
 # replicaCount > 1 is safe: the RFC 002 durable schedule-state lease gives
@@ -190,7 +202,6 @@ config:
   VENDOR_MAX_CONCURRENT: "64"
   LLM_MAX_CONCURRENT: "32"
   UPSTREAM_RESPONSE_MAX_BYTES: "67108864"
-  COMPOSIO_RESPONSE_MAX_BYTES: "67108864"
   DAILY_CREDIT_LIMIT: "100000"
   MONTHLY_CREDIT_LIMIT: "2000000"
   LLM_ALLOWED_MODELS: ""
@@ -238,6 +249,15 @@ config:
   #   gates the loop) — keep the window short.
   TEMPORAL_SCHEDULE_CATCHUP: 1m
   TEMPORAL_SCHEDULE_RECONCILE_INTERVAL: 5m
+  # Admission guardrails for API-native background-task runs. These execute
+  # before Temporal workflow start: overload or credit exhaustion creates a
+  # failed dead-letter run row instead of failing late in the worker.
+  CLOUD_RUN_ADMISSION_ENABLED: "true"
+  CLOUD_RUN_MAX_INFLIGHT_GLOBAL: "5000"
+  CLOUD_RUN_MAX_INFLIGHT_PER_USER: "50"
+  CLOUD_RUN_RATE_LIMIT_GLOBAL_PER_MINUTE: "2000"
+  CLOUD_RUN_RATE_LIMIT_PER_USER_PER_MINUTE: "60"
+  CLOUD_RUN_CREDIT_PREFLIGHT_ENABLED: "true"
   # Cloud event ingestion + routing (RFC 003). Ingestion endpoints are always
   # mounted; routing (the Temporal workflow matching events to tasks) is gated
   # and requires TEMPORAL_ENABLED=true.
@@ -266,6 +286,27 @@ config:
   CLOUD_RUNTIME_MAX_TOOL_CALLS: "24"
   CLOUD_RUNTIME_MAX_ARTIFACT_BYTES: "1048576"
   CLOUD_RUNTIME_MAX_EVENT_BYTES: "65536"
+  # sandbox.run: optional out-of-process tool for code, browser automation,
+  # long-running, or dependency-heavy work. Backends: kubernetes-job or
+  # argo-workflow. RBAC is controlled separately by sandbox.rbac.enabled so
+  # production can stage env and permissions separately.
+  CLOUD_RUNTIME_SANDBOX_ENABLED: "false"
+  CLOUD_RUNTIME_SANDBOX_BACKEND: kubernetes-job
+  CLOUD_RUNTIME_SANDBOX_IMAGE: python:3.12-slim
+  CLOUD_RUNTIME_SANDBOX_ALLOWED_IMAGES: "python:3.12-slim,mcr.microsoft.com/playwright:*"
+  CLOUD_RUNTIME_SANDBOX_NAMESPACE: ""
+  # Required when CLOUD_RUNTIME_SANDBOX_BACKEND=argo-workflow.
+  CLOUD_RUNTIME_SANDBOX_SERVICE_ACCOUNT: ""
+  CLOUD_RUNTIME_SANDBOX_MAX_DURATION: 4m
+  CLOUD_RUNTIME_SANDBOX_POLL_INTERVAL: 5s
+  CLOUD_RUNTIME_SANDBOX_MAX_SCRIPT_BYTES: "32768"
+  CLOUD_RUNTIME_SANDBOX_MAX_OUTPUT_BYTES: "65536"
+  CLOUD_RUNTIME_SANDBOX_CPU_REQUEST: 100m
+  CLOUD_RUNTIME_SANDBOX_MEMORY_REQUEST: 128Mi
+  CLOUD_RUNTIME_SANDBOX_CPU_LIMIT: "1"
+  CLOUD_RUNTIME_SANDBOX_MEMORY_LIMIT: 1Gi
+  CLOUD_RUNTIME_SANDBOX_WORKSPACE_SIZE: 1Gi
+  CLOUD_RUNTIME_SANDBOX_TTL_SECONDS: "600"
 
 # Secret env. In production these are projected from an existing Secret
 # (existingSecret) rather than templated into the chart. When existingSecret is
@@ -280,6 +321,7 @@ secretValues: {}
   # INTERNAL_API_SECRET: ""
   # SLACK_SIGNING_SECRET: ""
   # GOOGLE_WEBHOOK_TOKEN: ""
+  # WEBHOOK_SIGNING_SECRET: ""
   # SLACK_CLIENT_ID: ""
   # SLACK_CLIENT_SECRET: ""
   # ORY_BROKER_CLIENT_ID: ""

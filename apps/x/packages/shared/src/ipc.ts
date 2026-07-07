@@ -33,6 +33,7 @@ import {
   BackgroundTaskCloudRunStatusSchema,
   BackgroundTaskCloudScheduleStateSchema,
   BackgroundTaskOfflineRunsEventSchema,
+  BackgroundTaskPatchSchema,
   BackgroundTaskRunExecutor,
   BackgroundTaskRunStatus,
   BackgroundTaskSignal,
@@ -44,7 +45,6 @@ import {
 import { NotificationsConfigSchema } from "./notifications.js";
 import { UserMessageContent } from "./message.js";
 import { SolomonApiConfig } from "./solomon-account.js";
-import { ZListToolkitsResponse } from "./composio.js";
 import { BrowserStateSchema } from "./browser-control.js";
 import { BillingInfoSchema } from "./billing.js";
 import { GmailThreadSchema } from "./blocks.js";
@@ -67,6 +67,59 @@ import {
 // ============================================================================
 // Runtime Validation Schemas (Single Source of Truth)
 // ============================================================================
+
+const ConnectorTrustTierSchema = z.enum(["read", "write", "act", "money-moving"]);
+
+const ConnectorTemplateBlockSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  category: z.string(),
+  requiredScopes: z.array(z.string()).optional(),
+  mcpTools: z.array(z.string()).optional(),
+  trustTier: ConnectorTrustTierSchema,
+  samplePrompt: z.string().optional(),
+});
+
+const ConnectorMCPToolPolicySchema = z.object({
+  name: z.string(),
+  trustTier: ConnectorTrustTierSchema.optional(),
+});
+
+const ConnectorViewSchema = z.object({
+  name: z.string(),
+  displayName: z.string(),
+  description: z.string(),
+  mcpUrl: z.string(),
+  authType: z.enum(["oauth", "api_key"]),
+  scopes: z.array(z.string()).optional(),
+  iconUrl: z.string().optional(),
+  mcpTools: z.array(ConnectorMCPToolPolicySchema).optional(),
+  templateBlocks: z.array(ConnectorTemplateBlockSchema).optional(),
+  connected: z.boolean(),
+  connectedAt: z.string().optional(),
+});
+
+const SlackLocalWorkspaceSchema = z.object({
+  url: z.string(),
+  name: z.string(),
+});
+
+const SlackWorkspaceSchema = z.object({
+  url: z.string().optional(),
+  name: z.string(),
+  teamId: z.string().optional(),
+  scopes: z.array(z.string()).optional(),
+  connectedAt: z.string().optional(),
+  source: z.enum(["managed", "local"]).optional(),
+});
+
+const SlackReplyDraftSchema = z.object({
+  teamId: z.string(),
+  channel: z.string(),
+  threadTs: z.string(),
+  text: z.string(),
+});
 
 const ipcSchemas = {
   "app:getVersions": {
@@ -426,6 +479,32 @@ const ipcSchemas = {
       error: z.string().optional(),
     }),
   },
+  "connectors:list": {
+    req: z.null(),
+    res: z.object({
+      connectors: z.array(ConnectorViewSchema),
+      error: z.string().optional(),
+    }),
+  },
+  "connectors:saveApiKey": {
+    req: z.object({
+      connector: z.string(),
+      apiKey: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
+  "connectors:disconnect": {
+    req: z.object({
+      connector: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
   // Begins a Slack workspace install (RFC 003 cloud events): main opens the
   // api's /oauth/slack/start in the system browser; the api callback parks the
   // sealed bundle and deep-links back to
@@ -557,22 +636,42 @@ const ipcSchemas = {
     req: z.null(),
     res: z.object({
       enabled: z.boolean(),
-      workspaces: z.array(z.object({ url: z.string(), name: z.string() })),
+      workspaces: z.array(SlackWorkspaceSchema),
+      error: z.string().optional(),
     }),
   },
   "slack:setConfig": {
     req: z.object({
       enabled: z.boolean(),
-      workspaces: z.array(z.object({ url: z.string(), name: z.string() })),
+      workspaces: z.array(SlackLocalWorkspaceSchema),
     }),
     res: z.object({
       success: z.literal(true),
     }),
   },
+  "slack:disconnectWorkspace": {
+    req: z.object({
+      teamId: z.string().optional(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
+  "slack:sendReplyDraft": {
+    req: SlackReplyDraftSchema,
+    res: z.object({
+      success: z.boolean(),
+      teamId: z.string().optional(),
+      channel: z.string().optional(),
+      threadTs: z.string().optional(),
+      error: z.string().optional(),
+    }),
+  },
   "slack:listWorkspaces": {
     req: z.null(),
     res: z.object({
-      workspaces: z.array(z.object({ url: z.string(), name: z.string() })),
+      workspaces: z.array(SlackLocalWorkspaceSchema),
       error: z.string().optional(),
     }),
   },
@@ -587,84 +686,6 @@ const ipcSchemas = {
     res: z.object({
       success: z.literal(true),
     }),
-  },
-  // Composio integration channels
-  "composio:is-configured": {
-    req: z.null(),
-    res: z.object({
-      configured: z.boolean(),
-    }),
-  },
-  "composio:set-api-key": {
-    req: z.object({
-      apiKey: z.string(),
-    }),
-    res: z.object({
-      success: z.boolean(),
-      error: z.string().optional(),
-    }),
-  },
-  "composio:initiate-connection": {
-    req: z.object({
-      toolkitSlug: z.string(),
-    }),
-    res: z.object({
-      success: z.boolean(),
-      redirectUrl: z.string().optional(),
-      connectedAccountId: z.string().optional(),
-      error: z.string().optional(),
-    }),
-  },
-  "composio:get-connection-status": {
-    req: z.object({
-      toolkitSlug: z.string(),
-    }),
-    res: z.object({
-      isConnected: z.boolean(),
-      status: z.string().optional(),
-    }),
-  },
-  "composio:sync-connection": {
-    req: z.object({
-      toolkitSlug: z.string(),
-      connectedAccountId: z.string(),
-    }),
-    res: z.object({
-      status: z.string(),
-    }),
-  },
-  "composio:disconnect": {
-    req: z.object({
-      toolkitSlug: z.string(),
-    }),
-    res: z.object({
-      success: z.boolean(),
-    }),
-  },
-  "composio:list-connected": {
-    req: z.null(),
-    res: z.object({
-      toolkits: z.array(z.string()),
-    }),
-  },
-  "migration:check-composio-google": {
-    req: z.null(),
-    res: z.object({
-      shouldShow: z.boolean(),
-    }),
-  },
-  "composio:didConnect": {
-    req: z.object({
-      toolkitSlug: z.string(),
-      success: z.boolean(),
-      error: z.string().optional(),
-    }),
-    res: z.null(),
-  },
-  // Composio Tools Library channels
-  "composio:list-toolkits": {
-    req: z.object({}),
-    res: ZListToolkitsResponse,
   },
   // Agent schedule channels
   "agent-schedule:getConfig": {
@@ -776,7 +797,9 @@ const ipcSchemas = {
           snippet: z.string(),
           score: z.number(),
           highlights: z.array(z.object({ start: z.number(), end: z.number() })).optional(),
-          scores: z.object({ vector: z.number().optional(), lexical: z.number().optional() }).optional(),
+          scores: z
+            .object({ vector: z.number().optional(), lexical: z.number().optional() })
+            .optional(),
           startLine: z.number(),
           endLine: z.number(),
         }),
@@ -1159,7 +1182,7 @@ const ipcSchemas = {
   "bg-task:patch": {
     req: z.object({
       slug: z.string(),
-      partial: BackgroundTaskSchema.partial(),
+      partial: BackgroundTaskPatchSchema,
     }),
     res: z.object({
       success: z.boolean(),
@@ -1481,6 +1504,26 @@ const ipcSchemas = {
   "billing:getInfo": {
     req: z.null(),
     res: BillingInfoSchema,
+  },
+  "billing:getCheckoutUrl": {
+    req: z.object({
+      plan: z.enum(["starter", "pro"]),
+    }),
+    res: z.object({
+      url: z.string(),
+    }),
+  },
+  "billing:getPortalUrl": {
+    req: z.null(),
+    res: z.object({
+      url: z.string(),
+    }),
+  },
+  "billing:sync": {
+    req: z.null(),
+    res: z.object({
+      success: z.boolean(),
+    }),
   },
   // Feedback (relayed to Plain via the backend; signed-in only)
   "feedback:submit": {

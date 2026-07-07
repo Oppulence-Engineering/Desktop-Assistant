@@ -17,8 +17,13 @@ import (
 const (
 	SourceGmail          = "gmail"
 	SourceGoogleCalendar = "google_calendar"
+	SourceGoogleDrive    = "google_drive"
 	SourceSlack          = "slack"
 	SourceWebhook        = "webhook"
+	SourceMCP            = "mcp"
+	SourceGitHub         = "github"
+	SourceLinear         = "linear"
+	SourceStripe         = "stripe"
 	SourceInternal       = "internal"
 )
 
@@ -34,8 +39,13 @@ const (
 var knownSources = map[string]struct{}{
 	SourceGmail:          {},
 	SourceGoogleCalendar: {},
+	SourceGoogleDrive:    {},
 	SourceSlack:          {},
 	SourceWebhook:        {},
+	SourceMCP:            {},
+	SourceGitHub:         {},
+	SourceLinear:         {},
+	SourceStripe:         {},
 	SourceInternal:       {},
 }
 

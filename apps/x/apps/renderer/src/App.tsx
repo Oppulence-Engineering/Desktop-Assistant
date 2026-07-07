@@ -6,7 +6,6 @@ import {
   LEGACY_DEEP_LINK_SCHEME,
   PRODUCT_NAME,
   getProductProviderState,
-  isProductProvider,
 } from "@x/shared/dist/branding.js";
 import { RunEvent, ListRunsResponse } from "@x/shared/src/runs.js";
 import type { LanguageModelUsage, ToolUIPart } from "ai";
@@ -76,7 +75,8 @@ import {
 } from "@/components/ai-elements/tool";
 import { WebSearchResult } from "@/components/ai-elements/web-search-result";
 import { AppActionCard } from "@/components/ai-elements/app-action-card";
-import { ComposioConnectCard } from "@/components/ai-elements/composio-connect-card";
+import { IntegrationConnectCard } from "@/components/ai-elements/integration-connect-card";
+import { SlackReplyDraftCard } from "@/components/ai-elements/slack-reply-draft-card";
 import { PermissionRequest } from "@/components/ai-elements/permission-request";
 import { AutoPermissionDecision } from "@/components/ai-elements/auto-permission-decision";
 import { TerminalOutput } from "@/components/terminal-output";
@@ -111,7 +111,6 @@ import {
 import { splitFrontmatter, joinFrontmatter } from "@/lib/frontmatter";
 import { extractConferenceLink } from "@/lib/calendar-event";
 import { FullPageOnboarding } from "@/components/onboarding";
-import { ComposioGoogleMigrationModal } from "@/components/composio-google-migration-modal";
 import {
   CommandPalette,
   type CommandPaletteMention,
@@ -136,7 +135,8 @@ import {
   createEmptyChatTabViewState,
   getWebSearchCardData,
   getAppActionCardData,
-  getComposioConnectCardData,
+  getIntegrationConnectCardData,
+  getSlackReplyDraftCardData,
   getToolDisplayName,
   groupConversationItems,
   inferRunTitleFromMessage,
@@ -149,7 +149,6 @@ import {
   parseAttachedFiles,
   toToolState,
 } from "@/lib/chat-conversation";
-import { COMPOSIO_DISPLAY_NAMES as composioDisplayNames } from "@x/shared/src/composio.js";
 import { AgentScheduleConfig } from "@x/shared/dist/agent-schedule.js";
 import { AgentScheduleState } from "@x/shared/dist/agent-schedule-state.js";
 import { toast } from "sonner";
@@ -157,6 +156,8 @@ import { useVoiceMode } from "@/hooks/useVoiceMode";
 import { useVoiceTTS } from "@/hooks/useVoiceTTS";
 import { useMeetingTranscription, type CalendarEventMeta } from "@/hooks/useMeetingTranscription";
 import { useAnalyticsIdentity } from "@/hooks/useAnalyticsIdentity";
+import { useSolomonAccount } from "@/hooks/useSolomonAccount";
+import { useBilling } from "@/hooks/useBilling";
 import * as analytics from "@/lib/analytics";
 import { useTheme } from "@/contexts/theme-context";
 
@@ -655,6 +656,7 @@ type ViewState =
   | { type: "suggested-topics" }
   | { type: "meetings" }
   | { type: "live-notes" }
+  | { type: "bg-tasks" }
   | { type: "email" }
   | { type: "workspace"; path?: string }
   | { type: "knowledge-view"; folderPath?: string }
@@ -819,6 +821,14 @@ function App() {
   type MarkdownHistoryHandlers = { undo: () => boolean; redo: () => boolean };
 
   useAnalyticsIdentity();
+  const solomonAccount = useSolomonAccount();
+  const { isLoading: solomonBillingLoading, error: solomonBillingError } = useBilling(
+    solomonAccount.signedIn,
+  );
+  const shouldOfferBgTaskCopilot =
+    !solomonAccount.isLoading &&
+    (!solomonAccount.signedIn ||
+      (!solomonBillingLoading && solomonBillingError?.reason !== "auth_unavailable"));
 
   // File browser state (for Knowledge section)
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
@@ -990,6 +1000,9 @@ function App() {
   const meetingTranscription = useMeetingTranscription(() => {
     handleToggleMeetingRef.current?.();
   });
+  // Mirror of the live transcription state for the [] -dep join handler. (ERRORS.md E18)
+  const meetingStateRef = useRef(meetingTranscription.state);
+  meetingStateRef.current = meetingTranscription.state;
 
   // Check if voice is available on mount and when OAuth state changes
   const refreshVoiceAvailability = useCallback(() => {
@@ -1041,30 +1054,6 @@ function App() {
         toast.success(summary);
       }
     });
-  }, []);
-
-  // One-time Composio→native Google migration check. Runs on mount and again
-  // after the user signs in to Solomon AI (so we catch users who weren't signed
-  // in at startup). The IPC is idempotent — once `dismissed_at` is set on the
-  // main side, every subsequent call returns `{shouldShow: false}`.
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const result = await window.ipc.invoke("migration:check-composio-google", null);
-        if (result.shouldShow) {
-          setShowComposioGoogleMigration(true);
-        }
-      } catch (error) {
-        console.error("[migration] check-composio-google failed:", error);
-      }
-    };
-    void run();
-    const cleanup = window.ipc.on("oauth:didConnect", (event) => {
-      if (isProductProvider(event.provider) && event.success) {
-        void run();
-      }
-    });
-    return cleanup;
   }, []);
 
   const handleStartRecording = useCallback(() => {
@@ -1449,9 +1438,6 @@ function App() {
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
-
-  // One-time Composio→native Google migration modal
-  const [showComposioGoogleMigration, setShowComposioGoogleMigration] = useState(false);
 
   // Search state
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -2178,6 +2164,8 @@ function App() {
         await loadBackgroundTasks();
       } catch (err) {
         console.error("Failed to update background task:", err);
+        // Surface the failure so the snapped-back Switch isn't a silent no-op. (ERRORS.md E37)
+        toast.error(`Couldn't ${enabled ? "enable" : "pause"} this agent. Please try again.`);
       }
     },
     [backgroundTasks, loadBackgroundTasks],
@@ -3063,9 +3051,8 @@ function App() {
   };
   handlePromptSubmitRef.current = handlePromptSubmit;
 
-  const handleComposioConnected = useCallback((toolkitSlug: string) => {
-    // Auto-send a continuation message when a Composio toolkit connects
-    const name = composioDisplayNames[toolkitSlug] || toolkitSlug;
+  const handleIntegrationConnected = useCallback((connectorName: string, displayName: string) => {
+    const name = displayName || connectorName;
     handlePromptSubmitRef.current?.({
       text: `${name} connected successfully.`,
       files: [],
@@ -3135,12 +3122,19 @@ function App() {
       requestId: string,
       decision: "allow_once" | "allow_always" | "reject",
     ) => {
+      // Snapshot the pending request so the card can be restored if the resolve
+      // fails — otherwise a thrown invoke leaves the coding turn wedged with no
+      // card and no feedback. (ERRORS.md E31)
+      let prevPending: unknown = null;
       setConversation((prev) =>
-        prev.map((item) =>
-          isToolCall(item) && item.id === toolCallId
-            ? { ...item, pendingCodePermission: null }
-            : item,
-        ),
+        prev.map((item) => {
+          if (isToolCall(item) && item.id === toolCallId) {
+            prevPending =
+              (item as { pendingCodePermission?: unknown }).pendingCodePermission ?? null;
+            return { ...item, pendingCodePermission: null };
+          }
+          return item;
+        }),
       );
       try {
         await window.ipc.invoke("codeRun:resolvePermission", {
@@ -3149,6 +3143,15 @@ function App() {
         });
       } catch (error) {
         console.error("Failed to resolve code permission:", error);
+        // Restore the card so the user can retry instead of being silently stuck.
+        setConversation((prev) =>
+          prev.map((item) =>
+            isToolCall(item) && item.id === toolCallId
+              ? { ...item, pendingCodePermission: prevPending as never }
+              : item,
+          ),
+        );
+        toast.error("Couldn't send your decision to the coding agent. Please try again.");
       }
     },
     [],
@@ -4159,6 +4162,9 @@ function App() {
     if (isEmailOpen) return { type: "email" };
     if (isMeetingsOpen) return { type: "meetings" };
     if (isLiveNotesOpen) return { type: "live-notes" };
+    // bg-tasks is a first-class view so navigation records/restores it correctly
+    // instead of mislabeling it as chat. (ERRORS.md E20)
+    if (isBgTasksOpen) return { type: "bg-tasks" };
     if (isSuggestedTopicsOpen) return { type: "suggested-topics" };
     if (isWorkspaceOpen) return { type: "workspace", path: workspaceInitialPath ?? undefined };
     if (isKnowledgeViewOpen)
@@ -4337,6 +4343,8 @@ function App() {
 
   const openEmailView = useCallback(
     (threadId?: string) => {
+      // Record the view we're leaving so Back returns to it. (ERRORS.md E19)
+      setHistory({ back: appendUnique(historyRef.current.back, currentViewState), forward: [] });
       setSelectedPath(null);
       setIsGraphOpen(false);
       setIsBrowserOpen(false);
@@ -4358,10 +4366,12 @@ function App() {
       }
       ensureEmailFileTab();
     },
-    [ensureEmailFileTab],
+    [ensureEmailFileTab, appendUnique, currentViewState],
   );
 
   const openBgTasksView = useCallback(() => {
+    // Record the view we're leaving so Back returns to it. (ERRORS.md E19)
+    setHistory({ back: appendUnique(historyRef.current.back, currentViewState), forward: [] });
     setSelectedPath(null);
     setIsGraphOpen(false);
     setIsBrowserOpen(false);
@@ -4379,9 +4389,11 @@ function App() {
     setIsRightPaneMaximized(false);
     setIsBgTasksOpen(true);
     ensureBgTasksFileTab();
-  }, [ensureBgTasksFileTab]);
+  }, [ensureBgTasksFileTab, appendUnique, currentViewState]);
 
   const openMeetingsView = useCallback(() => {
+    // Record the view we're leaving so Back returns to it. (ERRORS.md E19)
+    setHistory({ back: appendUnique(historyRef.current.back, currentViewState), forward: [] });
     setSelectedPath(null);
     setIsGraphOpen(false);
     setIsBrowserOpen(false);
@@ -4398,7 +4410,7 @@ function App() {
     setExpandedFrom(null);
     setIsRightPaneMaximized(false);
     ensureMeetingsFileTab();
-  }, [ensureMeetingsFileTab]);
+  }, [ensureMeetingsFileTab, appendUnique, currentViewState]);
 
   const applyViewState = useCallback(
     async (view: ViewState) => {
@@ -4517,6 +4529,25 @@ function App() {
           setIsHomeOpen(false);
           setIsLiveNotesOpen(true);
           ensureLiveNotesFileTab();
+          return;
+        case "bg-tasks":
+          // (ERRORS.md E20)
+          setSelectedPath(null);
+          setIsGraphOpen(false);
+          setIsBrowserOpen(false);
+          setExpandedFrom(null);
+          setIsRightPaneMaximized(false);
+          setSelectedBackgroundTask(null);
+          setIsSuggestedTopicsOpen(false);
+          setIsMeetingsOpen(false);
+          setIsLiveNotesOpen(false);
+          setIsEmailOpen(false);
+          setIsWorkspaceOpen(false);
+          setIsKnowledgeViewOpen(false);
+          setIsChatHistoryOpen(false);
+          setIsHomeOpen(false);
+          setIsBgTasksOpen(true);
+          ensureBgTasksFileTab();
           return;
         case "email":
           setSelectedPath(null);
@@ -4652,6 +4683,7 @@ function App() {
       ensureEmailFileTab,
       ensureMeetingsFileTab,
       ensureLiveNotesFileTab,
+      ensureBgTasksFileTab,
       ensureFileTabForPath,
       ensureGraphFileTab,
       ensureSuggestedTopicsFileTab,
@@ -5252,6 +5284,7 @@ function App() {
     isWorkspaceOpen,
     isKnowledgeViewOpen,
     isChatHistoryOpen,
+    isHomeOpen,
     isChatSidebarOpen,
     isRightPaneMaximized,
     activeShortcutPane,
@@ -5534,8 +5567,16 @@ function App() {
       rename: async (oldPath: string, newName: string, isDir: boolean) => {
         try {
           const parts = oldPath.split("/");
-          // For files, ensure .md extension
-          const finalName = isDir ? newName : newName.endsWith(".md") ? newName : `${newName}.md`;
+          // Preserve the file's ORIGINAL extension instead of always forcing .md:
+          // ensure the new name keeps the source extension (.md for knowledge notes,
+          // .pdf/.png/etc. for Workspace files). Matching on the original extension
+          // (not "any dot in the name") avoids dropping .md when a note is renamed to
+          // a title that contains a period, e.g. "Mr. Smith" or "v1.2 Plan". (ERRORS.md E21)
+          const oldExt = isDir ? "" : (oldPath.match(/\.[^./]+$/)?.[0] ?? "");
+          const finalName =
+            !isDir && oldExt && !newName.toLowerCase().endsWith(oldExt.toLowerCase())
+              ? `${newName}${oldExt}`
+              : newName;
           parts[parts.length - 1] = finalName;
           const newPath = parts.join("/");
           await window.ipc.invoke("workspace:rename", {
@@ -5751,6 +5792,8 @@ function App() {
     if (meetingTranscription.state === "recording") {
       await meetingTranscription.stop();
       setRecordingMeetingSource(null);
+      // Clear any stale pending calendar event so it can't attach to a later run. (ERRORS.md E18)
+      pendingCalendarEventRef.current = undefined;
 
       // Read the final transcript and generate meeting notes via LLM
       const notePath = meetingNotePathRef.current;
@@ -5822,6 +5865,13 @@ function App() {
   // Listen for calendar block "join meeting & take notes" events
   useEffect(() => {
     const handler = () => {
+      // If a meeting is already recording, ignore the join request rather than
+      // toggling it OFF and stranding a stale pending event for the next start. (ERRORS.md E18)
+      if (meetingStateRef.current === "recording") {
+        window.__pendingCalendarEvent = undefined;
+        toast.error("A meeting is already being recorded. Stop it before joining another.");
+        return;
+      }
       // Read calendar event data set by the calendar block on window
       const pending = window.__pendingCalendarEvent;
       window.__pendingCalendarEvent = undefined;
@@ -6152,18 +6202,31 @@ function App() {
           />
         );
       }
-      const composioConnectData = getComposioConnectCardData(item);
-      if (composioConnectData) {
-        // Skip rendering if this is a duplicate "already connected" card
-        if (composioConnectData.hidden) return null;
+      const integrationConnectData = getIntegrationConnectCardData(item);
+      if (integrationConnectData) {
+        if (integrationConnectData.hidden) return null;
         return (
-          <ComposioConnectCard
+          <IntegrationConnectCard
             key={item.id}
-            toolkitSlug={composioConnectData.toolkitSlug}
-            toolkitDisplayName={composioConnectData.toolkitDisplayName}
+            connectorName={integrationConnectData.connectorName}
+            displayName={integrationConnectData.displayName}
+            authType={integrationConnectData.authType}
             status={item.status}
-            alreadyConnected={composioConnectData.alreadyConnected}
-            onConnected={handleComposioConnected}
+            alreadyConnected={integrationConnectData.alreadyConnected}
+            onConnected={handleIntegrationConnected}
+          />
+        );
+      }
+      const slackReplyDraftData = getSlackReplyDraftCardData(item);
+      if (slackReplyDraftData) {
+        return (
+          <SlackReplyDraftCard
+            key={item.id}
+            teamId={slackReplyDraftData.teamId}
+            channel={slackReplyDraftData.channel}
+            threadTs={slackReplyDraftData.threadTs}
+            text={slackReplyDraftData.text}
+            status={item.status}
           />
         );
       }
@@ -6675,12 +6738,20 @@ function App() {
                   <BgTasksView
                     initialSlug={bgTaskInitialSlug}
                     slugVersion={bgTaskSlugVersion}
-                    onCreateWithCopilot={(description) => {
-                      submitFromPalette(buildBgTaskSetupPrompt(description), null);
-                    }}
-                    onEditWithCopilot={(slug) => {
-                      submitFromPalette(buildBgTaskEditPrompt(slug), null);
-                    }}
+                    onCreateWithCopilot={
+                      shouldOfferBgTaskCopilot
+                        ? (description) => {
+                            submitFromPalette(buildBgTaskSetupPrompt(description), null);
+                          }
+                        : undefined
+                    }
+                    onEditWithCopilot={
+                      shouldOfferBgTaskCopilot
+                        ? (slug) => {
+                            submitFromPalette(buildBgTaskEditPrompt(slug), null);
+                          }
+                        : undefined
+                    }
                   />
                 </div>
               ) : isEmailOpen ? (
@@ -6701,6 +6772,7 @@ function App() {
                       revealInFileManager: knowledgeActions.revealInFileManager,
                       createNote: knowledgeActions.createNote,
                       createFolder: knowledgeActions.createFolder,
+                      rename: knowledgeActions.rename,
                       onOpenInNewTab: knowledgeActions.onOpenInNewTab,
                     }}
                     onNavigate={(path) => {
@@ -6788,7 +6860,7 @@ function App() {
                   <GraphView
                     nodes={graphData.nodes}
                     edges={graphData.edges}
-                    isLoading={false}
+                    isLoading={graphStatus === "loading"}
                     error={graphStatus === "error" ? (graphError ?? "Failed to build graph") : null}
                     onSelectNode={(path) => {
                       navigateToFile(path);
@@ -6804,7 +6876,10 @@ function App() {
                       display: isCacheableViewerPath(selectedPath) ? "block" : "none",
                     }}
                   >
-                    <PersistentViewerCache activePath={selectedPath} />
+                    <PersistentViewerCache
+                      activePath={selectedPath}
+                      livePaths={fileTabs.map((t) => t.path)}
+                    />
                   </div>
                   {!isCacheableViewerPath(selectedPath) &&
                     (selectedPath.endsWith(".md") ? (
@@ -6883,7 +6958,13 @@ function App() {
                                   }}
                                   editable={!isViewingHistory}
                                   onExport={async (format) => {
-                                    const markdown = tabContent;
+                                    // Markdown export must preserve YAML frontmatter (split off at
+                                    // open); pdf/docx render the body only. (ERRORS.md E08)
+                                    const fm = frontmatterByPathRef.current.get(tab.path) ?? null;
+                                    const markdown =
+                                      format === "md"
+                                        ? joinFrontmatter(fm, tabContent)
+                                        : tabContent;
                                     const title = getBaseName(tab.path);
                                     try {
                                       await window.ipc.invoke("export:note", {
@@ -7347,6 +7428,28 @@ function App() {
                 autoPermissionDecisions={autoPermissionDecisions}
                 onPermissionResponse={handlePermissionResponse}
                 onAskHumanResponse={handleAskHumanResponse}
+                onSwitchAgent={async (toolCallId, subflow, newAgent) => {
+                  // Deny the coding-command request, then re-ask on the active run with
+                  // the swapped agent — parity with full-screen chat. (ERRORS.md E02)
+                  const runIdForSwitch = runId;
+                  await handlePermissionResponse(toolCallId, subflow, "deny");
+                  window.dispatchEvent(
+                    new CustomEvent("code-mode-detected", {
+                      detail: { runId: runIdForSwitch, agent: newAgent },
+                    }),
+                  );
+                  if (runIdForSwitch) {
+                    try {
+                      await window.ipc.invoke("runs:createMessage", {
+                        runId: runIdForSwitch,
+                        message: `Use ${newAgent === "claude" ? "Claude Code" : "Codex"} instead — rerun the same task with the same prompt, just swap the agent binary to \`${newAgent}\`.`,
+                        codeMode: newAgent,
+                      });
+                    } catch (err) {
+                      console.error("Failed to send swap-agent follow-up", err);
+                    }
+                  }
+                }}
                 isToolOpenForTab={isToolOpenForTab}
                 onToolOpenChangeForTab={setToolOpenForTab}
                 onOpenKnowledgeFile={(path) => {
@@ -7366,7 +7469,7 @@ function App() {
                 ttsMode={ttsMode}
                 onToggleTts={handleToggleTts}
                 onTtsModeChange={handleTtsModeChange}
-                onComposioConnected={handleComposioConnected}
+                onIntegrationConnected={handleIntegrationConnected}
               />
             )}
             {/* Rendered last so its no-drag region paints over the sidebar drag region */}
@@ -7391,17 +7494,6 @@ function App() {
         open={billingErrorOpen}
         match={billingErrorMatch}
         onOpenChange={setBillingErrorOpen}
-      />
-      <ComposioGoogleMigrationModal
-        open={showComposioGoogleMigration}
-        onOpenChange={setShowComposioGoogleMigration}
-        onReconnect={() => {
-          // Trigger the Solomon AI-managed Google connect flow. With no credentials
-          // and the user signed in to Solomon AI, the main process opens the
-          // webapp `/oauth/google/start` URL. The deep link returns and
-          // completeSolomonGoogleConnect persists the tokens.
-          void window.ipc.invoke("oauth:connect", { provider: "google" });
-        }}
       />
       <Dialog open={showMeetingPermissions} onOpenChange={setShowMeetingPermissions}>
         <DialogContent showCloseButton={false}>

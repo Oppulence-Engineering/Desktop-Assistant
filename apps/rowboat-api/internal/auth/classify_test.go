@@ -52,7 +52,6 @@ func TestRouteGroup(t *testing.T) {
 		"/v1/google-oauth/claim":                   RouteGroupConnectors,
 		"/v1/slack-oauth/claim":                    RouteGroupConnectors,
 		"/oauth/google/start":                      RouteGroupConnectors,
-		"/v1/composio/anything":                    RouteGroupComposio,
 		"/v1/events":                               RouteGroupEvents,
 		"/v1/webhooks/google":                      RouteGroupEvents,
 		"/v1/internal/events":                      RouteGroupInternal,

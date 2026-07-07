@@ -96,13 +96,13 @@
           "message_id"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "GMAIL_ADD_LABEL_TO_EMAIL",
         "noAuth": false,
         "toolkitName": "gmail",
         "toolkitSlug": "gmail",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/gmail.svg"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/gmail.svg"
       }
     }
   ],

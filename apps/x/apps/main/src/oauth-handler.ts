@@ -1,27 +1,38 @@
-import { shell } from 'electron';
-import type { Server } from 'http';
-import { createAuthServer } from './auth-server.js';
-import { DEFAULT_CALLBACK_PORT } from '@x/core/dist/auth/client-repo.js';
-import * as oauthClient from '@x/core/dist/auth/oauth-client.js';
-import type { Configuration } from '@x/core/dist/auth/oauth-client.js';
-import { getProviderConfig, getAvailableProviders } from '@x/core/dist/auth/providers.js';
-import container from '@x/core/dist/di/container.js';
-import { IOAuthRepo } from '@x/core/dist/auth/repo.js';
-import { IClientRegistrationRepo } from '@x/core/dist/auth/client-repo.js';
-import { triggerSync as triggerGmailSync } from '@x/core/dist/knowledge/sync_gmail.js';
-import { triggerSync as triggerCalendarSync } from '@x/core/dist/knowledge/sync_calendar.js';
-import { triggerSync as triggerFirefliesSync } from '@x/core/dist/knowledge/sync_fireflies.js';
-import { emitOAuthEvent } from './ipc.js';
-import { getBillingInfo } from '@x/core/dist/billing/billing.js';
-import { capture as analyticsCapture, identify as analyticsIdentify, reset as analyticsReset } from '@x/core/dist/analytics/posthog.js';
-import { isSignedIn } from '@x/core/dist/account/account.js';
-import { getWebappUrl } from '@x/core/dist/config/remote-config.js';
-import { claimTokensViaBackend } from '@x/core/dist/auth/google-backend-oauth.js';
-import { startConnectorViaBackend, claimConnectorViaBackend } from '@x/core/dist/connectors/connectors-backend.js';
-import { slackStartURL, claimSlackWorkspaceViaBackend } from '@x/core/dist/auth/slack-backend-oauth.js';
-import { getWorkosLoginUrl, exchangeWorkosCode } from '@x/core/dist/auth/workos-backend.js';
-import { PRODUCT_PROVIDER_ID, isProductProvider } from '@x/shared/dist/branding.js';
-import { isManagedAuthMode } from '@x/core/dist/auth/repo.js';
+import { shell } from "electron";
+import type { Server } from "http";
+import { createAuthServer } from "./auth-server.js";
+import { DEFAULT_CALLBACK_PORT } from "@x/core/dist/auth/client-repo.js";
+import * as oauthClient from "@x/core/dist/auth/oauth-client.js";
+import type { Configuration } from "@x/core/dist/auth/oauth-client.js";
+import { getProviderConfig, getAvailableProviders } from "@x/core/dist/auth/providers.js";
+import container from "@x/core/dist/di/container.js";
+import { IOAuthRepo } from "@x/core/dist/auth/repo.js";
+import { IClientRegistrationRepo } from "@x/core/dist/auth/client-repo.js";
+import { triggerSync as triggerGmailSync } from "@x/core/dist/knowledge/sync_gmail.js";
+import { triggerSync as triggerCalendarSync } from "@x/core/dist/knowledge/sync_calendar.js";
+import { triggerSync as triggerFirefliesSync } from "@x/core/dist/knowledge/sync_fireflies.js";
+import { emitOAuthEvent } from "./ipc.js";
+import { getBillingInfo } from "@x/core/dist/billing/billing.js";
+import {
+  capture as analyticsCapture,
+  identify as analyticsIdentify,
+  reset as analyticsReset,
+} from "@x/core/dist/analytics/posthog.js";
+import { isSignedIn } from "@x/core/dist/account/account.js";
+import { getWebappUrl } from "@x/core/dist/config/remote-config.js";
+import { invalidateCopilotInstructionsCache } from "@x/core/dist/application/assistant/instructions.js";
+import { claimTokensViaBackend } from "@x/core/dist/auth/google-backend-oauth.js";
+import {
+  startConnectorViaBackend,
+  claimConnectorViaBackend,
+} from "@x/core/dist/connectors/connectors-backend.js";
+import {
+  slackStartURL,
+  claimSlackWorkspaceViaBackend,
+} from "@x/core/dist/auth/slack-backend-oauth.js";
+import { getWorkosLoginUrl, exchangeWorkosCode } from "@x/core/dist/auth/workos-backend.js";
+import { PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/dist/branding.js";
+import { isManagedAuthMode } from "@x/core/dist/auth/repo.js";
 
 function buildRedirectUri(port: number): string {
   return `http://localhost:${port}/oauth/callback`;
@@ -30,17 +41,17 @@ function buildRedirectUri(port: number): string {
 const REDIRECT_URI = buildRedirectUri(DEFAULT_CALLBACK_PORT);
 
 /** Top-level openid-client messages that often wrap a more specific cause. */
-const OPAQUE_OAUTH_TOP_MESSAGES = new Set(['invalid response encountered']);
+const OPAQUE_OAUTH_TOP_MESSAGES = new Set(["invalid response encountered"]);
 
 function firstCauseMessage(error: unknown): string | undefined {
-  if (error == null || typeof error !== 'object' || !('cause' in error)) {
+  if (error == null || typeof error !== "object" || !("cause" in error)) {
     return undefined;
   }
   const cause = (error as { cause?: unknown }).cause;
   if (cause instanceof Error && cause.message.trim()) {
     return cause.message;
   }
-  if (typeof cause === 'string' && cause.trim()) {
+  if (typeof cause === "string" && cause.trim()) {
     return cause;
   }
   return undefined;
@@ -52,12 +63,13 @@ function firstCauseMessage(error: unknown): string | undefined {
  * The catch block below still logs the full cause chain for any error; this helper stays conservative.
  */
 function getOAuthErrorMessage(error: unknown): string {
-  const msg = error instanceof Error ? error.message : 'Unknown error';
-  const code = error != null && typeof error === 'object' && 'code' in error
-    ? (error as { code?: string }).code
-    : undefined;
+  const msg = error instanceof Error ? error.message : "Unknown error";
+  const code =
+    error != null && typeof error === "object" && "code" in error
+      ? (error as { code?: string }).code
+      : undefined;
   const causeMsg = firstCauseMessage(error);
-  if (code === 'OAUTH_INVALID_RESPONSE' && causeMsg) {
+  if (code === "OAUTH_INVALID_RESPONSE" && causeMsg) {
     return causeMsg;
   }
   if (causeMsg && OPAQUE_OAUTH_TOP_MESSAGES.has(msg.trim().toLowerCase())) {
@@ -67,11 +79,14 @@ function getOAuthErrorMessage(error: unknown): string {
 }
 
 // Store active OAuth flows (state -> { codeVerifier, provider, config })
-const activeFlows = new Map<string, {
-  codeVerifier: string;
-  provider: string;
-  config: Configuration;
-}>();
+const activeFlows = new Map<
+  string,
+  {
+    codeVerifier: string;
+    provider: string;
+    config: Configuration;
+  }
+>();
 
 // Module-level state for tracking the active OAuth flow
 interface ActiveOAuthFlow {
@@ -86,7 +101,7 @@ let activeFlow: ActiveOAuthFlow | null = null;
 /**
  * Cancel any active OAuth flow, cleaning up resources
  */
-function cancelActiveFlow(reason: string = 'cancelled'): void {
+function cancelActiveFlow(reason: string = "cancelled"): void {
   if (!activeFlow) {
     return;
   }
@@ -98,11 +113,11 @@ function cancelActiveFlow(reason: string = 'cancelled'): void {
   activeFlows.delete(activeFlow.state);
 
   // Only emit event for user-visible cancellations
-  if (reason !== 'new_flow_started') {
+  if (reason !== "new_flow_started") {
     emitOAuthEvent({
       provider: activeFlow.provider,
       success: false,
-      error: `OAuth flow ${reason}`
+      error: `OAuth flow ${reason}`,
     });
   }
 
@@ -113,14 +128,14 @@ function cancelActiveFlow(reason: string = 'cancelled'): void {
  * Get OAuth repository from DI container
  */
 function getOAuthRepo(): IOAuthRepo {
-  return container.resolve<IOAuthRepo>('oauthRepo');
+  return container.resolve<IOAuthRepo>("oauthRepo");
 }
 
 /**
  * Get client registration repository from DI container
  */
 function getClientRegistrationRepo(): IClientRegistrationRepo {
-  return container.resolve<IClientRegistrationRepo>('clientRegistrationRepo');
+  return container.resolve<IClientRegistrationRepo>("clientRegistrationRepo");
 }
 
 /**
@@ -134,12 +149,18 @@ async function getProviderConfiguration(
   credentialsOverride?: { clientId: string; clientSecret: string },
 ): Promise<Configuration> {
   const config = await getProviderConfig(provider);
-  const resolveClientCredentials = async (): Promise<{ clientId: string; clientSecret?: string }> => {
-    if (config.client.mode === 'static' && config.client.clientId) {
+  const resolveClientCredentials = async (): Promise<{
+    clientId: string;
+    clientSecret?: string;
+  }> => {
+    if (config.client.mode === "static" && config.client.clientId) {
       return { clientId: config.client.clientId, clientSecret: credentialsOverride?.clientSecret };
     }
     if (credentialsOverride) {
-      return { clientId: credentialsOverride.clientId, clientSecret: credentialsOverride.clientSecret };
+      return {
+        clientId: credentialsOverride.clientId,
+        clientSecret: credentialsOverride.clientSecret,
+      };
     }
     const oauthRepo = getOAuthRepo();
     const connection = await oauthRepo.read(provider);
@@ -149,15 +170,15 @@ async function getProviderConfiguration(
     throw new Error(`${provider} client ID not configured. Please provide a client ID.`);
   };
 
-  if (config.discovery.mode === 'issuer') {
-    if (config.client.mode === 'static') {
+  if (config.discovery.mode === "issuer") {
+    if (config.client.mode === "static") {
       // Discover endpoints, use static client ID
       console.log(`[OAuth] ${provider}: Discovery from issuer with static client ID`);
       const { clientId, clientSecret } = await resolveClientCredentials();
       return await oauthClient.discoverConfiguration(
         config.discovery.issuer,
         clientId,
-        clientSecret
+        clientSecret,
       );
     } else {
       // DCR mode - check for existing registration or register new
@@ -169,7 +190,7 @@ async function getProviderConfiguration(
         console.log(`[OAuth] ${provider}: Using existing DCR registration`);
         return await oauthClient.discoverConfiguration(
           config.discovery.issuer,
-          existingRegistration.client_id
+          existingRegistration.client_id,
         );
       }
 
@@ -178,7 +199,7 @@ async function getProviderConfiguration(
       const { config: oauthConfig, registration } = await oauthClient.registerClient(
         config.discovery.issuer,
         [redirectUri],
-        scopes
+        scopes,
       );
 
       // Parse port from redirectUri (e.g. "http://localhost:8081/...") and save
@@ -192,7 +213,7 @@ async function getProviderConfiguration(
     }
   } else {
     // Static endpoints mode
-    if (config.client.mode !== 'static') {
+    if (config.client.mode !== "static") {
       throw new Error('DCR requires discovery mode "issuer", not "static"');
     }
 
@@ -203,7 +224,7 @@ async function getProviderConfiguration(
       config.discovery.tokenEndpoint,
       clientId,
       config.discovery.revocationEndpoint,
-      clientSecret
+      clientSecret,
     );
   }
 }
@@ -227,20 +248,35 @@ async function connectSolomonViaBroker(): Promise<{ success: boolean; error?: st
     if (callbackHandled) return;
     callbackHandled = true;
 
-    const receivedState = callbackUrl.searchParams.get('state');
-    if (!receivedState || receivedState !== state) {
-      throw new Error('Invalid state parameter - possible CSRF attack');
+    // ... (ERRORS.md E44) Sign-in denial / provider error — fail fast with the
+    // provider's description instead of waiting for the abandoned-flow timeout.
+    const callbackError = callbackUrl.searchParams.get("error");
+    if (callbackError) {
+      const description = callbackUrl.searchParams.get("error_description") || callbackError;
+      console.error(`[OAuth] Solomon AI sign-in error: ${description}`);
+      emitOAuthEvent({ provider: PRODUCT_PROVIDER_ID, success: false, error: description });
+      if (activeFlow && activeFlow.state === state) {
+        clearTimeout(activeFlow.cleanupTimeout);
+        activeFlow.server.close();
+        activeFlow = null;
+      }
+      return;
     }
-    const code = callbackUrl.searchParams.get('code');
+
+    const receivedState = callbackUrl.searchParams.get("state");
+    if (!receivedState || receivedState !== state) {
+      throw new Error("Invalid state parameter - possible CSRF attack");
+    }
+    const code = callbackUrl.searchParams.get("code");
     if (!code) {
-      throw new Error('OAuth callback missing authorization code');
+      throw new Error("OAuth callback missing authorization code");
     }
 
     try {
-      console.log('[OAuth] Exchanging WorkOS code via Solomon AI API broker...');
+      console.log("[OAuth] Exchanging WorkOS code via Solomon AI API broker...");
       const tokens = await exchangeWorkosCode(code, codeVerifier);
       await oauthRepo.upsert(PRODUCT_PROVIDER_ID, { tokens, error: null });
-      console.log('[OAuth] Solomon AI sign-in successful');
+      console.log("[OAuth] Solomon AI sign-in successful");
 
       // Ensure user + Stripe customer exist before notifying the renderer.
       let signedInUserId: string | undefined;
@@ -253,13 +289,13 @@ async function connectSolomonViaBroker(): Promise<{ success: boolean; error?: st
             plan: billing.subscriptionPlan,
             status: billing.subscriptionStatus,
           });
-          analyticsCapture('user_signed_in', {
+          analyticsCapture("user_signed_in", {
             plan: billing.subscriptionPlan,
             status: billing.subscriptionStatus,
           });
         }
       } catch (meError) {
-        console.error('[OAuth] Failed to initialize user via /v1/me:', meError);
+        console.error("[OAuth] Failed to initialize user via /v1/me:", meError);
       }
 
       emitOAuthEvent({
@@ -268,11 +304,11 @@ async function connectSolomonViaBroker(): Promise<{ success: boolean; error?: st
         ...(signedInUserId ? { userId: signedInUserId } : {}),
       });
     } catch (error) {
-      console.error('[OAuth] Solomon AI sign-in failed:', error);
+      console.error("[OAuth] Solomon AI sign-in failed:", error);
       emitOAuthEvent({
         provider: PRODUCT_PROVIDER_ID,
         success: false,
-        error: error instanceof Error ? error.message : 'Sign-in failed',
+        error: error instanceof Error ? error.message : "Sign-in failed",
       });
       throw error;
     } finally {
@@ -284,12 +320,15 @@ async function connectSolomonViaBroker(): Promise<{ success: boolean; error?: st
     }
   });
 
-  const cleanupTimeout = setTimeout(() => {
-    if (activeFlow?.state === state) {
-      console.log('[OAuth] Cleaning up abandoned Solomon AI sign-in (timeout)');
-      cancelActiveFlow('timed_out');
-    }
-  }, 2 * 60 * 1000);
+  const cleanupTimeout = setTimeout(
+    () => {
+      if (activeFlow?.state === state) {
+        console.log("[OAuth] Cleaning up abandoned Solomon AI sign-in (timeout)");
+        cancelActiveFlow("timed_out");
+      }
+    },
+    2 * 60 * 1000,
+  );
 
   activeFlow = { provider: PRODUCT_PROVIDER_ID, state, server, cleanupTimeout };
 
@@ -317,12 +356,16 @@ export async function resolveStartPort(
   const registeredPort = await clientRepo.getRegisteredPort(provider);
   try {
     // Probe — fixed-port (no fallback) so we know whether the exact registered port is free
-    const probe = await createAuthServer(registeredPort, () => { /* probe */ });
+    const probe = await createAuthServer(registeredPort, () => {
+      /* probe */
+    });
     probe.server.close();
     console.log(`[OAuth] ${provider}: registered port ${registeredPort} still available`);
     return registeredPort;
   } catch {
-    console.log(`[OAuth] ${provider}: registered port ${registeredPort} blocked, clearing DCR registration`);
+    console.log(
+      `[OAuth] ${provider}: registered port ${registeredPort} blocked, clearing DCR registration`,
+    );
     await clientRepo.clearClientRegistration(provider);
     return DEFAULT_CALLBACK_PORT;
   }
@@ -331,12 +374,15 @@ export async function resolveStartPort(
 /**
  * Initiate OAuth flow for a provider
  */
-export async function connectProvider(provider: string, credentials?: { clientId: string; clientSecret: string }): Promise<{ success: boolean; error?: string }> {
+export async function connectProvider(
+  provider: string,
+  credentials?: { clientId: string; clientSecret: string },
+): Promise<{ success: boolean; error?: string }> {
   try {
     console.log(`[OAuth] Starting connection flow for ${provider}...`);
 
     // Cancel any existing flow before starting a new one
-    cancelActiveFlow('new_flow_started');
+    cancelActiveFlow("new_flow_started");
 
     // Solomon AI sign-in goes through the WorkOS broker in the API (WorkOS is
     // a confidential client; the desktop can't hold the API key). The browser
@@ -348,7 +394,7 @@ export async function connectProvider(provider: string, credentials?: { clientId
     const oauthRepo = getOAuthRepo();
     const providerConfig = await getProviderConfig(provider);
 
-    if (provider === 'google') {
+    if (provider === "google") {
       if (!credentials?.clientId || !credentials?.clientSecret) {
         // No credentials → managed mode if the user is signed in to Solomon AI
         // (we use the company-owned Google client via the api + webapp).
@@ -357,24 +403,29 @@ export async function connectProvider(provider: string, credentials?: { clientId
           try {
             const webappUrl = await getWebappUrl();
             await shell.openExternal(`${webappUrl}/oauth/google/start`);
-            console.log('[OAuth] Started Solomon AI-managed Google connect (browser opened to webapp)');
+            console.log(
+              "[OAuth] Started Solomon AI-managed Google connect (browser opened to webapp)",
+            );
             return { success: true };
           } catch (error) {
-            console.error('[OAuth] Failed to start Solomon AI-managed Google connect:', error);
+            console.error("[OAuth] Failed to start Solomon AI-managed Google connect:", error);
             return {
               success: false,
-              error: error instanceof Error ? error.message : 'Failed to open browser',
+              error: error instanceof Error ? error.message : "Failed to open browser",
             };
           }
         }
-        return { success: false, error: 'Google client ID and client secret are required to connect.' };
+        return {
+          success: false,
+          error: "Google client ID and client secret are required to connect.",
+        };
       }
     }
 
     // For static-client providers (Google BYOK) the redirect URI is pre-registered
     // at the OAuth provider console on a fixed port — we must not scan.
     // For DCR providers, resolveStartPort handles the re-registration trap.
-    const isStaticClient = providerConfig.client.mode === 'static';
+    const isStaticClient = providerConfig.client.mode === "static";
     const startPort = isStaticClient
       ? DEFAULT_CALLBACK_PORT
       : await resolveStartPort(provider, getClientRegistrationRepo());
@@ -383,7 +434,7 @@ export async function connectProvider(provider: string, credentials?: { clientId
     // Declare `state` before the closure so the callback can close over its binding.
     // The variable is assigned below, before shell.openExternal, so it is always
     // set by the time any browser request arrives.
-    let state = '';
+    let state = "";
     let callbackHandled = false;
 
     const { server, port: boundPort } = await createAuthServer(
@@ -392,19 +443,36 @@ export async function connectProvider(provider: string, credentials?: { clientId
         // Guard against duplicate callbacks (browser may send multiple requests)
         if (callbackHandled) return;
         callbackHandled = true;
-        const receivedState = callbackUrl.searchParams.get('state');
-        if (receivedState == null || receivedState === '') {
+
+        // ... (ERRORS.md E44) Consent denial / provider error — fail fast with the
+        // provider's description instead of waiting for the abandoned-flow timeout.
+        const callbackError = callbackUrl.searchParams.get("error");
+        if (callbackError) {
+          const description = callbackUrl.searchParams.get("error_description") || callbackError;
+          console.error(`[OAuth] ${provider} authorization error: ${description}`);
+          emitOAuthEvent({ provider, success: false, error: description });
+          activeFlows.delete(state);
+          if (activeFlow && activeFlow.state === state) {
+            clearTimeout(activeFlow.cleanupTimeout);
+            activeFlow.server.close();
+            activeFlow = null;
+          }
+          return;
+        }
+
+        const receivedState = callbackUrl.searchParams.get("state");
+        if (receivedState == null || receivedState === "") {
           throw new Error(
-            'OAuth callback missing state parameter. Complete sign-in in the browser or check the redirect URI.'
+            "OAuth callback missing state parameter. Complete sign-in in the browser or check the redirect URI.",
           );
         }
         if (receivedState !== state) {
-          throw new Error('Invalid state parameter - possible CSRF attack');
+          throw new Error("Invalid state parameter - possible CSRF attack");
         }
 
         const flow = activeFlows.get(state);
         if (!flow || flow.provider !== provider) {
-          throw new Error('Invalid OAuth flow state');
+          throw new Error("Invalid OAuth flow state");
         }
 
         try {
@@ -414,7 +482,7 @@ export async function connectProvider(provider: string, credentials?: { clientId
             flow.config,
             callbackUrl,
             flow.codeVerifier,
-            state
+            state,
           );
 
           // Save tokens and credentials. For Google, BYOK is the only path
@@ -424,16 +492,18 @@ export async function connectProvider(provider: string, credentials?: { clientId
           console.log(`[OAuth] Token exchange successful for ${provider}`);
           await oauthRepo.upsert(provider, {
             tokens,
-            ...(credentials ? { clientId: credentials.clientId, clientSecret: credentials.clientSecret } : {}),
-            ...(provider === 'google' ? { mode: 'byok' as const } : {}),
+            ...(credentials
+              ? { clientId: credentials.clientId, clientSecret: credentials.clientSecret }
+              : {}),
+            ...(provider === "google" ? { mode: "byok" as const } : {}),
             error: null,
           });
 
           // Trigger immediate sync for relevant providers
-          if (provider === 'google') {
+          if (provider === "google") {
             triggerGmailSync();
             triggerCalendarSync();
-          } else if (provider === 'fireflies-ai') {
+          } else if (provider === "fireflies-ai") {
             triggerFirefliesSync();
           }
 
@@ -451,13 +521,13 @@ export async function connectProvider(provider: string, credentials?: { clientId
                   plan: billing.subscriptionPlan,
                   status: billing.subscriptionStatus,
                 });
-                analyticsCapture('user_signed_in', {
+                analyticsCapture("user_signed_in", {
                   plan: billing.subscriptionPlan,
                   status: billing.subscriptionStatus,
                 });
               }
             } catch (meError) {
-              console.error('[OAuth] Failed to initialize user via /v1/me:', meError);
+              console.error("[OAuth] Failed to initialize user via /v1/me:", meError);
             }
           }
 
@@ -468,13 +538,13 @@ export async function connectProvider(provider: string, credentials?: { clientId
             ...(signedInUserId ? { userId: signedInUserId } : {}),
           });
         } catch (error) {
-          console.error('OAuth token exchange failed:', error);
+          console.error("OAuth token exchange failed:", error);
           // Log cause chain for debugging (e.g. OAUTH_INVALID_RESPONSE -> OperationProcessingError)
           let cause: unknown = error;
-          while (cause != null && typeof cause === 'object' && 'cause' in cause) {
+          while (cause != null && typeof cause === "object" && "cause" in cause) {
             cause = (cause as { cause?: unknown }).cause;
             if (cause != null) {
-              console.error('[OAuth] Caused by:', cause);
+              console.error("[OAuth] Caused by:", cause);
             }
           }
           const errorMessage = getOAuthErrorMessage(error);
@@ -505,7 +575,9 @@ export async function connectProvider(provider: string, credentials?: { clientId
       // for the old port — clear it so getProviderConfiguration re-registers
       // with the actual bound port.
       if (!isStaticClient && boundPort !== startPort) {
-        console.log(`[OAuth] ${provider}: bound port ${boundPort} differs from start port ${startPort}, clearing stale DCR registration`);
+        console.log(
+          `[OAuth] ${provider}: bound port ${boundPort} differs from start port ${startPort}, clearing stale DCR registration`,
+        );
         await getClientRegistrationRepo().clearClientRegistration(provider);
       }
 
@@ -520,18 +592,21 @@ export async function connectProvider(provider: string, credentials?: { clientId
 
       const authUrl = oauthClient.buildAuthorizationUrl(config, {
         redirect_uri: redirectUri,
-        scope: scopes.join(' '),
+        scope: scopes.join(" "),
         code_challenge: codeChallenge,
         state,
       });
 
       // Set timeout to clean up abandoned flows (2 minutes)
-      const cleanupTimeout = setTimeout(() => {
-        if (activeFlow?.state === state) {
-          console.log(`[OAuth] Cleaning up abandoned OAuth flow for ${provider} (timeout)`);
-          cancelActiveFlow('timed_out');
-        }
-      }, 2 * 60 * 1000);
+      const cleanupTimeout = setTimeout(
+        () => {
+          if (activeFlow?.state === state) {
+            console.log(`[OAuth] Cleaning up abandoned OAuth flow for ${provider} (timeout)`);
+            cancelActiveFlow("timed_out");
+          }
+        },
+        2 * 60 * 1000,
+      );
 
       activeFlow = {
         provider,
@@ -554,10 +629,10 @@ export async function connectProvider(provider: string, credentials?: { clientId
       throw setupError;
     }
   } catch (error) {
-    console.error('OAuth connection failed:', error);
+    console.error("OAuth connection failed:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -571,10 +646,10 @@ export async function connectProvider(provider: string, credentials?: { clientId
  */
 export async function completeSolomonGoogleConnect(state: string): Promise<void> {
   try {
-    console.log('[OAuth] Claiming Solomon AI-managed Google tokens...');
+    console.log("[OAuth] Claiming Solomon AI-managed Google tokens...");
     const tokens = await claimTokensViaBackend(state);
     const oauthRepo = getOAuthRepo();
-    await oauthRepo.upsert('google', {
+    await oauthRepo.upsert("google", {
       tokens,
       mode: PRODUCT_PROVIDER_ID,
       // Explicitly null these — no client_id/secret on the desktop in this mode.
@@ -584,14 +659,14 @@ export async function completeSolomonGoogleConnect(state: string): Promise<void>
     });
     triggerGmailSync();
     triggerCalendarSync();
-    emitOAuthEvent({ provider: 'google', success: true });
-    console.log('[OAuth] Solomon AI-managed Google connect complete');
+    emitOAuthEvent({ provider: "google", success: true });
+    console.log("[OAuth] Solomon AI-managed Google connect complete");
   } catch (error) {
-    console.error('[OAuth] Failed to complete Solomon AI-managed Google connect:', error);
+    console.error("[OAuth] Failed to complete Solomon AI-managed Google connect:", error);
     emitOAuthEvent({
-      provider: 'google',
+      provider: "google",
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to claim Google tokens',
+      error: error instanceof Error ? error.message : "Failed to claim Google tokens",
     });
   }
 }
@@ -603,7 +678,9 @@ export async function completeSolomonGoogleConnect(state: string): Promise<void>
  * grant and deep-links back to solomon-ai://connection-complete?...&session=...,
  * where completeConnectorConnect redeems it.
  */
-export async function connectConnector(connector: string): Promise<{ success: boolean; error?: string }> {
+export async function connectConnector(
+  connector: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const authorizeUrl = await startConnectorViaBackend(connector);
     await shell.openExternal(authorizeUrl);
@@ -612,7 +689,7 @@ export async function connectConnector(connector: string): Promise<{ success: bo
     console.error(`[Connectors] start ${connector} failed:`, error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to start connector connect',
+      error: error instanceof Error ? error.message : "Failed to start connector connect",
     };
   }
 }
@@ -629,6 +706,7 @@ export async function completeConnectorConnect(connector: string, state: string)
   try {
     console.log(`[Connectors] claiming ${connector} grant...`);
     await claimConnectorViaBackend(connector, state);
+    invalidateCopilotInstructionsCache();
     emitOAuthEvent({ provider: connector, success: true });
     console.log(`[Connectors] ${connector} connect complete`);
   } catch (error) {
@@ -636,7 +714,7 @@ export async function completeConnectorConnect(connector: string, state: string)
     emitOAuthEvent({
       provider: connector,
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to claim connector grant',
+      error: error instanceof Error ? error.message : "Failed to claim connector grant",
     });
   }
 }
@@ -653,10 +731,10 @@ export async function connectSlackWorkspace(): Promise<{ success: boolean; error
     await shell.openExternal(slackStartURL());
     return { success: true };
   } catch (error) {
-    console.error('[Slack] start workspace install failed:', error);
+    console.error("[Slack] start workspace install failed:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to start Slack install',
+      error: error instanceof Error ? error.message : "Failed to start Slack install",
     };
   }
 }
@@ -672,16 +750,17 @@ export async function connectSlackWorkspace(): Promise<{ success: boolean; error
  */
 export async function completeSolomonSlackConnect(state: string): Promise<void> {
   try {
-    console.log('[Slack] claiming workspace connection...');
+    console.log("[Slack] claiming workspace connection...");
     const workspace = await claimSlackWorkspaceViaBackend(state);
-    emitOAuthEvent({ provider: 'slack', success: true });
+    invalidateCopilotInstructionsCache();
+    emitOAuthEvent({ provider: "slack", success: true });
     console.log(`[Slack] workspace connected: ${workspace.teamName ?? workspace.teamId}`);
   } catch (error) {
-    console.error('[Slack] failed to claim workspace connection:', error);
+    console.error("[Slack] failed to claim workspace connection:", error);
     emitOAuthEvent({
-      provider: 'slack',
+      provider: "slack",
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to claim Slack workspace',
+      error: error instanceof Error ? error.message : "Failed to claim Slack workspace",
     });
   }
 }
@@ -696,31 +775,33 @@ export async function disconnectProvider(provider: string): Promise<{ success: b
     // For Solomon AI-managed Google, best-effort revoke at Google before clearing
     // local state. Google's revoke endpoint accepts an unauthenticated POST
     // with the access_token; failure is logged but doesn't block disconnect.
-    if (provider === 'google') {
+    if (provider === "google") {
       const connection = await oauthRepo.read(provider);
       if (isManagedAuthMode(connection.mode) && connection.tokens?.access_token) {
         try {
           const revokeUrl = `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(connection.tokens.access_token)}`;
-          const res = await fetch(revokeUrl, { method: 'POST', signal: AbortSignal.timeout(5000) });
+          const res = await fetch(revokeUrl, { method: "POST", signal: AbortSignal.timeout(5000) });
           if (!res.ok) {
-            console.warn(`[OAuth] Google revoke returned ${res.status}; continuing with local disconnect`);
+            console.warn(
+              `[OAuth] Google revoke returned ${res.status}; continuing with local disconnect`,
+            );
           }
         } catch (error) {
-          console.warn('[OAuth] Google revoke failed; continuing with local disconnect:', error);
+          console.warn("[OAuth] Google revoke failed; continuing with local disconnect:", error);
         }
       }
     }
 
     await oauthRepo.delete(provider);
     if (isProductProvider(provider)) {
-      analyticsCapture('user_signed_out');
+      analyticsCapture("user_signed_out");
       analyticsReset();
     }
     // Notify renderer so sidebar, voice, and billing re-check state
     emitOAuthEvent({ provider, success: false });
     return { success: true };
   } catch (error) {
-    console.error('OAuth disconnect failed:', error);
+    console.error("OAuth disconnect failed:", error);
     return { success: false };
   }
 }
@@ -748,14 +829,14 @@ export async function disconnectProvider(provider: string): Promise<{ success: b
 export async function disconnectGoogleIfScopesStale(): Promise<void> {
   try {
     const oauthRepo = getOAuthRepo();
-    const connection = await oauthRepo.read('google');
+    const connection = await oauthRepo.read("google");
 
     // Not connected (or already invalidated) — nothing to migrate.
     if (!connection.tokens) {
       return;
     }
 
-    const providerConfig = await getProviderConfig('google');
+    const providerConfig = await getProviderConfig("google");
     const requiredScopes = providerConfig.scopes ?? [];
     if (requiredScopes.length === 0) {
       return;
@@ -768,35 +849,37 @@ export async function disconnectGoogleIfScopesStale(): Promise<void> {
     }
 
     console.log(
-      `[OAuth] Google grant is missing current scopes [${missingScopes.join(', ')}]; ` +
-      'invalidating it so the user is prompted to reconnect with the new scopes.'
+      `[OAuth] Google grant is missing current scopes [${missingScopes.join(", ")}]; ` +
+        "invalidating it so the user is prompted to reconnect with the new scopes.",
     );
 
     // Best-effort revoke at Google for Solomon AI-managed grants (mirrors disconnectProvider).
     if (isManagedAuthMode(connection.mode) && connection.tokens.access_token) {
       try {
         const revokeUrl = `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(connection.tokens.access_token)}`;
-        const res = await fetch(revokeUrl, { method: 'POST', signal: AbortSignal.timeout(5000) });
+        const res = await fetch(revokeUrl, { method: "POST", signal: AbortSignal.timeout(5000) });
         if (!res.ok) {
-          console.warn(`[OAuth] Google revoke returned ${res.status}; continuing with local invalidation`);
+          console.warn(
+            `[OAuth] Google revoke returned ${res.status}; continuing with local invalidation`,
+          );
         }
       } catch (error) {
-        console.warn('[OAuth] Google revoke failed; continuing with local invalidation:', error);
+        console.warn("[OAuth] Google revoke failed; continuing with local invalidation:", error);
       }
     }
 
     // Drop the stale token but keep the entry with an error so the reconnect
     // prompt fires (see the note above).
-    await oauthRepo.upsert('google', {
+    await oauthRepo.upsert("google", {
       tokens: null,
-      error: 'Google permissions changed. Please reconnect to continue.',
+      error: "Google permissions changed. Please reconnect to continue.",
     });
 
     // Nudge any already-open window to re-read state. The renderer's initial
     // mount also re-reads, so the prompt shows even if no window is up yet.
-    emitOAuthEvent({ provider: 'google', success: false });
+    emitOAuthEvent({ provider: "google", success: false });
   } catch (error) {
-    console.error('[OAuth] Google scope migration check failed:', error);
+    console.error("[OAuth] Google scope migration check failed:", error);
   }
 }
 
@@ -817,7 +900,7 @@ export async function getAccessToken(provider: string): Promise<string | null> {
     if (oauthClient.isTokenExpired(tokens)) {
       if (!tokens.refresh_token) {
         // No refresh token, need to reconnect
-        await oauthRepo.upsert(provider, { error: 'Missing refresh token. Please reconnect.' });
+        await oauthRepo.upsert(provider, { error: "Missing refresh token. Please reconnect." });
         return null;
       }
 
@@ -827,20 +910,24 @@ export async function getAccessToken(provider: string): Promise<string | null> {
 
         // Refresh token, preserving existing scopes
         const existingScopes = tokens.scopes;
-        const refreshedTokens = await oauthClient.refreshTokens(config, tokens.refresh_token, existingScopes);
+        const refreshedTokens = await oauthClient.refreshTokens(
+          config,
+          tokens.refresh_token,
+          existingScopes,
+        );
         await oauthRepo.upsert(provider, { tokens: refreshedTokens });
         tokens = refreshedTokens;
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Token refresh failed';
+        const message = error instanceof Error ? error.message : "Token refresh failed";
         await oauthRepo.upsert(provider, { error: message });
-        console.error('Token refresh failed:', error);
+        console.error("Token refresh failed:", error);
         return null;
       }
     }
 
     return tokens.access_token;
   } catch (error) {
-    console.error('Get access token failed:', error);
+    console.error("Get access token failed:", error);
     return null;
   }
 }

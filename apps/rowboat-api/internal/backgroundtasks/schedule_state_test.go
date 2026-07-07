@@ -72,6 +72,28 @@ func TestScheduleStateLoopOwnedCron(t *testing.T) {
 	}
 }
 
+func TestLoopCronNextTickSkipsCurrentMinute(t *testing.T) {
+	next, err := nextLoopCronTick("*/5 * * * *", time.Date(2026, 6, 28, 0, 35, 37, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("nextLoopCronTick: %v", err)
+	}
+	want := time.Date(2026, 6, 28, 0, 40, 0, 0, time.UTC)
+	if !next.Equal(want) {
+		t.Fatalf("next = %s, want %s", next.Format(time.RFC3339), want.Format(time.RFC3339))
+	}
+}
+
+func TestLoopCronNextTickKeepsUpcomingMinute(t *testing.T) {
+	next, err := nextLoopCronTick("*/5 * * * *", time.Date(2026, 6, 28, 0, 34, 37, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("nextLoopCronTick: %v", err)
+	}
+	want := time.Date(2026, 6, 28, 0, 35, 0, 0, time.UTC)
+	if !next.Equal(want) {
+		t.Fatalf("next = %s, want %s", next.Format(time.RFC3339), want.Format(time.RFC3339))
+	}
+}
+
 func TestScheduleStateTemporalOwnedCron(t *testing.T) {
 	u, router, mgr := setupScheduleTest(t)
 	nextFire := time.Now().UTC().Add(45 * time.Minute).Truncate(time.Second)

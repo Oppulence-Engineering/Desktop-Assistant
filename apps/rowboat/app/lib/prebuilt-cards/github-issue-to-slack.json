@@ -100,13 +100,13 @@
           "channel"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "SLACK_SEND_MESSAGE",
         "noAuth": false,
         "toolkitName": "slack",
         "toolkitSlug": "slack",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/slack.svg"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/slack.svg"
       }
     }
   ],

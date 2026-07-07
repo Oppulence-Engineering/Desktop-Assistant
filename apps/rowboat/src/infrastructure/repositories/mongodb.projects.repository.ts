@@ -1,5 +1,5 @@
 import { db } from "@/app/lib/mongodb";
-import { CreateSchema, IProjectsRepository, AddComposioConnectedAccountSchema, AddCustomMcpServerSchema } from "@/src/application/repositories/projects.repository.interface";
+import { CreateSchema, IProjectsRepository, AddIntegrationConnectedAccountSchema, AddCustomMcpServerSchema } from "@/src/application/repositories/projects.repository.interface";
 import { NotFoundError } from "@/src/entities/errors/common";
 import { Project } from "@/src/entities/models/project";
 import { z } from "zod";
@@ -83,8 +83,8 @@ export class MongodbProjectsRepository implements IProjectsRepository {
         };
     }
 
-    async addComposioConnectedAccount(projectId: string, data: z.infer<typeof AddComposioConnectedAccountSchema>): Promise<z.infer<typeof Project>> {
-        const key = `composioConnectedAccounts.${data.toolkitSlug}`;
+    async addIntegrationConnectedAccount(projectId: string, data: z.infer<typeof AddIntegrationConnectedAccountSchema>): Promise<z.infer<typeof Project>> {
+        const key = `integrationConnectedAccounts.${data.toolkitSlug}`;
         const result = await this.collection.findOneAndUpdate(
             { _id: projectId },
             {
@@ -102,12 +102,12 @@ export class MongodbProjectsRepository implements IProjectsRepository {
         return { ...rest, id: _id };
     }
 
-    async deleteComposioConnectedAccount(projectId: string, toolkitSlug: string): Promise<boolean> {
+    async deleteIntegrationConnectedAccount(projectId: string, toolkitSlug: string): Promise<boolean> {
         const result = await this.collection.updateOne({
             _id: projectId,
         }, {
             $unset: {
-                [`composioConnectedAccounts.${toolkitSlug}`]: "",
+                [`integrationConnectedAccounts.${toolkitSlug}`]: "",
             }
         });
         return result.modifiedCount > 0;

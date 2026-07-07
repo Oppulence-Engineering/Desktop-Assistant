@@ -1,550 +1,596 @@
-import { useState, useEffect, useCallback } from "react"
-import { setGoogleCredentials, clearGoogleCredentials } from "@/lib/google-credentials-store"
-import { toast } from "sonner"
-import { PRODUCT_NAME, getProductProviderState, isProductProvider } from "@x/shared/dist/branding.js"
+import { useState, useEffect, useCallback, useRef } from "react";
+import { setGoogleCredentials, clearGoogleCredentials } from "@/lib/google-credentials-store";
+import { toast } from "sonner";
+import {
+  PRODUCT_NAME,
+  getProductProviderState,
+  isProductProvider,
+} from "@x/shared/dist/branding.js";
 
 export interface ProviderState {
-  isConnected: boolean
-  isLoading: boolean
-  isConnecting: boolean
+  isConnected: boolean;
+  isLoading: boolean;
+  isConnecting: boolean;
 }
 
 export interface ProviderStatus {
-  error?: string
+  error?: string;
+}
+
+export interface IntegrationTemplateBlock {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  requiredScopes?: string[];
+  mcpTools?: string[];
+  trustTier: "read" | "write" | "act" | "money-moving";
+  samplePrompt?: string;
+}
+
+export interface IntegrationConnector {
+  name: string;
+  displayName: string;
+  description: string;
+  mcpUrl: string;
+  authType: "oauth" | "api_key";
+  scopes?: string[];
+  iconUrl?: string;
+  templateBlocks?: IntegrationTemplateBlock[];
+  connected: boolean;
+  connectedAt?: string;
+}
+
+export interface SlackWorkspace {
+  url?: string;
+  name: string;
+  teamId?: string;
+  scopes?: string[];
+  connectedAt?: string;
+  source?: "managed" | "local";
 }
 
 export function useConnectors(active: boolean) {
-  const [providers, setProviders] = useState<string[]>([])
-  const [providersLoading, setProvidersLoading] = useState(true)
-  const [providerStates, setProviderStates] = useState<Record<string, ProviderState>>({})
-  const [providerStatus, setProviderStatus] = useState<Record<string, ProviderStatus>>({})
-  const [googleClientIdOpen, setGoogleClientIdOpen] = useState(false)
-  const [googleClientIdDescription, setGoogleClientIdDescription] = useState<string | undefined>(undefined)
+  const [providers, setProviders] = useState<string[]>([]);
+  const [providersLoading, setProvidersLoading] = useState(true);
+  const [providerStates, setProviderStates] = useState<Record<string, ProviderState>>({});
+  const [providerStatus, setProviderStatus] = useState<Record<string, ProviderStatus>>({});
+  const [googleClientIdOpen, setGoogleClientIdOpen] = useState(false);
+  const [googleClientIdDescription, setGoogleClientIdDescription] = useState<string | undefined>(
+    undefined,
+  );
+  const [integrations, setIntegrations] = useState<IntegrationConnector[]>([]);
+  const [integrationsLoading, setIntegrationsLoading] = useState(true);
+  const [integrationConnecting, setIntegrationConnecting] = useState<Record<string, boolean>>({});
+  const [integrationApiKeyOpen, setIntegrationApiKeyOpen] = useState(false);
+  const [integrationApiKeyTarget, setIntegrationApiKeyTarget] =
+    useState<IntegrationConnector | null>(null);
+  const [integrationApiKeySubmitting, setIntegrationApiKeySubmitting] = useState(false);
 
   // Granola state
-  const [granolaEnabled, setGranolaEnabled] = useState(false)
-  const [granolaLoading, setGranolaLoading] = useState(true)
-
-  // Composio API key state
-  const [composioApiKeyOpen, setComposioApiKeyOpen] = useState(false)
-  const [composioApiKeyTarget, setComposioApiKeyTarget] = useState<'slack' | 'gmail'>('gmail')
+  const [granolaEnabled, setGranolaEnabled] = useState(false);
+  const [granolaLoading, setGranolaLoading] = useState(true);
 
   // Slack state
-  const [slackEnabled, setSlackEnabled] = useState(false)
-  const [slackLoading, setSlackLoading] = useState(true)
-  const [slackWorkspaces, setSlackWorkspaces] = useState<Array<{ url: string; name: string }>>([])
-  const [slackAvailableWorkspaces, setSlackAvailableWorkspaces] = useState<Array<{ url: string; name: string }>>([])
-  const [slackSelectedUrls, setSlackSelectedUrls] = useState<Set<string>>(new Set())
-  const [slackPickerOpen, setSlackPickerOpen] = useState(false)
-  const [slackDiscovering, setSlackDiscovering] = useState(false)
-  const [slackDiscoverError, setSlackDiscoverError] = useState<string | null>(null)
-
-  // Composio Gmail/Calendar sync was removed. These flags are seeded false
-  // and never flipped — the IPC that used to set them is gone. The setters
-  // remain so the legacy Composio-Gmail handlers below still type-check,
-  // but those handlers are no longer reachable in the UI (the gating
-  // condition `useComposioForGoogle` stays false).
-  // TODO follow-up: drop these flags entirely and prune the dead UI branches
-  // in connectors-popover, connected-accounts-settings, and onboarding-modal.
-  const [useComposioForGoogle] = useState(false)
-  const [gmailConnected, setGmailConnected] = useState(false)
-  const [gmailLoading, setGmailLoading] = useState(false)
-  const [gmailConnecting, setGmailConnecting] = useState(false)
-
-  const [useComposioForGoogleCalendar] = useState(false)
-  const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false)
-  const [googleCalendarLoading, setGoogleCalendarLoading] = useState(false)
-  const [googleCalendarConnecting, setGoogleCalendarConnecting] = useState(false)
+  const [slackEnabled, setSlackEnabled] = useState(false);
+  const [slackLoading, setSlackLoading] = useState(true);
+  const [slackWorkspaces, setSlackWorkspaces] = useState<SlackWorkspace[]>([]);
+  const [slackDiscovering, setSlackDiscovering] = useState(false);
+  const [slackDiscoverError, setSlackDiscoverError] = useState<string | null>(null);
 
   // Load available providers on mount
   useEffect(() => {
     async function loadProviders() {
       try {
-        setProvidersLoading(true)
-        const result = await window.ipc.invoke('oauth:list-providers', null)
-        setProviders(result.providers || [])
+        setProvidersLoading(true);
+        const result = await window.ipc.invoke("oauth:list-providers", null);
+        setProviders(result.providers || []);
       } catch (error) {
-        console.error('Failed to get available providers:', error)
-        setProviders([])
+        console.error("Failed to get available providers:", error);
+        setProviders([]);
       } finally {
-        setProvidersLoading(false)
+        setProvidersLoading(false);
       }
     }
-    loadProviders()
-  }, [])
-
-  // (Composio Gmail/Calendar flag-check effect removed — flags are constant false now.)
+    loadProviders();
+  }, []);
 
   // Load Granola config
   const refreshGranolaConfig = useCallback(async () => {
     try {
-      setGranolaLoading(true)
-      const result = await window.ipc.invoke('granola:getConfig', null)
-      setGranolaEnabled(result.enabled)
+      setGranolaLoading(true);
+      const result = await window.ipc.invoke("granola:getConfig", null);
+      setGranolaEnabled(result.enabled);
     } catch (error) {
-      console.error('Failed to load Granola config:', error)
-      setGranolaEnabled(false)
+      console.error("Failed to load Granola config:", error);
+      setGranolaEnabled(false);
     } finally {
-      setGranolaLoading(false)
+      setGranolaLoading(false);
     }
-  }, [])
+  }, []);
 
   const handleGranolaToggle = useCallback(async (enabled: boolean) => {
     try {
-      setGranolaLoading(true)
-      await window.ipc.invoke('granola:setConfig', { enabled })
-      setGranolaEnabled(enabled)
-      toast.success(enabled ? 'Granola sync enabled' : 'Granola sync disabled')
+      setGranolaLoading(true);
+      await window.ipc.invoke("granola:setConfig", { enabled });
+      setGranolaEnabled(enabled);
+      toast.success(enabled ? "Granola sync enabled" : "Granola sync disabled");
     } catch (error) {
-      console.error('Failed to update Granola config:', error)
-      toast.error('Failed to update Granola sync settings')
+      console.error("Failed to update Granola config:", error);
+      toast.error("Failed to update Granola sync settings");
     } finally {
-      setGranolaLoading(false)
+      setGranolaLoading(false);
     }
-  }, [])
+  }, []);
 
   // Slack
   const refreshSlackConfig = useCallback(async () => {
     try {
-      setSlackLoading(true)
-      const result = await window.ipc.invoke('slack:getConfig', null)
-      setSlackEnabled(result.enabled)
-      setSlackWorkspaces(result.workspaces || [])
+      setSlackLoading(true);
+      const result = await window.ipc.invoke("slack:getConfig", null);
+      setSlackEnabled(result.enabled);
+      setSlackWorkspaces(result.workspaces || []);
+      setSlackDiscoverError(result.error ?? null);
     } catch (error) {
-      console.error('Failed to load Slack config:', error)
-      setSlackEnabled(false)
-      setSlackWorkspaces([])
+      console.error("Failed to load Slack config:", error);
+      setSlackEnabled(false);
+      setSlackWorkspaces([]);
     } finally {
-      setSlackLoading(false)
+      setSlackLoading(false);
     }
-  }, [])
+  }, []);
 
   const handleSlackEnable = useCallback(async () => {
-    setSlackDiscovering(true)
-    setSlackDiscoverError(null)
+    setSlackDiscovering(true);
+    setSlackDiscoverError(null);
     try {
-      const result = await window.ipc.invoke('slack:listWorkspaces', null)
-      if (result.error || result.workspaces.length === 0) {
-        setSlackDiscoverError(result.error || 'No Slack workspaces found. Set up with: agent-slack auth import-desktop')
-        setSlackAvailableWorkspaces([])
-        setSlackPickerOpen(true)
-      } else {
-        setSlackAvailableWorkspaces(result.workspaces)
-        setSlackSelectedUrls(new Set(result.workspaces.map((w: { url: string }) => w.url)))
-        setSlackPickerOpen(true)
+      const result = await window.ipc.invoke("slack:connectWorkspace", null);
+      if (!result.success) {
+        const message = result.error || "Failed to start Slack connection";
+        setSlackDiscoverError(message);
+        toast.error(message);
       }
     } catch (error) {
-      console.error('Failed to discover Slack workspaces:', error)
-      setSlackDiscoverError('Failed to discover Slack workspaces')
-      setSlackPickerOpen(true)
+      console.error("Failed to connect Slack:", error);
+      setSlackDiscoverError("Failed to connect Slack");
+      toast.error("Failed to connect Slack");
     } finally {
-      setSlackDiscovering(false)
+      setSlackDiscovering(false);
     }
-  }, [])
-
-  const handleSlackSaveWorkspaces = useCallback(async () => {
-    const selected = slackAvailableWorkspaces.filter(w => slackSelectedUrls.has(w.url))
-    try {
-      setSlackLoading(true)
-      await window.ipc.invoke('slack:setConfig', { enabled: true, workspaces: selected })
-      setSlackEnabled(true)
-      setSlackWorkspaces(selected)
-      setSlackPickerOpen(false)
-      toast.success('Slack enabled')
-    } catch (error) {
-      console.error('Failed to save Slack config:', error)
-      toast.error('Failed to save Slack settings')
-    } finally {
-      setSlackLoading(false)
-    }
-  }, [slackAvailableWorkspaces, slackSelectedUrls])
+  }, []);
 
   const handleSlackDisable = useCallback(async () => {
     try {
-      setSlackLoading(true)
-      await window.ipc.invoke('slack:setConfig', { enabled: false, workspaces: [] })
-      setSlackEnabled(false)
-      setSlackWorkspaces([])
-      setSlackPickerOpen(false)
-      toast.success('Slack disabled')
-    } catch (error) {
-      console.error('Failed to update Slack config:', error)
-      toast.error('Failed to update Slack settings')
-    } finally {
-      setSlackLoading(false)
-    }
-  }, [])
-
-  // Gmail (Composio)
-  const refreshGmailStatus = useCallback(async () => {
-    try {
-      setGmailLoading(true)
-      const result = await window.ipc.invoke('composio:get-connection-status', { toolkitSlug: 'gmail' })
-      setGmailConnected(result.isConnected)
-    } catch (error) {
-      console.error('Failed to load Gmail status:', error)
-      setGmailConnected(false)
-    } finally {
-      setGmailLoading(false)
-    }
-  }, [])
-
-  const startGmailConnect = useCallback(async () => {
-    try {
-      setGmailConnecting(true)
-      const result = await window.ipc.invoke('composio:initiate-connection', { toolkitSlug: 'gmail' })
-      if (!result.success) {
-        toast.error(result.error || 'Failed to connect to Gmail')
-        setGmailConnecting(false)
-      }
-    } catch (error) {
-      console.error('Failed to connect to Gmail:', error)
-      toast.error('Failed to connect to Gmail')
-      setGmailConnecting(false)
-    }
-  }, [])
-
-  const handleConnectGmail = useCallback(async () => {
-    const configResult = await window.ipc.invoke('composio:is-configured', null)
-    if (!configResult.configured) {
-      setComposioApiKeyTarget('gmail')
-      setComposioApiKeyOpen(true)
-      return
-    }
-    await startGmailConnect()
-  }, [startGmailConnect])
-
-  const handleDisconnectGmail = useCallback(async () => {
-    try {
-      setGmailLoading(true)
-      const result = await window.ipc.invoke('composio:disconnect', { toolkitSlug: 'gmail' })
-      if (result.success) {
-        setGmailConnected(false)
-        toast.success('Disconnected from Gmail')
+      setSlackLoading(true);
+      const managedWorkspaces = slackWorkspaces.filter((workspace) => workspace.teamId);
+      if (managedWorkspaces.length > 0) {
+        const results = await Promise.all(
+          managedWorkspaces.map((workspace) =>
+            window.ipc.invoke("slack:disconnectWorkspace", { teamId: workspace.teamId }),
+          ),
+        );
+        const failed = results.find((result) => !result.success);
+        if (failed) {
+          throw new Error(failed.error || "Failed to disconnect Slack");
+        }
       } else {
-        toast.error('Failed to disconnect from Gmail')
+        await window.ipc.invoke("slack:setConfig", { enabled: false, workspaces: [] });
+      }
+      setSlackEnabled(false);
+      setSlackWorkspaces([]);
+      toast.success("Slack disabled");
+    } catch (error) {
+      console.error("Failed to update Slack config:", error);
+      toast.error("Failed to update Slack settings");
+    } finally {
+      setSlackLoading(false);
+    }
+  }, [slackWorkspaces]);
+
+  // ... (ERRORS.md E49) Per-provider safety timeouts. The managed connect flow
+  // opens the browser and returns success immediately; if the user abandons it,
+  // the renderer never hears oauth:didConnect, so the Connect spinner would
+  // hang forever. These reset the connecting state after a grace period.
+  const connectTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const CONNECT_TIMEOUT_MS = 120_000;
+
+  const clearConnectTimeout = useCallback((provider: string) => {
+    const handle = connectTimeoutsRef.current[provider];
+    if (handle) {
+      clearTimeout(handle);
+      delete connectTimeoutsRef.current[provider];
+    }
+  }, []);
+
+  const integrationConnectTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const clearIntegrationConnectTimeout = useCallback((connector: string) => {
+    const handle = integrationConnectTimeoutsRef.current[connector];
+    if (handle) {
+      clearTimeout(handle);
+      delete integrationConnectTimeoutsRef.current[connector];
+    }
+  }, []);
+
+  const refreshIntegrations = useCallback(async () => {
+    try {
+      setIntegrationsLoading(true);
+      const result = await window.ipc.invoke("connectors:list", null);
+      setIntegrations(result.connectors || []);
+      if (result.error) {
+        console.warn("Failed to list integrations:", result.error);
       }
     } catch (error) {
-      console.error('Failed to disconnect from Gmail:', error)
-      toast.error('Failed to disconnect from Gmail')
+      console.error("Failed to list integrations:", error);
+      setIntegrations([]);
     } finally {
-      setGmailLoading(false)
+      setIntegrationsLoading(false);
     }
-  }, [])
+  }, []);
 
-  // Google Calendar (Composio)
-  const refreshGoogleCalendarStatus = useCallback(async () => {
-    try {
-      setGoogleCalendarLoading(true)
-      const result = await window.ipc.invoke('composio:get-connection-status', { toolkitSlug: 'googlecalendar' })
-      setGoogleCalendarConnected(result.isConnected)
-    } catch (error) {
-      console.error('Failed to load Google Calendar status:', error)
-      setGoogleCalendarConnected(false)
-    } finally {
-      setGoogleCalendarLoading(false)
-    }
-  }, [])
-
-  const startGoogleCalendarConnect = useCallback(async () => {
-    try {
-      setGoogleCalendarConnecting(true)
-      const result = await window.ipc.invoke('composio:initiate-connection', { toolkitSlug: 'googlecalendar' })
-      if (!result.success) {
-        toast.error(result.error || 'Failed to connect to Google Calendar')
-        setGoogleCalendarConnecting(false)
+  const handleConnectIntegration = useCallback(
+    async (connector: IntegrationConnector) => {
+      if (connector.connected) return;
+      if (connector.authType === "api_key") {
+        setIntegrationApiKeyTarget(connector);
+        setIntegrationApiKeyOpen(true);
+        return;
       }
-    } catch (error) {
-      console.error('Failed to connect to Google Calendar:', error)
-      toast.error('Failed to connect to Google Calendar')
-      setGoogleCalendarConnecting(false)
-    }
-  }, [])
 
-  const handleConnectGoogleCalendar = useCallback(async () => {
-    const configResult = await window.ipc.invoke('composio:is-configured', null)
-    if (!configResult.configured) {
-      setComposioApiKeyTarget('gmail')
-      setComposioApiKeyOpen(true)
-      return
-    }
-    await startGoogleCalendarConnect()
-  }, [startGoogleCalendarConnect])
+      setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: true }));
+      clearIntegrationConnectTimeout(connector.name);
+      integrationConnectTimeoutsRef.current[connector.name] = setTimeout(() => {
+        delete integrationConnectTimeoutsRef.current[connector.name];
+        setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: false }));
+        toast.message("Connect didn't finish — try again");
+      }, CONNECT_TIMEOUT_MS);
 
-  const handleDisconnectGoogleCalendar = useCallback(async () => {
-    try {
-      setGoogleCalendarLoading(true)
-      const result = await window.ipc.invoke('composio:disconnect', { toolkitSlug: 'googlecalendar' })
-      if (result.success) {
-        setGoogleCalendarConnected(false)
-        toast.success('Disconnected from Google Calendar')
-      } else {
-        toast.error('Failed to disconnect from Google Calendar')
+      try {
+        const result = await window.ipc.invoke("connectors:connect", {
+          connector: connector.name,
+        });
+        if (!result.success) {
+          clearIntegrationConnectTimeout(connector.name);
+          setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: false }));
+          toast.error(result.error || `Failed to connect ${connector.displayName}`);
+        }
+      } catch (error) {
+        clearIntegrationConnectTimeout(connector.name);
+        setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: false }));
+        console.error("Failed to connect integration:", error);
+        toast.error(`Failed to connect ${connector.displayName}`);
       }
-    } catch (error) {
-      console.error('Failed to disconnect from Google Calendar:', error)
-      toast.error('Failed to disconnect from Google Calendar')
-    } finally {
-      setGoogleCalendarLoading(false)
-    }
-  }, [])
+    },
+    [clearIntegrationConnectTimeout],
+  );
 
-  // Composio API key
-  const handleComposioApiKeySubmit = useCallback(async (apiKey: string) => {
-    try {
-      await window.ipc.invoke('composio:set-api-key', { apiKey })
-      setComposioApiKeyOpen(false)
-      toast.success('Composio API key saved')
-      await startGmailConnect()
-    } catch (error) {
-      console.error('Failed to save Composio API key:', error)
-      toast.error('Failed to save API key')
-    }
-  }, [startGmailConnect])
+  const handleIntegrationApiKeySubmit = useCallback(
+    async (apiKey: string) => {
+      if (!integrationApiKeyTarget) return;
+      try {
+        setIntegrationApiKeySubmitting(true);
+        const result = await window.ipc.invoke("connectors:saveApiKey", {
+          connector: integrationApiKeyTarget.name,
+          apiKey,
+        });
+        if (!result.success) {
+          toast.error(result.error || `Failed to connect ${integrationApiKeyTarget.displayName}`);
+          return;
+        }
+        toast.success(`Connected to ${integrationApiKeyTarget.displayName}`);
+        setIntegrationApiKeyOpen(false);
+        setIntegrationApiKeyTarget(null);
+        await refreshIntegrations();
+      } catch (error) {
+        console.error("Failed to save integration API key:", error);
+        toast.error(`Failed to connect ${integrationApiKeyTarget.displayName}`);
+      } finally {
+        setIntegrationApiKeySubmitting(false);
+      }
+    },
+    [integrationApiKeyTarget, refreshIntegrations],
+  );
+
+  const handleDisconnectIntegration = useCallback(
+    async (connector: IntegrationConnector) => {
+      try {
+        setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: true }));
+        const result = await window.ipc.invoke("connectors:disconnect", {
+          connector: connector.name,
+        });
+        if (!result.success) {
+          toast.error(result.error || `Failed to disconnect ${connector.displayName}`);
+          return;
+        }
+        toast.success(`Disconnected from ${connector.displayName}`);
+        await refreshIntegrations();
+      } catch (error) {
+        console.error("Failed to disconnect integration:", error);
+        toast.error(`Failed to disconnect ${connector.displayName}`);
+      } finally {
+        setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: false }));
+      }
+    },
+    [refreshIntegrations],
+  );
 
   // OAuth connect/disconnect
-  const startConnect = useCallback(async (provider: string, credentials?: { clientId: string; clientSecret: string }) => {
-    setProviderStates(prev => ({
-      ...prev,
-      [provider]: { ...prev[provider], isConnecting: true }
-    }))
-
-    try {
-      const result = await window.ipc.invoke('oauth:connect', { provider, clientId: credentials?.clientId, clientSecret: credentials?.clientSecret })
-
-      if (!result.success) {
-        toast.error(result.error || (isProductProvider(provider) ? `Failed to log in to ${PRODUCT_NAME}` : `Failed to connect to ${provider}`))
-        setProviderStates(prev => ({
-          ...prev,
-          [provider]: { ...prev[provider], isConnecting: false }
-        }))
-      }
-    } catch (error) {
-      console.error('Failed to connect:', error)
-      toast.error(isProductProvider(provider) ? `Failed to log in to ${PRODUCT_NAME}` : `Failed to connect to ${provider}`)
-      setProviderStates(prev => ({
+  const startConnect = useCallback(
+    async (provider: string, credentials?: { clientId: string; clientSecret: string }) => {
+      setProviderStates((prev) => ({
         ...prev,
-        [provider]: { ...prev[provider], isConnecting: false }
-      }))
-    }
-  }, [])
+        [provider]: { ...prev[provider], isConnecting: true },
+      }));
 
-  const handleConnect = useCallback(async (provider: string) => {
-    if (provider === 'google') {
-      // Signed-in users use the Solomon AI managed-credentials flow: opens
-      // the webapp in the browser, no BYOK modal. Main process detects
-      // signed-in via isSignedIn() when oauth:connect arrives without creds.
-      // Falls back to the BYOK modal for not-signed-in users.
-      const isSignedIntoSolomon = getProductProviderState(providerStates)?.isConnected ?? false
-      if (isSignedIntoSolomon) {
-        await startConnect('google')
-        return
+      // ... (ERRORS.md E49) Safety timeout for an abandoned browser flow.
+      clearConnectTimeout(provider);
+      connectTimeoutsRef.current[provider] = setTimeout(() => {
+        delete connectTimeoutsRef.current[provider];
+        let wasConnecting = false;
+        setProviderStates((prev) => {
+          if (!prev[provider]?.isConnecting) return prev;
+          wasConnecting = true;
+          return { ...prev, [provider]: { ...prev[provider], isConnecting: false } };
+        });
+        if (wasConnecting) toast.message("Connect didn't finish — try again");
+      }, CONNECT_TIMEOUT_MS);
+
+      try {
+        const result = await window.ipc.invoke("oauth:connect", {
+          provider,
+          clientId: credentials?.clientId,
+          clientSecret: credentials?.clientSecret,
+        });
+
+        if (!result.success) {
+          clearConnectTimeout(provider);
+          toast.error(
+            result.error ||
+              (isProductProvider(provider)
+                ? `Failed to log in to ${PRODUCT_NAME}`
+                : `Failed to connect to ${provider}`),
+          );
+          setProviderStates((prev) => ({
+            ...prev,
+            [provider]: { ...prev[provider], isConnecting: false },
+          }));
+        }
+      } catch (error) {
+        clearConnectTimeout(provider);
+        console.error("Failed to connect:", error);
+        toast.error(
+          isProductProvider(provider)
+            ? `Failed to log in to ${PRODUCT_NAME}`
+            : `Failed to connect to ${provider}`,
+        );
+        setProviderStates((prev) => ({
+          ...prev,
+          [provider]: { ...prev[provider], isConnecting: false },
+        }));
       }
-      setGoogleClientIdDescription(undefined)
-      setGoogleClientIdOpen(true)
-      return
-    }
+    },
+    [clearConnectTimeout],
+  );
 
-    await startConnect(provider)
-  }, [startConnect, providerStates])
+  const handleConnect = useCallback(
+    async (provider: string) => {
+      if (provider === "google") {
+        // Signed-in users use the Solomon AI managed-credentials flow: opens
+        // the webapp in the browser, no BYOK modal. Main process detects
+        // signed-in via isSignedIn() when oauth:connect arrives without creds.
+        // Falls back to the BYOK modal for not-signed-in users.
+        const isSignedIntoSolomon = getProductProviderState(providerStates)?.isConnected ?? false;
+        if (isSignedIntoSolomon) {
+          await startConnect("google");
+          return;
+        }
+        setGoogleClientIdDescription(undefined);
+        setGoogleClientIdOpen(true);
+        return;
+      }
 
-  const handleGoogleClientIdSubmit = useCallback((clientId: string, clientSecret: string) => {
-    setGoogleCredentials(clientId, clientSecret)
-    setGoogleClientIdOpen(false)
-    setGoogleClientIdDescription(undefined)
-    startConnect('google', { clientId, clientSecret })
-  }, [startConnect])
+      await startConnect(provider);
+    },
+    [startConnect, providerStates],
+  );
+
+  const handleGoogleClientIdSubmit = useCallback(
+    (clientId: string, clientSecret: string) => {
+      setGoogleCredentials(clientId, clientSecret);
+      setGoogleClientIdOpen(false);
+      setGoogleClientIdDescription(undefined);
+      startConnect("google", { clientId, clientSecret });
+    },
+    [startConnect],
+  );
 
   // Reconnect flow used by the "Reconnect" button. Mirrors handleConnect's
   // Solomon AI-vs-BYOK branching for Google so signed-in users don't get the
   // client-ID modal — they just re-run the managed-credentials browser flow.
-  const handleReconnect = useCallback(async (provider: string) => {
-    if (provider === 'google') {
-      const isSignedIntoSolomon = getProductProviderState(providerStates)?.isConnected ?? false
-      if (isSignedIntoSolomon) {
-        await startConnect('google')
-        return
+  const handleReconnect = useCallback(
+    async (provider: string) => {
+      if (provider === "google") {
+        const isSignedIntoSolomon = getProductProviderState(providerStates)?.isConnected ?? false;
+        if (isSignedIntoSolomon) {
+          await startConnect("google");
+          return;
+        }
+        setGoogleClientIdDescription(
+          "To keep your Google account connected, please re-enter your client ID. You only need to do this once.",
+        );
+        setGoogleClientIdOpen(true);
+        return;
       }
-      setGoogleClientIdDescription(
-        "To keep your Google account connected, please re-enter your client ID. You only need to do this once."
-      )
-      setGoogleClientIdOpen(true)
-      return
-    }
-    await startConnect(provider)
-  }, [startConnect, providerStates])
+      await startConnect(provider);
+    },
+    [startConnect, providerStates],
+  );
 
   const handleDisconnect = useCallback(async (provider: string) => {
-    setProviderStates(prev => ({
+    setProviderStates((prev) => ({
       ...prev,
-      [provider]: { ...prev[provider], isLoading: true }
-    }))
+      [provider]: { ...prev[provider], isLoading: true },
+    }));
 
     try {
-      const result = await window.ipc.invoke('oauth:disconnect', { provider })
+      const result = await window.ipc.invoke("oauth:disconnect", { provider });
 
       if (result.success) {
-        if (provider === 'google') {
-          clearGoogleCredentials()
+        if (provider === "google") {
+          clearGoogleCredentials();
         }
-        const displayName = provider === 'fireflies-ai' ? 'Fireflies' : provider.charAt(0).toUpperCase() + provider.slice(1)
-        toast.success(isProductProvider(provider) ? `Logged out of ${PRODUCT_NAME}` : `Disconnected from ${displayName}`)
-        setProviderStates(prev => ({
+        const displayName =
+          provider === "fireflies-ai"
+            ? "Fireflies"
+            : provider.charAt(0).toUpperCase() + provider.slice(1);
+        toast.success(
+          isProductProvider(provider)
+            ? `Logged out of ${PRODUCT_NAME}`
+            : `Disconnected from ${displayName}`,
+        );
+        setProviderStates((prev) => ({
           ...prev,
           [provider]: {
             isConnected: false,
             isLoading: false,
             isConnecting: false,
-          }
-        }))
+          },
+        }));
       } else {
-        toast.error(isProductProvider(provider) ? `Failed to log out of ${PRODUCT_NAME}` : `Failed to disconnect from ${provider}`)
-        setProviderStates(prev => ({
+        toast.error(
+          isProductProvider(provider)
+            ? `Failed to log out of ${PRODUCT_NAME}`
+            : `Failed to disconnect from ${provider}`,
+        );
+        setProviderStates((prev) => ({
           ...prev,
-          [provider]: { ...prev[provider], isLoading: false }
-        }))
+          [provider]: { ...prev[provider], isLoading: false },
+        }));
       }
     } catch (error) {
-      console.error('Failed to disconnect:', error)
-      toast.error(isProductProvider(provider) ? `Failed to log out of ${PRODUCT_NAME}` : `Failed to disconnect from ${provider}`)
-      setProviderStates(prev => ({
+      console.error("Failed to disconnect:", error);
+      toast.error(
+        isProductProvider(provider)
+          ? `Failed to log out of ${PRODUCT_NAME}`
+          : `Failed to disconnect from ${provider}`,
+      );
+      setProviderStates((prev) => ({
         ...prev,
-        [provider]: { ...prev[provider], isLoading: false }
-      }))
+        [provider]: { ...prev[provider], isLoading: false },
+      }));
     }
-  }, [])
+  }, []);
 
   // Refresh all statuses
   const refreshAllStatuses = useCallback(async () => {
-    refreshGranolaConfig()
-    refreshSlackConfig()
+    refreshIntegrations();
+    refreshGranolaConfig();
+    refreshSlackConfig();
 
-    if (useComposioForGoogle) {
-      refreshGmailStatus()
-    }
+    if (providers.length === 0) return;
 
-    if (useComposioForGoogleCalendar) {
-      refreshGoogleCalendarStatus()
-    }
-
-    if (providers.length === 0) return
-
-    const newStates: Record<string, ProviderState> = {}
+    const newStates: Record<string, ProviderState> = {};
 
     try {
-      const result = await window.ipc.invoke('oauth:getState', null)
-      const config = result.config || {}
-      const statusMap: Record<string, ProviderStatus> = {}
+      const result = await window.ipc.invoke("oauth:getState", null);
+      const config = result.config || {};
+      const statusMap: Record<string, ProviderStatus> = {};
 
       for (const provider of providers) {
-        const providerConfig = config[provider]
+        const providerConfig = config[provider];
         newStates[provider] = {
           isConnected: providerConfig?.connected ?? false,
           isLoading: false,
           isConnecting: false,
-        }
+        };
         if (providerConfig?.error) {
-          statusMap[provider] = { error: providerConfig.error }
+          statusMap[provider] = { error: providerConfig.error };
         }
       }
 
-      setProviderStatus(statusMap)
+      setProviderStatus(statusMap);
     } catch (error) {
-      console.error('Failed to check connection statuses:', error)
+      console.error("Failed to check connection statuses:", error);
       for (const provider of providers) {
         newStates[provider] = {
           isConnected: false,
           isLoading: false,
           isConnecting: false,
-        }
+        };
       }
-      setProviderStatus({})
+      setProviderStatus({});
     }
 
-    setProviderStates(newStates)
-  }, [providers, refreshGranolaConfig, refreshSlackConfig, refreshGmailStatus, useComposioForGoogle, refreshGoogleCalendarStatus, useComposioForGoogleCalendar])
+    setProviderStates(newStates);
+  }, [
+    providers,
+    refreshGranolaConfig,
+    refreshIntegrations,
+    refreshSlackConfig,
+  ]);
 
   // Refresh when active or providers change
   useEffect(() => {
     if (active) {
-      refreshAllStatuses()
+      refreshAllStatuses();
     }
-  }, [active, providers, refreshAllStatuses])
+  }, [active, providers, refreshAllStatuses]);
 
   // Listen for OAuth events
   useEffect(() => {
-    const cleanup = window.ipc.on('oauth:didConnect', async (event) => {
-      const { provider, success } = event
+    const cleanup = window.ipc.on("oauth:didConnect", async (event) => {
+      const { provider, success } = event;
 
-      setProviderStates(prev => ({
+      // ... (ERRORS.md E49) Outcome arrived — cancel the safety timeout.
+      clearConnectTimeout(provider);
+      clearIntegrationConnectTimeout(provider);
+      setIntegrationConnecting((prev) => ({ ...prev, [provider]: false }));
+
+      if (provider === "slack") {
+        setSlackDiscovering(false);
+        if (success) {
+          toast.success("Connected to Slack");
+          refreshSlackConfig();
+        } else {
+          toast.error(event.error || "Failed to connect Slack");
+        }
+        return;
+      }
+
+      setProviderStates((prev) => ({
         ...prev,
         [provider]: {
           isConnected: success,
           isLoading: false,
           isConnecting: false,
-        }
-      }))
+        },
+      }));
 
       if (success) {
-        const displayName = provider === 'fireflies-ai' ? 'Fireflies' : provider.charAt(0).toUpperCase() + provider.slice(1)
+        const displayName =
+          provider === "fireflies-ai"
+            ? "Fireflies"
+            : provider.charAt(0).toUpperCase() + provider.slice(1);
         if (isProductProvider(provider)) {
-          toast.success(`Logged in to ${PRODUCT_NAME}`)
-        } else if (provider === 'google' || provider === 'fireflies-ai') {
+          toast.success(`Logged in to ${PRODUCT_NAME}`);
+        } else if (provider === "google" || provider === "fireflies-ai") {
           toast.success(`Connected to ${displayName}`, {
-            description: 'Syncing your data in the background. This may take a few minutes before changes appear.',
+            description:
+              "Syncing your data in the background. This may take a few minutes before changes appear.",
             duration: 8000,
-          })
+          });
         } else {
-          toast.success(`Connected to ${displayName}`)
+          toast.success(`Connected to ${displayName}`);
         }
 
-        refreshAllStatuses()
+        refreshAllStatuses();
       }
-    })
+    });
 
-    return cleanup
-  }, [refreshAllStatuses])
+    return cleanup;
+  }, [refreshAllStatuses, refreshSlackConfig, clearConnectTimeout, clearIntegrationConnectTimeout]);
 
-  // Listen for Composio events
-  useEffect(() => {
-    const cleanup = window.ipc.on('composio:didConnect', (event) => {
-      const { toolkitSlug, success, error } = event
-
-      if (toolkitSlug === 'gmail') {
-        setGmailConnected(success)
-        setGmailConnecting(false)
-
-        if (success) {
-          toast.success('Connected to Gmail', {
-            description: 'Syncing your emails in the background. This may take a few minutes before changes appear.',
-            duration: 8000,
-          })
-        } else {
-          toast.error(error || 'Failed to connect to Gmail')
-        }
-      }
-
-      if (toolkitSlug === 'googlecalendar') {
-        setGoogleCalendarConnected(success)
-        setGoogleCalendarConnecting(false)
-
-        if (success) {
-          toast.success('Connected to Google Calendar', {
-            description: 'Syncing your calendar in the background. This may take a few minutes before changes appear.',
-            duration: 8000,
-          })
-        } else {
-          toast.error(error || 'Failed to connect to Google Calendar')
-        }
-      }
-    })
-
-    return cleanup
-  }, [])
-
-  const hasProviderError = Object.values(providerStatus).some(
-    (status) => Boolean(status?.error)
-  )
+  const hasProviderError = Object.values(providerStatus).some((status) => Boolean(status?.error));
 
   return {
     // OAuth providers
@@ -565,50 +611,34 @@ export function useConnectors(active: boolean) {
     setGoogleClientIdDescription,
     handleGoogleClientIdSubmit,
 
+    // Rowboat integrations
+    integrations,
+    integrationsLoading,
+    integrationConnecting,
+    integrationApiKeyOpen,
+    setIntegrationApiKeyOpen,
+    integrationApiKeyTarget,
+    integrationApiKeySubmitting,
+    handleConnectIntegration,
+    handleIntegrationApiKeySubmit,
+    handleDisconnectIntegration,
+    refreshIntegrations,
+
     // Granola
     granolaEnabled,
     granolaLoading,
     handleGranolaToggle,
 
-    // Composio API key modal
-    composioApiKeyOpen,
-    setComposioApiKeyOpen,
-    composioApiKeyTarget,
-    setComposioApiKeyTarget,
-    handleComposioApiKeySubmit,
-
     // Slack
     slackEnabled,
     slackLoading,
     slackWorkspaces,
-    slackAvailableWorkspaces,
-    slackSelectedUrls,
-    setSlackSelectedUrls,
-    slackPickerOpen,
-    setSlackPickerOpen,
     slackDiscovering,
     slackDiscoverError,
     handleSlackEnable,
-    handleSlackSaveWorkspaces,
     handleSlackDisable,
-
-    // Gmail (Composio)
-    useComposioForGoogle,
-    gmailConnected,
-    gmailLoading,
-    gmailConnecting,
-    handleConnectGmail,
-    handleDisconnectGmail,
-
-    // Google Calendar (Composio)
-    useComposioForGoogleCalendar,
-    googleCalendarConnected,
-    googleCalendarLoading,
-    googleCalendarConnecting,
-    handleConnectGoogleCalendar,
-    handleDisconnectGoogleCalendar,
 
     // Refresh
     refreshAllStatuses,
-  }
+  };
 }

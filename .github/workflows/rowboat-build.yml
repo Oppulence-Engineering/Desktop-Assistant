@@ -25,7 +25,7 @@ jobs:
         run: npm run build
         working-directory: apps/rowboat
 
-  build-rowboatx:
+  build-rowboat-www:
     runs-on: ubuntu-latest
     
     steps:
@@ -34,14 +34,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          cache-dependency-path: 'apps/rowboat/package-lock.json'
-          node-version: '24'
+          cache-dependency-path: 'apps/rowboat-www/package-lock.json'
+          node-version: '22'
           cache: 'npm'
           
       - name: Install dependencies
         run: npm ci
-        working-directory: apps/cli
+        working-directory: apps/rowboat-www
         
-      - name: Build Rowboat
+      - name: Build rowboat-www
         run: npm run build
-        working-directory: apps/cli 
+        working-directory: apps/rowboat-www

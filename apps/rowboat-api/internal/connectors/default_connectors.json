@@ -1,0 +1,260 @@
+[
+  {
+    "name": "canvas",
+    "displayName": "Canvas",
+    "description": "Banking, invoicing, dunning, transactions",
+    "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
+    "authType": "oauth",
+    "audience": "canvas-api",
+    "scopes": ["invoices:read", "customers:read", "transactions:read"],
+    "mcpTools": [
+      { "name": "customer.lookup", "trustTier": "read" },
+      { "name": "invoice.lookup", "trustTier": "read" },
+      { "name": "transaction.search", "trustTier": "read" }
+    ],
+    "templateBlocks": [
+      {
+        "id": "invoice-context",
+        "title": "Invoice context",
+        "description": "Look up invoices, customers, balances, and current payment status.",
+        "category": "finance",
+        "requiredScopes": ["invoices:read", "customers:read"],
+        "mcpTools": ["invoice.lookup", "customer.lookup"],
+        "trustTier": "read",
+        "samplePrompt": "Show me the current invoice status for Acme."
+      },
+      {
+        "id": "transaction-review",
+        "title": "Transaction review",
+        "description": "Search transactions and summarize recent customer activity.",
+        "category": "finance",
+        "requiredScopes": ["transactions:read"],
+        "mcpTools": ["transaction.search"],
+        "trustTier": "read",
+        "samplePrompt": "Find recent transactions for this customer."
+      }
+    ]
+  },
+  {
+    "name": "corinthian",
+    "displayName": "Corinthian",
+    "description": "Accounts receivable, collections, communications",
+    "mcpUrl": "https://mcp.corinthian.solomon-ai.co/mcp",
+    "authType": "oauth",
+    "audience": "corinthian-api",
+    "scopes": ["ar:read", "collections:read"],
+    "mcpTools": [
+      { "name": "thread.search", "trustTier": "read" },
+      { "name": "case.lookup", "trustTier": "read" },
+      { "name": "promise.list", "trustTier": "read" }
+    ],
+    "templateBlocks": [
+      {
+        "id": "collections-context",
+        "title": "Collections context",
+        "description": "Review collection cases, promises to pay, and customer thread history.",
+        "category": "finance",
+        "requiredScopes": ["collections:read"],
+        "mcpTools": ["case.lookup", "promise.list", "thread.search"],
+        "trustTier": "read",
+        "samplePrompt": "Summarize this customer's open collection promises."
+      }
+    ]
+  },
+  {
+    "name": "wispr",
+    "displayName": "Wispr Flow",
+    "description": "AI dictation transcripts",
+    "mcpUrl": "https://mcp.wispr.solomon-ai.co/mcp",
+    "authType": "api_key",
+    "audience": "wispr-api",
+    "mcpTools": [
+      { "name": "transcript.search", "trustTier": "read" },
+      { "name": "transcript.get", "trustTier": "read" }
+    ],
+    "templateBlocks": [
+      {
+        "id": "transcript-recall",
+        "title": "Transcript recall",
+        "description": "Search and retrieve dictated transcripts for memory and follow-up work.",
+        "category": "meetings",
+        "mcpTools": ["transcript.search", "transcript.get"],
+        "trustTier": "read",
+        "samplePrompt": "Find my latest voice notes about the launch plan."
+      }
+    ]
+  },
+  {
+    "name": "hubspot",
+    "displayName": "HubSpot",
+    "description": "CRM contacts, deals, companies, tickets, and notes",
+    "mcpUrl": "https://mcp.hubspot.solomon-ai.co/mcp",
+    "authType": "api_key",
+    "audience": "hubspot-api",
+    "mcpTools": [
+      { "name": "contact.lookup", "trustTier": "read" },
+      { "name": "company.lookup", "trustTier": "read" },
+      { "name": "deal.search", "trustTier": "read" },
+      { "name": "ticket.create", "trustTier": "act" },
+      { "name": "note.create", "trustTier": "act" }
+    ],
+    "templateBlocks": [
+      {
+        "id": "crm-research",
+        "title": "CRM research",
+        "description": "Look up contacts, companies, deals, and tickets before customer work.",
+        "category": "crm",
+        "mcpTools": ["contact.lookup", "company.lookup", "deal.search"],
+        "trustTier": "read",
+        "samplePrompt": "Brief me on the current HubSpot deal for Acme."
+      },
+      {
+        "id": "crm-actions",
+        "title": "CRM actions",
+        "description": "Create tickets and notes from agent follow-up workflows.",
+        "category": "crm",
+        "mcpTools": ["ticket.create", "note.create"],
+        "trustTier": "act",
+        "samplePrompt": "Create a follow-up note on this HubSpot company."
+      }
+    ]
+  },
+  {
+    "name": "github",
+    "displayName": "GitHub",
+    "description": "Repositories, issues, pull requests, and code review context",
+    "mcpUrl": "https://mcp.github.solomon-ai.co/mcp",
+    "authType": "api_key",
+    "audience": "github-api",
+    "mcpTools": [
+      { "name": "repository.get", "trustTier": "read" },
+      { "name": "issue.search", "trustTier": "read" },
+      { "name": "pull_request.search", "trustTier": "read" },
+      { "name": "issue.comment.create", "trustTier": "act" },
+      { "name": "pull_request.review.create", "trustTier": "act" }
+    ],
+    "templateBlocks": [
+      {
+        "id": "engineering-context",
+        "title": "Engineering context",
+        "description": "Search repositories, issues, and pull requests for project context.",
+        "category": "development",
+        "mcpTools": ["repository.get", "issue.search", "pull_request.search"],
+        "trustTier": "read",
+        "samplePrompt": "Summarize open pull requests related to billing."
+      },
+      {
+        "id": "github-comments",
+        "title": "GitHub comments",
+        "description": "Comment on issues or pull requests when a workflow needs to respond.",
+        "category": "development",
+        "mcpTools": ["issue.comment.create", "pull_request.review.create"],
+        "trustTier": "act",
+        "samplePrompt": "Draft and post a status comment on this issue."
+      }
+    ]
+  },
+  {
+    "name": "linear",
+    "displayName": "Linear",
+    "description": "Issues, projects, comments, and triage workflows",
+    "mcpUrl": "https://mcp.linear.solomon-ai.co/mcp",
+    "authType": "api_key",
+    "audience": "linear-api",
+    "mcpTools": [
+      { "name": "issue.search", "trustTier": "read" },
+      { "name": "project.lookup", "trustTier": "read" },
+      { "name": "issue.create", "trustTier": "act" },
+      { "name": "issue.comment.create", "trustTier": "act" }
+    ],
+    "templateBlocks": [
+      {
+        "id": "issue-triage",
+        "title": "Issue triage",
+        "description": "Search issues and projects to understand scope and ownership.",
+        "category": "project-management",
+        "mcpTools": ["issue.search", "project.lookup"],
+        "trustTier": "read",
+        "samplePrompt": "Find Linear issues related to onboarding integrations."
+      },
+      {
+        "id": "issue-actions",
+        "title": "Issue actions",
+        "description": "Create issues and add comments from support or planning workflows.",
+        "category": "project-management",
+        "mcpTools": ["issue.create", "issue.comment.create"],
+        "trustTier": "act",
+        "samplePrompt": "Create a Linear issue for this bug report."
+      }
+    ]
+  },
+  {
+    "name": "notion",
+    "displayName": "Notion",
+    "description": "Workspace pages, databases, and knowledge bases",
+    "mcpUrl": "https://mcp.notion.solomon-ai.co/mcp",
+    "authType": "api_key",
+    "audience": "notion-api",
+    "mcpTools": [
+      { "name": "page.search", "trustTier": "read" },
+      { "name": "page.get", "trustTier": "read" },
+      { "name": "database.query", "trustTier": "read" },
+      { "name": "page.update", "trustTier": "act" }
+    ],
+    "templateBlocks": [
+      {
+        "id": "workspace-knowledge",
+        "title": "Workspace knowledge",
+        "description": "Search pages and databases to ground answers in Notion content.",
+        "category": "knowledge",
+        "mcpTools": ["page.search", "page.get", "database.query"],
+        "trustTier": "read",
+        "samplePrompt": "Search Notion for the latest onboarding notes."
+      },
+      {
+        "id": "page-updates",
+        "title": "Page updates",
+        "description": "Update Notion pages after agent workflows produce new context.",
+        "category": "knowledge",
+        "mcpTools": ["page.update"],
+        "trustTier": "act",
+        "samplePrompt": "Append this summary to the launch plan page."
+      }
+    ]
+  },
+  {
+    "name": "stripe",
+    "displayName": "Stripe",
+    "description": "Customers, charges, invoices, subscriptions, and refunds",
+    "mcpUrl": "https://mcp.stripe.solomon-ai.co/mcp",
+    "authType": "api_key",
+    "audience": "stripe-api",
+    "mcpTools": [
+      { "name": "customer.lookup", "trustTier": "read" },
+      { "name": "charge.search", "trustTier": "read" },
+      { "name": "invoice.lookup", "trustTier": "read" },
+      { "name": "invoice.finalize", "trustTier": "act" },
+      { "name": "refund.create", "trustTier": "money-moving" }
+    ],
+    "templateBlocks": [
+      {
+        "id": "payments-context",
+        "title": "Payments context",
+        "description": "Look up customers, charges, and invoices for support and finance work.",
+        "category": "payments",
+        "mcpTools": ["customer.lookup", "charge.search", "invoice.lookup"],
+        "trustTier": "read",
+        "samplePrompt": "Find recent Stripe charges for this customer."
+      },
+      {
+        "id": "payment-actions",
+        "title": "Payment actions",
+        "description": "Finalize invoices and create refunds when explicitly requested.",
+        "category": "payments",
+        "mcpTools": ["invoice.finalize", "refund.create"],
+        "trustTier": "money-moving",
+        "samplePrompt": "Prepare the refund workflow for this charge."
+      }
+    ]
+  }
+]

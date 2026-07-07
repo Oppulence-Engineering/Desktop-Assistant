@@ -33,7 +33,7 @@
         "search_tweets": {
           "type": "mcp",
           "name": "TWITTER_RECENT_SEARCH",
-          "description": "Search recent Tweets from the last 7 days using X/Twitter's search syntax via Composio's Twitter MCP server.",
+          "description": "Search recent Tweets from the last 7 days using X/Twitter's search syntax via legacy integration vendor's Twitter MCP server.",
           "mcpServerName": "twitter",
           "inputSchema": {
             "type": "object",
@@ -549,11 +549,11 @@
     },
     "calendar": {
       "type": "http",
-      "url": "<composio-url>"
+      "url": "<legacy-integration-vendor-url>"
     },
     "twitter": {
       "type": "http",
-      "url": "<composio-url>"
+      "url": "<legacy-integration-vendor-url>"
     }
   }
 }

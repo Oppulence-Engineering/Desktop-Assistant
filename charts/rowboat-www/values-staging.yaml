@@ -1,0 +1,19 @@
+# Staging overrides. Apply with:
+#   helm upgrade --install rowboat-www charts/rowboat-www \
+#     -f charts/rowboat-www/values-staging.yaml -n rowboat-staging
+
+replicaCount: 2
+
+imagePullSecrets:
+  - name: ghcr-pull
+
+ingress:
+  host: x.staging.oppulence.io
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+  tls:
+    secretName: rowboat-www-staging-tls
+
+config:
+  ROWBOAT_WWW_PUBLIC_API_BASE_URL: https://api.x.staging.oppulence.io
+  ROWBOAT_WWW_API_PROXY_URL: https://api.x.staging.oppulence.io

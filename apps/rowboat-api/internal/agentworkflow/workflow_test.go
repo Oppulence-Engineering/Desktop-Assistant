@@ -241,6 +241,29 @@ func TestWorkflowIDStableAcrossSession(t *testing.T) {
 	}
 }
 
+func TestApprovalIDScopeValidation(t *testing.T) {
+	st := baseState("hello", []ToolMeta{{Name: "demo.payment", TrustTier: agentregistry.TierMoneyMoving, Kind: agentregistry.KindTool}})
+	e := &exec{state: &st}
+
+	if err := e.validateApprovalID(ApprovalID(st.Start.SessionID, 0, 0)); err != nil {
+		t.Fatalf("accepted turn approval rejected: %v", err)
+	}
+	if err := e.validateApprovalID(ApprovalID("other-session", 0, 0)); err == nil {
+		t.Fatal("foreign approval id must be rejected")
+	}
+	if err := e.validateApprovalID(ApprovalID(st.Start.SessionID, 1, 0)); err == nil {
+		t.Fatal("future turn approval id must be rejected")
+	}
+	if err := e.validateApprovalID(st.Start.SessionID + "/turn/not-a-number/approval/0"); err == nil {
+		t.Fatal("malformed approval id must be rejected")
+	}
+
+	st.CompletedTurns = 1
+	if err := e.validateApprovalID(ApprovalID(st.Start.SessionID, 0, 0)); err == nil {
+		t.Fatal("completed turn approval id must be rejected")
+	}
+}
+
 // TestSessionWorkflowHITLApproved is the P3 gate: a money-moving tool pauses on
 // workflow.Await (zero worker slot); an approveAction Update carrying a valid
 // X-Approval-Token resolves it; ValidateApproval passes; the tool then runs.

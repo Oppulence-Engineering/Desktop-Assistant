@@ -64,8 +64,11 @@ func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, log *zap
 			// gmail.compose lets the agent create drafts (never send) on the user's
 			// behalf, gated behind a human approval (connector.write.gmail_draft).
 			"https://www.googleapis.com/auth/gmail.compose",
+			"https://www.googleapis.com/auth/gmail.send",
 			"https://www.googleapis.com/auth/calendar.events.readonly",
+			"https://www.googleapis.com/auth/calendar.events",
 			"https://www.googleapis.com/auth/drive.readonly",
+			"https://www.googleapis.com/auth/drive.file",
 		},
 	}
 }

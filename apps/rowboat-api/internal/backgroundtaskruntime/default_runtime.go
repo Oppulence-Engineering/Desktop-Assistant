@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
 )
@@ -20,10 +21,14 @@ const toolResultCap = 16 << 10 // 16 KiB
 // explicit and billed, so the cost is bounded by the model's own choices.
 const artifactResultCap = 256 << 10 // 256 KiB
 
+var controlPollInterval = time.Second
+
 // DefaultToolResultCap is the per-tool transcript budget (the generic cap),
 // exported for reuse by the durable agent runtime (RFC 027), which truncates
 // tool results before they re-enter the workflow transcript / Temporal history.
 const DefaultToolResultCap = toolResultCap
+
+const sandboxEventOutputCap = 16 << 10
 
 // TruncateToolResult is the exported reuse of the transcript-truncation rule
 // (RFC 027 reuses it for tool results entering workflow history). See
@@ -104,6 +109,9 @@ func (r *DefaultRuntime) Execute(ctx context.Context, in RunInput) (RunOutput, e
 
 		// One progress tick per iteration: drives the run row + heartbeat.
 		percent := 10 + (70*call)/in.Limits.MaxLLMCalls
+		if err := r.applyControls(runCtx, in, &transcript, percent); err != nil {
+			return out, r.classify(ctx, runCtx, in, err)
+		}
 		if err := in.Events.Progress(runCtx, percent, fmt.Sprintf("Agent step %d.", call+1)); err != nil {
 			return out, r.classify(ctx, runCtx, in, err)
 		}
@@ -158,12 +166,30 @@ func (r *DefaultRuntime) Execute(ctx context.Context, in RunInput) (RunOutput, e
 				continue
 			}
 
-			if err := r.emit(runCtx, in, eventToolCallStarted, map[string]any{
-				"tool": tool.Name(), "callIndex": toolCalls,
-			}); err != nil {
+			audit := auditInfo(tool, callReq.Arguments)
+			if err := r.emit(runCtx, in, eventToolCallStarted, toolEventPayload(tool.Name(), toolCalls, audit, "", map[string]any{})); err != nil {
 				return out, r.classify(ctx, runCtx, in, err)
 			}
-			result, ierr := tool.Invoke(runCtx, r.scope(in), callReq.Arguments)
+			approvalID := ""
+			if RequiresApproval(audit.TrustTier) {
+				decision, err := r.awaitToolApproval(runCtx, in, tool.Name(), toolCalls, audit, callReq.Arguments)
+				if err != nil {
+					return out, r.classify(ctx, runCtx, in, err)
+				}
+				approvalID = decision.ApprovalID
+				if !decision.Approved {
+					if err := r.emit(runCtx, in, eventToolCallCompleted, toolEventPayload(tool.Name(), toolCalls, audit, approvalID, map[string]any{
+						"error": "tool call denied by human approval gate",
+					})); err != nil {
+						return out, r.classify(ctx, runCtx, in, err)
+					}
+					transcript = appendToolResult(transcript, callReq.ID, `{"error":"tool call denied by human approval gate"}`)
+					continue
+				}
+			}
+			started := time.Now()
+			result, ierr := tool.Invoke(runCtx, r.scope(in, toolCalls, approvalID), callReq.Arguments)
+			latencyMs := time.Since(started).Milliseconds()
 			if ierr != nil {
 				backgroundtaskmetrics.RuntimeToolFailures.WithLabelValues(tool.Name()).Inc()
 				// A tool that died on OUR deadline is a deadline breach, not a
@@ -176,18 +202,26 @@ func (r *DefaultRuntime) Execute(ctx context.Context, in RunInput) (RunOutput, e
 				if errors.As(ierr, &re) {
 					return out, re
 				}
-				if err := r.emit(runCtx, in, eventToolCallCompleted, map[string]any{
-					"tool": tool.Name(), "callIndex": toolCalls, "error": truncate(ierr.Error(), 300),
-				}); err != nil {
+				if err := r.emit(runCtx, in, eventToolCallCompleted, toolEventPayload(tool.Name(), toolCalls, audit, approvalID, map[string]any{
+					"latencyMs": latencyMs,
+					"error":     truncate(ierr.Error(), 300),
+				})); err != nil {
 					return out, r.classify(ctx, runCtx, in, err)
 				}
 				transcript = appendToolResult(transcript, callReq.ID, fmt.Sprintf(`{"error":%q}`, truncate(ierr.Error(), 300)))
 				continue
 			}
 			backgroundtaskmetrics.RuntimeToolCalls.WithLabelValues(tool.Name()).Inc()
-			if err := r.emit(runCtx, in, eventToolCallCompleted, map[string]any{
-				"tool": tool.Name(), "callIndex": toolCalls, "resultBytes": len(result),
-			}); err != nil {
+			completedExtra := map[string]any{
+				"latencyMs":   latencyMs,
+				"resultBytes": len(result),
+			}
+			if tool.Name() == sandboxToolName {
+				for k, v := range sandboxResultEventFields(result) {
+					completedExtra[k] = v
+				}
+			}
+			if err := r.emit(runCtx, in, eventToolCallCompleted, toolEventPayload(tool.Name(), toolCalls, audit, approvalID, completedExtra)); err != nil {
 				return out, r.classify(ctx, runCtx, in, err)
 			}
 			transcript = appendToolResult(transcript, callReq.ID, truncateToolResult(result, resultCap(tool.Name())))
@@ -210,8 +244,8 @@ func (r *DefaultRuntime) buildRegistry(staged *stagedArtifact, in RunInput) Tool
 	return NewRegistry(tools)
 }
 
-func (r *DefaultRuntime) scope(in RunInput) ToolScope {
-	return ToolScope{UserID: in.UserID, TaskSlug: in.Slug, RunID: in.RunID}
+func (r *DefaultRuntime) scope(in RunInput, toolCallIndex int, approvalID string) ToolScope {
+	return ToolScope{UserID: in.UserID, TaskSlug: in.Slug, RunID: in.RunID, ToolCallIndex: toolCallIndex, ApprovalID: approvalID}
 }
 
 // finalize flushes the staged artifact (or promotes the final content into
@@ -270,6 +304,112 @@ func (r *DefaultRuntime) emit(ctx context.Context, in RunInput, eventType string
 	return in.Events.Emit(ctx, eventType, payload)
 }
 
+func (r *DefaultRuntime) applyControls(ctx context.Context, in RunInput, transcript *[]Message, percent int) error {
+	if in.Controls == nil {
+		return nil
+	}
+	paused := false
+	for {
+		state, err := in.Controls.Checkpoint(ctx)
+		if err != nil {
+			return err
+		}
+		for _, update := range state.ContextUpdates {
+			text := strings.TrimSpace(update)
+			if text == "" {
+				continue
+			}
+			*transcript = append(*transcript, Message{
+				Role:    "user",
+				Content: "Operator update_context: " + text,
+			})
+			if err := in.Events.Progress(ctx, percent, "Context updated."); err != nil {
+				return err
+			}
+		}
+		if !state.Paused {
+			if paused {
+				return in.Events.Progress(ctx, percent, "Run resumed.")
+			}
+			return nil
+		}
+		if !paused {
+			paused = true
+			if err := in.Events.Progress(ctx, percent, "Run paused."); err != nil {
+				return err
+			}
+		}
+		if err := sleepContext(ctx, controlPollInterval); err != nil {
+			return err
+		}
+	}
+}
+
+type runtimeApprovalDecision struct {
+	ApprovalID string
+	Approved   bool
+}
+
+func (r *DefaultRuntime) awaitToolApproval(ctx context.Context, in RunInput, toolName string, callIndex int, audit ToolAudit, _ json.RawMessage) (runtimeApprovalDecision, error) {
+	approvalID := toolApprovalID(in.RunID, callIndex)
+	requestPayload := toolEventPayload(toolName, callIndex, audit, approvalID, map[string]any{
+		"approvalRequired": true,
+	})
+	if err := r.emit(ctx, in, eventToolApprovalRequested, requestPayload); err != nil {
+		return runtimeApprovalDecision{}, err
+	}
+	if err := in.Events.Progress(ctx, 80, "Waiting for human approval."); err != nil {
+		return runtimeApprovalDecision{}, err
+	}
+	if in.Controls == nil {
+		if err := r.emit(ctx, in, eventToolApprovalResolved, toolEventPayload(toolName, callIndex, audit, approvalID, map[string]any{
+			"decision": "denied",
+			"reason":   "approval control source is not configured",
+		})); err != nil {
+			return runtimeApprovalDecision{}, err
+		}
+		return runtimeApprovalDecision{ApprovalID: approvalID, Approved: false}, nil
+	}
+	for {
+		state, err := in.Controls.Checkpoint(ctx)
+		if err != nil {
+			return runtimeApprovalDecision{}, err
+		}
+		if decision, ok := state.ToolApprovals[approvalID]; ok {
+			out := toolEventPayload(toolName, callIndex, audit, approvalID, map[string]any{
+				"decision": "denied",
+			})
+			if decision.Approved {
+				out["decision"] = "approved"
+			}
+			if decision.ResolvedBy != "" {
+				out["resolvedBy"] = decision.ResolvedBy
+			}
+			if decision.Reason != "" {
+				out["reason"] = decision.Reason
+			}
+			if err := r.emit(ctx, in, eventToolApprovalResolved, out); err != nil {
+				return runtimeApprovalDecision{}, err
+			}
+			return runtimeApprovalDecision{ApprovalID: approvalID, Approved: decision.Approved}, nil
+		}
+		if err := sleepContext(ctx, controlPollInterval); err != nil {
+			return runtimeApprovalDecision{}, err
+		}
+	}
+}
+
+func sleepContext(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
 // limitBreached records the breach (event + metric) and returns the terminal
 // classified error.
 func (r *DefaultRuntime) limitBreached(ctx context.Context, in RunInput, code, limit string, value, maxVal int) error {
@@ -308,10 +448,85 @@ func appendToolResult(transcript []Message, toolCallID, content string) []Messag
 	return append(transcript, Message{Role: "tool", ToolCallID: toolCallID, Content: content})
 }
 
+func sandboxResultEventFields(raw json.RawMessage) map[string]any {
+	var result SandboxResult
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil
+	}
+	fields := map[string]any{
+		"sandboxStatus": result.Status,
+	}
+	if result.Backend != "" {
+		fields["sandboxBackend"] = result.Backend
+	}
+	if result.JobName != "" {
+		fields["sandboxJobName"] = result.JobName
+	}
+	if result.ExitCode != 0 {
+		fields["sandboxExitCode"] = result.ExitCode
+	}
+	if result.Output != "" {
+		fields["sandboxOutputBytes"] = len([]byte(result.Output))
+		if len([]byte(result.Output)) > sandboxEventOutputCap {
+			fields["sandboxOutput"] = truncate(result.Output, sandboxEventOutputCap)
+			fields["sandboxOutputEventTruncated"] = true
+		} else {
+			fields["sandboxOutput"] = result.Output
+		}
+	}
+	if result.OutputTruncated {
+		fields["sandboxOutputTruncated"] = true
+	}
+	if result.TimedOut {
+		fields["sandboxTimedOut"] = true
+	}
+	return fields
+}
+
 func defsOf(tools []Tool) []ToolDef {
 	out := make([]ToolDef, 0, len(tools))
 	for _, t := range tools {
-		out = append(out, ToolDef{Name: t.Name(), Description: t.Description(), Parameters: t.JSONSchema()})
+		audit := auditInfo(t, nil)
+		out = append(out, ToolDef{Name: t.Name(), Description: t.Description(), Parameters: t.JSONSchema(), TrustTier: audit.TrustTier})
 	}
 	return out
+}
+
+func auditInfo(tool Tool, args json.RawMessage) ToolAudit {
+	audit := ToolAudit{TrustTier: TierRead}
+	if provider, ok := tool.(ToolAuditProvider); ok {
+		audit = provider.AuditInfo(args)
+	}
+	if audit.TrustTier == "" {
+		audit.TrustTier = TierRead
+	}
+	return audit
+}
+
+func toolEventPayload(toolName string, callIndex int, audit ToolAudit, approvalID string, extra map[string]any) map[string]any {
+	payload := map[string]any{
+		"tool":      toolName,
+		"callIndex": callIndex,
+		"trustTier": audit.TrustTier,
+	}
+	if audit.Connector != "" {
+		payload["connector"] = audit.Connector
+	}
+	if audit.Operation != "" {
+		payload["operation"] = audit.Operation
+	}
+	if len(audit.RequiredScopes) > 0 {
+		payload["requiredScopes"] = append([]string(nil), audit.RequiredScopes...)
+	}
+	if approvalID != "" {
+		payload["approvalId"] = approvalID
+	}
+	for k, v := range extra {
+		payload[k] = v
+	}
+	return payload
+}
+
+func toolApprovalID(runID string, callIndex int) string {
+	return fmt.Sprintf("%s/tool/%d", runID, callIndex)
 }

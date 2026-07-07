@@ -3,16 +3,13 @@ import * as path from "path";
 import * as fs from "fs/promises";
 import { executeCommand, executeCommandAbortable } from "./command-executor.js";
 import { resolveSkill, availableSkills } from "../assistant/skills/index.js";
-import { executeTool, listServers, listTools } from "../../mcp/mcp.js";
+import { closeMcpClient, executeTool, listServers, listTools } from "../../mcp/mcp.js";
 import container from "../../di/container.js";
 import { IMcpConfigRepo } from "../..//mcp/repo.js";
 import { McpServerDefinition } from "@x/shared/dist/mcp.js";
 import * as files from "../../filesystem/files.js";
 import { IAgentsRepo } from "../../agents/repo.js";
 import { WorkDir } from "../../config/config.js";
-import { composioAccountsRepo } from "../../composio/repo.js";
-import { executeAction as executeComposioAction, isConfigured as isComposioConfigured, searchTools as searchComposioTools } from "../../composio/client.js";
-import { CURATED_TOOLKITS, CURATED_TOOLKIT_SLUGS } from "@x/shared/dist/composio.js";
 import { BrowserControlInputSchema, type BrowserControlInput } from "@x/shared/dist/browser-control.js";
 import { BackgroundTaskSchema, TriggersSchema } from "@x/shared/dist/background-task.js";
 import type { CodeModeManager } from "../../code-mode/acp/manager.js";
@@ -54,6 +51,13 @@ import { getCurrentUseCase, withUseCase } from "../../analytics/use_case.js";
 import { isSignedIn } from "../../account/account.js";
 import { getAccessToken } from "../../auth/tokens.js";
 import { API_URL } from "../../config/env.js";
+import { getConnectorMCPTokenViaBackend, listConnectorsViaBackend } from "../../connectors/connectors-backend.js";
+import {
+    buildSlackReplyDraft,
+    buildSlackThreadReadRequest,
+    listSlackWorkspacesViaBackend,
+    readSlackThreadViaBackend,
+} from "../../auth/slack-backend-oauth.js";
 import type { IBrowserControlService } from "../browser-control/service.js";
 import type { INotificationService } from "../notification/service.js";
 // Parser libraries are loaded dynamically inside parseFile.execute()
@@ -98,6 +102,9 @@ const LLMPARSE_MIME_TYPES: Record<string, string> = {
     '.tiff': 'image/tiff',
 };
 
+function rowboatIntegrationServerName(connector: string): string {
+    return `rowboat-${connector.toLowerCase().replace(/[^a-z0-9_-]+/g, "-")}`;
+}
 
 export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     loadSkill: {
@@ -1324,151 +1331,230 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     },
 
     // ========================================================================
-    // Composio Meta-Tools
+    // Rowboat Integration Meta-Tools
     // ========================================================================
 
-    'composio-list-toolkits': {
-        description: 'List available Composio integrations (Gmail, Slack, GitHub, etc.) and their connection status. Use this to show the user what services they can connect to.',
+    'rowboat-list-integrations': {
+        description: 'List managed Rowboat integrations and their connection status, MCP tools, and template blocks. Use this before working with external services.',
         inputSchema: z.object({
-            category: z.enum(['all', 'communication', 'productivity', 'development', 'crm', 'social', 'storage', 'support']).optional()
-                .describe('Filter by category. Defaults to "all".'),
+            query: z.string().optional().describe('Optional service or capability to filter for, such as "github", "invoices", or "crm".'),
         }),
-        execute: async ({ category }: { category?: string }) => {
-            const toolkits = CURATED_TOOLKITS
-                .filter(t => !category || category === 'all' || t.category === category)
-                .map(t => ({
-                    slug: t.slug,
-                    name: t.displayName,
-                    category: t.category,
-                    isConnected: composioAccountsRepo.isConnected(t.slug),
-                }));
-
-            const connectedCount = toolkits.filter(t => t.isConnected).length;
-            return {
-                toolkits,
-                connectedCount,
-                totalCount: toolkits.length,
-            };
-        },
-        isAvailable: async () => isComposioConfigured(),
-    },
-
-    'composio-search-tools': {
-        description: 'Search for Composio tools by use case across connected services. Returns tool slugs, descriptions, and input schemas so you can call composio-execute-tool with the right parameters. Example: search "send email" to find Gmail tools, "create issue" to find GitHub/Jira tools.',
-        inputSchema: z.object({
-            query: z.string().describe('Natural language description of what you want to do (e.g., "send an email", "create a GitHub issue", "schedule a meeting")'),
-            toolkitSlug: z.string().optional().describe('Optional: limit search to a specific toolkit (e.g., "gmail", "github")'),
-        }),
-        execute: async ({ query, toolkitSlug }: { query: string; toolkitSlug?: string }) => {
+        execute: async ({ query }: { query?: string }) => {
             try {
-                const toolkitFilter = toolkitSlug ? [toolkitSlug] : undefined;
-                const result = await searchComposioTools(query, toolkitFilter);
-
-                // Filter to curated toolkits only (skip if a specific toolkit was requested —
-                // the API already filtered server-side)
-                const filtered = toolkitSlug
-                    ? result.items
-                    : result.items.filter(t => CURATED_TOOLKIT_SLUGS.has(t.toolkitSlug));
-
-                // Annotate with connection status
-                const tools = filtered.map(t => ({
-                    slug: t.slug,
-                    name: t.name,
-                    description: t.description,
-                    toolkitSlug: t.toolkitSlug,
-                    isConnected: composioAccountsRepo.isConnected(t.toolkitSlug),
-                    inputSchema: t.inputParameters,
-                }));
+                const response = await listConnectorsViaBackend();
+                const q = query?.trim().toLowerCase();
+                const integrations = response.connectors
+                    .filter((connector) => {
+                        if (!q) return true;
+                        const haystack = [
+                            connector.name,
+                            connector.displayName,
+                            connector.description,
+                            ...(connector.templateBlocks ?? []).flatMap((block) => [
+                                block.title,
+                                block.description,
+                                block.category,
+                            ]),
+                            ...(connector.mcpTools ?? []).map((tool) => tool.name),
+                        ].join(' ').toLowerCase();
+                        return haystack.includes(q);
+                    })
+                    .map((connector) => ({
+                        name: connector.name,
+                        displayName: connector.displayName,
+                        description: connector.description,
+                        authType: connector.authType,
+                        connected: connector.connected,
+                        serverName: rowboatIntegrationServerName(connector.name),
+                        templateBlocks: connector.templateBlocks ?? [],
+                        mcpTools: connector.mcpTools ?? [],
+                    }));
 
                 return {
-                    tools,
-                    resultCount: tools.length,
-                    hint: tools.some(t => !t.isConnected)
-                        ? 'Some tools require connecting the toolkit first. Use composio-connect-toolkit to help the user authenticate.'
-                        : undefined,
+                    integrations,
+                    connectedCount: integrations.filter((integration) => integration.connected).length,
+                    totalCount: integrations.length,
                 };
             } catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                return { tools: [], resultCount: 0, error: message };
-            }
-        },
-        isAvailable: async () => isComposioConfigured(),
-    },
-
-    'composio-execute-tool': {
-        description: 'Execute a Composio tool by its slug. You MUST pass the arguments field with all required parameters from the search results inputSchema. Example: composio-execute-tool({ toolSlug: "GITHUB_ISSUES_LIST_FOR_REPO", toolkitSlug: "github", arguments: { owner: "octocat", repo: "Hello-World", state: "open", per_page: 100 } })',
-        inputSchema: z.object({
-            toolSlug: z.string().describe('EXACT tool slug from search results (e.g., "GITHUB_ISSUES_LIST_FOR_REPO"). Copy it exactly — do not modify it.'),
-            toolkitSlug: z.string().describe('The toolkit slug (e.g., "gmail", "github")'),
-            arguments: z.record(z.string(), z.unknown()).describe('REQUIRED: Tool input parameters as key-value pairs. Get the required fields from the inputSchema returned by composio-search-tools. Never omit this.'),
-        }),
-        execute: async ({ toolSlug, toolkitSlug, arguments: args }: { toolSlug: string; toolkitSlug: string; arguments?: Record<string, unknown> }) => {
-            // Default arguments to {} if the LLM omits the field entirely
-            const toolArgs = args ?? {};
-
-            // Check connection
-            const account = composioAccountsRepo.getAccount(toolkitSlug);
-            if (!account || account.status !== 'ACTIVE') {
                 return {
-                    successful: false,
-                    data: null,
-                    error: `Toolkit "${toolkitSlug}" is not connected. Use composio-connect-toolkit to help the user connect it first.`,
+                    integrations: [],
+                    connectedCount: 0,
+                    totalCount: 0,
+                    error: error instanceof Error ? error.message : String(error),
                 };
             }
+        },
+        isAvailable: async () => isSignedIn(),
+    },
 
+    'rowboat-connect-integration': {
+        description: 'Show a user-facing connect card for a managed Rowboat integration. Call this when an integration is not connected yet.',
+        inputSchema: z.object({
+            connector: z.string().describe('Connector name from rowboat-list-integrations, such as "github", "hubspot", "notion", or "canvas".'),
+        }),
+        execute: async ({ connector }: { connector: string }) => {
             try {
-                return await executeComposioAction(toolSlug, {
-                    connected_account_id: account.id,
-                    user_id: 'solomon-user',
-                    version: 'latest',
-                    arguments: toolArgs,
-                });
-            } catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                console.error(`[Composio] Tool execution failed for ${toolSlug}:`, message);
-                return {
-                    successful: false,
-                    data: null,
-                    error: `Failed to execute ${toolSlug}: ${message}. If fields are missing, check the inputSchema and retry with the correct arguments.`,
-                };
-            }
-        },
-        isAvailable: async () => isComposioConfigured(),
-    },
-
-    'composio-connect-toolkit': {
-        description: 'Connect a Composio service (Gmail, Slack, GitHub, etc.) via OAuth. Shows a connect card for the user to authenticate.',
-        inputSchema: z.object({
-            toolkitSlug: z.string().describe('The toolkit slug to connect (e.g., "gmail", "github", "slack", "notion")'),
-        }),
-        execute: async ({ toolkitSlug }: { toolkitSlug: string }) => {
-            // Validate against curated list
-            if (!CURATED_TOOLKIT_SLUGS.has(toolkitSlug)) {
-                const available = CURATED_TOOLKITS.map(t => `${t.slug} (${t.displayName})`).join(', ');
-                return {
-                    success: false,
-                    error: `Unknown toolkit "${toolkitSlug}". Available toolkits: ${available}`,
-                };
-            }
-
-            // Check if already connected
-            if (composioAccountsRepo.isConnected(toolkitSlug)) {
+                const response = await listConnectorsViaBackend();
+                const integration = response.connectors.find((candidate) => candidate.name === connector);
+                if (!integration) {
+                    return {
+                        success: false,
+                        error: `Unknown integration "${connector}". Call rowboat-list-integrations for available connectors.`,
+                    };
+                }
                 return {
                     success: true,
-                    message: `${toolkitSlug} is already connected. You can search for and execute its tools.`,
-                    alreadyConnected: true,
+                    connectorName: integration.name,
+                    displayName: integration.displayName,
+                    authType: integration.authType,
+                    alreadyConnected: integration.connected,
+                    message: integration.connected
+                        ? `${integration.displayName} is already connected.`
+                        : `Please connect ${integration.displayName} to continue.`,
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error),
                 };
             }
-
-            // Return signal — the UI renders a ComposioConnectCard with a Connect button.
-            // OAuth only starts when the user clicks that button.
-            const toolkit = CURATED_TOOLKITS.find(t => t.slug === toolkitSlug);
-            return {
-                success: true,
-                message: `Please connect ${toolkit?.displayName ?? toolkitSlug} to continue.`,
-            };
         },
-        isAvailable: async () => isComposioConfigured(),
+        isAvailable: async () => isSignedIn(),
+    },
+
+    'rowboat-configure-integration-mcp': {
+        description: 'Mint an MCP credential for a connected Rowboat integration and configure it as a local MCP server. Call listMcpTools next with the returned serverName.',
+        inputSchema: z.object({
+            connector: z.string().describe('Connector name from rowboat-list-integrations. The connector must already be connected.'),
+        }),
+        execute: async ({ connector }: { connector: string }) => {
+            try {
+                const response = await listConnectorsViaBackend();
+                const integration = response.connectors.find((candidate) => candidate.name === connector);
+                if (!integration) {
+                    return {
+                        success: false,
+                        error: `Unknown integration "${connector}". Call rowboat-list-integrations for available connectors.`,
+                    };
+                }
+                if (!integration.connected) {
+                    return {
+                        success: false,
+                        connectorName: integration.name,
+                        displayName: integration.displayName,
+                        error: `${integration.displayName} is not connected.`,
+                        hint: `Call rowboat-connect-integration with connector "${integration.name}" first.`,
+                    };
+                }
+
+                const token = await getConnectorMCPTokenViaBackend(integration.name);
+                const tokenType = token.token_type || 'Bearer';
+                const serverName = rowboatIntegrationServerName(integration.name);
+                const repo = container.resolve<IMcpConfigRepo>('mcpConfigRepo');
+                await repo.upsert(serverName, {
+                    type: 'http',
+                    url: token.mcpUrl,
+                    headers: {
+                        Authorization: `${tokenType} ${token.access_token}`,
+                    },
+                });
+                await closeMcpClient(serverName);
+
+                return {
+                    success: true,
+                    connectorName: integration.name,
+                    displayName: integration.displayName,
+                    serverName,
+                    mcpUrl: token.mcpUrl,
+                    expiresAt: token.expires_at,
+                    mcpTools: integration.mcpTools ?? [],
+                    templateBlocks: integration.templateBlocks ?? [],
+                    nextStep: `Call listMcpTools with serverName "${serverName}", then executeMcpTool with the matching tool name.`,
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error),
+                };
+            }
+        },
+        isAvailable: async () => isSignedIn(),
+    },
+    'rowboat-list-slack-workspaces': {
+        description: 'List managed Slack workspace connections for the signed-in user. Use this before reading a Slack thread.',
+        inputSchema: z.object({}),
+        execute: async () => {
+            try {
+                const response = await listSlackWorkspacesViaBackend();
+                return {
+                    workspaces: response.workspaces,
+                    connectedCount: response.workspaces.length,
+                };
+            } catch (error) {
+                return {
+                    workspaces: [],
+                    connectedCount: 0,
+                    error: error instanceof Error ? error.message : String(error),
+                };
+            }
+        },
+        isAvailable: async () => isSignedIn(),
+    },
+    'rowboat-read-slack-thread': {
+        description: 'Read messages from a connected Slack thread using the server-held Slack app token. Accepts a Slack message permalink or explicit ids. Read-only; never posts to Slack.',
+        inputSchema: z.object({
+            url: z.string().optional().describe('Optional Slack message/thread permalink, e.g. https://workspace.slack.com/archives/C01234567/p1700000000000100.'),
+            teamId: z.string().optional().describe('Slack workspace/team id from rowboat-list-slack-workspaces. Required when using explicit ids or when multiple workspaces are connected.'),
+            channel: z.string().optional().describe('Slack channel id, e.g. C01234567. Optional when url is provided.'),
+            threadTs: z.string().optional().describe('Slack thread timestamp. For a top-level message, use the message ts. Optional when url is provided.'),
+            limit: z.number().int().min(1).max(200).optional().describe('Max messages to return. Defaults to 50, max 200.'),
+        }),
+        execute: async (input: { url?: string; teamId?: string; channel?: string; threadTs?: string; limit?: number }) => {
+            try {
+                const workspaces = await listSlackWorkspacesViaBackend();
+                const request = buildSlackThreadReadRequest(input, workspaces.workspaces);
+                const result = await readSlackThreadViaBackend(request);
+                return {
+                    success: true,
+                    ...result,
+                    parsedFromUrl: Boolean(input.url),
+                    count: result.messages.length,
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error),
+                };
+            }
+        },
+        isAvailable: async () => isSignedIn(),
+    },
+    'rowboat-draft-slack-reply': {
+        description: 'Prepare a copyable Slack reply draft for a connected thread. This never posts to Slack; it validates the target and returns sent=false.',
+        inputSchema: z.object({
+            text: z.string().describe('Exact Slack reply text to draft for the user to review and send manually.'),
+            url: z.string().optional().describe('Optional Slack message/thread permalink, e.g. https://workspace.slack.com/archives/C01234567/p1700000000000100.'),
+            teamId: z.string().optional().describe('Slack workspace/team id from rowboat-list-slack-workspaces. Required when using explicit ids or when multiple workspaces are connected.'),
+            channel: z.string().optional().describe('Slack channel id, e.g. C01234567. Optional when url is provided.'),
+            threadTs: z.string().optional().describe('Slack thread timestamp. For a top-level message, use the message ts. Optional when url is provided.'),
+        }),
+        execute: async (input: { text: string; url?: string; teamId?: string; channel?: string; threadTs?: string }) => {
+            try {
+                const workspaces = await listSlackWorkspacesViaBackend();
+                const draft = buildSlackReplyDraft(input, workspaces.workspaces);
+                return {
+                    success: true,
+                    draft,
+                    nextAction: 'Show this draft to the user. Do not claim it was sent; the user can review it and click Send in the Slack draft card.',
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error),
+                };
+            }
+        },
+        isAvailable: async () => isSignedIn(),
     },
     'run-live-note-agent': {
         description: "Manually trigger the live-note agent to run now on a note. Equivalent to the user clicking the Run button in the live-note sidebar, but you can pass extra `context` to bias what the agent does this run — most useful for backfills (e.g. seeding a newly-made-live note from existing synced emails) or focused refreshes. Returns the action taken, summary, and the new note body.",

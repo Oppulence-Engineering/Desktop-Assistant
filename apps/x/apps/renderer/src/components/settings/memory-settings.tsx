@@ -160,13 +160,21 @@ export function MemorySettings({ dialogOpen }: { dialogOpen: boolean }) {
           label="Enable semantic memory"
           description="When off, search and recall fall back to plain text matching."
         >
-          <Switch checked={cfg.enabled} onCheckedChange={(v) => update("enabled", v)} />
+          <Switch
+            checked={cfg.enabled}
+            onCheckedChange={(v) => update("enabled", v)}
+            aria-label="Enable semantic memory"
+          />
         </SettingsRow>
         <SettingsRow
           label="Query expansion (HyDE)"
           description="Use the LLM to broaden recall on conceptual queries. Adds a small cost per search."
         >
-          <Switch checked={cfg.queryExpansion} onCheckedChange={(v) => update("queryExpansion", v)} />
+          <Switch
+            checked={cfg.queryExpansion}
+            onCheckedChange={(v) => update("queryExpansion", v)}
+            aria-label="Query expansion"
+          />
         </SettingsRow>
         <SettingsRow
           label="Recency weight"
@@ -186,9 +194,17 @@ export function MemorySettings({ dialogOpen }: { dialogOpen: boolean }) {
         </SettingsRow>
       </SettingsSection>
 
-      <SettingsSection title="Advanced" description="Changing the model or dimensions rebuilds the index.">
+      <SettingsSection
+        title="Advanced"
+        description="Changing the model or dimensions rebuilds the index."
+      >
         <SettingsRow label="Embedding model" description="Defaults to text-embedding-3-small.">
-          <Input value={cfg.model} onChange={(e) => update("model", e.target.value)} className="h-8 w-56" />
+          <Input
+            value={cfg.model}
+            onChange={(e) => update("model", e.target.value)}
+            className="h-8 w-56"
+            aria-label="Embedding model"
+          />
         </SettingsRow>
         <SettingsRow
           label="Embedding dimensions"
@@ -198,8 +214,11 @@ export function MemorySettings({ dialogOpen }: { dialogOpen: boolean }) {
             type="number"
             min={0}
             value={cfg.embedDimensions}
-            onChange={(e) => update("embedDimensions", Math.max(0, parseInt(e.target.value || "0", 10)))}
+            onChange={(e) =>
+              update("embedDimensions", Math.max(0, parseInt(e.target.value || "0", 10)))
+            }
             className="h-8 w-24"
+            aria-label="Embedding dimensions"
           />
         </SettingsRow>
       </SettingsSection>

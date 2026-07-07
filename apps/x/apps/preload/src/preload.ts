@@ -1,10 +1,9 @@
 import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
-import { ipc as ipcShared } from "@x/shared";
+import type { ipc as ipcShared } from "@x/shared";
 
 type InvokeChannels = ipcShared.InvokeChannels;
 type IPCChannels = ipcShared.IPCChannels;
 type SendChannels = ipcShared.SendChannels;
-const { validateRequest } = ipcShared;
 
 const ipc = {
   /**
@@ -15,9 +14,7 @@ const ipc = {
     channel: K,
     args: IPCChannels[K]["req"],
   ): Promise<IPCChannels[K]["res"]> {
-    // Runtime validation of request payload
-    const validatedArgs = validateRequest(channel, args);
-    return ipcRenderer.invoke(channel, validatedArgs);
+    return ipcRenderer.invoke(channel, args);
   },
 
   /**
@@ -25,9 +22,7 @@ const ipc = {
    * Only channels with null responses can be sent
    */
   send<K extends SendChannels>(channel: K, args: IPCChannels[K]["req"]): void {
-    // Runtime validation of request payload
-    const validatedArgs = validateRequest(channel, args);
-    ipcRenderer.send(channel, validatedArgs);
+    ipcRenderer.send(channel, args);
   },
 
   /**

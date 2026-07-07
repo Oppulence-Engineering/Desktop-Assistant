@@ -75,17 +75,17 @@ export const WorkflowTool = z.object({
     }),
     isMcp: z.boolean().default(false).optional(),
     mcpServerName: z.string().optional(),
-    isComposio: z.boolean().optional(), // whether this is a Composio tool
+    isIntegration: z.boolean().optional(), // whether this is a Integration tool
     isLibrary: z.boolean().default(false).optional(), // whether this is a library tool
     isWebhook: z.boolean().optional(), // whether this is a webhook tool
     isGeminiImage: z.boolean().optional(), // whether this tool generates images via Gemini
-    composioData: z.object({
-        slug: z.string(), // the slug for the Composio tool e.g. "GITHUB_CREATE_AN_ISSUE"
+    integrationData: z.object({
+        slug: z.string(), // the slug for the Integration tool e.g. "GITHUB_CREATE_AN_ISSUE"
         noAuth: z.boolean(), // whether the tool requires no authentication
-        toolkitName: z.string(), // the name for the Composio toolkit e.g. "GITHUB"
-        toolkitSlug: z.string(), // the slug for the Composio toolkit e.g. "GITHUB"
-        logo: z.string(), // the logo for the Composio tool
-    }).optional(), // the data for the Composio tool, if it is a Composio tool
+        toolkitName: z.string(), // the name for the Integration toolkit e.g. "GITHUB"
+        toolkitSlug: z.string(), // the slug for the Integration toolkit e.g. "GITHUB"
+        logo: z.string(), // the logo for the Integration tool
+    }).optional(), // the data for the Integration tool, if it is a Integration tool
 });
 
 export const WorkflowPipeline = z.object({

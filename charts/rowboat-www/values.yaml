@@ -1,0 +1,112 @@
+# Default values for rowboat-www. Override per environment via
+# values-production.yaml or ad hoc Helm values.
+
+replicaCount: 2
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+
+image:
+  repository: ghcr.io/oppulence-engineering/rowboat-www
+  pullPolicy: IfNotPresent
+  tag: "" # defaults to .Chart.AppVersion
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automount: false
+
+ports:
+  http: 8080
+
+service:
+  type: ClusterIP
+  annotations: {}
+  nodePorts: {}
+    # http: 30082
+
+ingress:
+  enabled: true
+  className: nginx
+  host: oppulence.io
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "32m"
+  tls:
+    enabled: true
+    secretName: rowboat-www-tls
+
+config:
+  ROWBOAT_WWW_PUBLIC_API_BASE_URL: https://api.oppulence.io
+  ROWBOAT_WWW_API_PROXY_URL: https://api.oppulence.io
+
+secrets: {}
+# secrets:
+#   ROWBOAT_WWW_SESSION_SECRET: "" # 32+ random chars, set per environment.
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: "500m"
+    memory: 256Mi
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+  readiness:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+
+podAnnotations: {}
+podLabels: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 101
+  runAsGroup: 101
+  fsGroup: 101
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector: {}
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector: {}
+
+networkPolicy:
+  enabled: true
+  ingress:
+    from:
+      - namespaceSelector: {}
+  egress:
+    enabled: false
+    rules: []

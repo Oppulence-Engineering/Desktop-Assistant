@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   languageModel: vi.fn((model: string) => ({ model })),
   createProvider: vi.fn(() => ({ languageModel: mocks.languageModel })),
   withUseCase: vi.fn((_meta: unknown, fn: () => Promise<unknown>) => fn()),
+  memorySearch: vi.fn(),
   workDir: "/tmp/rowboat-summarize-meeting-test",
   outsideDir: "/tmp/rowboat-summarize-meeting-outside",
 }));
@@ -37,6 +38,10 @@ vi.mock("../analytics/use_case.js", () => ({
   withUseCase: mocks.withUseCase,
 }));
 
+vi.mock("../memory/index.js", () => ({
+  memorySearch: mocks.memorySearch,
+}));
+
 vi.mock("../config/config.js", () => ({
   WorkDir: mocks.workDir,
 }));
@@ -46,6 +51,7 @@ import { summarizeMeeting } from "./summarize_meeting.js";
 describe("summarizeMeeting", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.memorySearch.mockResolvedValue({ results: [] });
   });
 
   it("returns trimmed LLM notes when the cloud summarizer succeeds", async () => {
@@ -63,6 +69,19 @@ describe("summarizeMeeting", () => {
       }),
     );
   });
+
+  it("does not block summaries when related memory lookup stalls", async () => {
+    mocks.memorySearch.mockImplementationOnce(() => new Promise(() => {}));
+    mocks.generateText.mockResolvedValue({
+      text: "### Summary\n- Done.",
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+    });
+
+    await expect(summarizeMeeting("**You:** Summarize this.")).resolves.toBe(
+      "### Summary\n- Done.",
+    );
+    expect(mocks.generateText).toHaveBeenCalled();
+  }, 10000);
 
   it("falls back to local extractive notes when cloud auth is temporarily unavailable", async () => {
     mocks.generateText.mockRejectedValue(

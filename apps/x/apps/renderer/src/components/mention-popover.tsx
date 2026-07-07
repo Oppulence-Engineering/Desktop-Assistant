@@ -1,23 +1,23 @@
-import { useMemo, useEffect, useState, useCallback } from 'react'
-import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
-import { Command, CommandEmpty, CommandItem, CommandList } from '@/components/ui/command'
-import { wikiLabel, stripKnowledgePrefix } from '@/lib/wiki-links'
-import { FileTextIcon } from '@/lib/icons'
-import type { CaretCoordinates } from '@/lib/textarea-caret'
+import { useMemo, useEffect, useState, useCallback } from "react";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandItem, CommandList } from "@/components/ui/command";
+import { wikiLabel, stripKnowledgePrefix } from "@/lib/wiki-links";
+import { FileTextIcon } from "@/lib/icons";
+import type { CaretCoordinates } from "@/lib/textarea-caret";
 
 interface MentionPopoverProps {
-  files: string[]
-  recentFiles?: string[]
-  visibleFiles?: string[]
-  query: string
-  position: CaretCoordinates | null
-  containerRef: React.RefObject<HTMLElement | null>
-  onSelect: (path: string, displayName: string) => void
-  onClose: () => void
-  open: boolean
+  files: string[];
+  recentFiles?: string[];
+  visibleFiles?: string[];
+  query: string;
+  position: CaretCoordinates | null;
+  containerRef: React.RefObject<HTMLElement | null>;
+  onSelect: (path: string, displayName: string) => void;
+  onClose: () => void;
+  open: boolean;
 }
 
-const MAX_VISIBLE_FILES = 8
+const MAX_VISIBLE_FILES = 8;
 
 export function MentionPopover({
   files,
@@ -30,111 +30,117 @@ export function MentionPopover({
   onClose,
   open,
 }: MentionPopoverProps) {
-  void _containerRef // Reserved for future positioning logic
-  const [selectedIndex, setSelectedIndex] = useState(0)
+  void _containerRef; // Reserved for future positioning logic
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Order files: visible > recent > rest, then filter by query
   const orderedAndFilteredFiles = useMemo(() => {
-    const lowerQuery = query.toLowerCase()
+    const lowerQuery = query.toLowerCase();
 
     // Create sets for quick lookup
-    const visibleSet = new Set(visibleFiles)
-    const recentSet = new Set(recentFiles)
-    const allFiles = new Set(files)
+    const visibleSet = new Set(visibleFiles);
+    const recentSet = new Set(recentFiles);
+    const allFiles = new Set(files);
 
     // Categorize files
-    const visible: string[] = []
-    const recent: string[] = []
-    const rest: string[] = []
+    const visible: string[] = [];
+    const recent: string[] = [];
+    const rest: string[] = [];
 
     for (const file of files) {
       if (visibleSet.has(file)) {
-        visible.push(file)
+        visible.push(file);
       } else if (recentSet.has(file)) {
-        recent.push(file)
+        recent.push(file);
       } else {
-        rest.push(file)
+        rest.push(file);
       }
     }
 
     // Maintain recent order for recent files
-    const orderedRecent = recentFiles.filter(f => allFiles.has(f) && !visibleSet.has(f))
+    const orderedRecent = recentFiles.filter((f) => allFiles.has(f) && !visibleSet.has(f));
 
     // Combine in order: visible > recent > rest
-    const ordered = [...visible, ...orderedRecent, ...rest]
+    const ordered = [...visible, ...orderedRecent, ...rest];
 
     // Filter by query if present
-    if (!query) return ordered.slice(0, MAX_VISIBLE_FILES)
+    if (!query) return ordered.slice(0, MAX_VISIBLE_FILES);
 
     return ordered
       .filter((path) => {
-        const label = wikiLabel(path).toLowerCase()
-        const normalized = stripKnowledgePrefix(path).toLowerCase()
-        return label.includes(lowerQuery) || normalized.includes(lowerQuery)
+        const label = wikiLabel(path).toLowerCase();
+        const normalized = stripKnowledgePrefix(path).toLowerCase();
+        return label.includes(lowerQuery) || normalized.includes(lowerQuery);
       })
-      .slice(0, MAX_VISIBLE_FILES)
-  }, [files, recentFiles, visibleFiles, query])
+      .slice(0, MAX_VISIBLE_FILES);
+  }, [files, recentFiles, visibleFiles, query]);
 
   // Reset selection when filtered list changes
   useEffect(() => {
-    setSelectedIndex(0)
-  }, [orderedAndFilteredFiles.length, query])
+    setSelectedIndex(0);
+  }, [orderedAndFilteredFiles.length, query]);
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!open) return
+      if (!open) return;
+      // ... (ERRORS.md E04) With zero matches the popover renders null; don't
+      // swallow Enter/Tab/Arrows in the capture phase — let them fall through to
+      // the textarea so message submit (and caret movement) still works.
+      if (orderedAndFilteredFiles.length === 0) return;
 
       switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault()
-          e.stopPropagation()
-          setSelectedIndex((prev) => (prev + 1) % orderedAndFilteredFiles.length)
-          break
-        case 'ArrowUp':
-          e.preventDefault()
-          e.stopPropagation()
-          setSelectedIndex((prev) => (prev - 1 + orderedAndFilteredFiles.length) % orderedAndFilteredFiles.length)
-          break
-        case 'Enter':
-          e.preventDefault()
-          e.stopPropagation()
+        case "ArrowDown":
+          e.preventDefault();
+          e.stopPropagation();
+          setSelectedIndex((prev) => (prev + 1) % orderedAndFilteredFiles.length);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          e.stopPropagation();
+          setSelectedIndex(
+            (prev) => (prev - 1 + orderedAndFilteredFiles.length) % orderedAndFilteredFiles.length,
+          );
+          break;
+        case "Enter":
+          e.preventDefault();
+          e.stopPropagation();
           if (orderedAndFilteredFiles[selectedIndex]) {
-            const path = orderedAndFilteredFiles[selectedIndex]
-            onSelect(path, wikiLabel(path))
+            const path = orderedAndFilteredFiles[selectedIndex];
+            onSelect(path, wikiLabel(path));
           }
-          break
-        case 'Escape':
-          e.preventDefault()
-          e.stopPropagation()
-          onClose()
-          break
-        case 'Tab':
-          e.preventDefault()
-          e.stopPropagation()
+          break;
+        case "Escape":
+          e.preventDefault();
+          e.stopPropagation();
+          onClose();
+          break;
+        case "Tab":
+          e.preventDefault();
+          e.stopPropagation();
           if (orderedAndFilteredFiles[selectedIndex]) {
-            const path = orderedAndFilteredFiles[selectedIndex]
-            onSelect(path, wikiLabel(path))
+            const path = orderedAndFilteredFiles[selectedIndex];
+            onSelect(path, wikiLabel(path));
           }
-          break
+          break;
       }
     },
-    [open, orderedAndFilteredFiles, selectedIndex, onSelect, onClose]
-  )
+    [open, orderedAndFilteredFiles, selectedIndex, onSelect, onClose],
+  );
 
   // Attach keyboard listener
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
 
     // Use capture phase to intercept before textarea handles it
-    document.addEventListener('keydown', handleKeyDown, true)
+    document.addEventListener("keydown", handleKeyDown, true);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [open, handleKeyDown])
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [open, handleKeyDown]);
 
   if (!open || !position || orderedAndFilteredFiles.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -143,12 +149,12 @@ export function MentionPopover({
         <span
           className="mention-popover-anchor"
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: position.left,
             top: position.top + position.height + 4,
             width: 0,
             height: 0,
-            pointerEvents: 'none',
+            pointerEvents: "none",
           }}
         />
       </PopoverAnchor>
@@ -169,7 +175,7 @@ export function MentionPopover({
                   key={path}
                   value={path}
                   onSelect={() => onSelect(path, wikiLabel(path))}
-                  className={index === selectedIndex ? 'bg-accent' : ''}
+                  className={index === selectedIndex ? "bg-accent" : ""}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >
                   <FileTextIcon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -181,5 +187,5 @@ export function MentionPopover({
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

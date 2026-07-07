@@ -13,7 +13,7 @@ import { Workflow } from "@/app/lib/types/workflow_types";
 import { ModelsResponse } from "@/app/lib/types/billing_types";
 import { listScheduledJobRules } from "@/app/actions/scheduled-job-rules.actions";
 import { listRecurringJobRules } from "@/app/actions/recurring-job-rules.actions";
-import { listComposioTriggerDeployments } from "@/app/actions/composio.actions";
+import { listIntegrationTriggerDeployments } from "@/app/actions/integration.actions";
 import { transformTriggersForCopilot, DEFAULT_TRIGGER_FETCH_LIMIT } from "./trigger-transform";
 
 export function App({
@@ -74,16 +74,16 @@ export function App({
     }
 
     const fetchTriggers = useCallback(async () => {
-        const [scheduled, recurring, composio] = await Promise.all([
+        const [scheduled, recurring, integration] = await Promise.all([
             listScheduledJobRules({ projectId: initialProjectData.id, limit: DEFAULT_TRIGGER_FETCH_LIMIT }),
             listRecurringJobRules({ projectId: initialProjectData.id, limit: DEFAULT_TRIGGER_FETCH_LIMIT }),
-            listComposioTriggerDeployments({ projectId: initialProjectData.id, limit: DEFAULT_TRIGGER_FETCH_LIMIT }),
+            listIntegrationTriggerDeployments({ projectId: initialProjectData.id, limit: DEFAULT_TRIGGER_FETCH_LIMIT }),
         ]);
 
         return transformTriggersForCopilot({
             scheduled: scheduled.items ?? [],
             recurring: recurring.items ?? [],
-            composio: composio.items ?? [],
+            integration: integration.items ?? [],
         });
     }, [initialProjectData.id]);
 

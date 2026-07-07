@@ -58,9 +58,24 @@ func mockGoogleReads(t *testing.T) (*Client, *httptest.Server) {
 			}},
 		})
 	})
+	mux.HandleFunc("/files", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if q.Get("q") != "name contains 'invoice'" || q.Get("pageSize") != "2" || q.Get("orderBy") != "modifiedTime desc" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"files": []map[string]any{{
+				"id": "file_1", "name": "Invoice 4821.pdf", "mimeType": "application/pdf",
+				"modifiedTime": "2026-06-08T17:00:00Z",
+				"webViewLink":  "https://drive.google.com/file/d/file_1/view",
+				"owners":       []map[string]string{{"emailAddress": "owner@acme.com"}},
+			}},
+		})
+	})
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
-	return New(Config{GmailBaseURL: srv.URL, CalendarBaseURL: srv.URL}), srv
+	return New(Config{GmailBaseURL: srv.URL, CalendarBaseURL: srv.URL, DriveBaseURL: srv.URL}), srv
 }
 
 func TestListMessages(t *testing.T) {
@@ -110,5 +125,20 @@ func TestListEvents(t *testing.T) {
 	// All-day events fall back to the date field.
 	if events[1].StartsAt != "2026-06-09" {
 		t.Fatalf("all-day start = %q", events[1].StartsAt)
+	}
+}
+
+func TestListDriveFiles(t *testing.T) {
+	c, _ := mockGoogleReads(t)
+	files, err := c.ListDriveFiles(context.Background(), "tok", "name contains 'invoice'", 2)
+	if err != nil {
+		t.Fatalf("list drive: %v", err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("files = %d, want 1", len(files))
+	}
+	f := files[0]
+	if f.ID != "file_1" || f.Name != "Invoice 4821.pdf" || f.MIMEType != "application/pdf" || f.WebViewLink == "" || len(f.Owners) != 1 {
+		t.Fatalf("file = %+v", f)
 	}
 }

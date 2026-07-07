@@ -43,7 +43,7 @@ export function ToolsModal({
         </ModalHeader>
         <ModalBody>
           <ToolsConfig
-            useComposioTools={true}
+            useIntegrationTools={true}
             projectId={projectId}
             tools={tools}
             onAddTool={handleAddTool}

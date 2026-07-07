@@ -213,16 +213,16 @@ export function Action({
     );
   }
 
-  // Determine composio toolkit logo for tools
+  // Determine integration toolkit logo for tools
   const toolkitLogo = (() => {
     if (action.config_type !== "tool") return undefined;
     const getLogo = (o: any): string | undefined => {
       return (
-        o?.composioData?.logo ||
-        o?.composioData?.logoUrl ||
-        o?.composio?.logo ||
+        o?.integrationData?.logo ||
+        o?.integrationData?.logoUrl ||
+        o?.integration?.logo ||
         o?.toolkit?.logo ||
-        o?.composio_tool?.toolkit?.logo ||
+        o?.integration_tool?.toolkit?.logo ||
         o?.logo ||
         undefined
       );
@@ -233,9 +233,9 @@ export function Action({
       getLogo(a.config_changes) ||
       getLogo(a) ||
       getLogo(a.config_changes?.tool) ||
-      getLogo(a.config_changes?.composio_tool) ||
+      getLogo(a.config_changes?.integration_tool) ||
       getLogo(a.tool) ||
-      (workflow.tools.find((t) => t.name === action.name) as any)?.composioData
+      (workflow.tools.find((t) => t.name === action.name) as any)?.integrationData
         ?.logo ||
       undefined
     );
@@ -268,7 +268,7 @@ export function Action({
         }}
       >
         <div className="flex items-center gap-2 px-2 py-1 border-b border-zinc-100 dark:border-zinc-800">
-          {/* Small colored icon for type; show composio toolkit logo for tools when available */}
+          {/* Small colored icon for type; show integration toolkit logo for tools when available */}
           <span
             className={clsx(
               "inline-flex items-center justify-center rounded-full h-5 w-5 text-xs overflow-hidden",

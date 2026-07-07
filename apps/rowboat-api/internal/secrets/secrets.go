@@ -19,7 +19,6 @@ const (
 	KeyGoogle                  = "GOOGLE_API_KEY"
 	KeyElevenLabs              = "ELEVENLABS_API_KEY"
 	KeyExa                     = "EXA_API_KEY"
-	KeyComposio                = "COMPOSIO_API_KEY"
 	KeyGoogleOAuthClientID     = "GOOGLE_OAUTH_CLIENT_ID"
 	KeyGoogleOAuthClientSecret = "GOOGLE_OAUTH_CLIENT_SECRET"
 	KeySlackClientID           = "SLACK_CLIENT_ID"
@@ -43,7 +42,6 @@ func NewFromConfig(cfg appconfig.Config) *Store {
 		KeyGoogle:                  cfg.GoogleAPIKey,
 		KeyElevenLabs:              cfg.ElevenLabsAPIKey,
 		KeyExa:                     cfg.ExaAPIKey,
-		KeyComposio:                cfg.ComposioAPIKey,
 		KeyGoogleOAuthClientID:     cfg.GoogleOAuthClientID,
 		KeyGoogleOAuthClientSecret: cfg.GoogleOAuthClientSecret,
 		KeySlackClientID:           cfg.SlackClientID,
@@ -86,9 +84,6 @@ func (s *Store) ElevenLabs() string { return s.Get(KeyElevenLabs) }
 
 // Exa returns the Exa Search API key.
 func (s *Store) Exa() string { return s.Get(KeyExa) }
-
-// Composio returns the Composio API key.
-func (s *Store) Composio() string { return s.Get(KeyComposio) }
 
 // GoogleOAuthClientID returns the Google OAuth client id.
 func (s *Store) GoogleOAuthClientID() string { return s.Get(KeyGoogleOAuthClientID) }

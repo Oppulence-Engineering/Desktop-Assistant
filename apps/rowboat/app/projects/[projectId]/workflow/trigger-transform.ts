@@ -22,7 +22,7 @@ interface TransformParams {
         disabled: boolean;
         input?: { messages: Array<z.infer<typeof Message>> };
     }>;
-    composio: Array<{
+    integration: Array<{
         id: string;
         triggerTypeName: string;
         toolkitSlug: string;
@@ -34,7 +34,7 @@ interface TransformParams {
 export function transformTriggersForCopilot({
     scheduled,
     recurring,
-    composio,
+    integration,
 }: TransformParams): CopilotTrigger[] {
     const placeholderInput = {
         messages: [
@@ -64,7 +64,7 @@ export function transformTriggersForCopilot({
         input: trigger.input ?? placeholderInput,
     }));
 
-    const external = composio.map((trigger) => ({
+    const external = integration.map((trigger) => ({
         type: "external" as const,
         id: trigger.id,
         name: trigger.triggerTypeName,

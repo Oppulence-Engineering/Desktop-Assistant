@@ -49,8 +49,6 @@ type UserEdges struct {
 	OauthConnections []*OAuthConnection `json:"oauth_connections,omitempty"`
 	// McpConnections holds the value of the mcp_connections edge.
 	McpConnections []*MCPConnection `json:"mcp_connections,omitempty"`
-	// ComposioAccounts holds the value of the composio_accounts edge.
-	ComposioAccounts []*ComposioAccount `json:"composio_accounts,omitempty"`
 	// BackgroundTasks holds the value of the background_tasks edge.
 	BackgroundTasks []*BackgroundTask `json:"background_tasks,omitempty"`
 	// BackgroundTaskArtifacts holds the value of the background_task_artifacts edge.
@@ -81,7 +79,7 @@ type UserEdges struct {
 	AgentToolResultBlobs []*AgentToolResultBlob `json:"agent_tool_result_blobs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [21]bool
+	loadedTypes [20]bool
 	// totalCount holds the count of the edges above.
 	totalCount [20]map[string]int
 
@@ -90,7 +88,6 @@ type UserEdges struct {
 	namedLlmUsages                    map[string][]*LLMUsage
 	namedOauthConnections             map[string][]*OAuthConnection
 	namedMcpConnections               map[string][]*MCPConnection
-	namedComposioAccounts             map[string][]*ComposioAccount
 	namedBackgroundTasks              map[string][]*BackgroundTask
 	namedBackgroundTaskArtifacts      map[string][]*BackgroundTaskArtifact
 	namedBackgroundTaskRuns           map[string][]*BackgroundTaskRun
@@ -163,19 +160,10 @@ func (e UserEdges) McpConnectionsOrErr() ([]*MCPConnection, error) {
 	return nil, &NotLoadedError{edge: "mcp_connections"}
 }
 
-// ComposioAccountsOrErr returns the ComposioAccounts value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) ComposioAccountsOrErr() ([]*ComposioAccount, error) {
-	if e.loadedTypes[6] {
-		return e.ComposioAccounts, nil
-	}
-	return nil, &NotLoadedError{edge: "composio_accounts"}
-}
-
 // BackgroundTasksOrErr returns the BackgroundTasks value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTasksOrErr() ([]*BackgroundTask, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[6] {
 		return e.BackgroundTasks, nil
 	}
 	return nil, &NotLoadedError{edge: "background_tasks"}
@@ -184,7 +172,7 @@ func (e UserEdges) BackgroundTasksOrErr() ([]*BackgroundTask, error) {
 // BackgroundTaskArtifactsOrErr returns the BackgroundTaskArtifacts value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskArtifactsOrErr() ([]*BackgroundTaskArtifact, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[7] {
 		return e.BackgroundTaskArtifacts, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_artifacts"}
@@ -193,7 +181,7 @@ func (e UserEdges) BackgroundTaskArtifactsOrErr() ([]*BackgroundTaskArtifact, er
 // BackgroundTaskRunsOrErr returns the BackgroundTaskRuns value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskRunsOrErr() ([]*BackgroundTaskRun, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[8] {
 		return e.BackgroundTaskRuns, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_runs"}
@@ -202,7 +190,7 @@ func (e UserEdges) BackgroundTaskRunsOrErr() ([]*BackgroundTaskRun, error) {
 // BackgroundTaskRunEventsOrErr returns the BackgroundTaskRunEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskRunEventsOrErr() ([]*BackgroundTaskRunEvent, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[9] {
 		return e.BackgroundTaskRunEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_run_events"}
@@ -211,7 +199,7 @@ func (e UserEdges) BackgroundTaskRunEventsOrErr() ([]*BackgroundTaskRunEvent, er
 // BackgroundTaskScheduleStatesOrErr returns the BackgroundTaskScheduleStates value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskScheduleStatesOrErr() ([]*BackgroundTaskScheduleState, error) {
-	if e.loadedTypes[11] {
+	if e.loadedTypes[10] {
 		return e.BackgroundTaskScheduleStates, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_schedule_states"}
@@ -220,7 +208,7 @@ func (e UserEdges) BackgroundTaskScheduleStatesOrErr() ([]*BackgroundTaskSchedul
 // CloudEventsOrErr returns the CloudEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) CloudEventsOrErr() ([]*CloudEvent, error) {
-	if e.loadedTypes[12] {
+	if e.loadedTypes[11] {
 		return e.CloudEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "cloud_events"}
@@ -229,7 +217,7 @@ func (e UserEdges) CloudEventsOrErr() ([]*CloudEvent, error) {
 // GoogleWatchesOrErr returns the GoogleWatches value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) GoogleWatchesOrErr() ([]*GoogleWatch, error) {
-	if e.loadedTypes[13] {
+	if e.loadedTypes[12] {
 		return e.GoogleWatches, nil
 	}
 	return nil, &NotLoadedError{edge: "google_watches"}
@@ -238,7 +226,7 @@ func (e UserEdges) GoogleWatchesOrErr() ([]*GoogleWatch, error) {
 // AgentDefinitionsOrErr returns the AgentDefinitions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentDefinitionsOrErr() ([]*AgentDefinition, error) {
-	if e.loadedTypes[14] {
+	if e.loadedTypes[13] {
 		return e.AgentDefinitions, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_definitions"}
@@ -247,7 +235,7 @@ func (e UserEdges) AgentDefinitionsOrErr() ([]*AgentDefinition, error) {
 // AgentSessionsOrErr returns the AgentSessions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentSessionsOrErr() ([]*AgentSession, error) {
-	if e.loadedTypes[15] {
+	if e.loadedTypes[14] {
 		return e.AgentSessions, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_sessions"}
@@ -256,7 +244,7 @@ func (e UserEdges) AgentSessionsOrErr() ([]*AgentSession, error) {
 // AgentTurnsOrErr returns the AgentTurns value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentTurnsOrErr() ([]*AgentTurn, error) {
-	if e.loadedTypes[16] {
+	if e.loadedTypes[15] {
 		return e.AgentTurns, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_turns"}
@@ -265,7 +253,7 @@ func (e UserEdges) AgentTurnsOrErr() ([]*AgentTurn, error) {
 // AgentSessionEventsOrErr returns the AgentSessionEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentSessionEventsOrErr() ([]*AgentSessionEvent, error) {
-	if e.loadedTypes[17] {
+	if e.loadedTypes[16] {
 		return e.AgentSessionEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_session_events"}
@@ -274,7 +262,7 @@ func (e UserEdges) AgentSessionEventsOrErr() ([]*AgentSessionEvent, error) {
 // AgentToolCallsOrErr returns the AgentToolCalls value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentToolCallsOrErr() ([]*AgentToolCall, error) {
-	if e.loadedTypes[18] {
+	if e.loadedTypes[17] {
 		return e.AgentToolCalls, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_tool_calls"}
@@ -283,7 +271,7 @@ func (e UserEdges) AgentToolCallsOrErr() ([]*AgentToolCall, error) {
 // AgentApprovalsOrErr returns the AgentApprovals value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentApprovalsOrErr() ([]*AgentApproval, error) {
-	if e.loadedTypes[19] {
+	if e.loadedTypes[18] {
 		return e.AgentApprovals, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_approvals"}
@@ -292,7 +280,7 @@ func (e UserEdges) AgentApprovalsOrErr() ([]*AgentApproval, error) {
 // AgentToolResultBlobsOrErr returns the AgentToolResultBlobs value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentToolResultBlobsOrErr() ([]*AgentToolResultBlob, error) {
-	if e.loadedTypes[20] {
+	if e.loadedTypes[19] {
 		return e.AgentToolResultBlobs, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_tool_result_blobs"}
@@ -401,11 +389,6 @@ func (_m *User) QueryOauthConnections() *OAuthConnectionQuery {
 // QueryMcpConnections queries the "mcp_connections" edge of the User entity.
 func (_m *User) QueryMcpConnections() *MCPConnectionQuery {
 	return NewUserClient(_m.config).QueryMcpConnections(_m)
-}
-
-// QueryComposioAccounts queries the "composio_accounts" edge of the User entity.
-func (_m *User) QueryComposioAccounts() *ComposioAccountQuery {
-	return NewUserClient(_m.config).QueryComposioAccounts(_m)
 }
 
 // QueryBackgroundTasks queries the "background_tasks" edge of the User entity.
@@ -636,30 +619,6 @@ func (_m *User) appendNamedMcpConnections(name string, edges ...*MCPConnection) 
 		_m.Edges.namedMcpConnections[name] = []*MCPConnection{}
 	} else {
 		_m.Edges.namedMcpConnections[name] = append(_m.Edges.namedMcpConnections[name], edges...)
-	}
-}
-
-// NamedComposioAccounts returns the ComposioAccounts named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *User) NamedComposioAccounts(name string) ([]*ComposioAccount, error) {
-	if _m.Edges.namedComposioAccounts == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedComposioAccounts[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *User) appendNamedComposioAccounts(name string, edges ...*ComposioAccount) {
-	if _m.Edges.namedComposioAccounts == nil {
-		_m.Edges.namedComposioAccounts = make(map[string][]*ComposioAccount)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedComposioAccounts[name] = []*ComposioAccount{}
-	} else {
-		_m.Edges.namedComposioAccounts[name] = append(_m.Edges.namedComposioAccounts[name], edges...)
 	}
 }
 

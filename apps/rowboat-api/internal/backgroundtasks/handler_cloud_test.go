@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"go.uber.org/zap"
@@ -121,6 +124,49 @@ func TestCloudRunQueuedEventAndRetryLineage(t *testing.T) {
 	}
 }
 
+func TestTerminalRunCancelAndSignalDoNotCallTemporal(t *testing.T) {
+	u, router, temporal := setupTemporalTest(t)
+	createAPITask(t, router, u, "api-task")
+
+	createRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs", map[string]any{
+		"runId":              "finished-run",
+		"trigger":            "manual",
+		"status":             "succeeded",
+		"executor":           "api",
+		"temporalWorkflowId": "background-task/user/api-task/finished-run",
+		"temporalRunId":      "temporal-finished-run",
+		"temporalStatus":     "Completed",
+	})
+	if createRec.Code != http.StatusCreated {
+		t.Fatalf("create finished run: want 201, got %d: %s", createRec.Code, createRec.Body.String())
+	}
+
+	cancelRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs/finished-run/cancel", nil)
+	if cancelRec.Code != http.StatusAccepted {
+		t.Fatalf("cancel finished run: want 202, got %d: %s", cancelRec.Code, cancelRec.Body.String())
+	}
+	canceled := decodeBody[runView](t, cancelRec)
+	if canceled.Status != "succeeded" {
+		t.Fatalf("cancel finished run status = %q, want succeeded", canceled.Status)
+	}
+	if len(temporal.cancels) != 0 {
+		t.Fatalf("cancel finished run should not call Temporal, got %+v", temporal.cancels)
+	}
+
+	signalRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs/finished-run/signal", map[string]any{
+		"signal": "update_context",
+		"payload": map[string]any{
+			"qa": "terminal signal",
+		},
+	})
+	if signalRec.Code != http.StatusBadRequest || !strings.Contains(signalRec.Body.String(), "only queued or running runs can be signaled") {
+		t.Fatalf("signal finished run: want 400 terminal message, got %d: %s", signalRec.Code, signalRec.Body.String())
+	}
+	if len(temporal.signals) != 0 {
+		t.Fatalf("signal finished run should not call Temporal, got %+v", temporal.signals)
+	}
+}
+
 // TestCloudRunStartFailureSetsErrorCode verifies a failed Temporal start records
 // the granular temporal_start_failed error code on the run row.
 func TestCloudRunStartFailureSetsErrorCode(t *testing.T) {
@@ -144,6 +190,21 @@ func TestCloudRunStartFailureSetsErrorCode(t *testing.T) {
 	}
 	if got.ErrorDetails == "" {
 		t.Fatalf("expected errorDetails to be populated, got empty")
+	}
+}
+
+func TestCloudRunSubscriptionNotActiveReturnsPaymentRequired(t *testing.T) {
+	h := &Handler{log: zap.NewNop()}
+	rec := httptest.NewRecorder()
+	h.writeStartedRun(rec, nil, nil, &backgroundtaskruns.AdmissionRejectedError{
+		Code:    backgroundtaskworkflow.ErrCodeSubscriptionNotActive,
+		Message: "subscription not active for cloud run preflight",
+	}, "test admission rejection")
+	if rec.Code != http.StatusPaymentRequired {
+		t.Fatalf("want 402, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), backgroundtaskworkflow.ErrCodeSubscriptionNotActive) {
+		t.Fatalf("response missing code %q: %s", backgroundtaskworkflow.ErrCodeSubscriptionNotActive, rec.Body.String())
 	}
 }
 

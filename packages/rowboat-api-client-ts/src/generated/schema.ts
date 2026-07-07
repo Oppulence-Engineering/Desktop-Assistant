@@ -264,6 +264,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/background-task-templates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List background task templates
+     * @description Lists built-in API-target task templates that can be instantiated into normal background tasks. Templates provide known-good instructions, triggers, and execution defaults for common cloud task patterns.
+     */
+    get: operations["listBackgroundTaskTemplates"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/background-task-templates/{templateSlug}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get background task template
+     * @description Fetches one built-in task template by slug so clients can preview the instructions, default trigger, and required connectors before instantiation.
+     */
+    get: operations["getBackgroundTaskTemplate"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/background-task-templates/{templateSlug}/instantiate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Instantiate background task template
+     * @description Creates a normal background task from a built-in template. The resulting task is owned by the authenticated user and then follows the same trigger, admission, and Temporal execution path as tasks created directly.
+     */
+    post: operations["instantiateBackgroundTaskTemplate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/background-tasks": {
     parameters: {
       query?: never;
@@ -416,16 +476,36 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List task run events
-     * @description Returns mirrored JSONL events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.
+     * List task run logs
+     * @description Returns durable log/progress events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.
      */
     get: operations["listBackgroundTaskRunEvents"];
     put?: never;
     /**
-     * Append task run events
-     * @description Appends a batch of JSONL run events. The unique (run, seq) key makes retries idempotent: duplicate seq values are counted as skipped.
+     * Append task run logs
+     * @description Appends a batch of durable log/progress events. The unique (run, seq) key makes retries idempotent: duplicate seq values are counted as skipped.
      */
     post: operations["appendBackgroundTaskRunEvents"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/background-tasks/{slug}/runs/{runId}/events/stream": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Stream task run progress
+     * @description Streams durable task log/progress events as application/x-ndjson. The stream first backfills events with seq greater than afterSeq, then tails the run log until a terminal event or client disconnect.
+     */
+    get: operations["streamBackgroundTaskRunEvents"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -463,7 +543,7 @@ export interface paths {
     put?: never;
     /**
      * Signal API-worker run
-     * @description Sends a constrained control signal to the Temporal workflow. V1 accepts pause, resume, and update_context signals for workflow versions that know how to consume them.
+     * @description Sends a constrained control signal to the Temporal workflow. API-worker runs persist the signal as a durable run event and honor pause, resume, and update_context at cooperative runtime checkpoints between model steps.
      */
     post: operations["signalBackgroundTaskRun"];
     delete?: never;
@@ -512,42 +592,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/composio/{path}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Proxy Composio v3 Get
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
-     */
-    get: operations["proxyComposioGet"];
-    /**
-     * Proxy Composio v3 Put
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
-     */
-    put: operations["proxyComposioPut"];
-    /**
-     * Proxy Composio v3 Post
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
-     */
-    post: operations["proxyComposioPost"];
-    /**
-     * Proxy Composio v3 Delete
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
-     */
-    delete: operations["proxyComposioDelete"];
-    options?: never;
-    head?: never;
-    /**
-     * Proxy Composio v3 Patch
-     * @description Authenticated reverse proxy to Composio v3. The user's bearer token is replaced with the server-held Composio x-api-key, X-Solomon-User is attached, and connected-account access is scoped to the authenticated Rowboat user.
-     */
-    patch: operations["proxyComposioPatch"];
-    trace?: never;
-  };
   "/v1/config": {
     parameters: {
       query?: never;
@@ -588,6 +632,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/connections/{name}/api-key": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Connect API-key connector
+     * @description Stores a vendor-issued API key for an api_key connector. The key is sealed at rest and later minted back only through the connector MCP token endpoint.
+     */
+    post: operations["setConnectionAPIKey"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/connections/{name}/callback": {
     parameters: {
       query?: never;
@@ -602,6 +666,26 @@ export interface paths {
     get: operations["handleConnectionCallback"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/connections/{name}/claim": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Claim connector OAuth flow
+     * @description Redeems the connector grant parked by the browser callback. Persistence is bound to the authenticated user that started the flow.
+     */
+    post: operations["claimConnection"];
     delete?: never;
     options?: never;
     head?: never;
@@ -952,6 +1036,86 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/slack-oauth/thread/post": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Post Slack thread reply
+     * @description Posts an explicitly approved reply into a connected managed Slack thread using the server-held Slack app token. The token and message text are never returned.
+     */
+    post: operations["postSlackThreadReply"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/slack-oauth/thread/read": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Read Slack thread
+     * @description Reads messages from a connected managed Slack workspace using the server-held Slack app token. The token is never returned to the desktop.
+     */
+    post: operations["readSlackThread"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/slack-oauth/workspaces": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Slack workspace connections
+     * @description Returns the authenticated user's managed Slack workspace connections. Bot tokens are never returned.
+     */
+    get: operations["listSlackWorkspaces"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/slack-oauth/workspaces/{teamId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Disconnect Slack workspace
+     * @description Idempotently deletes the authenticated user's managed Slack workspace connection for the given team id.
+     */
+    delete: operations["deleteSlackWorkspace"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/voice/text-to-speech/{voiceId}": {
     parameters: {
       query?: never;
@@ -972,6 +1136,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/webhooks/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generic signed webhook event
+     * @description Receives arbitrary normalized webhook events, verified via X-Webhook-Signature HMAC over the raw body using WEBHOOK_SIGNING_SECRET. The request names the owning userId; source defaults to webhook and may be mcp, github, linear, or stripe for connector/provider gateways. Payload is sealed, and routing uses the same cloud event router as provider webhooks.
+     */
+    post: operations["genericWebhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/webhooks/google": {
     parameters: {
       query?: never;
@@ -983,7 +1167,7 @@ export interface paths {
     put?: never;
     /**
      * Google push webhook
-     * @description Receives Gmail Pub/Sub pushes and Google Calendar channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for Calendar). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.
+     * @description Receives Gmail Pub/Sub pushes plus Google Calendar and Drive channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for channels). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.
      */
     post: operations["googleWebhook"];
     delete?: never;
@@ -1972,7 +2156,7 @@ export interface components {
       seq: number;
       /**
        * @description Event type, either supplied explicitly or copied from event.type.
-       * @example completed
+       * @example temporal.completed
        */
       type?: string | null;
     };
@@ -1989,7 +2173,7 @@ export interface components {
       seq: number;
       /**
        * @description Optional event type. If omitted, rowboat-api reads event.type when present.
-       * @example completed
+       * @example temporal.completed
        */
       type?: string | null;
     };
@@ -2011,9 +2195,9 @@ export interface components {
        */
       stored: number;
     };
-    /** @description Ordered event list for a run. */
+    /** @description Ordered durable task log/progress event list for a run. */
     BackgroundTaskRunEventsResponse: {
-      /** @description Run events ordered by seq. */
+      /** @description Run log/progress events ordered by seq. */
       events: components["schemas"]["BackgroundTaskRunEvent"][];
     };
     /** @description Revision-checked update for mirrored run state. */
@@ -2268,7 +2452,7 @@ export interface components {
     };
     /** @description Control signal sent to a Temporal-backed API-worker run. */
     BackgroundTaskSignalRequest: {
-      /** @description Optional signal payload. update_context can carry replacement context. */
+      /** @description Optional signal payload. update_context can carry context/text/requestedContext for the next runtime checkpoint. */
       payload?: {
         [key: string]: unknown;
       };
@@ -2278,6 +2462,114 @@ export interface components {
        * @enum {string}
        */
       signal: "pause" | "resume" | "update_context";
+    };
+    /** @description Built-in starter template for creating API-target background tasks with safe defaults. */
+    BackgroundTaskTemplate: {
+      /**
+       * @description Whether instantiated tasks are active by default.
+       * @example true
+       */
+      active: boolean;
+      /**
+       * @description Short explanation of what the template does.
+       * @example Summarize new priority email and produce a short follow-up plan.
+       */
+      description: string;
+      /**
+       * @description Default execution target.
+       * @example api
+       * @enum {string}
+       */
+      executionTarget: "api" | "desktop";
+      /**
+       * @description Default task instructions.
+       * @example Review recent important Gmail messages and produce a markdown digest.
+       */
+      instructions: string;
+      /**
+       * @description Desktop-facing LLM model id.
+       * @example openai/gpt-4.1-mini
+       */
+      model?: string | null;
+      /**
+       * @description Default task name.
+       * @example Inbox Digest
+       */
+      name: string;
+      /**
+       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+       * @example openai
+       */
+      provider?: string | null;
+      /** @description Connectors this template expects for full fidelity. */
+      requiredConnectors?: string[];
+      /**
+       * @description Stable template slug.
+       * @example inbox-digest
+       */
+      slug: string;
+      /** @description Template tags for UI grouping. */
+      tags?: string[];
+      /**
+       * @description Default task slug used when instantiating this template.
+       * @example inbox-digest
+       */
+      taskSlug: string;
+      /**
+       * @description Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.
+       * @example {
+       *       "cronExpr": "0 9 * * *",
+       *       "timezone": "America/New_York"
+       *     }
+       */
+      triggers?: unknown;
+    };
+    /** @description Overrides applied while creating a task from a built-in template. Omitted fields use template defaults. */
+    BackgroundTaskTemplateInstantiateRequest: {
+      /**
+       * @description Override active state.
+       * @example true
+       */
+      active?: boolean;
+      /**
+       * @description Execution target override.
+       * @example api
+       * @enum {string}
+       */
+      executionTarget?: "desktop" | "api";
+      /**
+       * @description Desktop-facing LLM model id.
+       * @example openai/gpt-4.1-mini
+       */
+      model?: string | null;
+      /**
+       * @description Task name override.
+       * @example Executive Inbox Digest
+       */
+      name?: string | null;
+      /**
+       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+       * @example openai
+       */
+      provider?: string | null;
+      /**
+       * @description Task slug override. Defaults to template.taskSlug.
+       * @example exec-inbox
+       */
+      slug?: string | null;
+      /**
+       * @description Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.
+       * @example {
+       *       "cronExpr": "0 9 * * *",
+       *       "timezone": "America/New_York"
+       *     }
+       */
+      triggers?: unknown;
+    };
+    /** @description Built-in background task templates available to the authenticated user. */
+    BackgroundTaskTemplatesResponse: {
+      /** @description Available task templates. */
+      templates: components["schemas"]["BackgroundTaskTemplate"][];
     };
     /** @description Queues a remote run request. The desktop sync loop claims queued runs and executes them locally. */
     BackgroundTaskTriggerRequest: {
@@ -2390,7 +2682,17 @@ export interface components {
        * @example gmail
        * @enum {string}
        */
-      source: "gmail" | "google_calendar" | "slack" | "webhook" | "internal";
+      source:
+        | "gmail"
+        | "google_calendar"
+        | "google_drive"
+        | "slack"
+        | "webhook"
+        | "mcp"
+        | "github"
+        | "linear"
+        | "stripe"
+        | "internal";
       /**
        * @description Connected-account key.
        * @example acct_google_primary
@@ -2438,7 +2740,17 @@ export interface components {
        * @example internal
        * @enum {string}
        */
-      source: "gmail" | "google_calendar" | "slack" | "webhook" | "internal";
+      source:
+        | "gmail"
+        | "google_calendar"
+        | "google_drive"
+        | "slack"
+        | "webhook"
+        | "mcp"
+        | "github"
+        | "linear"
+        | "stripe"
+        | "internal";
       /**
        * @description Connected-account key the event belongs to.
        * @example acct_google_primary
@@ -2539,10 +2851,6 @@ export interface components {
       /** @description Linked runs. */
       runs: components["schemas"]["CloudEventRun"][];
     };
-    /** @description Composio v3 response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-    ComposioProxyResponse: {
-      [key: string]: unknown;
-    };
     /** @description Public bootstrap values consumed by the desktop before sign-in. */
     ConfigResponse: {
       /**
@@ -2570,6 +2878,30 @@ export interface components {
        * @example
        */
       websocketApiUrl: string;
+    };
+    /** @description Stores a vendor-issued API key for an api_key connector. */
+    ConnectionAPIKeyRequest: {
+      /**
+       * @description Vendor API key. Stored sealed at rest and never returned by connector list endpoints.
+       * @example sk_vendor_abc123
+       */
+      apiKey: string;
+    };
+    /** @description Redeems a one-time connector OAuth ticket parked by /v1/connections/{name}/callback. */
+    ConnectionClaimRequest: {
+      /**
+       * @description Opaque one-time OAuth state/session ticket.
+       * @example state_abc123
+       */
+      state: string;
+    };
+    /** @description Connector connection result. */
+    ConnectionConnectedResponse: {
+      /**
+       * @description Whether the connector is now connected.
+       * @example true
+       */
+      connected: boolean;
     };
     /** @description OAuth authorize URL for a connector. */
     ConnectionStartResponse: {
@@ -2612,6 +2944,8 @@ export interface components {
        * @example https://example.com/icon.png
        */
       iconUrl?: string | null;
+      /** @description Allowlisted upstream MCP tools and trust tiers for cloud runtime calls. */
+      mcpTools?: components["schemas"]["MCPToolPolicy"][];
       /**
        * @description MCP endpoint the desktop should call after obtaining an MCP token.
        * @example https://api.canvas.solomon-ai.co/v1/mcp
@@ -2630,6 +2964,8 @@ export interface components {
        *     ]
        */
       scopes?: string[];
+      /** @description Onboarding capability blocks shown when a user browses or connects this integration. */
+      templateBlocks?: components["schemas"]["IntegrationTemplateBlock"][];
     };
     /** @description Connector registry plus per-user connection state. */
     ConnectorsResponse: {
@@ -2807,6 +3143,59 @@ export interface components {
     ExaSearchResponse: {
       [key: string]: unknown;
     };
+    /** @description Signed generic webhook event ingestion. Defaults source=webhook; connector/provider gateways may send source=mcp, github, linear, or stripe. The receiver resolves the owner from userId. */
+    GenericWebhookEventRequest: {
+      /**
+       * @description Optional idempotency anchor. If omitted, sourceEventId is required and derives <source>:<sourceAccountId>:<sourceEventId>.
+       * @example webhook:zapier-acme-ar:evt_123
+       */
+      dedupeKey?: string | null;
+      /**
+       * @description Provider-specific event type.
+       * @example invoice.disputed
+       */
+      eventType?: string | null;
+      /**
+       * @description RFC3339 provider event time.
+       * @example 2026-06-06T14:00:00Z
+       */
+      occurredAt?: string | null;
+      /** @description Full provider object. Sealed at rest; returned only by the event detail endpoint. */
+      payload?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Webhook source.
+       * @example webhook
+       * @enum {string}
+       */
+      source?: "webhook" | "mcp" | "github" | "linear" | "stripe";
+      /**
+       * @description External account or webhook integration key.
+       * @example zapier-acme-ar
+       */
+      sourceAccountId?: string | null;
+      /**
+       * @description Provider-side event id. Used to derive dedupeKey when dedupeKey is omitted.
+       * @example evt_123
+       */
+      sourceEventId?: string | null;
+      /**
+       * @description Short title used in UI and routing prompts. Defaults to eventType when omitted.
+       * @example Invoice #4821 dispute
+       */
+      subject?: string | null;
+      /**
+       * @description Human-readable gist used in routing prompts. Defaults to a compact payload summary when omitted.
+       * @example Acme disputed invoice #4821.
+       */
+      text?: string | null;
+      /**
+       * @description Rowboat user id (UUID) owning the event.
+       * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
+       */
+      userId: string;
+    };
     /** @description Redeems a one-time Google OAuth handoff ticket parked by /oauth/google/callback. */
     GoogleClaimRequest: {
       /**
@@ -2896,6 +3285,44 @@ export interface components {
        */
       status: "ok";
     };
+    /** @description User-facing integration onboarding capability block. Blocks describe what an integration unlocks; they are not executable workflow nodes. */
+    IntegrationTemplateBlock: {
+      /**
+       * @description UI grouping category.
+       * @example finance
+       */
+      category: string;
+      /**
+       * @description Human-readable capability description.
+       * @example Look up invoices, customers, balances, and current payment status.
+       */
+      description: string;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** @description Connector MCP tools backing this capability. */
+      mcpTools?: string[];
+      /** @description OAuth scopes required by this capability. */
+      requiredScopes?: string[];
+      /**
+       * @description Optional prompt example for the onboarding UI.
+       * @example Show me the current invoice status for Acme.
+       */
+      samplePrompt?: string | null;
+      /**
+       * @description Short block title.
+       * @example Invoice context
+       */
+      title: string;
+      /**
+       * @description Highest trust tier needed by this capability.
+       * @example read
+       * @enum {string}
+       */
+      trustTier: "read" | "write" | "act" | "money-moving";
+    };
     /** @description Server-to-server cloud event ingestion: the caller names the event owner explicitly. */
     InternalCloudEventIngestRequest: {
       /**
@@ -2908,7 +3335,17 @@ export interface components {
        * @example internal
        * @enum {string}
        */
-      source: "gmail" | "google_calendar" | "slack" | "webhook" | "internal";
+      source:
+        | "gmail"
+        | "google_calendar"
+        | "google_drive"
+        | "slack"
+        | "webhook"
+        | "mcp"
+        | "github"
+        | "linear"
+        | "stripe"
+        | "internal";
       /**
        * @description Rowboat user id (UUID) owning the event.
        * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
@@ -3384,6 +3821,20 @@ export interface components {
        */
       token_type: string;
     };
+    /** @description Allowlisted upstream MCP tool metadata. */
+    MCPToolPolicy: {
+      /**
+       * @description Upstream MCP tool name.
+       * @example customer.lookup
+       */
+      name: string;
+      /**
+       * @description Runtime trust tier for this tool.
+       * @example read
+       * @enum {string}
+       */
+      trustTier: "read" | "write" | "act" | "money-moving";
+    };
     /** @description Response for GET /v1/me. */
     MeResponse: {
       billing: components["schemas"]["BillingState"];
@@ -3756,6 +4207,150 @@ export interface components {
        * @example Acme
        */
       teamName?: string | null;
+    };
+    /** @description Slack thread message metadata returned to desktop chat. */
+    SlackThreadMessage: {
+      /**
+       * @description Slack bot id when present.
+       * @example B01234567
+       */
+      bot_id?: string | null;
+      /**
+       * @description Slack message text.
+       * @example Can you summarize this?
+       */
+      text?: string | null;
+      /**
+       * @description Usage or ledger event timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      ts?: string | null;
+      /**
+       * @description User that owns this row.
+       * @example U01234567
+       */
+      user?: string | null;
+    };
+    /** @description Post an approved Slack reply into a connected managed thread. */
+    SlackThreadPostRequest: {
+      /**
+       * @description Slack channel id.
+       * @example C01234567
+       */
+      channel: string;
+      /**
+       * @description Slack workspace/team id.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Slack message text to post.
+       * @example I can take this one.
+       */
+      text: string;
+      /**
+       * @description Slack thread timestamp. The reply is posted under this thread.
+       * @example 1700000000.000100
+       */
+      threadTs: string;
+    };
+    /** @description Slack reply post result. The bot token and message text are never returned. */
+    SlackThreadPostResponse: {
+      /**
+       * @description Slack channel id.
+       * @example C01234567
+       */
+      channel: string;
+      /**
+       * @description Whether Slack accepted the post.
+       * @example true
+       */
+      ok: boolean;
+      /**
+       * @description Slack workspace/team id.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Slack thread timestamp.
+       * @example 1700000000.000100
+       */
+      threadTs: string;
+    };
+    /** @description Read a Slack thread from a connected managed workspace. */
+    SlackThreadReadRequest: {
+      /**
+       * @description Slack channel id.
+       * @example C01234567
+       */
+      channel: string;
+      /**
+       * @description Max messages to return. Defaults to 50, max 200.
+       * @example 50
+       */
+      limit?: number | null;
+      /**
+       * @description Slack workspace/team id.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Slack thread timestamp. For a top-level message, use the message ts.
+       * @example 1700000000.000100
+       */
+      threadTs: string;
+    };
+    /** @description Slack thread messages read through the server-held Slack app token. */
+    SlackThreadReadResponse: {
+      /**
+       * @description Slack channel id.
+       * @example C01234567
+       */
+      channel: string;
+      /** @description Slack thread messages. */
+      messages: components["schemas"]["SlackThreadMessage"][];
+      /**
+       * @description Slack workspace/team id.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Slack thread timestamp.
+       * @example 1700000000.000100
+       */
+      threadTs: string;
+    };
+    /** @description Connected Slack workspace metadata. Credentials are server-held and never returned. */
+    SlackWorkspace: {
+      /**
+       * Format: date-time
+       * @description Connection creation time.
+       * @example 2026-06-04T20:38:00Z
+       */
+      connectedAt?: string;
+      /**
+       * @description OAuth scopes granted or requested.
+       * @example [
+       *       "invoices:read",
+       *       "customers:read"
+       *     ]
+       */
+      scopes?: string[];
+      /**
+       * @description Slack workspace (team) id — the key Events API deliveries resolve against.
+       * @example T0EXAMPLE
+       */
+      teamId: string;
+      /**
+       * @description Workspace display name when available.
+       * @example Acme
+       */
+      teamName?: string | null;
+    };
+    /** @description Connected Slack workspaces for the authenticated user. */
+    SlackWorkspacesResponse: {
+      /** @description Connected Slack workspaces. */
+      workspaces: components["schemas"]["SlackWorkspace"][];
     };
     /** @description User billing plan, status, trial expiry, Stripe identifiers, and credit grant. */
     Subscription: {
@@ -4826,6 +5421,189 @@ export interface operations {
       500: components["responses"]["500"];
     };
   };
+  listBackgroundTaskTemplates: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Task templates. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "templates": [
+           *         {
+           *           "active": true,
+           *           "description": "Summarize new priority email and produce a short follow-up plan.",
+           *           "executionTarget": "api",
+           *           "instructions": "Review recent important Gmail messages and produce a markdown digest.",
+           *           "model": "anthropic/claude-sonnet-4-5",
+           *           "name": "Inbox Digest",
+           *           "provider": "openrouter",
+           *           "requiredConnectors": [
+           *             "google"
+           *           ],
+           *           "slug": "inbox-digest",
+           *           "tags": [
+           *             "gmail",
+           *             "digest",
+           *             "scheduled"
+           *           ],
+           *           "taskSlug": "inbox-digest",
+           *           "triggers": {
+           *             "cronExpr": "0 8 * * 1-5",
+           *             "timezone": "America/New_York"
+           *           }
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": components["schemas"]["BackgroundTaskTemplatesResponse"];
+        };
+      };
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  getBackgroundTaskTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Background task template slug. */
+        templateSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Task template. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "active": true,
+           *       "description": "Summarize new priority email and produce a short follow-up plan.",
+           *       "executionTarget": "api",
+           *       "instructions": "Review recent important Gmail messages and produce a markdown digest.",
+           *       "model": "anthropic/claude-sonnet-4-5",
+           *       "name": "Inbox Digest",
+           *       "provider": "openrouter",
+           *       "requiredConnectors": [
+           *         "google"
+           *       ],
+           *       "slug": "inbox-digest",
+           *       "tags": [
+           *         "gmail",
+           *         "digest",
+           *         "scheduled"
+           *       ],
+           *       "taskSlug": "inbox-digest",
+           *       "triggers": {
+           *         "cronExpr": "0 8 * * 1-5",
+           *         "timezone": "America/New_York"
+           *       }
+           *     }
+           */
+          "application/json": components["schemas"]["BackgroundTaskTemplate"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  instantiateBackgroundTaskTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Background task template slug. */
+        templateSlug: string;
+      };
+      cookie?: never;
+    };
+    /** @description Optional template overrides. */
+    requestBody?: {
+      content: {
+        /**
+         * @example {
+         *       "name": "Executive Inbox Digest",
+         *       "slug": "exec-inbox"
+         *     }
+         */
+        "application/json": components["schemas"]["BackgroundTaskTemplateInstantiateRequest"];
+      };
+    };
+    responses: {
+      /** @description Created task. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "active": true,
+           *       "createdAt": "2026-06-04T20:38:00Z",
+           *       "executionTarget": "desktop",
+           *       "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+           *       "instructions": "Summarize important account changes and draft follow-up notes.",
+           *       "lastAttemptAt": "2026-06-04T21:00:00Z",
+           *       "lastRunAt": "2026-06-04T21:02:00Z",
+           *       "lastRunError": "",
+           *       "lastRunId": "run-20260604-210000",
+           *       "lastRunSummary": "No high-priority account changes.",
+           *       "model": "openai/gpt-4.1-mini",
+           *       "name": "Daily Account Summary",
+           *       "provider": "openai",
+           *       "revision": 2,
+           *       "slug": "daily-summary",
+           *       "triggers": {
+           *         "cronExpr": "0 9 * * *",
+           *         "timezone": "America/New_York"
+           *       },
+           *       "updatedAt": "2026-06-04T20:39:00Z"
+           *     }
+           */
+          "application/json": components["schemas"]["BackgroundTask"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      /** @description A task with this slug already exists for the user. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "conflict",
+           *       "detail": "background task already exists",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/conflict"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
   listBackgroundTasks: {
     parameters: {
       query?: never;
@@ -5612,7 +6390,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Run events. */
+      /** @description Run log/progress events. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -5624,12 +6402,12 @@ export interface operations {
            *         {
            *           "event": {
            *             "summary": "ok",
-           *             "type": "completed"
+           *             "type": "temporal.completed"
            *           },
            *           "id": "06227adb-924f-46f1-b324-1b10d080a660",
            *           "receivedAt": "2026-06-04T21:02:05Z",
            *           "seq": 1,
-           *           "type": "completed"
+           *           "type": "temporal.completed"
            *         }
            *       ]
            *     }
@@ -5669,10 +6447,10 @@ export interface operations {
          *         {
          *           "event": {
          *             "summary": "ok",
-         *             "type": "completed"
+         *             "type": "temporal.completed"
          *           },
          *           "seq": 1,
-         *           "type": "completed"
+         *           "type": "temporal.completed"
          *         }
          *       ]
          *     }
@@ -5694,6 +6472,50 @@ export interface operations {
            *     }
            */
           "application/json": components["schemas"]["BackgroundTaskRunEventsAppendResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  streamBackgroundTaskRunEvents: {
+    parameters: {
+      query?: {
+        /** @description Optional reconnect cursor. When provided, only events with seq greater than this value are streamed. */
+        afterSeq?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Background task slug, matching bg-tasks/<slug> locally. */
+        slug: string;
+        /** @description Cloud-visible run id for a background task run. */
+        runId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description NDJSON stream of BackgroundTaskRunEvent objects. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "event": {
+           *         "summary": "ok",
+           *         "type": "temporal.completed"
+           *       },
+           *       "id": "06227adb-924f-46f1-b324-1b10d080a660",
+           *       "receivedAt": "2026-06-04T21:02:05Z",
+           *       "seq": 1,
+           *       "type": "temporal.completed"
+           *     }
+           */
+          "application/x-ndjson": components["schemas"]["BackgroundTaskRunEvent"];
         };
       };
       400: components["responses"]["400"];
@@ -5943,166 +6765,6 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
-  proxyComposioGet: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard. */
-        path: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "items": []
-           *     }
-           */
-          "application/json": components["schemas"]["ComposioProxyResponse"];
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
-  proxyComposioPut: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard. */
-        path: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "items": []
-           *     }
-           */
-          "application/json": components["schemas"]["ComposioProxyResponse"];
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
-  proxyComposioPost: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard. */
-        path: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "items": []
-           *     }
-           */
-          "application/json": components["schemas"]["ComposioProxyResponse"];
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
-  proxyComposioDelete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard. */
-        path: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "items": []
-           *     }
-           */
-          "application/json": components["schemas"]["ComposioProxyResponse"];
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
-  proxyComposioPatch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Composio API path after /v1/composio. The runtime route accepts a slash-containing wildcard. */
-        path: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Composio response body. Connected-account list responses are filtered to the caller's mapped accounts. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "items": []
-           *     }
-           */
-          "application/json": components["schemas"]["ComposioProxyResponse"];
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
   getConfig: {
     parameters: {
       query?: never;
@@ -6156,6 +6818,49 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
+  setConnectionAPIKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Connector slug, for example canvas, corinthian, or wispr. */
+        name: string;
+      };
+      cookie?: never;
+    };
+    /** @description Connector API key. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "apiKey": "sk_vendor_abc123"
+         *     }
+         */
+        "application/json": components["schemas"]["ConnectionAPIKeyRequest"];
+      };
+    };
+    responses: {
+      /** @description Connector connected. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "connected": true
+           *     }
+           */
+          "application/json": components["schemas"]["ConnectionConnectedResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+      503: components["responses"]["503"];
+    };
+  };
   handleConnectionCallback: {
     parameters: {
       query: {
@@ -6186,6 +6891,52 @@ export interface operations {
       };
       400: components["responses"]["400"];
       500: components["responses"]["500"];
+    };
+  };
+  claimConnection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Connector slug, for example canvas, corinthian, or wispr. */
+        name: string;
+      };
+      cookie?: never;
+    };
+    /** @description Connector claim ticket. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "state": "state_abc123"
+         *     }
+         */
+        "application/json": components["schemas"]["ConnectionClaimRequest"];
+      };
+    };
+    responses: {
+      /** @description Connector connected. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "connected": true
+           *     }
+           */
+          "application/json": components["schemas"]["ConnectionConnectedResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+      410: components["responses"]["410"];
+      500: components["responses"]["500"];
+      503: components["responses"]["503"];
     };
   };
   createMCPToken: {
@@ -6281,10 +7032,31 @@ export interface operations {
            *           "connectedAt": "2026-06-04T20:38:00Z",
            *           "description": "Banking, invoicing, dunning, transactions",
            *           "displayName": "Canvas",
+           *           "mcpTools": [
+           *             {
+           *               "name": "customer.lookup",
+           *               "trustTier": "read"
+           *             }
+           *           ],
            *           "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
            *           "name": "canvas",
            *           "scopes": [
            *             "invoices:read"
+           *           ],
+           *           "templateBlocks": [
+           *             {
+           *               "category": "finance",
+           *               "description": "Look up invoices and customers.",
+           *               "id": "invoice-context",
+           *               "mcpTools": [
+           *                 "invoice.lookup"
+           *               ],
+           *               "requiredScopes": [
+           *                 "invoices:read"
+           *               ],
+           *               "title": "Invoice context",
+           *               "trustTier": "read"
+           *             }
            *           ]
            *         }
            *       ]
@@ -7062,6 +7834,164 @@ export interface operations {
       500: components["responses"]["500"];
     };
   };
+  postSlackThreadReply: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Slack reply target and text. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "channel": "C01234567",
+         *       "teamId": "T0EXAMPLE",
+         *       "text": "I can take this one.",
+         *       "threadTs": "1700000000.000100"
+         *     }
+         */
+        "application/json": components["schemas"]["SlackThreadPostRequest"];
+      };
+    };
+    responses: {
+      /** @description Slack post accepted. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "channel": "C01234567",
+           *       "ok": true,
+           *       "teamId": "T0EXAMPLE",
+           *       "threadTs": "1700000000.000100"
+           *     }
+           */
+          "application/json": components["schemas"]["SlackThreadPostResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
+    };
+  };
+  readSlackThread: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Slack thread target. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "channel": "C01234567",
+         *       "limit": 25,
+         *       "teamId": "T0EXAMPLE",
+         *       "threadTs": "1700000000.000100"
+         *     }
+         */
+        "application/json": components["schemas"]["SlackThreadReadRequest"];
+      };
+    };
+    responses: {
+      /** @description Slack thread messages. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "channel": "C01234567",
+           *       "messages": [
+           *         {
+           *           "text": "Can you summarize this?",
+           *           "ts": "1700000000.000100",
+           *           "user": "U01234567"
+           *         }
+           *       ],
+           *       "teamId": "T0EXAMPLE",
+           *       "threadTs": "1700000000.000100"
+           *     }
+           */
+          "application/json": components["schemas"]["SlackThreadReadResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
+    };
+  };
+  listSlackWorkspaces: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Connected Slack workspaces. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "workspaces": [
+           *         {
+           *           "connectedAt": "2026-06-04T20:38:00Z",
+           *           "scopes": [
+           *             "channels:history",
+           *             "chat:write"
+           *           ],
+           *           "teamId": "T0EXAMPLE"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": components["schemas"]["SlackWorkspacesResponse"];
+        };
+      };
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  deleteSlackWorkspace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slack workspace/team id. */
+        teamId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Workspace disconnected or was already absent. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
   textToSpeech: {
     parameters: {
       query?: never;
@@ -7104,6 +8034,89 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
+  genericWebhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Generic webhook event envelope. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "eventType": "invoice.disputed",
+         *       "payload": {
+         *         "customer": "Acme",
+         *         "invoice": "4821",
+         *         "reason": "pricing mismatch"
+         *       },
+         *       "sourceAccountId": "zapier-acme-ar",
+         *       "sourceEventId": "evt_123",
+         *       "userId": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+         *     }
+         */
+        "application/json": components["schemas"]["GenericWebhookEventRequest"];
+      };
+    };
+    responses: {
+      /** @description Duplicate dedupeKey: existing event returned. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "deduped": true,
+           *       "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+           *       "routingStatus": "routed"
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEventIngestResponse"];
+        };
+      };
+      /** @description Event ingested. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "deduped": false,
+           *       "eventId": "0c0afab1-7f6f-4f0b-9d8e-1e58e8b0f111",
+           *       "routingStatus": "pending"
+           *     }
+           */
+          "application/json": components["schemas"]["CloudEventIngestResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      /** @description Payload exceeds the configured size cap. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_body_too_large",
+           *       "detail": "request body exceeds 327680 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Request Entity Too Large",
+           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
   googleWebhook: {
     parameters: {
       query?: {
@@ -7114,7 +8127,7 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description Pub/Sub push envelope (Gmail). Calendar notifications carry no body. */
+    /** @description Pub/Sub push envelope (Gmail). Calendar and Drive notifications carry no body. */
     requestBody?: {
       content: {
         /**

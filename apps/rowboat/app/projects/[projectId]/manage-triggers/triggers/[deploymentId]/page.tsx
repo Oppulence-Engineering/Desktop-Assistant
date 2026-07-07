@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { requireActiveBillingSubscription } from '@/app/lib/billing';
-import { ComposioTriggerDeploymentView } from "../../components/composio-trigger-deployment-view";
+import { IntegrationTriggerDeploymentView } from "../../components/integration-trigger-deployment-view";
 
 export const metadata: Metadata = {
     title: "External Trigger",
@@ -13,7 +13,7 @@ export default async function Page(
 ) {
     const params = await props.params;
     await requireActiveBillingSubscription();
-    return <ComposioTriggerDeploymentView projectId={params.projectId} deploymentId={params.deploymentId} />;
+    return <IntegrationTriggerDeploymentView projectId={params.projectId} deploymentId={params.deploymentId} />;
 }
 
 

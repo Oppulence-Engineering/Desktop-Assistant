@@ -221,9 +221,9 @@ export class MongoDBJobsRepository implements IJobsRepository {
                 query["reason.ruleId"] = filters.recurringJobRuleId;
             }
             
-            if (filters.composioTriggerDeploymentId) {
-                query["reason.type"] = "composio_trigger";
-                query["reason.triggerDeploymentId"] = filters.composioTriggerDeploymentId;
+            if (filters.integrationTriggerDeploymentId) {
+                query["reason.type"] = "integration_trigger";
+                query["reason.triggerDeploymentId"] = filters.integrationTriggerDeploymentId;
             }
             
             if (filters.createdAfter) {

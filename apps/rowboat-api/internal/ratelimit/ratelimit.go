@@ -23,7 +23,6 @@ const (
 	GroupLLM         = "llm"
 	GroupVoice       = "voice"
 	GroupSearch      = "search"
-	GroupComposio    = "composio"
 	GroupConnections = "connections"
 	GroupDefault     = "default"
 	GroupAuth        = "auth"

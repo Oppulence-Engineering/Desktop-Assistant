@@ -187,10 +187,15 @@ func (h *Handler) cronSourceView(ctx context.Context, task *ent.BackgroundTask, 
 		src.Health = "syncing"
 	}
 	// Loop-owned (or fallback): predict the next minute-aligned tick.
-	if next, err := gronx.NextTickAfter(tr.CronExpr, now, true); err == nil {
+	if next, err := nextLoopCronTick(tr.CronExpr, now); err == nil {
 		src.NextDueAt = formatTimePtr(&next)
 	}
 	return src
+}
+
+func nextLoopCronTick(expr string, now time.Time) (time.Time, error) {
+	ref := now.Truncate(time.Minute).Add(time.Minute)
+	return gronx.NextTickAfter(expr, ref, true)
 }
 
 // scheduleStateTimes returns the newest last_evaluated_at / last_triggered_at

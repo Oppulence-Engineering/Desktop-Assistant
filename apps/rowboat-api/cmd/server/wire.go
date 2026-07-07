@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -17,12 +16,12 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtasks"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskschedule"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composio"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/config"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
@@ -42,6 +41,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/server"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slack"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slacktoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/transcription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/voice"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
@@ -154,7 +154,19 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	configH := config.New(cfg)
 	docsH := docs.New()
 	billingH := billing.New(client, cfg.FreeTierCredits, cfg.DailyCreditLimit, database.Cached, log)
+	billingH.ConfigureStripe(billing.StripeConfig{
+		SecretKey:      cfg.StripeSecretKey,
+		WebhookSecret:  cfg.StripeWebhookSecret,
+		StarterPriceID: cfg.StripeStarterPriceID,
+		ProPriceID:     cfg.StripeProPriceID,
+		SuccessURL:     cfg.StripeSuccessURL,
+		CancelURL:      cfg.StripeCancelURL,
+		APIBaseURL:     cfg.StripeAPIBaseURL,
+		StarterCredits: cfg.StripeStarterCredits,
+		ProCredits:     cfg.StripeProCredits,
+	})
 	backgroundTasksH := backgroundtasks.New(client, log)
+	backgroundTasksH.SetAdmission(backgroundtaskruns.AdmissionFromConfig(cfg, gate, prices))
 	// temporalClient outlives this block: the cloud-events route starter below
 	// reuses the same connection. Closed on shutdown by the goroutine.
 	var temporalClient temporalsdk.Client
@@ -249,10 +261,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		slackRedirect = strings.TrimRight(cfg.AppURL, "/") + "/oauth/slack/callback"
 	}
 	slackH.SetOAuthFlow(cfg.SlackAuthorizeURL, cfg.SlackTokenURL, slackRedirect, cfg.DesktopDeepLinkScheme, cfg.SlackOAuthScopes)
-	composioH := composio.New(client, sec, log)
-	composioPolicy := vendorPolicy
-	composioPolicy.MaxResponseBytes = cfg.ComposioResponseMaxBytes
-	composioH.SetOutboundPolicy(composioPolicy)
+	slackH.SetRuntimeClients(
+		slacktoken.New(client, sealer, sec, cfg.SlackTokenURL, vendorPolicy),
+		slackclient.New(vendorPolicy),
+	)
 
 	// Cloud event ingestion (RFC 003). The route controller is wired only when
 	// routing is enabled (it needs Temporal); without it events are stored with
@@ -262,9 +274,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		routeCtl = cloudevents.NewRouteStarter(temporalClient, cfg)
 	}
 	cloudEventsH := cloudevents.New(client, sealer, routeCtl, cloudevents.Config{
-		MaxPayloadBytes:    cfg.CloudEventsMaxPayloadBytes,
-		SlackSigningSecret: cfg.SlackSigningSecret,
-		GoogleWebhookToken: cfg.GoogleWebhookToken,
+		MaxPayloadBytes:      cfg.CloudEventsMaxPayloadBytes,
+		SlackSigningSecret:   cfg.SlackSigningSecret,
+		GoogleWebhookToken:   cfg.GoogleWebhookToken,
+		WebhookSigningSecret: cfg.WebhookSigningSecret,
 	}, log)
 
 	registry, err := connectors.LoadRegistry([]byte(cfg.ConnectorsJSON))
@@ -376,6 +389,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		Post("/v1/webhooks/google", cloudEventsH.GoogleWebhook)
 	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
 		Post("/v1/webhooks/slack", cloudEventsH.SlackWebhook)
+	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
+		Post("/v1/webhooks/events", cloudEventsH.GenericWebhook)
+	r.With(rl.PerUserWindow(ratelimit.GroupWebhooks, 240, time.Minute)).
+		Post("/v1/billing/stripe/webhook", billingH.StripeWebhook)
 
 	// Agent channel inbound (RFC 027 P5). Slack Events API has a single request
 	// URL, so /v1/webhooks/slack owns verification, durable event storage, and
@@ -422,18 +439,29 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		r.Use(rl.PerUser(ratelimit.GroupDefault, 600)) // sanity bucket
 
 		r.Get("/v1/me", billingH.Me)
+		r.Post("/v1/billing/checkout-session", billingH.CheckoutSession)
+		r.Post("/v1/billing/portal-session", billingH.PortalSession)
+		r.Post("/v1/billing/sync", billingH.Sync)
 
 		// Feedback relay to Plain. Tight per-user window: it's a human-driven form.
 		r.With(rl.PerUserWindow(ratelimit.GroupFeedback, 5, time.Minute)).
 			Post("/v1/feedback", feedbackH.Submit)
 
 		r.Get("/v1/background-task-runs", backgroundTasksH.ListAllRuns)
+		r.Route("/v1/background-task-templates", func(r chi.Router) {
+			r.Use(rl.PerUserWindow(ratelimit.GroupTaskBurst, 120, 10*time.Second))
+			r.Get("/", backgroundTasksH.ListTemplates)
+			r.Get("/{templateSlug}", backgroundTasksH.GetTemplate)
+			r.Post("/{templateSlug}/instantiate", backgroundTasksH.InstantiateTemplate)
+		})
 		// NOTE: do not register /v1/background-tasks directly here — the Route
 		// block below registers the same paths WITH the burst limiter, and a
 		// direct registration would (depending on chi's shadowing rules) bypass
 		// it.
 		r.Route("/v1/background-tasks", func(r chi.Router) {
-			r.Use(rl.PerUserWindow(ratelimit.GroupTaskBurst, 30, 10*time.Second))
+			// Desktop task runs sync artifacts, run state, events, and UI refreshes
+			// in a short burst; keep the guardrail high enough for normal runs.
+			r.Use(rl.PerUserWindow(ratelimit.GroupTaskBurst, 120, 10*time.Second))
 			r.Get("/", backgroundTasksH.List)
 			r.Post("/", backgroundTasksH.Create)
 			r.Get("/{slug}", backgroundTasksH.Get)
@@ -451,6 +479,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Post("/{slug}/runs/{runId}/signal", backgroundTasksH.SignalRun)
 			r.Get("/{slug}/runs/{runId}/events", backgroundTasksH.ListRunEvents)
 			r.Post("/{slug}/runs/{runId}/events", backgroundTasksH.AppendRunEvents)
+			r.Get("/{slug}/runs/{runId}/events/stream", backgroundTasksH.StreamRunEvents)
 			r.Post("/{slug}/trigger", backgroundTasksH.Trigger)
 			r.Get("/{slug}/schedule-state", backgroundTasksH.GetScheduleState)
 		})
@@ -513,11 +542,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Post("/refresh", googleH.Refresh)
 		})
 
-		r.With(rl.PerUserWindow(ratelimit.GroupConnections, 30, time.Minute)).
-			Post("/v1/slack-oauth/claim", slackH.Claim)
-
-		r.With(rl.PerUser(ratelimit.GroupComposio, 120)).
-			Handle("/v1/composio/*", http.HandlerFunc(composioH.Proxy))
+		r.Route("/v1/slack-oauth", func(r chi.Router) {
+			r.Use(rl.PerUserWindow(ratelimit.GroupConnections, 30, time.Minute))
+			r.Post("/claim", slackH.Claim)
+			r.Get("/workspaces", slackH.ListWorkspaces)
+			r.Delete("/workspaces/{teamId}", slackH.DeleteWorkspace)
+			r.Post("/thread/read", slackH.ReadThread)
+			r.Post("/thread/post", slackH.PostThread)
+		})
 
 		// Cloud event ingestion + audit reads (RFC 003).
 		r.Route("/v1/events", func(r chi.Router) {
@@ -534,6 +566,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Use(rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second))
 			r.Post("/{name}/start", connectorsH.Start)
 			r.Post("/{name}/claim", connectorsH.Claim)
+			r.Post("/{name}/api-key", connectorsH.SetAPIKey)
 			r.Post("/{name}/mcp-token", connectorsH.MCPToken)
 			r.Delete("/{name}", connectorsH.Delete)
 		})

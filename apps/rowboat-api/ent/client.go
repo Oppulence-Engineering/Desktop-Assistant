@@ -31,7 +31,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/composioaccount"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -81,8 +80,6 @@ type Client struct {
 	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
 	// CloudEvent is the client for interacting with the CloudEvent builders.
 	CloudEvent *CloudEventClient
-	// ComposioAccount is the client for interacting with the ComposioAccount builders.
-	ComposioAccount *ComposioAccountClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
 	// GoogleWatch is the client for interacting with the GoogleWatch builders.
@@ -141,7 +138,6 @@ func (c *Client) init() {
 	c.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(c.config)
 	c.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(c.config)
 	c.CloudEvent = NewCloudEventClient(c.config)
-	c.ComposioAccount = NewComposioAccountClient(c.config)
 	c.CreditLedger = NewCreditLedgerClient(c.config)
 	c.GoogleWatch = NewGoogleWatchClient(c.config)
 	c.LLMUsage = NewLLMUsageClient(c.config)
@@ -300,7 +296,6 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BackgroundTaskRunEvent:      NewBackgroundTaskRunEventClient(cfg),
 		BackgroundTaskScheduleState: NewBackgroundTaskScheduleStateClient(cfg),
 		CloudEvent:                  NewCloudEventClient(cfg),
-		ComposioAccount:             NewComposioAccountClient(cfg),
 		CreditLedger:                NewCreditLedgerClient(cfg),
 		GoogleWatch:                 NewGoogleWatchClient(cfg),
 		LLMUsage:                    NewLLMUsageClient(cfg),
@@ -348,7 +343,6 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BackgroundTaskRunEvent:      NewBackgroundTaskRunEventClient(cfg),
 		BackgroundTaskScheduleState: NewBackgroundTaskScheduleStateClient(cfg),
 		CloudEvent:                  NewCloudEventClient(cfg),
-		ComposioAccount:             NewComposioAccountClient(cfg),
 		CreditLedger:                NewCreditLedgerClient(cfg),
 		GoogleWatch:                 NewGoogleWatchClient(cfg),
 		LLMUsage:                    NewLLMUsageClient(cfg),
@@ -396,10 +390,10 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob, c.AgentTurn,
 		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
-		c.ComposioAccount, c.CreditLedger, c.GoogleWatch, c.LLMUsage,
-		c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory,
-		c.MeetingMinuteUsage, c.OAuthConnection, c.OAuthConnectionHistory,
-		c.OAuthPending, c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
+		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
+		c.MCPConnectionHistory, c.MeetingMinuteUsage, c.OAuthConnection,
+		c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
+		c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Use(hooks...)
 	}
@@ -413,10 +407,10 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob, c.AgentTurn,
 		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
-		c.ComposioAccount, c.CreditLedger, c.GoogleWatch, c.LLMUsage,
-		c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory,
-		c.MeetingMinuteUsage, c.OAuthConnection, c.OAuthConnectionHistory,
-		c.OAuthPending, c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
+		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
+		c.MCPConnectionHistory, c.MeetingMinuteUsage, c.OAuthConnection,
+		c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
+		c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -453,8 +447,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BackgroundTaskScheduleState.mutate(ctx, m)
 	case *CloudEventMutation:
 		return c.CloudEvent.mutate(ctx, m)
-	case *ComposioAccountMutation:
-		return c.ComposioAccount.mutate(ctx, m)
 	case *CreditLedgerMutation:
 		return c.CreditLedger.mutate(ctx, m)
 	case *GoogleWatchMutation:
@@ -2910,155 +2902,6 @@ func (c *CloudEventClient) mutate(ctx context.Context, m *CloudEventMutation) (V
 	}
 }
 
-// ComposioAccountClient is a client for the ComposioAccount schema.
-type ComposioAccountClient struct {
-	config
-}
-
-// NewComposioAccountClient returns a client for the ComposioAccount from the given config.
-func NewComposioAccountClient(c config) *ComposioAccountClient {
-	return &ComposioAccountClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `composioaccount.Hooks(f(g(h())))`.
-func (c *ComposioAccountClient) Use(hooks ...Hook) {
-	c.hooks.ComposioAccount = append(c.hooks.ComposioAccount, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `composioaccount.Intercept(f(g(h())))`.
-func (c *ComposioAccountClient) Intercept(interceptors ...Interceptor) {
-	c.inters.ComposioAccount = append(c.inters.ComposioAccount, interceptors...)
-}
-
-// Create returns a builder for creating a ComposioAccount entity.
-func (c *ComposioAccountClient) Create() *ComposioAccountCreate {
-	mutation := newComposioAccountMutation(c.config, OpCreate)
-	return &ComposioAccountCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of ComposioAccount entities.
-func (c *ComposioAccountClient) CreateBulk(builders ...*ComposioAccountCreate) *ComposioAccountCreateBulk {
-	return &ComposioAccountCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ComposioAccountClient) MapCreateBulk(slice any, setFunc func(*ComposioAccountCreate, int)) *ComposioAccountCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ComposioAccountCreateBulk{err: fmt.Errorf("calling to ComposioAccountClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ComposioAccountCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ComposioAccountCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for ComposioAccount.
-func (c *ComposioAccountClient) Update() *ComposioAccountUpdate {
-	mutation := newComposioAccountMutation(c.config, OpUpdate)
-	return &ComposioAccountUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ComposioAccountClient) UpdateOne(_m *ComposioAccount) *ComposioAccountUpdateOne {
-	mutation := newComposioAccountMutation(c.config, OpUpdateOne, withComposioAccount(_m))
-	return &ComposioAccountUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *ComposioAccountClient) UpdateOneID(id uuid.UUID) *ComposioAccountUpdateOne {
-	mutation := newComposioAccountMutation(c.config, OpUpdateOne, withComposioAccountID(id))
-	return &ComposioAccountUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for ComposioAccount.
-func (c *ComposioAccountClient) Delete() *ComposioAccountDelete {
-	mutation := newComposioAccountMutation(c.config, OpDelete)
-	return &ComposioAccountDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *ComposioAccountClient) DeleteOne(_m *ComposioAccount) *ComposioAccountDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ComposioAccountClient) DeleteOneID(id uuid.UUID) *ComposioAccountDeleteOne {
-	builder := c.Delete().Where(composioaccount.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &ComposioAccountDeleteOne{builder}
-}
-
-// Query returns a query builder for ComposioAccount.
-func (c *ComposioAccountClient) Query() *ComposioAccountQuery {
-	return &ComposioAccountQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeComposioAccount},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a ComposioAccount entity by its id.
-func (c *ComposioAccountClient) Get(ctx context.Context, id uuid.UUID) (*ComposioAccount, error) {
-	return c.Query().Where(composioaccount.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ComposioAccountClient) GetX(ctx context.Context, id uuid.UUID) *ComposioAccount {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryUser queries the user edge of a ComposioAccount.
-func (c *ComposioAccountClient) QueryUser(_m *ComposioAccount) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(composioaccount.Table, composioaccount.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, composioaccount.UserTable, composioaccount.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *ComposioAccountClient) Hooks() []Hook {
-	return c.hooks.ComposioAccount
-}
-
-// Interceptors returns the client interceptors.
-func (c *ComposioAccountClient) Interceptors() []Interceptor {
-	return c.inters.ComposioAccount
-}
-
-func (c *ComposioAccountClient) mutate(ctx context.Context, m *ComposioAccountMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ComposioAccountCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ComposioAccountUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ComposioAccountUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ComposioAccountDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown ComposioAccount mutation op: %q", m.Op())
-	}
-}
-
 // CreditLedgerClient is a client for the CreditLedger schema.
 type CreditLedgerClient struct {
 	config
@@ -4971,22 +4814,6 @@ func (c *UserClient) QueryMcpConnections(_m *User) *MCPConnectionQuery {
 	return query
 }
 
-// QueryComposioAccounts queries the composio_accounts edge of a User.
-func (c *UserClient) QueryComposioAccounts(_m *User) *ComposioAccountQuery {
-	query := (&ComposioAccountClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(composioaccount.Table, composioaccount.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.ComposioAccountsTable, user.ComposioAccountsColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryBackgroundTasks queries the background_tasks edge of a User.
 func (c *UserClient) QueryBackgroundTasks(_m *User) *BackgroundTaskQuery {
 	query := (&BackgroundTaskClient{config: c.config}).Query()
@@ -5375,20 +5202,18 @@ type (
 		AgentApproval, AgentDefinition, AgentDefinitionHistory, AgentSession,
 		AgentSessionEvent, AgentToolCall, AgentToolResultBlob, AgentTurn,
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
-		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent,
-		ComposioAccount, CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory,
-		MCPConnection, MCPConnectionHistory, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Subscription, SubscriptionHistory, User,
-		UserHistory []ent.Hook
+		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, CreditLedger,
+		GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Subscription, SubscriptionHistory, User, UserHistory []ent.Hook
 	}
 	inters struct {
 		AgentApproval, AgentDefinition, AgentDefinitionHistory, AgentSession,
 		AgentSessionEvent, AgentToolCall, AgentToolResultBlob, AgentTurn,
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
-		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent,
-		ComposioAccount, CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory,
-		MCPConnection, MCPConnectionHistory, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Subscription, SubscriptionHistory, User,
-		UserHistory []ent.Interceptor
+		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, CreditLedger,
+		GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Subscription, SubscriptionHistory, User, UserHistory []ent.Interceptor
 	}
 )

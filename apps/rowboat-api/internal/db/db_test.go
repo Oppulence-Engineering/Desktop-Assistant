@@ -2,7 +2,9 @@ package db_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -133,4 +135,48 @@ func TestIdempotentLedgerKey(t *testing.T) {
 
 	// Same request_id, different reason (a later phase) is allowed.
 	c.CreditLedger.Create().SetUser(u).SetDelta(2).SetReason("refund").SetRequestID(rid).SaveX(ctx)
+}
+
+func TestAutoMigrateDropsLegacyOAuthProviderUserIndex(t *testing.T) {
+	name := strings.NewReplacer("/", "_", " ", "_").Replace(t.Name())
+	dsn := "file:" + name + "?mode=memory&cache=shared&_pragma=foreign_keys(1)"
+	raw, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		t.Fatalf("raw open: %v", err)
+	}
+	defer func() { _ = raw.Close() }()
+	if err := raw.PingContext(context.Background()); err != nil {
+		t.Fatalf("raw ping: %v", err)
+	}
+
+	d, err := db.Open(context.Background(), appconfig.Config{DatabaseURL: dsn, AutoMigrate: true}, zap.NewNop())
+	if err != nil {
+		t.Fatalf("initial open: %v", err)
+	}
+	_ = d.Close()
+
+	if _, err := raw.ExecContext(context.Background(), `
+		CREATE UNIQUE INDEX oauthconnection_provider_user_oauth_connections
+		ON oauth_connections (provider, user_oauth_connections)
+	`); err != nil {
+		t.Fatalf("create legacy index: %v", err)
+	}
+
+	d, err = db.Open(context.Background(), appconfig.Config{DatabaseURL: dsn, AutoMigrate: true}, zap.NewNop())
+	if err != nil {
+		t.Fatalf("reopen with legacy index: %v", err)
+	}
+	defer func() { _ = d.Close() }()
+
+	var count int
+	if err := raw.QueryRowContext(context.Background(), `
+		SELECT COUNT(*)
+		FROM sqlite_master
+		WHERE type = 'index' AND name = 'oauthconnection_provider_user_oauth_connections'
+	`).Scan(&count); err != nil {
+		t.Fatalf("query indexes: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("legacy oauth index count = %d, want 0", count)
+	}
 }

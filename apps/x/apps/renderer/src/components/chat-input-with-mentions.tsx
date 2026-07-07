@@ -476,6 +476,17 @@ function ChatInputInner({
           }
         }
         setConfiguredModels(models);
+        // ... (ERRORS.md E05) A no-pick run uses the config's ACTIVE default
+        // (top-level provider.flavor + model), not configuredModels[0]. Seed the
+        // displayed model from it so the composer matches what actually runs.
+        // Only when unset — never clobber an explicit user pick.
+        const activeFlavor =
+          typeof parsed?.provider?.flavor === "string" ? parsed.provider.flavor : "";
+        const activeModel = typeof parsed?.model === "string" ? parsed.model : "";
+        const activeKey = activeFlavor && activeModel ? `${activeFlavor}/${activeModel}` : "";
+        if (activeKey && models.some((m) => `${m.provider}/${m.model}` === activeKey)) {
+          setActiveModelKey((prev) => prev || activeKey);
+        }
       }
     } catch {
       // No config yet
@@ -869,6 +880,7 @@ function ChatInputInner({
                   type="button"
                   onClick={() => removeAttachment(attachment.id)}
                   className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-md border border-border/70 bg-background/70 text-muted-foreground opacity-0 transition-[opacity,color] duration-150 hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
+                  aria-label={`Remove ${attachmentName}`}
                 >
                   <X className="size-3.5" />
                 </button>
@@ -1408,6 +1420,7 @@ function ChatInputInner({
               <Button
                 size="icon"
                 onClick={onStop}
+                aria-label={isStopping ? "Force stop generation" : "Stop generation"}
                 title={isStopping ? "Click again to force stop" : "Stop generation"}
                 className={cn(
                   "h-7 w-7 shrink-0 rounded-none transition-all",
@@ -1427,6 +1440,7 @@ function ChatInputInner({
                 size="icon"
                 onClick={handleSubmit}
                 disabled={!canSubmit}
+                aria-label="Send message"
                 className={cn(
                   "h-7 w-7 shrink-0 rounded-none transition-all",
                   canSubmit

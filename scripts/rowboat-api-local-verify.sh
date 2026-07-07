@@ -70,6 +70,7 @@ up() {
   export TOKEN_AUDIENCE="rowboat-api" JWKS_URL="http://localhost:${DEVPORT}/.well-known/jwks.json"
   export ORY_PUBLIC_URL="http://localhost:${DEVPORT}" PUBLIC_BASE_URL="http://localhost:${APIPORT}"
   export INFISICAL_ENABLED=false ENVIRONMENT=development LOG_LEVEL=info
+  export OPENROUTER_API_KEY="dev-openrouter-key" OPENROUTER_BASE_URL="http://localhost:${DEVPORT}/v1"
   export TEMPORAL_ENABLED=true TEMPORAL_ADDRESS="localhost:${TMPPORT}" \
          TEMPORAL_NAMESPACE=default TEMPORAL_TASK_QUEUE=rowboat-api-background-tasks
 

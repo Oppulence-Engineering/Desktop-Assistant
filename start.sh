@@ -9,11 +9,6 @@ mkdir -p data/mongo
 export USE_RAG=true
 export USE_RAG_UPLOADS=true
 
-# enable composio tools if API key is set
-if [ -n "$COMPOSIO_API_KEY" ]; then
-  export USE_COMPOSIO_TOOLS=true
-fi
-
 # always show klavis tools, even if API key is not set
 export USE_KLAVIS_TOOLS=true
 

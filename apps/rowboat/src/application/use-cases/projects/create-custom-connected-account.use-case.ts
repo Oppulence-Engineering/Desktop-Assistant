@@ -2,13 +2,13 @@ import { z } from "zod";
 import { IProjectsRepository } from "../../repositories/projects.repository.interface";
 import { IProjectActionAuthorizationPolicy } from "../../policies/project-action-authorization.policy";
 import { IUsageQuotaPolicy } from "../../policies/usage-quota.policy.interface";
-import { ComposioConnectedAccount } from "@/src/entities/models/project";
-import { createAuthConfig, createConnectedAccount } from "@/src/application/lib/composio/composio";
-import { ZCreateConnectedAccountResponse } from "../../lib/composio/types";
-import { ZCreateConnectedAccountRequest } from "../../lib/composio/types";
-import { ZCreateAuthConfigResponse } from "../../lib/composio/types";
-import { ZCredentials } from "../../lib/composio/types";
-import { ZAuthScheme } from "../../lib/composio/types";
+import { IntegrationConnectedAccount } from "@/src/entities/models/project";
+import { createAuthConfig, createConnectedAccount } from "@/src/application/lib/integration/integration";
+import { ZCreateConnectedAccountResponse } from "../../lib/integration/types";
+import { ZCreateConnectedAccountRequest } from "../../lib/integration/types";
+import { ZCreateAuthConfigResponse } from "../../lib/integration/types";
+import { ZCredentials } from "../../lib/integration/types";
+import { ZAuthScheme } from "../../lib/integration/types";
 
 export const InputSchema = z.object({
     caller: z.enum(["user", "api"]),
@@ -83,7 +83,7 @@ export class CreateCustomConnectedAccountUseCase implements ICreateCustomConnect
 
         // persist to project
         const now = new Date().toISOString();
-        const account: z.infer<typeof ComposioConnectedAccount> = {
+        const account: z.infer<typeof IntegrationConnectedAccount> = {
             id: response.id,
             authConfigId: created.auth_config.id,
             status: 'INITIATED',
@@ -91,7 +91,7 @@ export class CreateCustomConnectedAccountUseCase implements ICreateCustomConnect
             lastUpdatedAt: now,
         };
 
-        await this.projectsRepository.addComposioConnectedAccount(projectId, {
+        await this.projectsRepository.addIntegrationConnectedAccount(projectId, {
             toolkitSlug,
             data: account,
         });

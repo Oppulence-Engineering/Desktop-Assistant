@@ -74,6 +74,8 @@ func TestRuntimeEventTypesAreKnown(t *testing.T) {
 		EventRuntimeLLMCallCompleted,
 		EventRuntimeToolCallStarted,
 		EventRuntimeToolCallCompleted,
+		EventRuntimeToolApprovalRequested,
+		EventRuntimeToolApprovalResolved,
 		EventRuntimeToolDenied,
 		EventRuntimeLimitExceeded,
 		EventRuntimeFinalArtifactReady,

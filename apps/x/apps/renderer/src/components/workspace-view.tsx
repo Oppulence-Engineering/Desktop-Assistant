@@ -56,6 +56,9 @@ type WorkspaceActions = {
   revealInFileManager: (path: string, isDir: boolean) => void;
   createNote: (parentPath?: string) => void;
   createFolder: (parentPath?: string) => Promise<string>;
+  // Renames via the App-level migration so an open tab / caches / wiki-links
+  // follow the new path instead of going stale. (ERRORS.md E21)
+  rename: (oldPath: string, newName: string, isDir: boolean) => Promise<void>;
   onOpenInNewTab?: (path: string) => void;
 };
 
@@ -84,10 +87,7 @@ function fileExtensionLabel(name: string): string {
   return `${name.slice(dot + 1).toUpperCase()} file`;
 }
 
-function findNode(
-  nodes: TreeNode[] | undefined,
-  path: string,
-): TreeNode | null {
+function findNode(nodes: TreeNode[] | undefined, path: string): TreeNode | null {
   if (!nodes) return null;
   for (const node of nodes) {
     if (node.path === path) return node;
@@ -110,9 +110,7 @@ async function uniqueChildPath(parent: string, name: string): Promise<string> {
   const ext = dot > 0 ? name.slice(dot) : "";
   let candidate = `${parent}/${name}`;
   let i = 1;
-  while (
-    (await window.ipc.invoke("workspace:exists", { path: candidate })).exists
-  ) {
+  while ((await window.ipc.invoke("workspace:exists", { path: candidate })).exists) {
     candidate = `${parent}/${base} (${i})${ext}`;
     i += 1;
   }
@@ -155,16 +153,11 @@ export function WorkspaceView({
   const isRoot = currentPath === WORKSPACE_ROOT;
   const fileManagerName = getFileManagerName();
 
-  const currentNode = useMemo(
-    () => findNode(tree, currentPath),
-    [tree, currentPath],
-  );
+  const currentNode = useMemo(() => findNode(tree, currentPath), [tree, currentPath]);
 
   const items = useMemo<TreeNode[]>(() => {
     const children = currentNode?.children ?? [];
-    const filtered = isRoot
-      ? children.filter((c) => c.kind === "dir")
-      : children;
+    const filtered = isRoot ? children.filter((c) => c.kind === "dir") : children;
     return [...filtered].sort((a, b) => {
       if (a.kind !== b.kind) return a.kind === "dir" ? -1 : 1;
       return a.name.localeCompare(b.name);
@@ -204,19 +197,16 @@ export function WorkspaceView({
     const node = items.find((i) => i.path === renameTarget);
     const trimmed = renameValue.trim();
     setRenameTarget(null);
-    if (!node || !trimmed || trimmed === node.name || trimmed.includes("/"))
-      return;
-    const parent = renameTarget.slice(0, renameTarget.lastIndexOf("/"));
+    if (!node || !trimmed || trimmed === node.name || trimmed.includes("/")) return;
     try {
-      await window.ipc.invoke("workspace:rename", {
-        from: renameTarget,
-        to: `${parent}/${trimmed}`,
-      });
+      // Route through the App migration so a renamed file open in a tab follows
+      // the new path (and caches/wiki-links update). (ERRORS.md E21)
+      await actions.rename(renameTarget, trimmed, node.kind === "dir");
       toast("Renamed", "success");
     } catch {
       toast("Failed to rename", "error");
     }
-  }, [renameTarget, renameValue, items]);
+  }, [renameTarget, renameValue, items, actions]);
 
   const handleDelete = useCallback(
     async (item: TreeNode) => {
@@ -238,22 +228,26 @@ export function WorkspaceView({
       try {
         for (const file of list) {
           const data = await readFileAsBase64(file);
-          const rel = (file as File & { webkitRelativePath?: string })
-            .webkitRelativePath;
-          const target =
-            preserveStructure && rel
-              ? `${currentPath}/${rel}`
-              : await uniqueChildPath(currentPath, file.name);
+          const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
+          // Preserve folder structure but still dedup the leaf file name so
+          // colliding workspace files are auto-renamed, not overwritten,
+          // matching the single-file path. (ERRORS.md E24)
+          let target: string;
+          if (preserveStructure && rel) {
+            const slash = rel.lastIndexOf("/");
+            const relDir = slash > 0 ? rel.slice(0, slash) : "";
+            const parent = relDir ? `${currentPath}/${relDir}` : currentPath;
+            target = await uniqueChildPath(parent, file.name);
+          } else {
+            target = await uniqueChildPath(currentPath, file.name);
+          }
           await window.ipc.invoke("workspace:writeFile", {
             path: target,
             data,
             opts: { encoding: "base64", mkdirp: true },
           });
         }
-        toast(
-          list.length === 1 ? "Added" : `${list.length} items added`,
-          "success",
-        );
+        toast(list.length === 1 ? "Added" : `${list.length} items added`, "success");
       } catch (err) {
         console.error("Failed to add files:", err);
         toast("Failed to add", "error");
@@ -264,51 +258,46 @@ export function WorkspaceView({
     [currentPath],
   );
 
-  // Drag-and-drop (only inside a workspace folder, not at the root grid).
+  // Drag-and-drop. Uploads only happen inside a workspace folder, but we
+  // still handle drags at the root so we can show a non-actionable hint and
+  // preventDefault — that keeps the drop from falling through to the
+  // copilot's document-level drop listener. (ERRORS.md E25)
   // stopPropagation keeps the drop from also reaching the copilot's
   // document-level drop listener when it lands on the workspace area.
   const dropEnabled = !isRoot;
-  const handleDragEnter = useCallback(
-    (e: React.DragEvent) => {
-      if (!dropEnabled) return;
-      if (!Array.from(e.dataTransfer.types).includes("Files")) return;
-      e.preventDefault();
-      e.stopPropagation();
-      dragDepthRef.current += 1;
-      setIsDraggingOver(true);
-    },
-    [dropEnabled],
-  );
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    if (!Array.from(e.dataTransfer.types).includes("Files")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current += 1;
+    setIsDraggingOver(true);
+  }, []);
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
-      if (!dropEnabled) return;
       if (!Array.from(e.dataTransfer.types).includes("Files")) return;
       e.preventDefault();
       e.stopPropagation();
-      e.dataTransfer.dropEffect = "copy";
+      e.dataTransfer.dropEffect = dropEnabled ? "copy" : "none";
     },
     [dropEnabled],
   );
-  const handleDragLeave = useCallback(
-    (e: React.DragEvent) => {
-      if (!dropEnabled) return;
-      e.preventDefault();
-      e.stopPropagation();
-      dragDepthRef.current -= 1;
-      if (dragDepthRef.current <= 0) {
-        dragDepthRef.current = 0;
-        setIsDraggingOver(false);
-      }
-    },
-    [dropEnabled],
-  );
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current -= 1;
+    if (dragDepthRef.current <= 0) {
+      dragDepthRef.current = 0;
+      setIsDraggingOver(false);
+    }
+  }, []);
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      if (!dropEnabled) return;
       e.preventDefault();
       e.stopPropagation();
       dragDepthRef.current = 0;
       setIsDraggingOver(false);
+      // Root rejects drops — hint only, no upload. (ERRORS.md E25)
+      if (!dropEnabled) return;
       if (e.dataTransfer.files?.length) void uploadFiles(e.dataTransfer.files);
     },
     [dropEnabled, uploadFiles],
@@ -337,9 +326,7 @@ export function WorkspaceView({
       setAddOpen(false);
       resetAddDialog();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create workspace",
-      );
+      setError(err instanceof Error ? err.message : "Failed to create workspace");
       setCreating(false);
     }
   }, [newName, onCreateWorkspace, resetAddDialog]);
@@ -394,11 +381,7 @@ export function WorkspaceView({
             Open in {fileManagerName}
           </Button>
           {isRoot ? (
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={() => setAddOpen(true)}
-            >
+            <Button size="sm" className="w-full" onClick={() => setAddOpen(true)}>
               <Plus className="size-4" />
               Add workspace
             </Button>
@@ -411,15 +394,11 @@ export function WorkspaceView({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => filesInputRef.current?.click()}
-                >
+                <DropdownMenuItem onClick={() => filesInputRef.current?.click()}>
                   <FilePlus className="mr-2 size-4" />
                   Add files…
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => folderInputRef.current?.click()}
-                >
+                <DropdownMenuItem onClick={() => folderInputRef.current?.click()}>
                   <FolderPlus className="mr-2 size-4" />
                   Add folder…
                 </DropdownMenuItem>
@@ -468,11 +447,7 @@ export function WorkspaceView({
                 : "This folder is empty. Drag files in or use New note / New folder."}
             </div>
             {isRoot && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setAddOpen(true)}
-              >
+              <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
                 <Plus className="size-4" />
                 Add workspace
               </Button>
@@ -512,9 +487,7 @@ export function WorkspaceView({
                         className="h-6 text-sm"
                       />
                     ) : (
-                      <div className="truncate text-sm font-medium">
-                        {item.name}
-                      </div>
+                      <div className="truncate text-sm font-medium">{item.name}</div>
                     )}
                     {!isRenaming && (
                       <div className="truncate text-xs text-muted-foreground">
@@ -530,21 +503,14 @@ export function WorkspaceView({
               return (
                 <ContextMenu key={item.path}>
                   <ContextMenuTrigger asChild>{card}</ContextMenuTrigger>
-                  <ContextMenuContent
-                    className="w-48"
-                    onCloseAutoFocus={(e) => e.preventDefault()}
-                  >
+                  <ContextMenuContent className="w-48" onCloseAutoFocus={(e) => e.preventDefault()}>
                     {isDir && (
                       <>
-                        <ContextMenuItem
-                          onClick={() => actions.createNote(item.path)}
-                        >
+                        <ContextMenuItem onClick={() => actions.createNote(item.path)}>
                           <FilePlus className="mr-2 size-4" />
                           New Note
                         </ContextMenuItem>
-                        <ContextMenuItem
-                          onClick={() => void actions.createFolder(item.path)}
-                        >
+                        <ContextMenuItem onClick={() => void actions.createFolder(item.path)}>
                           <FolderPlus className="mr-2 size-4" />
                           New Folder
                         </ContextMenuItem>
@@ -553,9 +519,7 @@ export function WorkspaceView({
                     )}
                     {!isDir && actions.onOpenInNewTab && (
                       <>
-                        <ContextMenuItem
-                          onClick={() => actions.onOpenInNewTab!(item.path)}
-                        >
+                        <ContextMenuItem onClick={() => actions.onOpenInNewTab!(item.path)}>
                           <ExternalLink className="mr-2 size-4" />
                           Open in new tab
                         </ContextMenuItem>
@@ -571,11 +535,7 @@ export function WorkspaceView({
                       <Copy className="mr-2 size-4" />
                       Copy Path
                     </ContextMenuItem>
-                    <ContextMenuItem
-                      onClick={() =>
-                        actions.revealInFileManager(item.path, isDir)
-                      }
-                    >
+                    <ContextMenuItem onClick={() => actions.revealInFileManager(item.path, isDir)}>
                       <FolderOpen className="mr-2 size-4" />
                       Open in {fileManagerName}
                     </ContextMenuItem>
@@ -584,10 +544,7 @@ export function WorkspaceView({
                       <Pencil className="mr-2 size-4" />
                       Rename
                     </ContextMenuItem>
-                    <ContextMenuItem
-                      variant="destructive"
-                      onClick={() => void handleDelete(item)}
-                    >
+                    <ContextMenuItem variant="destructive" onClick={() => void handleDelete(item)}>
                       <Trash2 className="mr-2 size-4" />
                       Delete
                     </ContextMenuItem>
@@ -601,9 +558,14 @@ export function WorkspaceView({
         {dropEnabled && isDraggingOver && (
           <div className="pointer-events-none absolute inset-3 z-10 flex flex-col items-center justify-center gap-2 rounded-none border-2 border-dashed border-primary/60 bg-primary/5 text-primary">
             <UploadCloud className="size-8" />
-            <span className="text-sm font-medium">
-              Drop files to add to this folder
-            </span>
+            <span className="text-sm font-medium">Drop files to add to this folder</span>
+          </div>
+        )}
+        {/* Root rejects drops — show a non-actionable hint. (ERRORS.md E25) */}
+        {!dropEnabled && isDraggingOver && (
+          <div className="pointer-events-none absolute inset-3 z-10 flex flex-col items-center justify-center gap-2 rounded-none border-2 border-dashed border-border bg-muted/30 text-muted-foreground">
+            <UploadCloud className="size-8 opacity-50" />
+            <span className="text-sm font-medium">Open a workspace to add files here</span>
           </div>
         )}
         {uploading && (
@@ -657,10 +619,7 @@ export function WorkspaceView({
             >
               Cancel
             </Button>
-            <Button
-              onClick={() => void handleCreate()}
-              disabled={creating || !newName.trim()}
-            >
+            <Button onClick={() => void handleCreate()} disabled={creating || !newName.trim()}>
               {creating ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>

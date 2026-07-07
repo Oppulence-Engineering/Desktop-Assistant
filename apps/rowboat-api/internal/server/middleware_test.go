@@ -3,7 +3,10 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 )
 
 func realIPThrough(t *testing.T, cidrs []string, remoteAddr, xff string) string {
@@ -44,5 +47,30 @@ func TestRealIPFromTrustedProxies(t *testing.T) {
 	// No trusted CIDRs configured: middleware is a no-op.
 	if got := realIPThrough(t, nil, "10.1.2.3:5000", "203.0.113.9"); got != "10.1.2.3:5000" {
 		t.Fatalf("no CIDRs: RemoteAddr = %q, want unchanged", got)
+	}
+}
+
+func TestCORSPermitsWebhookSignatureHeader(t *testing.T) {
+	cfg := appconfig.Load()
+	cfg.CORSOrigins = []string{"https://app.example.test"}
+	h := CORS(cfg)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	req := httptest.NewRequest(http.MethodOptions, "/v1/webhooks/events", nil)
+	req.Header.Set("Origin", "https://app.example.test")
+	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
+	req.Header.Set("Access-Control-Request-Headers", "content-type,x-webhook-signature")
+	resp := httptest.NewRecorder()
+
+	h.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusNoContent {
+		t.Fatalf("preflight status = %d, want 204", resp.Code)
+	}
+	allowed := resp.Header().Get("Access-Control-Allow-Headers")
+	for _, name := range []string{"Content-Type", "X-Webhook-Signature"} {
+		if !strings.Contains(allowed, name) {
+			t.Fatalf("Access-Control-Allow-Headers = %q, missing %s", allowed, name)
+		}
 	}
 }

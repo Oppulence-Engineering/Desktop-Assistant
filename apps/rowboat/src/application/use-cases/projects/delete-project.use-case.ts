@@ -6,13 +6,13 @@ import { IApiKeysRepository } from "../../repositories/api-keys.repository.inter
 import { IDataSourceDocsRepository } from "../../repositories/data-source-docs.repository.interface";
 import { IDataSourcesRepository } from "../../repositories/data-sources.repository.interface";
 import { qdrantClient } from "@/app/lib/qdrant";
-import { IComposioTriggerDeploymentsRepository } from "../../repositories/composio-trigger-deployments.repository.interface";
+import { IIntegrationTriggerDeploymentsRepository } from "../../repositories/integration-trigger-deployments.repository.interface";
 import { IConversationsRepository } from "../../repositories/conversations.repository.interface";
 import { IJobsRepository } from "../../repositories/jobs.repository.interface";
 import { IRecurringJobRulesRepository } from "../../repositories/recurring-job-rules.repository.interface";
 import { IScheduledJobRulesRepository } from "../../repositories/scheduled-job-rules.repository.interface";
 import { NotFoundError } from "@/src/entities/errors/common";
-import { deleteConnectedAccount } from "../../lib/composio/composio";
+import { deleteConnectedAccount } from "../../lib/integration/integration";
 
 export const InputSchema = z.object({
     projectId: z.string(),
@@ -32,20 +32,20 @@ export class DeleteProjectUseCase implements IDeleteProjectUseCase {
     private readonly apiKeysRepository: IApiKeysRepository;
     private readonly dataSourceDocsRepository: IDataSourceDocsRepository;
     private readonly dataSourcesRepository: IDataSourcesRepository;
-    private readonly composioTriggerDeploymentsRepository: IComposioTriggerDeploymentsRepository;
+    private readonly integrationTriggerDeploymentsRepository: IIntegrationTriggerDeploymentsRepository;
     private readonly conversationsRepository: IConversationsRepository;
     private readonly jobsRepository: IJobsRepository;
     private readonly recurringJobRulesRepository: IRecurringJobRulesRepository;
     private readonly scheduledJobRulesRepository: IScheduledJobRulesRepository;
 
-    constructor({ projectsRepository, projectMembersRepository, projectActionAuthorizationPolicy, apiKeysRepository, dataSourceDocsRepository, dataSourcesRepository, composioTriggerDeploymentsRepository, conversationsRepository, jobsRepository, recurringJobRulesRepository, scheduledJobRulesRepository }: {
+    constructor({ projectsRepository, projectMembersRepository, projectActionAuthorizationPolicy, apiKeysRepository, dataSourceDocsRepository, dataSourcesRepository, integrationTriggerDeploymentsRepository, conversationsRepository, jobsRepository, recurringJobRulesRepository, scheduledJobRulesRepository }: {
         projectsRepository: IProjectsRepository,
         projectMembersRepository: IProjectMembersRepository,
         projectActionAuthorizationPolicy: IProjectActionAuthorizationPolicy,
         apiKeysRepository: IApiKeysRepository,
         dataSourceDocsRepository: IDataSourceDocsRepository,
         dataSourcesRepository: IDataSourcesRepository,
-        composioTriggerDeploymentsRepository: IComposioTriggerDeploymentsRepository,
+        integrationTriggerDeploymentsRepository: IIntegrationTriggerDeploymentsRepository,
         conversationsRepository: IConversationsRepository,
         jobsRepository: IJobsRepository,
         recurringJobRulesRepository: IRecurringJobRulesRepository,
@@ -57,7 +57,7 @@ export class DeleteProjectUseCase implements IDeleteProjectUseCase {
         this.apiKeysRepository = apiKeysRepository;
         this.dataSourceDocsRepository = dataSourceDocsRepository;
         this.dataSourcesRepository = dataSourcesRepository;
-        this.composioTriggerDeploymentsRepository = composioTriggerDeploymentsRepository;
+        this.integrationTriggerDeploymentsRepository = integrationTriggerDeploymentsRepository;
         this.conversationsRepository = conversationsRepository;
         this.jobsRepository = jobsRepository;
         this.recurringJobRulesRepository = recurringJobRulesRepository;
@@ -80,7 +80,7 @@ export class DeleteProjectUseCase implements IDeleteProjectUseCase {
 
         // delete connected accounts
         await Promise.all(
-            Object.values(project.composioConnectedAccounts || {}).map(account =>
+            Object.values(project.integrationConnectedAccounts || {}).map(account =>
                 deleteConnectedAccount(account.id)
             )
         );
@@ -91,8 +91,8 @@ export class DeleteProjectUseCase implements IDeleteProjectUseCase {
         // delete api keys
         await this.apiKeysRepository.deleteAll(projectId);
 
-        // delete composio trigger deployments
-        await this.composioTriggerDeploymentsRepository.deleteByProjectId(projectId);
+        // delete integration trigger deployments
+        await this.integrationTriggerDeploymentsRepository.deleteByProjectId(projectId);
 
         // delete conversations
         await this.conversationsRepository.deleteByProjectId(projectId);

@@ -37,7 +37,13 @@ export type BackgroundTaskRunStatusType = z.infer<typeof BackgroundTaskRunStatus
 export const BackgroundTaskRunExecutor = z.enum(["desktop", "api"]);
 export type BackgroundTaskRunExecutorType = z.infer<typeof BackgroundTaskRunExecutor>;
 
-export const BackgroundTaskSignal = z.enum(["pause", "resume", "update_context"]);
+export const BackgroundTaskSignal = z.enum([
+  "pause",
+  "resume",
+  "update_context",
+  "approve_tool",
+  "deny_tool",
+]);
 export type BackgroundTaskSignalType = z.infer<typeof BackgroundTaskSignal>;
 
 // Temporal Schedule sync health for the cron sub-trigger of api-target tasks
@@ -97,7 +103,7 @@ export const BackgroundTaskCloudScheduleStateSchema = z.object({
   scheduleSyncState: BackgroundTaskScheduleSyncState.optional(),
   // Per-source detail for mixed cron+window tasks; optional so a compact
   // aggregate can render without it.
-  sources: z.record(BackgroundTaskScheduleSource, ScheduleSourceStateSchema).optional(),
+  sources: z.partialRecord(BackgroundTaskScheduleSource, ScheduleSourceStateSchema).optional(),
 });
 export type BackgroundTaskCloudScheduleStateType = z.infer<
   typeof BackgroundTaskCloudScheduleStateSchema
@@ -230,6 +236,14 @@ export const BackgroundTaskSchema = z.object({
       "Server-owned — never write this yourself. When the Temporal Schedule last converged successfully.",
     ),
 });
+
+export const BackgroundTaskPatchSchema = BackgroundTaskSchema.omit({
+  executionTarget: true,
+})
+  .partial()
+  .extend({
+    executionTarget: BackgroundTaskExecutionTarget.optional(),
+  });
 
 export const BackgroundTaskSummarySchema = z.object({
   slug: z.string(),
@@ -387,9 +401,29 @@ export const CLOUD_RUN_EVENT_TYPES = [
   "runtime.llm_call_completed",
   "runtime.tool_call_started",
   "runtime.tool_call_completed",
+  "runtime.tool_approval_requested",
+  "runtime.tool_approval_resolved",
   "runtime.tool_denied",
   "runtime.limit_exceeded",
   "runtime.final_artifact_ready",
+  "desktop.run_processing_start",
+  "desktop.run_processing_end",
+  "desktop.start",
+  "desktop.spawn_subflow",
+  "desktop.llm_stream_event",
+  "desktop.message",
+  "desktop.tool_invocation",
+  "desktop.tool_result",
+  "desktop.tool_output_stream",
+  "desktop.ask_human_request",
+  "desktop.ask_human_response",
+  "desktop.tool_permission_request",
+  "desktop.tool_permission_response",
+  "desktop.code_run_event",
+  "desktop.code_run_permission_request",
+  "desktop.tool_permission_auto_decision",
+  "desktop.error",
+  "desktop.run_stopped",
 ] as const;
 
 /**

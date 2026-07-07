@@ -25,7 +25,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/composioaccount"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -213,21 +212,6 @@ func (_c *UserCreate) AddMcpConnections(v ...*MCPConnection) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddMcpConnectionIDs(ids...)
-}
-
-// AddComposioAccountIDs adds the "composio_accounts" edge to the ComposioAccount entity by IDs.
-func (_c *UserCreate) AddComposioAccountIDs(ids ...uuid.UUID) *UserCreate {
-	_c.mutation.AddComposioAccountIDs(ids...)
-	return _c
-}
-
-// AddComposioAccounts adds the "composio_accounts" edges to the ComposioAccount entity.
-func (_c *UserCreate) AddComposioAccounts(v ...*ComposioAccount) *UserCreate {
-	ids := make([]uuid.UUID, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddComposioAccountIDs(ids...)
 }
 
 // AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by IDs.
@@ -650,22 +634,6 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpconnection.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.ComposioAccountsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.ComposioAccountsTable,
-			Columns: []string{user.ComposioAccountsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(composioaccount.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

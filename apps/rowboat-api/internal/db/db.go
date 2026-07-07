@@ -59,10 +59,25 @@ func Open(ctx context.Context, cfg appconfig.Config, log *zap.Logger) (*DB, erro
 		// and ConnMaxLifetime=0 (connections never recycled), which can exhaust
 		// the server's connection slots and pin stale connections. Bound the pool
 		// and recycle connections so usage stays predictable.
-		sqlDB.SetMaxOpenConns(20)
-		sqlDB.SetMaxIdleConns(10)
-		sqlDB.SetConnMaxLifetime(30 * time.Minute)
-		sqlDB.SetConnMaxIdleTime(5 * time.Minute)
+		maxOpen := cfg.DBMaxOpenConns
+		if maxOpen <= 0 {
+			maxOpen = 20
+		}
+		maxIdle := cfg.DBMaxIdleConns
+		if maxIdle < 0 {
+			maxIdle = 0
+		}
+		if maxIdle > maxOpen {
+			maxIdle = maxOpen
+		}
+		sqlDB.SetMaxOpenConns(maxOpen)
+		sqlDB.SetMaxIdleConns(maxIdle)
+		if cfg.DBConnMaxLifetime > 0 {
+			sqlDB.SetConnMaxLifetime(cfg.DBConnMaxLifetime)
+		}
+		if cfg.DBConnMaxIdleTime > 0 {
+			sqlDB.SetConnMaxIdleTime(cfg.DBConnMaxIdleTime)
+		}
 	}
 
 	base := entsql.OpenDB(dlct, sqlDB)
@@ -71,6 +86,10 @@ func Open(ctx context.Context, cfg appconfig.Config, log *zap.Logger) (*DB, erro
 	// query results to *sql.Rows, which entcache wraps in a recorder. Running
 	// migration before/outside entcache avoids that panic entirely.
 	if cfg.AutoMigrate {
+		if err := dropLegacyOAuthProviderUserIndex(ctx, sqlDB); err != nil {
+			_ = sqlDB.Close()
+			return nil, fmt.Errorf("db: drop legacy oauth index: %w", err)
+		}
 		raw := ent.NewClient(ent.Driver(base))
 		if err := raw.Schema.Create(ctx); err != nil {
 			_ = sqlDB.Close()
@@ -94,6 +113,11 @@ func Open(ctx context.Context, cfg appconfig.Config, log *zap.Logger) (*DB, erro
 
 	log.Info("database connected", zap.String("dialect", dlct), zap.String("driver", driverName))
 	return d, nil
+}
+
+func dropLegacyOAuthProviderUserIndex(ctx context.Context, sqlDB *sql.DB) error {
+	_, err := sqlDB.ExecContext(ctx, `DROP INDEX IF EXISTS oauthconnection_provider_user_oauth_connections`)
+	return err
 }
 
 // buildCacheLevels assembles the shared cache tiers: an in-process LRU L1 (per

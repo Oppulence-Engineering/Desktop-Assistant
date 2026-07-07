@@ -4,12 +4,8 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { GoogleClientIdModal } from "@/components/google-client-id-modal";
-import { ComposioApiKeyModal } from "@/components/composio-api-key-modal";
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 import { useOnboardingState } from "./use-onboarding-state";
-import { ROWBOAT_STEPS, BYOK_STEPS } from "./step-indicator";
-import { BrandRail } from "./brand-rail";
-import { OnboardingFooter } from "./onboarding-footer";
 import { WelcomeStep } from "./steps/welcome-step";
 import { LlmSetupStep } from "./steps/llm-setup-step";
 import { ConnectAccountsStep } from "./steps/connect-accounts-step";
@@ -20,16 +16,9 @@ interface FullPageOnboardingProps {
   onComplete: () => void;
 }
 
-/**
- * Full-window onboarding (RFC: "not just a dialog"). Renders a two-column
- * takeover — a persistent {@link BrandRail} + a scrolling step column with a
- * sticky {@link OnboardingFooter}. Mounted by App.tsx via an early return BEFORE
- * the app shell, so no sidebar/tab bar/chat panel exists behind it (a true
- * takeover; no overlay/z-index needed). All flow logic is reused verbatim from
- * {@link useOnboardingState}; only the presentation changed from the old modal.
- */
 export function FullPageOnboarding({ open, onComplete }: FullPageOnboardingProps) {
   const state = useOnboardingState(open, onComplete);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const stepContent = React.useMemo(() => {
     switch (state.currentStep) {
@@ -44,63 +33,54 @@ export function FullPageOnboarding({ open, onComplete }: FullPageOnboardingProps
     }
   }, [state.currentStep, state]);
 
-  // Compact "Step N of M" for the narrow (<lg) top bar.
-  const steps = state.onboardingPath === "byok" ? BYOK_STEPS : ROWBOAT_STEPS;
-  const stepNumber = steps.findIndex((s) => s.step === state.currentStep) + 1;
+  React.useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [state.currentStep]);
 
   return (
     <>
-      {/* Helper modals preserved verbatim from the old modal shell. */}
       <GoogleClientIdModal
         open={state.googleClientIdOpen}
         onOpenChange={state.setGoogleClientIdOpen}
         onSubmit={state.handleGoogleClientIdSubmit}
         isSubmitting={state.providerStates.google?.isConnecting ?? false}
       />
-      <ComposioApiKeyModal
-        open={state.composioApiKeyOpen}
-        onOpenChange={state.setComposioApiKeyOpen}
-        onSubmit={state.handleComposioApiKeySubmit}
-        isSubmitting={state.gmailConnecting}
+      <IntegrationApiKeyModal
+        open={state.integrationApiKeyOpen}
+        onOpenChange={state.setIntegrationApiKeyOpen}
+        onSubmit={state.handleIntegrationApiKeySubmit}
+        isSubmitting={state.integrationApiKeySubmitting}
+        integrationName={state.integrationApiKeyTarget?.displayName}
       />
 
-      <div className="rowboat-shell flex h-svh w-full flex-col overflow-hidden bg-background">
-        {/* Top drag strip — frameless window has no titlebar while onboarding owns
-            the screen; keeps the window movable and clears macOS traffic lights. */}
-        <div className="titlebar-drag-region h-9 shrink-0" />
+      <div
+        className="rowboat-shell onboarding-shell onboarding-shell--welcome flex h-svh w-full flex-col overflow-hidden bg-[var(--onboarding-bg)] text-foreground"
+      >
+        <div className="titlebar-drag-region h-9 shrink-0 border-b border-[var(--onboarding-border)] bg-[var(--onboarding-bg)]" />
 
-        <div className="flex min-h-0 flex-1">
-          <BrandRail state={state} />
-
+        <div className="flex min-h-0 flex-1 bg-[var(--onboarding-bg)]">
           <div className="flex min-w-0 flex-1 flex-col">
-            {/* Narrow (<lg) compact header in place of the rail. */}
-            <div className="flex shrink-0 items-center gap-2.5 border-b border-border bg-[var(--rowboat-panel)] px-6 py-3.5 lg:hidden">
-              <img src="/logo-only.png" alt={PRODUCT_NAME} className="size-6 dark:invert" />
-              <span className="text-sm font-semibold">{PRODUCT_NAME}</span>
-              <span className="ml-auto text-xs text-muted-foreground">
-                Step {stepNumber} of {steps.length}
-              </span>
-            </div>
-
-            <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex-1 overflow-y-auto">
-                <div className="mx-auto flex min-h-full w-full max-w-[520px] flex-col px-8 py-12 lg:px-14 lg:py-16">
+            <div className="relative flex min-h-0 flex-1 flex-col">
+              <div
+                aria-hidden
+                className="onboarding-main-grid pointer-events-none absolute inset-0"
+              />
+              <div ref={scrollRef} className="relative flex-1 overflow-y-auto">
+                <div className="flex min-h-full w-full flex-col p-0">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={state.currentStep}
-                      initial={{ opacity: 0, y: 14 }}
+                      initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                      className="flex flex-1 flex-col"
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                      className="flex min-h-full flex-1 flex-col"
                     >
                       {stepContent}
                     </motion.div>
                   </AnimatePresence>
                 </div>
               </div>
-
-              <OnboardingFooter state={state} />
             </div>
           </div>
         </div>

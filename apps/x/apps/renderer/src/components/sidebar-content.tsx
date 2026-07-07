@@ -23,15 +23,13 @@ import {
 } from "@/lib/icons";
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -138,6 +136,7 @@ const SERVICE_LABELS: Record<string, string> = {
   email_labeling: "Labeling emails",
   note_tagging: "Tagging notes",
   agent_notes: "Updating agent notes",
+  memory: "Indexing memory",
 };
 
 function summarizeServiceError(error: string): string {
@@ -439,7 +438,8 @@ export function SidebarContentPanel({
   const [isSolomonConnected, setIsSolomonConnected] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const [appUrl, setAppUrl] = useState<string | null>(null);
-  const { billing } = useBilling(isSolomonConnected);
+  const { billing, error: billingError } = useBilling(isSolomonConnected);
+  const billingNeedsReconnect = billingError?.reason === "auth_unavailable";
 
   // Nav previews: unread important emails + next upcoming meetings (top 2 each).
   const [unreadEmailCount, setUnreadEmailCount] = useState(0);
@@ -657,7 +657,7 @@ export function SidebarContentPanel({
     return () => clearInterval(tick);
   }, [latestNoteMtime]);
 
-  // "2 active · Last run 3m ago" sublabel under Background agents, overridden by
+  // "2 active · Last run 3m ago" sublabel under Background tasks, overridden by
   // "N failed · Needs review" when any task's last run errored.
   const [bgAgentsLabel, setBgAgentsLabel] = useState<string | null>(null);
   useEffect(() => {
@@ -672,7 +672,7 @@ export function SidebarContentPanel({
         const ms = t.lastRunAt ? new Date(t.lastRunAt).getTime() : 0;
         return Number.isFinite(ms) && ms > max ? ms : max;
       }, 0);
-      const parts: string[] = [active > 0 ? `${active} active` : "No active agents"];
+      const parts: string[] = [active > 0 ? `${active} active` : "No active tasks"];
       if (lastRunMs > 0) parts.push(`Last run ${formatAgo(lastRunMs)}`);
       setBgAgentsLabel(parts.join(" · "));
     };
@@ -943,7 +943,7 @@ export function SidebarContentPanel({
                 >
                   <Workflow className="size-4 shrink-0 text-muted-foreground" />
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-muted-foreground">Background agents</span>
+                    <span className="truncate text-muted-foreground">Background tasks</span>
                     {bgAgentsLabel && (
                       <span
                         className={cn(
@@ -998,7 +998,7 @@ export function SidebarContentPanel({
             {quickAccessExpanded &&
               (quickAccessItems.length === 0 ? (
                 <div className="px-4 pb-2 text-[11.5px] italic text-muted-foreground">
-                  Recent notes and agents show up here.
+                  Recent notes and tasks show up here.
                 </div>
               ) : (
                 <SidebarMenu>
@@ -1063,6 +1063,17 @@ export function SidebarContentPanel({
           </div>
         </div>
       ) : null}
+      {isSolomonConnected && billingNeedsReconnect ? (
+        <div className="px-3 py-2">
+          <button
+            onClick={handleSolomonLogin}
+            disabled={loggingIn}
+            className="flex w-full items-center justify-center rounded-none border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-xs font-medium text-sidebar-foreground transition-colors hover:bg-amber-500/15 disabled:opacity-50"
+          >
+            {loggingIn ? "Signing in..." : `Sign in again to ${PRODUCT_NAME}`}
+          </button>
+        </div>
+      ) : null}
       {/* Sign in CTA */}
       {!isSolomonConnected && (
         <div className="px-3 py-2">
@@ -1089,15 +1100,15 @@ export function SidebarContentPanel({
             </button>
             {hasOauthError && (
               <AlertDialog open={showOauthAlert} onOpenChange={setShowOauthAlert}>
-                <AlertDialogTrigger asChild>
-                  <button
-                    type="button"
-                    className="inline-flex items-center"
-                    aria-label="OAuth connection issues"
-                  >
-                    <AlertTriangle className="size-3 text-amber-500/90 animate-pulse" />
-                  </button>
-                </AlertDialogTrigger>
+                <button
+                  type="button"
+                  className="inline-flex items-center"
+                  aria-label="OAuth connection issues"
+                  aria-expanded={showOauthAlert}
+                  onClick={() => setShowOauthAlert(true)}
+                >
+                  <AlertTriangle className="size-3 text-amber-500/90 animate-pulse" />
+                </button>
                 <AlertDialogContent
                   onCloseAutoFocus={(event) => {
                     event.preventDefault();
@@ -1116,22 +1127,23 @@ export function SidebarContentPanel({
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel
+                    <Button
+                      variant="outline"
                       onClick={() => {
                         setOpenConnectionsAfterClose(false);
                         setShowOauthAlert(false);
                       }}
                     >
                       Dismiss
-                    </AlertDialogCancel>
-                    <AlertDialogAction
+                    </Button>
+                    <Button
                       onClick={() => {
                         setOpenConnectionsAfterClose(true);
                         setShowOauthAlert(false);
                       }}
                     >
                       View connected accounts
-                    </AlertDialogAction>
+                    </Button>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>

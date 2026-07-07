@@ -78,15 +78,20 @@ export function RelatedNotesSidebar({ filePath, onOpen, onClose }: RelatedNotesS
                   title={r.path}
                 >
                   <span className="truncate">{title(r.path)}</span>
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{r.score.toFixed(2)}</span>
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {r.score.toFixed(2)}
+                  </span>
                 </button>
               </li>
             ))}
           </ul>
         ) : (
           <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+            {/* ... (ERRORS.md E11) Accurate whether memory is off or still indexing. */}
             No related notes yet.
-            <span className="mt-1 block text-xs">The semantic index builds in the background.</span>
+            <span className="mt-1 block text-xs">
+              Enable semantic memory in Settings → Memory and let indexing finish.
+            </span>
           </div>
         )}
       </div>

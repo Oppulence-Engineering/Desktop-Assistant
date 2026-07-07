@@ -2,8 +2,8 @@ import { Message } from "@/app/lib/types/types";
 import { Workflow } from "@/app/lib/types/workflow_types";
 import { z } from "zod";
 
-const composioTriggerReason = z.object({
-    type: z.literal("composio_trigger"),
+const integrationTriggerReason = z.object({
+    type: z.literal("integration_trigger"),
     triggerId: z.string(),
     triggerDeploymentId: z.string(),
     triggerTypeSlug: z.string(),
@@ -21,7 +21,7 @@ const recurringJobRuleReason = z.object({
 });
 
 const reason = z.discriminatedUnion("type", [
-    composioTriggerReason,
+    integrationTriggerReason,
     scheduledJobRuleReason,
     recurringJobRuleReason,
 ]);

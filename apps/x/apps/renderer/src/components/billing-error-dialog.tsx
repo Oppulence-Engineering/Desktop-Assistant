@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,39 +6,45 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import type { BillingErrorMatch } from "@/lib/billing-error"
-
-interface BillingSolomonAccount {
-  config?: {
-    appUrl?: string | null
-  } | null
-}
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import type { BillingErrorMatch } from "@/lib/billing-error";
 
 interface BillingErrorDialogProps {
-  open: boolean
-  match: BillingErrorMatch | null
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  match: BillingErrorMatch | null;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function BillingErrorDialog({ open, match, onOpenChange }: BillingErrorDialogProps) {
-  const [appUrl, setAppUrl] = useState<string | null>(null)
+  const [pending, setPending] = useState(false);
 
-  useEffect(() => {
-    if (!open) return
-    window.ipc
-      .invoke('account:getSolomon', null)
-      .then((account: BillingSolomonAccount) => setAppUrl(account.config?.appUrl ?? null))
-      .catch(() => {})
-  }, [open])
+  if (!match) return null;
 
-  if (!match) return null
-
-  const handleUpgrade = () => {
-    if (appUrl) window.open(`${appUrl}?intent=upgrade`)
-    onOpenChange(false)
-  }
+  const handleUpgrade = async () => {
+    setPending(true);
+    try {
+      let url: string | null = null;
+      if (match.cta === "Reactivate") {
+        try {
+          const portal = await window.ipc.invoke("billing:getPortalUrl", null);
+          url = portal.url;
+        } catch {
+          url = null;
+        }
+      }
+      if (!url) {
+        const checkout = await window.ipc.invoke("billing:getCheckoutUrl", { plan: "starter" });
+        url = checkout.url;
+      }
+      window.open(url);
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Failed to open billing flow:", error);
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,11 +57,11 @@ export function BillingErrorDialog({ open, match, onOpenChange }: BillingErrorDi
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Dismiss
           </Button>
-          <Button onClick={handleUpgrade} disabled={!appUrl}>
+          <Button onClick={handleUpgrade} disabled={pending}>
             {match.cta}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

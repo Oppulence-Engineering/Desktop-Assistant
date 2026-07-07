@@ -218,6 +218,8 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 		switch {
 		case errors.Is(err, quota.ErrInsufficientCredits):
 			httpx.Error(w, http.StatusPaymentRequired, "insufficient_credits", "insufficient_credits")
+		case errors.Is(err, quota.ErrSubscriptionNotActive):
+			httpx.Error(w, http.StatusPaymentRequired, "subscription not active", "subscription_not_active")
 		case errors.Is(err, quota.ErrDailyLimitExceeded), errors.Is(err, quota.ErrMonthlyLimitExceeded), errors.Is(err, quota.ErrNoUser):
 			writeQuotaError(w, err)
 		default:
@@ -413,6 +415,8 @@ func writePolicyError(w http.ResponseWriter, err error) {
 
 func writeQuotaError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, quota.ErrSubscriptionNotActive):
+		httpx.Error(w, http.StatusPaymentRequired, "subscription not active", "subscription_not_active")
 	case errors.Is(err, quota.ErrDailyLimitExceeded):
 		httpx.Error(w, http.StatusTooManyRequests, "daily credit limit exceeded", "daily_credit_limit_exceeded")
 	case errors.Is(err, quota.ErrMonthlyLimitExceeded):

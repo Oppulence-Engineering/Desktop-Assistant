@@ -1,76 +1,90 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Streamdown } from 'streamdown'
-import '@/styles/live-note-panel.css'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Streamdown } from "streamdown";
+import "@/styles/live-note-panel.css";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
-  Play, Square, Loader2, Sparkles,
-  AlertCircle, Plus, X, Check, Pencil, Radio, Repeat, Clock, Zap,
-  ChevronDown, ChevronRight,
-} from '@/lib/icons'
-import { LiveNoteSchema, type LiveNote, type Triggers } from '@x/shared/dist/live-note.js'
-import type { Run } from '@x/shared/dist/runs.js'
-import type z from 'zod'
-import { useLiveNoteAgentStatus } from '@/hooks/use-live-note-agent-status'
-import { formatRelativeTime } from '@/lib/relative-time'
-import { runLogToConversation } from '@/lib/run-to-conversation'
-import { CompactConversation } from '@/components/compact-conversation'
+  Play,
+  Square,
+  Loader2,
+  Sparkles,
+  AlertCircle,
+  Plus,
+  X,
+  Check,
+  Pencil,
+  Radio,
+  Repeat,
+  Clock,
+  Zap,
+  ChevronDown,
+  ChevronRight,
+} from "@/lib/icons";
+import { LiveNoteSchema, type LiveNote, type Triggers } from "@x/shared/dist/live-note.js";
+import type { Run } from "@x/shared/dist/runs.js";
+import type z from "zod";
+import { useLiveNoteAgentStatus } from "@/hooks/use-live-note-agent-status";
+import { formatRelativeTime } from "@/lib/relative-time";
+import { runLogToConversation } from "@/lib/run-to-conversation";
+import { CompactConversation } from "@/components/compact-conversation";
 
 export type OpenLiveNotePanelDetail = {
-  filePath: string
-}
+  filePath: string;
+};
 
 const CRON_PHRASES: Record<string, string> = {
-  '* * * * *': 'Every minute',
-  '*/5 * * * *': 'Every 5 minutes',
-  '*/15 * * * *': 'Every 15 minutes',
-  '*/30 * * * *': 'Every 30 minutes',
-  '0 * * * *': 'Hourly, on the hour',
-  '0 */2 * * *': 'Every 2 hours',
-  '0 */6 * * *': 'Every 6 hours',
-  '0 */12 * * *': 'Every 12 hours',
-  '0 0 * * *': 'Daily at midnight',
-  '0 8 * * *': 'Daily at 8 AM',
-  '0 9 * * *': 'Daily at 9 AM',
-  '0 12 * * *': 'Daily at noon',
-  '0 18 * * *': 'Daily at 6 PM',
-  '0 9 * * 1-5': 'Weekdays at 9 AM',
-  '0 17 * * 1-5': 'Weekdays at 5 PM',
-}
+  "* * * * *": "Every minute",
+  "*/5 * * * *": "Every 5 minutes",
+  "*/15 * * * *": "Every 15 minutes",
+  "*/30 * * * *": "Every 30 minutes",
+  "0 * * * *": "Hourly, on the hour",
+  "0 */2 * * *": "Every 2 hours",
+  "0 */6 * * *": "Every 6 hours",
+  "0 */12 * * *": "Every 12 hours",
+  "0 0 * * *": "Daily at midnight",
+  "0 8 * * *": "Daily at 8 AM",
+  "0 9 * * *": "Daily at 9 AM",
+  "0 12 * * *": "Daily at noon",
+  "0 18 * * *": "Daily at 6 PM",
+  "0 9 * * 1-5": "Weekdays at 9 AM",
+  "0 17 * * 1-5": "Weekdays at 5 PM",
+};
 
 function describeCron(expr: string): string {
-  return CRON_PHRASES[expr.trim()] ?? expr
+  return CRON_PHRASES[expr.trim()] ?? expr;
 }
 
 function summarizeSchedule(triggers: Triggers | undefined): string {
-  if (!triggers) return 'Manual only'
-  const parts: string[] = []
-  if (triggers.cronExpr) parts.push(describeCron(triggers.cronExpr))
+  if (!triggers) return "Manual only";
+  const parts: string[] = [];
+  if (triggers.cronExpr) parts.push(describeCron(triggers.cronExpr));
   if (triggers.windows && triggers.windows.length > 0) {
-    parts.push(triggers.windows.length === 1
-      ? `${triggers.windows[0].startTime}–${triggers.windows[0].endTime}`
-      : `${triggers.windows.length} windows`)
+    parts.push(
+      triggers.windows.length === 1
+        ? `${triggers.windows[0].startTime}–${triggers.windows[0].endTime}`
+        : `${triggers.windows.length} windows`,
+    );
   }
-  if (triggers.eventMatchCriteria) parts.push('events')
-  return parts.length === 0 ? 'Manual only' : parts.join(' · ')
+  if (triggers.eventMatchCriteria) parts.push("events");
+  return parts.length === 0 ? "Manual only" : parts.join(" · ");
 }
 
 function stripKnowledgePrefix(p: string): string {
-  return p.replace(/^knowledge\//, '')
+  return p.replace(/^knowledge\//, "");
 }
 
 function formatRunAt(iso: string): string {
-  const d = new Date(iso)
-  const date = d.toLocaleString('en-US', { month: 'short', day: 'numeric' })
-  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-  return `${date} · ${time}`
+  const d = new Date(iso);
+  const date = d.toLocaleString("en-US", { month: "short", day: "numeric" });
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  return `${date} · ${time}`;
 }
 
-const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/
+const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-type Tab = 'objective' | 'last-run' | 'details'
+type Tab = "objective" | "last-run" | "details";
 
 export interface LiveNoteSidebarProps {
   /**
@@ -78,189 +92,208 @@ export interface LiveNoteSidebarProps {
    * or full — both forms are accepted; the prefix is stripped internally.
    * `null` (or empty) hides the panel entirely.
    */
-  filePath: string | null
+  filePath: string | null;
   /** Called when the user clicks the close button or hands off to Copilot. */
-  onClose: () => void
+  onClose: () => void;
 }
 
 export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
-  const [live, setLive] = useState<LiveNote | null>(null)
-  const [draft, setDraft] = useState<LiveNote | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('objective')
-  const [editingObjective, setEditingObjective] = useState(false)
-  const [editingEvents, setEditingEvents] = useState(false)
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [live, setLive] = useState<LiveNote | null>(null);
+  const [draft, setDraft] = useState<LiveNote | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("objective");
+  const [editingObjective, setEditingObjective] = useState(false);
+  const [editingEvents, setEditingEvents] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const knowledgeRelPath = useMemo(() => stripKnowledgePrefix(filePath ?? ''), [filePath])
-  const agentStatus = useLiveNoteAgentStatus()
-  const runState = agentStatus.get(knowledgeRelPath) ?? { status: 'idle' as const }
-  const isRunning = runState.status === 'running'
+  const knowledgeRelPath = useMemo(() => stripKnowledgePrefix(filePath ?? ""), [filePath]);
+  const agentStatus = useLiveNoteAgentStatus();
+  const runState = agentStatus.get(knowledgeRelPath) ?? { status: "idle" as const };
+  const isRunning = runState.status === "running";
 
   const refresh = useCallback(async (relPath: string) => {
-    if (!relPath) { setLive(null); setDraft(null); return }
-    setLoading(true)
-    setError(null)
+    if (!relPath) {
+      setLive(null);
+      setDraft(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
     try {
-      const res = await window.ipc.invoke('live-note:get', { filePath: relPath })
+      const res = await window.ipc.invoke("live-note:get", { filePath: relPath });
       if (!res.success) {
-        setError(res.error ?? 'Failed to load')
-        setLive(null)
-        setDraft(null)
-        return
+        setError(res.error ?? "Failed to load");
+        setLive(null);
+        setDraft(null);
+        return;
       }
-      setLive(res.live ?? null)
-      setDraft(res.live ? structuredClone(res.live) as LiveNote : null)
-      setConfirmingDelete(false)
+      setLive(res.live ?? null);
+      setDraft(res.live ? (structuredClone(res.live) as LiveNote) : null);
+      setConfirmingDelete(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-      setLive(null)
-      setDraft(null)
+      setError(err instanceof Error ? err.message : String(err));
+      setLive(null);
+      setDraft(null);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    setTab('objective')
-    setEditingObjective(false)
-    setEditingEvents(false)
-    setShowAdvanced(false)
-    setConfirmingDelete(false)
-    setError(null)
+    setTab("objective");
+    setEditingObjective(false);
+    setEditingEvents(false);
+    setShowAdvanced(false);
+    setConfirmingDelete(false);
+    setError(null);
     if (knowledgeRelPath) {
-      void refresh(knowledgeRelPath)
+      void refresh(knowledgeRelPath);
     } else {
-      setLive(null)
-      setDraft(null)
+      setLive(null);
+      setDraft(null);
     }
-  }, [knowledgeRelPath, refresh])
+  }, [knowledgeRelPath, refresh]);
 
   useEffect(() => {
-    if (!knowledgeRelPath) return
-    const state = agentStatus.get(knowledgeRelPath)
-    if (state && (state.status === 'done' || state.status === 'error')) {
-      void refresh(knowledgeRelPath)
+    if (!knowledgeRelPath) return;
+    const state = agentStatus.get(knowledgeRelPath);
+    if (state && (state.status === "done" || state.status === "error")) {
+      void refresh(knowledgeRelPath);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentStatus, knowledgeRelPath])
+  }, [agentStatus, knowledgeRelPath]);
 
   const isDirty = useMemo(() => {
-    if (!live || !draft) return false
-    return JSON.stringify(live) !== JSON.stringify(draft)
-  }, [live, draft])
+    if (!live || !draft) return false;
+    return JSON.stringify(live) !== JSON.stringify(draft);
+  }, [live, draft]);
 
   const handleSave = useCallback(async () => {
-    if (!knowledgeRelPath || !draft) return
-    const parsed = LiveNoteSchema.safeParse(draft)
+    if (!knowledgeRelPath || !draft) return;
+    const parsed = LiveNoteSchema.safeParse(draft);
     if (!parsed.success) {
-      setError(parsed.error.issues.map(i => i.message).join('; '))
-      return
+      setError(parsed.error.issues.map((i) => i.message).join("; "));
+      return;
     }
-    setSaving(true)
-    setError(null)
+    setSaving(true);
+    setError(null);
     try {
-      const res = await window.ipc.invoke('live-note:set', { filePath: knowledgeRelPath, live: parsed.data })
+      const res = await window.ipc.invoke("live-note:set", {
+        filePath: knowledgeRelPath,
+        live: parsed.data,
+      });
       if (!res.success) {
-        setError(res.error ?? 'Save failed')
-        return
+        setError(res.error ?? "Save failed");
+        return;
       }
-      setLive(res.live ?? null)
-      setDraft(res.live ? structuredClone(res.live) as LiveNote : null)
-      setEditingObjective(false)
-      setEditingEvents(false)
+      setLive(res.live ?? null);
+      setDraft(res.live ? (structuredClone(res.live) as LiveNote) : null);
+      setEditingObjective(false);
+      setEditingEvents(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }, [knowledgeRelPath, draft])
+  }, [knowledgeRelPath, draft]);
 
   const handleCancelObjective = useCallback(() => {
-    if (live) setDraft(d => d ? { ...d, objective: live.objective } : d)
-    setEditingObjective(false)
-  }, [live])
+    if (live) setDraft((d) => (d ? { ...d, objective: live.objective } : d));
+    setEditingObjective(false);
+  }, [live]);
 
   const handleToggleActive = useCallback(async () => {
-    if (!knowledgeRelPath || !live) return
-    setSaving(true)
-    setError(null)
+    if (!knowledgeRelPath || !live) return;
+    setSaving(true);
+    setError(null);
     try {
-      const res = await window.ipc.invoke('live-note:setActive', {
+      const res = await window.ipc.invoke("live-note:setActive", {
         filePath: knowledgeRelPath,
         active: live.active === false,
-      })
+      });
       if (!res.success) {
-        setError(res.error ?? 'Failed')
-        return
+        setError(res.error ?? "Failed");
+        return;
       }
-      setLive(res.live ?? null)
-      setDraft(res.live ? structuredClone(res.live) as LiveNote : null)
+      setLive(res.live ?? null);
+      // E12: only sync the toggled `active` flag into the draft so the user's
+      // other in-progress edits (objective/triggers) aren't silently discarded.
+      setDraft((d) =>
+        d
+          ? { ...d, active: res.live?.active ?? d.active }
+          : res.live
+            ? (structuredClone(res.live) as LiveNote)
+            : null,
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }, [knowledgeRelPath, live])
+  }, [knowledgeRelPath, live]);
 
   const handleRun = useCallback(async () => {
-    if (!knowledgeRelPath) return
-    setError(null)
+    if (!knowledgeRelPath) return;
+    setError(null);
     try {
-      await window.ipc.invoke('live-note:run', { filePath: knowledgeRelPath })
+      // E15: surface run failures (e.g. "Already running" / "Note is not live").
+      const res = await window.ipc.invoke("live-note:run", { filePath: knowledgeRelPath });
+      if (!res.success && res.error) setError(res.error);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(err instanceof Error ? err.message : String(err));
     }
-  }, [knowledgeRelPath])
+  }, [knowledgeRelPath]);
 
   const handleStop = useCallback(async () => {
-    if (!knowledgeRelPath) return
-    setError(null)
+    if (!knowledgeRelPath) return;
+    setError(null);
     try {
-      const res = await window.ipc.invoke('live-note:stop', { filePath: knowledgeRelPath })
-      if (!res.success && res.error) setError(res.error)
+      const res = await window.ipc.invoke("live-note:stop", { filePath: knowledgeRelPath });
+      if (!res.success && res.error) setError(res.error);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(err instanceof Error ? err.message : String(err));
     }
-  }, [knowledgeRelPath])
+  }, [knowledgeRelPath]);
 
   const handleDelete = useCallback(async () => {
-    if (!knowledgeRelPath) return
-    setSaving(true)
-    setError(null)
+    if (!knowledgeRelPath) return;
+    setSaving(true);
+    setError(null);
     try {
-      const res = await window.ipc.invoke('live-note:delete', { filePath: knowledgeRelPath })
+      const res = await window.ipc.invoke("live-note:delete", { filePath: knowledgeRelPath });
       if (!res.success) {
-        setError(res.error ?? 'Delete failed')
-        return
+        setError(res.error ?? "Delete failed");
+        return;
       }
-      setLive(null)
-      setDraft(null)
-      setConfirmingDelete(false)
+      setLive(null);
+      setDraft(null);
+      setConfirmingDelete(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }, [knowledgeRelPath])
+  }, [knowledgeRelPath]);
 
   const handleEditWithCopilot = useCallback(() => {
-    if (!filePath) return
-    window.dispatchEvent(new CustomEvent('rowboat:open-copilot-edit-live-note', {
-      detail: { filePath },
-    }))
-    onClose()
-  }, [filePath, onClose])
+    if (!filePath) return;
+    window.dispatchEvent(
+      new CustomEvent("rowboat:open-copilot-edit-live-note", {
+        detail: { filePath },
+      }),
+    );
+    onClose();
+  }, [filePath, onClose]);
 
-  if (!filePath) return null
+  if (!filePath) return null;
 
   const noteTitle = filePath
-    ? (filePath.split('/').pop() ?? filePath).replace(/\.md$/, '')
-    : 'Live note'
-  const paused = live?.active === false
+    ? (filePath.split("/").pop() ?? filePath).replace(/\.md$/, "")
+    : "Live note";
+  const paused = live?.active === false;
 
   // Empty state — passive note.
   if (!loading && !live) {
@@ -288,7 +321,8 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
           <Radio className="size-8 text-muted-foreground/40" />
           <div className="text-sm font-medium text-foreground">This note is passive</div>
           <div className="text-xs text-muted-foreground max-w-[260px]">
-            Make it live to have an agent keep its body up to date — describe what you want it to track and how often.
+            Make it live to have an agent keep its body up to date — describe what you want it to
+            track and how often.
           </div>
           <Button size="sm" onClick={handleEditWithCopilot} className="mt-2">
             <Sparkles className="size-3" />
@@ -296,7 +330,7 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
           </Button>
         </div>
       </aside>
-    )
+    );
   }
 
   return (
@@ -304,16 +338,21 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
       {/* Header */}
       <div className="flex h-12 shrink-0 items-center gap-2.5 border-b border-border px-4">
         <Radio
-          className={`size-4 shrink-0 ${paused ? 'text-muted-foreground' : 'text-emerald-600 dark:text-emerald-400'}`}
+          className={`size-4 shrink-0 ${paused ? "text-muted-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
         />
         <span className="truncate text-sm font-semibold">{noteTitle}</span>
-        <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-          paused
-            ? 'bg-muted text-muted-foreground'
-            : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-        }`}>
-          <span className={`size-1.5 rounded-full ${paused ? 'bg-muted-foreground/60' : 'bg-emerald-500'} ${isRunning ? 'animate-pulse' : ''}`} aria-hidden />
-          {paused ? 'Paused' : 'Live note'}
+        <span
+          className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+            paused
+              ? "bg-muted text-muted-foreground"
+              : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+          }`}
+        >
+          <span
+            className={`size-1.5 rounded-full ${paused ? "bg-muted-foreground/60" : "bg-emerald-500"} ${isRunning ? "animate-pulse" : ""}`}
+            aria-hidden
+          />
+          {paused ? "Paused" : "Live note"}
         </span>
         <span className="ml-auto" />
         <Switch
@@ -345,42 +384,54 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
       )}
 
       {!loading && live && draft && (
-        <div className={`flex flex-1 flex-col overflow-hidden ${paused ? 'opacity-90' : ''}`}>
+        <div className={`flex flex-1 flex-col overflow-hidden ${paused ? "opacity-90" : ""}`}>
           {/* Status strip — 2 columns: Last run · Triggers. */}
           <div className="shrink-0 border-b border-border px-4 py-3">
             <div className="grid grid-cols-2 gap-4">
               <div className="min-w-0">
-                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Last run</div>
+                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Last run
+                </div>
                 <div className="mt-0.5 truncate text-xs text-foreground">
-                  {live.lastRunAt
-                    ? <>
-                        {formatRelativeTime(live.lastRunAt)} ago
-                        {live.lastRunError && <span className="text-destructive"> · error</span>}
-                      </>
-                    : <span className="text-muted-foreground">Never</span>}
+                  {live.lastRunAt ? (
+                    <>
+                      {formatRelativeTime(live.lastRunAt)} ago
+                      {live.lastRunError && <span className="text-destructive"> · error</span>}
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">Never</span>
+                  )}
                 </div>
               </div>
               <div className="min-w-0">
-                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Triggers</div>
-                <div className="mt-0.5 truncate text-xs text-foreground">{summarizeSchedule(live.triggers)}</div>
+                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Triggers
+                </div>
+                <div className="mt-0.5 truncate text-xs text-foreground">
+                  {summarizeSchedule(live.triggers)}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Tabs */}
           <div className="flex shrink-0 border-b border-border px-4">
-            <TabButton active={tab === 'objective'} onClick={() => setTab('objective')}>Objective</TabButton>
+            <TabButton active={tab === "objective"} onClick={() => setTab("objective")}>
+              Objective
+            </TabButton>
             <TabButton
-              active={tab === 'last-run'}
-              onClick={() => setTab('last-run')}
+              active={tab === "last-run"}
+              onClick={() => setTab("last-run")}
               disabled={!live.lastRunId}
             >
               Last run
             </TabButton>
-            <TabButton active={tab === 'details'} onClick={() => setTab('details')}>Details</TabButton>
+            <TabButton active={tab === "details"} onClick={() => setTab("details")}>
+              Details
+            </TabButton>
           </div>
 
-          {tab === 'objective' && (
+          {tab === "objective" && (
             <ObjectiveTab
               draft={draft}
               setDraft={setDraft}
@@ -389,11 +440,9 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
             />
           )}
 
-          {tab === 'last-run' && (
-            <LastRunTab live={live} />
-          )}
+          {tab === "last-run" && <LastRunTab live={live} />}
 
-          {tab === 'details' && (
+          {tab === "details" && (
             <DetailsTab
               draft={draft}
               setDraft={setDraft}
@@ -409,13 +458,17 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
           )}
 
           {/* Footer — context-dependent. */}
-          {tab === 'objective' && editingObjective ? (
+          {tab === "objective" && editingObjective ? (
             <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-muted/20 px-4 py-2.5">
               <Button variant="ghost" size="sm" onClick={handleCancelObjective} disabled={saving}>
                 Cancel
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving || !isDirty}>
-                {saving ? <Loader2 className="size-3 animate-spin" /> : <Check className="size-3" />}
+                {saving ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <Check className="size-3" />
+                )}
                 Save
               </Button>
             </div>
@@ -435,19 +488,33 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
                 </>
               ) : (
                 <>
-                  {tab === 'objective' && (
-                    <Button variant="ghost" size="sm" onClick={() => setEditingObjective(true)} disabled={saving}>
+                  {tab === "objective" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingObjective(true)}
+                      disabled={saving}
+                    >
                       <Pencil className="size-3" />
                       Edit
                     </Button>
                   )}
-                  <Button variant="ghost" size="sm" onClick={handleEditWithCopilot} disabled={saving}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEditWithCopilot}
+                    disabled={saving}
+                  >
                     <Sparkles className="size-3" />
                     Edit with Copilot
                   </Button>
-                  {isDirty && tab === 'details' && (
+                  {isDirty && tab === "details" && (
                     <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
-                      {saving ? <Loader2 className="size-3 animate-spin" /> : <Check className="size-3" />}
+                      {saving ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        <Check className="size-3" />
+                      )}
                       Save
                     </Button>
                   )}
@@ -463,7 +530,7 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
         </div>
       )}
     </aside>
-  )
+  );
 }
 
 function TabButton({
@@ -472,10 +539,10 @@ function TabButton({
   disabled,
   children,
 }: {
-  active: boolean
-  onClick: () => void
-  disabled?: boolean
-  children: React.ReactNode
+  active: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <button
@@ -484,15 +551,15 @@ function TabButton({
       disabled={disabled}
       className={`relative px-3 py-2.5 text-xs font-medium transition-colors ${
         active
-          ? 'text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-foreground'
+          ? "text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-foreground"
           : disabled
-            ? 'text-muted-foreground/50 cursor-not-allowed'
-            : 'text-muted-foreground hover:text-foreground'
+            ? "text-muted-foreground/50 cursor-not-allowed"
+            : "text-muted-foreground hover:text-foreground"
       }`}
     >
       {children}
     </button>
-  )
+  );
 }
 
 function ObjectiveTab({
@@ -501,28 +568,28 @@ function ObjectiveTab({
   editing,
   onCancel,
 }: {
-  draft: LiveNote
-  setDraft: (next: LiveNote) => void
-  editing: boolean
-  onCancel: () => void
+  draft: LiveNote;
+  setDraft: (next: LiveNote) => void;
+  editing: boolean;
+  onCancel: () => void;
 }) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!editing) return
-    const el = textareaRef.current
-    if (!el) return
-    el.focus()
-    const len = el.value.length
-    el.setSelectionRange(len, len)
-  }, [editing])
+    if (!editing) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    el.focus();
+    const len = el.value.length;
+    el.setSelectionRange(len, len);
+  }, [editing]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      onCancel()
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
     }
-  }
+  };
 
   if (editing) {
     return (
@@ -537,7 +604,7 @@ function ObjectiveTab({
           className="flex-1 resize-none rounded-none border-0 border-transparent bg-transparent px-4 py-4 font-mono text-[12.5px] leading-relaxed shadow-none focus-visible:ring-0"
         />
       </div>
-    )
+    );
   }
 
   return (
@@ -547,10 +614,12 @@ function ObjectiveTab({
           {draft.objective}
         </Streamdown>
       ) : (
-        <p className="text-sm italic text-muted-foreground">No objective yet. Click Edit to write one.</p>
+        <p className="text-sm italic text-muted-foreground">
+          No objective yet. Click Edit to write one.
+        </p>
       )}
     </div>
-  )
+  );
 }
 
 function DetailsTab({
@@ -565,16 +634,16 @@ function DetailsTab({
   onDelete,
   saving,
 }: {
-  draft: LiveNote
-  setDraft: (next: LiveNote) => void
-  editingEvents: boolean
-  setEditingEvents: (v: boolean) => void
-  showAdvanced: boolean
-  setShowAdvanced: (v: boolean) => void
-  confirmingDelete: boolean
-  setConfirmingDelete: (v: boolean) => void
-  onDelete: () => void
-  saving: boolean
+  draft: LiveNote;
+  setDraft: (next: LiveNote) => void;
+  editingEvents: boolean;
+  setEditingEvents: (v: boolean) => void;
+  showAdvanced: boolean;
+  setShowAdvanced: (v: boolean) => void;
+  confirmingDelete: boolean;
+  setConfirmingDelete: (v: boolean) => void;
+  onDelete: () => void;
+  saving: boolean;
 }) {
   return (
     <div className="flex-1 overflow-auto">
@@ -602,14 +671,14 @@ function DetailsTab({
             <div className="grid grid-cols-[74px_1fr] gap-x-3 gap-y-2.5 text-xs">
               <span className="pt-1.5 text-muted-foreground">Model</span>
               <Input
-                value={draft.model ?? ''}
+                value={draft.model ?? ""}
                 onChange={(e) => setDraft({ ...draft, model: e.target.value || undefined })}
                 placeholder="(global default)"
                 className="h-7 font-mono text-xs"
               />
               <span className="pt-1.5 text-muted-foreground">Provider</span>
               <Input
-                value={draft.provider ?? ''}
+                value={draft.provider ?? ""}
                 onChange={(e) => setDraft({ ...draft, provider: e.target.value || undefined })}
                 placeholder="(global default)"
                 className="h-7 font-mono text-xs"
@@ -620,7 +689,12 @@ function DetailsTab({
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-none border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm">
                   <span className="text-destructive">Convert to static note?</span>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setConfirmingDelete(false)} disabled={saving}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmingDelete(false)}
+                      disabled={saving}
+                    >
                       Cancel
                     </Button>
                     <Button variant="destructive" size="sm" onClick={onDelete} disabled={saving}>
@@ -642,9 +716,8 @@ function DetailsTab({
           </div>
         )}
       </div>
-
     </div>
-  )
+  );
 }
 
 function SectionRegion({ label, children }: { label?: string; children: React.ReactNode }) {
@@ -657,54 +730,57 @@ function SectionRegion({ label, children }: { label?: string; children: React.Re
       )}
       {children}
     </div>
-  )
+  );
 }
 
 function LastRunTab({ live }: { live: LiveNote }) {
-  const [run, setRun] = useState<z.infer<typeof Run> | null>(null)
-  const [loadingRun, setLoadingRun] = useState(false)
-  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [run, setRun] = useState<z.infer<typeof Run> | null>(null);
+  const [loadingRun, setLoadingRun] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const runId = live.lastRunId ?? null
+  const runId = live.lastRunId ?? null;
 
   useEffect(() => {
     if (!runId) {
-      setRun(null)
-      setFetchError(null)
-      setLoadingRun(false)
-      return
+      setRun(null);
+      setFetchError(null);
+      setLoadingRun(false);
+      return;
     }
-    let cancelled = false
-    setLoadingRun(true)
-    setFetchError(null)
+    let cancelled = false;
+    setLoadingRun(true);
+    setFetchError(null);
     void (async () => {
       try {
-        const r = await window.ipc.invoke('runs:fetch', { runId })
-        if (cancelled) return
-        setRun(r)
+        const r = await window.ipc.invoke("runs:fetch", { runId });
+        if (cancelled) return;
+        setRun(r);
       } catch (err) {
-        if (cancelled) return
-        setFetchError(err instanceof Error ? err.message : String(err))
-        setRun(null)
+        if (cancelled) return;
+        setFetchError(err instanceof Error ? err.message : String(err));
+        setRun(null);
       } finally {
-        if (!cancelled) setLoadingRun(false)
+        if (!cancelled) setLoadingRun(false);
       }
-    })()
-    return () => { cancelled = true }
-  }, [runId])
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [runId]);
 
   if (!runId) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-12 text-center">
         <p className="text-xs text-muted-foreground max-w-[240px]">
-          No run yet. Click <span className="font-medium text-foreground">Run now</span> below to see the agent's full transcript here.
+          No run yet. Click <span className="font-medium text-foreground">Run now</span> below to
+          see the agent's full transcript here.
         </p>
       </div>
-    )
+    );
   }
 
-  const isError = !!live.lastRunError
-  const items = run ? runLogToConversation(run.log) : []
+  const isError = !!live.lastRunError;
+  const items = run ? runLogToConversation(run.log) : [];
 
   return (
     <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
@@ -752,16 +828,15 @@ function LastRunTab({ live }: { live: LiveNote }) {
           </div>
         )}
         {run && !loadingRun && items.length === 0 && (
-          <p className="text-xs italic text-muted-foreground">No messages or tool calls recorded.</p>
+          <p className="text-xs italic text-muted-foreground">
+            No messages or tool calls recorded.
+          </p>
         )}
-        {run && !loadingRun && items.length > 0 && (
-          <CompactConversation items={items} />
-        )}
+        {run && !loadingRun && items.length > 0 && <CompactConversation items={items} />}
       </div>
     </div>
-  )
+  );
 }
-
 
 function TriggersEditor({
   draft,
@@ -769,28 +844,28 @@ function TriggersEditor({
   editingEvents,
   setEditingEvents,
 }: {
-  draft: LiveNote
-  setDraft: (next: LiveNote) => void
-  editingEvents: boolean
-  setEditingEvents: (v: boolean) => void
+  draft: LiveNote;
+  setDraft: (next: LiveNote) => void;
+  editingEvents: boolean;
+  setEditingEvents: (v: boolean) => void;
 }) {
-  const triggers: Triggers = draft.triggers ?? {}
-  const hasCron = typeof triggers.cronExpr === 'string'
-  const hasWindows = Array.isArray(triggers.windows) && triggers.windows.length > 0
-  const hasEvent = typeof triggers.eventMatchCriteria === 'string'
+  const triggers: Triggers = draft.triggers ?? {};
+  const hasCron = typeof triggers.cronExpr === "string";
+  const hasWindows = Array.isArray(triggers.windows) && triggers.windows.length > 0;
+  const hasEvent = typeof triggers.eventMatchCriteria === "string";
 
   const updateTriggers = (next: Partial<Triggers>) => {
-    const merged: Triggers = { ...triggers, ...next }
-    ;(Object.keys(merged) as (keyof Triggers)[]).forEach(key => {
-      if (merged[key] === undefined) delete merged[key]
-    })
+    const merged: Triggers = { ...triggers, ...next };
+    (Object.keys(merged) as (keyof Triggers)[]).forEach((key) => {
+      if (merged[key] === undefined) delete merged[key];
+    });
     if (Object.keys(merged).length === 0) {
-      const { triggers: _omit, ...rest } = draft
-      setDraft(rest as LiveNote)
+      const { triggers: _omit, ...rest } = draft;
+      setDraft(rest as LiveNote);
     } else {
-      setDraft({ ...draft, triggers: merged })
+      setDraft({ ...draft, triggers: merged });
     }
-  }
+  };
 
   return (
     <div className="grid grid-cols-[74px_1fr] items-start gap-x-3 gap-y-4">
@@ -803,7 +878,7 @@ function TriggersEditor({
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
               <Input
-                value={triggers.cronExpr ?? ''}
+                value={triggers.cronExpr ?? ""}
                 onChange={(e) => updateTriggers({ cronExpr: e.target.value })}
                 placeholder="0 * * * *"
                 className="h-7 max-w-[160px] font-mono text-xs"
@@ -818,13 +893,15 @@ function TriggersEditor({
               </button>
             </div>
             {triggers.cronExpr && (
-              <div className="text-[11px] text-muted-foreground">{describeCron(triggers.cronExpr)}</div>
+              <div className="text-[11px] text-muted-foreground">
+                {describeCron(triggers.cronExpr)}
+              </div>
             )}
           </div>
         ) : (
           <button
             type="button"
-            onClick={() => updateTriggers({ cronExpr: '0 * * * *' })}
+            onClick={() => updateTriggers({ cronExpr: "0 * * * *" })}
             className="inline-flex items-center gap-1 pt-1.5 text-[11px] text-muted-foreground hover:text-foreground"
           >
             <Plus className="size-3" /> Cron
@@ -844,29 +921,29 @@ function TriggersEditor({
                 <Input
                   value={w.startTime}
                   onChange={(e) => {
-                    const next = [...(triggers.windows ?? [])]
-                    next[idx] = { ...next[idx], startTime: e.target.value }
-                    updateTriggers({ windows: next })
+                    const next = [...(triggers.windows ?? [])];
+                    next[idx] = { ...next[idx], startTime: e.target.value };
+                    updateTriggers({ windows: next });
                   }}
                   placeholder="09:00"
-                  className={`h-7 w-20 font-mono text-xs ${HH_MM.test(w.startTime) ? '' : 'border-destructive'}`}
+                  className={`h-7 w-20 font-mono text-xs ${HH_MM.test(w.startTime) ? "" : "border-destructive"}`}
                 />
                 <span className="text-xs text-muted-foreground">–</span>
                 <Input
                   value={w.endTime}
                   onChange={(e) => {
-                    const next = [...(triggers.windows ?? [])]
-                    next[idx] = { ...next[idx], endTime: e.target.value }
-                    updateTriggers({ windows: next })
+                    const next = [...(triggers.windows ?? [])];
+                    next[idx] = { ...next[idx], endTime: e.target.value };
+                    updateTriggers({ windows: next });
                   }}
                   placeholder="12:00"
-                  className={`h-7 w-20 font-mono text-xs ${HH_MM.test(w.endTime) ? '' : 'border-destructive'}`}
+                  className={`h-7 w-20 font-mono text-xs ${HH_MM.test(w.endTime) ? "" : "border-destructive"}`}
                 />
                 <button
                   type="button"
                   onClick={() => {
-                    const next = (triggers.windows ?? []).filter((_, i) => i !== idx)
-                    updateTriggers({ windows: next.length === 0 ? undefined : next })
+                    const next = (triggers.windows ?? []).filter((_, i) => i !== idx);
+                    updateTriggers({ windows: next.length === 0 ? undefined : next });
                   }}
                   className="ml-auto inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
                   aria-label="Remove window"
@@ -877,9 +954,11 @@ function TriggersEditor({
             ))}
             <button
               type="button"
-              onClick={() => updateTriggers({
-                windows: [...(triggers.windows ?? []), { startTime: '13:00', endTime: '15:00' }],
-              })}
+              onClick={() =>
+                updateTriggers({
+                  windows: [...(triggers.windows ?? []), { startTime: "13:00", endTime: "15:00" }],
+                })
+              }
               className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
             >
               <Plus className="size-3" /> Window
@@ -888,7 +967,7 @@ function TriggersEditor({
         ) : (
           <button
             type="button"
-            onClick={() => updateTriggers({ windows: [{ startTime: '09:00', endTime: '12:00' }] })}
+            onClick={() => updateTriggers({ windows: [{ startTime: "09:00", endTime: "12:00" }] })}
             className="inline-flex items-center gap-1 pt-1.5 text-[11px] text-muted-foreground hover:text-foreground"
           >
             <Plus className="size-3" /> Window
@@ -905,7 +984,7 @@ function TriggersEditor({
           editingEvents ? (
             <div className="space-y-1.5">
               <Textarea
-                value={triggers.eventMatchCriteria ?? ''}
+                value={triggers.eventMatchCriteria ?? ""}
                 onChange={(e) => updateTriggers({ eventMatchCriteria: e.target.value })}
                 rows={5}
                 autoFocus
@@ -923,8 +1002,8 @@ function TriggersEditor({
                 <button
                   type="button"
                   onClick={() => {
-                    updateTriggers({ eventMatchCriteria: undefined })
-                    setEditingEvents(false)
+                    updateTriggers({ eventMatchCriteria: undefined });
+                    setEditingEvents(false);
                   }}
                   className="text-[11px] text-muted-foreground hover:text-destructive"
                 >
@@ -934,13 +1013,15 @@ function TriggersEditor({
             </div>
           ) : (
             <div className="text-xs leading-relaxed text-foreground/85">
-              {triggers.eventMatchCriteria || <span className="italic text-muted-foreground">No criteria yet.</span>}
+              {triggers.eventMatchCriteria || (
+                <span className="italic text-muted-foreground">No criteria yet.</span>
+              )}
               <button
                 type="button"
                 onClick={() => setEditingEvents(true)}
                 className="ml-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
               >
-                {triggers.eventMatchCriteria ? 'Edit rule →' : 'Add →'}
+                {triggers.eventMatchCriteria ? "Edit rule →" : "Add →"}
               </button>
             </div>
           )
@@ -948,8 +1029,8 @@ function TriggersEditor({
           <button
             type="button"
             onClick={() => {
-              updateTriggers({ eventMatchCriteria: '' })
-              setEditingEvents(true)
+              updateTriggers({ eventMatchCriteria: "" });
+              setEditingEvents(true);
             }}
             className="inline-flex items-center gap-1 pt-1.5 text-[11px] text-muted-foreground hover:text-foreground"
           >
@@ -958,5 +1039,5 @@ function TriggersEditor({
         )}
       </div>
     </div>
-  )
+  );
 }

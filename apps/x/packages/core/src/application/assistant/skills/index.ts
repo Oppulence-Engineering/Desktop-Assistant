@@ -12,7 +12,7 @@ import createPresentationsSkill from "./create-presentations/skill.js";
 import appNavigationSkill from "./app-navigation/skill.js";
 import browserControlSkill from "./browser-control/skill.js";
 import codeWithAgentsSkill from "./code-with-agents/skill.js";
-import composioIntegrationSkill from "./composio-integration/skill.js";
+import rowboatIntegrationSkill from "./rowboat-integration/skill.js";
 import liveNoteSkill from "./live-note/skill.js";
 import backgroundTaskSkill from "./background-task/skill.js";
 import notifyUserSkill from "./notify-user/skill.js";
@@ -87,10 +87,10 @@ const definitions: SkillDefinition[] = [
     content: mcpIntegrationSkill,
   },
   {
-    id: "composio-integration",
-    title: "Composio Integration",
-    summary: "Interact with third-party services (Gmail, GitHub, Slack, LinkedIn, Notion, Jira, Google Sheets, etc.) via Composio. Search, connect, and execute tools.",
-    content: composioIntegrationSkill,
+    id: "rowboat-integration",
+    title: "Rowboat Integration",
+    summary: "Connect to managed Rowboat integrations and execute their authenticated MCP tools.",
+    content: rowboatIntegrationSkill,
   },
   {
     id: "deletion-guardrails",

@@ -144,13 +144,13 @@
           "spreadsheet_id"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "GOOGLESHEETS_BATCH_GET",
         "noAuth": false,
         "toolkitName": "googlesheets",
         "toolkitSlug": "googlesheets",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/google-sheets.svg"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/google-sheets.svg"
       }
     },
     {
@@ -319,13 +319,13 @@
           "start_datetime"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "GOOGLECALENDAR_CREATE_EVENT",
         "noAuth": false,
         "toolkitName": "googlecalendar",
         "toolkitSlug": "googlecalendar",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/google-calendar.svg"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/google-calendar.svg"
       }
     },
     {
@@ -441,13 +441,13 @@
           "values"
         ]
       },
-      "isComposio": true,
-      "composioData": {
+      "isIntegration": true,
+      "integrationData": {
         "slug": "GOOGLESHEETS_BATCH_UPDATE",
         "noAuth": false,
         "toolkitName": "googlesheets",
         "toolkitSlug": "googlesheets",
-        "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/google-sheets.svg"
+        "logo": "https://cdn.jsdelivr.net/gh/IntegrationHQ/open-logos@master/google-sheets.svg"
       }
     }
   ],

@@ -12,7 +12,6 @@ import {
   Plus,
   X,
   Trash2,
-  Wrench,
   Search,
   ChevronRight,
   Link2,
@@ -34,14 +33,19 @@ import {
   Bell,
 } from "@/lib/icons";
 
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { AnimatePresence, motion } from "motion/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AccountSettings } from "@/components/settings/account-settings";
 import { ConnectedAccountsSettings } from "@/components/settings/connected-accounts-settings";
@@ -53,6 +57,8 @@ import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { MemorySettings } from "@/components/settings/memory-settings";
 import { SettingsSection } from "@/components/settings/settings-ui";
 import { FeedbackDialog } from "@/components/feedback-dialog";
+import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
+import { useConnectors } from "@/hooks/useConnectors";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { PRODUCT_NAME, getProductProviderState } from "@x/shared/dist/branding.js";
 import type { ApprovalPolicy } from "@x/shared/src/code-mode.js";
@@ -297,20 +303,6 @@ function HelpSettings() {
 
 // --- Tools Library Settings ---
 
-interface ToolkitInfo {
-  slug: string;
-  name: string;
-  meta: {
-    description: string;
-    logo: string;
-    tools_count: number;
-    triggers_count: number;
-  };
-  no_auth?: boolean;
-  auth_schemes?: string[];
-  composio_managed_auth_schemes?: string[];
-}
-
 function ToolsLibrarySettings({
   dialogOpen,
   rowboatConnected,
@@ -318,352 +310,138 @@ function ToolsLibrarySettings({
   dialogOpen: boolean;
   rowboatConnected: boolean;
 }) {
-  // API key state
-  const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState("");
-  const [apiKeySaving, setApiKeySaving] = useState(false);
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-
-  // Toolkit browsing state
-  const [toolkits, setToolkits] = useState<ToolkitInfo[]>([]);
-  const [toolkitsLoading, setToolkitsLoading] = useState(false);
-  const [toolkitsUnavailableMessage, setToolkitsUnavailableMessage] = useState<string | null>(null);
+  const c = useConnectors(dialogOpen);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Connection state
-  const [connectedToolkits, setConnectedToolkits] = useState<Set<string>>(new Set());
-  const [connectingToolkit, setConnectingToolkit] = useState<string | null>(null);
-
-  // Check API key configuration
-  const checkApiKey = useCallback(async () => {
-    try {
-      const result = await window.ipc.invoke("composio:is-configured", null);
-      setApiKeyConfigured(result.configured);
-      if (!result.configured) {
-        setShowApiKeyInput(true);
-      }
-    } catch {
-      setApiKeyConfigured(false);
-    }
-  }, []);
-
-  // Load connected toolkits
-  const loadConnected = useCallback(async () => {
-    try {
-      const result = await window.ipc.invoke("composio:list-connected", null);
-      setConnectedToolkits(new Set(result.toolkits));
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  // Load toolkits
-  const loadToolkits = useCallback(async () => {
-    setToolkitsLoading(true);
-    setToolkitsUnavailableMessage(null);
-    try {
-      const result = await window.ipc.invoke("composio:list-toolkits", {});
-      setToolkits(result.items || []);
-      if (result.providerConfigured === false) {
-        setToolkitsUnavailableMessage(
-          result.message || `Tool integrations are disabled for this ${PRODUCT_NAME} API.`,
-        );
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (
-        message.includes("provider_unconfigured") ||
-        message.includes("composio not configured")
-      ) {
-        setToolkits([]);
-        setToolkitsUnavailableMessage(
-          `Tool integrations are disabled because this ${PRODUCT_NAME} API is running without Composio credentials.`,
-        );
-      } else {
-        toast.error("Failed to load toolkits");
-      }
-    } finally {
-      setToolkitsLoading(false);
-    }
-  }, []);
-
-  // Initial load
-  useEffect(() => {
-    if (!dialogOpen) return;
-    checkApiKey();
-    loadConnected();
-  }, [dialogOpen, checkApiKey, loadConnected]);
-
-  // Load toolkits when API key is configured
-  useEffect(() => {
-    if (dialogOpen && apiKeyConfigured) {
-      loadToolkits();
-    }
-  }, [dialogOpen, apiKeyConfigured, loadToolkits]);
-
-  // Listen for composio connection events
-  useEffect(() => {
-    const cleanup = window.ipc.on("composio:didConnect", (event) => {
-      const { toolkitSlug, success, error } = event;
-      setConnectingToolkit(null);
-      if (success) {
-        setConnectedToolkits((prev) => new Set([...prev, toolkitSlug]));
-        toast.success(`Connected to ${toolkitSlug}`);
-      } else {
-        toast.error(error || `Failed to connect to ${toolkitSlug}`);
-      }
-    });
-    return cleanup;
-  }, []);
-
-  // Save API key
-  const handleSaveApiKey = async () => {
-    const trimmed = apiKeyInput.trim();
-    if (!trimmed) return;
-    setApiKeySaving(true);
-    try {
-      const result = await window.ipc.invoke("composio:set-api-key", {
-        apiKey: trimmed,
-      });
-      if (result.success) {
-        setApiKeyConfigured(true);
-        setShowApiKeyInput(false);
-        setApiKeyInput("");
-        toast.success("Composio API key saved");
-      } else {
-        toast.error(result.error || "Failed to save API key");
-      }
-    } catch {
-      toast.error("Failed to save API key");
-    } finally {
-      setApiKeySaving(false);
-    }
-  };
-
-  // Connect a toolkit
-  const handleConnect = async (toolkitSlug: string) => {
-    setConnectingToolkit(toolkitSlug);
-    try {
-      const result = await window.ipc.invoke("composio:initiate-connection", {
-        toolkitSlug,
-      });
-      if (!result.success) {
-        toast.error(result.error || "Failed to connect");
-        setConnectingToolkit(null);
-      }
-      // Success will be handled by composio:didConnect event
-    } catch {
-      toast.error("Failed to connect");
-      setConnectingToolkit(null);
-    }
-  };
-
-  // Disconnect a toolkit
-  const handleDisconnect = async (toolkitSlug: string) => {
-    try {
-      await window.ipc.invoke("composio:disconnect", { toolkitSlug });
-      setConnectedToolkits((prev) => {
-        const next = new Set(prev);
-        next.delete(toolkitSlug);
-        return next;
-      });
-      toast.success(`Disconnected from ${toolkitSlug}`);
-    } catch {
-      toast.error("Failed to disconnect");
-    }
-  };
-
-  // Filter toolkits by search
-  const filteredToolkits = searchQuery.trim()
-    ? toolkits.filter(
-        (t) =>
-          t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t.meta.description.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredIntegrations = searchQuery.trim()
+    ? c.integrations.filter(
+        (integration) =>
+          integration.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          integration.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          integration.description.toLowerCase().includes(searchQuery.toLowerCase()),
       )
-    : toolkits;
+    : c.integrations;
 
   return (
     <div className="space-y-4">
-      {/* Section A: API Key (only in BYOK mode) */}
-      {!rowboatConnected && (
-        <div className="space-y-2">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Composio API Key
-          </span>
-          {apiKeyConfigured && !showApiKeyInput ? (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 text-sm text-green-600">
-                <CheckCircle2 className="size-4" />
-                API key configured
+      <IntegrationApiKeyModal
+        open={c.integrationApiKeyOpen}
+        onOpenChange={c.setIntegrationApiKeyOpen}
+        onSubmit={c.handleIntegrationApiKeySubmit}
+        isSubmitting={c.integrationApiKeySubmitting}
+        integrationName={c.integrationApiKeyTarget?.displayName}
+      />
+
+      <div className="space-y-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          Available Integrations
+        </span>
+        {!rowboatConnected && (
+          <div className="flex gap-2 rounded-none border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <span>Sign in to {PRODUCT_NAME} to connect managed integrations.</span>
+          </div>
+        )}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search integrations..."
+            className="pl-8"
+          />
+        </div>
+      </div>
+
+      {c.integrationsLoading ? (
+        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+          <Loader2 className="mr-2 size-4 animate-spin" />
+          Loading integrations...
+        </div>
+      ) : (
+        <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
+          {filteredIntegrations.map((integration) => {
+            const isConnecting = c.integrationConnecting[integration.name] ?? false;
+            const blocks = integration.templateBlocks ?? [];
+
+            return (
+              <div key={integration.name} className="border rounded-none overflow-hidden">
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="size-7 rounded bg-muted flex items-center justify-center shrink-0">
+                    <Plug className="size-3.5 text-muted-foreground" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium truncate">
+                        {integration.displayName}
+                      </span>
+                      {integration.connected && (
+                        <span className="rounded-full bg-green-500/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-green-600">
+                          Connected
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {integration.description}
+                    </p>
+                    {blocks.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {blocks.slice(0, 3).map((block) => (
+                          <span
+                            key={block.id}
+                            className="border border-border px-1.5 py-0.5 text-[10px] leading-4 text-muted-foreground"
+                          >
+                            {block.title}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {integration.connected ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => c.handleDisconnectIntegration(integration)}
+                      disabled={isConnecting}
+                      className="text-xs h-7 shrink-0"
+                      aria-label={`Disconnect ${integration.displayName}`}
+                    >
+                      {isConnecting ? <Loader2 className="size-3 animate-spin" /> : "Disconnect"}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => c.handleConnectIntegration(integration)}
+                      disabled={isConnecting || !rowboatConnected}
+                      className="text-xs h-7 shrink-0"
+                      aria-label={`Connect ${integration.displayName}`}
+                    >
+                      {isConnecting ? (
+                        <>
+                          <Loader2 className="mr-1 size-3 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <Link2 className="mr-1 size-3" />
+                          Connect
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
-              <button
-                onClick={() => setShowApiKeyInput(true)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Change
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Enter your Composio API key to browse and enable tool integrations. Get your key
-                from{" "}
-                <a
-                  href="https://app.composio.dev/settings"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  app.composio.dev/settings
-                </a>
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  type="password"
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  placeholder="Paste your Composio API key"
-                  onKeyDown={(e) => e.key === "Enter" && handleSaveApiKey()}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleSaveApiKey}
-                  disabled={!apiKeyInput.trim() || apiKeySaving}
-                  size="sm"
-                >
-                  {apiKeySaving ? <Loader2 className="size-4 animate-spin" /> : "Save"}
-                </Button>
-                {apiKeyConfigured && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setShowApiKeyInput(false);
-                      setApiKeyInput("");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                )}
-              </div>
+            );
+          })}
+
+          {filteredIntegrations.length === 0 && !c.integrationsLoading && (
+            <div className="text-center py-6 text-sm text-muted-foreground">
+              {searchQuery ? "No integrations match your search" : "No integrations available"}
             </div>
           )}
         </div>
-      )}
-
-      {/* Section B: Toolkit Browser (only when API key configured) */}
-      {apiKeyConfigured && (
-        <>
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Available Toolkits
-            </span>
-            {toolkitsUnavailableMessage && (
-              <div className="flex gap-2 rounded-none border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                <span>{toolkitsUnavailableMessage}</span>
-              </div>
-            )}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search toolkits..."
-                className="pl-8"
-              />
-            </div>
-          </div>
-
-          {toolkitsLoading ? (
-            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
-              <Loader2 className="size-4 animate-spin mr-2" />
-              Loading toolkits...
-            </div>
-          ) : (
-            <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
-              {filteredToolkits.map((toolkit) => {
-                const isConnected = connectedToolkits.has(toolkit.slug);
-                const isConnecting = connectingToolkit === toolkit.slug;
-
-                return (
-                  <div key={toolkit.slug} className="border rounded-none overflow-hidden">
-                    <div className="flex items-center gap-3 px-3 py-2.5">
-                      {/* Logo */}
-                      {toolkit.meta.logo ? (
-                        <img
-                          src={toolkit.meta.logo}
-                          alt=""
-                          className="size-7 rounded object-contain shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="size-7 rounded bg-muted flex items-center justify-center shrink-0">
-                          <Wrench className="size-3.5 text-muted-foreground" />
-                        </div>
-                      )}
-
-                      {/* Name & description */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-medium truncate">{toolkit.name}</span>
-                          {isConnected && (
-                            <span className="rounded-full bg-green-500/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-green-600">
-                              Connected
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {toolkit.meta.description}
-                        </p>
-                      </div>
-
-                      {/* Connect / Disconnect button */}
-                      {isConnected ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDisconnect(toolkit.slug)}
-                          className="text-xs h-7 shrink-0"
-                        >
-                          Disconnect
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => handleConnect(toolkit.slug)}
-                          disabled={isConnecting}
-                          className="text-xs h-7 shrink-0"
-                        >
-                          {isConnecting ? (
-                            <>
-                              <Loader2 className="size-3 animate-spin mr-1" />
-                              Connecting...
-                            </>
-                          ) : (
-                            <>
-                              <Link2 className="size-3 mr-1" />
-                              Connect
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {filteredToolkits.length === 0 && !toolkitsLoading && (
-                <div className="text-center py-6 text-sm text-muted-foreground">
-                  {searchQuery ? "No toolkits match your search" : "No toolkits available"}
-                </div>
-              )}
-            </div>
-          )}
-        </>
       )}
     </div>
   );
@@ -822,10 +600,11 @@ function TagGroupTable({
       {!collapsed && group.tags.length === 0 && (
         <button
           onClick={onAdd}
+          aria-label={`Add ${group.label.toLowerCase()} tag`}
           className="flex w-full items-center justify-center gap-1.5 rounded-none border border-dashed py-3 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
         >
           <Plus className="size-3.5" />
-          Add a {group.label.toLowerCase()} tag
+          Add tag
         </button>
       )}
     </div>
@@ -871,7 +650,7 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
       list.push(tag);
       map.set(tag.type, list);
     }
-    return NOTE_TAG_TYPE_ORDER.filter((type) => map.has(type)).map((type) => ({
+    return NOTE_TAG_TYPE_ORDER.map((type) => ({
       type,
       label: TAG_TYPE_LABELS[type],
       tags: map.get(type) ?? [],
@@ -886,7 +665,7 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
       list.push(tag);
       map.set(tag.type, list);
     }
-    return EMAIL_TAG_TYPE_ORDER.filter((type) => map.has(type)).map((type) => ({
+    return EMAIL_TAG_TYPE_ORDER.map((type) => ({
       type,
       label: TAG_TYPE_LABELS[type],
       tags: map.get(type) ?? [],
@@ -897,14 +676,19 @@ function NoteTaggingSettings({ dialogOpen }: { dialogOpen: boolean }) {
     (type: string, localIndex: number) => {
       let count = 0;
       for (let i = 0; i < tags.length; i++) {
-        if (tags[i].type === type) {
+        if (
+          tags[i].type === type &&
+          (activeSection === "notes"
+            ? tags[i].applicability !== "email"
+            : tags[i].applicability !== "notes")
+        ) {
           if (count === localIndex) return i;
           count++;
         }
       }
       return -1;
     },
-    [tags],
+    [tags, activeSection],
   );
 
   const updateTag = useCallback((index: number, field: keyof TagDef, value: string | boolean) => {
@@ -1290,7 +1074,12 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
               installed agents.
             </div>
           </div>
-          <Switch checked={enabled} onCheckedChange={handleToggle} disabled={saving} />
+          <Switch
+            checked={enabled}
+            onCheckedChange={handleToggle}
+            disabled={saving}
+            aria-label="Enable code mode"
+          />
         </div>
       </SettingsSection>
 
@@ -1398,6 +1187,7 @@ function NotificationSettings() {
             checked={cloudRunsOfflineNotify}
             onCheckedChange={(next) => void handleToggle(next)}
             disabled={!loaded || saving}
+            aria-label="System notifications for missed runs"
           />
         </div>
       </SettingsSection>
@@ -1442,10 +1232,11 @@ export function SettingsDialog({
       });
   }, [open]);
 
-  const visibleTabs = useMemo(
-    () => (solomonConnected ? tabs.filter((t) => t.id !== "models") : tabs),
-    [solomonConnected],
-  );
+  // ... (ERRORS.md E51) Keep the Models tab visible when signed in so the
+  // signed-in model picker (SolomonModelSettings) stays reachable — the models
+  // tab content branches to it below. Previously it was filtered out, leaving
+  // signed-in users with no path to the picker.
+  const visibleTabs = tabs;
 
   const activeTabConfig = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0];
 
@@ -1455,6 +1246,11 @@ export function SettingsDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="rowboat-settings w-[1000px]! max-w-[96vw]! h-[660px] max-h-[88vh] p-0 gap-0 overflow-hidden">
+        <DialogTitle className="sr-only">Settings</DialogTitle>
+        <DialogDescription className="sr-only">
+          Manage account, connections, models, transcription, appearance, security, and memory
+          settings.
+        </DialogDescription>
         <div className="flex h-full overflow-hidden">
           {/* Sidebar nav — grouped, ElevenLabs developer-console rail */}
           <div className="flex w-60 shrink-0 flex-col border-r bg-muted/20">
@@ -1527,66 +1323,55 @@ export function SettingsDialog({
               </div>
             </div>
 
-            {/* Content — animated per-tab */}
-            <div className="min-h-0 flex-1">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex h-full min-h-0 flex-col"
-                >
-                  {activeTab === "note-tagging" ? (
-                    // NoteTaggingSettings owns its own internal scroll.
-                    <div className="flex min-h-0 flex-1 flex-col px-6 py-5">
-                      <NoteTaggingSettings dialogOpen={open} />
+            {/* Content */}
+            <div className="flex min-h-0 flex-1 flex-col">
+              {activeTab === "note-tagging" ? (
+                // NoteTaggingSettings owns its own internal scroll.
+                <div className="flex min-h-0 flex-1 flex-col px-6 py-5">
+                  <NoteTaggingSettings dialogOpen={open} />
+                </div>
+              ) : (
+                <ScrollArea className="flex-1 px-6 py-5">
+                  {activeTab === "account" ? (
+                    <AccountSettings dialogOpen={open} />
+                  ) : activeTab === "connections" ? (
+                    <div className="space-y-6">
+                      <SettingsSection title="Primary accounts">
+                        <ConnectedAccountsSettings dialogOpen={open} />
+                      </SettingsSection>
+                      <Separator />
+                      <SettingsSection title="Library">
+                        <ToolsLibrarySettings
+                          dialogOpen={open}
+                          rowboatConnected={solomonConnected}
+                        />
+                      </SettingsSection>
                     </div>
-                  ) : (
-                    <ScrollArea className="flex-1 px-6 py-5">
-                      {activeTab === "account" ? (
-                        <AccountSettings dialogOpen={open} />
-                      ) : activeTab === "connections" ? (
-                        <div className="space-y-6">
-                          <SettingsSection title="Primary accounts">
-                            <ConnectedAccountsSettings dialogOpen={open} />
-                          </SettingsSection>
-                          <Separator />
-                          <SettingsSection title="Library">
-                            <ToolsLibrarySettings
-                              dialogOpen={open}
-                              rowboatConnected={solomonConnected}
-                            />
-                          </SettingsSection>
-                        </div>
-                      ) : activeTab === "models" ? (
-                        solomonConnected ? (
-                          <SolomonModelSettings dialogOpen={open} />
-                        ) : (
-                          <ModelSettings dialogOpen={open} />
-                        )
-                      ) : activeTab === "transcription" ? (
-                        <TranscriptionSettings dialogOpen={open} />
-                      ) : activeTab === "notifications" ? (
-                        <NotificationSettings />
-                      ) : activeTab === "appearance" ? (
-                        <AppearanceSettings />
-                      ) : activeTab === "help" ? (
-                        <HelpSettings />
-                      ) : activeTab === "code-mode" ? (
-                        <CodeModeSettings dialogOpen={open} />
-                      ) : activeTab === "mcp" ? (
-                        <McpSettings dialogOpen={open} />
-                      ) : activeTab === "security" ? (
-                        <SecuritySettings dialogOpen={open} />
-                      ) : activeTab === "memory" ? (
-                        <MemorySettings dialogOpen={open} />
-                      ) : null}
-                    </ScrollArea>
-                  )}
-                </motion.div>
-              </AnimatePresence>
+                  ) : activeTab === "models" ? (
+                    solomonConnected ? (
+                      <SolomonModelSettings dialogOpen={open} />
+                    ) : (
+                      <ModelSettings dialogOpen={open} />
+                    )
+                  ) : activeTab === "transcription" ? (
+                    <TranscriptionSettings dialogOpen={open} />
+                  ) : activeTab === "notifications" ? (
+                    <NotificationSettings />
+                  ) : activeTab === "appearance" ? (
+                    <AppearanceSettings />
+                  ) : activeTab === "help" ? (
+                    <HelpSettings />
+                  ) : activeTab === "code-mode" ? (
+                    <CodeModeSettings dialogOpen={open} />
+                  ) : activeTab === "mcp" ? (
+                    <McpSettings dialogOpen={open} />
+                  ) : activeTab === "security" ? (
+                    <SecuritySettings dialogOpen={open} />
+                  ) : activeTab === "memory" ? (
+                    <MemorySettings dialogOpen={open} />
+                  ) : null}
+                </ScrollArea>
+              )}
             </div>
           </div>
         </div>

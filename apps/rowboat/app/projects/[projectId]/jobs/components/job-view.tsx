@@ -54,9 +54,9 @@ export function JobView({
   };
 
   const getReasonDisplay = (reason: any) => {
-    if (reason.type === "composio_trigger") {
+    if (reason.type === "integration_trigger") {
       return {
-        type: "Composio Trigger",
+        type: "Integration Trigger",
         details: {
           "Trigger Type": reason.triggerTypeSlug,
           "Trigger ID": reason.triggerId,

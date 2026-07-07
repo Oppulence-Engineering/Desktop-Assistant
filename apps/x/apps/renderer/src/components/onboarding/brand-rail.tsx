@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ShieldCheck } from "@/lib/icons";
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { BrainIcon, CheckCircle2, Mail, Network, ShieldCheck, Sparkles } from "@/lib/icons";
+import { PRODUCT_NAME, isProductProvider } from "@x/shared/dist/branding.js";
 import type { OnboardingState } from "./use-onboarding-state";
 import { VerticalStepper } from "./vertical-stepper";
 
@@ -9,84 +7,99 @@ interface BrandRailProps {
   state: OnboardingState;
 }
 
-/** Short, on-message value props sourced from the existing product framing. */
-const VALUE_PROPS = [
-  "Connects to the work you already do.",
-  "Builds a private knowledge graph.",
-  "Remembers context so you don't repeat yourself.",
-];
-
-const ROTATE_MS = 4500;
-
-/**
- * Persistent left rail for the full-page onboarding (lg+ only). Owns the brand
- * identity (logo, wordmark, tagline) and the vertical progress, so the step
- * content column stays focused on the task at hand. Hidden below `lg`, where the
- * full-page shell renders a compact top bar instead.
- */
 export function BrandRail({ state }: BrandRailProps) {
-  const reduceMotion = useReducedMotion();
-  const [propIndex, setPropIndex] = useState(0);
-
-  useEffect(() => {
-    if (reduceMotion) return;
-    const id = setInterval(() => setPropIndex((i) => (i + 1) % VALUE_PROPS.length), ROTATE_MS);
-    return () => clearInterval(id);
-  }, [reduceMotion]);
+  const connectedSources =
+    state.connectedProviders.filter((provider) => !isProductProvider(provider)).length +
+    (state.gmailConnected ? 1 : 0) +
+    (state.googleCalendarConnected ? 1 : 0);
+  const modelMode =
+    state.onboardingPath === "byok"
+      ? "Own provider"
+      : state.onboardingPath === "rowboat"
+        ? "Managed"
+        : "Select access";
 
   return (
-    <aside className="onboarding-dot-grid relative hidden w-[400px] shrink-0 flex-col border-r border-border bg-[var(--rowboat-panel)] px-9 py-10 lg:flex">
-      {/* Ambient gradient keyed off --foreground → auto-inverts between themes. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_15%_100%,color-mix(in_oklab,var(--foreground)_6%,transparent),transparent_60%)]"
-      />
-
+    <aside className="onboarding-dot-grid relative hidden w-[420px] shrink-0 flex-col border-r border-[var(--onboarding-border)] bg-[var(--onboarding-panel)] px-9 py-8 lg:flex">
       <div className="relative flex flex-1 flex-col">
-        {/* Logo + wordmark (with the signature ambient glow). */}
-        <div className="mb-3 flex items-center gap-3">
-          <div className="relative">
-            <div className="absolute inset-0 size-9 bg-primary/10 blur-xl scale-[2.5]" />
-            <img src="/logo-only.png" alt={PRODUCT_NAME} className="relative size-9 dark:invert" />
+        <div className="mb-10">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center border border-[var(--onboarding-border)] bg-[var(--onboarding-card)]">
+              <img src="/logo-only.png" alt={PRODUCT_NAME} className="size-6 dark:invert" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-base font-semibold tracking-tight">{PRODUCT_NAME}</div>
+              <div className="text-xs text-muted-foreground">Desktop setup</div>
+            </div>
           </div>
-          <span className="text-lg font-semibold tracking-tight">{PRODUCT_NAME}</span>
+
+          <div className="inline-flex items-center gap-2 border border-[var(--onboarding-border)] bg-[var(--onboarding-card)] px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            Private working memory
+          </div>
         </div>
 
-        {/* Tagline badge. */}
-        <div className="mb-10 inline-flex w-fit items-center gap-2 rounded-full border bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground">
-          <span className="size-1.5 rounded-full bg-green-500 animate-pulse" />
-          Your AI coworker, with memory
+        <div className="mb-9">
+          <p className="mb-3 max-w-[300px] text-3xl font-semibold leading-[1.05] tracking-tight">
+            Give {PRODUCT_NAME} its model and memory sources.
+          </p>
+          <p className="max-w-[280px] text-sm leading-6 text-muted-foreground">
+            A short setup pass for model access, work context, and the first run.
+          </p>
         </div>
 
-        {/* Vertical progress. */}
-        <VerticalStepper currentStep={state.currentStep} path={state.onboardingPath} />
+        <div className="mb-8">
+          <VerticalStepper currentStep={state.currentStep} path={state.onboardingPath} />
+        </div>
 
         <div className="flex-1" />
 
-        {/* Rotating value prop (static when reduced motion is requested). */}
-        <div className="mb-6 min-h-[40px]">
-          {reduceMotion ? (
-            <p className="text-sm text-muted-foreground">{VALUE_PROPS[0]}</p>
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={propIndex}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="text-sm text-muted-foreground"
-              >
-                {VALUE_PROPS[propIndex]}
-              </motion.p>
-            </AnimatePresence>
-          )}
+        <div className="mb-6 border border-[var(--onboarding-border)] bg-[var(--onboarding-card)]">
+          <div className="flex items-center justify-between border-b border-[var(--onboarding-border)] px-4 py-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <BrainIcon className="size-4" />
+              Context engine
+            </div>
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              local
+            </span>
+          </div>
+          <div className="grid grid-cols-3 divide-x divide-[var(--onboarding-border)]">
+            {[
+              { icon: Mail, label: "Ingest" },
+              { icon: Network, label: "Map" },
+              { icon: Sparkles, label: "Recall" },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="flex min-h-[86px] flex-col justify-between p-3">
+                <Icon className="size-4 text-muted-foreground" />
+                <span className="text-xs font-medium">{label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-[var(--onboarding-border)] px-4 py-3">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  Model
+                </div>
+                <div className="mt-1 font-medium">{modelMode}</div>
+              </div>
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  Sources
+                </div>
+                <div className="mt-1 font-medium">{connectedSources || "Pending"}</div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Privacy footnote. */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <ShieldCheck className="size-3.5" />
-          Private · on your machine
+        <div className="flex items-center justify-between border-t border-[var(--onboarding-border)] pt-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-3.5" />
+            Local-first by default
+          </div>
+          <CheckCircle2 className="size-3.5 text-emerald-500" />
         </div>
       </div>
     </aside>

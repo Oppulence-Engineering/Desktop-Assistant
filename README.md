@@ -86,7 +86,7 @@ To use Exa research search (optional), add the Exa API key in `~/.rowboat/config
 
 ### External tools
 
-To enable external tools (optional), you can add any MCP server or use Composio tools by adding an API key in `~/.rowboat/config/composio.json`
+To enable external tools (optional), add MCP servers or connect Rowboat managed integrations from the app.
 
 All API key files use the same format:
 
@@ -112,11 +112,7 @@ Under the hood, Rowboat maintains an **Obsidian-compatible vault** of plain Mark
 
 Rowboat builds memory from the work you already do:
 
-- **Gmail** - important threads, replies, asks, drafts, and follow-up state.
-- **Google Calendar** - today's meetings, attendees, context windows, and prep triggers.
-- **Rowboat meeting notes / Fireflies / Granola-style imports** - decisions, action items, and relationship updates.
-- **Slack and other channels** - event sources for relationship, customer, and project activity as connector support lands.
-- **MCP tools and product connectors** - optional tools for search, CRM, support, finance, GitHub, Linear/Jira, and internal systems.
+It also contains a library of product integrations through Rowboat managed integrations and MCP servers.
 
 ## How it’s different
 
@@ -255,14 +251,13 @@ Plus Next.js routes under `app/api/` — `app/api/widget/v1/*` is what the chat 
 
 ### Surrounding apps
 
-| Path                                  | What it is                                                                                                                          |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/cli`                            | CLI tool.                                                                                                                           |
-| `apps/python-sdk`                     | The `rowboat` PyPI client (used by `simulation_runner`).                                                                            |
-| `apps/docs`                           | Docs site, shipped on port 8000 via the `docs` profile.                                                                             |
-| `apps/rfc`                            | Canonical product and architecture RFCs, including [RFC 029](./apps/rfc/029-founder-operating-memory.md).                           |
-| `apps/oauth-consent`                  | OAuth consent helper surface.                                                                                                       |
-| `apps/experimental/chat_widget`       | Iframe-embedded end-user chat. Talks to platform at `/api/widget/v1`.                                                               |
+| Path | What it is |
+|------|-----------|
+| `apps/rowboat-www` | Oppulence marketing site and desktop companion web app. |
+| `apps/cli` | CLI tool. |
+| `apps/python-sdk` | The `rowboat` PyPI client (used by `simulation_runner`). |
+| `apps/docs` | Docs site, shipped on port 8000 via the `docs` profile. |
+| `apps/experimental/chat_widget` | Iframe-embedded end-user chat. Talks to platform at `/api/widget/v1`. |
 | `apps/experimental/simulation_runner` | Async Python worker — polls `test_runs` in Mongo, role-plays scenarios via OpenAI against a Rowboat workflow, writes verdicts back. |
 | `apps/experimental/tools_webhook`     | Reference Flask service that Rowboat tool-calls can POST to.                                                                        |
 
@@ -285,7 +280,7 @@ Commented-out but pre-wired: `rowboat_agents:3001`, `copilot:3002`, `tools_webho
 
 Three roles share one image: the `Dockerfile` runs the long-running Next server; `scripts.Dockerfile` runs the same bundle with `npm run jobs-worker` / `rag-worker` / `setupQdrant` / `deleteQdrant`. **The worker containers are the same Node bundle running a different `package.json` script**, not separate codebases.
 
-`start.sh` is the dev entry point: sets `USE_RAG=true`, `USE_KLAVIS_TOOLS=true`, toggles `USE_COMPOSIO_TOOLS` if `COMPOSIO_API_KEY` is set, then runs `docker compose --profile setup_qdrant --profile qdrant --profile rag-worker up --build`.
+`start.sh` is the dev entry point: sets `USE_RAG=true`, `USE_KLAVIS_TOOLS=true`, then runs `docker compose --profile setup_qdrant --profile qdrant --profile rag-worker up --build`.
 
 ### Request flow
 
@@ -337,14 +332,14 @@ End-to-end: ~6 minutes from merging the release PR to installers on the Releases
 
 **Platform (`apps/rowboat`)** is source-distributed — no registry push in this fork. Users run `./start.sh` locally (or in their own infra), which builds the images from source and brings up the compose stack. Feature flags toggle behavior:
 
-| Flag                                                  | Effect                                            |
-| ----------------------------------------------------- | ------------------------------------------------- |
-| `USE_RAG`, `USE_RAG_UPLOADS`, `USE_RAG_S3_UPLOADS`    | Enables vector store, file uploads, S3 ingestion. |
-| `USE_RAG_SCRAPING` + `FIRECRAWL_API_KEY`              | Web ingestion.                                    |
-| `USE_CHAT_WIDGET` + `CHAT_WIDGET_HOST`                | Mounts the widget endpoints.                      |
-| `USE_KLAVIS_TOOLS`, `USE_COMPOSIO_TOOLS`              | Tool integrations.                                |
-| `USE_BILLING` + `BILLING_API_URL` / `BILLING_API_KEY` | Talks to an external billing service.             |
-| `USE_AUTH`                                            | Auth0-gated SSR.                                  |
+| Flag | Effect |
+|------|--------|
+| `USE_RAG`, `USE_RAG_UPLOADS`, `USE_RAG_S3_UPLOADS` | Enables vector store, file uploads, S3 ingestion. |
+| `USE_RAG_SCRAPING` + `FIRECRAWL_API_KEY` | Web ingestion. |
+| `USE_CHAT_WIDGET` + `CHAT_WIDGET_HOST` | Mounts the widget endpoints. |
+| `USE_KLAVIS_TOOLS` | Tool integrations. |
+| `USE_BILLING` + `BILLING_API_URL` / `BILLING_API_KEY` | Talks to an external billing service. |
+| `USE_AUTH` | Auth0-gated SSR. |
 
 ### CI side-jobs
 

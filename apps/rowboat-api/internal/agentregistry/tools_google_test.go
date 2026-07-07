@@ -18,7 +18,11 @@ import (
 
 func TestGoogleToolsRegistered(t *testing.T) {
 	cat := DefaultCatalog()
-	for _, name := range []string{"connector.read.gmail", "connector.read.calendar"} {
+	for _, name := range []string{
+		"connector.read.gmail",
+		"connector.read.calendar",
+		"connector.read.drive",
+	} {
 		c, ok := cat.Get(name)
 		if !ok {
 			t.Fatalf("capability %q not registered in DefaultCatalog", name)
@@ -33,19 +37,35 @@ func TestGoogleToolsRegistered(t *testing.T) {
 	}
 }
 
-func TestGmailDraftCapabilityIsApprovalTier(t *testing.T) {
-	c, ok := DefaultCatalog().Get("connector.write.gmail_draft")
-	if !ok {
-		t.Fatal("connector.write.gmail_draft not registered")
-	}
-	// Drafting is an outward-facing act → approval-eligible.
-	if c.TrustTier != TierAct || !RequiresApproval(c.TrustTier) {
-		t.Fatalf("gmail_draft tier = %q, want act (approval-eligible)", c.TrustTier)
+func TestGoogleWriteCapabilitiesAreApprovalTier(t *testing.T) {
+	for _, name := range []string{
+		"connector.write.gmail_draft",
+		"connector.write.gmail_send",
+		"connector.write.calendar_create",
+		"connector.write.calendar_update",
+		"connector.write.drive_update",
+	} {
+		c, ok := DefaultCatalog().Get(name)
+		if !ok {
+			t.Fatalf("%s not registered", name)
+		}
+		if c.TrustTier != TierAct || !RequiresApproval(c.TrustTier) {
+			t.Fatalf("%s tier = %q, want act (approval-eligible)", name, c.TrustTier)
+		}
 	}
 }
 
 func TestGoogleToolUnavailableWhenUnconfigured(t *testing.T) {
-	for _, name := range []string{"connector.read.gmail", "connector.read.calendar", "connector.write.gmail_draft"} {
+	for _, name := range []string{
+		"connector.read.gmail",
+		"connector.read.calendar",
+		"connector.read.drive",
+		"connector.write.gmail_draft",
+		"connector.write.gmail_send",
+		"connector.write.calendar_create",
+		"connector.write.calendar_update",
+		"connector.write.drive_update",
+	} {
 		capability, _ := DefaultCatalog().Get(name)
 		// No Google deps and no user id → graceful "unavailable", never a panic.
 		tool := capability.Build(ToolDeps{})
@@ -100,7 +120,12 @@ func TestGoogleToolsRejectSlackChannelSessions(t *testing.T) {
 	}{
 		{name: "connector.read.gmail", args: json.RawMessage(`{"query":"from:customer@example.com"}`)},
 		{name: "connector.read.calendar", args: json.RawMessage(`{"limit":1}`)},
+		{name: "connector.read.drive", args: json.RawMessage(`{"query":"name contains 'invoice'"}`)},
 		{name: "connector.write.gmail_draft", args: json.RawMessage(`{"to":"customer@example.com","body":"hello"}`)},
+		{name: "connector.write.gmail_send", args: json.RawMessage(`{"to":"customer@example.com","body":"hello"}`)},
+		{name: "connector.write.calendar_create", args: json.RawMessage(`{"summary":"Call","start":"2026-06-27T15:00:00Z","end":"2026-06-27T15:30:00Z"}`)},
+		{name: "connector.write.calendar_update", args: json.RawMessage(`{"eventId":"evt_1","summary":"Call","start":"2026-06-27T15:00:00Z","end":"2026-06-27T15:30:00Z"}`)},
+		{name: "connector.write.drive_update", args: json.RawMessage(`{"fileId":"file_1","name":"Plan"}`)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			capability, _ := DefaultCatalog().Get(tc.name)

@@ -72,7 +72,6 @@ const (
 	RouteGroupTranscription  = "transcription"
 	RouteGroupSearch         = "search"
 	RouteGroupConnectors     = "connectors"
-	RouteGroupComposio       = "composio"
 	RouteGroupEvents         = "events"
 	RouteGroupInternal       = "internal"
 	RouteGroupOAuthHooks     = "oauth_hooks"
@@ -100,7 +99,6 @@ var routeGroupPrefixes = []struct {
 	{"/v1/google-oauth", RouteGroupConnectors},
 	{"/v1/slack-oauth", RouteGroupConnectors},
 	{"/oauth/", RouteGroupConnectors},
-	{"/v1/composio", RouteGroupComposio},
 	{"/v1/events", RouteGroupEvents},
 	{"/v1/webhooks/", RouteGroupEvents},
 	{"/v1/internal", RouteGroupInternal},

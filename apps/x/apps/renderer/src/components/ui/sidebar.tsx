@@ -8,12 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -83,12 +78,11 @@ function SidebarProvider({
 
   // Auto-collapse sidebar when window crosses below the threshold
   React.useEffect(() => {
-    const mql = window.matchMedia(
-      `(max-width: ${SIDEBAR_AUTO_COLLAPSE_WIDTH - 1}px)`,
-    );
+    const mql = window.matchMedia(`(max-width: ${SIDEBAR_AUTO_COLLAPSE_WIDTH - 1}px)`);
     const onChange = () => {
       if (mql.matches) setOpen(false);
     };
+    onChange();
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
   }, [setOpen]);
@@ -224,11 +218,7 @@ function Sidebar({
   );
 }
 
-function SidebarTrigger({
-  className,
-  onClick,
-  ...props
-}: React.ComponentProps<typeof Button>) {
+function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar();
 
   return (
@@ -261,9 +251,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"div">) {
       startXRef.current = e.clientX;
       const sidebar = document.querySelector('[data-slot="sidebar-wrapper"]');
       const currentWidth = sidebar
-        ? parseInt(
-            getComputedStyle(sidebar).getPropertyValue("--sidebar-width"),
-          )
+        ? parseInt(getComputedStyle(sidebar).getPropertyValue("--sidebar-width"))
         : SIDEBAR_WIDTH;
       startWidthRef.current = currentWidth;
       setIsResizing(true);
@@ -328,10 +316,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
   );
 }
 
-function SidebarInput({
-  className,
-  ...props
-}: React.ComponentProps<typeof Input>) {
+function SidebarInput({ className, ...props }: React.ComponentProps<typeof Input>) {
   return (
     <Input
       data-slot="sidebar-input"
@@ -364,10 +349,7 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function SidebarSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof Separator>) {
+function SidebarSeparator({ className, ...props }: React.ComponentProps<typeof Separator>) {
   return (
     <Separator
       data-slot="sidebar-separator"
@@ -397,10 +379,7 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="sidebar-group"
       data-sidebar="group"
-      className={cn(
-        "relative flex w-full min-w-0 flex-col px-2 py-1",
-        className,
-      )}
+      className={cn("relative flex w-full min-w-0 flex-col px-2 py-1", className)}
       {...props}
     />
   );
@@ -450,10 +429,7 @@ function SidebarGroupAction({
   );
 }
 
-function SidebarGroupContent({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function SidebarGroupContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sidebar-group-content"
@@ -548,12 +524,7 @@ function SidebarMenuButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent
-        side="right"
-        align="center"
-        hidden={state !== "collapsed"}
-        {...tooltip}
-      />
+      <TooltipContent side="right" align="center" hidden={state !== "collapsed"} {...tooltip} />
     </Tooltip>
   );
 }
@@ -590,10 +561,7 @@ function SidebarMenuAction({
   );
 }
 
-function SidebarMenuBadge({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function SidebarMenuBadge({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sidebar-menu-badge"
@@ -631,12 +599,7 @@ function SidebarMenuSkeleton({
       className={cn("flex h-8 items-center gap-2 rounded-none px-2", className)}
       {...props}
     >
-      {showIcon && (
-        <Skeleton
-          className="size-4 rounded-md"
-          data-sidebar="menu-skeleton-icon"
-        />
-      )}
+      {showIcon && <Skeleton className="size-4 rounded-md" data-sidebar="menu-skeleton-icon" />}
       <Skeleton
         className="h-4 max-w-(--skeleton-width) flex-1"
         data-sidebar="menu-skeleton-text"
@@ -665,10 +628,7 @@ function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul">) {
   );
 }
 
-function SidebarMenuSubItem({
-  className,
-  ...props
-}: React.ComponentProps<"li">) {
+function SidebarMenuSubItem({ className, ...props }: React.ComponentProps<"li">) {
   return (
     <li
       data-slot="sidebar-menu-sub-item"

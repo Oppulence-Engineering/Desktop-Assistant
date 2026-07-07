@@ -60,6 +60,11 @@ config:
 worker:
   enabled: true
   replicaCount: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 65
 
 # Secrets live in the cluster Secret `rowboat-api-secrets` (sealed-secrets /
 # external-secrets / Infisical operator). Do NOT inline secret values here.

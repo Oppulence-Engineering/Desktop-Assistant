@@ -183,8 +183,8 @@ app.on("second-instance", (_event, argv) => {
 
 // Path resolution differs between development and production:
 const preloadPath = app.isPackaged
-  ? path.join(__dirname, "../preload/dist/preload.js")
-  : path.join(__dirname, "../../../preload/dist/preload.js");
+  ? path.join(__dirname, "../preload/dist/preload.cjs")
+  : path.join(__dirname, "../../../preload/dist/preload.cjs");
 console.log("preloadPath", preloadPath);
 
 const rendererPath = app.isPackaged
@@ -296,6 +296,9 @@ function createWindow() {
 
   setMainWindowForDeepLinks(win);
   win.on("closed", () => setMainWindowForDeepLinks(null));
+  win.webContents.on("preload-error", (_event, failedPreloadPath, error) => {
+    console.error("[Main] preload failed:", failedPreloadPath, error);
+  });
 
   // Show window when content is ready to prevent blank screen
   win.once("ready-to-show", () => {

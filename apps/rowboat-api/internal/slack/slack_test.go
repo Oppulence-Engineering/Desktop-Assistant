@@ -3,6 +3,7 @@ package slack_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,9 +20,57 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slack"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slacktoken"
+	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
+
+type fakeTeamTokenResolver struct {
+	token  string
+	userID string
+	teamID string
+	err    error
+}
+
+func (r *fakeTeamTokenResolver) ResolveTeam(_ context.Context, userID, teamID string) (string, error) {
+	r.userID = userID
+	r.teamID = teamID
+	if r.err != nil {
+		return "", r.err
+	}
+	return r.token, nil
+}
+
+type fakeThreadReader struct {
+	token    string
+	channel  string
+	threadTS string
+	limit    int
+	text     string
+	messages []slackclient.Message
+	err      error
+	postErr  error
+}
+
+func (r *fakeThreadReader) ReadThread(_ context.Context, token, channel, threadTS string, limit int) ([]slackclient.Message, error) {
+	r.token = token
+	r.channel = channel
+	r.threadTS = threadTS
+	r.limit = limit
+	if r.err != nil {
+		return nil, r.err
+	}
+	return r.messages, nil
+}
+
+func (r *fakeThreadReader) PostMessage(_ context.Context, token, channel, threadTS, text string) error {
+	r.token = token
+	r.channel = channel
+	r.threadTS = threadTS
+	r.text = text
+	return r.postErr
+}
 
 func setup(t *testing.T) (*ent.Client, *ent.User, *slack.Handler) {
 	client, user, handler, _ := setupWithSealer(t)
@@ -104,6 +153,45 @@ func claim(t *testing.T, h *slack.Handler, u *ent.User, state string) *httptest.
 	return rec
 }
 
+func listWorkspaces(t *testing.T, h *slack.Handler, u *ent.User) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/v1/slack-oauth/workspaces", nil).
+		WithContext(auth.WithUser(context.Background(), u))
+	rec := httptest.NewRecorder()
+	h.ListWorkspaces(rec, req)
+	return rec
+}
+
+func deleteWorkspace(t *testing.T, h *slack.Handler, u *ent.User, teamID string) *httptest.ResponseRecorder {
+	t.Helper()
+	route := chi.NewRouteContext()
+	route.URLParams.Add("teamId", teamID)
+	ctx := context.WithValue(auth.WithUser(context.Background(), u), chi.RouteCtxKey, route)
+	req := httptest.NewRequest(http.MethodDelete, "/v1/slack-oauth/workspaces/"+teamID, nil).
+		WithContext(ctx)
+	rec := httptest.NewRecorder()
+	h.DeleteWorkspace(rec, req)
+	return rec
+}
+
+func readThread(t *testing.T, h *slack.Handler, u *ent.User, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/v1/slack-oauth/thread/read", strings.NewReader(body)).
+		WithContext(auth.WithUser(context.Background(), u))
+	rec := httptest.NewRecorder()
+	h.ReadThread(rec, req)
+	return rec
+}
+
+func postThread(t *testing.T, h *slack.Handler, u *ent.User, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/v1/slack-oauth/thread/post", strings.NewReader(body)).
+		WithContext(auth.WithUser(context.Background(), u))
+	rec := httptest.NewRecorder()
+	h.PostThread(rec, req)
+	return rec
+}
+
 func mustJSON(t *testing.T, v any) []byte {
 	t.Helper()
 	b, err := json.Marshal(v)
@@ -173,9 +261,237 @@ func TestSlackOAuthFullFlow(t *testing.T) {
 		t.Fatal("credential must be sealed, not plaintext")
 	}
 
+	listRec := listWorkspaces(t, h, u)
+	if listRec.Code != http.StatusOK {
+		t.Fatalf("list workspaces: %d (%s), want 200", listRec.Code, listRec.Body.String())
+	}
+	if strings.Contains(listRec.Body.String(), "xoxb-") {
+		t.Fatal("list response must never contain the raw bot token")
+	}
+	var listed struct {
+		Workspaces []struct {
+			TeamID string `json:"teamId"`
+		} `json:"workspaces"`
+	}
+	_ = json.Unmarshal(listRec.Body.Bytes(), &listed)
+	if len(listed.Workspaces) != 1 || listed.Workspaces[0].TeamID != "T0EXAMPLE" {
+		t.Fatalf("listed workspaces = %+v", listed.Workspaces)
+	}
+
 	// One-shot: a second claim of the same ticket is rejected.
 	if rec := claim(t, h, u, state); rec.Code != http.StatusNotFound {
 		t.Fatalf("replayed claim: %d, want 404", rec.Code)
+	}
+}
+
+func TestSlackOAuthAllowsMultipleWorkspacesForOneUser(t *testing.T) {
+	client, u, h := setup(t)
+	teams := []struct {
+		id   string
+		name string
+	}{
+		{id: "TEAM_A", name: "Alpha"},
+		{id: "TEAM_B", name: "Beta"},
+	}
+	exchanges := 0
+	token := mockSlackToken(t, func(form url.Values) map[string]any {
+		if form.Get("code") != "code-1" || form.Get("client_secret") != "secret-1" {
+			return map[string]any{"ok": false, "error": "invalid_code"}
+		}
+		if exchanges >= len(teams) {
+			return map[string]any{"ok": false, "error": "too_many_exchanges"}
+		}
+		team := teams[exchanges]
+		exchanges++
+		return map[string]any{
+			"ok":           true,
+			"access_token": "xoxb-" + team.id,
+			"scope":        "channels:history,channels:read",
+			"bot_user_id":  "U0BOT",
+			"app_id":       "A0APP",
+			"team":         map[string]any{"id": team.id, "name": team.name},
+		}
+	})
+	h.SetOAuthFlow("https://slack.example/authorize", token.URL, "https://api.example/oauth/slack/callback", "solomon-ai", "")
+
+	for _, team := range teams {
+		state := startFlow(t, h)
+		runCallback(t, h, state)
+		rec := claim(t, h, u, state)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("claim %s: %d (%s), want 200", team.id, rec.Code, rec.Body.String())
+		}
+	}
+
+	ctx := auth.WithUser(context.Background(), u)
+	count := client.OAuthConnection.Query().
+		Where(oauthconnection.ProviderEQ("slack")).
+		CountX(ctx)
+	if count != 2 {
+		t.Fatalf("slack connection count = %d, want 2", count)
+	}
+	listRec := listWorkspaces(t, h, u)
+	if listRec.Code != http.StatusOK {
+		t.Fatalf("list workspaces: %d (%s), want 200", listRec.Code, listRec.Body.String())
+	}
+	var listed struct {
+		Workspaces []struct {
+			TeamID string `json:"teamId"`
+		} `json:"workspaces"`
+	}
+	_ = json.Unmarshal(listRec.Body.Bytes(), &listed)
+	got := map[string]bool{}
+	for _, workspace := range listed.Workspaces {
+		got[workspace.TeamID] = true
+	}
+	if len(listed.Workspaces) != 2 || !got["TEAM_A"] || !got["TEAM_B"] {
+		t.Fatalf("listed workspaces = %+v, want TEAM_A and TEAM_B", listed.Workspaces)
+	}
+}
+
+func TestSlackWorkspacesListAndDeleteAreUserScoped(t *testing.T) {
+	client, userA, h := setup(t)
+	userB := client.User.Create().
+		SetEmail("b@x.co").
+		SetWorkosUserID("user_2").
+		SaveX(context.Background())
+	ctx := auth.WithInternal(context.Background())
+	client.OAuthConnection.Create().
+		SetUser(userA).
+		SetProvider("slack").
+		SetRefreshTokenEncrypted([]byte("sealed-token-a")).
+		SetScopes([]string{"channels:history"}).
+		SetExternalAccountID("TEAM_A").
+		SaveX(ctx)
+	client.OAuthConnection.Create().
+		SetUser(userB).
+		SetProvider("slack").
+		SetRefreshTokenEncrypted([]byte("sealed-token-b")).
+		SetScopes([]string{"channels:history"}).
+		SetExternalAccountID("TEAM_B").
+		SaveX(ctx)
+
+	rec := listWorkspaces(t, h, userA)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("list user A: %d (%s), want 200", rec.Code, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "sealed-token") {
+		t.Fatal("list response must not leak stored credentials")
+	}
+	var out struct {
+		Workspaces []struct {
+			TeamID string `json:"teamId"`
+		} `json:"workspaces"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	if len(out.Workspaces) != 1 || out.Workspaces[0].TeamID != "TEAM_A" {
+		t.Fatalf("user A workspaces = %+v, want TEAM_A only", out.Workspaces)
+	}
+
+	if rec := deleteWorkspace(t, h, userB, "TEAM_A"); rec.Code != http.StatusNoContent {
+		t.Fatalf("user B delete TEAM_A: %d, want 204", rec.Code)
+	}
+	if n := client.OAuthConnection.Query().
+		Where(oauthconnection.ProviderEQ("slack"), oauthconnection.ExternalAccountIDEQ("TEAM_A")).
+		CountX(auth.WithUser(context.Background(), userA)); n != 1 {
+		t.Fatalf("TEAM_A rows for user A after user B delete = %d, want 1", n)
+	}
+
+	if rec := deleteWorkspace(t, h, userA, "TEAM_A"); rec.Code != http.StatusNoContent {
+		t.Fatalf("user A delete TEAM_A: %d, want 204", rec.Code)
+	}
+	if n := client.OAuthConnection.Query().
+		Where(oauthconnection.ProviderEQ("slack"), oauthconnection.ExternalAccountIDEQ("TEAM_A")).
+		CountX(auth.WithUser(context.Background(), userA)); n != 0 {
+		t.Fatalf("TEAM_A rows for user A after owner delete = %d, want 0", n)
+	}
+	if n := client.OAuthConnection.Query().
+		Where(oauthconnection.ProviderEQ("slack"), oauthconnection.ExternalAccountIDEQ("TEAM_B")).
+		CountX(auth.WithUser(context.Background(), userB)); n != 1 {
+		t.Fatalf("TEAM_B rows for user B = %d, want 1", n)
+	}
+}
+
+func TestSlackReadThreadUsesServerHeldToken(t *testing.T) {
+	_, u, h := setup(t)
+	tokens := &fakeTeamTokenResolver{token: "xoxb-secret-token"}
+	reader := &fakeThreadReader{
+		messages: []slackclient.Message{
+			{User: "U1", Text: "first", TS: "1700000000.000100"},
+			{User: "U2", Text: "second", TS: "1700000000.000200"},
+		},
+	}
+	h.SetRuntimeClients(tokens, reader)
+
+	rec := readThread(t, h, u, `{"teamId":"T1","channel":"C1","threadTs":"1700000000.000100","limit":25}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("read thread: %d (%s), want 200", rec.Code, rec.Body.String())
+	}
+	if tokens.userID != u.ID.String() || tokens.teamID != "T1" {
+		t.Fatalf("resolved token for user %q team %q", tokens.userID, tokens.teamID)
+	}
+	if reader.token != "xoxb-secret-token" || reader.channel != "C1" || reader.threadTS != "1700000000.000100" || reader.limit != 25 {
+		t.Fatalf("reader call = %+v", reader)
+	}
+	if strings.Contains(rec.Body.String(), "xoxb-") {
+		t.Fatal("read response must not leak the bot token")
+	}
+	if !strings.Contains(rec.Body.String(), `"text":"first"`) || !strings.Contains(rec.Body.String(), `"teamId":"T1"`) {
+		t.Fatalf("read response = %s", rec.Body.String())
+	}
+}
+
+func TestSlackReadThreadRequiresConnectedWorkspace(t *testing.T) {
+	_, u, h := setup(t)
+	h.SetRuntimeClients(&fakeTeamTokenResolver{err: errors.New("not connected")}, &fakeThreadReader{})
+
+	rec := readThread(t, h, u, `{"teamId":"T-missing","channel":"C1","threadTs":"1.1"}`)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("read missing workspace: %d (%s), want 404", rec.Code, rec.Body.String())
+	}
+}
+
+func TestSlackPostThreadUsesServerHeldToken(t *testing.T) {
+	_, u, h := setup(t)
+	tokens := &fakeTeamTokenResolver{token: "xoxb-secret-token"}
+	reader := &fakeThreadReader{}
+	h.SetRuntimeClients(tokens, reader)
+
+	rec := postThread(t, h, u, `{"teamId":"T1","channel":"C1","threadTs":"1700000000.000100","text":"Approved reply"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("post thread: %d (%s), want 200", rec.Code, rec.Body.String())
+	}
+	if tokens.userID != u.ID.String() || tokens.teamID != "T1" {
+		t.Fatalf("resolved token for user %q team %q", tokens.userID, tokens.teamID)
+	}
+	if reader.token != "xoxb-secret-token" || reader.channel != "C1" || reader.threadTS != "1700000000.000100" || reader.text != "Approved reply" {
+		t.Fatalf("post call = %+v", reader)
+	}
+	if strings.Contains(rec.Body.String(), "xoxb-") || strings.Contains(rec.Body.String(), "Approved reply") {
+		t.Fatal("post response must not echo the bot token or message text")
+	}
+	if !strings.Contains(rec.Body.String(), `"ok":true`) || !strings.Contains(rec.Body.String(), `"teamId":"T1"`) {
+		t.Fatalf("post response = %s", rec.Body.String())
+	}
+}
+
+func TestSlackPostThreadValidatesRequiredFields(t *testing.T) {
+	_, u, h := setup(t)
+	h.SetRuntimeClients(&fakeTeamTokenResolver{token: "xoxb-secret-token"}, &fakeThreadReader{})
+
+	rec := postThread(t, h, u, `{"teamId":"T1","channel":"C1","threadTs":"1.1","text":"   "}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("post empty text: %d (%s), want 400", rec.Code, rec.Body.String())
+	}
+}
+
+func TestSlackPostThreadRequiresConnectedWorkspace(t *testing.T) {
+	_, u, h := setup(t)
+	h.SetRuntimeClients(&fakeTeamTokenResolver{err: errors.New("not connected")}, &fakeThreadReader{})
+
+	rec := postThread(t, h, u, `{"teamId":"T-missing","channel":"C1","threadTs":"1.1","text":"hello"}`)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("post missing workspace: %d (%s), want 404", rec.Code, rec.Body.String())
 	}
 }
 

@@ -47,6 +47,12 @@ type Config struct {
 	DatabaseURL string // postgres DSN (pgx); empty → local sqlite for dev
 	RedisURL    string // redis://... for rate-limit buckets + ent cache
 	AutoMigrate bool   // run ent schema auto-migration on boot (dev/first-deploy)
+	// Database/sql pool sizing. Postgres defaults are deliberately bounded so
+	// sidecar processes (API, worker, scheduler) cannot exhaust server slots.
+	DBMaxOpenConns    int
+	DBMaxIdleConns    int
+	DBConnMaxLifetime time.Duration
+	DBConnMaxIdleTime time.Duration
 
 	// Column encryption passphrase for pgcrypto-sealed columns.
 	DBEncryptionKey string
@@ -121,7 +127,6 @@ type Config struct {
 	GoogleAPIKey            string
 	ElevenLabsAPIKey        string
 	ExaAPIKey               string
-	ComposioAPIKey          string
 	GoogleOAuthClientID     string
 	GoogleOAuthClientSecret string
 	// PlainAPIKey is optional: when unset, POST /v1/feedback returns
@@ -140,7 +145,6 @@ type Config struct {
 	VendorMaxConcurrent         int
 	LLMMaxConcurrent            int
 	UpstreamResponseMaxBytes    int64
-	ComposioResponseMaxBytes    int64
 
 	// GoogleTokenURL overrides Google's OAuth token endpoint. Empty → the
 	// real endpoint (oauth2.googleapis.com/token). Set in dev to a local mock.
@@ -158,6 +162,19 @@ type Config struct {
 
 	// Free-tier credit grant minted on first sign-in.
 	FreeTierCredits int
+
+	// Stripe billing. When StripeSecretKey is empty, checkout/portal endpoints
+	// return provider_unconfigured while /v1/me and free-tier metering keep
+	// working for local development.
+	StripeSecretKey      string
+	StripeWebhookSecret  string
+	StripeStarterPriceID string
+	StripeProPriceID     string
+	StripeSuccessURL     string
+	StripeCancelURL      string
+	StripeAPIBaseURL     string
+	StripeStarterCredits int
+	StripeProCredits     int
 
 	// Free cloud meeting-transcription seconds per UTC month for non-paid plans
 	// (RFC 009 §16). Exhausted → the desktop falls back to on-device transcription.
@@ -223,6 +240,16 @@ type Config struct {
 	CloudSchedulerTimezone string // IANA name; v1 is "UTC"
 	CloudSchedulerOwner    string // lease owner identity; defaults to hostname
 
+	// Cloud run admission guardrails. These run before Temporal workflow start
+	// so scheduled runs are either admitted with priority metadata or
+	// dead-lettered with a stable reason instead of failing late in the worker.
+	CloudRunAdmissionEnabled       bool
+	CloudRunMaxInflightGlobal      int
+	CloudRunMaxInflightPerUser     int
+	CloudRunRateLimitGlobalPerMin  int
+	CloudRunRateLimitPerUserPerMin int
+	CloudRunCreditPreflightEnabled bool
+
 	// Cloud event ingestion + routing (RFC 003). Ingestion (/v1/events and
 	// provider webhooks) is always mounted; ROUTING — the Temporal workflow that
 	// matches events to tasks via LLM and fires trigger=event runs — is gated.
@@ -233,6 +260,7 @@ type Config struct {
 	CloudEventsMaxPayloadBytes int     // reject larger payloads before sealing
 	SlackSigningSecret         string  // verifies /v1/webhooks/slack signatures
 	GoogleWebhookToken         string  // shared token for /v1/webhooks/google
+	WebhookSigningSecret       string  // verifies /v1/webhooks/events HMACs
 
 	// Web search backs the durable-agent web.search tool (Tavily-shaped API).
 	// Empty WebSearchAPIKey disables the tool (it reports itself unavailable).
@@ -240,12 +268,10 @@ type Config struct {
 	WebSearchAPIKey string
 
 	// Portfolio faculties (RFC 008): Conduit (evidence) and Eigen (foresight),
-	// reached as runtime tools. Empty base URL or key disables that faculty's
-	// tool (it reports itself unavailable).
+	// reached as runtime tools. Empty base URL disables that faculty's tool; calls
+	// use the shared service-token issuer and agent signing secret.
 	ConduitBaseURL string
-	ConduitAPIKey  string
 	EigenBaseURL   string
-	EigenAPIKey    string
 
 	// Slack workspace connect flow (OAuth v2). The connection maps team_id →
 	// user, which is what /v1/webhooks/slack resolves events against.
@@ -269,9 +295,10 @@ type Config struct {
 	GmailPubSubTopic       string        // projects/{p}/topics/{t}; empty → Gmail watches skipped
 	GoogleWatchInterval    time.Duration // renewal scan cadence
 	GoogleWatchRenewMargin time.Duration // renew registrations expiring within this window
-	// GmailAPIBaseURL / CalendarAPIBaseURL override Google's API hosts (dev mocks).
+	// GmailAPIBaseURL / CalendarAPIBaseURL / DriveAPIBaseURL override Google's API hosts (dev mocks).
 	GmailAPIBaseURL    string
 	CalendarAPIBaseURL string
+	DriveAPIBaseURL    string
 
 	// Cloud agent runtime (RFC 004): the LLM-backed, tool-scoped agent loop
 	// that the Temporal worker's ExecuteAPITask delegates to. Enabled by
@@ -279,11 +306,29 @@ type Config struct {
 	// selecting the deterministic NoopRuntime artifact path.
 	CloudRuntimeEnabled          bool
 	CloudRuntimeModel            string        // model used when the task carries none
-	CloudRuntimeMaxDuration      time.Duration // wall clock per run; MUST stay < the 5m activity timeout
+	CloudRuntimeMaxDuration      time.Duration // wall clock per run; MUST stay < the execute activity timeout
 	CloudRuntimeMaxLLMCalls      int
 	CloudRuntimeMaxToolCalls     int
 	CloudRuntimeMaxArtifactBytes int
 	CloudRuntimeMaxEventBytes    int
+	// Optional sandbox.run tool for API tasks. It runs code/browser/dependency-
+	// heavy work in a Kubernetes Job instead of the worker process.
+	CloudRuntimeSandboxEnabled        bool
+	CloudRuntimeSandboxBackend        string
+	CloudRuntimeSandboxImage          string
+	CloudRuntimeSandboxAllowedImages  []string
+	CloudRuntimeSandboxNamespace      string
+	CloudRuntimeSandboxServiceAccount string
+	CloudRuntimeSandboxMaxDuration    time.Duration
+	CloudRuntimeSandboxPollInterval   time.Duration
+	CloudRuntimeSandboxMaxScriptBytes int
+	CloudRuntimeSandboxMaxOutputBytes int
+	CloudRuntimeSandboxCPURequest     string
+	CloudRuntimeSandboxMemoryRequest  string
+	CloudRuntimeSandboxCPULimit       string
+	CloudRuntimeSandboxMemoryLimit    string
+	CloudRuntimeSandboxWorkspaceSize  string
+	CloudRuntimeSandboxTTLSeconds     int
 
 	// Durable agent runtime (RFC 027): the per-step durable, multi-turn agent
 	// framework whose reason→act loop runs in Temporal workflow code (each
@@ -384,9 +429,15 @@ func Load() Config {
 		LogLevel:     getenv("LOG_LEVEL", "info"),
 		OTLPEndpoint: getenv("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
 
-		DatabaseURL:     getenv("DATABASE_URL", ""),
-		RedisURL:        getenv("REDIS_URL", ""),
-		AutoMigrate:     getbool("AUTO_MIGRATE", true),
+		DatabaseURL:    getenv("DATABASE_URL", ""),
+		RedisURL:       getenv("REDIS_URL", ""),
+		AutoMigrate:    getbool("AUTO_MIGRATE", true),
+		DBMaxOpenConns: getint("DB_MAX_OPEN_CONNS", 20),
+		DBMaxIdleConns: getint("DB_MAX_IDLE_CONNS", 10),
+		DBConnMaxLifetime: getdur("DB_CONN_MAX_LIFETIME",
+			30*time.Minute),
+		DBConnMaxIdleTime: getdur("DB_CONN_MAX_IDLE_TIME",
+			5*time.Minute),
 		DBEncryptionKey: getenv("DB_ENCRYPTION_KEY", "dev-insecure-encryption-key-change-me"),
 
 		AppURL: getenv("APP_URL", "https://app.solomon-ai.co"),
@@ -440,7 +491,6 @@ func Load() Config {
 		GoogleAPIKey:                getenv("GOOGLE_API_KEY", ""),
 		ElevenLabsAPIKey:            getenv("ELEVENLABS_API_KEY", ""),
 		ExaAPIKey:                   getenv("EXA_API_KEY", ""),
-		ComposioAPIKey:              getenv("COMPOSIO_API_KEY", ""),
 		GoogleOAuthClientID:         getenv("GOOGLE_OAUTH_CLIENT_ID", ""),
 		GoogleOAuthClientSecret:     getenv("GOOGLE_OAUTH_CLIENT_SECRET", ""),
 		PlainAPIKey:                 getenv("PLAIN_API_KEY", ""),
@@ -452,13 +502,21 @@ func Load() Config {
 		VendorMaxConcurrent:         getint("VENDOR_MAX_CONCURRENT", 64),
 		LLMMaxConcurrent:            getint("LLM_MAX_CONCURRENT", 32),
 		UpstreamResponseMaxBytes:    getint64("UPSTREAM_RESPONSE_MAX_BYTES", 64<<20),
-		ComposioResponseMaxBytes:    getint64("COMPOSIO_RESPONSE_MAX_BYTES", 64<<20),
 		GoogleTokenURL:              getenv("GOOGLE_TOKEN_URL", ""),
 		GoogleAuthorizeURL:          getenv("GOOGLE_AUTHORIZE_URL", ""),
 		GoogleRedirectURI:           getenv("GOOGLE_REDIRECT_URI", ""),
 
 		DesktopDeepLinkScheme: getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
 		FreeTierCredits:       getint("FREE_TIER_CREDITS", 10000),
+		StripeSecretKey:       getenv("STRIPE_SECRET_KEY", ""),
+		StripeWebhookSecret:   getenv("STRIPE_WEBHOOK_SECRET", ""),
+		StripeStarterPriceID:  getenv("STRIPE_STARTER_PRICE_ID", ""),
+		StripeProPriceID:      getenv("STRIPE_PRO_PRICE_ID", ""),
+		StripeSuccessURL:      getenv("STRIPE_SUCCESS_URL", getenv("APP_URL", "https://app.solomon-ai.co")+"/billing/success"),
+		StripeCancelURL:       getenv("STRIPE_CANCEL_URL", getenv("APP_URL", "https://app.solomon-ai.co")+"/billing/cancel"),
+		StripeAPIBaseURL:      getenv("STRIPE_API_BASE_URL", "https://api.stripe.com"),
+		StripeStarterCredits:  getint("STRIPE_STARTER_CREDITS", 200000),
+		StripeProCredits:      getint("STRIPE_PRO_CREDITS", 2000000),
 
 		FreeMeetingSecondsPerMonth:  getint("FREE_MEETING_SECONDS_PER_MONTH", 10800), // 180 min
 		TranscriptionVoiceDefault:   getenv("TRANSCRIPTION_VOICE_DEFAULT", "whisper-local"),
@@ -499,6 +557,13 @@ func Load() Config {
 		CloudSchedulerTimezone: getenv("CLOUD_SCHEDULER_TIMEZONE", "UTC"),
 		CloudSchedulerOwner:    getenv("CLOUD_SCHEDULER_OWNER", defaultHostname()),
 
+		CloudRunAdmissionEnabled:       getbool("CLOUD_RUN_ADMISSION_ENABLED", true),
+		CloudRunMaxInflightGlobal:      getint("CLOUD_RUN_MAX_INFLIGHT_GLOBAL", 5000),
+		CloudRunMaxInflightPerUser:     getint("CLOUD_RUN_MAX_INFLIGHT_PER_USER", 50),
+		CloudRunRateLimitGlobalPerMin:  getint("CLOUD_RUN_RATE_LIMIT_GLOBAL_PER_MINUTE", 2000),
+		CloudRunRateLimitPerUserPerMin: getint("CLOUD_RUN_RATE_LIMIT_PER_USER_PER_MINUTE", 60),
+		CloudRunCreditPreflightEnabled: getbool("CLOUD_RUN_CREDIT_PREFLIGHT_ENABLED", true),
+
 		CloudEventsRoutingEnabled: getbool("CLOUD_EVENTS_ROUTING_ENABLED", false),
 		CloudEventsMatchThreshold: getfloat("CLOUD_EVENTS_MATCH_THRESHOLD", 0.7),
 		// Routing is two cheap bounded calls per event; default to the cheapest
@@ -507,14 +572,13 @@ func Load() Config {
 		CloudEventsMaxPayloadBytes: getint("CLOUD_EVENTS_MAX_PAYLOAD_BYTES", 256<<10),
 		SlackSigningSecret:         getenv("SLACK_SIGNING_SECRET", ""),
 		GoogleWebhookToken:         getenv("GOOGLE_WEBHOOK_TOKEN", ""),
+		WebhookSigningSecret:       getenv("WEBHOOK_SIGNING_SECRET", ""),
 
 		WebSearchAPIURL: getenv("WEB_SEARCH_API_URL", "https://api.tavily.com/search"),
 		WebSearchAPIKey: getenv("WEB_SEARCH_API_KEY", ""),
 
 		ConduitBaseURL: getenv("CONDUIT_BASE_URL", ""),
-		ConduitAPIKey:  getenv("CONDUIT_API_KEY", ""),
 		EigenBaseURL:   getenv("EIGEN_BASE_URL", ""),
-		EigenAPIKey:    getenv("EIGEN_API_KEY", ""),
 
 		SlackClientID:     getenv("SLACK_CLIENT_ID", ""),
 		SlackClientSecret: getenv("SLACK_CLIENT_SECRET", ""),
@@ -529,14 +593,31 @@ func Load() Config {
 		GoogleWatchRenewMargin: getdur("GOOGLE_WATCH_RENEW_MARGIN", 24*time.Hour),
 		GmailAPIBaseURL:        getenv("GMAIL_API_BASE_URL", ""),
 		CalendarAPIBaseURL:     getenv("CALENDAR_API_BASE_URL", ""),
+		DriveAPIBaseURL:        getenv("DRIVE_API_BASE_URL", ""),
 
-		CloudRuntimeEnabled:          getbool("CLOUD_RUNTIME_ENABLED", true),
-		CloudRuntimeModel:            getenv("CLOUD_RUNTIME_MODEL", "anthropic/claude-sonnet-4-5"),
-		CloudRuntimeMaxDuration:      getdur("CLOUD_RUNTIME_MAX_DURATION", 4*time.Minute),
-		CloudRuntimeMaxLLMCalls:      getint("CLOUD_RUNTIME_MAX_LLM_CALLS", 12),
-		CloudRuntimeMaxToolCalls:     getint("CLOUD_RUNTIME_MAX_TOOL_CALLS", 24),
-		CloudRuntimeMaxArtifactBytes: getint("CLOUD_RUNTIME_MAX_ARTIFACT_BYTES", 1<<20),
-		CloudRuntimeMaxEventBytes:    getint("CLOUD_RUNTIME_MAX_EVENT_BYTES", 64<<10),
+		CloudRuntimeEnabled:               getbool("CLOUD_RUNTIME_ENABLED", true),
+		CloudRuntimeModel:                 getenv("CLOUD_RUNTIME_MODEL", "anthropic/claude-sonnet-4-5"),
+		CloudRuntimeMaxDuration:           getdur("CLOUD_RUNTIME_MAX_DURATION", 4*time.Minute),
+		CloudRuntimeMaxLLMCalls:           getint("CLOUD_RUNTIME_MAX_LLM_CALLS", 12),
+		CloudRuntimeMaxToolCalls:          getint("CLOUD_RUNTIME_MAX_TOOL_CALLS", 24),
+		CloudRuntimeMaxArtifactBytes:      getint("CLOUD_RUNTIME_MAX_ARTIFACT_BYTES", 1<<20),
+		CloudRuntimeMaxEventBytes:         getint("CLOUD_RUNTIME_MAX_EVENT_BYTES", 64<<10),
+		CloudRuntimeSandboxEnabled:        getbool("CLOUD_RUNTIME_SANDBOX_ENABLED", false),
+		CloudRuntimeSandboxBackend:        getenv("CLOUD_RUNTIME_SANDBOX_BACKEND", "kubernetes-job"),
+		CloudRuntimeSandboxImage:          getenv("CLOUD_RUNTIME_SANDBOX_IMAGE", "python:3.12-slim"),
+		CloudRuntimeSandboxAllowedImages:  getcsv("CLOUD_RUNTIME_SANDBOX_ALLOWED_IMAGES", "python:3.12-slim,mcr.microsoft.com/playwright:*"),
+		CloudRuntimeSandboxNamespace:      getenv("CLOUD_RUNTIME_SANDBOX_NAMESPACE", ""),
+		CloudRuntimeSandboxServiceAccount: getenv("CLOUD_RUNTIME_SANDBOX_SERVICE_ACCOUNT", ""),
+		CloudRuntimeSandboxMaxDuration:    getdur("CLOUD_RUNTIME_SANDBOX_MAX_DURATION", 4*time.Minute),
+		CloudRuntimeSandboxPollInterval:   getdur("CLOUD_RUNTIME_SANDBOX_POLL_INTERVAL", 5*time.Second),
+		CloudRuntimeSandboxMaxScriptBytes: getint("CLOUD_RUNTIME_SANDBOX_MAX_SCRIPT_BYTES", 32<<10),
+		CloudRuntimeSandboxMaxOutputBytes: getint("CLOUD_RUNTIME_SANDBOX_MAX_OUTPUT_BYTES", 64<<10),
+		CloudRuntimeSandboxCPURequest:     getenv("CLOUD_RUNTIME_SANDBOX_CPU_REQUEST", "100m"),
+		CloudRuntimeSandboxMemoryRequest:  getenv("CLOUD_RUNTIME_SANDBOX_MEMORY_REQUEST", "128Mi"),
+		CloudRuntimeSandboxCPULimit:       getenv("CLOUD_RUNTIME_SANDBOX_CPU_LIMIT", "1"),
+		CloudRuntimeSandboxMemoryLimit:    getenv("CLOUD_RUNTIME_SANDBOX_MEMORY_LIMIT", "1Gi"),
+		CloudRuntimeSandboxWorkspaceSize:  getenv("CLOUD_RUNTIME_SANDBOX_WORKSPACE_SIZE", "1Gi"),
+		CloudRuntimeSandboxTTLSeconds:     getint("CLOUD_RUNTIME_SANDBOX_TTL_SECONDS", 600),
 
 		AgentStreamingEnabled: getbool("AGENT_STREAMING_ENABLED", true),
 		AgentHITLEnabled:      getbool("AGENT_HITL_ENABLED", true),
@@ -631,7 +712,7 @@ func (c Config) Validate() error {
 	if c.VendorMaxConcurrent <= 0 || c.LLMMaxConcurrent <= 0 {
 		return fmt.Errorf("vendor concurrency limits must be > 0")
 	}
-	if c.UpstreamResponseMaxBytes <= 0 || c.ComposioResponseMaxBytes <= 0 {
+	if c.UpstreamResponseMaxBytes <= 0 {
 		return fmt.Errorf("upstream response byte limits must be > 0")
 	}
 	if c.GraphQLMaxComplexity <= 0 || c.GraphQLMaxDepth <= 0 {
@@ -678,6 +759,10 @@ func (c Config) Validate() error {
 			return fmt.Errorf("CLOUD_SCHEDULER_TIMEZONE must be UTC in v1 (per-task timezone is a committed fast-follow); got %q", c.CloudSchedulerTimezone)
 		}
 	}
+	if c.CloudRunMaxInflightGlobal < 0 || c.CloudRunMaxInflightPerUser < 0 ||
+		c.CloudRunRateLimitGlobalPerMin < 0 || c.CloudRunRateLimitPerUserPerMin < 0 {
+		return fmt.Errorf("cloud run admission limits must be >= 0")
+	}
 	if c.TemporalSchedulesEnabled {
 		// No TEMPORAL_ENABLED requirement: schedules default ON, but every
 		// consumer is gated behind Temporal wiring, so the flag is simply
@@ -699,9 +784,9 @@ func (c Config) Validate() error {
 		}
 	}
 	if c.GoogleWatchEnabled {
-		// Calendar channels are registered with PUBLIC_BASE_URL as the push
-		// address and GOOGLE_WEBHOOK_TOKEN as the channel token; without them
-		// the registrations would either point nowhere or be unverifiable.
+		// Calendar and Drive channels are registered with PUBLIC_BASE_URL as the
+		// push address and GOOGLE_WEBHOOK_TOKEN as the channel token; without
+		// them the registrations would either point nowhere or be unverifiable.
 		if strings.TrimSpace(c.PublicBaseURL) == "" {
 			return fmt.Errorf("PUBLIC_BASE_URL is required when GOOGLE_WATCH_ENABLED=true")
 		}
@@ -712,19 +797,51 @@ func (c Config) Validate() error {
 			return fmt.Errorf("GOOGLE_WATCH_INTERVAL and GOOGLE_WATCH_RENEW_MARGIN must be > 0")
 		}
 	}
-	// The runtime's own deadline must fire BEFORE Temporal's activity
-	// StartToCloseTimeout (5m, backgroundtaskworkflow activity options), or
+	// The runtime's own deadline must fire BEFORE Temporal's execute activity
+	// StartToCloseTimeout (30m, backgroundtaskworkflow activity options), or
 	// runs would fail as activity_timeout and hide the real
 	// runtime_deadline_exceeded cause. Raising this ceiling requires raising
 	// the activity timeout in the same change (RFC 004 duration coupling).
-	if c.CloudRuntimeMaxDuration <= 0 || c.CloudRuntimeMaxDuration >= 5*time.Minute {
-		return fmt.Errorf("CLOUD_RUNTIME_MAX_DURATION must be in (0, 5m); got %s", c.CloudRuntimeMaxDuration)
+	if c.CloudRuntimeMaxDuration <= 0 || c.CloudRuntimeMaxDuration >= 30*time.Minute {
+		return fmt.Errorf("CLOUD_RUNTIME_MAX_DURATION must be in (0, 30m); got %s", c.CloudRuntimeMaxDuration)
 	}
 	if c.CloudRuntimeMaxLLMCalls <= 0 || c.CloudRuntimeMaxToolCalls <= 0 {
 		return fmt.Errorf("CLOUD_RUNTIME_MAX_LLM_CALLS and CLOUD_RUNTIME_MAX_TOOL_CALLS must be > 0")
 	}
 	if c.CloudRuntimeMaxArtifactBytes <= 0 || c.CloudRuntimeMaxEventBytes <= 0 {
 		return fmt.Errorf("cloud runtime byte limits must be > 0")
+	}
+	if c.CloudRuntimeSandboxEnabled {
+		backend := strings.TrimSpace(c.CloudRuntimeSandboxBackend)
+		switch backend {
+		case "kubernetes-job", "argo-workflow":
+		default:
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_BACKEND must be kubernetes-job or argo-workflow")
+		}
+		if strings.TrimSpace(c.CloudRuntimeSandboxImage) == "" {
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_IMAGE is required when CLOUD_RUNTIME_SANDBOX_ENABLED=true")
+		}
+		if backend == "argo-workflow" && strings.TrimSpace(c.CloudRuntimeSandboxServiceAccount) == "" {
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_SERVICE_ACCOUNT is required when CLOUD_RUNTIME_SANDBOX_BACKEND=argo-workflow")
+		}
+		if len(c.CloudRuntimeSandboxAllowedImages) == 0 {
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_ALLOWED_IMAGES is required when CLOUD_RUNTIME_SANDBOX_ENABLED=true")
+		}
+		if !imageAllowedByList(c.CloudRuntimeSandboxImage, c.CloudRuntimeSandboxAllowedImages) {
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_IMAGE must match CLOUD_RUNTIME_SANDBOX_ALLOWED_IMAGES")
+		}
+		if c.CloudRuntimeSandboxMaxDuration <= 0 || c.CloudRuntimeSandboxMaxDuration > c.CloudRuntimeMaxDuration {
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_MAX_DURATION must be in (0, CLOUD_RUNTIME_MAX_DURATION]; got %s", c.CloudRuntimeSandboxMaxDuration)
+		}
+		if c.CloudRuntimeSandboxPollInterval <= 0 {
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_POLL_INTERVAL must be > 0")
+		}
+		if c.CloudRuntimeSandboxMaxScriptBytes <= 0 || c.CloudRuntimeSandboxMaxOutputBytes <= 0 {
+			return fmt.Errorf("sandbox script/output byte limits must be > 0")
+		}
+		if c.CloudRuntimeSandboxTTLSeconds <= 0 {
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_TTL_SECONDS must be > 0")
+		}
 	}
 	if c.CloudEventsMatchThreshold <= 0 || c.CloudEventsMatchThreshold > 1 {
 		return fmt.Errorf("CLOUD_EVENTS_MATCH_THRESHOLD must be in (0, 1]; got %v", c.CloudEventsMatchThreshold)
@@ -776,6 +893,23 @@ func (c Config) Validate() error {
 		return c.validateProduction()
 	}
 	return nil
+}
+
+func imageAllowedByList(image string, allowed []string) bool {
+	image = strings.TrimSpace(image)
+	if image == "" {
+		return false
+	}
+	for _, entry := range allowed {
+		entry = strings.TrimSpace(entry)
+		if entry == image {
+			return true
+		}
+		if strings.HasSuffix(entry, "*") && strings.HasPrefix(image, strings.TrimSuffix(entry, "*")) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c Config) validateProduction() error {
@@ -843,7 +977,6 @@ func (c Config) validateProduction() error {
 	for key, value := range map[string]string{
 		"ELEVENLABS_API_KEY":         c.ElevenLabsAPIKey,
 		"EXA_API_KEY":                c.ExaAPIKey,
-		"COMPOSIO_API_KEY":           c.ComposioAPIKey,
 		"GOOGLE_OAUTH_CLIENT_ID":     c.GoogleOAuthClientID,
 		"GOOGLE_OAUTH_CLIENT_SECRET": c.GoogleOAuthClientSecret,
 	} {

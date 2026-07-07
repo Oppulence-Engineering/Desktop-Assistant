@@ -29,13 +29,4 @@ describe("API_URL", () => {
 
     expect(API_URL).toBe("http://localhost:18080");
   });
-
-  it("maps the retired Solomon API host to the production API", async () => {
-    process.env.API_URL = "https://api.x.solomon-ai.co";
-    vi.resetModules();
-
-    const { API_URL } = await import("./env.js");
-
-    expect(API_URL).toBe("https://api.oppulence.io");
-  });
 });

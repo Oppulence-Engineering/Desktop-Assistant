@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
@@ -74,6 +75,15 @@ type facultyTool struct {
 func (t *facultyTool) Name() string                { return t.name }
 func (t *facultyTool) Description() string         { return t.description }
 func (t *facultyTool) JSONSchema() json.RawMessage { return t.schema }
+func (t *facultyTool) AuditInfo(json.RawMessage) backgroundtaskruntime.ToolAudit {
+	connector := t.name
+	operation := t.path
+	if before, after, ok := strings.Cut(t.name, "."); ok {
+		connector = before
+		operation = after
+	}
+	return backgroundtaskruntime.ToolAudit{TrustTier: backgroundtaskruntime.TierRead, Connector: connector, Operation: operation}
+}
 func (t *facultyTool) Invoke(ctx context.Context, scope backgroundtaskruntime.ToolScope, args json.RawMessage) (json.RawMessage, error) {
 	var body map[string]any
 	if len(args) > 0 {

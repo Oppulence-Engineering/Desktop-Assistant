@@ -738,36 +738,6 @@ var (
 			},
 		},
 	}
-	// ComposioAccountsColumns holds the columns for the "composio_accounts" table.
-	ComposioAccountsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "account_id", Type: field.TypeString},
-		{Name: "toolkit", Type: field.TypeString, Nullable: true},
-		{Name: "user_composio_accounts", Type: field.TypeUUID},
-	}
-	// ComposioAccountsTable holds the schema information for the "composio_accounts" table.
-	ComposioAccountsTable = &schema.Table{
-		Name:       "composio_accounts",
-		Columns:    ComposioAccountsColumns,
-		PrimaryKey: []*schema.Column{ComposioAccountsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "composio_accounts_users_composio_accounts",
-				Columns:    []*schema.Column{ComposioAccountsColumns[5]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "composioaccount_account_id",
-				Unique:  true,
-				Columns: []*schema.Column{ComposioAccountsColumns[3]},
-			},
-		},
-	}
 	// CreditLedgersColumns holds the columns for the "credit_ledgers" table.
 	CreditLedgersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1041,14 +1011,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "oauthconnection_provider_user_oauth_connections",
+				Name:    "oauthconnection_provider_external_account_id_user_oauth_connections",
 				Unique:  true,
-				Columns: []*schema.Column{OauthConnectionsColumns[3], OauthConnectionsColumns[7]},
-			},
-			{
-				Name:    "oauthconnection_provider_external_account_id",
-				Unique:  false,
-				Columns: []*schema.Column{OauthConnectionsColumns[3], OauthConnectionsColumns[6]},
+				Columns: []*schema.Column{OauthConnectionsColumns[3], OauthConnectionsColumns[6], OauthConnectionsColumns[7]},
 			},
 		},
 	}
@@ -1212,7 +1177,6 @@ var (
 		BackgroundTaskRunEventsTable,
 		BackgroundTaskScheduleStatesTable,
 		CloudEventsTable,
-		ComposioAccountsTable,
 		CreditLedgersTable,
 		GoogleWatchesTable,
 		LlmUsagesTable,
@@ -1258,7 +1222,6 @@ func init() {
 	BackgroundTaskScheduleStatesTable.ForeignKeys[0].RefTable = BackgroundTasksTable
 	BackgroundTaskScheduleStatesTable.ForeignKeys[1].RefTable = UsersTable
 	CloudEventsTable.ForeignKeys[0].RefTable = UsersTable
-	ComposioAccountsTable.ForeignKeys[0].RefTable = UsersTable
 	CreditLedgersTable.ForeignKeys[0].RefTable = UsersTable
 	GoogleWatchesTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable

@@ -16,10 +16,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// Google push ingestion: Gmail arrives as a Pub/Sub push envelope, Calendar as
-// a channel notification (headers only). Both are verified against the shared
-// GOOGLE_WEBHOOK_TOKEN — supplied as ?token= on the Pub/Sub push subscription
-// URL, or as the channel token (X-Goog-Channel-Token) set at watch time.
+// Google push ingestion: Gmail arrives as a Pub/Sub push envelope, Calendar and
+// Drive arrive as channel notifications (headers only). All are verified
+// against the shared GOOGLE_WEBHOOK_TOKEN — supplied as ?token= on the Pub/Sub
+// push subscription URL, or as the channel token (X-Goog-Channel-Token) set at
+// watch time.
 //
 // V1 TRADEOFF: a shared bearer-style token is weaker than Pub/Sub OIDC push
 // auth (it can leak via URL logging); OIDC JWT verification against Google's
@@ -40,9 +41,9 @@ func (h *Handler) GoogleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calendar channel notifications carry everything in headers.
+	// Calendar and Drive channel notifications carry everything in headers.
 	if state := r.Header.Get("X-Goog-Resource-State"); state != "" {
-		h.handleCalendarNotification(w, r, state)
+		h.handleGoogleChannelNotification(w, r, state)
 		return
 	}
 	h.handleGmailPush(w, r, body)
@@ -128,7 +129,7 @@ func (h *Handler) handleGmailPush(w http.ResponseWriter, r *http.Request, body [
 	h.respondIngest(w, r, owner, req)
 }
 
-func (h *Handler) handleCalendarNotification(w http.ResponseWriter, r *http.Request, state string) {
+func (h *Handler) handleGoogleChannelNotification(w http.ResponseWriter, r *http.Request, state string) {
 	// The initial handshake message for a new channel carries state=sync and
 	// must simply be acknowledged.
 	if state == "sync" {
@@ -142,7 +143,20 @@ func (h *Handler) handleCalendarNotification(w http.ResponseWriter, r *http.Requ
 		httpx.Error(w, http.StatusBadRequest, "missing Goog channel headers", "bad_request")
 		return
 	}
+	switch {
+	case strings.HasPrefix(channelID, "gcal:"):
+		h.handleCalendarNotification(w, r, state, channelID, messageNumber, resourceID)
+	case strings.HasPrefix(channelID, "gdrive:"):
+		h.handleDriveNotification(w, r, state, channelID, messageNumber, resourceID)
+	default:
+		metricUnresolved.WithLabelValues(SourceGoogleCalendar).Inc()
+		h.log.Warn("google notification for unresolved channel dropped",
+			zap.String("channelId", channelID))
+		w.WriteHeader(http.StatusOK)
+	}
+}
 
+func (h *Handler) handleCalendarNotification(w http.ResponseWriter, r *http.Request, state, channelID, messageNumber, resourceID string) {
 	// The watching account travels in the channel id, which Rowboat controls
 	// at watch time: "gcal:{accountEmail}:{uuid}".
 	email := calendarAccountFromChannelID(channelID)
@@ -173,11 +187,53 @@ func (h *Handler) handleCalendarNotification(w http.ResponseWriter, r *http.Requ
 	h.respondIngest(w, r, owner, req)
 }
 
+func (h *Handler) handleDriveNotification(w http.ResponseWriter, r *http.Request, state, channelID, messageNumber, resourceID string) {
+	// The watching account travels in the channel id, which Rowboat controls
+	// at watch time: "gdrive:{accountEmail}:{uuid}".
+	email := driveAccountFromChannelID(channelID)
+	owner, ok := h.resolveGoogleUser(r, email)
+	if !ok {
+		metricUnresolved.WithLabelValues(SourceGoogleDrive).Inc()
+		h.log.Warn("drive notification for unresolved channel dropped",
+			zap.String("channelId", channelID))
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	payload, _ := json.Marshal(map[string]string{
+		"channelId":     channelID,
+		"resourceId":    resourceID,
+		"resourceState": state,
+		"messageNumber": messageNumber,
+		"changed":       r.Header.Get("X-Goog-Changed"),
+	})
+	req := IngestRequest{
+		Source:          SourceGoogleDrive,
+		SourceEventID:   resourceID,
+		SourceAccountID: email,
+		EventType:       "resource." + state,
+		Text:            fmt.Sprintf("Google Drive update (%s) for %s.", state, email),
+		Payload:         payload,
+		DedupeKey:       fmt.Sprintf("gdrive:%s:%s", channelID, messageNumber),
+	}
+	h.respondIngest(w, r, owner, req)
+}
+
 // calendarAccountFromChannelID extracts the account email from a Rowboat-
 // minted channel id ("gcal:{email}:{uuid}"), or "" for foreign formats.
 func calendarAccountFromChannelID(channelID string) string {
+	return googleChannelAccountFromID(channelID, "gcal")
+}
+
+// driveAccountFromChannelID extracts the account email from a Rowboat-minted
+// Drive channel id ("gdrive:{email}:{uuid}"), or "" for foreign formats.
+func driveAccountFromChannelID(channelID string) string {
+	return googleChannelAccountFromID(channelID, "gdrive")
+}
+
+func googleChannelAccountFromID(channelID, prefix string) string {
 	parts := strings.SplitN(channelID, ":", 3)
-	if len(parts) != 3 || parts[0] != "gcal" {
+	if len(parts) != 3 || parts[0] != prefix {
 		return ""
 	}
 	return strings.ToLower(strings.TrimSpace(parts[1]))

@@ -49,6 +49,7 @@ const RECOVERABLE_SUMMARY_ERROR_PATTERNS = [
   "rate limit",
   "token refresh",
 ];
+const RELATED_MEMORY_TIMEOUT_MS = 750;
 
 /**
  * Load recent calendar events from the calendar_sync directory.
@@ -60,7 +61,7 @@ function loadRecentCalendarEvents(meetingTime: string): string {
 
     const files = fs
       .readdirSync(CALENDAR_SYNC_DIR)
-      .filter((f) => f.endsWith(".json") && f !== "sync_state.json" && f !== "composio_state.json");
+      .filter((f) => f.endsWith(".json") && f !== "sync_state.json");
     if (files.length === 0) return "";
 
     const meetingDate = new Date(meetingTime);
@@ -279,9 +280,15 @@ function buildLocalExtractiveNotes(transcript: string): string {
  */
 export async function loadRelatedMemory(query: string): Promise<string> {
   if (!query.trim()) return "";
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
     const { memorySearch } = await import("../memory/index.js");
-    const res = await memorySearch(query, { k: 5 });
+    const timeoutPromise = new Promise<null>((resolve) => {
+      timeout = setTimeout(() => resolve(null), RELATED_MEMORY_TIMEOUT_MS);
+      (timeout as { unref?: () => void }).unref?.();
+    });
+    const res = await Promise.race([memorySearch(query, { k: 5 }), timeoutPromise]);
+    if (!res) return "";
     if (res.results.length === 0) return "";
     const lines = res.results.map(
       (r) => `- ${r.backlink}: ${r.snippet.replace(/\s+/g, " ").trim().slice(0, 200)}`,
@@ -289,6 +296,8 @@ export async function loadRelatedMemory(query: string): Promise<string> {
     return `\n\n## Related past notes (context only — do not copy verbatim)\n${lines.join("\n")}`;
   } catch {
     return "";
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 }
 

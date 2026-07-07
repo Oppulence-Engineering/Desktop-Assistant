@@ -1,56 +1,71 @@
 import { skillCatalog, buildSkillCatalog } from "./skills/index.js";
 import { getRuntimeContext, getRuntimeContextPrompt } from "./runtime-context.js";
-import { composioAccountsRepo } from "../../composio/repo.js";
-import { isConfigured as isComposioConfigured } from "../../composio/client.js";
-import { CURATED_TOOLKITS } from "@x/shared/dist/composio.js";
 import container from "../../di/container.js";
 import type { ICodeModeConfigRepo } from "../../code-mode/repo.js";
+import { listConnectorsViaBackend, type ConnectorView } from "../../connectors/connectors-backend.js";
 
 const runtimeContextPrompt = getRuntimeContextPrompt(getRuntimeContext());
 
+type RowboatIntegrationPromptState = {
+    enabled: boolean;
+    prompt: string;
+};
+
+function formatIntegrationCapabilities(connectors: ConnectorView[]): string {
+    return connectors
+        .slice(0, 8)
+        .map((connector) => {
+            const blocks = (connector.templateBlocks ?? []).map((block) => block.title).slice(0, 3);
+            return `- ${connector.displayName} (\`${connector.name}\`)${blocks.length > 0 ? `: ${blocks.join(', ')}` : ''}`;
+        })
+        .join('\n');
+}
+
 /**
- * Generate dynamic instructions section for Composio integrations.
- * Lists connected toolkits and explains the meta-tool discovery flow.
+ * Generate dynamic instructions for Rowboat managed integrations.
+ * Lists connected integrations and explains the meta-tool discovery flow.
  */
-async function getComposioToolsPrompt(): Promise<string> {
-    if (!(await isComposioConfigured())) {
-        return '';
-    }
+async function getRowboatIntegrationsPrompt(): Promise<RowboatIntegrationPromptState> {
+    try {
+        const response = await listConnectorsViaBackend();
+        const connected = response.connectors.filter((connector) => connector.connected);
+        const connectedSection = connected.length > 0
+            ? `**Currently connected:** ${connected.map((connector) => connector.displayName).join(', ')}`
+            : `**No managed integrations connected yet.** Load the \`rowboat-integration\` skill to help the user connect one.`;
 
-    const connectedToolkits = composioAccountsRepo.getConnectedToolkits();
-    const connectedSection = connectedToolkits.length > 0
-        ? `**Currently connected:** ${connectedToolkits.map(slug => CURATED_TOOLKITS.find(t => t.slug === slug)?.displayName ?? slug).join(', ')}`
-        : `**No services connected yet.** Load the \`composio-integration\` skill to help the user connect one.`;
-
-    return `
-## Composio Integrations
+        return {
+            enabled: response.connectors.length > 0,
+            prompt: `
+## Rowboat Integrations
 
 ${connectedSection}
 
-Load the \`composio-integration\` skill when the user asks to interact with any third-party service. NEVER say "I can't access [service]" without loading the skill and trying Composio first.
-`;
+Managed integration catalog:
+${formatIntegrationCapabilities(response.connectors)}
+
+Load the \`rowboat-integration\` skill when the user asks to interact with a managed third-party service. It will list integrations, connect missing services, configure the MCP server, and execute the relevant MCP tool.
+`,
+        };
+    } catch {
+        return { enabled: false, prompt: '' };
+    }
 }
 
-function buildStaticInstructions(composioEnabled: boolean, catalog: string, codeModeEnabled: boolean = true): string {
-    // Conditionally include Composio-related instruction sections
-    const emailDraftSuffix = composioEnabled
-        ? ` Do NOT load this skill for reading, fetching, or checking emails — use the \`composio-integration\` skill for that instead.`
+function buildStaticInstructions(integrationsEnabled: boolean, catalog: string, codeModeEnabled: boolean = true): string {
+    const emailDraftSuffix = integrationsEnabled
+        ? ` Do NOT load this skill for reading, fetching, or checking emails through connected integrations — use the \`rowboat-integration\` skill for that instead.`
         : ` Do NOT load this skill for reading, fetching, or checking emails.`;
 
-    const thirdPartyBlock = composioEnabled
-        ? `\n**Third-Party Services:** When users ask to interact with any external service (Gmail, GitHub, Slack, LinkedIn, Notion, Google Sheets, Jira, etc.) — reading emails, listing issues, sending messages, fetching profiles — load the \`composio-integration\` skill first. Do NOT look in local \`gmail_sync/\` or \`calendar_sync/\` folders for live data.\n`
+    const thirdPartyBlock = integrationsEnabled
+        ? `\n**Third-Party Services:** When users ask to interact with a managed external service (GitHub, HubSpot, Linear, Notion, Slack, Stripe, Canvas, Corinthian, Wispr, etc.) — list records, inspect issues, fetch docs, read Slack threads, update CRM data, or perform service actions — load the \`rowboat-integration\` skill first. Do NOT look in local sync folders for live third-party data when a managed integration is available.\n`
         : '';
 
-    const toolPriority = composioEnabled
-        ? `For third-party services (GitHub, Gmail, Slack, etc.), load the \`composio-integration\` skill. For capabilities Composio doesn't cover (web search, file scraping, audio), use MCP tools via the \`mcp-integration\` skill.`
+    const toolPriority = integrationsEnabled
+        ? `For managed third-party services, load the \`rowboat-integration\` skill. For capabilities managed integrations do not cover (web search, file scraping, audio, or custom servers), use MCP tools via the \`mcp-integration\` skill.`
         : `For capabilities like web search, file scraping, and audio, use MCP tools via the \`mcp-integration\` skill.`;
 
-    const slackToolsLine = composioEnabled
-        ? `- \`slack-checkConnection\`, \`slack-listAvailableTools\`, \`slack-executeAction\` - Slack integration (requires Slack to be connected via Composio). Use \`slack-listAvailableTools\` first to discover available tool slugs, then \`slack-executeAction\` to execute them.\n`
-        : '';
-
-    const composioToolsLine = composioEnabled
-        ? `- \`composio-list-toolkits\`, \`composio-search-tools\`, \`composio-execute-tool\`, \`composio-connect-toolkit\` — Composio integration tools. Load the \`composio-integration\` skill for usage guidance.\n`
+    const integrationToolsLine = integrationsEnabled
+        ? `- \`rowboat-list-integrations\`, \`rowboat-connect-integration\`, \`rowboat-configure-integration-mcp\` - managed Rowboat integration tools. Load the \`rowboat-integration\` skill for usage guidance.\n- \`rowboat-list-slack-workspaces\`, \`rowboat-read-slack-thread\`, \`rowboat-draft-slack-reply\` - managed Slack tools. Use these for desktop-chat Slack thread reading and reply drafting; they accept Slack permalinks or explicit ids, use server-held Slack metadata where needed, and never post automatically. The rendered Slack draft card is the user approval/send surface.\n`
         : '';
 
     return `You are Solomon AI Copilot - an AI assistant for everyday work. You help users with anything they want. For instance, drafting emails, prepping for meetings, tracking projects, or answering questions - with memory that compounds from their emails, calendar, and notes. Everything runs locally on the user's machine. The nerdy coworker who remembers everything.
@@ -262,11 +277,11 @@ ${runtimeContextPrompt}
 - \`analyzeAgent\` - Agent analysis
 - \`addMcpServer\`, \`listMcpServers\`, \`listMcpTools\`, \`executeMcpTool\` - MCP server management and execution
 - \`loadSkill\` - Skill loading
-${slackToolsLine}- \`web-search\` - Search the web. Returns rich results with full text, highlights, and metadata. The \`category\` parameter defaults to \`general\` (full web search) — only use a specific category like \`news\`, \`company\`, \`research paper\` etc. when the query is clearly about that type. For everyday queries (weather, restaurants, prices, how-to), use \`general\`.
+- \`web-search\` - Search the web. Returns rich results with full text, highlights, and metadata. The \`category\` parameter defaults to \`general\` (full web search) — only use a specific category like \`news\`, \`company\`, \`research paper\` etc. when the query is clearly about that type. For everyday queries (weather, restaurants, prices, how-to), use \`general\`.
 - \`app-navigation\` - Control the app UI: open notes, switch views, filter/search the knowledge base, manage saved views. **Load the \`app-navigation\` skill before using this tool.**
 - \`browser-control\` - Control the embedded browser pane: open sites, inspect the live page, switch tabs, and interact with indexed page elements. **Load the \`browser-control\` skill before using this tool.**
 - \`save-to-memory\` - Save observations about the user to the agent memory system. Use this proactively during conversations.
-${composioToolsLine}
+${integrationToolsLine}
 
 **Prefer these tools whenever possible.** For file operations anywhere on the machine, use file tools instead of \`executeCommand\`.
 
@@ -324,7 +339,7 @@ export function invalidateCopilotInstructionsCache(): void {
 
 export async function buildCopilotInstructions(): Promise<string> {
     if (cachedInstructions !== null) return cachedInstructions;
-    const composioEnabled = await isComposioConfigured();
+    const integrations = await getRowboatIntegrationsPrompt();
     let codeModeEnabled = false;
     try {
         const repo = container.resolve<ICodeModeConfigRepo>('codeModeConfigRepo');
@@ -333,15 +348,14 @@ export async function buildCopilotInstructions(): Promise<string> {
         // repo unavailable — default to disabled
     }
     const excludeIds: string[] = [];
-    if (!composioEnabled) excludeIds.push('composio-integration');
+    if (!integrations.enabled) excludeIds.push('rowboat-integration');
     if (!codeModeEnabled) excludeIds.push('code-with-agents');
     const catalog = excludeIds.length > 0
         ? buildSkillCatalog({ excludeIds })
         : skillCatalog;
-    const baseInstructions = buildStaticInstructions(composioEnabled, catalog, codeModeEnabled);
-    const composioPrompt = await getComposioToolsPrompt();
-    cachedInstructions = composioPrompt
-        ? baseInstructions + '\n' + composioPrompt
+    const baseInstructions = buildStaticInstructions(integrations.enabled, catalog, codeModeEnabled);
+    cachedInstructions = integrations.prompt
+        ? baseInstructions + '\n' + integrations.prompt
         : baseInstructions;
     return cachedInstructions;
 }

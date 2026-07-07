@@ -18,14 +18,14 @@ export const skill = String.raw`
 
 | User Request | Check For | Likely Tool |
 |--------------|-----------|-------------|
-| "Search the web/internet" | firecrawl, composio, fetch | \`firecrawl_search\`, \`COMPOSIO_SEARCH_WEB\` |
+| "Search the web/internet" | firecrawl, legacy-integration-vendor, fetch | \`firecrawl_search\`, \`LEGACY_INTEGRATION_VENDOR_SEARCH_WEB\` |
 | "Scrape this website" | firecrawl | \`firecrawl_scrape\` |
 | "Read/write files" | filesystem | \`read_file\`, \`write_file\` |
 | "Get current time/date" | time | \`get_current_time\` |
 | "Make HTTP request" | fetch | \`fetch\`, \`post\` |
 | "GitHub operations" | github | \`create_issue\`, \`search_repos\` |
 | "Generate audio/speech" | elevenLabs | \`text_to_speech\` |
-| "Tweet/social media" | twitter, composio | Various social tools |
+| "Tweet/social media" | twitter, legacy-integration-vendor | Various social tools |
 
 ## Key concepts
 - MCP servers expose tools (web scraping, APIs, databases, etc.) declared in \`config/mcp.json\`.
@@ -242,7 +242,7 @@ The schema tells you:
 **Example schema from listMcpTools:**
 \`\`\`json
 {
-  "name": "COMPOSIO_SEARCH_WEB",
+  "name": "LEGACY_INTEGRATION_VENDOR_SEARCH_WEB",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -263,8 +263,8 @@ The schema tells you:
 **Correct executeMcpTool call:**
 \`\`\`json
 {
-  "serverName": "composio",
-  "toolName": "COMPOSIO_SEARCH_WEB",
+  "serverName": "legacy-integration-vendor",
+  "toolName": "LEGACY_INTEGRATION_VENDOR_SEARCH_WEB",
   "arguments": {
     "query": "elon musk latest news"
   }
@@ -274,16 +274,16 @@ The schema tells you:
 **WRONG - Missing arguments:**
 \`\`\`json
 {
-  "serverName": "composio",
-  "toolName": "COMPOSIO_SEARCH_WEB"
+  "serverName": "legacy-integration-vendor",
+  "toolName": "LEGACY_INTEGRATION_VENDOR_SEARCH_WEB"
 }
 \`\`\`
 
 **WRONG - Wrong parameter name:**
 \`\`\`json
 {
-  "serverName": "composio",
-  "toolName": "COMPOSIO_SEARCH_WEB",
+  "serverName": "legacy-integration-vendor",
+  "toolName": "LEGACY_INTEGRATION_VENDOR_SEARCH_WEB",
   "arguments": {
     "search": "elon musk"  // Wrong! Should be "query"
   }
