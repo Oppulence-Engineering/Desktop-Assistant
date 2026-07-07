@@ -2,8 +2,8 @@
 
 This directory holds Rowboat architecture RFCs. It started with the cloud-native
 background workflow set and now also carries the related service plane, auth,
-connector, product-fabric, observability, app-boundary, local-model, and future
-agent-delegation tracks. Email feature RFCs use the `email-{number}-{value}`
+connector, product-fabric, observability, app-boundary, local-model, product
+strategy, and future agent-delegation tracks. Email feature RFCs use the `email-{number}-{value}`
 prefix so they can evolve as a product track without renumbering the platform
 RFC sequence.
 
@@ -64,14 +64,14 @@ Not part of the cloud-workflows set above, but living here under the same RFC co
 
 The set below (021–026) hardens the desktop's memory/runtime foundations and composes them — with the existing fabric (006/008/013/020) — into a **finance command center** for a finance operator/founder over Conduitt (AR), Cadence (AP), and Eigen (stress-testing). 026 is the umbrella; 021–025 are the foundations it depends on. All **Draft**.
 
-| #                                          | Title                                                                    | Layer              | What it adds                                                                                                                                                              |
-| ------------------------------------------ | ------------------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [021](./complete-021-semantic-memory-index.md)      | Semantic Retrieval & Memory Index                                        | apps/x (+ api)     | A local, incremental embedding index over the vault + a `memory-search` builtin doing hybrid (vector + BM25) recall; lexical `file-grep` won't scale a large KB.          |
-| [022](./022-unified-entity-graph.md)       | Unified Entity Graph — Stable IDs, Reconciliation & Shared Memory        | apps/x + api       | Stable ULID + `resourceRefs` per entity reconciling a desktop Company/Person to product records (Conduitt/Cadence/Eigen), plus an optional FGA-scoped team spine.         |
-| [023](./023-closed-loop-actions.md)        | Operating Business Objects — Closed-Loop Actions (HITL)                  | api + apps/x       | propose → approve → execute → watch: agents operate invoices/bills via Act-seam tools with single-use scoped approval tokens; the product's return event closes the loop. |
-| [024](./024-cold-primitives-ga.md)         | Finishing the Cold Primitives                                            | apps/x             | Turns on four wired-but-cold capabilities: a Slack event producer, Code Mode GA, an agent-schedule UI, and note version history.                                          |
-| [025](./025-desktop-runtime-durability.md) | Desktop Runtime Durability — Local Queue, Backpressure & Multi-Workspace | apps/x             | Replaces in-memory run guards with a crash-safe SQLite job queue (at-most-once), adds event coalescing/backpressure, and supports multiple workspaces without restart.    |
-| [026](./026-finance-command-center.md)     | The Finance Command Center                                               | product (umbrella) | Composes 021–025 + 006/008/013/020 into the operator/founder cockpit (AR inbox · AP queue · cash & exposure · agent activity); personas, killer workflows, build order.   |
+| #                                              | Title                                                                    | Layer              | What it adds                                                                                                                                                              |
+| ---------------------------------------------- | ------------------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [021](./complete-021-semantic-memory-index.md) | Semantic Retrieval & Memory Index                                        | apps/x (+ api)     | A local, incremental embedding index over the vault + a `memory-search` builtin doing hybrid (vector + BM25) recall; lexical `file-grep` won't scale a large KB.          |
+| [022](./022-unified-entity-graph.md)           | Unified Entity Graph — Stable IDs, Reconciliation & Shared Memory        | apps/x + api       | Stable ULID + `resourceRefs` per entity reconciling a desktop Company/Person to product records (Conduitt/Cadence/Eigen), plus an optional FGA-scoped team spine.         |
+| [023](./023-closed-loop-actions.md)            | Operating Business Objects — Closed-Loop Actions (HITL)                  | api + apps/x       | propose → approve → execute → watch: agents operate invoices/bills via Act-seam tools with single-use scoped approval tokens; the product's return event closes the loop. |
+| [024](./024-cold-primitives-ga.md)             | Finishing the Cold Primitives                                            | apps/x             | Turns on four wired-but-cold capabilities: a Slack event producer, Code Mode GA, an agent-schedule UI, and note version history.                                          |
+| [025](./025-desktop-runtime-durability.md)     | Desktop Runtime Durability — Local Queue, Backpressure & Multi-Workspace | apps/x             | Replaces in-memory run guards with a crash-safe SQLite job queue (at-most-once), adds event coalescing/backpressure, and supports multiple workspaces without restart.    |
+| [026](./026-finance-command-center.md)         | The Finance Command Center                                               | product (umbrella) | Composes 021–025 + 006/008/013/020 into the operator/founder cockpit (AR inbox · AP queue · cash & exposure · agent activity); personas, killer workflows, build order.   |
 
 ## Durable agent runtime
 
@@ -81,6 +81,17 @@ RFC 027 generalizes the cloud runtime ([004](./complete-004-cloud-agent-runtime.
 | ---------------------------------------------- | ----------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | [027](./complete-027-durable-agent-runtime.md) | Durable Agent Runtime         | rowboat-api            | Lifts the RFC 004 loop into a durable `rowboat.agent.session.v1` workflow; adds declarative `AgentDefinition`s, sessions/turns over `/v1/agent-sessions`, Update-delivered turns, HITL approvals, subagents-as-child-workflows, NDJSON streaming, and per-turn/per-session budgets.                                                                                                        |
 | [028](./028-declarative-agent-definitions.md)  | Declarative Agent Definitions | rowboat-api + apps/cli | Extends 027's `AgentDefinition` with a versioned **YAML** authoring format (`agent.yaml` + `instructions.md`), one shared JSON-Schema validator (tool names vs the Go registry, model allowlist, RFC 012 scopes), embedded/tenant/**GitOps** delivery, a `rowboat agent validate/push` CLI, revision-pinned sessions, and declarative OpenAPI/MCP tools (RFC 020) referenceable from YAML. |
+
+## Product strategy
+
+RFC 029 is the product wedge that turns the runtime and memory primitives into a
+specific buyer-facing promise: founder/operator follow-through. It makes the
+control tower the main product point, with the agent builder, graph, MCP layer,
+and Temporal runtime as infrastructure underneath that promise.
+
+| #                                        | Title                                      | Layer                          | What it adds                                                                                                                                                                |
+| ---------------------------------------- | ------------------------------------------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [029](./029-founder-operating-memory.md) | Founder Operating Memory and Control Tower | product + apps/x + rowboat-api | Daily founder brief, follow-up queue, relationship/deal memory, approval-gated actions, job portfolio, metrics, and build order around the "nothing important slips" wedge. |
 
 ## Email feature RFCs
 

@@ -1,24 +1,163 @@
-import { exec, execSync, spawn, ChildProcess } from 'child_process';
-import { promisify } from 'util';
-import { getSecurityAllowList } from '../../config/security.js';
-import { getExecutionShell } from '../assistant/runtime-context.js';
+import { exec, execSync, spawn, ChildProcess } from "child_process";
+import { promisify } from "util";
+import { getSecurityAllowList } from "../../config/security.js";
+import { getExecutionShell } from "../assistant/runtime-context.js";
 
 const execPromise = promisify(exec);
 
-const COMMAND_SPLIT_REGEX = /(?:\|\||&&|;|\||\n|`|\$\(|\(|\))/;
 const ENV_ASSIGNMENT_REGEX = /^[A-Za-z_][A-Za-z0-9_]*=.*/;
-const WRAPPER_COMMANDS = new Set(['sudo', 'env', 'time', 'command']);
+const WRAPPER_COMMANDS = new Set(["sudo", "env", "time", "command"]);
+const SHELL_FUNCTION_DEFINITION_COMMAND = "function-definition";
+const SHELL_FUNCTION_DEFINITION_REGEX =
+  /^(?:function\s+[A-Za-z_][A-Za-z0-9_:-]*(?:\s*\(\s*\))?|[A-Za-z_][A-Za-z0-9_:-]*\s*\(\s*\))\s*(?:\(|\{)/;
+type Quote = "'" | "\"" | null;
+
+function isAmpersandSeparator(command: string, index: number): boolean {
+  const previous = command[index - 1];
+  const next = command[index + 1];
+  return previous !== "<" && previous !== ">" && next !== ">" && next !== "&";
+}
+
+function isCommandGroupStart(command: string, index: number): boolean {
+  const before = command.slice(0, index).trimEnd();
+  if (!before) return true;
+
+  const previous = before[before.length - 1];
+  return previous === ";" || previous === "|" || previous === "&" || previous === "(" || previous === "\n";
+}
+
+function splitCommandSegments(command: string): string[] {
+  const segments: string[] = [];
+  const quoteStack: Quote[] = [];
+  let current = "";
+  let quote: Quote = null;
+  let escaped = false;
+  let parenDepth = 0;
+  let inBacktick = false;
+  let backtickOuterQuote: Quote = null;
+
+  const push = () => {
+    if (current.trim()) {
+      segments.push(current);
+    }
+    current = "";
+  };
+
+  for (let index = 0; index < command.length; index++) {
+    const char = command[index];
+    const next = command[index + 1];
+
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\" && quote !== "'") {
+      current += char;
+      escaped = true;
+      continue;
+    }
+
+    if (char === "'" && quote !== "\"") {
+      quote = quote === "'" ? null : "'";
+      current += char;
+      continue;
+    }
+
+    if (char === "\"" && quote !== "'") {
+      quote = quote === "\"" ? null : "\"";
+      current += char;
+      continue;
+    }
+
+    if (
+      quote !== "'" &&
+      ((char === "$" && next === "(") ||
+        ((char === "<" || char === ">") && next === "("))
+    ) {
+      push();
+      quoteStack.push(quote);
+      quote = null;
+      parenDepth++;
+      index++;
+      continue;
+    }
+
+    if (quote !== "'" && char === "`") {
+      push();
+      if (inBacktick) {
+        quote = backtickOuterQuote;
+        backtickOuterQuote = null;
+        inBacktick = false;
+      } else {
+        backtickOuterQuote = quote;
+        quote = null;
+        inBacktick = true;
+      }
+      continue;
+    }
+
+    if (quote === null) {
+      if (char === "&" && next === "&") {
+        push();
+        index++;
+        continue;
+      }
+      if (char === "|" && next === "|") {
+        push();
+        index++;
+        continue;
+      }
+      if (char === ";" || char === "|" || char === "\n") {
+        push();
+        continue;
+      }
+      if (char === "&" && isAmpersandSeparator(command, index)) {
+        push();
+        continue;
+      }
+      if (char === "(" && isCommandGroupStart(command, index)) {
+        push();
+        quoteStack.push(null);
+        parenDepth++;
+        continue;
+      }
+      if (char === ")" && parenDepth > 0) {
+        push();
+        parenDepth--;
+        quote = quoteStack.pop() ?? null;
+        continue;
+      }
+    }
+
+    current += char;
+  }
+
+  push();
+  return segments;
+}
 
 function sanitizeToken(token: string): string {
-  return token.trim().replace(/^['"()]+|['"()]+$/g, '');
+  return token.trim().replace(/^['"()]+|['"()]+$/g, "");
+}
+
+function isShellFunctionDefinition(segment: string): boolean {
+  return SHELL_FUNCTION_DEFINITION_REGEX.test(segment.trim());
 }
 
 export function extractCommandNames(command: string): string[] {
   const discovered = new Set<string>();
-  const segments = command.split(COMMAND_SPLIT_REGEX);
+  const segments = splitCommandSegments(command);
 
   for (const segment of segments) {
-    const tokens = segment.trim().split(/\s+/).filter(Boolean);
+    const trimmedSegment = segment.trim();
+    if (isShellFunctionDefinition(trimmedSegment)) {
+      discovered.add(SHELL_FUNCTION_DEFINITION_COMMAND);
+      continue;
+    }
+
+    const tokens = trimmedSegment.split(/\s+/).filter(Boolean);
     if (!tokens.length) continue;
 
     let index = 0;
@@ -49,10 +188,11 @@ function findBlockedCommands(command: string, sessionAllowedCommands?: Set<strin
   if (!invoked.length) return [];
 
   const allowList = getSecurityAllowList();
-  if (!allowList.length && (!sessionAllowedCommands || sessionAllowedCommands.size === 0)) return invoked;
+  if (!allowList.length && (!sessionAllowedCommands || sessionAllowedCommands.size === 0))
+    return invoked;
 
   const allowSet = new Set(allowList);
-  if (allowSet.has('*')) return [];
+  if (allowSet.has("*")) return [];
 
   return invoked.filter((cmd) => !allowSet.has(cmd) && !sessionAllowedCommands?.has(cmd));
 }
@@ -81,7 +221,7 @@ export async function executeCommand(
     timeout?: number; // timeout in milliseconds
     maxBuffer?: number; // max buffer size in bytes
     env?: NodeJS.ProcessEnv; // override environment
-  }
+  },
 ): Promise<CommandResult> {
   try {
     const shell = getExecutionShell();
@@ -102,8 +242,8 @@ export async function executeCommand(
     // exec throws an error if the command fails or times out
     const e = error as { stdout?: string; stderr?: string; code?: number; message?: string };
     return {
-      stdout: e.stdout?.trim() || '',
-      stderr: e.stderr?.trim() || e.message || '',
+      stdout: e.stdout?.trim() || "",
+      stderr: e.stderr?.trim() || e.message || "",
       exitCode: e.code || 1,
     };
   }
@@ -147,18 +287,18 @@ export function executeCommandAbortable(
     signal?: AbortSignal;
     onData?: (chunk: string) => void;
     env?: NodeJS.ProcessEnv;
-  }
+  },
 ): { promise: Promise<AbortableCommandResult>; process: ChildProcess } {
   // Check if already aborted before spawning
   if (options?.signal?.aborted) {
     // Return a dummy process and a resolved result
-    const dummyProc = spawn(process.execPath, ['-e', 'process.exit(0)']);
+    const dummyProc = spawn(process.execPath, ["-e", "process.exit(0)"]);
     dummyProc.kill();
     return {
       process: dummyProc,
       promise: Promise.resolve({
-        stdout: '',
-        stderr: '',
+        stdout: "",
+        stderr: "",
         exitCode: 130,
         wasAborted: true,
       }),
@@ -170,18 +310,18 @@ export function executeCommandAbortable(
     shell,
     cwd: options?.cwd,
     env: options?.env,
-    detached: process.platform !== 'win32', // Create process group on Unix
-    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: process.platform !== "win32", // Create process group on Unix
+    stdio: ["ignore", "pipe", "pipe"],
   });
 
   const promise = new Promise<AbortableCommandResult>((resolve) => {
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
     let wasAborted = false;
     let exited = false;
 
     // Collect output
-    proc.stdout?.on('data', (chunk: Buffer) => {
+    proc.stdout?.on("data", (chunk: Buffer) => {
       const text = chunk.toString();
       const maxBuffer = options?.maxBuffer || 1024 * 1024;
       if (stdout.length < maxBuffer) {
@@ -189,7 +329,7 @@ export function executeCommandAbortable(
       }
       options?.onData?.(text);
     });
-    proc.stderr?.on('data', (chunk: Buffer) => {
+    proc.stderr?.on("data", (chunk: Buffer) => {
       const text = chunk.toString();
       const maxBuffer = options?.maxBuffer || 1024 * 1024;
       if (stderr.length < maxBuffer) {
@@ -201,17 +341,17 @@ export function executeCommandAbortable(
     // Abort handler
     const abortHandler = () => {
       wasAborted = true;
-      killProcessTree(proc, 'SIGTERM');
+      killProcessTree(proc, "SIGTERM");
       // Force kill after grace period
       setTimeout(() => {
         if (!exited) {
-          killProcessTree(proc, 'SIGKILL');
+          killProcessTree(proc, "SIGKILL");
         }
       }, SIGKILL_GRACE_MS);
     };
 
     if (options?.signal) {
-      options.signal.addEventListener('abort', abortHandler, { once: true });
+      options.signal.addEventListener("abort", abortHandler, { once: true });
     }
 
     // Timeout handler
@@ -219,27 +359,27 @@ export function executeCommandAbortable(
     if (options?.timeout) {
       timeoutId = setTimeout(() => {
         wasAborted = true;
-        killProcessTree(proc, 'SIGTERM');
+        killProcessTree(proc, "SIGTERM");
         setTimeout(() => {
           if (!exited) {
-            killProcessTree(proc, 'SIGKILL');
+            killProcessTree(proc, "SIGKILL");
           }
         }, SIGKILL_GRACE_MS);
       }, options.timeout);
     }
 
-    proc.once('exit', (code) => {
+    proc.once("exit", (code) => {
       exited = true;
       // Cleanup listeners
       if (options?.signal) {
-        options.signal.removeEventListener('abort', abortHandler);
+        options.signal.removeEventListener("abort", abortHandler);
       }
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
 
       if (wasAborted) {
-        stdout += '\n\n(Command was aborted)';
+        stdout += "\n\n(Command was aborted)";
       }
 
       resolve({
@@ -250,16 +390,16 @@ export function executeCommandAbortable(
       });
     });
 
-    proc.once('error', (err) => {
+    proc.once("error", (err) => {
       exited = true;
       if (options?.signal) {
-        options.signal.removeEventListener('abort', abortHandler);
+        options.signal.removeEventListener("abort", abortHandler);
       }
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
       resolve({
-        stdout: '',
+        stdout: "",
         stderr: err.message,
         exitCode: 1,
         wasAborted,
@@ -279,27 +419,27 @@ export function executeCommandSync(
   options?: {
     cwd?: string;
     timeout?: number;
-  }
+  },
 ): CommandResult {
   try {
     const shell = getExecutionShell();
     const stdout = execSync(command, {
       cwd: options?.cwd,
       timeout: options?.timeout,
-      encoding: 'utf-8',
+      encoding: "utf-8",
       shell,
     });
 
     return {
       stdout: stdout.trim(),
-      stderr: '',
+      stderr: "",
       exitCode: 0,
     };
   } catch (error: unknown) {
     const e = error as { stdout?: string; stderr?: string; status?: number; message?: string };
     return {
-      stdout: e.stdout?.toString().trim() || '',
-      stderr: e.stderr?.toString().trim() || e.message || '',
+      stdout: e.stdout?.toString().trim() || "",
+      stderr: e.stderr?.toString().trim() || e.message || "",
       exitCode: e.status || 1,
     };
   }

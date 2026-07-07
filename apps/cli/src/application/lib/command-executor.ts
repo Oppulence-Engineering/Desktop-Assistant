@@ -1,24 +1,163 @@
-import { exec, execSync } from 'child_process';
-import { promisify } from 'util';
-import { getSecurityAllowList, SECURITY_CONFIG_PATH } from '../../config/security.js';
-import { getExecutionShell } from '../assistant/runtime-context.js';
+import { exec, execSync } from "child_process";
+import { promisify } from "util";
+import { getSecurityAllowList, SECURITY_CONFIG_PATH } from "../../config/security.js";
+import { getExecutionShell } from "../assistant/runtime-context.js";
 
 const execPromise = promisify(exec);
-const COMMAND_SPLIT_REGEX = /(?:\|\||&&|;|\||\n)/;
 const ENV_ASSIGNMENT_REGEX = /^[A-Za-z_][A-Za-z0-9_]*=.*/;
-const WRAPPER_COMMANDS = new Set(['sudo', 'env', 'time', 'command']);
+const WRAPPER_COMMANDS = new Set(["sudo", "env", "time", "command"]);
+const SHELL_FUNCTION_DEFINITION_COMMAND = "function-definition";
+const SHELL_FUNCTION_DEFINITION_REGEX =
+  /^(?:function\s+[A-Za-z_][A-Za-z0-9_:-]*(?:\s*\(\s*\))?|[A-Za-z_][A-Za-z0-9_:-]*\s*\(\s*\))\s*(?:\(|\{)/;
 const EXECUTION_SHELL = getExecutionShell();
+type Quote = "'" | "\"" | null;
+
+function isAmpersandSeparator(command: string, index: number): boolean {
+  const previous = command[index - 1];
+  const next = command[index + 1];
+  return previous !== "<" && previous !== ">" && next !== ">" && next !== "&";
+}
+
+function isCommandGroupStart(command: string, index: number): boolean {
+  const before = command.slice(0, index).trimEnd();
+  if (!before) return true;
+
+  const previous = before[before.length - 1];
+  return previous === ";" || previous === "|" || previous === "&" || previous === "(" || previous === "\n";
+}
+
+function splitCommandSegments(command: string): string[] {
+  const segments: string[] = [];
+  const quoteStack: Quote[] = [];
+  let current = "";
+  let quote: Quote = null;
+  let escaped = false;
+  let parenDepth = 0;
+  let inBacktick = false;
+  let backtickOuterQuote: Quote = null;
+
+  const push = () => {
+    if (current.trim()) {
+      segments.push(current);
+    }
+    current = "";
+  };
+
+  for (let index = 0; index < command.length; index++) {
+    const char = command[index];
+    const next = command[index + 1];
+
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\" && quote !== "'") {
+      current += char;
+      escaped = true;
+      continue;
+    }
+
+    if (char === "'" && quote !== "\"") {
+      quote = quote === "'" ? null : "'";
+      current += char;
+      continue;
+    }
+
+    if (char === "\"" && quote !== "'") {
+      quote = quote === "\"" ? null : "\"";
+      current += char;
+      continue;
+    }
+
+    if (
+      quote !== "'" &&
+      ((char === "$" && next === "(") ||
+        ((char === "<" || char === ">") && next === "("))
+    ) {
+      push();
+      quoteStack.push(quote);
+      quote = null;
+      parenDepth++;
+      index++;
+      continue;
+    }
+
+    if (quote !== "'" && char === "`") {
+      push();
+      if (inBacktick) {
+        quote = backtickOuterQuote;
+        backtickOuterQuote = null;
+        inBacktick = false;
+      } else {
+        backtickOuterQuote = quote;
+        quote = null;
+        inBacktick = true;
+      }
+      continue;
+    }
+
+    if (quote === null) {
+      if (char === "&" && next === "&") {
+        push();
+        index++;
+        continue;
+      }
+      if (char === "|" && next === "|") {
+        push();
+        index++;
+        continue;
+      }
+      if (char === ";" || char === "|" || char === "\n") {
+        push();
+        continue;
+      }
+      if (char === "&" && isAmpersandSeparator(command, index)) {
+        push();
+        continue;
+      }
+      if (char === "(" && isCommandGroupStart(command, index)) {
+        push();
+        quoteStack.push(null);
+        parenDepth++;
+        continue;
+      }
+      if (char === ")" && parenDepth > 0) {
+        push();
+        parenDepth--;
+        quote = quoteStack.pop() ?? null;
+        continue;
+      }
+    }
+
+    current += char;
+  }
+
+  push();
+  return segments;
+}
 
 function sanitizeToken(token: string): string {
-  return token.trim().replace(/^['"]+|['"]+$/g, '');
+  return token.trim().replace(/^['"]+|['"]+$/g, "");
+}
+
+function isShellFunctionDefinition(segment: string): boolean {
+  return SHELL_FUNCTION_DEFINITION_REGEX.test(segment.trim());
 }
 
 function extractCommandNames(command: string): string[] {
   const discovered = new Set<string>();
-  const segments = command.split(COMMAND_SPLIT_REGEX);
+  const segments = splitCommandSegments(command);
 
   for (const segment of segments) {
-    const tokens = segment.trim().split(/\s+/).filter(Boolean);
+    const trimmedSegment = segment.trim();
+    if (isShellFunctionDefinition(trimmedSegment)) {
+      discovered.add(SHELL_FUNCTION_DEFINITION_COMMAND);
+      continue;
+    }
+
+    const tokens = trimmedSegment.split(/\s+/).filter(Boolean);
     if (!tokens.length) continue;
 
     let index = 0;
@@ -52,7 +191,7 @@ function findBlockedCommands(command: string): string[] {
   if (!allowList.length) return invoked;
 
   const allowSet = new Set(allowList);
-  if (allowSet.has('*')) return [];
+  if (allowSet.has("*")) return [];
 
   return invoked.filter((cmd) => !allowSet.has(cmd));
 }
@@ -86,7 +225,7 @@ export async function executeCommand(
     cwd?: string;
     timeout?: number; // timeout in milliseconds
     maxBuffer?: number; // max buffer size in bytes
-  }
+  },
 ): Promise<CommandResult> {
   try {
     const { stdout, stderr } = await execPromise(command, {
@@ -104,7 +243,7 @@ export async function executeCommand(
   } catch (error: any) {
     // exec throws an error if the command fails or times out
     return {
-      stdout: error.stdout?.trim() || '',
+      stdout: error.stdout?.trim() || "",
       stderr: error.stderr?.trim() || error.message,
       exitCode: error.code || 1,
     };
@@ -120,24 +259,24 @@ export function executeCommandSync(
   options?: {
     cwd?: string;
     timeout?: number;
-  }
+  },
 ): CommandResult {
   try {
     const stdout = execSync(command, {
       cwd: options?.cwd,
       timeout: options?.timeout,
-      encoding: 'utf-8',
+      encoding: "utf-8",
       shell: EXECUTION_SHELL,
     });
 
     return {
       stdout: stdout.trim(),
-      stderr: '',
+      stderr: "",
       exitCode: 0,
     };
   } catch (error: any) {
     return {
-      stdout: error.stdout?.toString().trim() || '',
+      stdout: error.stdout?.toString().trim() || "",
       stderr: error.stderr?.toString().trim() || error.message,
       exitCode: error.status || 1,
     };

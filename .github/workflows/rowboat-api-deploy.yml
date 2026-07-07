@@ -35,7 +35,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE_REPOSITORY: ghcr.io/oppulence-engineering/rowboat-api
+  IMAGE_REPOSITORY: ghcr.io/oppulence-engineering/desktop-assistant-rowboat-api
   INFISICAL_PROJECT_ID: 04ebc1cf-0ec5-4e9e-8ab9-4c6da4252574
   INFISICAL_ENVIRONMENT: prod
   INFISICAL_PATH: /
@@ -137,6 +137,10 @@ jobs:
             VERSION=${{ needs.resolve-context.outputs.image_tag }}
             COMMIT=${{ github.sha }}
             DATE=${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.resolve-context.outputs.image_tag }}
           tags: |
             ${{ env.IMAGE_REPOSITORY }}:${{ needs.resolve-context.outputs.image_tag }}
             ${{ env.IMAGE_REPOSITORY }}:production-latest
@@ -267,21 +271,22 @@ jobs:
             exit 0
           fi
 
-          env_file="$(mktemp)"
-          chmod 600 "$env_file"
-          trap 'rm -f "$env_file"' EXIT
+          secrets_json="$(mktemp)"
+          secret_manifest="$(mktemp)"
+          chmod 600 "$secrets_json" "$secret_manifest"
+          trap 'rm -f "$secrets_json" "$secret_manifest"' EXIT
 
           infisical export \
             --silent \
-            --format=dotenv \
+            --format=json \
             --projectId="${INFISICAL_PROJECT_ID}" \
             --env="${INFISICAL_ENVIRONMENT}" \
             --path="${INFISICAL_PATH}" \
-            --token="${INFISICAL_TOKEN}" > "$env_file"
+            --token="${INFISICAL_TOKEN}" > "$secrets_json"
 
           missing=()
           for key in "${required_keys[@]}"; do
-            if ! grep -Eq "^${key}=" "$env_file"; then
+            if ! jq -e --arg key "$key" '.[] | select(.key == $key)' "$secrets_json" >/dev/null; then
               missing+=("${key}")
             fi
           done
@@ -291,10 +296,23 @@ jobs:
             exit 1
           fi
 
-          kubectl -n "${KUBE_NAMESPACE}" create secret generic rowboat-api-secrets \
-            --from-env-file="$env_file" \
-            --dry-run=client \
-            -o yaml | kubectl apply -f -
+          jq -n \
+            --arg namespace "${KUBE_NAMESPACE}" \
+            --arg name "rowboat-api-secrets" \
+            --slurpfile secrets "$secrets_json" \
+            '{
+              apiVersion: "v1",
+              kind: "Secret",
+              type: "Opaque",
+              metadata: {name: $name, namespace: $namespace},
+              stringData: (
+                $secrets[0]
+                | map({key: .key, value: ((.value // "") | tostring)})
+                | from_entries
+              )
+            }' > "$secret_manifest"
+
+          kubectl apply -f "$secret_manifest"
 
           echo "rowboat-api-secrets synced from Infisical ${INFISICAL_ENVIRONMENT}${INFISICAL_PATH}"
 

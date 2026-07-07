@@ -1,5 +1,79 @@
 # Changelog
 
+## [0.1.19](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.18...v0.1.19) (2026-06-26)
+
+
+### Bug Fixes
+
+* **desktop:** refresh oauth callback page ([23194b6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/23194b691880094df209fba19bd1089627abc4ec))
+
+## [0.1.18](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.17...v0.1.18) (2026-06-26)
+
+
+### Bug Fixes
+
+* **desktop:** normalize retired api host ([bf25382](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/bf2538216a9b61901f2299c25bbd1b6f5ae50ae6))
+
+## [0.1.17](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.16...v0.1.17) (2026-06-25)
+
+
+### Features
+
+* **apps/x:** implement RFC 017 on-device meeting diarization ([3b8c398](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/3b8c398233de62cb0423c904cd6e7360c1dd7d10))
+* **apps/x:** implement RFC 021 local semantic memory index + app surfaces ([5e318b4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/5e318b45c39e1b1ee1c088fe87d6a88b5efe805d))
+* **apps/x:** surface semantic memory in the UI (settings, related notes, sources, ⌘K) ([34feb52](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/34feb52a2c6247002b9656298c2717be8ef9b4f7))
+
+
+### Bug Fixes
+
+* **apps/x:** wire related notes toolbar action ([82b2ab5](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/82b2ab5babda14eba38164ab64fb651015a5b694))
+
+## [0.1.16](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.15...v0.1.16) (2026-06-14)
+
+
+### Features
+
+* robust WorkOS token refresh (desktop state machine + idempotent broker) ([626ecf4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/626ecf44bad1e67e31b0d8af7d8bfa88d8e7e22a))
+* **x:** classify WorkOS refresh failures like the Google path ([0aa7a4c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/0aa7a4c3e88f3c826938b4cbd12b8897a97a7bcf))
+* **x:** refresh state machine for the WorkOS session ([d3029bc](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/d3029bc3816c1e4a0b7db227afec6c737c25f50a))
+
+
+### Bug Fixes
+
+* dogfooding findings — tenant scoping, cron scheduling, desktop UX ([953ed5a](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/953ed5a6829292f94dbcc6db0ae61a0c21cd091a))
+* harden transcription edge cases ([2d9eabf](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/2d9eabfb1d90aceb34be70bdc980848963859394))
+* stabilize local meeting transcription and notes ([8fd97cd](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/8fd97cda45cb07fe38ecd9d8985a003629d76833))
+* **x:** carry typed description into manual task config ([97966c0](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/97966c03fcd8f03535e5527f32afa85f67219d07))
+* **x:** don't fire never-run cron tasks outside their schedule ([297de5b](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/297de5b324804d4e9357352c0ccdb177ffba1ae7))
+* **x:** focus new untitled notes and surface recording start failures ([6fce28a](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6fce28afede14f4ced383a30d726a43ce40755d3))
+* **x:** keep atomic-write temp files out of listings and watch events ([c240cd1](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c240cd14a0ab4462df82a2663489091c5ff66beb))
+* **x:** quiesce cloud sync while the WorkOS session is unavailable ([f3f78e8](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f3f78e80e050fcaa3abc429cd00c7b521fe3d410))
+* **x:** render actionable chat errors instead of 'name: AI_RetryError' ([8db48fe](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/8db48fe9b805c8412d8b8f627d709bc734e75a70))
+* **x:** serialize and crash-harden oauth.json writes ([6c884ff](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6c884ff4c33b2407b8051758e6ce698ba01f679d))
+
+## [0.1.15](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.14...v0.1.15) (2026-06-11)
+
+
+### Features
+
+* close RFC 006 deferred items — event provenance, OS notifications, quit reminder ([c639aac](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c639aaca95298f8ec4b4e9e22ecb8db118551f22))
+* RFC 006 — desktop as cloud workflow control plane ([cff267e](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/cff267e0edeebd256118ae3c8026ffcaac4403e4))
+* **x:** add cloud schedule-state types and IPC contracts ([30dcbc6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/30dcbc6c9d1a00621a8e099ccccd206580cdc898))
+* **x:** add getCloudScheduleState core client and IPC handler ([6733e26](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6733e269486c9d1b2d20f66667213bbf19eecd0e))
+* **x:** add notification preferences config and settings toggle ([212fa71](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/212fa718f2e7801f674098f0ccad7c8d2b99016e))
+* **x:** fire opt-in OS notification for missed cloud runs ([db6afd4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/db6afd43924c73f80b2599182fd5354b5948ba85))
+* **x:** remind about pausing desktop schedules on quit ([df55082](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/df5508234e42a7bf9d5e002cd91dcce1844eba50))
+* **x:** render cloud schedule state, ownership labels, and runs filters ([68eb741](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/68eb741496572c1350fada66822f8594d5b8878b))
+* **x:** show run provenance in the cloud transcript ([7d44535](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/7d445351d09808781d2509e07b74948d8f36173f))
+* **x:** surface cloud runs completed while the app was closed ([6cd7bef](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6cd7beffcf8d56535dc336f7ca4894958a03313e))
+
+
+### Bug Fixes
+
+* offline-runs toast listener must live at the app root ([bb43b87](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/bb43b87ce10de0109fd92860a8a4c9392c42a32f))
+* **x:** move the offline-runs toast listener to the app root ([6201e65](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6201e65e07b6210b1793a096b7048991a23d0077))
+* **x:** stop the desktop firing api-target timed triggers ([77e0922](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/77e09228054cf08cf9882ad28fc004a64a3e29ef))
+
 ## [0.1.14](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.13...v0.1.14) (2026-06-11)
 
 
