@@ -25,16 +25,16 @@ export function renderOAuthSuccessPage(): string {
           body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
           .shell { max-width: 520px; margin: 0 auto; }
           .eyebrow { color: #64748b; font-size: 14px; }
-          .status { color: #047857; }
+          .status { color: #334155; }
         </style>
       </head>
       <body>
         <main class="shell">
           <p class="eyebrow">Solomon AI</p>
-          <h1 class="status">Connected to Solomon AI</h1>
+          <h1 class="status">Return to Solomon AI</h1>
           <p>Your AI coworker, with memory</p>
           <p>Private · on your machine</p>
-          <p>Return to Solomon AI.</p>
+          <p>We received the sign-in response. Solomon AI will finish the connection in the app.</p>
         </main>
         <script>setTimeout(() => window.close(), 2000);</script>
       </body>

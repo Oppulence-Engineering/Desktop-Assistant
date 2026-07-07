@@ -29,6 +29,19 @@ describe("extractCommandNames", () => {
     ]);
   });
 
+  it("rejects shell function definitions before command allow checks", () => {
+    expect(extractCommandNames("echo () ( rm -rf /tmp/nope ); echo hi")).toEqual([
+      "function-definition",
+      "echo",
+    ]);
+    expect(extractCommandNames("deploy() { rm -rf /tmp/nope; }; deploy")).toContain(
+      "function-definition",
+    );
+    expect(extractCommandNames("function deploy { rm -rf /tmp/nope; }; deploy")).toContain(
+      "function-definition",
+    );
+  });
+
   it("does not treat quoted or word-local parentheses as command separators", () => {
     expect(extractCommandNames('echo "hello (world)"')).toEqual(["echo"]);
     expect(extractCommandNames("printf '%s (value)'")).toEqual(["printf"]);

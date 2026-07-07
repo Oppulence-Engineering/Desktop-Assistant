@@ -7,6 +7,9 @@ const execPromise = promisify(exec);
 
 const ENV_ASSIGNMENT_REGEX = /^[A-Za-z_][A-Za-z0-9_]*=.*/;
 const WRAPPER_COMMANDS = new Set(["sudo", "env", "time", "command"]);
+const SHELL_FUNCTION_DEFINITION_COMMAND = "function-definition";
+const SHELL_FUNCTION_DEFINITION_REGEX =
+  /^(?:function\s+[A-Za-z_][A-Za-z0-9_:-]*(?:\s*\(\s*\))?|[A-Za-z_][A-Za-z0-9_:-]*\s*\(\s*\))\s*(?:\(|\{)/;
 type Quote = "'" | "\"" | null;
 
 function isAmpersandSeparator(command: string, index: number): boolean {
@@ -139,12 +142,22 @@ function sanitizeToken(token: string): string {
   return token.trim().replace(/^['"()]+|['"()]+$/g, "");
 }
 
+function isShellFunctionDefinition(segment: string): boolean {
+  return SHELL_FUNCTION_DEFINITION_REGEX.test(segment.trim());
+}
+
 export function extractCommandNames(command: string): string[] {
   const discovered = new Set<string>();
   const segments = splitCommandSegments(command);
 
   for (const segment of segments) {
-    const tokens = segment.trim().split(/\s+/).filter(Boolean);
+    const trimmedSegment = segment.trim();
+    if (isShellFunctionDefinition(trimmedSegment)) {
+      discovered.add(SHELL_FUNCTION_DEFINITION_COMMAND);
+      continue;
+    }
+
+    const tokens = trimmedSegment.split(/\s+/).filter(Boolean);
     if (!tokens.length) continue;
 
     let index = 0;

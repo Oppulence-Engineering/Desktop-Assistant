@@ -8,8 +8,9 @@ test("OAuth success callback uses the Solomon onboarding shell", () => {
   expect(html).toContain("Solomon AI");
   expect(html).toContain("Your AI coworker, with memory");
   expect(html).toContain("Private · on your machine");
-  expect(html).toContain("Connected to Solomon AI");
+  expect(html).toContain("We received the sign-in response");
   expect(html).toContain("Return to Solomon AI");
+  expect(html).not.toContain("Connected to Solomon AI");
   expect(html).not.toContain("Authorization Successful");
 });
 
