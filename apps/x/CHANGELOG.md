@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.20](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.19...v0.1.20) (2026-07-07)
+
+
+### Features
+
+* add dogfood background task runtime ([18477e4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/18477e4fab3abf4e8195ded37bed3b8776693330))
+* add rowboat website and refresh onboarding ([587126b](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/587126b2bbffac2654a1c8d47a783b1291ea19b2))
+* add WorkOS auth to rowboat web ([691e7c2](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/691e7c27982314197f0caf1dea9462249351e459))
+
+
+### Bug Fixes
+
+* address remaining PR review threads ([696f162](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/696f162b0ce8fbcce277eea6add841ef33980e3e))
+* **apps/x:** resolve 56 logistical/UX defects from full feature audit ([a040056](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a040056bed9f454769627b7b4530f8b82d2bd5b3))
+* detect shell process substitutions ([2a4dd36](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/2a4dd368bb58591a7b827dae9987d51786637347))
+
 ## [0.1.19](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.18...v0.1.19) (2026-06-26)
 
 
