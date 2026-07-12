@@ -1011,9 +1011,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "oauthconnection_provider_external_account_id_user_oauth_connections",
+				Name:    "oauthconnection_provider_external_account_id",
 				Unique:  true,
-				Columns: []*schema.Column{OauthConnectionsColumns[3], OauthConnectionsColumns[6], OauthConnectionsColumns[7]},
+				Columns: []*schema.Column{OauthConnectionsColumns[3], OauthConnectionsColumns[6]},
 			},
 		},
 	}

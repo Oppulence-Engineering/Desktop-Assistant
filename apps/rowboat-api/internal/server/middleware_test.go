@@ -59,7 +59,7 @@ func TestCORSPermitsWebhookSignatureHeader(t *testing.T) {
 	req := httptest.NewRequest(http.MethodOptions, "/v1/webhooks/events", nil)
 	req.Header.Set("Origin", "https://app.example.test")
 	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
-	req.Header.Set("Access-Control-Request-Headers", "content-type,x-webhook-signature")
+	req.Header.Set("Access-Control-Request-Headers", "content-type,x-webhook-signature,x-webhook-timestamp")
 	resp := httptest.NewRecorder()
 
 	h.ServeHTTP(resp, req)
@@ -68,9 +68,35 @@ func TestCORSPermitsWebhookSignatureHeader(t *testing.T) {
 		t.Fatalf("preflight status = %d, want 204", resp.Code)
 	}
 	allowed := resp.Header().Get("Access-Control-Allow-Headers")
-	for _, name := range []string{"Content-Type", "X-Webhook-Signature"} {
+	for _, name := range []string{"Content-Type", "X-Webhook-Signature", "X-Webhook-Timestamp"} {
 		if !strings.Contains(allowed, name) {
 			t.Fatalf("Access-Control-Allow-Headers = %q, missing %s", allowed, name)
 		}
+	}
+}
+
+func TestRequireJSONContentTypeAllowsOnlySlackInteractivityForm(t *testing.T) {
+	h := RequireJSONContentType(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	for _, tc := range []struct {
+		name string
+		path string
+		want int
+	}{
+		{name: "slack interactivity", path: "/v1/agent-channels/slack/interactivity", want: http.StatusNoContent},
+		{name: "ordinary api route", path: "/v1/background-tasks", want: http.StatusUnsupportedMediaType},
+		{name: "near miss", path: "/v1/agent-channels/slack/interactivity/extra", want: http.StatusUnsupportedMediaType},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, tc.path, strings.NewReader("payload=%7B%7D"))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			if rec.Code != tc.want {
+				t.Fatalf("status = %d, want %d", rec.Code, tc.want)
+			}
+		})
 	}
 }

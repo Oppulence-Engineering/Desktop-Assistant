@@ -10,8 +10,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/go-chi/chi/v5"
@@ -21,8 +23,12 @@ import (
 
 const genericWebhookSecret = "generic-webhook-secret"
 
-func genericWebhookSign(secret string, body []byte) string {
+var genericWebhookTestTimestamp = strconv.FormatInt(time.Now().Unix(), 10)
+
+func genericWebhookSign(secret, timestamp string, body []byte) string {
 	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(timestamp))
+	mac.Write([]byte("."))
 	mac.Write(body)
 	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
 }
@@ -37,9 +43,14 @@ func newGenericWebhookServer(t *testing.T, h *Handler) *httptest.Server {
 }
 
 func postGenericWebhook(t *testing.T, srv *httptest.Server, body, sig string) (int, []byte) {
+	return postGenericWebhookAt(t, srv, body, genericWebhookTestTimestamp, sig)
+}
+
+func postGenericWebhookAt(t *testing.T, srv *httptest.Server, body, timestamp, sig string) (int, []byte) {
 	t.Helper()
 	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/webhooks/events", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Webhook-Timestamp", timestamp)
 	if sig != "" {
 		req.Header.Set("X-Webhook-Signature", sig)
 	}
@@ -53,6 +64,10 @@ func postGenericWebhook(t *testing.T, srv *httptest.Server, body, sig string) (i
 		t.Fatalf("read generic webhook response: %v", err)
 	}
 	return resp.StatusCode, respBody
+}
+
+func signedGenericWebhook(body, secret string) string {
+	return genericWebhookSign(secret, genericWebhookTestTimestamp, []byte(body))
 }
 
 func genericWebhookBody(userID string) string {
@@ -78,7 +93,7 @@ func TestGenericWebhookFlowRoutesToEventRun(t *testing.T) {
 	srv := newGenericWebhookServer(t, h)
 
 	body := genericWebhookBody(u.ID.String())
-	sig := genericWebhookSign(genericWebhookSecret, []byte(body))
+	sig := signedGenericWebhook(body, genericWebhookSecret)
 	status, respBody := postGenericWebhook(t, srv, body, sig)
 	if status != http.StatusAccepted {
 		t.Fatalf("signed generic webhook: %d, want 202: %s", status, respBody)
@@ -150,7 +165,7 @@ func TestMCPWebhookFlowRoutesToEventRun(t *testing.T) {
 	})
 	body := string(raw)
 
-	status, respBody := postGenericWebhook(t, srv, body, genericWebhookSign(genericWebhookSecret, []byte(body)))
+	status, respBody := postGenericWebhook(t, srv, body, signedGenericWebhook(body, genericWebhookSecret))
 	if status != http.StatusAccepted {
 		t.Fatalf("signed mcp webhook: %d, want 202: %s", status, respBody)
 	}
@@ -199,7 +214,7 @@ func TestProviderGenericWebhookSourcesRouteToEventRun(t *testing.T) {
 			})
 			body := string(raw)
 
-			status, respBody := postGenericWebhook(t, srv, body, genericWebhookSign(genericWebhookSecret, []byte(body)))
+			status, respBody := postGenericWebhook(t, srv, body, signedGenericWebhook(body, genericWebhookSecret))
 			if status != http.StatusAccepted {
 				t.Fatalf("signed provider webhook: %d, want 202: %s", status, respBody)
 			}
@@ -230,26 +245,31 @@ func TestGenericWebhookVerificationAndValidation(t *testing.T) {
 	if status, _ := postGenericWebhook(t, srv, body, ""); status != http.StatusUnauthorized {
 		t.Fatalf("missing signature: %d, want 401", status)
 	}
-	if status, _ := postGenericWebhook(t, srv, body, genericWebhookSign("wrong", []byte(body))); status != http.StatusUnauthorized {
+	if status, _ := postGenericWebhook(t, srv, body, signedGenericWebhook(body, "wrong")); status != http.StatusUnauthorized {
 		t.Fatalf("wrong signature: %d, want 401", status)
+	}
+	expired := strconv.FormatInt(time.Now().Add(-10*time.Minute).Unix(), 10)
+	expiredSig := genericWebhookSign(genericWebhookSecret, expired, []byte(body))
+	if status, _ := postGenericWebhookAt(t, srv, body, expired, expiredSig); status != http.StatusUnauthorized {
+		t.Fatalf("expired signed request: %d, want 401", status)
 	}
 
 	noDedupe, _ := json.Marshal(map[string]any{
 		"userId":  u.ID.String(),
 		"payload": map[string]any{"hello": "world"},
 	})
-	status, respBody := postGenericWebhook(t, srv, string(noDedupe), genericWebhookSign(genericWebhookSecret, noDedupe))
+	status, respBody := postGenericWebhook(t, srv, string(noDedupe), signedGenericWebhook(string(noDedupe), genericWebhookSecret))
 	if status != http.StatusBadRequest || !strings.Contains(string(respBody), "dedupeKey or sourceEventId is required") {
 		t.Fatalf("missing dedupe/sourceEventId: %d, want 400 specific validation: %s", status, respBody)
 	}
 
 	unknownUser := fmt.Sprintf(`{"userId":%q,"sourceEventId":"evt-1","payload":{"hello":"world"}}`, uuid.NewString())
-	if status, _ := postGenericWebhook(t, srv, unknownUser, genericWebhookSign(genericWebhookSecret, []byte(unknownUser))); status != http.StatusBadRequest {
+	if status, _ := postGenericWebhook(t, srv, unknownUser, signedGenericWebhook(unknownUser, genericWebhookSecret)); status != http.StatusBadRequest {
 		t.Fatalf("unknown user: %d, want 400", status)
 	}
 
 	unknownSource := fmt.Sprintf(`{"userId":%q,"source":"unknown","sourceEventId":"evt-1","payload":{"hello":"world"}}`, u.ID.String())
-	if status, respBody := postGenericWebhook(t, srv, unknownSource, genericWebhookSign(genericWebhookSecret, []byte(unknownSource))); status != http.StatusBadRequest ||
+	if status, respBody := postGenericWebhook(t, srv, unknownSource, signedGenericWebhook(unknownSource, genericWebhookSecret)); status != http.StatusBadRequest ||
 		!strings.Contains(string(respBody), "source must be one of webhook, mcp, github, linear, stripe") {
 		t.Fatalf("unknown source: %d, want 400 specific validation: %s", status, respBody)
 	}
@@ -261,7 +281,7 @@ func TestGenericWebhookFailsClosedWithoutSecret(t *testing.T) {
 	srv := newGenericWebhookServer(t, h)
 	body := genericWebhookBody(u.ID.String())
 
-	if status, _ := postGenericWebhook(t, srv, body, genericWebhookSign(genericWebhookSecret, []byte(body))); status != http.StatusInternalServerError {
+	if status, _ := postGenericWebhook(t, srv, body, signedGenericWebhook(body, genericWebhookSecret)); status != http.StatusInternalServerError {
 		t.Fatalf("unconfigured secret: %d, want 500", status)
 	}
 }

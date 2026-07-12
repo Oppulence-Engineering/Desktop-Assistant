@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
@@ -14,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -45,7 +49,7 @@ func setup(t *testing.T, registry *connectors.Registry) (*ent.Client, *ent.User,
 	}
 	t.Cleanup(func() { _ = d.Close() })
 	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(context.Background())
-	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(context.Background())
+	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(auth.WithUser(context.Background(), u))
 	sealer, _ := crypto.NewSealer("test-key")
 	h := connectors.New(d.Client, sealer, registry, connectors.Config{
 		OryPublicURL:          "https://placeholder",
@@ -54,6 +58,7 @@ func setup(t *testing.T, registry *connectors.Registry) (*ent.Client, *ent.User,
 		PublicBaseURL:         "https://api.test",
 		DeepLinkScheme:        "solomon-ai",
 	}, zap.NewNop())
+	h.SetRefreshDedup(workosauth.NewMemoryRefreshCache(), sealer)
 	return d.Client, u, h
 }
 
@@ -252,6 +257,16 @@ func TestLoadRegistryRejectsInvalidMCPPolicies(t *testing.T) {
 			want: "has mcpUrl but no mcpTools allowlist",
 		},
 		{
+			name: "insecure-mcp-url",
+			body: `[{"name":"x","displayName":"X","mcpUrl":"http://127.0.0.1/mcp","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read","trustTier":"read"}]}]`,
+			want: "absolute HTTPS URL",
+		},
+		{
+			name: "mcp-url-with-credentials",
+			body: `[{"name":"x","displayName":"X","mcpUrl":"https://user:pass@mcp.test/mcp","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read","trustTier":"read"}]}]`,
+			want: "without userinfo",
+		},
+		{
 			name: "missing-trust-tier",
 			body: `[{"name":"x","displayName":"X","mcpUrl":"https://mcp.test","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read"}]}]`,
 			want: `invalid trustTier ""`,
@@ -360,7 +375,7 @@ func TestInvalidate(t *testing.T) {
 	_ = sealer
 	// Seed a connection directly.
 	client.MCPConnection.Create().SetUser(u).SetConnector("canvas").SetAudience("canvas-api").
-		SetRefreshTokenEncrypted([]byte("x")).SaveX(context.Background())
+		SetRefreshTokenEncrypted([]byte("x")).SaveX(auth.WithUser(context.Background(), u))
 
 	body := `{"workos_user_id":"user_1","connector":"canvas"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/internal/connections/invalidate", strings.NewReader(body)).
@@ -443,6 +458,7 @@ func TestMCPRuntimeResolverRefreshesOAuthConnector(t *testing.T) {
 		OryBrokerClientID:     "broker",
 		OryBrokerClientSecret: "secret",
 	})
+	resolver.SetRefreshDedup(workosauth.NewMemoryRefreshCache(), sealer, zap.NewNop())
 	mcpURL, tokenType, token, err := resolver.ResolveMCP(context.Background(), u.ID.String(), "canvas")
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
@@ -457,5 +473,68 @@ func TestMCPRuntimeResolverRefreshesOAuthConnector(t *testing.T) {
 	}
 	if rotated != "rt-rotated" || updated.LastUsedAt.IsZero() {
 		t.Fatalf("rotated/lastUsed = %q/%v", rotated, updated.LastUsedAt)
+	}
+}
+
+func TestMCPTokenCollapsesConcurrentRotatingRefreshes(t *testing.T) {
+	var hits atomic.Int64
+	var mu sync.Mutex
+	consumed := false
+	ory := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if r.Form.Get("grant_type") != "refresh_token" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		hits.Add(1)
+		mu.Lock()
+		if consumed {
+			mu.Unlock()
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error":"invalid_grant"}`))
+			return
+		}
+		consumed = true
+		mu.Unlock()
+		time.Sleep(50 * time.Millisecond)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"access_token":"acc-one","refresh_token":"rt-next","expires_in":3600,"token_type":"Bearer"}`))
+	}))
+	t.Cleanup(ory.Close)
+
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	h.SetOryBaseURL(ory.URL)
+	sealer, _ := crypto.NewSealer("test-key")
+	sealed, _ := sealer.SealString("rt-once")
+	ctx := auth.WithUser(context.Background(), u)
+	client.MCPConnection.Create().
+		SetUser(u).
+		SetConnector("canvas").
+		SetAudience("canvas-api").
+		SetRefreshTokenEncrypted(sealed).
+		SaveX(ctx)
+
+	const callers = 8
+	var wg sync.WaitGroup
+	codes := make([]int, callers)
+	for i := range callers {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/mcp-token", nil).
+				WithContext(withParam(auth.WithUser(context.Background(), u), "name", "canvas"))
+			h.MCPToken(rec, req)
+			codes[i] = rec.Code
+		}(i)
+	}
+	wg.Wait()
+	for i, code := range codes {
+		if code != http.StatusOK {
+			t.Fatalf("caller %d status = %d, want 200", i, code)
+		}
+	}
+	if hits.Load() != 1 {
+		t.Fatalf("rotating token endpoint hits = %d, want 1", hits.Load())
 	}
 }

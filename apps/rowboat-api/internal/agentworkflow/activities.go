@@ -45,8 +45,8 @@ type Activities struct {
 	Publisher EventPublisher        // nil → durable-only (no live fan-out)
 	Log       *zap.Logger
 
-	// ApprovalSigner verifies money-moving approval tokens (RFC 012). nil falls
-	// back to the structural check (dev/test without a configured secret).
+	// ApprovalSigner verifies money-moving approval tokens (RFC 012). nil fails
+	// closed: a recognizable token prefix is never proof of authorization.
 	ApprovalSigner *agenttoken.Signer
 	// RequireMFA gates money-moving grants on an MFA step-up claim in the token.
 	RequireMFA bool
@@ -526,13 +526,7 @@ func (a *Activities) ValidateApproval(_ context.Context, in ValidateApprovalInpu
 		return errors.New("money-moving approval requires an X-Approval-Token")
 	}
 	if a.ApprovalSigner == nil {
-		// No signer configured (dev/test without a secret): fall back to the
-		// structural check so the path is exercisable, but never in production
-		// (Validate requires a secret when HITL is enabled there).
-		if !strings.HasPrefix(token, "agt_") && !strings.HasPrefix(token, "appr_") {
-			return errors.New("invalid approval token")
-		}
-		return nil
+		return errors.New("approval token verification is unavailable")
 	}
 	claims, err := a.ApprovalSigner.VerifyApproval(token, time.Now())
 	if err != nil {

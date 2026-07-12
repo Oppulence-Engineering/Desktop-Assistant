@@ -6,6 +6,8 @@
 package appconfig
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net/url"
@@ -260,6 +262,8 @@ type Config struct {
 	CloudEventsMaxPayloadBytes int     // reject larger payloads before sealing
 	SlackSigningSecret         string  // verifies /v1/webhooks/slack signatures
 	GoogleWebhookToken         string  // shared token for /v1/webhooks/google
+	GoogleWebhookOIDCAudience  string  // expected aud on authenticated Gmail Pub/Sub pushes
+	GoogleWebhookOIDCEmail     string  // expected service-account email on Gmail Pub/Sub pushes
 	WebhookSigningSecret       string  // verifies /v1/webhooks/events HMACs
 
 	// Web search backs the durable-agent web.search tool (Tavily-shaped API).
@@ -572,6 +576,8 @@ func Load() Config {
 		CloudEventsMaxPayloadBytes: getint("CLOUD_EVENTS_MAX_PAYLOAD_BYTES", 256<<10),
 		SlackSigningSecret:         getenv("SLACK_SIGNING_SECRET", ""),
 		GoogleWebhookToken:         getenv("GOOGLE_WEBHOOK_TOKEN", ""),
+		GoogleWebhookOIDCAudience:  getenv("GOOGLE_WEBHOOK_OIDC_AUDIENCE", ""),
+		GoogleWebhookOIDCEmail:     getenv("GOOGLE_WEBHOOK_OIDC_SERVICE_ACCOUNT", ""),
 		WebhookSigningSecret:       getenv("WEBHOOK_SIGNING_SECRET", ""),
 
 		WebSearchAPIURL: getenv("WEB_SEARCH_API_URL", "https://api.tavily.com/search"),
@@ -793,6 +799,17 @@ func (c Config) Validate() error {
 		if strings.TrimSpace(c.GoogleWebhookToken) == "" {
 			return fmt.Errorf("GOOGLE_WEBHOOK_TOKEN is required when GOOGLE_WATCH_ENABLED=true")
 		}
+		if c.IsProduction() && strings.TrimSpace(c.GmailPubSubTopic) != "" {
+			if strings.TrimSpace(c.GoogleWebhookOIDCAudience) == "" || strings.TrimSpace(c.GoogleWebhookOIDCEmail) == "" {
+				return fmt.Errorf("GOOGLE_WEBHOOK_OIDC_AUDIENCE and GOOGLE_WEBHOOK_OIDC_SERVICE_ACCOUNT are required for Gmail Pub/Sub pushes in production")
+			}
+			if err := validateProductionHTTPSURL("GOOGLE_WEBHOOK_OIDC_AUDIENCE", c.GoogleWebhookOIDCAudience); err != nil {
+				return err
+			}
+			if !strings.Contains(c.GoogleWebhookOIDCEmail, "@") {
+				return fmt.Errorf("GOOGLE_WEBHOOK_OIDC_SERVICE_ACCOUNT must be a service-account email")
+			}
+		}
 		if c.GoogleWatchInterval <= 0 || c.GoogleWatchRenewMargin <= 0 {
 			return fmt.Errorf("GOOGLE_WATCH_INTERVAL and GOOGLE_WATCH_RENEW_MARGIN must be > 0")
 		}
@@ -933,6 +950,56 @@ func (c Config) validateProduction() error {
 	if strings.Contains(c.DBEncryptionKey, "dev-insecure") || len(c.DBEncryptionKey) < 32 {
 		return fmt.Errorf("DB_ENCRYPTION_KEY must be a non-dev secret of at least 32 bytes in production")
 	}
+	for key, value := range map[string]string{
+		"HOOK_HMAC_SECRET":    c.HookHMACSecret,
+		"INTERNAL_API_SECRET": c.InternalAPISecret,
+	} {
+		if len(value) < 32 {
+			return fmt.Errorf("%s must be at least 32 bytes in production", key)
+		}
+	}
+	if c.AgentRuntimeSigningSecret != "" && len(c.AgentRuntimeSigningSecret) < 32 {
+		return fmt.Errorf("AGENT_RUNTIME_SIGNING_SECRET must be at least 32 bytes in production")
+	}
+	if !c.AgentRequireMFAForMoneyMoving {
+		return fmt.Errorf("AGENT_REQUIRE_MFA_FOR_MONEY_MOVING must be true in production")
+	}
+	if c.GoogleWatchEnabled {
+		if len(c.GoogleWebhookToken) < 32 {
+			return fmt.Errorf("GOOGLE_WEBHOOK_TOKEN must be at least 32 bytes in production")
+		}
+		if strings.TrimSpace(c.GmailPubSubTopic) != "" {
+			if strings.TrimSpace(c.GoogleWebhookOIDCAudience) == "" || strings.TrimSpace(c.GoogleWebhookOIDCEmail) == "" {
+				return fmt.Errorf("GOOGLE_WEBHOOK_OIDC_AUDIENCE and GOOGLE_WEBHOOK_OIDC_SERVICE_ACCOUNT are required for Gmail Pub/Sub pushes in production")
+			}
+			if err := validateProductionHTTPSURL("GOOGLE_WEBHOOK_OIDC_AUDIENCE", c.GoogleWebhookOIDCAudience); err != nil {
+				return err
+			}
+			if !strings.Contains(c.GoogleWebhookOIDCEmail, "@") {
+				return fmt.Errorf("GOOGLE_WEBHOOK_OIDC_SERVICE_ACCOUNT must be a service-account email")
+			}
+		}
+	}
+	if c.CloudRuntimeSandboxEnabled {
+		if !digestPinnedImage(c.CloudRuntimeSandboxImage) {
+			return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_IMAGE must be pinned by sha256 digest in production")
+		}
+		for _, image := range c.CloudRuntimeSandboxAllowedImages {
+			if !digestPinnedImage(image) {
+				return fmt.Errorf("CLOUD_RUNTIME_SANDBOX_ALLOWED_IMAGES entries must be exact sha256-digest-pinned images in production")
+			}
+		}
+	}
+	for key, value := range map[string]string{
+		"APP_URL":             c.AppURL,
+		"PUBLIC_BASE_URL":     c.PublicBaseURL,
+		"TOKEN_ISSUER":        c.TokenIssuer,
+		"GOOGLE_REDIRECT_URI": c.GoogleRedirectURI,
+	} {
+		if err := validateProductionHTTPSURL(key, value); err != nil {
+			return err
+		}
+	}
 	if c.AutoMigrate {
 		return fmt.Errorf("AUTO_MIGRATE must be false in production")
 	}
@@ -940,17 +1007,14 @@ func (c Config) validateProduction() error {
 		return fmt.Errorf("CORS_ALLOWED_ORIGINS is required in production")
 	}
 	for _, origin := range c.CORSOrigins {
-		if origin == "*" {
-			return fmt.Errorf("CORS_ALLOWED_ORIGINS contains non-production origin %q", origin)
+		u, err := url.Parse(origin)
+		if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil ||
+			u.Path != "" || u.RawQuery != "" || u.Fragment != "" || origin == "null" {
+			return fmt.Errorf("CORS_ALLOWED_ORIGINS contains invalid production origin %q", origin)
 		}
-		// Match on the parsed HOST, not a substring: a legitimate production
-		// origin like https://localhost-tools.example.com contains "localhost"
-		// but is not a dev origin and must not be rejected.
-		if u, perr := url.Parse(origin); perr == nil {
-			switch u.Hostname() {
-			case "localhost", "127.0.0.1", "::1":
-				return fmt.Errorf("CORS_ALLOWED_ORIGINS contains non-production origin %q", origin)
-			}
+		switch u.Hostname() {
+		case "localhost", "127.0.0.1", "::1":
+			return fmt.Errorf("CORS_ALLOWED_ORIGINS contains non-production origin %q", origin)
 		}
 	}
 	if c.GraphQLIntrospection {
@@ -985,6 +1049,23 @@ func (c Config) validateProduction() error {
 		}
 	}
 	return nil
+}
+
+func validateProductionHTTPSURL(key, value string) error {
+	u, err := url.Parse(strings.TrimSpace(value))
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" {
+		return fmt.Errorf("%s must be an absolute HTTPS URL without userinfo or fragment in production", key)
+	}
+	return nil
+}
+
+func digestPinnedImage(image string) bool {
+	name, digest, ok := strings.Cut(strings.TrimSpace(image), "@sha256:")
+	if !ok || strings.TrimSpace(name) == "" || len(digest) != sha256.Size*2 {
+		return false
+	}
+	_, err := hex.DecodeString(digest)
+	return err == nil
 }
 
 func getenv(key, def string) string {

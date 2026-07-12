@@ -85,6 +85,30 @@ func TestMarkRunRunningSelfHealsReaperFailedRun(t *testing.T) {
 	}
 }
 
+func TestMarkRunRunningRefusesFailedRunWithRetry(t *testing.T) {
+	client := claimTestClient(t)
+	ctx := auth.WithInternal(context.Background())
+	u := client.User.Create().SetEmail("retry@x.co").SetWorkosUserID("u-retry").SaveX(ctx)
+	task := client.BackgroundTask.Create().
+		SetUser(u).SetSlug("retry-task").SetName("retry-task").SetInstructions("x").SetExecutionTarget("api").SaveX(ctx)
+	original := client.BackgroundTaskRun.Create().
+		SetUser(u).SetTask(task).SetRunID("api-trigger-original").SetTrigger("manual").
+		SetStatus("failed").SetExecutor("api").SetTemporalStatus("StartFailed").SaveX(ctx)
+	client.BackgroundTaskRun.Create().
+		SetUser(u).SetTask(task).SetRunID("retry-child").SetTrigger("retry").
+		SetRetryOfRunID(original.RunID).SetStatus("queued").SetExecutor("api").SaveX(ctx)
+
+	a := &Activities{Client: client, Log: zap.NewNop()}
+	if err := a.MarkRunRunning(context.Background(), StartInput{
+		UserID: u.ID.String(), TaskID: task.ID.String(), Slug: task.Slug, RunID: original.RunID,
+	}); err == nil {
+		t.Fatal("superseded original run must not be reclaimed")
+	}
+	if got := client.BackgroundTaskRun.GetX(ctx, original.ID); got.Status != "failed" {
+		t.Fatalf("superseded original was resurrected to %q", got.Status)
+	}
+}
+
 // TestMarkRunRunningClaimsQueuedRun confirms the happy path is unchanged.
 func TestMarkRunRunningClaimsQueuedRun(t *testing.T) {
 	client := claimTestClient(t)

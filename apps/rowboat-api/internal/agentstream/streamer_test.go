@@ -30,6 +30,7 @@ func TestStreamBackfillFromAfterSeq(t *testing.T) {
 	defer func() { _ = d.Close() }()
 	ctx := context.Background()
 	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
+	ctx = auth.WithUser(ctx, u)
 	sess := d.Client.AgentSession.Create().
 		SetUser(u).SetSessionID("sess-stream").SetAgentSlug("assistant").SetChannel("http").SetStatus("active").
 		SaveX(ctx)

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,8 +28,10 @@ func (h *Handler) GenericWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := verifyGenericWebhookSignature(
 		h.cfg.WebhookSigningSecret,
+		r.Header.Get("X-Webhook-Timestamp"),
 		body,
 		r.Header.Get("X-Webhook-Signature"),
+		time.Now(),
 	); err != nil {
 		if errors.Is(err, errGenericWebhookUnconfigured) {
 			h.log.Error("generic webhook rejected: WEBHOOK_SIGNING_SECRET is not configured")
@@ -139,15 +142,28 @@ func genericWebhookSourceAllowed(source string) bool {
 
 var errGenericWebhookUnconfigured = errors.New("cloudevents: generic webhook signing secret not configured")
 
-func verifyGenericWebhookSignature(secret string, body []byte, got string) error {
+const genericWebhookMaxSkew = 5 * time.Minute
+
+func verifyGenericWebhookSignature(secret, timestamp string, body []byte, got string, now time.Time) error {
 	if secret == "" {
 		return errGenericWebhookUnconfigured
+	}
+	timestamp = strings.TrimSpace(timestamp)
+	seconds, err := strconv.ParseInt(timestamp, 10, 64)
+	if err != nil {
+		return errors.New("missing or invalid webhook timestamp")
+	}
+	signedAt := time.Unix(seconds, 0)
+	if skew := now.Sub(signedAt); skew < -genericWebhookMaxSkew || skew > genericWebhookMaxSkew {
+		return errors.New("webhook timestamp outside allowed window")
 	}
 	got = strings.TrimSpace(strings.TrimPrefix(got, "sha256="))
 	if got == "" {
 		return errors.New("missing webhook signature")
 	}
 	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(timestamp))
+	mac.Write([]byte("."))
 	mac.Write(body)
 	want := hex.EncodeToString(mac.Sum(nil))
 	if !hmac.Equal([]byte(want), []byte(got)) {

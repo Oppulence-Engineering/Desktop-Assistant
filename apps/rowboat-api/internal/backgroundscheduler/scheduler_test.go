@@ -160,7 +160,7 @@ type taskSpec struct {
 
 func seed(t *testing.T, client *ent.Client, u *ent.User, specs []taskSpec) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := auth.WithUser(context.Background(), u)
 	for _, s := range specs {
 		c := client.BackgroundTask.Create().
 			SetUser(u).SetSlug(s.slug).SetName(s.slug).
@@ -184,7 +184,7 @@ func seed(t *testing.T, client *ent.Client, u *ent.User, specs []taskSpec) {
 
 func newUser(t *testing.T, client *ent.Client, email, workosID string) *ent.User {
 	t.Helper()
-	return client.User.Create().SetEmail(email).SetWorkosUserID(workosID).SaveX(context.Background())
+	return client.User.Create().SetEmail(email).SetWorkosUserID(workosID).SaveX(auth.WithInternal(context.Background()))
 }
 
 // --- unit tests (fake starter, no-op lease) ---------------------------------
@@ -641,12 +641,12 @@ func TestReapStuckStartingRuns(t *testing.T) {
 	u := newUser(t, client, "a@x.co", "u1")
 	task := client.BackgroundTask.Create().
 		SetUser(u).SetSlug("t").SetName("t").SetInstructions("x").SetExecutionTarget("api").
-		SaveX(context.Background())
+		SaveX(auth.WithInternal(context.Background()))
 	stuck := client.BackgroundTaskRun.Create().
 		SetUser(u).SetTask(task).SetRunID("api-trigger-stuck").
 		SetTrigger("manual").SetStatus("queued").SetExecutor("api").
 		SetTemporalStatus("Starting").
-		SaveX(context.Background())
+		SaveX(auth.WithInternal(context.Background()))
 
 	realNow := time.Now()
 	s := New(client, &fakeStarter{}, NoopLeases{}, Config{Clock: func() time.Time { return realNow }}, zap.NewNop())

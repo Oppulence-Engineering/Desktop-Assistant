@@ -8,6 +8,7 @@ package google
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -39,6 +40,8 @@ type Handler struct {
 	deepLinkScheme string // desktop custom scheme (rowboat)
 	scopes         []string
 }
+
+var errGoogleAccountOwned = errors.New("google account is already connected to another user")
 
 // New builds the Google handler.
 func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, log *zap.Logger) *Handler {
@@ -118,6 +121,7 @@ type tokenBundle struct {
 type parkedPayload struct {
 	tokenBundle
 	WorkOSUserID string `json:"workos_user_id,omitempty"`
+	PKCEVerifier string `json:"pkce_verifier,omitempty"`
 	// AccountEmail is the Google account's email from the token exchange's
 	// id_token; persisted as the connection's external_account_id so provider
 	// webhooks can resolve the owning user (RFC 003).
@@ -145,7 +149,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	pending, err := h.client.OAuthPending.Query().
-		Where(oauthpending.StateEQ(req.Session)).
+		Where(oauthpending.StateEQ(req.Session), oauthpending.ProviderEQ("google")).
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -191,17 +195,23 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "malformed ticket", "internal_error")
 		return
 	}
-	// If a producer bound the ticket to a user, enforce it matches the caller.
-	// NOTE: the browser-facing Callback in this service cannot set this field
-	// (the browser flow carries no bearer), so for tickets it parks the claim is
-	// first-authenticated-claimer-wins; the atomic consume below at least
-	// guarantees exactly ONE claimer ever receives the bundle. True start-time
-	// binding needs the desktop to mint the start ticket via an authenticated
-	// call — tracked as a protocol change.
-	// Deliberately do NOT consume the ticket here (see deleteTicket comment).
-	if payload.WorkOSUserID != "" && payload.WorkOSUserID != u.WorkosUserID {
+	// Every ticket is minted by the authenticated start endpoint. Reject legacy
+	// unbound tickets as well as cross-user claims; first-claimer-wins is not an
+	// acceptable credential ownership policy.
+	if payload.WorkOSUserID == "" || payload.WorkOSUserID != u.WorkosUserID {
 		httpx.Error(w, http.StatusForbidden, "ticket does not belong to this user", "forbidden")
 		return
+	}
+	if payload.RefreshToken != "" && payload.AccountEmail != "" {
+		if err := h.ensureGoogleAccountAvailable(ctx, u, payload.AccountEmail); err != nil {
+			if errors.Is(err, errGoogleAccountOwned) {
+				httpx.Error(w, http.StatusConflict, "google account is already connected to another account", "account_already_connected")
+				return
+			}
+			h.log.Error("claim: check google account ownership", zap.Error(err))
+			httpx.Error(w, http.StatusInternalServerError, "could not verify google account ownership", "internal_error")
+			return
+		}
 	}
 
 	// Consume the ticket ATOMICALLY before releasing the token bundle: two
@@ -224,11 +234,37 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 
 	if payload.RefreshToken != "" {
 		if err := h.persistConnection(ctx, u, payload.RefreshToken, splitScope(payload.Scope), payload.AccountEmail); err != nil {
+			if errors.Is(err, errGoogleAccountOwned) {
+				httpx.Error(w, http.StatusConflict, "google account is already connected to another account", "account_already_connected")
+				return
+			}
 			h.log.Warn("claim: persist connection", zap.Error(err))
+			httpx.Error(w, http.StatusInternalServerError, "could not store google connection", "internal_error")
+			return
 		}
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, payload.tokenBundle)
+}
+
+func (h *Handler) ensureGoogleAccountAvailable(ctx context.Context, u *ent.User, accountEmail string) error {
+	conn, err := h.client.OAuthConnection.Query().
+		Where(
+			oauthconnection.ProviderEQ("google"),
+			oauthconnection.ExternalAccountIDEQ(strings.TrimSpace(accountEmail)),
+		).
+		WithUser().
+		Only(auth.WithInternalOnly(ctx))
+	if ent.IsNotFound(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if conn.Edges.User == nil || conn.Edges.User.ID != u.ID {
+		return errGoogleAccountOwned
+	}
+	return nil
 }
 
 // Refresh handles POST /v1/google-oauth/refresh.
@@ -345,7 +381,11 @@ func (h *Handler) persistConnection(ctx context.Context, u *ent.User, refreshTok
 		if accountEmail != "" {
 			create = create.SetExternalAccountID(accountEmail)
 		}
-		return create.Exec(ctx)
+		err := create.Exec(ctx)
+		if ent.IsConstraintError(err) {
+			return errGoogleAccountOwned
+		}
+		return err
 	default:
 		return err
 	}

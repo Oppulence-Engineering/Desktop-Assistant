@@ -10,6 +10,7 @@ package google
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"io"
@@ -19,13 +20,21 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"go.uber.org/zap"
 )
 
-// Start handles GET /oauth/google/start. Unauthenticated (the browser has no
-// bearer); the signed-in desktop binds the result to its user at claim time.
+// Start handles authenticated POST /v1/google-oauth/start. The state ticket is
+// bound to the verified Rowboat user before the browser ever visits Google, so
+// a leaked/raced callback state cannot be claimed by another Rowboat account.
 func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+		return
+	}
 	if h.secrets.GoogleOAuthClientID() == "" || h.secrets.GoogleOAuthClientSecret() == "" {
 		h.errorPage(w, http.StatusBadGateway, "Google sign-in isn't configured on the server yet.")
 		return
@@ -42,9 +51,15 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		h.errorPage(w, http.StatusInternalServerError, "Could not start sign-in.")
 		return
 	}
-	// Park the issued state (empty payload) so the callback can validate it and
-	// so an abandoned flow is swept by the row's TTL.
-	sealed, err := h.sealer.Seal([]byte("{}"))
+	verifier, err := randomState()
+	if err != nil {
+		h.log.Error("google start: generate PKCE verifier", zap.Error(err))
+		h.errorPage(w, http.StatusInternalServerError, "Could not start sign-in.")
+		return
+	}
+	// The starter identity is sealed at rest with the eventual token bundle.
+	initial, _ := json.Marshal(parkedPayload{WorkOSUserID: u.WorkosUserID, PKCEVerifier: verifier})
+	sealed, err := h.sealer.Seal(initial)
 	if err != nil {
 		h.errorPage(w, http.StatusInternalServerError, "Could not start sign-in.")
 		return
@@ -73,7 +88,9 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 	// forbids both `q=` search and format=FULL body fetches, breaking the Gmail
 	// sync. Requesting only h.scopes keeps the token's grant minimal and clean.
 	q.Set("state", state)
-	http.Redirect(w, r, h.authorizeURL+"?"+q.Encode(), http.StatusFound)
+	q.Set("code_challenge", pkceChallenge(verifier))
+	q.Set("code_challenge_method", "S256")
+	httpx.WriteJSON(w, http.StatusOK, map[string]string{"authorizeUrl": h.authorizeURL + "?" + q.Encode()})
 }
 
 // Callback handles GET /oauth/google/callback (Google's redirect target). It
@@ -83,19 +100,35 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	q := r.URL.Query()
 	state := q.Get("state")
+	code := q.Get("code")
+	if state == "" {
+		h.errorPage(w, http.StatusBadRequest, "Missing state.")
+		return
+	}
+
+	pending, err := h.client.OAuthPending.Query().
+		Where(oauthpending.StateEQ(state), oauthpending.ProviderEQ("google")).
+		Only(ctx)
+	if err != nil {
+		h.errorPage(w, http.StatusBadRequest, "Sign-in session expired or invalid. Please try again.")
+		return
+	}
+	initialRaw, err := h.sealer.Open(pending.PayloadEncrypted)
+	if err != nil {
+		h.errorPage(w, http.StatusBadRequest, "Sign-in session is invalid. Please try again.")
+		return
+	}
+	var initial parkedPayload
+	if json.Unmarshal(initialRaw, &initial) != nil || initial.WorkOSUserID == "" || initial.PKCEVerifier == "" {
+		h.errorPage(w, http.StatusBadRequest, "Sign-in session is not bound to a user. Please try again.")
+		return
+	}
 	if oauthErr := q.Get("error"); oauthErr != "" {
 		h.deepLink(w, state, "error")
 		return
 	}
-	code := q.Get("code")
-	if state == "" || code == "" {
-		h.errorPage(w, http.StatusBadRequest, "Missing code or state.")
-		return
-	}
-
-	pending, err := h.client.OAuthPending.Query().Where(oauthpending.StateEQ(state)).Only(ctx)
-	if err != nil {
-		h.errorPage(w, http.StatusBadRequest, "Sign-in session expired or invalid. Please try again.")
+	if code == "" {
+		h.errorPage(w, http.StatusBadRequest, "Missing code.")
 		return
 	}
 	if time.Now().After(pending.ExpiresAt) {
@@ -115,6 +148,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	form.Set("code", code)
 	form.Set("redirect_uri", h.redirectURI)
 	form.Set("grant_type", "authorization_code")
+	form.Set("code_verifier", initial.PKCEVerifier)
 
 	upReq, err := http.NewRequestWithContext(ctx, http.MethodPost, h.tokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
@@ -162,6 +196,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 			Scope:        gtok.Scope,
 			TokenType:    defaultStr(gtok.TokenType, "Bearer"),
 		},
+		WorkOSUserID: initial.WorkOSUserID,
 		// The Google account email keys webhook user resolution (RFC 003).
 		// Decoding without signature verification is fine here: the id_token
 		// came straight from Google's token endpoint over TLS.
@@ -188,14 +223,16 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) deepLink(w http.ResponseWriter, state, status string) {
 	target := h.deepLinkScheme + "://oauth/google/done?session=" + url.QueryEscape(state) + "&status=" + status
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'nonce-"+state+"'; base-uri 'none'; frame-ancestors 'none'")
 	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Rowboat</title>"+
-		"<script>location.href="+jsString(target)+"</script>"+
+		"<script nonce="+jsString(state)+">location.href="+jsString(target)+"</script>"+
 		"<p style=\"font:14px system-ui;margin:3rem\">Returning to Rowboat… "+
 		"<a href="+jsString(target)+">Click here</a> if it doesn't open automatically.</p>")
 }
 
 func (h *Handler) errorPage(w http.ResponseWriter, code int, msg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; base-uri 'none'; frame-ancestors 'none'")
 	w.WriteHeader(code)
 	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Rowboat</title>"+
 		"<p style=\"font:14px system-ui;margin:3rem\">"+htmlEscape(msg)+"</p>")
@@ -209,6 +246,11 @@ func randomState() (string, error) {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func pkceChallenge(verifier string) string {
+	digest := sha256.Sum256([]byte(verifier))
+	return base64.RawURLEncoding.EncodeToString(digest[:])
 }
 
 // emailFromIDToken extracts the email claim from a Google id_token by

@@ -147,6 +147,8 @@ func TestSandboxRunToolRejectsAdditionalUnsafeInputs(t *testing.T) {
 			DefaultImage: "python:3.12-slim", AllowedImages: []string{"python:3.12-slim"},
 			MaxEnvVars: 2, MaxEnvValueSize: 64,
 		}, args: `{"script":"echo ok","env":{"KUBERNETES_SERVICE_HOST":"10.0.0.1"}}`, want: `env var "KUBERNETES_SERVICE_HOST" is reserved`},
+		{name: "reserved-home", cfg: baseCfg, args: `{"script":"echo ok","env":{"HOME":"/root"}}`, want: `env var "HOME" is reserved`},
+		{name: "reserved-run-id", cfg: baseCfg, args: `{"script":"echo ok","env":{"ROWBOAT_RUN_ID":"forged"}}`, want: `env var "ROWBOAT_RUN_ID" is reserved`},
 		{name: "leading-digit-env", cfg: baseCfg, args: `{"script":"echo ok","env":{"1BAD":"x"}}`, want: `invalid env var name "1BAD"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

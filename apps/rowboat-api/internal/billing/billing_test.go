@@ -33,7 +33,7 @@ func testClient(t *testing.T) *ent.Client {
 
 func TestMeReturnsBillingShape(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(ctx)
@@ -123,7 +123,7 @@ func TestMeRejectsUnauthenticated(t *testing.T) {
 
 func TestAvailableCreditsClampsAtZero(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.CreditLedger.Create().SetUser(u).SetDelta(-50).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(ctx)
 

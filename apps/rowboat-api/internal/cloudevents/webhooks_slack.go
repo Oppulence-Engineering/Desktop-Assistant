@@ -186,9 +186,8 @@ func (h *Handler) resolveSlackUser(r *http.Request, teamID string) (*ent.User, b
 			oauthconnection.ProviderEQ("slack"),
 			oauthconnection.ExternalAccountIDEQ(strings.TrimSpace(teamID)),
 		).
-		Order(oauthconnection.ByCreatedAt()).
 		WithUser().
-		First(ctx)
+		Only(ctx)
 	if err != nil {
 		if !ent.IsNotFound(err) {
 			h.log.Error("slack webhook user resolution failed", zap.Error(err))

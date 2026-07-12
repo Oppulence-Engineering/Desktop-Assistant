@@ -29,6 +29,7 @@ func newDBActivities(t *testing.T) (*Activities, *ent.User, string) {
 	t.Cleanup(func() { _ = d.Close() })
 	ctx := context.Background()
 	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
+	ctx = auth.WithUser(ctx, u)
 	sessionID := "sess-evt"
 	d.Client.AgentSession.Create().
 		SetUser(u).SetSessionID(sessionID).SetAgentSlug("assistant").SetChannel("http").SetStatus("active").

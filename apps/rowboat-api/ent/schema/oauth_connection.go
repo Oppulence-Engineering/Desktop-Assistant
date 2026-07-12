@@ -51,10 +51,10 @@ func (OAuthConnection) Edges() []ent.Edge {
 // Indexes of the OAuthConnection.
 func (OAuthConnection) Indexes() []ent.Index {
 	return []ent.Index{
-		// One user can connect multiple accounts for the same provider when the
-		// provider exposes a stable external account id (Slack team id, Google
-		// email, etc.). Reconnecting the same account should update the row,
-		// while connecting a second Slack workspace should create a second row.
-		index.Fields("provider", "external_account_id").Edges("user").Unique(),
+		// Provider webhooks resolve a tenant solely from (provider,
+		// external_account_id), so that key must have exactly one owner globally.
+		// Optional NULL values remain available for legacy rows that predate an
+		// external account id. A user may still connect multiple distinct accounts.
+		index.Fields("provider", "external_account_id").Unique(),
 	}
 }

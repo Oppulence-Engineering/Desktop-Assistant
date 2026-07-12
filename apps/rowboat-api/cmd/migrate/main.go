@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"entgo.io/ent/dialect"
@@ -68,6 +69,9 @@ func run() error {
 // dump renders the CREATE-table DDL for the current schema and writes it to
 // migrations/<name>.sql.
 func dump(ctx context.Context, name string) error {
+	if !migrationNamePattern.MatchString(name) {
+		return fmt.Errorf("migration name must contain only letters, digits, underscore, or hyphen (max 128 characters)")
+	}
 	sqlDB, err := sql.Open("sqlite", "file:dump?mode=memory&_pragma=foreign_keys(1)")
 	if err != nil {
 		return err
@@ -75,11 +79,12 @@ func dump(ctx context.Context, name string) error {
 	defer func() { _ = sqlDB.Close() }()
 	client := ent.NewClient(ent.Driver(entsql.OpenDB(dialect.SQLite, sqlDB)))
 
-	if err := os.MkdirAll("migrations", 0o755); err != nil {
+	if err := os.MkdirAll("migrations", 0o750); err != nil {
 		return err
 	}
 	out := filepath.Join("migrations", name+".sql")
-	f, err := os.Create(out)
+	// name is strictly allowlisted above, so out cannot escape migrations.
+	f, err := os.OpenFile(out, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600) // #nosec G304,G703 -- allowlisted basename under fixed directory
 	if err != nil {
 		return err
 	}
@@ -91,3 +96,5 @@ func dump(ctx context.Context, name string) error {
 	fmt.Printf("wrote %s\n", out)
 	return nil
 }
+
+var migrationNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$`)

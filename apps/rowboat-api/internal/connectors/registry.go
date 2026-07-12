@@ -9,6 +9,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -112,6 +113,10 @@ func validateRegistry(list []Connector) error {
 				return fmt.Errorf("connector %q declares templateBlocks without mcpUrl", name)
 			}
 			continue
+		}
+		u, err := url.Parse(strings.TrimSpace(c.MCPURL))
+		if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" {
+			return fmt.Errorf("connector %q mcpUrl must be an absolute HTTPS URL without userinfo or fragment", name)
 		}
 		if len(c.MCPTools) == 0 {
 			return fmt.Errorf("connector %q has mcpUrl but no mcpTools allowlist", name)

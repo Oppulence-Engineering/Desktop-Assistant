@@ -33,6 +33,16 @@ func WithInternal(ctx context.Context) context.Context {
 	return context.WithValue(ctx, internalKey{}, true)
 }
 
+// WithInternalOnly marks a context as internal and explicitly removes any
+// authenticated user inherited from the request. Use this only for deliberate
+// cross-tenant lookups after the handler has already authenticated and
+// authorized the operation. Tenant hooks intentionally let a user identity win
+// over WithInternal, so this separate helper makes the bypass explicit.
+func WithInternalOnly(ctx context.Context) context.Context {
+	ctx = context.WithValue(ctx, userKey{}, (*ent.User)(nil))
+	return WithInternal(ctx)
+}
+
 // IsInternalCaller reports whether the context is an internal caller.
 func IsInternalCaller(ctx context.Context) bool {
 	v, _ := ctx.Value(internalKey{}).(bool)

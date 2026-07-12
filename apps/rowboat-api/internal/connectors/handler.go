@@ -3,6 +3,7 @@ package connectors
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -36,6 +37,13 @@ type Handler struct {
 	ory      *oryClient
 	cfg      Config
 	log      *zap.Logger
+	refresh  refreshDeduper
+}
+
+// SetRefreshDedup enables sealed result caching and cross-replica locking for
+// Ory's rotating, one-use connector refresh tokens.
+func (h *Handler) SetRefreshDedup(cache RefreshCache, sealer *crypto.Sealer) {
+	h.refresh.configure(cache, sealer, h.log)
 }
 
 // New builds the connectors handler.
@@ -467,35 +475,15 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "could not read refresh token", "internal_error")
 		return
 	}
-	tok, err := h.ory.refresh(ctx, string(refresh))
+	tok, err := h.refresh.refresh(ctx, name, mc, h.ory, string(refresh))
 	if err != nil {
-		h.log.Warn("mcp-token refresh failed", zap.String("connector", name), zap.Error(err))
-		httpx.Error(w, http.StatusBadGateway, "token refresh failed", "upstream_error")
-		return
-	}
-
-	// NOTE: concurrent mcp-token refreshes for the same connection remain a
-	// known race (no distributed lock here, out of scope): two in-flight
-	// refreshes can each rotate the Ory refresh token and clobber the other's
-	// persisted value.
-	upd := mc.Update().SetLastUsedAt(time.Now())
-	if tok.RefreshToken != "" { // Ory rotates refresh tokens
-		newSealed, sErr := h.sealer.SealString(tok.RefreshToken)
-		if sErr != nil {
-			// Don't silently drop the rotated token: if we proceed without
-			// persisting it the stored token is already dead. Surface it.
-			h.log.Error("mcp-token seal rotated refresh token", zap.String("connector", name), zap.Error(sErr))
-			httpx.Error(w, http.StatusInternalServerError, "could not persist refreshed token", "internal_error")
+		if errors.Is(err, errConnectorRefreshInProgress) {
+			w.Header().Set("Retry-After", "2")
+			httpx.Error(w, http.StatusTooManyRequests, "token refresh in progress; retry shortly", "refresh_in_progress")
 			return
 		}
-		upd = upd.SetRefreshTokenEncrypted(newSealed)
-	}
-	if err := upd.Exec(ctx); err != nil {
-		// Ory uses refresh-token rotation: if persisting the rotated refresh
-		// token fails, the stored token is now dead and reuse-detection may
-		// revoke the grant. Surface the failure rather than swallowing it.
-		h.log.Error("mcp-token persist refreshed token", zap.String("connector", name), zap.Error(err))
-		httpx.Error(w, http.StatusInternalServerError, "could not persist refreshed token", "internal_error")
+		h.log.Warn("mcp-token refresh failed", zap.String("connector", name), zap.Error(err))
+		httpx.Error(w, http.StatusBadGateway, "token refresh failed", "upstream_error")
 		return
 	}
 

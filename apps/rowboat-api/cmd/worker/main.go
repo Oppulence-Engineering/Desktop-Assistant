@@ -40,6 +40,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
@@ -106,7 +107,7 @@ func startMetricsServer(cfg appconfig.Config, log *zap.Logger) func() {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
-	srv := &http.Server{Addr: cfg.MetricsAddr, Handler: mux}
+	srv := &http.Server{Addr: cfg.MetricsAddr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	go func() {
 		log.Info("worker metrics listener starting", zap.String("addr", cfg.MetricsAddr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -211,7 +212,7 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		if s, serr := agenttoken.NewSigner(cfg.AgentSigningSecret()); serr == nil {
 			agentSigner = s
 		} else {
-			log.Warn("agent token signer unavailable; approval-token verification falls back to structural", zap.Error(serr))
+			return fmt.Errorf("configure agent token signer: %w", serr)
 		}
 		if cfg.AgentStreamingEnabled && cfg.RedisURL != "" {
 			if b, berr := agentstream.NewBus(ctx, cfg.RedisURL); berr == nil {
@@ -434,6 +435,19 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 		MaxConcurrent:    64,
 		MaxResponseBytes: 1 << 20,
 	})
+	refreshCache := workosauth.NewMemoryRefreshCache()
+	if cfg.RedisURL != "" {
+		rc, rcErr := workosauth.NewRedisRefreshCache(ctx, cfg.RedisURL)
+		if rcErr != nil {
+			if cfg.IsProduction() {
+				return nil, fmt.Errorf("configure distributed connector refresh-token dedup: %w", rcErr)
+			}
+			log.Warn("connector refresh dedup falling back to in-memory cache", zap.Error(rcErr))
+		} else {
+			refreshCache = rc
+		}
+	}
+	mcpResolver.SetRefreshDedup(refreshCache, sealer, log)
 
 	sec := secrets.NewFromConfig(cfg)
 	if err := sec.LoadInfisical(ctx, cfg); err != nil {

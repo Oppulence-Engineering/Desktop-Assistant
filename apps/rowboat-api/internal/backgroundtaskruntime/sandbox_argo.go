@@ -90,8 +90,7 @@ func (e *ArgoSandboxExecutor) ensureWorkflow(ctx context.Context, name string, r
 		return nil
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return fmt.Errorf("create argo sandbox workflow: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
+		return fmt.Errorf("create argo sandbox workflow: kubernetes status %d", resp.StatusCode)
 	}
 	return nil
 }
@@ -120,9 +119,14 @@ func (e *ArgoSandboxExecutor) workflowSpec(name string, run SandboxRun) map[stri
 		"env":             env,
 		"securityContext": map[string]any{
 			"allowPrivilegeEscalation": false,
+			"privileged":               false,
+			"readOnlyRootFilesystem":   true,
 			"capabilities":             map[string]any{"drop": []string{"ALL"}},
 		},
-		"volumeMounts": []map[string]string{{"name": "workspace", "mountPath": "/workspace"}},
+		"volumeMounts": []map[string]string{
+			{"name": "workspace", "mountPath": "/workspace"},
+			{"name": "tmp", "mountPath": "/tmp"},
+		},
 	}
 	resources := resources(e.kube.cfg)
 	if len(resources) > 0 {
@@ -144,6 +148,8 @@ func (e *ArgoSandboxExecutor) workflowSpec(name string, run SandboxRun) map[stri
 			"entrypoint":                   "sandbox",
 			"activeDeadlineSeconds":        int64(run.Timeout.Seconds()) + 5,
 			"automountServiceAccountToken": false,
+			"hostNetwork":                  false,
+			"podSpecPatch":                 `{"enableServiceLinks":false,"hostIPC":false,"hostPID":false}`,
 			"serviceAccountName":           serviceAccountName,
 			"executor":                     map[string]string{"serviceAccountName": serviceAccountName},
 			"securityContext": map[string]any{
@@ -157,12 +163,18 @@ func (e *ArgoSandboxExecutor) workflowSpec(name string, run SandboxRun) map[stri
 			},
 			"podMetadata": map[string]any{"labels": labels},
 			"ttlStrategy": map[string]any{"secondsAfterCompletion": ttl},
-			"volumes": []map[string]any{{
-				"name": "workspace",
-				"emptyDir": map[string]string{
-					"sizeLimit": valueOrDefault(e.kube.cfg.WorkspaceSizeLimit, "1Gi"),
+			"volumes": []map[string]any{
+				{
+					"name": "workspace",
+					"emptyDir": map[string]string{
+						"sizeLimit": valueOrDefault(e.kube.cfg.WorkspaceSizeLimit, "1Gi"),
+					},
 				},
-			}},
+				{
+					"name":     "tmp",
+					"emptyDir": map[string]string{"sizeLimit": "64Mi"},
+				},
+			},
 			"templates": []map[string]any{{
 				"name":      "sandbox",
 				"container": container,
@@ -187,8 +199,7 @@ func (e *ArgoSandboxExecutor) getWorkflowStatus(ctx context.Context, name string
 		return argoWorkflowStatus{}, errKubernetesNotFound
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return argoWorkflowStatus{}, fmt.Errorf("read argo sandbox workflow: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
+		return argoWorkflowStatus{}, fmt.Errorf("read argo sandbox workflow: kubernetes status %d", resp.StatusCode)
 	}
 	var workflow struct {
 		Status struct {
@@ -248,8 +259,7 @@ func (e *ArgoSandboxExecutor) logs(ctx context.Context, workflowName string, max
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return "", false, fmt.Errorf("read argo sandbox logs: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
+		return "", false, fmt.Errorf("read argo sandbox logs: kubernetes status %d", resp.StatusCode)
 	}
 	if maxOutputBytes <= 0 {
 		maxOutputBytes = 64 << 10
@@ -310,8 +320,7 @@ func (e *ArgoSandboxExecutor) firstWorkflowPod(ctx context.Context, workflowName
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return "", fmt.Errorf("list argo sandbox pods: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
+		return "", fmt.Errorf("list argo sandbox pods: kubernetes status %d", resp.StatusCode)
 	}
 	var list struct {
 		Items []struct {

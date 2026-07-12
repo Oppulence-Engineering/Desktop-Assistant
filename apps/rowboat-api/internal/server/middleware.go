@@ -126,7 +126,7 @@ func CORS(cfg appconfig.Config) func(http.Handler) http.Handler {
 					h.Set("Access-Control-Allow-Origin", origin)
 					h.Set("Access-Control-Allow-Credentials", "true")
 					h.Set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
-					h.Set("Access-Control-Allow-Headers", "Authorization,Content-Type,Idempotency-Key,X-Hook-Signature,X-Webhook-Signature,X-Internal-Secret")
+					h.Set("Access-Control-Allow-Headers", "Authorization,Content-Type,Idempotency-Key,X-Hook-Signature,X-Webhook-Signature,X-Webhook-Timestamp,X-Internal-Secret")
 					h.Set("Access-Control-Max-Age", "600")
 				} else if r.Method == http.MethodOptions {
 					httpx.Error(w, http.StatusForbidden, "origin is not allowed", "cors_forbidden")
@@ -197,8 +197,11 @@ func methodWithBody(method string) bool {
 	return method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch
 }
 
-func skipJSONContentType(_ string) bool {
-	return false
+func skipJSONContentType(path string) bool {
+	// Slack interactive components are signed by Slack and arrive as
+	// application/x-www-form-urlencoded (payload=<JSON>), not JSON. Keep the
+	// exception exact so every other mutating API route retains the JSON guard.
+	return path == "/v1/agent-channels/slack/interactivity"
 }
 
 // NoCache marks authenticated, internal, OAuth, and GraphQL surfaces as

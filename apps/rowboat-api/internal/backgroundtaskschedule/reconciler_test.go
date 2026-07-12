@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +29,7 @@ func TestReconcileCreatesMissingSchedule(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	// Handler upsert never happened (e.g. it failed): task is active api+cron
 	// with state failed and no schedule.
-	task = task.Update().SetScheduleSyncState("failed").SetScheduleSyncError("temporal unreachable").SaveX(context.Background())
+	task = task.Update().SetScheduleSyncState("failed").SetScheduleSyncError("temporal unreachable").SaveX(auth.WithInternal(context.Background()))
 
 	newReconciler(s).ReconcileOnce(context.Background())
 
@@ -74,7 +75,7 @@ func TestReconcileUnpausesActiveTask(t *testing.T) {
 
 func TestReconcileEnsuresInactivePausedSchedule(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
-	task = task.Update().SetActive(false).SaveX(context.Background())
+	task = task.Update().SetActive(false).SaveX(auth.WithInternal(context.Background()))
 
 	newReconciler(s).ReconcileOnce(context.Background())
 
@@ -107,7 +108,7 @@ func TestReconcileDeletesScheduleForDesktopFlip(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current + schedule
 	// Simulate a target flip whose handler-side delete was missed.
-	task = task.Update().SetExecutionTarget("desktop").SetScheduleSyncState("current").SaveX(context.Background())
+	task = task.Update().SetExecutionTarget("desktop").SetScheduleSyncState("current").SaveX(auth.WithInternal(context.Background()))
 
 	newReconciler(s).ReconcileOnce(context.Background())
 
@@ -123,7 +124,7 @@ func TestReconcileDeletesScheduleForDesktopFlip(t *testing.T) {
 func TestReconcileInvalidCronMarksFailedAndDeletes(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current + schedule
-	task = task.Update().SetTriggersJSON(`{"cronExpr":"not a cron"}`).SetScheduleSyncState("current").SaveX(context.Background())
+	task = task.Update().SetTriggersJSON(`{"cronExpr":"not a cron"}`).SetScheduleSyncState("current").SaveX(auth.WithInternal(context.Background()))
 
 	newReconciler(s).ReconcileOnce(context.Background())
 

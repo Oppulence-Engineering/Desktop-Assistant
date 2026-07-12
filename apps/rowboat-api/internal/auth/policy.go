@@ -209,8 +209,13 @@ func (m *Middleware) satisfiesStepUp(a *Actor, level StepUpLevel) bool {
 		if window <= 0 {
 			window = 15 * time.Minute
 		}
+		now := time.Now()
 		authedAt := time.Unix(a.AuthTime, 0)
-		return time.Since(authedAt) <= window
+		if authedAt.After(now.Add(time.Minute)) {
+			return false
+		}
+		age := now.Sub(authedAt)
+		return age >= 0 && age <= window
 	case StepUpMFA:
 		return a.HasMFA()
 	default:

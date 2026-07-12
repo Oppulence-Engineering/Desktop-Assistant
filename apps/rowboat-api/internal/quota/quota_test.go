@@ -27,8 +27,9 @@ func setup(t *testing.T) (*ent.Client, context.Context, *ent.User) {
 	t.Cleanup(func() { _ = d.Close() })
 	bg := context.Background()
 	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(bg)
-	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(100).SaveX(bg)
-	return d.Client, auth.WithUser(bg, u), u
+	userCtx := auth.WithUser(bg, u)
+	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(100).SaveX(userCtx)
+	return d.Client, userCtx, u
 }
 
 func TestReserveSettleHappyPath(t *testing.T) {

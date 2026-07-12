@@ -112,14 +112,22 @@ func mockSlackToken(t *testing.T, respond func(form url.Values) map[string]any) 
 	return srv
 }
 
-func startFlow(t *testing.T, h *slack.Handler) (state string) {
+func startFlow(t *testing.T, h *slack.Handler, u *ent.User) (state string) {
 	t.Helper()
 	rec := httptest.NewRecorder()
-	h.Start(rec, httptest.NewRequest(http.MethodGet, "/oauth/slack/start", nil))
-	if rec.Code != http.StatusFound {
-		t.Fatalf("start: %d, want 302 (%s)", rec.Code, rec.Body.String())
+	req := httptest.NewRequest(http.MethodPost, "/v1/slack-oauth/start", nil).
+		WithContext(auth.WithUser(context.Background(), u))
+	h.Start(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("start: %d, want 200 (%s)", rec.Code, rec.Body.String())
 	}
-	loc, err := url.Parse(rec.Header().Get("Location"))
+	var out struct {
+		AuthorizeURL string `json:"authorizeUrl"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatalf("decode start: %v", err)
+	}
+	loc, err := url.Parse(out.AuthorizeURL)
 	if err != nil {
 		t.Fatalf("location: %v", err)
 	}
@@ -218,7 +226,7 @@ func TestSlackOAuthFullFlow(t *testing.T) {
 	})
 	h.SetOAuthFlow("https://slack.example/authorize", token.URL, "https://api.example/oauth/slack/callback", "solomon-ai", "")
 
-	state := startFlow(t, h)
+	state := startFlow(t, h, u)
 
 	// Callback exchanges the code and deep-links success.
 	rec := runCallback(t, h, state)
@@ -227,6 +235,10 @@ func TestSlackOAuthFullFlow(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "solomon-ai://oauth/slack/done") {
 		t.Fatalf("callback should use the configured deep-link scheme")
+	}
+	other := client.User.Create().SetWorkosUserID("user_2").SaveX(context.Background())
+	if wrong := claim(t, h, other, state); wrong.Code != http.StatusForbidden {
+		t.Fatalf("wrong-user claim: %d (%s), want 403", wrong.Code, wrong.Body.String())
 	}
 
 	// Claim persists the workspace mapping and returns metadata only.
@@ -284,6 +296,33 @@ func TestSlackOAuthFullFlow(t *testing.T) {
 	}
 }
 
+func TestSlackOAuthRejectsWorkspaceOwnedByAnotherUser(t *testing.T) {
+	client, u, h, _ := setupWithSealer(t)
+	other := client.User.Create().SetWorkosUserID("user_2").SaveX(context.Background())
+	client.OAuthConnection.Create().
+		SetUser(other).
+		SetProvider("slack").
+		SetExternalAccountID("T0OWNED").
+		SetRefreshTokenEncrypted([]byte("sealed")).
+		SaveX(auth.WithUser(context.Background(), other))
+	token := mockSlackToken(t, func(url.Values) map[string]any {
+		return map[string]any{
+			"ok": true, "access_token": "xoxb-new", "scope": "chat:write",
+			"team": map[string]any{"id": "T0OWNED", "name": "Owned"},
+		}
+	})
+	h.SetOAuthFlow("https://slack.example/authorize", token.URL, "https://api.example/oauth/slack/callback", "rowboat", "")
+	state := startFlow(t, h, u)
+	runCallback(t, h, state)
+	rec := claim(t, h, u, state)
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "workspace_already_connected") {
+		t.Fatalf("claim = %d %s, want 409 workspace_already_connected", rec.Code, rec.Body.String())
+	}
+	if client.OAuthPending.Query().CountX(context.Background()) != 1 {
+		t.Fatal("ownership conflict consumed the legitimate ticket")
+	}
+}
+
 func TestSlackOAuthAllowsMultipleWorkspacesForOneUser(t *testing.T) {
 	client, u, h := setup(t)
 	teams := []struct {
@@ -315,7 +354,7 @@ func TestSlackOAuthAllowsMultipleWorkspacesForOneUser(t *testing.T) {
 	h.SetOAuthFlow("https://slack.example/authorize", token.URL, "https://api.example/oauth/slack/callback", "solomon-ai", "")
 
 	for _, team := range teams {
-		state := startFlow(t, h)
+		state := startFlow(t, h, u)
 		runCallback(t, h, state)
 		rec := claim(t, h, u, state)
 		if rec.Code != http.StatusOK {
@@ -514,7 +553,7 @@ func TestSlackOAuthStoresRotatingAccessTokenBundle(t *testing.T) {
 	})
 	h.SetOAuthFlow("https://slack.example/authorize", token.URL, "https://api.example/oauth/slack/callback", "solomon-ai", "")
 
-	state := startFlow(t, h)
+	state := startFlow(t, h, u)
 	runCallback(t, h, state)
 	rec := claim(t, h, u, state)
 	if rec.Code != http.StatusOK {
@@ -541,13 +580,13 @@ func TestSlackOAuthStoresRotatingAccessTokenBundle(t *testing.T) {
 }
 
 func TestSlackCallbackRejectsExchangeFailure(t *testing.T) {
-	client, _, h := setup(t)
+	client, u, h := setup(t)
 	token := mockSlackToken(t, func(url.Values) map[string]any {
 		return map[string]any{"ok": false, "error": "invalid_grant"}
 	})
 	h.SetOAuthFlow("", token.URL, "https://api.example/cb", "", "")
 
-	state := startFlow(t, h)
+	state := startFlow(t, h, u)
 	rec := runCallback(t, h, state)
 	if !strings.Contains(rec.Body.String(), "status=error") {
 		t.Fatalf("failed exchange must deep-link error, got: %s", rec.Body.String())
@@ -567,7 +606,7 @@ func TestSlackClaimBeforeCallbackIsRetryable(t *testing.T) {
 		}
 	})
 	h.SetOAuthFlow("", token.URL, "https://api.example/cb", "", "")
-	state := startFlow(t, h)
+	state := startFlow(t, h, u)
 
 	// Claim racing ahead of the callback: 409, ticket NOT consumed.
 	if rec := claim(t, h, u, state); rec.Code != http.StatusConflict {
@@ -585,7 +624,7 @@ func TestSlackClaimBeforeCallbackIsRetryable(t *testing.T) {
 }
 
 func TestSlackStartFailsClosedWithoutCredentials(t *testing.T) {
-	client, _, _ := setup(t)
+	client, u, _ := setup(t)
 	sealer, err := crypto.NewSealer("test-encryption-key-for-slack-oauth")
 	if err != nil {
 		t.Fatalf("sealer: %v", err)
@@ -594,7 +633,9 @@ func TestSlackStartFailsClosedWithoutCredentials(t *testing.T) {
 	empty.SetOAuthFlow("", "", "https://api.example/cb", "", "")
 
 	rec := httptest.NewRecorder()
-	empty.Start(rec, httptest.NewRequest(http.MethodGet, "/oauth/slack/start", nil))
+	req := httptest.NewRequest(http.MethodPost, "/v1/slack-oauth/start", nil).
+		WithContext(auth.WithUser(context.Background(), u))
+	empty.Start(rec, req)
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("start without credentials: %d, want 502", rec.Code)
 	}

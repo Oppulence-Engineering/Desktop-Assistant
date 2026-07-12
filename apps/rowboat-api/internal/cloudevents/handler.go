@@ -14,6 +14,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -36,6 +37,12 @@ type Handler struct {
 	log    *zap.Logger
 
 	slackAgentDispatcher SlackAgentDispatcher
+	googlePushVerifier   googlePushVerifier
+	googlePushEmail      string
+}
+
+type googlePushVerifier interface {
+	Verify(token string) (*oauthrs.Claims, error)
 }
 
 // SlackAgentDispatcher starts or continues an agent session for a verified
@@ -51,6 +58,14 @@ func New(client *ent.Client, sealer *crypto.Sealer, router RouteController, cfg 
 // the agent channel adapter after the CloudEvent row durably claims the event.
 func (h *Handler) SetSlackAgentDispatcher(fn SlackAgentDispatcher) {
 	h.slackAgentDispatcher = fn
+}
+
+// SetGooglePushVerifier enables OIDC verification for Gmail Pub/Sub pushes.
+// Calendar and Drive notifications continue to use their per-watch channel
+// token plus exact persisted watch binding.
+func (h *Handler) SetGooglePushVerifier(v googlePushVerifier, serviceAccountEmail string) {
+	h.googlePushVerifier = v
+	h.googlePushEmail = strings.ToLower(strings.TrimSpace(serviceAccountEmail))
 }
 
 // maxIngestBody bounds the whole ingest request body: the payload cap plus
