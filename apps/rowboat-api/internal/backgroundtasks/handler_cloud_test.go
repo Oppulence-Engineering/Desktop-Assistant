@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
@@ -18,7 +21,7 @@ import (
 )
 
 // setupTemporalTest builds an in-memory handler with a fake Temporal controller.
-func setupTemporalTest(t *testing.T) (*ent.User, http.Handler, *fakeTemporal) {
+func setupTemporalTest(t *testing.T) (*ent.Client, *ent.User, http.Handler, *fakeTemporal) {
 	t.Helper()
 	d, err := db.Open(context.Background(), appconfig.Config{
 		DatabaseURL: "file:" + t.Name() + "?mode=memory&cache=shared&_pragma=foreign_keys(1)",
@@ -32,7 +35,7 @@ func setupTemporalTest(t *testing.T) (*ent.User, http.Handler, *fakeTemporal) {
 	temporal := &fakeTemporal{}
 	h := New(d.Client, zap.NewNop())
 	h.SetTemporal(temporal)
-	return u, testRouter(h), temporal
+	return d.Client, u, testRouter(h), temporal
 }
 
 func createAPITask(t *testing.T, router http.Handler, u *ent.User, slug string) {
@@ -60,7 +63,7 @@ type runsResponse struct {
 // TestCloudRunQueuedEventAndRetryLineage covers the queued lifecycle event, the
 // retry trigger/lineage/attempt fields, and the terminal-only retry guard.
 func TestCloudRunQueuedEventAndRetryLineage(t *testing.T) {
-	u, router, temporal := setupTemporalTest(t)
+	_, u, router, temporal := setupTemporalTest(t)
 	createAPITask(t, router, u, "api-task")
 
 	triggerRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/trigger", map[string]any{
@@ -125,21 +128,22 @@ func TestCloudRunQueuedEventAndRetryLineage(t *testing.T) {
 }
 
 func TestTerminalRunCancelAndSignalDoNotCallTemporal(t *testing.T) {
-	u, router, temporal := setupTemporalTest(t)
+	client, u, router, temporal := setupTemporalTest(t)
 	createAPITask(t, router, u, "api-task")
 
-	createRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs", map[string]any{
-		"runId":              "finished-run",
-		"trigger":            "manual",
-		"status":             "succeeded",
-		"executor":           "api",
-		"temporalWorkflowId": "background-task/user/api-task/finished-run",
-		"temporalRunId":      "temporal-finished-run",
-		"temporalStatus":     "Completed",
-	})
-	if createRec.Code != http.StatusCreated {
-		t.Fatalf("create finished run: want 201, got %d: %s", createRec.Code, createRec.Body.String())
-	}
+	ctx := auth.WithUser(context.Background(), u)
+	task := client.BackgroundTask.Query().Where(backgroundtask.SlugEQ("api-task")).OnlyX(ctx)
+	client.BackgroundTaskRun.Create().
+		SetUser(u).
+		SetTask(task).
+		SetRunID("finished-run").
+		SetTrigger("manual").
+		SetStatus("succeeded").
+		SetExecutor("api").
+		SetTemporalWorkflowID(backgroundtaskworkflow.WorkflowID(u.ID.String(), task.Slug, "finished-run")).
+		SetTemporalRunID("temporal-finished-run").
+		SetTemporalStatus("Completed").
+		SaveX(ctx)
 
 	cancelRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs/finished-run/cancel", nil)
 	if cancelRec.Code != http.StatusAccepted {
@@ -167,10 +171,51 @@ func TestTerminalRunCancelAndSignalDoNotCallTemporal(t *testing.T) {
 	}
 }
 
+func TestUserCannotForgeTemporalWorkflowIdentity(t *testing.T) {
+	client, u, router, temporal := setupTemporalTest(t)
+	createAPITask(t, router, u, "api-task")
+
+	forged := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs", map[string]any{
+		"runId":              "forged-run",
+		"trigger":            "manual",
+		"status":             "running",
+		"executor":           "api",
+		"temporalWorkflowId": "victim-workflow",
+		"temporalRunId":      "victim-run",
+	})
+	if forged.Code != http.StatusBadRequest || !strings.Contains(forged.Body.String(), "server-managed") {
+		t.Fatalf("forged temporal create: want 400, got %d: %s", forged.Code, forged.Body.String())
+	}
+
+	triggered := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/trigger", map[string]any{"trigger": "manual"})
+	if triggered.Code != http.StatusAccepted {
+		t.Fatalf("trigger: %d: %s", triggered.Code, triggered.Body.String())
+	}
+	run := decodeBody[runView](t, triggered)
+	patched := authedJSON(t, router, u, http.MethodPatch, "/v1/background-tasks/api-task/runs/"+run.RunID, map[string]any{
+		"revision":           run.Revision,
+		"temporalWorkflowId": "victim-workflow",
+	})
+	if patched.Code != http.StatusBadRequest || !strings.Contains(patched.Body.String(), "server-managed") {
+		t.Fatalf("forged temporal patch: want 400, got %d: %s", patched.Code, patched.Body.String())
+	}
+
+	ctx := auth.WithUser(context.Background(), u)
+	row := client.BackgroundTaskRun.Query().Where(backgroundtaskrun.RunIDEQ(run.RunID)).OnlyX(ctx)
+	row.Update().SetTemporalWorkflowID("legacy-forged-workflow").ExecX(auth.WithInternal(context.Background()))
+	cancel := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/api-task/runs/"+run.RunID+"/cancel", nil)
+	if cancel.Code != http.StatusConflict || !strings.Contains(cancel.Body.String(), "invalid_workflow_identity") {
+		t.Fatalf("forged workflow cancel: want 409, got %d: %s", cancel.Code, cancel.Body.String())
+	}
+	if len(temporal.cancels) != 0 {
+		t.Fatalf("forged workflow reached Temporal: %+v", temporal.cancels)
+	}
+}
+
 // TestCloudRunStartFailureSetsErrorCode verifies a failed Temporal start records
 // the granular temporal_start_failed error code on the run row.
 func TestCloudRunStartFailureSetsErrorCode(t *testing.T) {
-	u, router, temporal := setupTemporalTest(t)
+	_, u, router, temporal := setupTemporalTest(t)
 	temporal.startErr = errors.New("temporal unreachable")
 	createAPITask(t, router, u, "api-task")
 

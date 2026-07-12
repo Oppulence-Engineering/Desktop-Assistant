@@ -136,6 +136,24 @@ func TestChatCompleteToolCallRoundTrip(t *testing.T) {
 	}
 }
 
+func TestChatCompleteBillsToolCallsWhenUsageIsMissing(t *testing.T) {
+	_, ctx, h := setup(t, 100000)
+	upstream := jsonUpstream(t, `{
+		"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","content":"","tool_calls":[{
+			"id":"call_1","type":"function","function":{"name":"connector.read.gmail","arguments":"{\"query\":\"from:acme.com\"}"}
+		}]}}]
+	}`, http.StatusOK)
+	h.SetUpstreams("", upstream.URL)
+
+	res, err := h.ChatComplete(ctx, chatRequest(uuid.New(), []llm.ChatMessage{{Role: "user", Content: "search"}}))
+	if err != nil {
+		t.Fatalf("ChatComplete: %v", err)
+	}
+	if len(res.Message.ToolCalls) != 1 || res.OutputTokens <= 0 {
+		t.Fatalf("tool-only completion must have non-zero fallback usage: %+v", res)
+	}
+}
+
 func TestChatCompleteRefundsOnFailure(t *testing.T) {
 	client, ctx, h := setup(t, 100000)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

@@ -250,6 +250,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		if rc, rcErr := workosauth.NewRedisRefreshCache(ctx, cfg.RedisURL); rcErr == nil {
 			refreshCache = rc
 		} else {
+			if cfg.IsProduction() {
+				return fmt.Errorf("configure distributed refresh-token dedup: %w", rcErr)
+			}
 			log.Warn("workos refresh dedup falling back to in-memory cache", zap.Error(rcErr))
 		}
 	}
@@ -279,6 +282,19 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		GoogleWebhookToken:   cfg.GoogleWebhookToken,
 		WebhookSigningSecret: cfg.WebhookSigningSecret,
 	}, log)
+	if strings.TrimSpace(cfg.GoogleWebhookOIDCAudience) != "" {
+		googlePushVerifier, err := oauthrs.New(ctx, oauthrs.Config{
+			IssuerURL:      "https://accounts.google.com",
+			Audience:       cfg.GoogleWebhookOIDCAudience,
+			JWKSURL:        "https://www.googleapis.com/oauth2/v3/certs",
+			AcceptableSkew: time.Minute,
+			ValidMethods:   []string{"RS256"},
+		})
+		if err != nil {
+			return fmt.Errorf("configure Google Pub/Sub OIDC verifier: %w", err)
+		}
+		cloudEventsH.SetGooglePushVerifier(googlePushVerifier, cfg.GoogleWebhookOIDCEmail)
+	}
 
 	registry, err := connectors.LoadRegistry([]byte(cfg.ConnectorsJSON))
 	if err != nil {
@@ -292,6 +308,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		DeepLinkScheme:        cfg.DesktopDeepLinkScheme,
 	}, log)
 	connectorsH.SetOutboundPolicy(vendorPolicy)
+	connectorsH.SetRefreshDedup(refreshCache, sealer)
 
 	plainLabels, err := feedback.ParseLabelMap(cfg.PlainLabelTypeIDs)
 	if err != nil {
@@ -367,18 +384,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// resolved from the sealed pending ticket inside the handler.
 	r.Get("/v1/connections/{name}/callback", connectorsH.Callback)
 
-	// Google OAuth front door (browser-facing, no bearer): the desktop opens
-	// /oauth/google/start; the callback parks tokens for /v1/google-oauth/claim.
-	r.With(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute)).
-		Get("/oauth/google/start", googleH.Start)
+	// Provider callbacks are browser-facing and carry state minted by the
+	// authenticated /v1/*-oauth/start endpoints below.
 	r.With(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute)).
 		Get("/oauth/google/callback", googleH.Callback)
 
 	// Slack workspace install front door (browser-facing, no bearer): the
 	// callback parks the sealed bundle for /v1/slack-oauth/claim, which writes
 	// the team_id→user mapping the Slack webhook resolves against.
-	r.With(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute)).
-		Get("/oauth/slack/start", slackH.Start)
 	r.With(rl.PerUserWindow(ratelimit.GroupAuth, 30, time.Minute)).
 		Get("/oauth/slack/callback", slackH.Callback)
 
@@ -509,7 +522,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 				r.Post("/{id}/turns", agentsH.SubmitTurn)
 				r.Get("/{id}/stream", agentsH.Stream)
 				r.Get("/{id}/events", agentsH.ListEvents)
-				r.Post("/{id}/approvals/{approvalId}/token", agentsH.MintApprovalToken)
+				r.With(authMW.RequireStepUp(auth.StepUpRecentAuth)).
+					Post("/{id}/approvals/{approvalId}/token", agentsH.MintApprovalToken)
 				r.Post("/{id}/approvals/{approvalId}", agentsH.Approve)
 				r.Post("/{id}/cancel", agentsH.Cancel)
 			})
@@ -538,12 +552,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 
 		r.Route("/v1/google-oauth", func(r chi.Router) {
 			r.Use(rl.PerUserWindow(ratelimit.GroupConnections, 30, time.Minute))
+			r.Post("/start", googleH.Start)
 			r.Post("/claim", googleH.Claim)
 			r.Post("/refresh", googleH.Refresh)
 		})
 
 		r.Route("/v1/slack-oauth", func(r chi.Router) {
 			r.Use(rl.PerUserWindow(ratelimit.GroupConnections, 30, time.Minute))
+			r.Post("/start", slackH.Start)
 			r.Post("/claim", slackH.Claim)
 			r.Get("/workspaces", slackH.ListWorkspaces)
 			r.Delete("/workspaces/{teamId}", slackH.DeleteWorkspace)

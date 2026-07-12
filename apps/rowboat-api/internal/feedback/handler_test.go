@@ -71,6 +71,7 @@ func newHandler(t *testing.T, baseURL, apiKey string, labels map[string]string) 
 	client := testClient(t)
 	ctx := context.Background()
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
+	ctx = auth.WithUser(ctx, u)
 	client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(ctx)
 	sec := secrets.NewFromConfig(appconfig.Config{PlainAPIKey: apiKey})
 	h := feedback.New(sec, client, feedback.Config{

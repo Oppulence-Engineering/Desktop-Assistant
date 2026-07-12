@@ -31,7 +31,7 @@ func setup(t *testing.T) (*ent.Client, *ent.User) {
 		t.Fatalf("open: %v", err)
 	}
 	t.Cleanup(func() { _ = d.Close() })
-	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(context.Background())
+	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(auth.WithInternal(context.Background()))
 	return d.Client, u
 }
 
@@ -189,7 +189,7 @@ func TestGetDecryptsPayload(t *testing.T) {
 
 func TestTenantIsolation(t *testing.T) {
 	client, u := setup(t)
-	other := client.User.Create().SetEmail("b@x.co").SetWorkosUserID("user_2").SaveX(context.Background())
+	other := client.User.Create().SetEmail("b@x.co").SetWorkosUserID("user_2").SaveX(auth.WithInternal(context.Background()))
 	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20}, zap.NewNop())
 
 	srvA := newTestServer(t, h, u)
@@ -222,7 +222,7 @@ func TestListPagination(t *testing.T) {
 			SetDedupeKey(fmt.Sprintf("k%d", i)).
 			SetText("x").
 			SetReceivedAt(base.Add(time.Duration(i) * time.Second)).
-			SaveX(context.Background())
+			SaveX(auth.WithInternal(context.Background()))
 	}
 
 	var page struct {

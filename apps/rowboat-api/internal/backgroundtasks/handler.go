@@ -991,6 +991,12 @@ func (h *Handler) CancelRun(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "run is not temporal-backed", "bad_request")
 		return
 	}
+	if !canonicalTemporalWorkflow(r.Context(), task, run) {
+		h.log.Error("refusing to cancel run with non-canonical temporal workflow id",
+			zap.String("runId", run.RunID), zap.String("taskSlug", task.Slug))
+		httpx.Error(w, http.StatusConflict, "run workflow identity is invalid", "invalid_workflow_identity")
+		return
+	}
 	if isTerminalRunStatus(run.Status) {
 		httpx.WriteJSON(w, http.StatusAccepted, viewRun(task, run))
 		return
@@ -1116,6 +1122,12 @@ func (h *Handler) SignalRun(w http.ResponseWriter, r *http.Request) {
 	}
 	if run.Executor != "api" || run.TemporalWorkflowID == "" {
 		httpx.Error(w, http.StatusBadRequest, "run is not temporal-backed", "bad_request")
+		return
+	}
+	if !canonicalTemporalWorkflow(r.Context(), task, run) {
+		h.log.Error("refusing to signal run with non-canonical temporal workflow id",
+			zap.String("runId", run.RunID), zap.String("taskSlug", task.Slug))
+		httpx.Error(w, http.StatusConflict, "run workflow identity is invalid", "invalid_workflow_identity")
 		return
 	}
 	if isTerminalRunStatus(run.Status) {
@@ -2013,24 +2025,9 @@ func parseRunCursor(raw string) (time.Time, uuid.UUID, error) {
 }
 
 func applyTemporalCreateFields(create *ent.BackgroundTaskRunCreate, req createRunRequest) error {
-	if req.TemporalWorkflowID != "" {
-		create.SetTemporalWorkflowID(req.TemporalWorkflowID)
-	}
-	if req.TemporalRunID != "" {
-		create.SetTemporalRunID(req.TemporalRunID)
-	}
-	if req.TemporalStatus != "" {
-		create.SetTemporalStatus(req.TemporalStatus)
-	}
-	if ts, ok, err := parseOptionalTime(req.TemporalStartedAt); err != nil {
-		return badRequest("invalid temporalStartedAt")
-	} else if ok {
-		create.SetTemporalStartedAt(ts)
-	}
-	if ts, ok, err := parseOptionalTime(req.TemporalClosedAt); err != nil {
-		return badRequest("invalid temporalClosedAt")
-	} else if ok {
-		create.SetTemporalClosedAt(ts)
+	if req.TemporalWorkflowID != "" || req.TemporalRunID != "" || req.TemporalStatus != "" ||
+		req.TemporalStartedAt != "" || req.TemporalClosedAt != "" {
+		return badRequest("temporal fields are server-managed")
 	}
 	if req.ProgressPercent != nil {
 		if *req.ProgressPercent < 0 || *req.ProgressPercent > 100 {
@@ -2050,32 +2047,9 @@ func applyTemporalCreateFields(create *ent.BackgroundTaskRunCreate, req createRu
 }
 
 func applyTemporalPatchFields(update *ent.BackgroundTaskRunUpdate, req patchRunRequest) error {
-	if req.TemporalWorkflowID != nil {
-		update.SetTemporalWorkflowID(*req.TemporalWorkflowID)
-	}
-	if req.TemporalRunID != nil {
-		update.SetTemporalRunID(*req.TemporalRunID)
-	}
-	if req.TemporalStatus != nil {
-		update.SetTemporalStatus(*req.TemporalStatus)
-	}
-	if req.TemporalStartedAt != nil {
-		ts, ok, err := parseOptionalTime(*req.TemporalStartedAt)
-		if err != nil {
-			return badRequest("invalid temporalStartedAt")
-		}
-		if ok {
-			update.SetTemporalStartedAt(ts)
-		}
-	}
-	if req.TemporalClosedAt != nil {
-		ts, ok, err := parseOptionalTime(*req.TemporalClosedAt)
-		if err != nil {
-			return badRequest("invalid temporalClosedAt")
-		}
-		if ok {
-			update.SetTemporalClosedAt(ts)
-		}
+	if req.TemporalWorkflowID != nil || req.TemporalRunID != nil || req.TemporalStatus != nil ||
+		req.TemporalStartedAt != nil || req.TemporalClosedAt != nil {
+		return badRequest("temporal fields are server-managed")
 	}
 	if req.ProgressPercent != nil {
 		if *req.ProgressPercent < 0 || *req.ProgressPercent > 100 {
@@ -2096,6 +2070,14 @@ func applyTemporalPatchFields(update *ent.BackgroundTaskRunUpdate, req patchRunR
 		}
 	}
 	return nil
+}
+
+func canonicalTemporalWorkflow(ctx context.Context, task *ent.BackgroundTask, run *ent.BackgroundTaskRun) bool {
+	u, ok := auth.UserFromCtx(ctx)
+	if !ok || task == nil || run == nil {
+		return false
+	}
+	return run.TemporalWorkflowID == backgroundtaskworkflow.WorkflowID(u.ID.String(), task.Slug, run.RunID)
 }
 
 // runLogFields returns the consistent structured-logging field set for a cloud

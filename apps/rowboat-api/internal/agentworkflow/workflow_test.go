@@ -2,6 +2,7 @@ package agentworkflow
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -66,8 +67,9 @@ func newWFHarness(t *testing.T) *wfHarness {
 		if h.validateErr != nil {
 			return h.validateErr
 		}
-		a := &Activities{Catalog: agentregistry.DefaultCatalog()}
-		return a.ValidateApproval(context.Background(), in)
+		// Token cryptography is covered by Activities tests. Workflow tests stub
+		// a successful validation unless a case explicitly injects validateErr.
+		return nil
 	})
 	reg(ActivityEnsureSession, func(_ context.Context, _ EnsureSessionInput) error { return nil })
 	reg(ActivityResolveSubagent, func(_ context.Context, in ResolveSubagentInput) (SubagentSpec, error) {
@@ -306,6 +308,7 @@ func TestSessionWorkflowHITLApproved(t *testing.T) {
 // the tool never runs.
 func TestSessionWorkflowHITLInvalidToken(t *testing.T) {
 	h := newWFHarness(t)
+	h.validateErr = errors.New("invalid approval token")
 	h.llm = func(in LLMCompleteInput) LLMCompleteResult {
 		if in.CallIndex == 0 {
 			return toolCallMsg("c1", "demo.payment", `{"amount":10,"recipient":"acme"}`)

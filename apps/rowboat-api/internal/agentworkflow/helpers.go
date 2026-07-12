@@ -1,6 +1,8 @@
 package agentworkflow
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -129,10 +131,8 @@ func approvalTokenRef(token string) string {
 	if token == "" {
 		return ""
 	}
-	if len(token) <= 8 {
-		return "ref:" + token[:len(token)/2] + "…"
-	}
-	return "ref:" + token[:8] + "…"
+	sum := sha256.Sum256([]byte(token))
+	return "sha256:" + hex.EncodeToString(sum[:8])
 }
 
 // closeStatus maps a close reason to the terminal session status + event.

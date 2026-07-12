@@ -123,7 +123,7 @@ func connectGoogle(t *testing.T, client *ent.Client, sealer *crypto.Sealer, u *e
 		SetProvider("google").
 		SetRefreshTokenEncrypted(sealed).
 		SetExternalAccountID(email).
-		SaveX(context.Background())
+		SaveX(auth.WithUser(context.Background(), u))
 }
 
 func newManager(t *testing.T, client *ent.Client, sealer *crypto.Sealer, g *mockGoogle, topic string) *Manager {

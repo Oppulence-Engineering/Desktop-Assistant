@@ -29,7 +29,7 @@ func setupDB(t *testing.T) (*ent.Client, *ent.User, context.Context) {
 		t.Fatalf("db: %v", err)
 	}
 	t.Cleanup(func() { _ = d.Close() })
-	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(context.Background())
+	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(auth.WithInternal(context.Background()))
 	return d.Client, u, auth.WithInternal(context.Background())
 }
 
@@ -92,7 +92,7 @@ func TestRunHistoryTool(t *testing.T) {
 	client, u, ctx := setupDB(t)
 	task := client.BackgroundTask.Create().
 		SetUser(u).SetSlug("s").SetName("S").SetInstructions("i").
-		SetExecutionTarget("api").SaveX(context.Background())
+		SetExecutionTarget("api").SaveX(ctx)
 	for i, status := range []string{"succeeded", "failed"} {
 		create := client.BackgroundTaskRun.Create().
 			SetUser(u).SetTask(task).
@@ -103,13 +103,13 @@ func TestRunHistoryTool(t *testing.T) {
 		} else {
 			create = create.SetErrorCode("llm_call_failed")
 		}
-		create.SaveX(context.Background())
+		create.SaveX(ctx)
 	}
 	// The in-flight run must be excluded.
 	client.BackgroundTaskRun.Create().
 		SetUser(u).SetTask(task).
 		SetRunID("run-current").SetStatus("running").SetExecutor("api").
-		SaveX(context.Background())
+		SaveX(ctx)
 
 	tool := NewRunHistoryTool(client, task.ID, "run-current")
 	out, err := tool.Invoke(ctx, ToolScope{}, nil)
@@ -131,7 +131,7 @@ func TestEventReadTool(t *testing.T) {
 		SetUser(u).SetSource("gmail").SetDedupeKey("k1").
 		SetSubject("Invoice dispute").SetText("Acme disputed.").
 		SetPayloadCiphertext(sealed).
-		SaveX(context.Background())
+		SaveX(auth.WithInternal(context.Background()))
 
 	tool := NewEventReadTool(client, sealer, ev.ID)
 	out, err := tool.Invoke(ctx, ToolScope{}, nil)
@@ -192,7 +192,7 @@ func TestGmailReadTool(t *testing.T) {
 		client.OAuthConnection.Create().
 			SetUser(u).SetProvider("google").
 			SetRefreshTokenEncrypted(sealed).SetScopes(scopes).
-			SaveX(context.Background())
+			SaveX(auth.WithInternal(context.Background()))
 	}
 
 	t.Run("happy path", func(t *testing.T) {
@@ -253,7 +253,7 @@ func TestDriveReadTool(t *testing.T) {
 		client.OAuthConnection.Create().
 			SetUser(u).SetProvider("google").
 			SetRefreshTokenEncrypted(sealed).SetScopes(scopes).
-			SaveX(context.Background())
+			SaveX(auth.WithInternal(context.Background()))
 	}
 
 	t.Run("happy path", func(t *testing.T) {

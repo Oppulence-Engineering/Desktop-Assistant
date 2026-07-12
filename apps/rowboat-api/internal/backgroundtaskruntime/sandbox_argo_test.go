@@ -106,6 +106,9 @@ func TestArgoSandboxExecutorCreatesWorkflowAndReturnsLogs(t *testing.T) {
 		spec["automountServiceAccountToken"] != false || spec["activeDeadlineSeconds"].(float64) != 65 {
 		t.Fatalf("workflow spec = %+v", spec)
 	}
+	if spec["hostNetwork"] != false || !strings.Contains(spec["podSpecPatch"].(string), `"hostPID":false`) {
+		t.Fatalf("workflow pod isolation fields = %+v", spec)
+	}
 	metadata := workflowSpec["metadata"].(map[string]any)
 	labels := metadata["labels"].(map[string]any)
 	if labels["rowboat.io/run-id"] != "run-1" || labels["rowboat.io/task-slug"] != "task" {
@@ -134,6 +137,13 @@ func TestArgoSandboxExecutorCreatesWorkflowAndReturnsLogs(t *testing.T) {
 	container := templates[0].(map[string]any)["container"].(map[string]any)
 	if container["image"] != "python:3.12-slim" || container["workingDir"] != "/workspace" {
 		t.Fatalf("container = %+v", container)
+	}
+	security := container["securityContext"].(map[string]any)
+	if security["privileged"] != false || security["readOnlyRootFilesystem"] != true || security["allowPrivilegeEscalation"] != false {
+		t.Fatalf("container security context = %+v", security)
+	}
+	if len(container["volumeMounts"].([]any)) != 2 || len(volumes) != 2 {
+		t.Fatalf("sandbox must have bounded workspace and tmp volumes: container=%+v volumes=%+v", container, volumes)
 	}
 	resources := container["resources"].(map[string]any)
 	requests := resources["requests"].(map[string]any)
@@ -428,7 +438,7 @@ func TestArgoSandboxExecutorDeletesWorkflowOnContextCancel(t *testing.T) {
 	}
 }
 
-func TestArgoSandboxExecutorCreateErrorIncludesKubernetesBody(t *testing.T) {
+func TestArgoSandboxExecutorCreateErrorRedactsKubernetesBody(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/apis/argoproj.io/v1alpha1/namespaces/ns/workflows/"):
@@ -452,12 +462,12 @@ func TestArgoSandboxExecutorCreateErrorIncludesKubernetesBody(t *testing.T) {
 		UserID: "u", TaskSlug: "task", RunID: "run", Image: "python", Script: "echo ok",
 		Timeout: time.Minute, MaxOutputBytes: 1024,
 	})
-	if err == nil || !strings.Contains(err.Error(), "kubernetes status 403") || !strings.Contains(err.Error(), "no workflow permissions") {
+	if err == nil || !strings.Contains(err.Error(), "kubernetes status 403") || strings.Contains(err.Error(), "no workflow permissions") {
 		t.Fatalf("err = %v", err)
 	}
 }
 
-func TestArgoSandboxExecutorReadWorkflowErrorIncludesKubernetesBody(t *testing.T) {
+func TestArgoSandboxExecutorReadWorkflowErrorRedactsKubernetesBody(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet || !strings.Contains(r.URL.Path, "/apis/argoproj.io/v1alpha1/namespaces/ns/workflows/") {
 			t.Fatalf("unexpected kube request: %s %s", r.Method, r.URL.String())
@@ -472,7 +482,7 @@ func TestArgoSandboxExecutorReadWorkflowErrorIncludesKubernetesBody(t *testing.T
 		UserID: "u", TaskSlug: "task", RunID: "run", Image: "python", Script: "echo ok",
 		Timeout: time.Minute, MaxOutputBytes: 1024,
 	})
-	if err == nil || !strings.Contains(err.Error(), "read argo sandbox workflow: kubernetes status 500: argo api down") {
+	if err == nil || !strings.Contains(err.Error(), "read argo sandbox workflow: kubernetes status 500") || strings.Contains(err.Error(), "argo api down") {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -515,12 +525,12 @@ func TestArgoSandboxExecutorListPodsErrorPropagates(t *testing.T) {
 		UserID: "u", TaskSlug: "task", RunID: "run", Image: "python", Script: "echo ok",
 		Timeout: time.Minute, MaxOutputBytes: 1024,
 	})
-	if err == nil || !strings.Contains(err.Error(), "list argo sandbox pods: kubernetes status 403: cannot list pods") {
+	if err == nil || !strings.Contains(err.Error(), "list argo sandbox pods: kubernetes status 403") || strings.Contains(err.Error(), "cannot list pods") {
 		t.Fatalf("err = %v", err)
 	}
 }
 
-func TestArgoSandboxExecutorLogErrorIncludesKubernetesBody(t *testing.T) {
+func TestArgoSandboxExecutorLogErrorRedactsKubernetesBody(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/apis/argoproj.io/v1alpha1/namespaces/ns/workflows/"):
@@ -549,7 +559,7 @@ func TestArgoSandboxExecutorLogErrorIncludesKubernetesBody(t *testing.T) {
 		UserID: "u", TaskSlug: "task", RunID: "run", Image: "python", Script: "echo ok",
 		Timeout: time.Minute, MaxOutputBytes: 1024,
 	})
-	if err == nil || !strings.Contains(err.Error(), "read argo sandbox logs: kubernetes status 502: log stream unavailable") {
+	if err == nil || !strings.Contains(err.Error(), "read argo sandbox logs: kubernetes status 502") || strings.Contains(err.Error(), "log stream unavailable") {
 		t.Fatalf("err = %v", err)
 	}
 }

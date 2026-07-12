@@ -254,11 +254,12 @@ func (t *sandboxRunTool) validateEnv(env map[string]string) (map[string]string, 
 		if !validEnvName(key) {
 			return nil, fmt.Errorf("invalid env var name %q", key)
 		}
+		if slices.Contains([]string{"HOME", "ROWBOAT_RUN_ID", "ROWBOAT_TASK_SLUG"}, key) ||
+			strings.HasPrefix(key, "KUBERNETES_") {
+			return nil, fmt.Errorf("env var %q is reserved", key)
+		}
 		if len([]byte(value)) > maxValue {
 			return nil, fmt.Errorf("env var %q is too large", key)
-		}
-		if slices.Contains([]string{"KUBERNETES_SERVICE_HOST", "KUBERNETES_SERVICE_PORT"}, key) {
-			return nil, fmt.Errorf("env var %q is reserved", key)
 		}
 		out[key] = value
 	}

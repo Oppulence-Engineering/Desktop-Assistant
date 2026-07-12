@@ -18,9 +18,7 @@ import (
 type chunk struct {
 	Usage   *usage `json:"usage"`
 	Choices []struct {
-		Delta struct {
-			Content string `json:"content"`
-		} `json:"delta"`
+		Delta json.RawMessage `json:"delta"`
 	} `json:"choices"`
 }
 
@@ -76,7 +74,7 @@ func (h *Handler) streamThrough(w http.ResponseWriter, resp *http.Response) (inT
 		}
 	}
 	if outTok == 0 {
-		outTok = contentChars / 4
+		outTok = estimateTextTokensFromBytes(contentChars)
 	}
 	return inTok, outTok, relayErr
 }
@@ -97,7 +95,10 @@ func parseSSELine(line []byte) (*usage, int, bool) {
 	}
 	chars := 0
 	for _, ch := range c.Choices {
-		chars += len(ch.Delta.Content)
+		var delta any
+		if json.Unmarshal(ch.Delta, &delta) == nil {
+			chars += jsonStringBytes(delta)
+		}
 	}
 	return c.Usage, chars, true
 }
@@ -117,9 +118,7 @@ func (h *Handler) bufferThrough(w http.ResponseWriter, resp *http.Response) (inT
 	var parsed struct {
 		Usage   *usage `json:"usage"`
 		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
+			Message json.RawMessage `json:"message"`
 		} `json:"choices"`
 	}
 	if json.Unmarshal(body, &parsed) == nil {
@@ -132,19 +131,64 @@ func (h *Handler) bufferThrough(w http.ResponseWriter, resp *http.Response) (inT
 			// fallback in proxy().
 			chars := 0
 			for _, ch := range parsed.Choices {
-				chars += len(ch.Message.Content)
+				var message any
+				if json.Unmarshal(ch.Message, &message) == nil {
+					chars += jsonStringBytes(message)
+				}
 			}
-			outTok = chars / 4
+			outTok = estimateTextTokensFromBytes(chars)
 		}
 	} else {
 		// A 200 whose body the minimal struct can't parse at all (non-JSON or an
 		// unrecognized provider variant) would otherwise bill output as free.
 		// Charge a conservative length-based estimate instead.
-		outTok = len(body) / 4
+		outTok = estimateTextTokensFromBytes(len(body))
 	}
 
 	w.Header().Set("Content-Type", contentTypeOr(resp, "application/json"))
 	w.WriteHeader(resp.StatusCode)
 	_, _ = w.Write(body)
 	return inTok, outTok, nil
+}
+
+func estimateOutputTokens(v any) int {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return 0
+	}
+	var decoded any
+	if json.Unmarshal(raw, &decoded) != nil {
+		return estimateTextTokensFromBytes(len(raw))
+	}
+	return estimateTextTokensFromBytes(jsonStringBytes(decoded))
+}
+
+func estimateTextTokens(s string) int { return estimateTextTokensFromBytes(len(s)) }
+
+func estimateTextTokensFromBytes(n int) int {
+	if n <= 0 {
+		return 0
+	}
+	return (n + 3) / 4
+}
+
+func jsonStringBytes(v any) int {
+	switch value := v.(type) {
+	case string:
+		return len(value)
+	case []any:
+		total := 0
+		for _, item := range value {
+			total += jsonStringBytes(item)
+		}
+		return total
+	case map[string]any:
+		total := 0
+		for _, item := range value {
+			total += jsonStringBytes(item)
+		}
+		return total
+	default:
+		return 0
+	}
 }

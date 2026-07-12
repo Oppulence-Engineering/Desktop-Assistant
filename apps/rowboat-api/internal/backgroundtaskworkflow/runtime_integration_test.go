@@ -46,6 +46,7 @@ func newIntegrationHarness(t *testing.T, llmHandler func(call int, w http.Respon
 	}
 	bg := context.Background()
 	u := d.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(bg)
+	bg = auth.WithUser(bg, u)
 	d.Subscription.Create().SetUser(u).SetSanctionedCredits(100000).SaveX(bg)
 	task := d.BackgroundTask.Create().
 		SetUser(u).SetSlug("acme-ar-watch").SetName("Acme AR Watch").

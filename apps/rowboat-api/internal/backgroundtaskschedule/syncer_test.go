@@ -8,6 +8,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"go.uber.org/zap"
 )
@@ -24,6 +25,7 @@ func setupSyncer(t *testing.T) (*Syncer, *FakeManager, *ent.User, *ent.Backgroun
 	t.Cleanup(func() { _ = d.Close() })
 	ctx := context.Background()
 	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
+	ctx = auth.WithUser(ctx, u)
 	task := d.Client.BackgroundTask.Create().
 		SetUser(u).SetSlug("daily-digest").SetName("Daily Digest").
 		SetInstructions("Summarize the day.").SetExecutionTarget("api").
@@ -86,7 +88,7 @@ func TestAfterWriteUpsertFailureMarksFailed(t *testing.T) {
 func TestAfterWriteInvalidCronFailsAndDeletesSchedule(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current + schedule
-	task = task.Update().SetTriggersJSON(`{"cronExpr":"not a cron"}`).SaveX(context.Background())
+	task = task.Update().SetTriggersJSON(`{"cronExpr":"not a cron"}`).SaveX(auth.WithInternal(context.Background()))
 
 	got := s.AfterWrite(context.Background(), u.ID.String(), nil, task)
 	if got.ScheduleSyncState != "failed" || !strings.Contains(got.ScheduleSyncError, "invalid cron") {
@@ -106,7 +108,7 @@ func TestAfterWriteUnrelatedPatchSkipsTemporal(t *testing.T) {
 	prev := s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current
 	calls := len(mgr.Calls)
 
-	patched := prev.Update().SetInstructions("Summarize the day, briefly.").SaveX(context.Background())
+	patched := prev.Update().SetInstructions("Summarize the day, briefly.").SaveX(auth.WithInternal(context.Background()))
 	got := s.AfterWrite(context.Background(), u.ID.String(), prev, patched)
 	if got.ScheduleSyncState != "current" || got.Revision != patched.Revision {
 		t.Fatalf("state=%q rev %d→%d, want untouched", got.ScheduleSyncState, patched.Revision, got.Revision)
@@ -116,7 +118,7 @@ func TestAfterWriteUnrelatedPatchSkipsTemporal(t *testing.T) {
 	}
 
 	// A failed task retries on ANY patch (failed → syncing → current).
-	failed := got.Update().SetScheduleSyncState("failed").SetScheduleSyncError("blip").SaveX(context.Background())
+	failed := got.Update().SetScheduleSyncState("failed").SetScheduleSyncError("blip").SaveX(auth.WithInternal(context.Background()))
 	repaired := s.AfterWrite(context.Background(), u.ID.String(), failed, failed)
 	if repaired.ScheduleSyncState != "current" {
 		t.Fatalf("failed task patch must re-sync, got %q", repaired.ScheduleSyncState)
@@ -129,7 +131,7 @@ func TestAfterWriteUnrelatedPatchSkipsTemporal(t *testing.T) {
 func TestAfterWriteInactiveInvalidCronIsUnmanaged(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current + schedule
-	task = task.Update().SetActive(false).SetTriggersJSON(`{"cronExpr":"not a cron"}`).SaveX(context.Background())
+	task = task.Update().SetActive(false).SetTriggersJSON(`{"cronExpr":"not a cron"}`).SaveX(auth.WithInternal(context.Background()))
 
 	got := s.AfterWrite(context.Background(), u.ID.String(), nil, task)
 	if got.ScheduleSyncState != "paused" {
@@ -150,7 +152,7 @@ func TestAfterWriteInactiveInvalidCronIsUnmanaged(t *testing.T) {
 func TestAfterWriteInactivePausesSchedule(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current
-	task = task.Update().SetActive(false).SaveX(context.Background())
+	task = task.Update().SetActive(false).SaveX(auth.WithInternal(context.Background()))
 
 	got := s.AfterWrite(context.Background(), u.ID.String(), nil, task)
 	if got.ScheduleSyncState != "paused" || got.ScheduleSyncError != "" {
@@ -165,7 +167,7 @@ func TestAfterWriteInactivePausesSchedule(t *testing.T) {
 func TestAfterWriteCronRemovedDeletesSchedule(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current
-	task = task.Update().SetTriggersJSON(`{"windows":[{"startTime":"09:00","endTime":"12:00"}]}`).SaveX(context.Background())
+	task = task.Update().SetTriggersJSON(`{"windows":[{"startTime":"09:00","endTime":"12:00"}]}`).SaveX(auth.WithInternal(context.Background()))
 
 	got := s.AfterWrite(context.Background(), u.ID.String(), nil, task)
 	if got.ScheduleSyncState != "paused" {
@@ -179,7 +181,7 @@ func TestAfterWriteCronRemovedDeletesSchedule(t *testing.T) {
 func TestAfterWriteTargetFlipToDesktopDeletesSchedule(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current
-	task = task.Update().SetExecutionTarget("desktop").SaveX(context.Background())
+	task = task.Update().SetExecutionTarget("desktop").SaveX(auth.WithInternal(context.Background()))
 
 	got := s.AfterWrite(context.Background(), u.ID.String(), nil, task)
 	if got.ScheduleSyncState != "paused" {
@@ -194,7 +196,7 @@ func TestAfterWriteNeverScheduledSkipsTemporal(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	// A desktop task that never had a schedule: the common write path must not
 	// pay a Temporal round-trip.
-	task = task.Update().SetExecutionTarget("desktop").SaveX(context.Background())
+	task = task.Update().SetExecutionTarget("desktop").SaveX(auth.WithInternal(context.Background()))
 	got := s.AfterWrite(context.Background(), u.ID.String(), nil, task)
 	if got.ScheduleSyncState != "paused" || len(mgr.Calls) != 0 {
 		t.Fatalf("state=%q calls=%v", got.ScheduleSyncState, mgr.Calls)
@@ -204,7 +206,7 @@ func TestAfterWriteNeverScheduledSkipsTemporal(t *testing.T) {
 func TestAfterWritePauseFailureRecordsError(t *testing.T) {
 	s, mgr, u, task := setupSyncer(t)
 	task = s.AfterWrite(context.Background(), u.ID.String(), nil, task) // current
-	task = task.Update().SetActive(false).SaveX(context.Background())
+	task = task.Update().SetActive(false).SaveX(auth.WithInternal(context.Background()))
 	mgr.PauseErr = errors.New("temporal unreachable")
 
 	got := s.AfterWrite(context.Background(), u.ID.String(), nil, task)
@@ -226,7 +228,7 @@ func TestAfterDelete(t *testing.T) {
 	fresh := s.Client.BackgroundTask.Create().
 		SetUser(u).SetSlug("plain").SetName("Plain").
 		SetInstructions("x").SetExecutionTarget("desktop").
-		SaveX(context.Background())
+		SaveX(auth.WithInternal(context.Background()))
 	s.AfterDelete(context.Background(), u.ID.String(), fresh)
 	if len(mgr.Calls) != calls {
 		t.Fatalf("never-scheduled delete must not call Temporal: %v", mgr.Calls[calls:])

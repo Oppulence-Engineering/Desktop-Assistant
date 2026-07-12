@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 	"unicode/utf8"
 
@@ -141,14 +142,14 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 
 	key := h.secrets.ElevenLabs()
 	if key == "" {
-		refund(charge, h.log)
+		refund(r.Context(), charge, h.log)
 		httpx.Error(w, http.StatusBadGateway, "voice provider not configured", "provider_unconfigured")
 		return
 	}
 
-	upReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, h.baseURL+"/v1/text-to-speech/"+voiceID, bytes.NewReader(raw))
+	upReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, h.baseURL+"/v1/text-to-speech/"+url.PathEscape(voiceID), bytes.NewReader(raw))
 	if err != nil {
-		refund(charge, h.log)
+		refund(r.Context(), charge, h.log)
 		httpx.Error(w, http.StatusInternalServerError, "could not build upstream request", "internal_error")
 		return
 	}
@@ -159,7 +160,7 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.http.Do(upReq)
 	if err != nil {
-		refund(charge, h.log)
+		refund(r.Context(), charge, h.log)
 		h.log.Warn("elevenlabs upstream error", zap.Error(err))
 		httpx.Error(w, http.StatusBadGateway, "voice upstream failed", "upstream_error")
 		return
@@ -167,10 +168,8 @@ func (h *Handler) TextToSpeech(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= http.StatusBadRequest {
-		refund(charge, h.log)
-		w.Header().Set("Content-Type", proxyutil.ContentTypeOr(resp, "application/json"))
-		w.WriteHeader(resp.StatusCode)
-		_, _ = io.Copy(w, resp.Body)
+		refund(r.Context(), charge, h.log)
+		httpx.Error(w, http.StatusBadGateway, "voice provider rejected the request", "upstream_error")
 		return
 	}
 
@@ -209,8 +208,8 @@ func writeQuotaError(w http.ResponseWriter, err error) {
 	}
 }
 
-func refund(charge *quota.Charge, log *zap.Logger) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func refund(reqCtx context.Context, charge *quota.Charge, log *zap.Logger) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(reqCtx), 5*time.Second)
 	defer cancel()
 	if err := charge.Refund(ctx); err != nil {
 		log.Error("voice refund", zap.Error(err))

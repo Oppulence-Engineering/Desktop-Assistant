@@ -34,11 +34,57 @@ func setup(t *testing.T, sanctioned int) (*ent.Client, context.Context, *llm.Han
 
 	bg := context.Background()
 	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(bg)
-	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(sanctioned).SaveX(bg)
+	userCtx := auth.WithUser(bg, u)
+	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(sanctioned).SaveX(userCtx)
 
 	sec := secrets.NewFromConfig(appconfig.Config{OpenRouterAPIKey: "or-key"})
 	h := llm.New(pricing.DefaultTable(), quota.New(d.Client, zap.NewNop()), sec, d.Client, zap.NewNop())
-	return d.Client, auth.WithUser(bg, u), h
+	return d.Client, userCtx, h
+}
+
+func TestChatCompletionsDoesNotExposeUpstreamErrorBody(t *testing.T) {
+	_, ctx, h := setup(t, 100000)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = io.WriteString(w, `{"error":{"message":"secret provider account project_123"}}`)
+	}))
+	defer upstream.Close()
+	h.SetUpstreams("", upstream.URL)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/llm/chat/completions", strings.NewReader(`{"model":"anthropic/claude-sonnet-4-5","messages":[{"role":"user","content":"hi"}]}`)).WithContext(ctx)
+	req.Header.Set("Idempotency-Key", "llm-upstream-error-redaction")
+	rec := httptest.NewRecorder()
+	h.ChatCompletions(rec, req)
+
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want 502: %s", rec.Code, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "project_123") || !strings.Contains(rec.Body.String(), "upstream_error") {
+		t.Fatalf("provider error leaked or safe code missing: %s", rec.Body.String())
+	}
+}
+
+func TestStreamingToolCallsWithoutUsageAreBilled(t *testing.T) {
+	client, ctx, h := setup(t, 100000)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"id\":\"call_1\",\"function\":{\"name\":\"connector.read.gmail\",\"arguments\":\"{\\\"query\\\":\\\"from:acme.com\\\"}\"}}]}}]}\n\n")
+		_, _ = io.WriteString(w, "data: [DONE]\n\n")
+	}))
+	defer upstream.Close()
+	h.SetUpstreams("", upstream.URL)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/llm/chat/completions", strings.NewReader(`{"model":"anthropic/claude-sonnet-4-5","stream":true,"messages":[{"role":"user","content":"search"}]}`)).WithContext(ctx)
+	req.Header.Set("Idempotency-Key", "llm-tool-fallback-usage")
+	rec := httptest.NewRecorder()
+	h.ChatCompletions(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
+	}
+	usage := client.LLMUsage.Query().OnlyX(ctx)
+	if usage.OutputTokens <= 0 {
+		t.Fatalf("tool-only streamed completion was billed at %d output tokens", usage.OutputTokens)
+	}
 }
 
 func TestChatCompletionsStreamingSettlesCredits(t *testing.T) {

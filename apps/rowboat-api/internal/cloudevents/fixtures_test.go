@@ -127,7 +127,7 @@ func TestFixtureRunLinkage(t *testing.T) {
 		SetStatus("queued").
 		SetExecutor("api").
 		SetCloudEventID(ev.ID).
-		SaveX(context.Background())
+		SaveX(auth.WithUser(context.Background(), u))
 
 	got := ev.QueryRuns().OnlyX(auth.WithInternal(context.Background()))
 	if got.ID != run.ID {

@@ -238,7 +238,6 @@ func (r *Router) pass1(ctx context.Context, ev *ent.CloudEvent, targets []eligib
 			RequestID:  routeRequestID(ev.ID, fmt.Sprintf("pass1/%d", i/pass1BatchSize)),
 		}, &out)
 		if err != nil {
-			anyFailed = true
 			metricRouteFailures.WithLabelValues("pass1").Inc()
 			if quotaTerminal(err) {
 				// Out of credits: no point attempting further batches.
@@ -247,11 +246,13 @@ func (r *Router) pass1(ctx context.Context, ev *ent.CloudEvent, targets []eligib
 			}
 			if errors.Is(err, llm.ErrAlreadyCompleted) {
 				// Deterministic request-id replay after a partial prior attempt:
-				// the original result is lost. Skip this batch rather than
-				// re-billing it.
+				// the original result is lost. Treat the batch as completed with
+				// no recoverable candidates rather than returning a retryable error
+				// that can never succeed with the same idempotency key.
 				log.Warn("cloud event pass-1 batch replayed; skipping", zap.String("eventId", ev.ID.String()))
 				continue
 			}
+			anyFailed = true
 			log.Warn("cloud event pass-1 batch failed",
 				zap.String("eventId", ev.ID.String()), zap.Int("batch", i/pass1BatchSize), zap.Error(err))
 			continue

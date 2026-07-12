@@ -56,7 +56,7 @@ func newInboundHarness(t *testing.T) (*ent.Client, *ent.User, *fakeController, *
 	// Map the Slack workspace (team T1) to the user.
 	client.OAuthConnection.Create().
 		SetUser(u).SetProvider("slack").SetExternalAccountID("T1").
-		SetRefreshTokenEncrypted([]byte("sealed")).SaveX(context.Background())
+		SetRefreshTokenEncrypted([]byte("sealed")).SaveX(auth.WithUser(context.Background(), u))
 
 	d := New(client, starter, "assistant", zap.NewNop())
 	h := NewHandler(client, d, testSlackSecret, zap.NewNop())

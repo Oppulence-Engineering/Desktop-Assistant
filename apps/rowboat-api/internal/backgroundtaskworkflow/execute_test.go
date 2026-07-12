@@ -29,6 +29,7 @@ func executeSetup(t *testing.T) (*ent.Client, StartInput) {
 	t.Cleanup(func() { _ = d.Close() })
 	bg := context.Background()
 	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(bg)
+	bg = auth.WithUser(bg, u)
 	task := d.Client.BackgroundTask.Create().
 		SetUser(u).SetSlug("daily-summary").SetName("Daily Account Summary").
 		SetInstructions("Summarize important account changes.").

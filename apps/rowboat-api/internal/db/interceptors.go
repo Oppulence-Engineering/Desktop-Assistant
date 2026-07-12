@@ -32,6 +32,33 @@ import (
 	"go.uber.org/zap"
 )
 
+// tenantUserColumns is the write-side counterpart to the query interceptors
+// below. Ent query interceptors do not run for mutations, so registerHooks uses
+// this generated entity/foreign-key map to inject the authenticated user's id
+// into every update/delete predicate.
+var tenantUserColumns = map[string]string{
+	ent.TypeAgentApproval:               agentapproval.UserColumn,
+	ent.TypeAgentDefinition:             agentdefinition.UserColumn,
+	ent.TypeAgentSession:                agentsession.UserColumn,
+	ent.TypeAgentSessionEvent:           agentsessionevent.UserColumn,
+	ent.TypeAgentToolCall:               agenttoolcall.UserColumn,
+	ent.TypeAgentToolResultBlob:         agenttoolresultblob.UserColumn,
+	ent.TypeAgentTurn:                   agentturn.UserColumn,
+	ent.TypeBackgroundTask:              backgroundtask.UserColumn,
+	ent.TypeBackgroundTaskArtifact:      backgroundtaskartifact.UserColumn,
+	ent.TypeBackgroundTaskRun:           backgroundtaskrun.UserColumn,
+	ent.TypeBackgroundTaskRunEvent:      backgroundtaskrunevent.UserColumn,
+	ent.TypeBackgroundTaskScheduleState: backgroundtaskschedulestate.UserColumn,
+	ent.TypeCloudEvent:                  cloudevent.UserColumn,
+	ent.TypeCreditLedger:                creditledger.UserColumn,
+	ent.TypeGoogleWatch:                 googlewatch.UserColumn,
+	ent.TypeLLMUsage:                    llmusage.UserColumn,
+	ent.TypeMCPConnection:               mcpconnection.UserColumn,
+	ent.TypeMeetingMinuteUsage:          meetingminuteusage.UserColumn,
+	ent.TypeOAuthConnection:             oauthconnection.UserColumn,
+	ent.TypeSubscription:                subscription.UserColumn,
+}
+
 // ErrNoViewer is returned when a per-user entity is queried with neither an
 // authenticated user nor the internal-caller flag in context. It is the
 // ORM-layer guarantee that untrusted code cannot read across tenants.
@@ -42,12 +69,9 @@ var ErrNoViewer = errors.New("db: query on per-user entity without a viewer in c
 //   - per-user tenant scoping (the privacy policy from the plan, enforced at
 //     the client so a READ cannot be bypassed by forgetting a WHERE clause)
 //
-// IMPORTANT: ent interceptors run only on QUERY execution. Mutations
-// (Update/UpdateOne/Delete/DeleteOne and OnConflict upserts) are NOT scoped here
-// — they must operate on an id/slug obtained from a prior tenant-scoped read
-// (the convention every handler follows: lookupTask/lookupRun/scoped Query →
-// mutate by verified id). A mutation that builds its predicate directly from
-// request input would bypass tenant isolation; keep the scoped-read-first rule.
+// Mutations are independently scoped by tenantMutationHook in hooks.go. The
+// read and write controls are deliberately separate because Ent interceptors
+// never run on mutation execution.
 func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 	client.Intercept(intercept.Func(func(_ context.Context, q intercept.Query) error {
 		entQueriesTotal.WithLabelValues(q.Type()).Inc()

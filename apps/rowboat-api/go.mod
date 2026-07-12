@@ -1,6 +1,6 @@
 module github.com/Oppulence-Engineering/rowboat/apps/rowboat-api
 
-go 1.26.4
+go 1.26.5
 
 require (
 	ariga.io/entcache v0.1.0

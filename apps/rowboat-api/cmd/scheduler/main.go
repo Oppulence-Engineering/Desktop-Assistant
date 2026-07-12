@@ -158,7 +158,7 @@ func buildWatchManager(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 // NotReady (so a rolling deploy won't retire the old pod and alerts fire)
 // without crash-looping on liveness.
 func startMetricsServer(cfg appconfig.Config, log *zap.Logger, ready *atomic.Bool) func() {
-	srv := &http.Server{Addr: cfg.MetricsAddr, Handler: newHealthMux(ready)}
+	srv := &http.Server{Addr: cfg.MetricsAddr, Handler: newHealthMux(ready), ReadHeaderTimeout: 5 * time.Second}
 	go func() {
 		log.Info("scheduler metrics listener starting", zap.String("addr", cfg.MetricsAddr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

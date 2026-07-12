@@ -1,9 +1,84 @@
 package appconfig
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
+
+func validProductionSecurityConfig() Config {
+	return Config{
+		Environment:                   "production",
+		AppURL:                        "https://app.example.com",
+		PublicBaseURL:                 "https://api.example.com",
+		GoogleRedirectURI:             "https://api.example.com/oauth/google/callback",
+		DatabaseURL:                   "postgres://db.example.com/rowboat",
+		RedisURL:                      "redis://redis.example.com:6379",
+		DBEncryptionKey:               strings.Repeat("e", 32),
+		TokenIssuer:                   "https://auth.example.com",
+		WorkOSAPIKey:                  "sk_test",
+		WorkOSClientID:                "client_test",
+		HookHMACSecret:                strings.Repeat("h", 32),
+		InternalAPISecret:             strings.Repeat("i", 32),
+		CORSOrigins:                   []string{"https://app.example.com"},
+		DailyCreditLimit:              100,
+		MonthlyCreditLimit:            1000,
+		OpenAIAPIKey:                  "openai",
+		ElevenLabsAPIKey:              "eleven",
+		ExaAPIKey:                     "exa",
+		GoogleOAuthClientID:           "google-client",
+		GoogleOAuthClientSecret:       "google-secret",
+		AgentRequireMFAForMoneyMoving: true,
+	}
+}
+
+func TestValidateProductionRejectsUnsafeSecurityConfiguration(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func(*Config)
+		want   string
+	}{
+		{name: "null CORS origin", mutate: func(c *Config) { c.CORSOrigins = []string{"null"} }, want: "invalid production origin"},
+		{name: "HTTP CORS origin", mutate: func(c *Config) { c.CORSOrigins = []string{"http://app.example.com"} }, want: "invalid production origin"},
+		{name: "CORS origin with path", mutate: func(c *Config) { c.CORSOrigins = []string{"https://app.example.com/path"} }, want: "invalid production origin"},
+		{name: "CORS origin with userinfo", mutate: func(c *Config) { c.CORSOrigins = []string{"https://user@app.example.com"} }, want: "invalid production origin"},
+		{name: "weak internal secret", mutate: func(c *Config) { c.InternalAPISecret = "short" }, want: "at least 32 bytes"},
+		{name: "weak hook secret", mutate: func(c *Config) { c.HookHMACSecret = "short" }, want: "at least 32 bytes"},
+		{name: "insecure public URL", mutate: func(c *Config) { c.PublicBaseURL = "http://api.example.com" }, want: "absolute HTTPS URL"},
+		{name: "MFA disabled", mutate: func(c *Config) { c.AgentRequireMFAForMoneyMoving = false }, want: "must be true"},
+		{name: "weak Google webhook token", mutate: func(c *Config) {
+			c.GoogleWatchEnabled = true
+			c.GoogleWebhookToken = "short"
+		}, want: "GOOGLE_WEBHOOK_TOKEN must be at least 32 bytes"},
+		{name: "Gmail push without OIDC identity", mutate: func(c *Config) {
+			c.GoogleWatchEnabled = true
+			c.GoogleWebhookToken = strings.Repeat("g", 32)
+			c.GmailPubSubTopic = "projects/example/topics/gmail"
+		}, want: "GOOGLE_WEBHOOK_OIDC_AUDIENCE"},
+		{name: "mutable sandbox image", mutate: func(c *Config) {
+			c.CloudRuntimeSandboxEnabled = true
+			c.CloudRuntimeSandboxImage = "python:3.12-slim"
+			c.CloudRuntimeSandboxAllowedImages = []string{"python:3.12-slim"}
+		}, want: "pinned by sha256 digest"},
+		{name: "wildcard sandbox allowlist", mutate: func(c *Config) {
+			digest := strings.Repeat("a", 64)
+			c.CloudRuntimeSandboxEnabled = true
+			c.CloudRuntimeSandboxImage = "python@sha256:" + digest
+			c.CloudRuntimeSandboxAllowedImages = []string{"python:*"}
+		}, want: "exact sha256-digest-pinned"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := validProductionSecurityConfig()
+			tc.mutate(&c)
+			if err := c.validateProduction(); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("validateProduction error = %v, want containing %q", err, tc.want)
+			}
+		})
+	}
+	if err := validProductionSecurityConfig().validateProduction(); err != nil {
+		t.Fatalf("valid production security config rejected: %v", err)
+	}
+}
 
 // baseConfig returns a config with development defaults that passes Validate,
 // so each test can toggle only the scheduler fields under test.
@@ -170,6 +245,8 @@ func TestLoadCloudSchedulerDefaults(t *testing.T) {
 func TestLoadProviderWebhookSecrets(t *testing.T) {
 	t.Setenv("SLACK_SIGNING_SECRET", "slack-secret")
 	t.Setenv("GOOGLE_WEBHOOK_TOKEN", "google-token")
+	t.Setenv("GOOGLE_WEBHOOK_OIDC_AUDIENCE", "https://api.example.com/v1/webhooks/google")
+	t.Setenv("GOOGLE_WEBHOOK_OIDC_SERVICE_ACCOUNT", "pubsub@example.iam.gserviceaccount.com")
 	t.Setenv("WEBHOOK_SIGNING_SECRET", "webhook-secret")
 
 	c := Load()
@@ -178,6 +255,9 @@ func TestLoadProviderWebhookSecrets(t *testing.T) {
 	}
 	if c.GoogleWebhookToken != "google-token" {
 		t.Fatalf("GoogleWebhookToken = %q", c.GoogleWebhookToken)
+	}
+	if c.GoogleWebhookOIDCAudience != "https://api.example.com/v1/webhooks/google" || c.GoogleWebhookOIDCEmail != "pubsub@example.iam.gserviceaccount.com" {
+		t.Fatalf("Google webhook OIDC config = %q / %q", c.GoogleWebhookOIDCAudience, c.GoogleWebhookOIDCEmail)
 	}
 	if c.WebhookSigningSecret != "webhook-secret" {
 		t.Fatalf("WebhookSigningSecret = %q", c.WebhookSigningSecret)

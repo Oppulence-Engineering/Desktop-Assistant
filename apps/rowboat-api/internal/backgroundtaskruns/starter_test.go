@@ -59,6 +59,7 @@ func setup(t *testing.T) (*ent.Client, *ent.User, *ent.BackgroundTask) {
 	t.Cleanup(func() { _ = d.Close() })
 	ctx := context.Background()
 	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
+	ctx = auth.WithUser(ctx, u)
 	task := d.Client.BackgroundTask.Create().
 		SetUser(u).SetSlug("api-task").SetName("API Task").
 		SetInstructions("Run on the server.").SetExecutionTarget("api").
@@ -70,6 +71,7 @@ func createUserTask(t *testing.T, client *ent.Client, email, workosID, slug stri
 	t.Helper()
 	ctx := context.Background()
 	u := client.User.Create().SetEmail(email).SetWorkosUserID(workosID).SaveX(ctx)
+	ctx = auth.WithUser(ctx, u)
 	task := client.BackgroundTask.Create().
 		SetUser(u).SetSlug(slug).SetName("API Task").
 		SetInstructions("Run on the server.").SetExecutionTarget("api").
@@ -399,7 +401,7 @@ func TestStartFailureMarksRunFailed(t *testing.T) {
 	ctrl := &fakeController{startErr: errors.New("temporal unreachable")}
 	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
 
-	run, err := starter.Start(context.Background(), backgroundtaskruns.Params{
+	run, err := starter.Start(auth.WithUser(context.Background(), u), backgroundtaskruns.Params{
 		User: u, Task: task, Trigger: "manual", RunIDPrefix: "api-trigger-",
 	})
 	var startFailed *backgroundtaskruns.StartFailedError

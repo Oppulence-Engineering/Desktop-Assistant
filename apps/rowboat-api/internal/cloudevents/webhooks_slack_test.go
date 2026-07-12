@@ -67,7 +67,7 @@ func connectSlack(t *testing.T, client *ent.Client, u *ent.User, teamID string) 
 		SetProvider("slack").
 		SetRefreshTokenEncrypted([]byte("sealed")).
 		SetExternalAccountID(teamID).
-		SaveX(context.Background())
+		SaveX(auth.WithUser(context.Background(), u))
 }
 
 func TestVerifySlackSignature(t *testing.T) {

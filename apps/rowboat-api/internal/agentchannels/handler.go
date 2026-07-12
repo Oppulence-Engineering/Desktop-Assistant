@@ -410,15 +410,13 @@ func (h *Handler) resolveSlackUser(r *http.Request, teamID string) (*ent.User, e
 	if strings.TrimSpace(teamID) == "" {
 		return nil, errors.New("missing team id")
 	}
-	// (provider, external_account_id) is non-unique: two users can connect the
-	// same workspace. Order by created_at so resolution is deterministic — the
-	// earliest connection (the original installer) consistently owns the
-	// workspace's inbound events, rather than an arbitrary row.
+	// The database enforces one owner for (provider, external_account_id). Use
+	// Only rather than First so any legacy duplicate fails closed instead of
+	// routing a signed Slack event into an arbitrarily selected tenant.
 	conn, err := h.client.OAuthConnection.Query().
 		Where(oauthconnection.ProviderEQ("slack"), oauthconnection.ExternalAccountIDEQ(strings.TrimSpace(teamID))).
-		Order(oauthconnection.ByCreatedAt()).
 		WithUser().
-		First(auth.WithInternal(r.Context()))
+		Only(auth.WithInternal(r.Context()))
 	if err != nil {
 		return nil, err
 	}

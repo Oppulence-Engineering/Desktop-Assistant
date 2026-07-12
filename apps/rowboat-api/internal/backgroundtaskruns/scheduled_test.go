@@ -30,7 +30,7 @@ func fireInput(task *ent.BackgroundTask, u *ent.User) backgroundtaskworkflow.Sch
 
 func setCron(t *testing.T, _ *ent.Client, task *ent.BackgroundTask) *ent.BackgroundTask {
 	t.Helper()
-	return task.Update().SetTriggersJSON(`{"cronExpr":"0 9 * * *"}`).SaveX(context.Background())
+	return task.Update().SetTriggersJSON(`{"cronExpr":"0 9 * * *"}`).SaveX(auth.WithInternal(context.Background()))
 }
 
 func TestStartScheduledRunCreatesRun(t *testing.T) {
@@ -180,7 +180,7 @@ func TestStartScheduledRunSkipsStaleFires(t *testing.T) {
 	task = setCron(t, client, task)
 	ctrl := &fakeController{}
 	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
-	bg := context.Background()
+	bg := auth.WithInternal(context.Background())
 
 	cases := []struct {
 		name   string
@@ -297,7 +297,7 @@ func TestStartScheduledRunSkipsCoveredOccurrence(t *testing.T) {
 	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
 
 	now := time.Now().UTC()
-	task = task.Update().SetLastRunAt(now).SetLastAttemptAt(now).SaveX(context.Background())
+	task = task.Update().SetLastRunAt(now).SetLastAttemptAt(now).SaveX(auth.WithInternal(context.Background()))
 
 	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
 	if err != nil {
@@ -340,7 +340,7 @@ func TestStartScheduledRunSkipsWhileInFlight(t *testing.T) {
 	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
 
 	attempt := time.Now().UTC().Add(-time.Minute)
-	task = task.Update().SetLastAttemptAt(attempt).SaveX(context.Background())
+	task = task.Update().SetLastAttemptAt(attempt).SaveX(auth.WithInternal(context.Background()))
 
 	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
 	if err != nil {
@@ -356,7 +356,7 @@ func TestStartScheduledRunSkipsWhileInFlight(t *testing.T) {
 	// A prior cycle that completed long ago (before the current occurrence)
 	// neither reads as in-flight nor covers the occurrence — the fire fires.
 	yesterday := time.Now().UTC().Add(-26 * time.Hour)
-	task = task.Update().SetLastAttemptAt(yesterday).SetLastRunAt(yesterday).SaveX(context.Background())
+	task = task.Update().SetLastAttemptAt(yesterday).SetLastRunAt(yesterday).SaveX(auth.WithInternal(context.Background()))
 	out, err = starter.StartScheduledRun(context.Background(), fireInput(task, u))
 	if err != nil || out.Skipped {
 		t.Fatalf("completed prior cycle must not suppress: %+v err=%v", out, err)
@@ -378,7 +378,7 @@ func TestStartScheduledRunScheduledAtIsAuthoritative(t *testing.T) {
 
 	// Covered: a prior fire stamped at/after this occurrence → skip,
 	// regardless of what the worker clock reads now.
-	task = task.Update().SetLastRunAt(occurrence.Add(2 * time.Second)).SetLastAttemptAt(occurrence.Add(2 * time.Second)).SaveX(context.Background())
+	task = task.Update().SetLastRunAt(occurrence.Add(2 * time.Second)).SetLastAttemptAt(occurrence.Add(2 * time.Second)).SaveX(auth.WithInternal(context.Background()))
 	in := fireInput(task, u)
 	in.ScheduledAt = occurrence
 	out, err := starter.StartScheduledRun(context.Background(), in)
@@ -390,7 +390,7 @@ func TestStartScheduledRunScheduledAtIsAuthoritative(t *testing.T) {
 	// even in the early-clock-skew window where a wall-clock derivation would
 	// have resolved to yesterday's occurrence and wrongly skipped.
 	yesterday := occurrence.Add(-24 * time.Hour).Add(2 * time.Second)
-	task = task.Update().SetLastRunAt(yesterday).SetLastAttemptAt(yesterday).SaveX(context.Background())
+	task = task.Update().SetLastRunAt(yesterday).SetLastAttemptAt(yesterday).SaveX(auth.WithInternal(context.Background()))
 	in = fireInput(task, u)
 	in.ScheduledAt = occurrence
 	out, err = starter.StartScheduledRun(context.Background(), in)
@@ -404,12 +404,12 @@ func TestStartScheduledRunScheduledAtIsAuthoritative(t *testing.T) {
 // cron-derived fallback (no ScheduledAt on the input).
 func TestStartScheduledRunCoversEveryMinuteCron(t *testing.T) {
 	client, u, task := setup(t)
-	task = task.Update().SetTriggersJSON(`{"cronExpr":"* * * * *"}`).SaveX(context.Background())
+	task = task.Update().SetTriggersJSON(`{"cronExpr":"* * * * *"}`).SaveX(auth.WithInternal(context.Background()))
 	ctrl := &fakeController{}
 	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
 
 	now := time.Now().UTC()
-	task = task.Update().SetLastRunAt(now).SetLastAttemptAt(now).SaveX(context.Background())
+	task = task.Update().SetLastRunAt(now).SetLastAttemptAt(now).SaveX(auth.WithInternal(context.Background()))
 
 	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
 	if err != nil {
@@ -427,7 +427,7 @@ func TestStartScheduledRunCoversEveryMinuteCron(t *testing.T) {
 // never start runs on the stale schedule cadence.
 func TestStartScheduledRunSkipsInvalidCron(t *testing.T) {
 	client, u, task := setup(t)
-	task = task.Update().SetTriggersJSON(`{"cronExpr":"not a cron"}`).SaveX(context.Background())
+	task = task.Update().SetTriggersJSON(`{"cronExpr":"not a cron"}`).SaveX(auth.WithInternal(context.Background()))
 	ctrl := &fakeController{}
 	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
 
@@ -439,7 +439,7 @@ func TestStartScheduledRunSkipsInvalidCron(t *testing.T) {
 		t.Fatalf("result = %+v, want invalid-cron skip", out)
 	}
 	// Whitespace-only matches ParseTriggers' TrimSpace semantics (no cron).
-	task = task.Update().SetTriggersJSON(`{"cronExpr":"   "}`).SaveX(context.Background())
+	task = task.Update().SetTriggersJSON(`{"cronExpr":"   "}`).SaveX(auth.WithInternal(context.Background()))
 	out, _ = starter.StartScheduledRun(context.Background(), fireInput(task, u))
 	if !out.Skipped || out.SkipReason != "cron trigger removed" {
 		t.Fatalf("whitespace cron = %+v, want removed skip", out)

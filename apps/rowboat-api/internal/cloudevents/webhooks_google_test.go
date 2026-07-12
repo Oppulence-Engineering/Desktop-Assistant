@@ -8,12 +8,23 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
+
+type fakeGooglePushVerifier struct {
+	claims *oauthrs.Claims
+	err    error
+}
+
+func (v *fakeGooglePushVerifier) Verify(string) (*oauthrs.Claims, error) {
+	return v.claims, v.err
+}
 
 func newWebhookServer(t *testing.T, h *Handler) *httptest.Server {
 	t.Helper()
@@ -31,7 +42,23 @@ func connectGoogle(t *testing.T, client *ent.Client, u *ent.User, email string) 
 		SetProvider("google").
 		SetRefreshTokenEncrypted([]byte("sealed")).
 		SetExternalAccountID(email).
-		SaveX(context.Background())
+		SaveX(auth.WithUser(context.Background(), u))
+}
+
+func addGoogleWatch(t *testing.T, client *ent.Client, u *ent.User, kind, email, channelID, resourceID string) *ent.GoogleWatch {
+	t.Helper()
+	create := client.GoogleWatch.Create().
+		SetUser(u).
+		SetKind(kind).
+		SetAccountEmail(email).
+		SetExpiresAt(time.Now().UTC().Add(time.Hour))
+	if channelID != "" {
+		create = create.SetChannelID(channelID)
+	}
+	if resourceID != "" {
+		create = create.SetResourceID(resourceID)
+	}
+	return create.SaveX(auth.WithUser(context.Background(), u))
 }
 
 func gmailPushBody(t *testing.T, email string, historyID uint64) string {
@@ -58,7 +85,11 @@ func postWebhook(t *testing.T, url, body string) int {
 func TestGoogleWebhookTokenVerification(t *testing.T) {
 	client, u := setup(t)
 	connectGoogle(t, client, u, "me@gmail.com")
+	addGoogleWatch(t, client, u, "gmail", "me@gmail.com", "", "")
 	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
+	if _, ok := h.resolveActiveGoogleWatch(httptest.NewRequest(http.MethodPost, "/v1/webhooks/google", nil), "gmail", "me@gmail.com", "", ""); !ok {
+		t.Fatal("active Gmail watch did not resolve")
+	}
 	srv := newWebhookServer(t, h)
 	body := gmailPushBody(t, "me@gmail.com", 998877)
 
@@ -78,6 +109,42 @@ func TestGoogleWebhookTokenVerification(t *testing.T) {
 	ev := client.CloudEvent.Query().OnlyX(auth.WithInternal(context.Background()))
 	if ev.Source != SourceGmail || ev.DedupeKey != "gmail:history:me@gmail.com:998877" {
 		t.Fatalf("event = %s/%s, want gmail dedupe key", ev.Source, ev.DedupeKey)
+	}
+}
+
+func TestGmailPushRequiresConfiguredOIDCIdentity(t *testing.T) {
+	client, u := setup(t)
+	connectGoogle(t, client, u, "me@gmail.com")
+	addGoogleWatch(t, client, u, "gmail", "me@gmail.com", "", "")
+	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "legacy-token"}, zap.NewNop())
+	verifier := &fakeGooglePushVerifier{claims: &oauthrs.Claims{Email: "pubsub@example.iam.gserviceaccount.com"}}
+	h.SetGooglePushVerifier(verifier, "pubsub@example.iam.gserviceaccount.com")
+	srv := newWebhookServer(t, h)
+	body := gmailPushBody(t, "me@gmail.com", 998879)
+
+	post := func(token string) int {
+		t.Helper()
+		req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/webhooks/google", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("post: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		return resp.StatusCode
+	}
+	if status := post(""); status != http.StatusUnauthorized {
+		t.Fatalf("missing OIDC token = %d, want 401", status)
+	}
+	if status := post("signed-token"); status != http.StatusAccepted {
+		t.Fatalf("valid OIDC push = %d, want 202", status)
+	}
+	verifier.claims.Email = "other@example.iam.gserviceaccount.com"
+	if status := post("signed-token"); status != http.StatusUnauthorized {
+		t.Fatalf("wrong service account = %d, want 401", status)
 	}
 }
 
@@ -104,24 +171,24 @@ func TestGoogleWebhookUnresolvedUserDropped(t *testing.T) {
 	}
 }
 
-func TestGoogleWebhookEmailFallbackResolution(t *testing.T) {
+func TestGoogleWebhookRequiresActiveWatch(t *testing.T) {
 	client, u := setup(t) // u.email = a@x.co, no connection rows
 	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
 	srv := newWebhookServer(t, h)
 
-	if status := postWebhook(t, srv.URL+"/v1/webhooks/google?token=tok-1", gmailPushBody(t, "a@x.co", 7)); status != http.StatusAccepted {
-		t.Fatalf("email-fallback resolution: %d, want 202", status)
+	if status := postWebhook(t, srv.URL+"/v1/webhooks/google?token=tok-1", gmailPushBody(t, "a@x.co", 7)); status != http.StatusOK {
+		t.Fatalf("unregistered Gmail watch: %d, want 200 drop", status)
 	}
-	ev := client.CloudEvent.Query().OnlyX(auth.WithInternal(context.Background()))
-	owner := ev.QueryUser().OnlyX(auth.WithInternal(context.Background()))
-	if owner.ID != u.ID {
-		t.Fatal("event owner must resolve via the WorkOS email fallback")
+	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 0 {
+		t.Fatalf("events = %d, want 0 without an active watch", n)
 	}
+	_ = u
 }
 
 func TestCalendarNotification(t *testing.T) {
 	client, u := setup(t)
 	connectGoogle(t, client, u, "me@gmail.com")
+	addGoogleWatch(t, client, u, "calendar", "me@gmail.com", "gcal:me@gmail.com:abc", "res-1")
 	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
 	srv := newWebhookServer(t, h)
 
@@ -160,11 +227,20 @@ func TestCalendarNotification(t *testing.T) {
 	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
 		t.Fatalf("events = %d, want 1", n)
 	}
+	// A valid shared token does not authorize an invented channel for the same
+	// account; only the exact active GoogleWatch registration is accepted.
+	if status := send("exists", "gcal:me@gmail.com:forged", "3"); status != http.StatusOK {
+		t.Fatalf("forged channel: %d, want 200 drop", status)
+	}
+	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
+		t.Fatalf("forged channel stored an event; count = %d", n)
+	}
 }
 
 func TestDriveNotification(t *testing.T) {
 	client, u := setup(t)
 	connectGoogle(t, client, u, "me@gmail.com")
+	addGoogleWatch(t, client, u, "drive", "me@gmail.com", "gdrive:me@gmail.com:abc", "drive-res-1")
 	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
 	srv := newWebhookServer(t, h)
 

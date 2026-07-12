@@ -7,26 +7,20 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"go.uber.org/zap"
 )
 
-// Google push ingestion: Gmail arrives as a Pub/Sub push envelope, Calendar and
-// Drive arrive as channel notifications (headers only). All are verified
-// against the shared GOOGLE_WEBHOOK_TOKEN — supplied as ?token= on the Pub/Sub
-// push subscription URL, or as the channel token (X-Goog-Channel-Token) set at
-// watch time.
-//
-// V1 TRADEOFF: a shared bearer-style token is weaker than Pub/Sub OIDC push
-// auth (it can leak via URL logging); OIDC JWT verification against Google's
-// JWKS is the production follow-up. The blast radius is contained because the
-// handler only ever stores events for users it can resolve from a connected
-// account, and unresolved pushes are dropped.
+// Google push ingestion: Gmail arrives as an OIDC-authenticated Pub/Sub push
+// envelope; Calendar and Drive arrive as channel notifications authenticated
+// by the X-Goog-Channel-Token set at watch time. Development retains the legacy
+// query-token fallback for local Pub/Sub mocks, but production configuration
+// requires OIDC for Gmail so secrets never appear in push URLs or access logs.
 
 const maxGoogleWebhookBody = 1 << 20 // 1 MiB
 
@@ -53,15 +47,31 @@ func (h *Handler) GoogleWebhook(w http.ResponseWriter, r *http.Request) {
 // query string (Pub/Sub push) or the channel token header (Calendar). Fails
 // closed when the secret is unconfigured (pattern: auth.RequireHookHMAC).
 func (h *Handler) verifyGoogleToken(w http.ResponseWriter, r *http.Request) bool {
+	if r.Header.Get("X-Goog-Resource-State") == "" && h.googlePushVerifier != nil {
+		authz := strings.TrimSpace(r.Header.Get("Authorization"))
+		const prefix = "Bearer "
+		if len(authz) <= len(prefix) || !strings.EqualFold(authz[:len(prefix)], prefix) {
+			httpx.Error(w, http.StatusUnauthorized, "missing Pub/Sub OIDC token", "unauthorized")
+			return false
+		}
+		claims, err := h.googlePushVerifier.Verify(strings.TrimSpace(authz[len(prefix):]))
+		if err != nil || claims == nil || h.googlePushEmail == "" || !strings.EqualFold(strings.TrimSpace(claims.Email), h.googlePushEmail) {
+			httpx.Error(w, http.StatusUnauthorized, "invalid Pub/Sub OIDC token", "unauthorized")
+			return false
+		}
+		return true
+	}
 	secret := h.cfg.GoogleWebhookToken
 	if secret == "" {
 		h.log.Error("google webhook rejected: GOOGLE_WEBHOOK_TOKEN is not configured")
 		httpx.Error(w, http.StatusInternalServerError, "webhook verification unavailable", "webhook_unconfigured")
 		return false
 	}
-	got := r.URL.Query().Get("token")
-	if got == "" {
-		got = r.Header.Get("X-Goog-Channel-Token")
+	got := r.Header.Get("X-Goog-Channel-Token")
+	if r.Header.Get("X-Goog-Resource-State") == "" {
+		// Local-development compatibility only. Production Gmail pushes install
+		// an OIDC verifier and never reach this query-token branch.
+		got = r.URL.Query().Get("token")
 	}
 	if subtle.ConstantTimeCompare([]byte(got), []byte(secret)) != 1 {
 		httpx.Error(w, http.StatusUnauthorized, "invalid webhook token", "unauthorized")
@@ -104,7 +114,7 @@ func (h *Handler) handleGmailPush(w http.ResponseWriter, r *http.Request, body [
 	}
 
 	email := strings.ToLower(strings.TrimSpace(note.EmailAddress))
-	owner, ok := h.resolveGoogleUser(r, email)
+	owner, ok := h.resolveActiveGoogleWatch(r, "gmail", email, "", "")
 	if !ok {
 		// 200, not 4xx: stop provider retries for an account we will never
 		// resolve. The event is dropped (CloudEvent.user is required) and the
@@ -139,7 +149,7 @@ func (h *Handler) handleGoogleChannelNotification(w http.ResponseWriter, r *http
 	channelID := r.Header.Get("X-Goog-Channel-ID")
 	messageNumber := r.Header.Get("X-Goog-Message-Number")
 	resourceID := r.Header.Get("X-Goog-Resource-ID")
-	if channelID == "" || messageNumber == "" {
+	if channelID == "" || messageNumber == "" || resourceID == "" {
 		httpx.Error(w, http.StatusBadRequest, "missing Goog channel headers", "bad_request")
 		return
 	}
@@ -160,7 +170,7 @@ func (h *Handler) handleCalendarNotification(w http.ResponseWriter, r *http.Requ
 	// The watching account travels in the channel id, which Rowboat controls
 	// at watch time: "gcal:{accountEmail}:{uuid}".
 	email := calendarAccountFromChannelID(channelID)
-	owner, ok := h.resolveGoogleUser(r, email)
+	owner, ok := h.resolveActiveGoogleWatch(r, "calendar", email, channelID, resourceID)
 	if !ok {
 		metricUnresolved.WithLabelValues(SourceGoogleCalendar).Inc()
 		h.log.Warn("calendar notification for unresolved channel dropped",
@@ -191,7 +201,7 @@ func (h *Handler) handleDriveNotification(w http.ResponseWriter, r *http.Request
 	// The watching account travels in the channel id, which Rowboat controls
 	// at watch time: "gdrive:{accountEmail}:{uuid}".
 	email := driveAccountFromChannelID(channelID)
-	owner, ok := h.resolveGoogleUser(r, email)
+	owner, ok := h.resolveActiveGoogleWatch(r, "drive", email, channelID, resourceID)
 	if !ok {
 		metricUnresolved.WithLabelValues(SourceGoogleDrive).Inc()
 		h.log.Warn("drive notification for unresolved channel dropped",
@@ -239,31 +249,37 @@ func googleChannelAccountFromID(channelID, prefix string) string {
 	return strings.ToLower(strings.TrimSpace(parts[1]))
 }
 
-// resolveGoogleUser maps a Google account email to the owning Rowboat user:
-// first via the connection's external_account_id, then falling back to the
-// user's WorkOS email (covers connections made before the backfill field).
-func (h *Handler) resolveGoogleUser(r *http.Request, email string) (*ent.User, bool) {
+// resolveActiveGoogleWatch binds a push to the exact registration Rowboat
+// created. A shared webhook token alone is not enough: without this check a
+// holder could forge a channel id containing any connected user's email and
+// inject events into that tenant.
+func (h *Handler) resolveActiveGoogleWatch(r *http.Request, kind, email, channelID, resourceID string) (*ent.User, bool) {
 	if email == "" {
 		return nil, false
 	}
 	ctx := auth.WithInternal(r.Context())
-	conn, err := h.client.OAuthConnection.Query().
+	q := h.client.GoogleWatch.Query().
 		Where(
-			oauthconnection.ProviderEQ("google"),
-			oauthconnection.ExternalAccountIDEQ(email),
+			googlewatch.KindEQ(kind),
+			googlewatch.AccountEmailEQ(email),
+			googlewatch.ExpiresAtGT(time.Now().UTC()),
 		).
-		WithUser().
-		First(ctx)
-	if err == nil && conn.Edges.User != nil {
-		return conn.Edges.User, true
+		WithUser()
+	if channelID != "" {
+		q = q.Where(googlewatch.ChannelIDEQ(channelID))
 	}
-	if err != nil && !ent.IsNotFound(err) {
-		h.log.Error("google webhook user resolution failed", zap.Error(err))
-		return nil, false
+	if resourceID != "" {
+		q = q.Where(googlewatch.ResourceIDEQ(resourceID))
 	}
-	owner, err := h.client.User.Query().Where(user.EmailEQ(email)).First(ctx)
+	watch, err := q.Only(ctx)
 	if err != nil {
+		if !ent.IsNotFound(err) {
+			h.log.Error("google webhook watch resolution failed", zap.Error(err))
+		}
 		return nil, false
 	}
-	return owner, true
+	if watch.Edges.User == nil {
+		return nil, false
+	}
+	return watch.Edges.User, true
 }

@@ -75,6 +75,7 @@ func TestGoogleGmailWebhookRoutesToEventRun(t *testing.T) {
 	client, u := setup(t)
 	makeTask(t, client, u, "gmail-ar", "api", true, "Gmail invoice disputes for Acme")
 	connectGoogle(t, client, u, "me@gmail.com")
+	addGoogleWatch(t, client, u, "gmail", "me@gmail.com", "", "")
 	rc := &fakeRouteController{}
 	h := New(client, testSealer(t), rc, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
 	srv := newWebhookServer(t, h)
@@ -93,6 +94,7 @@ func TestGoogleCalendarWebhookRoutesToEventRun(t *testing.T) {
 	client, u := setup(t)
 	makeTask(t, client, u, "calendar-qbr", "api", true, "Google Calendar QBR moves for Acme")
 	connectGoogle(t, client, u, "me@gmail.com")
+	addGoogleWatch(t, client, u, "calendar", "me@gmail.com", "gcal:me@gmail.com:route", "res-route-1")
 	rc := &fakeRouteController{}
 	h := New(client, testSealer(t), rc, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
 	srv := newWebhookServer(t, h)
@@ -122,6 +124,7 @@ func TestGoogleDriveWebhookRoutesToEventRun(t *testing.T) {
 	client, u := setup(t)
 	makeTask(t, client, u, "drive-alerts", "api", true, "Google Drive file changes for Acme")
 	connectGoogle(t, client, u, "me@gmail.com")
+	addGoogleWatch(t, client, u, "drive", "me@gmail.com", "gdrive:me@gmail.com:route", "drive-res-route-1")
 	rc := &fakeRouteController{}
 	h := New(client, testSealer(t), rc, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
 	srv := newWebhookServer(t, h)
