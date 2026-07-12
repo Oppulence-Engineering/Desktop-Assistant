@@ -1,16 +1,13 @@
-// Material icons via @mui/icons-material — the same icon library polar.sh uses.
-// Aliased to the previous local names so the icon-mapping logic stays untouched.
+// Material icons keep the route-driven marketing data compact and consistent.
 import type { SvgIconComponent } from "@mui/icons-material";
 import ArrowRightIcon from "@mui/icons-material/ArrowForwardOutlined";
 import BrainIcon from "@mui/icons-material/PsychologyOutlined";
 import BriefcaseIcon from "@mui/icons-material/BusinessCenterOutlined";
 import CalendarDotsIcon from "@mui/icons-material/CalendarMonthOutlined";
-import CaretDownIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
 import ChartLineIcon from "@mui/icons-material/ShowChartOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CircleIcon from "@mui/icons-material/CircleOutlined";
 import CodeIcon from "@mui/icons-material/CodeOutlined";
-import DownloadIcon from "@mui/icons-material/DownloadOutlined";
 import EnvelopeIcon from "@mui/icons-material/MailOutlineOutlined";
 import FileTextIcon from "@mui/icons-material/DescriptionOutlined";
 import FlowArrowIcon from "@mui/icons-material/SchemaOutlined";
@@ -49,24 +46,27 @@ import {
   type LinkItem,
   type MarketingPage,
 } from "./marketing-data";
+import { MarketingEffects } from "./marketing-effects";
 
 const integrationGroups = [
-  "Gmail",
-  "Google Calendar",
-  "Fireflies",
-  "Slack",
-  "Linear",
-  "GitHub",
-  "Exa search",
-  "Composio",
-  "Custom MCP",
+  "Email",
+  "Calendar",
+  "Meetings",
+  "CRM",
+  "Verification",
+  "Sending",
+  "Research",
+  "Policies",
+  "Custom tools",
 ];
 
 const mobileNavLinks = [
   { label: "Product", href: "/product" },
-  { label: "Resources", href: "/blog" },
+  { label: "Revenue Leak Scan", href: "/ai-help-center" },
+  { label: "Action Queue", href: "/ai-documentation-agent" },
+  { label: "Customers", href: "/customers" },
   { label: "Plans", href: "/pricing" },
-  { label: "Dashboard", href: "/app" },
+  { label: "Blog", href: "/blog" },
 ];
 
 type IconTone = "neutral" | "blue" | "green" | "orange" | "yellow";
@@ -357,18 +357,29 @@ function screenshotForPage(page: MarketingPage) {
   return desktopScreenshots.home;
 }
 
-function InlineLogo({ compact = false }: { compact?: boolean }) {
+function InlineLogo({
+  compact = false,
+  prominent = false,
+}: {
+  compact?: boolean;
+  prominent?: boolean;
+}) {
+  const iconSize = compact ? 20 : prominent ? 40 : 28;
+
   return (
     <span className="flex items-center gap-2">
       <Image
         alt=""
-        className={cn("rounded-[3px] dark:invert", compact ? "size-5" : "size-6")}
-        height={24}
+        className={cn(
+          "rounded-[3px] dark:invert",
+          compact ? "size-5" : prominent ? "size-10" : "size-7",
+        )}
+        height={iconSize}
         src="/marketing/oppulence-icon.png"
-        width={24}
+        width={iconSize}
       />
       {!compact ? (
-        <span className="font-display text-[24px] leading-[24px] font-semibold text-primary">
+        <span className="font-display text-[24px] leading-6 font-semibold text-primary">
           oppulence
         </span>
       ) : null}
@@ -425,18 +436,11 @@ function DropdownMenu({
   width?: string;
 }) {
   return (
-    <div className="group relative">
-      <button
-        className="inline-flex h-8 items-center gap-1 rounded px-2.5 py-1 text-sm font-medium text-foreground/78 transition-colors hover:bg-background-100/80 hover:text-foreground"
-        type="button"
-      >
+    <details className="group relative" data-marketing-dropdown>
+      <summary aria-haspopup="menu" className="linear-nav-trigger">
         {label}
-        <CaretDownIcon
-          className="transition-transform group-hover:rotate-180"
-          style={{ fontSize: "0.875rem" }}
-        />
-      </button>
-      <div className="invisible absolute top-full left-0 z-50 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100">
+      </summary>
+      <div className="linear-dropdown-panel invisible absolute top-full left-0 z-50 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100">
         <div
           className={cn(
             "marketing-surface-strong rounded-md border border-primary/10 bg-background p-3 shadow-xl shadow-black/30",
@@ -448,119 +452,78 @@ function DropdownMenu({
           </div>
           <div className="grid grid-cols-2 gap-1">
             {items.map((item) => (
-              <MenuLink item={item} key={item.href} />
+              <MenuLink item={item} key={`${label}-${item.label}-${item.href}`} />
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </details>
   );
 }
 
 function MobileMenu() {
   return (
-    <details className="group/mobile-menu relative md:hidden">
-      <summary className="marketing-cta-secondary inline-flex h-9 cursor-pointer list-none items-center gap-1 rounded-md border border-primary/10 px-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
-        Menu
-        <CaretDownIcon
-          className="transition-transform group-open/mobile-menu:rotate-180"
-          style={{ fontSize: "0.875rem" }}
-        />
+    <details className="relative lg:hidden" data-marketing-mobile-menu>
+      <summary aria-label="Toggle navigation" className="linear-mobile-summary">
+        <span />
+        <span />
       </summary>
-      <div className="marketing-surface-strong absolute top-11 right-0 z-50 w-48 border p-2">
+      <nav className="linear-mobile-panel">
         {mobileNavLinks.map((item) => (
-          <Link
-            className="flex items-center justify-between rounded px-3 py-2 text-sm text-foreground/80 transition-colors hover:bg-background-100/80 hover:text-foreground"
-            href={item.href}
-            key={item.href}
-          >
-            {item.label}
-            <ArrowRightIcon className="text-muted-foreground" style={{ fontSize: "0.875rem" }} />
+          <Link href={item.href} key={`${item.label}-${item.href}`}>
+            {item.label} <span className="text-foreground/40">→</span>
           </Link>
         ))}
-      </div>
+        <div className="mt-auto grid gap-2 pt-8">
+          <Link className="linear-button-secondary !h-11" href="/app">
+            Open action queue
+          </Link>
+          <Link className="linear-button-primary !h-11" href="/book-a-demo">
+            Book a scan
+          </Link>
+        </div>
+      </nav>
     </details>
   );
 }
 
 export function TopBar() {
   return (
-    <header className="fixed top-0 right-0 left-0 z-50">
-      <div className="marketing-topbar border-grid-x border-b backdrop-blur-xl">
-        <div className="container-wrapper mx-auto">
-          <div className="container mx-auto flex items-center justify-between gap-4 py-3">
-            <div className="flex min-w-0 flex-1 items-center">
-              <Link aria-label="Oppulence home" className="flex items-center" href="/">
-                <span className="inline-flex max-[359px]:hidden">
-                  <InlineLogo />
-                </span>
-                <span className="hidden max-[359px]:inline-flex">
-                  <InlineLogo compact />
-                </span>
-              </Link>
-              <p className="ml-4 hidden border-primary/10 border-l pl-4 font-mono text-[10px] text-foreground/50 uppercase tracking-wider xl:block">
-                The living work graph
-              </p>
-            </div>
+    <header className="linear-header">
+      <div className="linear-header-inner">
+        <div className="flex flex-1 justify-start">
+          <Link aria-label="Oppulence home" className="linear-logo !h-12" href="/">
+            <InlineLogo prominent />
+          </Link>
+        </div>
 
-            <nav className="hidden items-center gap-2 xl:flex">
-              <Link
-                className="rounded px-2.5 py-1.5 text-sm font-medium text-foreground/78 transition-colors hover:bg-background-100/80 hover:text-foreground"
-                href="/product"
-              >
-                Product
-              </Link>
-              <DropdownMenu items={featureLinks} label="Features" />
-              <DropdownMenu items={resourceLinks} label="Resources" width="w-[420px]" />
-              <Link
-                className="rounded px-2.5 py-1.5 text-sm font-medium text-foreground/78 transition-colors hover:bg-background-100/80 hover:text-foreground"
-                href="/pricing"
-              >
-                Plans
-              </Link>
-            </nav>
-
-            <div className="hidden items-center gap-1 md:flex xl:hidden">
-              <Link
-                className="rounded px-2 py-1 text-sm font-medium text-foreground/75 transition-colors hover:bg-background-100/80 hover:text-foreground"
-                href="/product"
-              >
-                Product
-              </Link>
-              <Link
-                className="rounded px-2 py-1 text-sm font-medium text-foreground/75 transition-colors hover:bg-background-100/80 hover:text-foreground"
-                href="/blog"
-              >
-                Resources
-              </Link>
-              <Link
-                className="rounded px-2 py-1 text-sm font-medium text-foreground/75 transition-colors hover:bg-background-100/80 hover:text-foreground"
-                href="/pricing"
-              >
-                Plans
-              </Link>
-            </div>
-
-            <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-              <MobileMenu />
-              <Button
-                asChild
-                className="marketing-cta-secondary hidden h-9 border border-primary/10 px-4 font-medium md:inline-flex"
-                variant="ghost"
-              >
-                <Link href="/app">Dashboard</Link>
-              </Button>
-              <Button
-                asChild
-                className="marketing-cta-primary h-9 border border-transparent px-4 font-medium"
-              >
-                <Link href="/book-a-demo">
-                  <span className="hidden sm:inline">Book a demo</span>
-                  <span className="sm:hidden">Demo</span>
-                </Link>
-              </Button>
-            </div>
+        <nav className="hidden items-center gap-2 lg:flex">
+          <DropdownMenu items={productLinks} label="Product" width="w-[560px]" />
+          <div className="hidden xl:block">
+            <DropdownMenu items={featureLinks} label="Features" />
           </div>
+          <DropdownMenu items={resourceLinks} label="Resources" width="w-[420px]" />
+          <Link className="linear-nav-link" href="/customers">
+            Customers
+          </Link>
+          <Link className="linear-nav-link" href="/pricing">
+            Plans
+          </Link>
+          <Link className="linear-nav-link hidden xl:inline-flex" href="/blog">
+            Blog
+          </Link>
+        </nav>
+
+        <div className="linear-header-divider hidden lg:block" />
+
+        <div className="flex flex-1 items-center justify-end gap-2">
+          <Link className="linear-nav-link hidden md:inline-flex" href="/app">
+            Action queue
+          </Link>
+          <Link className="linear-button-primary hidden md:inline-flex" href="/book-a-demo">
+            Book a scan
+          </Link>
+          <MobileMenu />
         </div>
       </div>
     </header>
@@ -569,10 +532,14 @@ export function TopBar() {
 
 export function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="marketing-polar relative flex min-h-svh flex-col overflow-clip border-grid-x bg-background text-foreground">
+    <div className="marketing-polar relative flex min-h-svh flex-col overflow-clip bg-background text-foreground">
+      <MarketingEffects />
+      <Link className="linear-skip-link" href="#marketing-content">
+        Skip to content →
+      </Link>
       <TopBar />
-      <main className="flex flex-1 flex-col">
-        <div className="container-wrapper mx-auto">{children}</div>
+      <main className="flex flex-1 flex-col" id="marketing-content">
+        <div className="linear-shell linear-guides">{children}</div>
       </main>
       <Footer />
     </div>
@@ -581,92 +548,51 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
 
 export function Footer() {
   return (
-    <footer className="mt-16 flex-col border-primary/10 border-t md:mt-0 md:border-transparent">
-      <div className="container-wrapper z-0 mx-auto px-2 py-12 md:pt-36 lg:px-0">
-        <div className="container grid grid-cols-1 gap-8 px-2 md:grid-cols-4 md:px-4">
-          <div className="col-span-1 md:col-span-2">
-            <Link className="inline-flex" href="/">
+    <footer className="linear-footer">
+      <div className="linear-shell">
+        <div className="linear-footer-grid">
+          <div className="linear-footer-column">
+            <Link className="linear-logo" href="/">
               <InlineLogo />
             </Link>
-            <p className="mt-4 mb-6 max-w-md font-mono text-foreground/60 text-sm leading-relaxed">
-              Oppulence turns email, calendar, meetings, files, and tools into a living work graph
-              that agents can inspect before they brief, draft, update, or act.
-            </p>
-            <div className="mt-10 flex flex-wrap items-center gap-2">
-              {socialLinks.map((item) => (
-                <Button asChild key={item.href} size="sm" variant="secondary">
-                  <a href={item.href} rel="noopener noreferrer" target="_blank">
-                    <MarketingIcon compact icon={GithubLogoIcon} />
-                    {item.label}
-                  </a>
-                </Button>
-              ))}
-            </div>
           </div>
-
-          <FooterGroup items={featureLinks.slice(0, 8)} title="Features" />
-          <FooterGroup
+          <LinearFooterGroup items={productLinks.slice(0, 6)} title="Product" />
+          <LinearFooterGroup items={featureLinks.slice(0, 7)} title="Features" />
+          <LinearFooterGroup items={[...resourceLinks, ...toolLinks]} title="Resources" />
+          <LinearFooterGroup items={socialLinks} title="Connect" />
+          <LinearFooterGroup
             items={[
-              ...productLinks,
-              ...toolLinks,
-              ...resourceLinks,
               { label: "Privacy", href: "/legal/privacy-policy" },
               { label: "Terms", href: "/legal/terms-of-service" },
+              { label: "Book a Revenue Leak Scan", href: "/book-a-demo" },
             ]}
-            title="Links"
+            title="Company"
           />
-        </div>
-      </div>
-      <div className="flex flex-col items-center justify-between border-primary/10 border-t md:items-start">
-        <div className="container-wrapper mx-auto flex flex-col items-center justify-between gap-6 px-4 pt-4 pb-20 md:flex-row md:items-start md:gap-0">
-          <p className="px-6 text-center font-mono text-foreground/60 text-sm md:text-left lg:px-0">
-            © 2026 oppulence. Open source under the MIT license.
+          <p className="linear-footer-note">
+            Oppulence remembers every commercial relationship, finds who needs attention and why,
+            then safely prepares the next action. © 2026 Oppulence. Open source under the MIT
+            license.
           </p>
-        </div>
-        <div className="container-wrapper mx-auto w-full px-4 pb-16">
-          <div className="flex items-center justify-center border-primary/10 border-t pt-6 md:justify-start">
-            <p className="font-mono text-[11px] text-foreground/45 uppercase tracking-wider">
-              Oppulence — the living work graph for agents
-            </p>
-          </div>
         </div>
       </div>
     </footer>
   );
 }
 
-function FooterGroup({ title, items }: { title: string; items: LinkItem[] }) {
+function LinearFooterGroup({ title, items }: { title: string; items: LinkItem[] }) {
   return (
-    <div>
-      <h3 className="mb-4 font-mono font-semibold text-foreground text-sm">{title}</h3>
-      <ul className="space-y-2">
+    <div className="linear-footer-column">
+      <h3>{title}</h3>
+      <ul>
         {items.map((item) => {
-          const { icon, tone } = iconForLink(item);
-          const content = (
-            <>
-              <MarketingIcon className="size-5 rounded-[3px]" compact icon={icon} tone={tone} />
-              <span className="min-w-0">{item.label}</span>
-            </>
-          );
-
           return (
-            <li key={`${title}-${item.href}`}>
+            <li key={`${title}-${item.label}-${item.href}`}>
               {item.external ? (
-                <a
-                  className="flex items-center gap-2 font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
-                  href={item.href}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  {content}
+                <a href={item.href} rel="noopener noreferrer" target="_blank">
+                  {item.label}
                 </a>
               ) : (
-                <Link
-                  className="flex items-center gap-2 font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
-                  href={item.href}
-                >
-                  {content}
-                </Link>
+                <Link href={item.href}>{item.label}</Link>
               )}
             </li>
           );
@@ -678,68 +604,32 @@ function FooterGroup({ title, items }: { title: string; items: LinkItem[] }) {
 
 const homeProblems = [
   {
-    title: "The history is scattered.",
-    body: "The email that changed the deal, the promise from last quarter, and the note from the last meeting all live in different places.",
+    title: "Warm relationships go cold.",
+    body: "The proposal, promise, objection, and last real conversation are scattered across inboxes, meetings, calendars, and CRM records.",
   },
   {
-    title: "Agents start cold.",
-    body: "Every new prompt needs the same setup: who this person is, what happened, what was promised, and which source can be trusted.",
+    title: "The CRM misses the promise.",
+    body: "Fields can show a stage, but they rarely explain what was said, who committed to what, or why the relationship matters now.",
   },
   {
-    title: "Actions lose their trail.",
-    body: "The work crosses Gmail, Slack, Linear, GitHub, and docs, but no shared graph knows what changed or what should happen next.",
+    title: "Sending without memory is risky.",
+    body: "A polished draft is still the wrong action if the contact opted out, changed roles, objected before, or should not hear from you yet.",
   },
 ];
 
 const homeSteps = [
   {
-    title: "Capture the traces",
-    body: "Connect the inboxes, calendars, meetings, files, and tools where real work already leaves a trail.",
+    title: "Observe and remember",
+    body: "Connect communication and CRM history so every relationship, promise, objection, and outcome has a durable source trail.",
   },
   {
-    title: "Build the graph",
-    body: "Oppulence structures those traces into people, projects, companies, decisions, commitments, and open questions.",
+    title: "Prioritize and verify",
+    body: "Rank the relationships worth attention, verify current contactability, and explain why each action matters now.",
   },
   {
-    title: "Let agents use it",
-    body: "Agents brief, draft, update notes, and propose actions from the graph while users keep the review boundary clear.",
+    title: "Govern, act, and learn",
+    body: "Check policy and sender health, approve the next move, then use replies, meetings, and revenue outcomes to improve the memory.",
   },
-];
-
-const capabilityTiles: { label: string; icon: SvgIconComponent; tone: IconTone }[] = [
-  { label: "Living work graph", icon: NetworkIcon, tone: "green" },
-  { label: "Compounding context", icon: BrainIcon, tone: "blue" },
-  { label: "Meeting briefs", icon: CalendarDotsIcon, tone: "yellow" },
-  { label: "Email & calendar", icon: EnvelopeIcon, tone: "blue" },
-  { label: "Live notes", icon: SparkleIcon, tone: "yellow" },
-  { label: "Background runs", icon: FlowArrowIcon, tone: "orange" },
-  { label: "Slack workflows", icon: PlugsConnectedIcon, tone: "blue" },
-  { label: "Reviewable actions", icon: SealCheckIcon, tone: "green" },
-  { label: "Agent trails", icon: PathIcon, tone: "yellow" },
-  { label: "Connectors & MCP", icon: StackIcon, tone: "orange" },
-  { label: "Web research", icon: GlobeIcon, tone: "green" },
-  { label: "Voice & meetings", icon: HeadsetIcon, tone: "orange" },
-  { label: "Bring your own models", icon: CodeIcon, tone: "green" },
-  { label: "Local-first", icon: MonitorIcon, tone: "blue" },
-  { label: "Self-hosted", icon: HardDrivesIcon, tone: "neutral" },
-];
-
-const homeProblemIcons: {
-  icon: SvgIconComponent;
-  tone: IconTone;
-}[] = [
-  { icon: CalendarDotsIcon, tone: "yellow" },
-  { icon: BrainIcon, tone: "blue" },
-  { icon: PathIcon, tone: "orange" },
-];
-
-const homeStepIcons: {
-  icon: SvgIconComponent;
-  tone: IconTone;
-}[] = [
-  { icon: PlugsConnectedIcon, tone: "blue" },
-  { icon: NetworkIcon, tone: "green" },
-  { icon: FlowArrowIcon, tone: "orange" },
 ];
 
 const bulletIconCycle: {
@@ -752,15 +642,6 @@ const bulletIconCycle: {
   { icon: BrainIcon, tone: "blue" },
 ];
 
-const pricingPlanIcons: {
-  icon: SvgIconComponent;
-  tone: IconTone;
-}[] = [
-  { icon: HardDrivesIcon, tone: "blue" },
-  { icon: FlowArrowIcon, tone: "orange" },
-  { icon: SealCheckIcon, tone: "green" },
-];
-
 const customerStoryIcons: {
   icon: SvgIconComponent;
   tone: IconTone;
@@ -771,9 +652,9 @@ const customerStoryIcons: {
 ];
 
 function PlanCtaButton({ plan }: { plan: (typeof pricingPlans)[number] }) {
-  const isDesktop = plan.name === "Desktop";
-  const href = isDesktop ? "/app" : "/book-a-demo";
-  const label = isDesktop ? "Open dashboard" : plan.recommended ? "Plan rollout" : "Book a demo";
+  const href = "/book-a-demo";
+  const label =
+    plan.name === "Founder" ? "Book a scan" : plan.recommended ? "Plan rollout" : "Talk to us";
 
   return (
     <Button
@@ -792,100 +673,6 @@ function PlanCtaButton({ plan }: { plan: (typeof pricingPlans)[number] }) {
   );
 }
 
-function heroPanelForPage(page: MarketingPage): {
-  eyebrow: string;
-  heading: string;
-  icon: SvgIconComponent;
-  items: string[];
-  tone: IconTone;
-} {
-  if (page.path === "pricing") {
-    return {
-      eyebrow: "Plan fit",
-      heading: "Buyer paths",
-      icon: HardDrivesIcon,
-      items: page.bullets,
-      tone: "blue",
-    };
-  }
-
-  if (page.category === "blog") {
-    return {
-      eyebrow: "Reading paths",
-      heading: "Resource map",
-      icon: FileTextIcon,
-      items: page.bullets,
-      tone: "neutral",
-    };
-  }
-
-  if (page.category === "customer") {
-    return {
-      eyebrow: "Customer fit",
-      heading: "Operator stories",
-      icon: BriefcaseIcon,
-      items: page.bullets,
-      tone: "yellow",
-    };
-  }
-
-  if (page.category === "demo") {
-    return {
-      eyebrow: "Demo path",
-      heading: "What we cover",
-      icon: PlayIcon,
-      items: page.bullets,
-      tone: "orange",
-    };
-  }
-
-  if (page.category === "tool") {
-    return {
-      eyebrow: "Tool path",
-      heading: "Workflow checks",
-      icon: SealCheckIcon,
-      items: page.bullets,
-      tone: "green",
-    };
-  }
-
-  return {
-    eyebrow: "Capability path",
-    heading: page.eyebrow,
-    icon: iconForPage(page).icon,
-    items: page.bullets.length > 0 ? page.bullets : page.proof,
-    tone: iconForPage(page).tone ?? "green",
-  };
-}
-
-function HeroProofPanel({ page }: { page: MarketingPage }) {
-  const panel = heroPanelForPage(page);
-
-  return (
-    <aside className="marketing-surface hidden border p-5 lg:block">
-      <div className="flex items-center gap-3">
-        <MarketingIcon icon={panel.icon} tone={panel.tone} />
-        <div>
-          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-            {panel.eyebrow}
-          </p>
-          <h2 className="mt-1 font-semibold text-lg">{panel.heading}</h2>
-        </div>
-      </div>
-      <div className="mt-5 divide-y divide-primary/10 border-y border-primary/10">
-        {panel.items.slice(0, 3).map((item, index) => (
-          <div className="flex gap-3 py-3 text-sm leading-relaxed" key={item}>
-            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-              0{index + 1}
-            </span>
-            <p className="text-foreground/78">{item}</p>
-          </div>
-        ))}
-      </div>
-    </aside>
-  );
-}
-
 export function HomePage() {
   return (
     <div className="flex flex-col">
@@ -893,15 +680,13 @@ export function HomePage() {
       <HeroVisual />
       <LogoBand />
       <ProblemSection />
-      <StatementBand />
-      <HowItWorks />
-      <DownloadSection />
-      <ProductSurfaceSection />
-      <IntegrationsShowcase />
-      {homeSpotlights.map((spotlight, index) => (
-        <FeatureSpotlight key={spotlight.heading} reverse={index % 2 === 1} spotlight={spotlight} />
+      {linearHomeSections.map((section, index) => (
+        <LinearProductSection index={index} key={section.title} section={section} />
       ))}
-      <FaqSection />
+      <HomeUpdates />
+      <CapabilityIndex />
+      <HomeProofBand />
+      <HomeFaqSection />
       <FinalCta />
     </div>
   );
@@ -909,44 +694,21 @@ export function HomePage() {
 
 function HomeHero() {
   return (
-    <section className="px-4 pt-32 pb-16 md:pt-36 md:pb-20">
-      <div className="flex w-full min-w-0 max-w-3xl flex-col items-start gap-6">
-        <p className="font-mono text-[12px] uppercase tracking-[0.22em] text-muted-foreground">
-          The living work graph
-        </p>
-        <h1 className="marketing-hero-title w-full min-w-0 max-w-3xl text-balance text-left font-display text-5xl leading-[1.04] font-light md:text-6xl xl:text-[4.25rem]">
-          Your work, as one living <span className="serif-accent">graph.</span>
+    <section className="linear-hero linear-inset">
+      <div>
+        <h1 className="linear-hero-title">
+          Turn forgotten relationships
+          <br className="hidden sm:block" /> into revenue.
         </h1>
-        <p className="max-w-xl text-balance text-left text-lg text-muted-foreground leading-relaxed">
-          Oppulence turns email, calendar, meetings, files, and tools into an owned graph of the
-          people, projects, decisions, and commitments that matter. Agents use that graph before
-          they brief, draft, update, or act.
-        </p>
-        <div className="mt-1 flex w-full flex-col gap-3 sm:flex-row sm:items-center">
-          <Button
-            asChild
-            className="marketing-cta-primary h-12 border border-transparent px-7 font-medium text-md has-[>svg]:px-5"
-          >
-            <Link href="/book-a-demo">
-              Book a demo
-              <ArrowRightIcon style={{ fontSize: "1rem" }} />
-            </Link>
-          </Button>
-          <Button
-            asChild
-            className="marketing-cta-secondary h-12 border px-6 font-medium text-md"
-            variant="ghost"
-          >
-            <Link href="/app">Open dashboard</Link>
-          </Button>
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-2">
-          {["Graph you own", "Sources stay inspectable", "Actions stay reviewable"].map((item) => (
-            <span className="flex items-center gap-2 text-sm text-muted-foreground" key={item}>
-              <CheckCircleIcon className="text-oppulence-green" style={{ fontSize: "1rem" }} />
-              {item}
-            </span>
-          ))}
+        <div className="linear-hero-meta">
+          <p className="linear-body max-w-[620px]">
+            Oppulence remembers every commercial relationship, identifies who needs attention and
+            why, verifies what is safe to send, and prepares the next action for your approval.
+          </p>
+          <Link className="linear-inline-link shrink-0" href="/book-a-demo">
+            <span className="linear-new-pill">New</span>
+            Revenue Leak Scan <span className="text-foreground/40">→</span>
+          </Link>
         </div>
       </div>
     </section>
@@ -955,424 +717,229 @@ function HomeHero() {
 
 function HeroVisual() {
   return (
-    <section className="px-4 pb-16 md:pb-24">
-      <DesktopScreenshotPreview
-        alt="The Oppulence desktop app — work context, tasks, and copilot in one place"
-        className="mx-auto w-full"
-        src={desktopScreenshots.home}
-      />
-    </section>
-  );
-}
-
-function LogoBand() {
-  return (
-    <section className="border-y border-dashed border-primary/10 bg-background-50">
-      <div className="container mx-auto flex flex-col items-center gap-6 px-4 py-7 md:flex-row md:gap-10">
-        <p className="shrink-0 font-mono text-[11px] uppercase tracking-[0.18em] text-foreground/45">
-          Works with the tools
-          <br className="hidden md:block" /> you already use
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-3 md:justify-start">
-          {integrationGroups.slice(0, 7).map((item) => {
-            const { icon: Icon } = iconForLink({ href: item, label: item });
-
-            return (
-              <span
-                className="flex items-center gap-2 text-sm font-medium text-foreground/70"
-                key={item}
-              >
-                <Icon className="text-foreground/50" style={{ fontSize: "1.25rem" }} />
-                {item}
-              </span>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProblemSection() {
-  return (
-    <section className="px-4 py-20 md:py-28">
-      <div className="mx-auto mb-12 max-w-2xl text-center">
-        <p className="inline-flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.22em] text-muted-foreground">
-          <MarketingIcon
-            className="size-5 rounded-[6px]"
-            compact
-            icon={MagnifyingGlassIcon}
-            tone="yellow"
-          />
-          The problem
-        </p>
-        <h2 className="mt-5 text-balance font-display text-4xl leading-[1.08] font-light tracking-[-0.03em] md:text-5xl">
-          Your context is everywhere. Your agents need one graph.
-        </h2>
-        <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-muted-foreground">
-          Useful AI does not start with a better prompt. It starts with a durable model of the work:
-          who is involved, what changed, what was decided, and what still needs to happen.
-        </p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        {homeProblems.map((card, index) => (
-          <article className="marketing-surface border p-6" key={card.title}>
-            <MarketingIcon
-              icon={homeProblemIcons[index]?.icon ?? ChartLineIcon}
-              tone={homeProblemIcons[index]?.tone ?? "neutral"}
-            />
-            <h3 className="mt-5 font-display text-xl font-medium">{card.title}</h3>
-            <p className="mt-3 text-muted-foreground text-sm leading-relaxed">{card.body}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function StatementBand() {
-  return (
-    <section className="border-y border-dashed border-primary/10 bg-background-50 px-4 py-20 md:py-28">
-      <div className="mx-auto max-w-4xl text-center">
-        <p className="inline-flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.22em] text-muted-foreground">
-          <MarketingIcon className="size-5 rounded-[6px]" compact icon={SparkleIcon} tone="green" />
-          The fix
-        </p>
-        <h2 className="mt-5 text-balance font-display text-4xl leading-[1.08] font-light tracking-[-0.03em] md:text-5xl">
-          The graph is the asymmetry.
-        </h2>
-        <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-muted-foreground">
-          Most agent products compete on prompts, models, or UI. Oppulence starts one layer lower:
-          the owned, inspectable work graph that gives every agent the same source of truth.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function HowItWorks() {
-  return (
-    <section className="px-4 py-20 md:py-28">
-      <div className="mx-auto mb-12 max-w-2xl text-center">
-        <p className="inline-flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.22em] text-muted-foreground">
-          <MarketingIcon
-            className="size-5 rounded-[6px]"
-            compact
-            icon={FlowArrowIcon}
-            tone="blue"
-          />
-          How it works
-        </p>
-        <h2 className="mt-5 text-balance font-display text-4xl leading-[1.08] font-light tracking-[-0.03em] md:text-5xl">
-          From scattered traces to useful agents.
-        </h2>
-      </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        {homeSteps.map((step, index) => (
-          <article className="marketing-surface border p-6" key={step.title}>
-            <div className="flex items-center justify-between gap-3">
-              <MarketingIcon
-                icon={homeStepIcons[index]?.icon ?? ChartLineIcon}
-                tone={homeStepIcons[index]?.tone ?? "neutral"}
-              />
-              <span className="font-mono text-2xl font-light text-foreground/25">0{index + 1}</span>
-            </div>
-            <h3 className="mt-5 font-display text-xl font-medium">{step.title}</h3>
-            <p className="mt-3 text-muted-foreground text-sm leading-relaxed">{step.body}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ProductSurfaceSection() {
-  return (
-    <section className="border-y border-dashed border-primary/10 bg-background-50 px-4 py-20 md:py-28">
-      <div className="mx-auto mb-12 max-w-2xl text-center">
-        <p className="inline-flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.22em] text-muted-foreground">
-          <MarketingIcon className="size-5 rounded-[6px]" compact icon={StackIcon} tone="green" />
-          One platform
-        </p>
-        <h2 className="mt-5 text-balance font-display text-4xl leading-[1.08] font-light tracking-[-0.03em] md:text-5xl">
-          Everything the graph needs to stay useful.
-        </h2>
-        <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-muted-foreground">
-          Capture sources, structure context, run background updates, and expose graph-backed agents
-          through desktop workflows, Slack, widgets, and APIs.
-        </p>
-      </div>
-      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {capabilityTiles.map((tile) => (
-          <div
-            className="marketing-surface flex flex-col items-center gap-3 border bg-card px-3 py-6 text-center"
-            key={tile.label}
-          >
-            <MarketingIcon icon={tile.icon} tone={tile.tone} />
-            <span className="text-sm font-medium leading-tight text-foreground/80">
-              {tile.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-const homeSpotlights: {
-  eyebrow: string;
-  icon: SvgIconComponent;
-  tone: IconTone;
-  heading: string;
-  body: string;
-  bullets: string[];
-  src: string;
-  alt: string;
-}[] = [
-  {
-    eyebrow: "Living graph",
-    icon: NetworkIcon,
-    tone: "green",
-    heading: "The graph keeps the work connected.",
-    body: "Oppulence turns email, meetings, files, and messages into linked context around the people, projects, decisions, and commitments that matter.",
-    bullets: [
-      "Built from Gmail, Calendar, and meeting transcripts as you work",
-      "People, projects, decisions, and open questions, all linked",
-      "Plain Markdown you own, search, and edit",
-    ],
-    src: desktopScreenshots.knowledge,
-    alt: "Oppulence living work graph of people, projects, and notes",
-  },
-  {
-    eyebrow: "Briefs & drafts",
-    icon: SparkleIcon,
-    tone: "blue",
-    heading: "Every draft starts from the same source of truth.",
-    body: "Ask for a meeting brief or a reply and the agent looks up the relevant person, project, and source trail before writing.",
-    bullets: [
-      "Prep assembled from real history before every call",
-      "Drafts in your voice, never generic",
-      "Nothing is auto-sent — you approve every send",
-    ],
-    src: desktopScreenshots.chat,
-    alt: "Oppulence copilot drafting a grounded reply",
-  },
-  {
-    eyebrow: "Background work",
-    icon: FlowArrowIcon,
-    tone: "orange",
-    heading: "The graph can update without another prompt.",
-    body: "Background workflows can refresh live notes, prepare recurring briefs, or watch high-value subjects from schedules and events.",
-    bullets: [
-      "Durable runs on a schedule or trigger",
-      "Updates notes and drafts next steps",
-      "Behind a clear read, draft, review, and action boundary",
-    ],
-    src: desktopScreenshots.tasks,
-    alt: "Oppulence background tasks running in the cloud",
-  },
-];
-
-function FeatureSpotlight({
-  spotlight,
-  reverse,
-}: {
-  spotlight: (typeof homeSpotlights)[number];
-  reverse: boolean;
-}) {
-  return (
-    <section className="px-4 py-16 md:py-24">
-      <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2">
-        <div className={cn("flex flex-col items-start gap-5", reverse && "lg:order-2")}>
-          <p className="inline-flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.22em] text-muted-foreground">
-            <MarketingIcon
-              className="size-5 rounded-[6px]"
-              compact
-              icon={spotlight.icon}
-              tone={spotlight.tone}
-            />
-            {spotlight.eyebrow}
-          </p>
-          <h2 className="text-balance font-display text-3xl leading-[1.08] font-light tracking-[-0.03em] md:text-4xl">
-            {spotlight.heading}
-          </h2>
-          <p className="text-balance text-lg leading-relaxed text-muted-foreground">
-            {spotlight.body}
-          </p>
-          <ul className="mt-1 flex flex-col gap-3">
-            {spotlight.bullets.map((bullet) => (
-              <li className="flex items-start gap-3 text-sm text-foreground/80" key={bullet}>
-                <CheckCircleIcon
-                  className="mt-0.5 shrink-0 text-oppulence-green"
-                  style={{ fontSize: "1rem" }}
-                />
-                {bullet}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <DesktopScreenshotPreview
-          alt={spotlight.alt}
-          className={cn("w-full", reverse && "lg:order-1")}
-          src={spotlight.src}
+    <section className="linear-hero-visual">
+      <div className="linear-hero-glow" />
+      <div className="linear-app-frame">
+        <Image
+          alt="The Oppulence revenue action queue with relationship context and recommended actions"
+          height={960}
+          priority
+          sizes="(max-width: 640px) 780px, (max-width: 1440px) 92vw, 1320px"
+          src={desktopScreenshots.home}
+          width={1440}
         />
       </div>
     </section>
   );
 }
 
-function IntegrationsShowcase() {
+function LogoBand() {
   return (
-    <section className="px-4 py-20 md:py-28">
-      <div className="mx-auto mb-12 max-w-2xl text-center">
-        <p className="inline-flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.22em] text-muted-foreground">
-          <MarketingIcon
-            className="size-5 rounded-[6px]"
-            compact
-            icon={PlugsConnectedIcon}
-            tone="orange"
-          />
-          Integrations
-        </p>
-        <h2 className="mt-5 text-balance font-display text-4xl leading-[1.08] font-light tracking-[-0.03em] md:text-5xl">
-          Connect everything you already use.
-        </h2>
-        <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-muted-foreground">
-          Native connectors plus MCP and API tools let sources feed the graph and actions stay
-          behind explicit review boundaries.
-        </p>
+    <section aria-label="Connected tools" className="linear-logo-band">
+      <div className="linear-logo-cell linear-logo-caption">
+        One loop across your revenue systems
       </div>
-      <div className="mx-auto max-w-4xl">
-        <div className="marketing-dots grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3">
-          {integrationGroups.map((item) => {
-            const { icon, tone } = iconForLink({ href: item, label: item });
+      {integrationGroups.slice(0, 6).map((item) => {
+        const { icon: Icon } = iconForLink({ href: item, label: item });
 
-            return (
-              <div
-                className="marketing-surface flex items-center gap-3 border bg-card px-4 py-4"
-                key={item}
-              >
-                <MarketingIcon compact icon={icon} tone={tone} />
-                <span className="text-sm font-medium text-foreground/80">{item}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-const downloadPlatforms: { label: string; platform: string }[] = [
-  { label: "macOS (Apple Silicon)", platform: "mac-arm64" },
-  { label: "macOS (Intel)", platform: "mac-x64" },
-  { label: "Windows", platform: "windows-x64" },
-  { label: "Linux", platform: "linux-deb-x64" },
-];
-
-function DownloadSection() {
-  return (
-    <section className="border-y border-dashed border-primary/10 px-4 py-20 md:py-28">
-      <div className="mx-auto max-w-2xl text-center">
-        <p className="inline-flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.22em] text-muted-foreground">
-          <MarketingIcon
-            className="size-5 rounded-[6px]"
-            compact
-            icon={DownloadIcon}
-            tone="green"
-          />
-          Download
-        </p>
-        <h2 className="mt-5 text-balance font-display text-4xl leading-[1.08] font-light tracking-[-0.03em] md:text-5xl">
-          Run Oppulence on your machine.
-        </h2>
-        <p className="mx-auto mt-5 max-w-xl text-balance text-lg leading-relaxed text-muted-foreground">
-          Local-first and open source. Your work graph lives on your own device — nothing leaves
-          unless you wire a tool to send it.
-        </p>
-        <div className="mt-8 flex flex-col items-center gap-5">
-          <Button
-            asChild
-            className="marketing-cta-primary h-12 border border-transparent px-7 font-medium text-md has-[>svg]:px-5"
-          >
-            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- API route 302-redirects to the installer; needs a full navigation */}
-            <a href="/api/download">
-              <DownloadIcon style={{ fontSize: "1rem" }} />
-              Download for free
-            </a>
-          </Button>
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 font-mono text-xs text-muted-foreground">
-            {downloadPlatforms.map((item, index) => (
-              <span className="flex items-center gap-3" key={item.platform}>
-                {index > 0 ? <span className="text-foreground/20">·</span> : null}
-                <a
-                  className="transition-colors hover:text-foreground"
-                  href={`/api/download?platform=${item.platform}`}
-                >
-                  {item.label}
-                </a>
-              </span>
-            ))}
+        return (
+          <div className="linear-logo-cell" key={item}>
+            <Icon style={{ fontSize: "1rem" }} />
+            {item}
           </div>
-        </div>
+        );
+      })}
+    </section>
+  );
+}
+
+function ProblemSection() {
+  return (
+    <section>
+      <div className="linear-statement linear-inset">
+        <h2 className="linear-statement-title">
+          <strong>Your next deal may already be in your inbox.</strong> Oppulence finds missed
+          promises, dormant champions, unanswered proposals, former customers, and neglected
+          referrals—then shows you the safest next move.
+        </h2>
+      </div>
+      <div className="linear-benefits linear-inset">
+        {homeProblems.map((card, index) => (
+          <article className="linear-benefit" key={card.title}>
+            <span className="linear-benefit-figure">FIG 0.{index + 2}</span>
+            <ProblemVisual index={index} />
+            <h3>{card.title}</h3>
+            <p className="linear-body">{card.body}</p>
+          </article>
+        ))}
       </div>
     </section>
   );
 }
 
-const homeFaqs = [
-  {
-    q: "How is this different from ChatGPT or Claude?",
-    a: "Chat assistants start cold and wait for context. Oppulence builds the context layer first: a graph of your real work that agents can inspect before generating or acting.",
-  },
-  {
-    q: "Do agents keep working when my laptop is closed?",
-    a: "Background workflows can run from schedules and events, including cloud-backed tasks where configured. The important point is that the output writes back into graph context instead of vanishing into a chat.",
-  },
-  {
-    q: "Can agents take actions on their own?",
-    a: "Actions should sit behind clear boundaries. Oppulence is designed so reading, drafting, review, and external execution can be separated instead of blended into one opaque agent step.",
-  },
-  {
-    q: "Where does my data live?",
-    a: "The desktop graph is local-first and file-backed. Platform deployments can be self-hosted when teams need control over storage, providers, and integration boundaries.",
-  },
-  {
-    q: "Which AI models can I use?",
-    a: "Bring your own provider keys — OpenAI, Anthropic, Google, OpenRouter, the AI Gateway, or a local model. You control routing and spend.",
-  },
-  {
-    q: "Which tools does it connect to?",
-    a: "The marketing surface centers Gmail, Calendar, meetings, Slack, GitHub, Linear, web search, and MCP/API tools. Exact availability depends on the configured deployment.",
-  },
-];
+function ProblemVisual({ index }: { index: number }) {
+  if (index === 0) {
+    return (
+      <div aria-hidden="true" className="linear-problem-art linear-problem-orbit">
+        <span className="linear-problem-orbit-ring" />
+        <span className="linear-problem-node linear-problem-node-a" />
+        <span className="linear-problem-node linear-problem-node-b" />
+        <span className="linear-problem-node linear-problem-node-c" />
+        <span className="linear-problem-orbit-break" />
+      </div>
+    );
+  }
 
-function FaqSection() {
+  if (index === 1) {
+    return (
+      <div aria-hidden="true" className="linear-problem-art linear-problem-stack">
+        <span className="linear-problem-plane linear-problem-plane-back" />
+        <span className="linear-problem-plane linear-problem-plane-middle" />
+        <span className="linear-problem-plane linear-problem-plane-front">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="linear-problem-thread" />
+      </div>
+    );
+  }
+
   return (
-    <section className="px-4 py-20 md:py-28">
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-10 text-center">
-          <p className="font-mono text-[12px] uppercase tracking-[0.22em] text-muted-foreground">
-            FAQ
-          </p>
-          <h2 className="mt-5 font-display text-4xl leading-[1.08] font-light tracking-[-0.03em] md:text-5xl">
-            Frequently asked <span className="serif-accent">questions</span>
-          </h2>
+    <div aria-hidden="true" className="linear-problem-art linear-problem-path">
+      <span className="linear-problem-path-rail" />
+      <span className="linear-problem-path-signal" />
+      <span className="linear-problem-path-gate">
+        <i />
+      </span>
+      <span className="linear-problem-path-echo" />
+    </div>
+  );
+}
+
+const linearHomeSections = [
+  {
+    title: "Find the revenue already hiding in your history.",
+    description:
+      "Scan the last 60–90 days of communication and CRM activity for unanswered proposals, dormant opportunities, missed commitments, former customers, and neglected referrals.",
+    label: "Revenue Leak Scan",
+    href: "/ai-help-center",
+    src: desktopScreenshots.knowledge,
+    alt: "Oppulence Revenue Leak Scan showing warm opportunities and source evidence",
+    bullets: [
+      "Unanswered proposals and missed promises",
+      "Dormant champions and former customers",
+      "Every finding linked to source evidence",
+    ],
+  },
+  {
+    title: "Know who needs attention—and why now.",
+    description:
+      "Oppulence ranks the highest-value relationships into one daily action queue, with the history, commitment, opportunity, and timing behind every recommendation.",
+    label: "Revenue Action Queue",
+    href: "/ai-documentation-agent",
+    src: desktopScreenshots.chat,
+    alt: "Oppulence daily revenue action queue ranked by value and urgency",
+    bullets: [
+      "Ten highest-value actions, not another noisy inbox",
+      "Relationship history and prior objections included",
+      "Approve, edit, snooze, or reject every action",
+    ],
+  },
+  {
+    title: "Verify the person before you prepare the message.",
+    description:
+      "Research the account, confirm the person’s current role and address, and keep the evidence attached before a draft becomes an action.",
+    label: "Research & verification",
+    href: "/automated-screenshots-for-docs",
+    src: desktopScreenshots.tasks,
+    alt: "Oppulence researching an account and verifying a contact before outreach",
+    bullets: [
+      "Current role and contact verification",
+      "Account research with source provenance",
+      "Evidence stays attached to the proposed action",
+    ],
+  },
+  {
+    title: "Know what must not be sent.",
+    description:
+      "Check prior objections, opt-outs, suppression lists, frequency limits, sender health, and permissions before a message can leave the queue.",
+    label: "Policy & sender protection",
+    href: "/integrations",
+    src: desktopScreenshots.connections,
+    alt: "Oppulence policy checks and sender protection before execution",
+    bullets: [
+      "Suppression and opt-out checks",
+      "Frequency and permission rules",
+      "Sender and domain health",
+    ],
+  },
+  {
+    title: "Let every outcome improve the next action.",
+    description:
+      "Replies, meetings, human edits, CRM changes, wins, and losses flow back into the relationship memory so the system learns what good follow-through looks like for your business.",
+    label: "Closed-loop learning",
+    href: "/product",
+    src: desktopScreenshots.home,
+    alt: "Oppulence relationship timeline updated by replies, meetings, and revenue outcomes",
+    bullets: [
+      "Replies and meetings update the relationship",
+      "Human edits become learning signals",
+      "Revenue outcomes close the loop",
+    ],
+  },
+] as const;
+
+function LinearProductSection({
+  index,
+  section,
+}: {
+  index: number;
+  section: (typeof linearHomeSections)[number];
+}) {
+  const sectionNumber = `${index + 1}.0`;
+  const action = (
+    <span className="linear-product-link">
+      <span className="linear-index">{sectionNumber}</span>
+      <span className="linear-body !text-[var(--linear-text-tertiary)]">{section.label}</span>
+      <span className="text-foreground/35">→</span>
+    </span>
+  );
+
+  return (
+    <section className="linear-product-section">
+      <header className="linear-product-header linear-inset">
+        <div>
+          <h2 className="linear-product-title">{section.title}</h2>
         </div>
-        <div className="divide-y divide-primary/10 border-y border-primary/10">
-          {homeFaqs.map((faq) => (
-            <details className="group/faq py-5" key={faq.q}>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left font-medium [&::-webkit-details-marker]:hidden">
-                {faq.q}
-                <CaretDownIcon
-                  className="shrink-0 text-muted-foreground transition-transform group-open/faq:rotate-180"
-                  style={{ fontSize: "1rem" }}
-                />
-              </summary>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                {faq.a}
-              </p>
-            </details>
+        <div className="linear-product-description">
+          <p>{section.description}</p>
+          {section.href.startsWith("/api/") ? (
+            <a href={section.href}>{action}</a>
+          ) : (
+            <Link href={section.href}>{action}</Link>
+          )}
+        </div>
+      </header>
+      <div className="linear-product-visual">
+        <div className="linear-product-panel">
+          <Image
+            alt={section.alt}
+            height={960}
+            sizes="(max-width: 640px) 100vw, (max-width: 1440px) 92vw, 1344px"
+            src={section.src}
+            width={1440}
+          />
+        </div>
+        <div className="linear-product-tabs">
+          {section.bullets.map((bullet, bulletIndex) => (
+            <div className="linear-product-tab" key={bullet}>
+              <span className="linear-index mr-3">
+                {index + 1}.{bulletIndex + 1}
+              </span>
+              {bullet}
+              <span className="ml-2 text-foreground/30">+</span>
+            </div>
           ))}
         </div>
       </div>
@@ -1380,35 +947,209 @@ function FaqSection() {
   );
 }
 
+function HomeUpdates() {
+  return (
+    <section className="linear-updates">
+      <div className="linear-inset">
+        <h2 className="linear-statement-title !max-w-[1180px]">
+          <strong>The memory is the advantage.</strong> Message generation is not the moat. The moat
+          is the source-linked history connecting relationships, commitments, policy decisions,
+          human edits, executed actions, and revenue outcomes.
+        </h2>
+      </div>
+      <div className="linear-updates-grid linear-inset">
+        {homeSteps.map((step, index) => (
+          <article className="linear-update" key={step.title}>
+            <span className="linear-index">0{index + 1}</span>
+            <HomeStepVisual index={index} />
+            <div className="linear-update-copy">
+              <h3>{step.title}</h3>
+              <p className="linear-body mt-2">{step.body}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HomeStepVisual({ index }: { index: number }) {
+  if (index === 0) {
+    return (
+      <div aria-hidden="true" className="linear-step-art linear-step-capture">
+        <span className="linear-step-capture-ring" />
+        <span className="linear-step-capture-core" />
+        <span className="linear-step-ray linear-step-ray-a" />
+        <span className="linear-step-ray linear-step-ray-b" />
+        <span className="linear-step-ray linear-step-ray-c" />
+      </div>
+    );
+  }
+
+  if (index === 1) {
+    return (
+      <div aria-hidden="true" className="linear-step-art linear-step-priority">
+        <span className="linear-step-slab linear-step-slab-a" />
+        <span className="linear-step-slab linear-step-slab-b" />
+        <span className="linear-step-slab linear-step-slab-c" />
+        <span className="linear-step-focus" />
+      </div>
+    );
+  }
+
+  return (
+    <div aria-hidden="true" className="linear-step-art linear-step-loop">
+      <span className="linear-step-loop-ring" />
+      <span className="linear-step-loop-node linear-step-loop-node-a" />
+      <span className="linear-step-loop-node linear-step-loop-node-b" />
+      <span className="linear-step-loop-node linear-step-loop-node-c" />
+      <span className="linear-step-loop-core" />
+    </div>
+  );
+}
+
+const capabilityTiles: { label: string; icon: SvgIconComponent }[] = [
+  { label: "Revenue Leak Scan", icon: MagnifyingGlassIcon },
+  { label: "Revenue Action Queue", icon: TrayIcon },
+  { label: "Relationship memory", icon: BrainIcon },
+  { label: "Commitment tracking", icon: CalendarDotsIcon },
+  { label: "Source evidence", icon: FileTextIcon },
+  { label: "Contact verification", icon: SealCheckIcon },
+  { label: "Account research", icon: GlobeIcon },
+  { label: "Suppression checks", icon: CircleIcon },
+  { label: "Frequency policies", icon: PathIcon },
+  { label: "Sender health", icon: ChartLineIcon },
+  { label: "Human approvals", icon: CheckCircleIcon },
+  { label: "Execution telemetry", icon: FlowArrowIcon },
+  { label: "Meeting briefs", icon: CalendarDotsIcon },
+  { label: "CRM outcome sync", icon: PlugsConnectedIcon },
+  { label: "Audit history", icon: HardDrivesIcon },
+];
+
+function CapabilityIndex() {
+  return (
+    <section className="linear-capabilities linear-inset">
+      <header>
+        <h2>Everything a safe revenue action needs.</h2>
+        <p>
+          From source evidence and relationship history to verification, policy, approval,
+          execution, and the outcome that follows.
+        </p>
+      </header>
+      <div>
+        {capabilityTiles.map(({ icon: Icon, label }, index) => (
+          <div key={label}>
+            <span className="linear-index">{String(index + 1).padStart(2, "0")}</span>
+            <Icon aria-hidden="true" />
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HomeProofBand() {
+  const proof = [
+    {
+      title: "Every recommendation explains why this relationship matters now.",
+      label: "Evidence before action",
+    },
+    {
+      title: "Verification, suppression, policy, and sender health precede execution.",
+      label: "Governed by default",
+    },
+    {
+      title: "Replies, meetings, edits, and revenue outcomes improve the memory.",
+      label: "Learns from outcomes",
+    },
+  ];
+
+  return (
+    <section aria-label="Product principles" className="linear-proof-band linear-inset">
+      {proof.map((item) => (
+        <article className="linear-proof" key={item.label}>
+          <p>{item.title}</p>
+          <p>{item.label}</p>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+const homeFaqs = [
+  {
+    question: "Is Oppulence another CRM?",
+    answer:
+      "No. Your CRM remains the system of record for opportunity state. Oppulence remembers the communication, promises, objections, and evidence around the relationship, then turns that context into the next governed action.",
+  },
+  {
+    question: "Is this a cold-email platform?",
+    answer:
+      "The starting point is warm revenue: dormant opportunities, missed commitments, unanswered proposals, former customers, and neglected referrals. Cold-account discovery can come later, after the system earns trust.",
+  },
+  {
+    question: "How does Oppulence decide who needs attention?",
+    answer:
+      "It combines relationship history, commitments, recency, opportunity context, prior objections, contactability, and source evidence to rank the actions most likely to recover or advance revenue.",
+  },
+  {
+    question: "Will it send messages without me?",
+    answer:
+      "High-value actions are approval-gated. You can approve, edit, snooze, or reject them. Controlled autonomy should only apply to low-risk actions under explicit policies.",
+  },
+  {
+    question: "What does it check before a message is sent?",
+    answer:
+      "Oppulence can verify the contact, inspect prior objections and opt-outs, apply suppression and frequency rules, check permissions and sender health, and retain the policy decision in the audit trail.",
+  },
+  {
+    question: "What systems does it connect to?",
+    answer:
+      "The initial workflow centers email, calendar, meetings, and CRM data, with research, verification, policy, and sending systems connected behind one revenue action queue. Exact availability depends on deployment and rollout stage.",
+  },
+];
+
+function HomeFaqSection() {
+  return (
+    <section className="linear-faq linear-inset">
+      <header>
+        <h2>Frequently asked questions</h2>
+        <p className="linear-body">
+          What revenue teams ask before they connect relationship history and approve external
+          action.
+        </p>
+      </header>
+      <div>
+        {homeFaqs.map((item) => (
+          <details key={item.question}>
+            <summary>
+              {item.question}
+              <span aria-hidden="true">+</span>
+            </summary>
+            <p>{item.answer}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function FinalCta() {
   return (
-    <section className="px-4 pb-24">
-      <div className="marketing-panel relative overflow-hidden rounded-3xl border border-primary/5 px-6 py-16 text-center md:py-24">
-        <h2 className="mx-auto max-w-3xl text-balance font-display text-4xl leading-[1.04] font-light tracking-[-0.03em] md:text-6xl">
-          Build the graph first. Let agents use it second.
-        </h2>
-        <p className="mx-auto mt-5 max-w-xl text-balance text-lg leading-relaxed text-foreground/70">
-          Connect the sources that matter, make the context inspectable, and give agents a safer
-          place to brief, draft, update, and act.
-        </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button
-            asChild
-            className="marketing-cta-primary h-12 border border-transparent px-7 font-medium text-md has-[>svg]:px-5"
-          >
-            <Link href="/book-a-demo">
-              Book a demo
-              <ArrowRightIcon style={{ fontSize: "1rem" }} />
-            </Link>
-          </Button>
-          <Button
-            asChild
-            className="marketing-cta-secondary h-12 border px-6 font-medium text-md"
-            variant="ghost"
-          >
-            <Link href="/app">Open dashboard</Link>
-          </Button>
-        </div>
+    <section className="linear-final-cta linear-inset">
+      <h2>Recover the revenue already in your relationships.</h2>
+      <p className="linear-body max-w-xl text-balance">
+        Find the warm opportunities slipping through the cracks, understand why they matter now, and
+        approve the safest next action.
+      </p>
+      <div className="flex flex-col items-center gap-3 sm:flex-row">
+        <Link className="linear-button-primary !h-10 !px-5" href="/book-a-demo">
+          Book a Revenue Leak Scan
+        </Link>
+        <Link className="linear-button-secondary !h-10 !px-5" href="/product">
+          See how it works
+        </Link>
       </div>
     </section>
   );
@@ -1495,28 +1236,26 @@ export function GenericPage({ page }: { page: MarketingPage }) {
 }
 
 function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: FeatureDetail }) {
-  const proofItems = details.heroProof ?? page.bullets;
   const capabilitySections = details.capabilities ?? details.sections;
   const relatedPages =
     details.relatedPages ??
     featureLinks.filter((item) => item.href !== `/${page.path}`).slice(0, 3);
 
   return (
-    <div className="flex flex-col pt-32 pb-20">
-      <div className="mx-auto w-full max-w-6xl px-4">
-        <header className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-          <div className="min-w-0 max-w-4xl">
+    <div className="linear-subpage">
+      <div className="linear-inset">
+        <header className="linear-subpage-hero">
+          <div className="min-w-0">
             <EyebrowPill {...iconForPage(page)}>{page.eyebrow}</EyebrowPill>
-            <h1 className="marketing-hero-title mt-5 w-full min-w-0 text-balance font-display text-5xl leading-[1.03] font-light md:text-6xl xl:text-[4rem]">
-              {page.title}
-            </h1>
-            <p className="mt-6 max-w-3xl text-lg text-muted-foreground">{page.description}</p>
+            <h1 className="linear-subpage-title mt-5">{page.title}</h1>
+          </div>
+          <div className="linear-subpage-description">
+            <p>{page.description}</p>
             <FeatureActionButtons
-              primary={page.ctaLabel ?? "Book a demo"}
-              secondary="Read guides"
+              primary={page.ctaLabel ?? "Book a Revenue Leak Scan"}
+              secondary="See product"
             />
           </div>
-          <FeatureHeroProofPanel items={proofItems} page={page} />
         </header>
 
         <section className="mt-12 grid gap-3 sm:grid-cols-3">
@@ -1638,14 +1377,16 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
               <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
                 Related
               </p>
-              <h2 className="mt-2 text-2xl font-semibold">Keep following the graph.</h2>
+              <h2 className="mt-2 text-2xl font-semibold">Keep following the revenue loop.</h2>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
-                <Link href={page.ctaHref ?? "/book-a-demo"}>{page.ctaLabel ?? "Book a demo"}</Link>
+                <Link href={page.ctaHref ?? "/book-a-demo"}>
+                  {page.ctaLabel ?? "Book a Revenue Leak Scan"}
+                </Link>
               </Button>
               <Button asChild className="marketing-cta-secondary" variant="ghost">
-                <Link href="/app">Open dashboard</Link>
+                <Link href="/app">Open action queue</Link>
               </Button>
             </div>
           </div>
@@ -1657,7 +1398,7 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
                 <Link
                   className="marketing-surface flex items-start gap-3 border p-4 transition-colors hover:bg-background-200"
                   href={item.href}
-                  key={item.href}
+                  key={`${item.label}-${item.href}`}
                 >
                   <MarketingIcon compact icon={icon} tone={tone} />
                   <span className="min-w-0">
@@ -1678,37 +1419,9 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
   );
 }
 
-function FeatureHeroProofPanel({ items, page }: { items: string[]; page: MarketingPage }) {
-  const { icon, tone } = iconForPage(page);
-
-  return (
-    <aside className="marketing-surface hidden border p-5 lg:block">
-      <div className="flex items-center gap-3">
-        <MarketingIcon icon={icon} tone={tone ?? "green"} />
-        <div>
-          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-            Feature path
-          </p>
-          <h2 className="mt-1 font-semibold text-lg">{page.eyebrow}</h2>
-        </div>
-      </div>
-      <div className="mt-5 divide-y divide-primary/10 border-y border-primary/10">
-        {items.slice(0, 3).map((item, index) => (
-          <div className="flex gap-3 py-3 text-sm leading-relaxed" key={item}>
-            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-              0{index + 1}
-            </span>
-            <p className="text-foreground/78">{item}</p>
-          </div>
-        ))}
-      </div>
-    </aside>
-  );
-}
-
 function FeatureActionButtons({
-  primary = "Get started free",
-  secondary = "Read docs",
+  primary = "Book a Revenue Leak Scan",
+  secondary = "See product",
 }: {
   primary?: string;
   secondary?: string;
@@ -1729,7 +1442,7 @@ function FeatureActionButtons({
         className="marketing-cta-secondary h-12 justify-between border border-primary/10 px-4 font-medium text-md"
         variant="ghost"
       >
-        <Link href="/blog">{secondary}</Link>
+        <Link href="/product">{secondary}</Link>
       </Button>
     </div>
   );
@@ -1737,30 +1450,29 @@ function FeatureActionButtons({
 
 function PageShell({ page, children }: { page: MarketingPage; children: ReactNode }) {
   return (
-    <div className="flex flex-col pt-32 pb-20">
-      <div className="mx-auto w-full max-w-5xl px-6">
-        <header className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-          <div className="min-w-0 max-w-4xl">
+    <div className="linear-subpage">
+      <div className="linear-inset">
+        <header className="linear-subpage-hero">
+          <div className="min-w-0">
             <EyebrowPill {...iconForPage(page)}>{page.eyebrow}</EyebrowPill>
-            <h1 className="marketing-hero-title mt-3 w-full min-w-0 text-balance font-display text-5xl leading-[1.03] font-light md:text-6xl xl:text-[4rem]">
-              {page.title}
-            </h1>
-            <p className="mt-6 max-w-3xl text-lg text-muted-foreground">{page.description}</p>
+            <h1 className="linear-subpage-title mt-5">{page.title}</h1>
+          </div>
+          <div className="linear-subpage-description">
+            <p>{page.description}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
                 <Link href={page.ctaHref ?? "/book-a-demo"}>
-                  {page.ctaLabel ?? "Book a demo"}
+                  {page.ctaLabel ?? "Book a Revenue Leak Scan"}
                   <ArrowRightIcon style={{ fontSize: "1rem" }} />
                 </Link>
               </Button>
               <Button asChild className="marketing-cta-secondary" variant="outline">
-                <Link href="/app">Open dashboard</Link>
+                <Link href="/app">Open action queue</Link>
               </Button>
             </div>
           </div>
-          <HeroProofPanel page={page} />
         </header>
-        <div className="mt-14 space-y-14">{children}</div>
+        <div className="linear-subpage-content">{children}</div>
       </div>
     </div>
   );
@@ -1772,13 +1484,13 @@ function ProofGrid({ page }: { page: MarketingPage }) {
       <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
-            Operational proof
+            Why teams trust the queue
           </p>
-          <h2 className="mt-2 text-2xl font-semibold">Built for owned context.</h2>
+          <h2 className="mt-2 text-2xl font-semibold">Built for evidence-backed action.</h2>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-          {page.eyebrow} routes keep the same standards: inspectable graph context, reviewable
-          actions, and stable deployment paths.
+          Every workflow keeps the same standards: source evidence, current relationship context,
+          explicit policy decisions, and reviewable execution.
         </p>
       </div>
       <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -1870,7 +1582,7 @@ function ApiReferenceEmbed() {
           <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
             API reference
           </p>
-          <h2 className="mt-2 text-2xl font-semibold">Explore the live Rowboat API contract.</h2>
+          <h2 className="mt-2 text-2xl font-semibold">Explore the live Oppulence API contract.</h2>
         </div>
         <div className="flex flex-wrap gap-3">
           <Button asChild className="marketing-cta-secondary" variant="ghost">
@@ -1891,7 +1603,7 @@ function ApiReferenceEmbed() {
           loading="lazy"
           referrerPolicy="no-referrer"
           src="/api/reference"
-          title="Rowboat API reference"
+          title="Oppulence API reference"
         />
       </div>
     </section>
@@ -1902,40 +1614,36 @@ export function PricingPage({ page }: { page: MarketingPage }) {
   return (
     <PageShell page={page}>
       <section className="grid border-y border-primary/10 md:grid-cols-3">
-        {pricingPlans.map((plan, index) => {
-          const { icon, tone } = pricingPlanIcons[index % pricingPlanIcons.length];
-
-          return (
-            <article
-              className="marketing-surface border-b border-primary/10 p-6 last:border-b-0 md:border-r md:border-b-0 md:last:border-r-0"
-              key={plan.name}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <MarketingIcon icon={icon} tone={tone} />
-                {plan.recommended ? (
-                  <span className="rounded border border-oppulence-orange/30 bg-oppulence-orange/10 px-2 py-1 font-mono text-[10px] text-oppulence-orange uppercase tracking-wider">
-                    Recommended
-                  </span>
-                ) : null}
-              </div>
-              <h2 className="mt-5 text-2xl font-semibold">{plan.name}</h2>
-              <p className="mt-5 text-3xl font-semibold">{plan.price}</p>
-              <p className="mt-3 min-h-16 text-sm leading-relaxed text-muted-foreground">
-                {plan.description}
-              </p>
-              <ul className="mt-8 space-y-3">
-                {plan.features.map((feature) => (
-                  <li className="flex gap-3 text-sm" key={feature}>
-                    <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <PlanCtaButton plan={plan} />
-            </article>
-          );
-        })}
+        {pricingPlans.map((plan) => (
+          <article
+            className="border-b border-primary/10 bg-background-50/40 p-6 last:border-b-0 md:border-r md:border-b-0 md:last:border-r-0"
+            key={plan.name}
+          >
+            <div className="flex min-h-8 items-start justify-between gap-3">
+              <h2 className="text-lg font-medium">{plan.name}</h2>
+              {plan.recommended ? (
+                <span className="rounded-full border border-[#828fff]/25 bg-[#828fff]/10 px-2 py-1 font-mono text-[10px] text-[#aeb6ff] uppercase tracking-wider">
+                  Recommended
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-6 text-3xl font-medium tracking-[-0.022em]">{plan.price}</p>
+            <p className="mt-3 min-h-16 text-sm leading-relaxed text-muted-foreground">
+              {plan.description}
+            </p>
+            <ul className="mt-8 space-y-3 border-primary/10 border-t pt-6">
+              {plan.features.map((feature) => (
+                <li className="flex gap-3 text-sm text-foreground/80" key={feature}>
+                  <CheckCircleIcon className="mt-0.5 shrink-0 text-[#8a8f98]" fontSize="small" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+            <PlanCtaButton plan={plan} />
+          </article>
+        ))}
       </section>
+      <ProofGrid page={page} />
     </PageShell>
   );
 }
@@ -2083,7 +1791,7 @@ export function DemoPage({ page }: { page: MarketingPage }) {
     <PageShell page={page}>
       <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="marketing-surface border p-6">
-          <h2 className="text-2xl font-semibold">Demo agenda</h2>
+          <h2 className="text-2xl font-semibold">Your Revenue Leak Scan walkthrough</h2>
           <ul className="mt-6 space-y-4">
             {page.bullets.map((bullet) => (
               <li className="flex gap-3 text-sm leading-relaxed" key={bullet}>
@@ -2095,10 +1803,10 @@ export function DemoPage({ page }: { page: MarketingPage }) {
         </div>
         <div className="marketing-surface-strong border p-6">
           <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-            Request form placeholder
+            Book your scan
           </p>
           <div className="mt-5 grid gap-3">
-            {["Work email", "Company", "Primary workflow"].map((field) => (
+            {["Work email", "Company", "CRM or sales system"].map((field) => (
               <div
                 className="marketing-chip border px-4 py-3 text-sm text-muted-foreground"
                 key={field}
@@ -2108,7 +1816,7 @@ export function DemoPage({ page }: { page: MarketingPage }) {
             ))}
           </div>
           <Button asChild className="marketing-cta-primary mt-5">
-            <Link href="/book-a-demo/success">Submit request</Link>
+            <Link href="/book-a-demo/success">Book my scan</Link>
           </Button>
         </div>
       </section>
@@ -2150,9 +1858,9 @@ export function RouteMapSummary() {
   return (
     <section className="border-t border-primary/10 px-4 py-12 md:px-8">
       <div className="grid gap-8 md:grid-cols-3">
-        <FooterGroup items={toolLinks} title="Tools" />
-        <FooterGroup items={alternativeLinks} title="Alternatives" />
-        <FooterGroup items={productLinks} title="Product" />
+        <LinearFooterGroup items={toolLinks} title="Tools" />
+        <LinearFooterGroup items={alternativeLinks} title="Alternatives" />
+        <LinearFooterGroup items={productLinks} title="Product" />
       </div>
     </section>
   );
