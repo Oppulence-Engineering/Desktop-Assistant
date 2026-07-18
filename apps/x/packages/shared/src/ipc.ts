@@ -47,7 +47,18 @@ import { UserMessageContent } from "./message.js";
 import { SolomonApiConfig } from "./solomon-account.js";
 import { BrowserStateSchema } from "./browser-control.js";
 import { BillingInfoSchema } from "./billing.js";
-import { GmailThreadSchema } from "./blocks.js";
+import {
+  GmailThreadSchema,
+  MailboxAccountBlockSchema,
+  MailboxActionRunBlockSchema,
+  MailboxDraftBlockSchema,
+  MailboxMessageBlockSchema,
+  MailboxRuleBlockSchema,
+  MailboxRuleRunBlockSchema,
+  MailboxThreadBlockSchema,
+  MailboxThreadSummaryBlockSchema,
+  MailboxTrackerBlockSchema,
+} from "./blocks.js";
 import { PermissionDecision, ApprovalPolicy } from "./code-mode.js";
 import {
   TranscriptionProvider,
@@ -297,6 +308,142 @@ const ipcSchemas = {
       height: z.number().int().positive(),
     }),
     res: z.object({}),
+  },
+
+  // --- Provider-neutral mailbox surface (email-001..004) ------------------
+  "mailbox:getAccounts": {
+    req: z.object({}),
+    res: z.object({ accounts: z.array(MailboxAccountBlockSchema) }),
+  },
+  "mailbox:getConnectionStatus": {
+    req: z.object({}),
+    res: z.object({ status: MailboxAccountBlockSchema.shape.status }),
+  },
+  "mailbox:listThreads": {
+    req: z.object({
+      accountId: z.string().optional(),
+      queue: z
+        .enum([
+          "important",
+          "other",
+          "unread",
+          "attachments",
+          "needs_reply",
+          "awaiting_reply",
+          "needs_action",
+          "newsletter",
+          "cold_email",
+        ])
+        .optional(),
+      limit: z.number().int().min(1).max(100).optional(),
+      cursor: z.string().optional(),
+    }),
+    res: z.object({
+      threads: z.array(MailboxThreadSummaryBlockSchema),
+      nextCursor: z.string().nullable(),
+    }),
+  },
+  "mailbox:getThread": {
+    req: z.object({
+      accountId: z.string().optional(),
+      providerThreadId: z.string().min(1),
+    }),
+    res: z.object({ thread: MailboxThreadBlockSchema }),
+  },
+  "mailbox:search": {
+    req: z.object({
+      accountId: z.string().optional(),
+      query: z.string().min(1),
+      limit: z.number().int().min(1).max(100).optional(),
+    }),
+    res: z.object({ messages: z.array(MailboxMessageBlockSchema) }),
+  },
+  "mailbox:triggerSync": {
+    req: z.object({}),
+    res: z.object({}),
+  },
+  "mailbox:archiveThread": {
+    req: z.object({ accountId: z.string().optional(), providerThreadId: z.string().min(1) }),
+    res: z.object({ status: z.string(), error: z.string().optional() }),
+  },
+  "mailbox:trashThread": {
+    req: z.object({ accountId: z.string().optional(), providerThreadId: z.string().min(1) }),
+    res: z.object({ status: z.string(), error: z.string().optional() }),
+  },
+  "mailbox:markThreadRead": {
+    req: z.object({ accountId: z.string().optional(), providerThreadId: z.string().min(1) }),
+    res: z.object({ status: z.string(), error: z.string().optional() }),
+  },
+  "mailbox:sendReply": {
+    req: z.object({
+      accountId: z.string().optional(),
+      providerThreadId: z.string().min(1),
+      to: z.array(z.string()).min(1),
+      cc: z.array(z.string()).optional(),
+      bcc: z.array(z.string()).optional(),
+      subject: z.string(),
+      bodyText: z.string(),
+      bodyHtml: z.string().optional(),
+      inReplyToHeaderMessageId: z.string().optional(),
+    }),
+    res: z.object({
+      ok: z.boolean(),
+      providerMessageId: z.string().optional(),
+      error: z.string().optional(),
+    }),
+  },
+  "mailbox:listRules": {
+    req: z.object({ accountId: z.string() }),
+    res: z.object({ rules: z.array(MailboxRuleBlockSchema) }),
+  },
+  "mailbox:createRule": {
+    req: z.object({ rule: z.record(z.string(), z.unknown()) }),
+    res: z.object({ rule: MailboxRuleBlockSchema }),
+  },
+  "mailbox:updateRule": {
+    req: z.object({ id: z.string(), patch: z.record(z.string(), z.unknown()) }),
+    res: z.object({ rule: MailboxRuleBlockSchema }),
+  },
+  "mailbox:deleteRule": {
+    req: z.object({ id: z.string() }),
+    res: z.object({}),
+  },
+  "mailbox:listTrackers": {
+    req: z.object({
+      accountId: z.string(),
+      status: z.enum(["needs_reply", "awaiting_reply", "needs_action", "done"]).optional(),
+    }),
+    res: z.object({ trackers: z.array(MailboxTrackerBlockSchema) }),
+  },
+  "mailbox:markThreadStatus": {
+    req: z.object({
+      accountId: z.string(),
+      threadId: z.string(),
+      status: z.enum(["needs_reply", "awaiting_reply", "needs_action", "done"]),
+      reason: z.string().optional(),
+      dueInDays: z.number().optional(),
+    }),
+    res: z.object({ tracker: MailboxTrackerBlockSchema.nullable() }),
+  },
+  "mailbox:listDrafts": {
+    req: z.object({ accountId: z.string() }),
+    res: z.object({ drafts: z.array(MailboxDraftBlockSchema) }),
+  },
+  "mailbox:generateDraft": {
+    req: z.object({
+      accountId: z.string().optional(),
+      providerThreadId: z.string().min(1),
+      instruction: z.string().optional(),
+    }),
+    res: z.object({ draft: MailboxDraftBlockSchema }),
+  },
+  "mailbox:getActionRuns": {
+    req: z.object({ accountId: z.string(), limit: z.number().int().min(1).max(500).optional() }),
+    res: z.object({ runs: z.array(MailboxActionRunBlockSchema) }),
+  },
+  "mailbox:getRuleRuns": {
+    req: z.object({ accountId: z.string(), limit: z.number().int().min(1).max(500).optional() }),
+    res: z.object({ runs: z.array(MailboxRuleRunBlockSchema) }),
   },
   "mcp:listTools": {
     req: z.object({
