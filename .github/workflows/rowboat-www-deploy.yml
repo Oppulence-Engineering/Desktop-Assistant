@@ -289,6 +289,22 @@ jobs:
           kubectl -n "${KUBE_NAMESPACE}" get pods,deploy,hpa,ingress,certificate
           kubectl -n "${KUBE_NAMESPACE}" describe ingress rowboat-www-rowboat-www
 
+      - name: Pin public DNS for smoke host
+        # The Tailscale step swaps the runner's resolver for the tailnet's DNS,
+        # which cannot resolve the public site hostname. Resolve it via public
+        # DNS and pin it in /etc/hosts so the smoke test reaches the real site
+        # without disturbing tailnet DNS (kubectl still needs it).
+        run: |
+          set -euo pipefail
+          HOST="${APP_URL#https://}"
+          HOST="${HOST%%/*}"
+          IP="$(dig +short @1.1.1.1 A "${HOST}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)"
+          if [[ -z "${IP}" ]]; then
+            echo "could not resolve ${HOST} via public DNS" >&2
+            exit 1
+          fi
+          echo "${IP} ${HOST}" | sudo tee -a /etc/hosts
+
       - name: Smoke test public site
         env:
           ROWBOAT_WWW_EXPECTED_API_BASE_URL: ${{ needs.resolve-context.outputs.deploy_environment == 'staging' && 'https://api.x.staging.oppulence.io' || 'https://api.oppulence.io' }}
