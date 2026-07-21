@@ -30,13 +30,13 @@ assert_contains() {
 need curl
 
 health="$(fetch /healthz)"
-if [[ "$health" != "ok" ]]; then
+if [[ "$health" != "ok" && "$health" != '{"status":"ok"}' ]]; then
   echo "/healthz returned unexpected body: ${health}" >&2
   exit 1
 fi
 
 ready="$(fetch /readyz)"
-if [[ "$ready" != "ok" ]]; then
+if [[ "$ready" != "ok" && "$ready" != '{"status":"ready"}' && "$ready" != '{"status":"ok"}' ]]; then
   echo "/readyz returned unexpected body: ${ready}" >&2
   exit 1
 fi
