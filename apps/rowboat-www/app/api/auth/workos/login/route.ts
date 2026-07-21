@@ -18,6 +18,9 @@ export async function GET(request: NextRequest) {
       redirectURI,
       state: pkce.state,
       codeChallenge: pkce.codeChallenge,
+      // Skip the hosted AuthKit picker and go straight to the configured
+      // identity provider (e.g. GoogleOAuth). Unset → hosted AuthKit.
+      provider: process.env.ROWBOAT_WWW_WORKOS_PROVIDER,
     });
     const response = NextResponse.redirect(url);
     setPKCECookie(response, pkce);

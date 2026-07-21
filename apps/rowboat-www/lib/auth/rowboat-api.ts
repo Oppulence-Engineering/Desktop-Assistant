@@ -45,11 +45,15 @@ export async function getWorkOSLoginURL(input: {
   redirectURI: string;
   state: string;
   codeChallenge: string;
+  provider?: string;
 }): Promise<string> {
   const url = rowboatApiURL("/v1/auth/workos/login-url");
   url.searchParams.set("redirect_uri", input.redirectURI);
   url.searchParams.set("state", input.state);
   url.searchParams.set("code_challenge", input.codeChallenge);
+  if (input.provider) {
+    url.searchParams.set("provider", input.provider);
+  }
 
   let res: Response;
   try {
