@@ -48,7 +48,6 @@ import {
   type SelectedModel,
 } from "@/components/chat-input-with-mentions";
 import { ChatMessageAttachments } from "@/components/chat-message-attachments";
-import { useSidebar } from "@/components/ui/sidebar";
 import { wikiLabel } from "@/lib/wiki-links";
 import type { ChatPaneSize } from "@/contexts/theme-context";
 import {
@@ -191,7 +190,6 @@ interface ChatSidebarProps {
   onToolOpenChangeForTab?: (tabId: string, toolId: string, open: boolean) => void;
   onOpenKnowledgeFile?: (path: string) => void;
   onActivate?: () => void;
-  collapsedLeftPaddingPx?: number;
   // Voice / TTS props
   isRecording?: boolean;
   recordingText?: string;
@@ -253,7 +251,6 @@ export function ChatSidebar({
   onToolOpenChangeForTab,
   onOpenKnowledgeFile,
   onActivate,
-  collapsedLeftPaddingPx = 196,
   isRecording,
   recordingText,
   recordingState,
@@ -268,7 +265,6 @@ export function ChatSidebar({
   onTtsModeChange,
   onIntegrationConnected,
 }: ChatSidebarProps) {
-  const { state: sidebarState } = useSidebar();
   const [width, setWidth] = useState(() => getInitialPaneWidth(defaultWidth));
   const [maxAllowedWidth, setMaxAllowedWidth] = useState(MAX_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
@@ -584,7 +580,8 @@ export function ChatSidebar({
       onFocusCapture={onActivate}
       className={cn(
         "relative flex min-w-0 flex-col overflow-hidden bg-background",
-        isMiddlePlacement ? "border-r border-border" : "border-l border-border",
+        // Inset-shell card: gutter + hairline border, matching the main pane.
+        isOpen && "my-2 ml-0 mr-2 rounded-[2px] border border-border",
         !isResizing && !justToggledMaximize && "transition-[width] duration-200 ease-linear",
         className,
       )}
@@ -608,10 +605,7 @@ export function ChatSidebar({
           <header
             className="titlebar-drag-region flex h-10 shrink-0 items-stretch border-b border-border bg-background"
             style={{
-              paddingLeft:
-                isMaximized && sidebarState === "collapsed" ? collapsedLeftPaddingPx : undefined,
               paddingRight: isMaximized ? 12 : undefined,
-              transition: isMaximized ? "padding-left 200ms linear" : undefined,
             }}
           >
             <ChatHeader
