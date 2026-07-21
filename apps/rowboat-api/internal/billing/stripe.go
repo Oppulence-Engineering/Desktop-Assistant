@@ -645,7 +645,9 @@ func (h *Handler) doStripe(req *http.Request, out any) error {
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("stripe %s %s returned %d: %s", req.Method, req.URL.Path, resp.StatusCode, strings.TrimSpace(string(body)))
+		// Stripe error bodies may include customer, payment, or account details.
+		// Keep them out of application errors because callers log those errors.
+		return fmt.Errorf("stripe %s %s returned %d", req.Method, req.URL.Path, resp.StatusCode)
 	}
 	if out == nil {
 		return nil

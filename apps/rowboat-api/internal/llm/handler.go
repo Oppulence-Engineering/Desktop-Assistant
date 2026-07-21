@@ -254,7 +254,7 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 
 	upReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, up.baseURL+path, bytes.NewReader(outBody))
 	if err != nil {
-		h.refund(charge)
+		h.refund(r.Context(), charge)
 		httpx.Error(w, http.StatusInternalServerError, "could not build upstream request", "internal_error")
 		return
 	}
@@ -268,19 +268,26 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 
 	resp, err := h.http.Do(upReq)
 	if err != nil {
-		h.refund(charge)
+		h.refund(r.Context(), charge)
 		h.log.Warn("llm upstream error", zap.String("provider", up.provider), zap.Error(err))
 		httpx.Error(w, http.StatusBadGateway, "upstream request failed", "upstream_error")
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	// Upstream error: refund and forward the upstream status + body verbatim.
+	// Upstream error: refund, but never expose a provider response body. Vendor
+	// errors can contain account, project, request, or policy details that do not
+	// belong in our public API contract.
 	if resp.StatusCode >= http.StatusBadRequest {
-		h.refund(charge)
-		w.Header().Set("Content-Type", contentTypeOr(resp, "application/json"))
-		w.WriteHeader(resp.StatusCode)
-		_, _ = io.Copy(w, resp.Body)
+		h.refund(r.Context(), charge)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+				w.Header().Set("Retry-After", retryAfter)
+			}
+			httpx.Error(w, http.StatusTooManyRequests, "upstream provider rate limited the request", "upstream_rate_limited")
+			return
+		}
+		httpx.Error(w, http.StatusBadGateway, "upstream provider rejected the request", "upstream_error")
 		return
 	}
 
@@ -305,7 +312,7 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 			h.finalize(r.Context(), charge, u, requestID, model, inTok, outTok, telemetryFrom(r))
 		} else {
 			// Buffered path: nothing but an error envelope was written; refund.
-			h.refund(charge)
+			h.refund(r.Context(), charge)
 		}
 		return
 	}
@@ -350,8 +357,10 @@ func (h *Handler) finalize(reqCtx context.Context, charge *quota.Charge, u *ent.
 	}
 }
 
-func (h *Handler) refund(charge *quota.Charge) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (h *Handler) refund(reqCtx context.Context, charge *quota.Charge) {
+	// Preserve the authenticated tenant identity for write-side Ent hooks while
+	// detaching cancellation so accounting still completes after disconnects.
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(reqCtx), 5*time.Second)
 	defer cancel()
 	if err := charge.Refund(ctx); err != nil {
 		h.log.Error("quota refund", zap.Error(err))

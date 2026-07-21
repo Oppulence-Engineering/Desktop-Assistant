@@ -5,9 +5,9 @@ import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Oppulence — The living work graph for agents",
+  title: "Oppulence — Revenue Memory and Execution OS",
   description:
-    "Oppulence turns email, calendar, meetings, files, and tools into an owned graph that agents can inspect before they brief, draft, update, or act.",
+    "Oppulence remembers every commercial relationship, identifies who needs attention and why, then safely prepares the next revenue action for approval.",
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",

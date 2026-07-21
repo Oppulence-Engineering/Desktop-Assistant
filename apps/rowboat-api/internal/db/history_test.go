@@ -37,7 +37,7 @@ func TestHistoryTracking(t *testing.T) {
 	}
 
 	// Subscription history works for the string-typed plan/status too.
-	sub := c.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(ctx)
+	sub := c.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(auth.WithUser(ctx, u))
 	sub.Update().SetPlan("pro").SaveX(auth.WithUser(ctx, u))
 	if n := c.SubscriptionHistory.Query().CountX(ctx); n < 2 {
 		t.Fatalf("subscription_history = %d, want >= 2", n)

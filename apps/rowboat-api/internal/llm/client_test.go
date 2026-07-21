@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/credits"
@@ -78,6 +79,9 @@ func TestCompleteRefundsOnUpstreamError(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("want error on upstream 500")
+	}
+	if strings.Contains(err.Error(), "boom") {
+		t.Fatalf("upstream response body leaked into error: %v", err)
 	}
 	avail, _ := credits.Available(ctx, client, 100000)
 	if avail != 100000 {

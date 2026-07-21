@@ -85,6 +85,10 @@ func (m *Middleware) refreshUser(ctx context.Context, u *ent.User, claims *oauth
 // A concurrent first-sight insert loses the unique-index race and falls back
 // to a re-query.
 func (m *Middleware) createUser(ctx context.Context, claims *oauthrs.Claims) (*ent.User, error) {
+	// First-sight provisioning happens before a user can exist in context. Mark
+	// the transaction as an authenticated internal identity operation so the
+	// ORM's tenant-mutation guard permits creation of the new user's subscription.
+	provisionCtx := WithInternal(ctx)
 	email := claims.Email
 	if email == "" && m.enricher != nil {
 		if e, eErr := m.enricher.Email(ctx, claims.WorkOSUserID); eErr == nil {
@@ -94,7 +98,7 @@ func (m *Middleware) createUser(ctx context.Context, claims *oauthrs.Claims) (*e
 		}
 	}
 
-	tx, err := m.client.Tx(ctx)
+	tx, err := m.client.Tx(provisionCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -106,12 +110,12 @@ func (m *Middleware) createUser(ctx context.Context, claims *oauthrs.Claims) (*e
 	if claims.WorkOSOrgID != "" {
 		create = create.SetWorkosOrgID(claims.WorkOSOrgID)
 	}
-	u, err := create.Save(ctx)
+	u, err := create.Save(provisionCtx)
 	if err != nil {
 		_ = tx.Rollback()
 		// Lost the first-sight race → the row exists; read it back.
 		if ent.IsConstraintError(err) {
-			return m.client.User.Query().Where(user.WorkosUserIDEQ(claims.WorkOSUserID)).Only(ctx)
+			return m.client.User.Query().Where(user.WorkosUserIDEQ(claims.WorkOSUserID)).Only(provisionCtx)
 		}
 		return nil, err
 	}
@@ -119,7 +123,7 @@ func (m *Middleware) createUser(ctx context.Context, claims *oauthrs.Claims) (*e
 	if _, err := tx.Subscription.Create().
 		SetUser(u).
 		SetSanctionedCredits(m.freeTierCredits).
-		Save(ctx); err != nil {
+		Save(provisionCtx); err != nil {
 		_ = tx.Rollback()
 		return nil, fmt.Errorf("mint free-tier subscription: %w", err)
 	}

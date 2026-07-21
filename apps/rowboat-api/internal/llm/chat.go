@@ -123,7 +123,7 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 
 	upReq, err := http.NewRequestWithContext(ctx, http.MethodPost, up.baseURL+"/chat/completions", bytes.NewReader(outBody))
 	if err != nil {
-		h.refund(charge)
+		h.refund(ctx, charge)
 		return ChatResult{}, err
 	}
 	upReq.Header.Set("Content-Type", "application/json")
@@ -136,18 +136,18 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 
 	resp, err := h.http.Do(upReq)
 	if err != nil {
-		h.refund(charge)
+		h.refund(ctx, charge)
 		return ChatResult{}, fmt.Errorf("llm upstream: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		h.refund(charge)
+		h.refund(ctx, charge)
 		return ChatResult{}, fmt.Errorf("llm upstream read: %w", err)
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
-		h.refund(charge)
-		return ChatResult{}, fmt.Errorf("llm upstream status %d: %s", resp.StatusCode, truncateErrBody(raw))
+		h.refund(ctx, charge)
+		return ChatResult{}, fmt.Errorf("llm upstream returned status %d", resp.StatusCode)
 	}
 
 	var parsed struct {
@@ -158,11 +158,11 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 		} `json:"choices"`
 	}
 	if err := json.Unmarshal(raw, &parsed); err != nil {
-		h.refund(charge)
+		h.refund(ctx, charge)
 		return ChatResult{}, fmt.Errorf("llm upstream response: %w", err)
 	}
 	if len(parsed.Choices) == 0 {
-		h.refund(charge)
+		h.refund(ctx, charge)
 		return ChatResult{}, errors.New("llm upstream returned no choices")
 	}
 	choice := parsed.Choices[0]
@@ -176,7 +176,7 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 		})
 	}
 
-	inTok, outTok := inputBytes/4, len(choice.Message.Content)/4
+	inTok, outTok := inputBytes/4, estimateOutputTokens(choice.Message)
 	if parsed.Usage != nil {
 		inTok, outTok = parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens
 	}

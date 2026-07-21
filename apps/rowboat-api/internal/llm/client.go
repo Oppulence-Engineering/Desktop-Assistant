@@ -107,7 +107,7 @@ func (h *Handler) Complete(ctx context.Context, req CompleteRequest) (CompleteRe
 
 	upReq, err := http.NewRequestWithContext(ctx, http.MethodPost, up.baseURL+"/chat/completions", bytes.NewReader(outBody))
 	if err != nil {
-		h.refund(charge)
+		h.refund(ctx, charge)
 		return CompleteResult{}, err
 	}
 	upReq.Header.Set("Content-Type", "application/json")
@@ -120,18 +120,18 @@ func (h *Handler) Complete(ctx context.Context, req CompleteRequest) (CompleteRe
 
 	resp, err := h.http.Do(upReq)
 	if err != nil {
-		h.refund(charge)
+		h.refund(ctx, charge)
 		return CompleteResult{}, fmt.Errorf("llm upstream: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		h.refund(charge)
+		h.refund(ctx, charge)
 		return CompleteResult{}, fmt.Errorf("llm upstream read: %w", err)
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
-		h.refund(charge)
-		return CompleteResult{}, fmt.Errorf("llm upstream status %d: %s", resp.StatusCode, truncateErrBody(raw))
+		h.refund(ctx, charge)
+		return CompleteResult{}, fmt.Errorf("llm upstream returned status %d", resp.StatusCode)
 	}
 
 	var parsed struct {
@@ -143,16 +143,16 @@ func (h *Handler) Complete(ctx context.Context, req CompleteRequest) (CompleteRe
 		} `json:"choices"`
 	}
 	if err := json.Unmarshal(raw, &parsed); err != nil {
-		h.refund(charge)
+		h.refund(ctx, charge)
 		return CompleteResult{}, fmt.Errorf("llm upstream response: %w", err)
 	}
 	if len(parsed.Choices) == 0 {
-		h.refund(charge)
+		h.refund(ctx, charge)
 		return CompleteResult{}, errors.New("llm upstream returned no choices")
 	}
 	content := parsed.Choices[0].Message.Content
 
-	inTok, outTok := inputEst, len(content)/4
+	inTok, outTok := inputEst, estimateTextTokens(content)
 	if parsed.Usage != nil {
 		inTok, outTok = parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens
 	}
@@ -194,13 +194,4 @@ func stripCodeFences(s string) string {
 	}
 	s = strings.TrimSuffix(strings.TrimSpace(s), "```")
 	return strings.TrimSpace(s)
-}
-
-// truncateErrBody bounds an upstream error body folded into an error message.
-func truncateErrBody(b []byte) string {
-	const maxLen = 512
-	if len(b) > maxLen {
-		b = b[:maxLen]
-	}
-	return string(b)
 }

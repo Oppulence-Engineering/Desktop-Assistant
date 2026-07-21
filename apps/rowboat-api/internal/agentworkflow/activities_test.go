@@ -88,7 +88,7 @@ func TestSessionRequestIDDeterminism(t *testing.T) {
 }
 
 // TestValidateApprovalMoneyMoving is the P3 validator gate: money-moving grants
-// require a structurally valid per-invocation token; act-tier grants need none.
+// fail closed when token verification is unavailable; act-tier grants need none.
 func TestValidateApprovalMoneyMoving(t *testing.T) {
 	a := newTestActivities()
 	ctx := context.Background()
@@ -102,8 +102,8 @@ func TestValidateApprovalMoneyMoving(t *testing.T) {
 	if err := a.ValidateApproval(ctx, ValidateApprovalInput{TrustTier: agentregistry.TierMoneyMoving, ApprovalToken: "bogus"}); err == nil {
 		t.Fatal("money-moving with malformed token must be rejected")
 	}
-	if err := a.ValidateApproval(ctx, ValidateApprovalInput{TrustTier: agentregistry.TierMoneyMoving, ApprovalToken: "appr_abc123456789"}); err != nil {
-		t.Fatalf("money-moving with a valid token must pass: %v", err)
+	if err := a.ValidateApproval(ctx, ValidateApprovalInput{TrustTier: agentregistry.TierMoneyMoving, ApprovalToken: "malformed-token"}); err == nil {
+		t.Fatal("money-moving token must fail closed without a signer")
 	}
 }
 

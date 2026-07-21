@@ -96,7 +96,7 @@ func addSecuritySchemes(schemes obj) {
 		"type":        "apiKey",
 		"in":          "header",
 		"name":        "X-Webhook-Signature",
-		"description": "HMAC-SHA256 over the raw request body, formatted as sha256=<hex>.",
+		"description": "HMAC-SHA256 over <X-Webhook-Timestamp>.<raw request body>, formatted as sha256=<hex>. The Unix timestamp must be within five minutes of the server clock.",
 	}
 	schemes["InternalSecret"] = obj{
 		"type":        "apiKey",
@@ -152,7 +152,7 @@ func addRuntimeSchemas(schemas obj) {
 		"refreshToken": stringSchema("Refresh token previously returned by the WorkOS broker.", "refresh_token_123"),
 	}, "refreshToken")
 	schemas["WorkOSTokenBundle"] = objectSchema("Desktop-facing token bundle normalized from WorkOS authenticate responses.", obj{
-		"access_token":  stringSchema("JWT access token used as Authorization: Bearer for authenticated Solomon AI API calls.", "eyJhbGciOiJSUzI1NiIs..."),
+		"access_token":  stringSchema("JWT access token used as Authorization: Bearer for authenticated Solomon AI API calls.", "example-access-token"),
 		"refresh_token": stringSchema("Refresh token for obtaining a new WorkOS access token.", "refresh_token_123", nullable()),
 		"expires_at":    int64Schema("Unix timestamp in seconds when the access token expires.", 1790784000),
 		"token_type":    stringEnum("Token type.", "Bearer", "Bearer"),
@@ -329,7 +329,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"summary":            stringSchema("Short run summary from the desktop.", "No high-priority account changes.", nullable()),
 		"error":              stringSchema("Run error when status is failed or stopped unexpectedly.", "", nullable()),
 		"temporalWorkflowId": stringSchema("Temporal workflow id for API-worker runs.", "background-task/user/daily-summary/api-trigger-123", nullable()),
-		"temporalRunId":      stringSchema("Temporal run id for the current workflow execution.", "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16", nullable()),
+		"temporalRunId":      stringSchema("Temporal run id for the current workflow execution.", "00000000-0000-0000-0000-000000000001", nullable()),
 		"temporalStatus":     stringSchema("Last mirrored Temporal status, separate from the product status.", "Running", nullable()),
 		"temporalStartedAt":  stringSchema("Timestamp when Temporal execution started.", "2026-06-04T21:01:00Z", obj{"format": "date-time"}, nullable()),
 		"temporalClosedAt":   stringSchema("Timestamp when Temporal execution closed.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
@@ -352,7 +352,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"status":             stringEnum("Product run status.", "running", "queued", "running", "succeeded", "failed", "stopped"),
 		"executor":           stringEnum("Execution backend.", "api", "desktop", "api"),
 		"temporalWorkflowId": stringSchema("Temporal workflow id for API-worker runs.", "background-task/user/daily-summary/api-trigger-123", nullable()),
-		"temporalRunId":      stringSchema("Temporal run id for API-worker runs.", "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16", nullable()),
+		"temporalRunId":      stringSchema("Temporal run id for API-worker runs.", "00000000-0000-0000-0000-000000000001", nullable()),
 		"temporalStatus":     stringSchema("Last mirrored Temporal status.", "Running", nullable()),
 		"progressPercent":    intSchema("Best-known progress for polling clients.", 50, nullable()),
 		"progressMessage":    stringSchema("Progress message.", "Building API-native task artifact.", nullable()),
@@ -377,7 +377,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"summary":            stringSchema("Initial run summary.", "started", nullable()),
 		"error":              stringSchema("Initial run error.", "", nullable()),
 		"temporalWorkflowId": stringSchema("Temporal workflow id for API-worker runs.", "background-task/user/daily-summary/api-trigger-123", nullable()),
-		"temporalRunId":      stringSchema("Temporal run id.", "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16", nullable()),
+		"temporalRunId":      stringSchema("Temporal run id.", "00000000-0000-0000-0000-000000000001", nullable()),
 		"temporalStatus":     stringSchema("Last mirrored Temporal status.", "Started", nullable()),
 		"progressPercent":    intSchema("Initial progress for polling clients.", 0, nullable()),
 		"progressMessage":    stringSchema("Initial progress message.", "Queued for API worker.", nullable()),
@@ -400,7 +400,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"summary":            stringSchema("Latest run summary.", "No high-priority account changes.", nullable()),
 		"error":              stringSchema("Latest run error.", "", nullable()),
 		"temporalWorkflowId": stringSchema("Temporal workflow id for API-worker runs.", "background-task/user/daily-summary/api-trigger-123", nullable()),
-		"temporalRunId":      stringSchema("Temporal run id.", "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16", nullable()),
+		"temporalRunId":      stringSchema("Temporal run id.", "00000000-0000-0000-0000-000000000001", nullable()),
 		"temporalStatus":     stringSchema("Last mirrored Temporal status.", "Running", nullable()),
 		"temporalStartedAt":  stringSchema("Temporal start timestamp.", "2026-06-04T21:01:00Z", obj{"format": "date-time"}, nullable()),
 		"temporalClosedAt":   stringSchema("Temporal close timestamp.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
@@ -517,7 +517,7 @@ func addVendorProxySchemas(schemas obj) {
 
 func addOAuthSchemas(schemas obj) {
 	schemas["OAuthTokenBundle"] = objectSchema("OAuth token bundle returned to the desktop.", obj{
-		"access_token":  stringSchema("Provider access token.", "ya29.a0AfH6S..."),
+		"access_token":  stringSchema("Provider access token.", "example-access-token"),
 		"refresh_token": stringSchema("Provider refresh token, present on claim when the provider issues one.", "1//refresh", nullable()),
 		"expires_at":    int64Schema("Unix timestamp in seconds when the access token expires.", 1790784000),
 		"scope":         stringSchema("Space-delimited OAuth scopes.", "openid email profile https://www.googleapis.com/auth/gmail.readonly", nullable()),
@@ -572,7 +572,7 @@ func addConnectorSchemas(schemas obj) {
 		"state": stringSchema("Opaque state/session ticket returned to the desktop deep link.", "state_abc123"),
 	}, "state")
 	schemas["ConnectionAPIKeyRequest"] = objectSchema("Stores a vendor-issued API key for an api_key connector.", obj{
-		"apiKey": stringSchema("Vendor API key. Stored sealed at rest and never returned by connector list endpoints.", "sk_vendor_abc123"),
+		"apiKey": stringSchema("Vendor API key. Stored sealed at rest and never returned by connector list endpoints.", "example-vendor-key"),
 	}, "apiKey")
 	schemas["ConnectionConnectedResponse"] = objectSchema("Connector connection result.", obj{
 		"connected": boolSchema("Whether the connector is now connected.", true),
@@ -829,8 +829,8 @@ func addCloudEventPaths(paths obj) {
 		"404": responseRef("404"),
 		"500": responseRef("500"),
 	})}
-	paths["/v1/webhooks/google"] = obj{"post": operation("Cloud Events", "Google push webhook", "Receives Gmail Pub/Sub pushes plus Google Calendar and Drive channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for channels). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.", "googleWebhook", nil, []any{
-		queryParam("token", "Shared webhook token configured on the Pub/Sub push subscription URL.", false, stringSchema("Webhook token.", "")),
+	paths["/v1/webhooks/google"] = obj{"post": operation("Cloud Events", "Google push webhook", "Receives Gmail Pub/Sub pushes plus Google Calendar and Drive channel notifications. Production Gmail pushes require a Google-signed OIDC bearer token with the configured audience and service-account email. Calendar and Drive use X-Goog-Channel-Token plus an exact active watch binding. The query token is retained only for local Pub/Sub mocks. Events for unresolved accounts are acknowledged with 200 and dropped.", "googleWebhook", nil, []any{
+		queryParam("token", "Development-only shared token for local Gmail Pub/Sub mocks; production uses OIDC bearer authentication.", false, stringSchema("Development webhook token.", "")),
 	}, jsonRequestOptional("Pub/Sub push envelope (Gmail). Calendar and Drive notifications carry no body.", freeFormSchema("Pub/Sub push envelope."), obj{
 		"message": obj{"data": "eyJlbWFpbEFkZHJlc3MiOiJtZUBnbWFpbC5jb20iLCJoaXN0b3J5SWQiOjk5ODg3N30=", "messageId": "m1"},
 	}), obj{
@@ -850,7 +850,7 @@ func addCloudEventPaths(paths obj) {
 		"401": responseRef("401"),
 		"500": responseRef("500"),
 	})}
-	paths["/v1/webhooks/events"] = obj{"post": operation("Cloud Events", "Generic signed webhook event", "Receives arbitrary normalized webhook events, verified via X-Webhook-Signature HMAC over the raw body using WEBHOOK_SIGNING_SECRET. The request names the owning userId; source defaults to webhook and may be mcp, github, linear, or stripe for connector/provider gateways. Payload is sealed, and routing uses the same cloud event router as provider webhooks.", "genericWebhook", []any{obj{"WebhookHMAC": []any{}}}, nil, jsonRequest("Generic webhook event envelope.", ref("GenericWebhookEventRequest"), obj{
+	paths["/v1/webhooks/events"] = obj{"post": operation("Cloud Events", "Generic signed webhook event", "Receives arbitrary normalized webhook events, verified via X-Webhook-Signature HMAC over X-Webhook-Timestamp plus the raw body using WEBHOOK_SIGNING_SECRET. The Unix timestamp must be within five minutes of the server clock to prevent replay. The request names the owning userId; source defaults to webhook and may be mcp, github, linear, or stripe for connector/provider gateways. Payload is sealed, and routing uses the same cloud event router as provider webhooks.", "genericWebhook", []any{obj{"WebhookHMAC": []any{}}}, []any{obj{"name": "X-Webhook-Timestamp", "in": "header", "required": true, "description": "Unix timestamp included in the webhook signature; must be within five minutes of server time.", "schema": obj{"type": "string"}}}, jsonRequest("Generic webhook event envelope.", ref("GenericWebhookEventRequest"), obj{
 		"userId":          "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
 		"sourceEventId":   "evt_123",
 		"sourceAccountId": "zapier-acme-ar",
@@ -1178,31 +1178,33 @@ func addVendorProxyPaths(paths obj) {
 }
 
 func addGoogleOAuthPaths(paths obj) {
-	paths["/oauth/google/start"] = obj{"get": operation("Google OAuth", "Start Google OAuth consent", "Browser-facing endpoint opened by the desktop. It creates a one-time state ticket, then redirects the browser to Google's consent screen.", "startGoogleOAuth", nil, nil, nil, obj{
-		"302": redirectResponse("Redirect to Google OAuth consent."),
-		"500": htmlResponse("HTML error page when the flow cannot be started."),
-		"502": htmlResponse("HTML error page when Google OAuth is not configured."),
+	paths["/v1/google-oauth/start"] = obj{"post": operation("Google OAuth", "Start Google OAuth consent", "Creates a one-time state ticket bound to the authenticated Rowboat user and a PKCE S256 verifier, then returns the Google consent URL for the desktop to open.", "startGoogleOAuth", bearer(), nil, nil, obj{
+		"200": jsonResponse("Bound Google authorization URL.", obj{"type": "object", "required": []any{"authorizeUrl"}, "properties": obj{"authorizeUrl": obj{"type": "string", "format": "uri"}}}, obj{"authorizeUrl": "https://accounts.google.com/o/oauth2/v2/auth?..."}),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+		"502": responseRef("502"),
 	})}
-	paths["/oauth/google/callback"] = obj{"get": operation("Google OAuth", "Handle Google OAuth callback", "Google redirect target. Exchanges the authorization code server-side, parks the token bundle under the state ticket, and returns an HTML page that deep-links back to the desktop.", "handleGoogleOAuthCallback", nil, []any{
-		queryParam("state", "Opaque state ticket minted by /oauth/google/start.", true, stringSchema("State ticket.", "state_abc123")),
+	paths["/oauth/google/callback"] = obj{"get": operation("Google OAuth", "Handle Google OAuth callback", "Google redirect target. Exchanges the authorization code server-side using the sealed PKCE verifier, parks the token bundle under the provider-bound state ticket, and returns an HTML page that deep-links back to the desktop.", "handleGoogleOAuthCallback", nil, []any{
+		queryParam("state", "Opaque user-bound state ticket minted by /v1/google-oauth/start.", true, stringSchema("State ticket.", "state_abc123")),
 		queryParam("code", "Authorization code returned by Google.", false, stringSchema("Authorization code.", "4/0AfJoh...")),
 		queryParam("error", "OAuth error returned by Google when the user cancels or consent fails.", false, stringSchema("OAuth error.", "access_denied")),
 	}, nil, obj{
 		"200": htmlResponse("HTML page that redirects to solomon-ai://oauth/google/done."),
 		"400": htmlResponse("HTML error page for missing or expired state/code."),
 	})}
-	paths["/v1/google-oauth/claim"] = obj{"post": operation("Google OAuth", "Claim Google OAuth token bundle", "Consumes a one-time Google OAuth session ticket, verifies it belongs to the authenticated user when bound, persists the refresh token when present, and returns the token bundle to the desktop.", "claimGoogleOAuth", bearer(), nil, jsonRequest("Google OAuth session ticket.", ref("GoogleClaimRequest"), obj{"session": "state_abc123"}), obj{
-		"200": jsonResponse("Claimed Google token bundle.", ref("OAuthTokenBundle"), obj{"access_token": "ya29.a0AfH6S...", "refresh_token": "1//refresh", "expires_at": 1790784000, "scope": "openid email profile", "token_type": "Bearer"}),
+	paths["/v1/google-oauth/claim"] = obj{"post": operation("Google OAuth", "Claim Google OAuth token bundle", "Consumes a one-time Google OAuth session ticket, requires the authenticated user to match the user that started it, persists the refresh token when present, and returns the token bundle to the desktop.", "claimGoogleOAuth", bearer(), nil, jsonRequest("Google OAuth session ticket.", ref("GoogleClaimRequest"), obj{"session": "state_abc123"}), obj{
+		"200": jsonResponse("Claimed Google token bundle.", ref("OAuthTokenBundle"), obj{"access_token": "example-access-token", "refresh_token": "example-refresh-token", "expires_at": 1790784000, "scope": "openid email profile", "token_type": "Bearer"}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"403": responseRef("403"),
 		"404": responseRef("404"),
+		"409": responseRef("409"),
 		"410": responseRef("410"),
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
 	paths["/v1/google-oauth/refresh"] = obj{"post": operation("Google OAuth", "Refresh Google access token", "Refreshes a Google access token using the server-held Google OAuth client id and secret. Google usually omits refresh_token on refresh; the desktop should preserve the old refresh token.", "refreshGoogleOAuth", bearer(), nil, jsonRequest("Google refresh token payload.", ref("GoogleRefreshRequest"), obj{"refreshToken": "1//refresh"}), obj{
-		"200": jsonResponse("Refreshed Google access token bundle.", ref("OAuthTokenBundle"), obj{"access_token": "ya29.a0AfH6S...", "expires_at": 1790784000, "scope": "openid email profile", "token_type": "Bearer"}),
+		"200": jsonResponse("Refreshed Google access token bundle.", ref("OAuthTokenBundle"), obj{"access_token": "example-access-token", "expires_at": 1790784000, "scope": "openid email profile", "token_type": "Bearer"}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"409": responseRef("409"),
@@ -1212,25 +1214,27 @@ func addGoogleOAuthPaths(paths obj) {
 }
 
 func addSlackOAuthPaths(paths obj) {
-	paths["/oauth/slack/start"] = obj{"get": operation("Slack OAuth", "Start Slack workspace install", "Browser-facing endpoint opened by the desktop. It creates a one-time state ticket, then redirects the browser to Slack's OAuth v2 authorize screen with the configured bot scopes.", "startSlackOAuth", nil, nil, nil, obj{
-		"302": redirectResponse("Redirect to Slack OAuth consent."),
-		"500": htmlResponse("HTML error page when the flow cannot be started."),
-		"502": htmlResponse("HTML error page when Slack OAuth is not configured."),
+	paths["/v1/slack-oauth/start"] = obj{"post": operation("Slack OAuth", "Start Slack workspace install", "Creates a one-time state ticket bound to the authenticated Rowboat user and returns the Slack install URL for the desktop to open.", "startSlackOAuth", bearer(), nil, nil, obj{
+		"200": jsonResponse("Bound Slack authorization URL.", obj{"type": "object", "required": []any{"authorizeUrl"}, "properties": obj{"authorizeUrl": obj{"type": "string", "format": "uri"}}}, obj{"authorizeUrl": "https://slack.com/oauth/v2/authorize?..."}),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+		"502": responseRef("502"),
 	})}
 	paths["/oauth/slack/callback"] = obj{"get": operation("Slack OAuth", "Handle Slack OAuth callback", "Slack redirect target. Exchanges the authorization code server-side, parks the sealed workspace bundle under the state ticket, and returns an HTML page that deep-links back to the desktop.", "handleSlackOAuthCallback", nil, []any{
-		queryParam("state", "Opaque state ticket minted by /oauth/slack/start.", true, stringSchema("State ticket.", "state_abc123")),
+		queryParam("state", "Opaque user-bound state ticket minted by /v1/slack-oauth/start.", true, stringSchema("State ticket.", "state_abc123")),
 		queryParam("code", "Authorization code returned by Slack.", false, stringSchema("Authorization code.", "1234.5678.abcd")),
 		queryParam("error", "OAuth error returned by Slack when the user cancels the install.", false, stringSchema("OAuth error.", "access_denied")),
 	}, nil, obj{
 		"200": htmlResponse("HTML page that redirects to solomon-ai://oauth/slack/done."),
 		"400": htmlResponse("HTML error page for missing or expired state/code."),
 	})}
-	paths["/v1/slack-oauth/claim"] = obj{"post": operation("Slack OAuth", "Claim Slack workspace connection", "Atomically consumes a one-time Slack install ticket and persists the workspace connection (the team_id-to-user mapping the Slack events webhook resolves against). The bot token stays server-held; the response carries workspace metadata only.", "claimSlackOAuth", bearer(), nil, jsonRequest("Slack install session ticket.", ref("SlackClaimRequest"), obj{"session": "state_abc123"}), obj{
+	paths["/v1/slack-oauth/claim"] = obj{"post": operation("Slack OAuth", "Claim Slack workspace connection", "Requires the authenticated user to match the user that started the install, atomically consumes the one-time ticket, and persists the workspace connection. The bot token stays server-held.", "claimSlackOAuth", bearer(), nil, jsonRequest("Slack install session ticket.", ref("SlackClaimRequest"), obj{"session": "state_abc123"}), obj{
 		"200": jsonResponse("Connected workspace metadata.", ref("SlackClaimResponse"), obj{"connected": true, "teamId": "T0EXAMPLE", "teamName": "Acme", "scope": "channels:history,channels:read", "botUserId": "U0BOT"}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
+		"403": responseRef("403"),
 		"404": responseRef("404"),
-		"409": problemResponse("The browser install has not completed yet; retry after the deep link returns.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "slack install not completed yet", "install_incomplete")),
+		"409": obj{"description": "The browser install is incomplete, or the workspace is already owned by another Rowboat account.", "content": obj{"application/problem+json": obj{"schema": ref("ErrorEnvelope")}}},
 		"410": responseRef("410"),
 		"500": responseRef("500"),
 	})}
@@ -1300,7 +1304,7 @@ func addConnectorPaths(paths obj) {
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/connections/{name}/api-key"] = obj{"post": operation("Connectors", "Connect API-key connector", "Stores a vendor-issued API key for an api_key connector. The key is sealed at rest and later minted back only through the connector MCP token endpoint.", "setConnectionAPIKey", bearer(), connectorNameParam(), jsonRequest("Connector API key.", ref("ConnectionAPIKeyRequest"), obj{"apiKey": "sk_vendor_abc123"}), obj{
+	paths["/v1/connections/{name}/api-key"] = obj{"post": operation("Connectors", "Connect API-key connector", "Stores a vendor-issued API key for an api_key connector. The key is sealed at rest and later minted back only through the connector MCP token endpoint.", "setConnectionAPIKey", bearer(), connectorNameParam(), jsonRequest("Connector API key.", ref("ConnectionAPIKeyRequest"), obj{"apiKey": "example-vendor-key"}), obj{
 		"200": jsonResponse("Connector connected.", ref("ConnectionConnectedResponse"), obj{"connected": true}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
@@ -1503,7 +1507,7 @@ func enrichEntitySchemas(schemas obj) {
 
 func tokenResponses(successDescription string) obj {
 	return obj{
-		"200": jsonResponse(successDescription, ref("WorkOSTokenBundle"), obj{"access_token": "eyJhbGciOiJSUzI1NiIs...", "refresh_token": "refresh_token_123", "expires_at": 1790784000, "token_type": "Bearer", "user_id": "user_01HABCDEF", "email": "user@example.com"}),
+		"200": jsonResponse(successDescription, ref("WorkOSTokenBundle"), obj{"access_token": "example-access-token", "refresh_token": "example-refresh-token", "expires_at": 1790784000, "token_type": "Bearer", "user_id": "user_01HABCDEF", "email": "user@example.com"}),
 		"400": responseRef("400"),
 		"409": responseRef("409"),
 		"502": responseRef("502"),
@@ -1764,7 +1768,7 @@ func backgroundTaskAPIRunExample() obj {
 	run["executor"] = "api"
 	run["status"] = "queued"
 	run["temporalWorkflowId"] = "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"
-	run["temporalRunId"] = "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16"
+	run["temporalRunId"] = "00000000-0000-0000-0000-000000000001"
 	run["temporalStatus"] = "Started"
 	run["progressPercent"] = 0
 	run["progressMessage"] = "Queued for API worker."
@@ -1781,7 +1785,7 @@ func backgroundTaskRunStatusExample() obj {
 		"status":             "running",
 		"executor":           "api",
 		"temporalWorkflowId": "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
-		"temporalRunId":      "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16",
+		"temporalRunId":      "00000000-0000-0000-0000-000000000001",
 		"temporalStatus":     "Running",
 		"progressPercent":    50,
 		"progressMessage":    "Building API-native task artifact.",

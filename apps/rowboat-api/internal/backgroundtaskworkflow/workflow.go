@@ -294,6 +294,23 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 			backgroundtaskrun.RunIDEQ(in.RunID),
 			backgroundtaskrun.HasTaskWith(backgroundtask.IDEQ(taskID)),
 			backgroundtaskrun.StatusNotIn("succeeded", "stopped"),
+			// A failed row may self-heal only while it is still the sole execution
+			// for this attempt. Once a retry row exists, resurrecting the original
+			// would run the same task twice. Keep this anti-join in the UPDATE so
+			// an already-committed retry cannot race between a separate check and
+			// the status transition.
+			backgroundtaskrun.Or(
+				backgroundtaskrun.StatusNEQ("failed"),
+				func(s *entsql.Selector) {
+					retry := entsql.Table(backgroundtaskrun.Table).As("retry")
+					s.Where(entsql.NotExists(
+						entsql.Select(retry.C(backgroundtaskrun.FieldID)).From(retry).Where(entsql.And(
+							entsql.EQ(retry.C(backgroundtaskrun.FieldRetryOfRunID), in.RunID),
+							entsql.ColumnsEQ(retry.C(backgroundtaskrun.UserColumn), s.C(backgroundtaskrun.UserColumn)),
+						)),
+					))
+				},
+			),
 		).
 		SetExecutor("api").
 		SetStatus("running").
@@ -318,10 +335,10 @@ func (a *Activities) MarkRunRunning(ctx context.Context, in StartInput) error {
 		return err
 	}
 	if n == 0 {
-		// Cancelled/succeeded/missing run: it will never become claimable, so
+		// Cancelled/succeeded/missing/superseded run: it will never become claimable, so
 		// fail the workflow fast instead of burning the activity retry budget.
 		return temporal.NewNonRetryableApplicationError(
-			fmt.Sprintf("background task run %s not claimable (cancelled, completed, or missing)", in.RunID),
+			fmt.Sprintf("background task run %s not claimable (cancelled, completed, superseded, or missing)", in.RunID),
 			"RunNotClaimable", nil)
 	}
 	if err := a.Client.BackgroundTask.UpdateOneID(taskID).

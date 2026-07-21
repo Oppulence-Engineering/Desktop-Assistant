@@ -34,6 +34,7 @@ func seedUser(t *testing.T, c *ent.Client, email, wid string) *ent.User {
 	t.Helper()
 	ctx := context.Background()
 	u := c.User.Create().SetEmail(email).SetWorkosUserID(wid).SaveX(ctx)
+	ctx = auth.WithUser(ctx, u)
 	c.Subscription.Create().SetUser(u).SaveX(ctx)
 	return u
 }
@@ -46,9 +47,9 @@ func TestTenantScoping(t *testing.T) {
 	u1 := seedUser(t, c, "a@x.co", "user_1")
 	u2 := seedUser(t, c, "b@x.co", "user_2")
 
-	c.CreditLedger.Create().SetUser(u1).SetDelta(-5).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(ctx)
-	c.CreditLedger.Create().SetUser(u1).SetDelta(-3).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(ctx)
-	c.CreditLedger.Create().SetUser(u2).SetDelta(-7).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(ctx)
+	c.CreditLedger.Create().SetUser(u1).SetDelta(-5).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(auth.WithUser(ctx, u1))
+	c.CreditLedger.Create().SetUser(u1).SetDelta(-3).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(auth.WithUser(ctx, u1))
+	c.CreditLedger.Create().SetUser(u2).SetDelta(-7).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(auth.WithUser(ctx, u2))
 
 	// No viewer in context → deny.
 	if _, err := c.CreditLedger.Query().All(ctx); !errors.Is(err, db.ErrNoViewer) {
@@ -74,6 +75,50 @@ func TestTenantScoping(t *testing.T) {
 	nAll := c.CreditLedger.Query().CountX(ctxInt)
 	if nAll != 3 {
 		t.Fatalf("internal caller should see 3 ledger rows, saw %d", nAll)
+	}
+}
+
+func TestTenantMutationHookRejectsCrossTenantWrites(t *testing.T) {
+	d, err := db.Open(context.Background(), appconfig.Config{
+		DatabaseURL: "file:" + t.Name() + "?mode=memory&cache=shared&_pragma=foreign_keys(1)",
+		AutoMigrate: true,
+	}, zap.NewNop())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = d.Close() })
+
+	bg := auth.WithInternal(context.Background())
+	u1 := d.Client.User.Create().SetWorkosUserID("user_mut_1").SaveX(bg)
+	u2 := d.Client.User.Create().SetWorkosUserID("user_mut_2").SaveX(bg)
+	task := d.Client.BackgroundTask.Create().
+		SetUser(u2).
+		SetSlug("victim-task").
+		SetName("Victim task").
+		SetInstructions("private").
+		SaveX(bg)
+
+	ctx1 := auth.WithUser(context.Background(), u1)
+	if _, err := d.Client.BackgroundTask.UpdateOneID(task.ID).
+		SetInstructions("stolen").
+		Save(ctx1); !ent.IsNotFound(err) {
+		t.Fatalf("cross-tenant update error = %v, want not found", err)
+	}
+	if err := d.Client.BackgroundTask.DeleteOneID(task.ID).Exec(ctx1); !ent.IsNotFound(err) {
+		t.Fatalf("cross-tenant delete error = %v, want not found", err)
+	}
+	if _, err := d.Client.BackgroundTask.Create().
+		SetUser(u2).
+		SetSlug("forged-owner").
+		SetName("Forged").
+		SetInstructions("x").
+		Save(ctx1); !errors.Is(err, db.ErrTenantMutation) {
+		t.Fatalf("cross-tenant create error = %v, want ErrTenantMutation", err)
+	}
+
+	got := d.Client.BackgroundTask.GetX(bg, task.ID)
+	if got.Instructions != "private" {
+		t.Fatalf("victim task was modified: %q", got.Instructions)
 	}
 }
 
@@ -109,7 +154,7 @@ func TestAppendOnlyLedger(t *testing.T) {
 	u := seedUser(t, c, "a@x.co", "user_1")
 	ctxU := auth.WithUser(ctx, u)
 
-	row := c.CreditLedger.Create().SetUser(u).SetDelta(-5).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(ctx)
+	row := c.CreditLedger.Create().SetUser(u).SetDelta(-5).SetReason("llm_call").SetRequestID(uuid.New()).SaveX(ctxU)
 
 	if err := c.CreditLedger.UpdateOne(row).SetDelta(99).Exec(ctxU); err == nil {
 		t.Fatal("expected update on credit ledger to be rejected (append-only)")
@@ -124,6 +169,7 @@ func TestIdempotentLedgerKey(t *testing.T) {
 	c := d.Client
 	ctx := context.Background()
 	u := seedUser(t, c, "a@x.co", "user_1")
+	ctx = auth.WithUser(ctx, u)
 
 	rid := uuid.New()
 	c.CreditLedger.Create().SetUser(u).SetDelta(-5).SetReason("llm_call_reserve").SetRequestID(rid).SaveX(ctx)

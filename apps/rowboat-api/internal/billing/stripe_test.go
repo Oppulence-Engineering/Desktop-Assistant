@@ -94,7 +94,7 @@ func newStripeBillingHandler(client *ent.Client, stripeURL string) *billing.Hand
 
 func TestCheckoutSessionCreatesCustomerAndSession(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(ctx)
 
@@ -132,7 +132,7 @@ func TestCheckoutSessionCreatesCustomerAndSession(t *testing.T) {
 
 func TestPortalSessionRequiresLinkedCustomer(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(ctx)
 	h := newStripeBillingHandler(client, "https://stripe.invalid")
@@ -148,7 +148,7 @@ func TestPortalSessionRequiresLinkedCustomer(t *testing.T) {
 
 func TestStripeWebhookCheckoutCompletedUpdatesSubscription(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(ctx)
 
@@ -186,7 +186,7 @@ func TestStripeWebhookCheckoutCompletedUpdatesSubscription(t *testing.T) {
 
 func TestStripeWebhookDuplicateEventDoesNotReapply(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(ctx)
 
@@ -247,7 +247,7 @@ func TestStripeWebhookExpiredSignature(t *testing.T) {
 
 func TestStripeSubscriptionUpdatedNormalizesBlockedStatus(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().
 		SetUser(u).
@@ -280,7 +280,7 @@ func TestStripeSubscriptionUpdatedNormalizesBlockedStatus(t *testing.T) {
 
 func TestStripeInvoicePaymentFailedWithoutSubscriptionMarksPastDue(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().
 		SetUser(u).
@@ -307,7 +307,7 @@ func TestStripeInvoicePaymentFailedWithoutSubscriptionMarksPastDue(t *testing.T)
 
 func TestStripeInvoicePaymentSucceededRetrievesSubscription(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().
 		SetUser(u).
@@ -342,7 +342,7 @@ func TestStripeInvoicePaymentSucceededRetrievesSubscription(t *testing.T) {
 
 func TestStripeSubscriptionPriceOverridesMetadataPlan(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().
 		SetUser(u).
@@ -375,7 +375,7 @@ func TestStripeSubscriptionPriceOverridesMetadataPlan(t *testing.T) {
 
 func TestStripeOutOfOrderWebhookFuzzDoesNotApplyStaleState(t *testing.T) {
 	client := testClient(t)
-	ctx := context.Background()
+	ctx := auth.WithInternal(context.Background())
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
 	client.Subscription.Create().
 		SetUser(u).

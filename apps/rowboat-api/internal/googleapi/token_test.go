@@ -10,6 +10,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
@@ -36,7 +37,7 @@ func testConn(t *testing.T, sealer *crypto.Sealer) *ent.OAuthConnection {
 		SetProvider("google").
 		SetRefreshTokenEncrypted(sealed).
 		SetExternalAccountID("me@gmail.com").
-		SaveX(context.Background())
+		SaveX(auth.WithUser(context.Background(), u))
 }
 
 func TestAccessTokenForConnection(t *testing.T) {

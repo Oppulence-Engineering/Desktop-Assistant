@@ -35,10 +35,12 @@ const tokenPrefix = "agt_"
 
 // Errors returned by Verify.
 var (
-	ErrMalformed = errors.New("agenttoken: malformed token")
-	ErrSignature = errors.New("agenttoken: signature mismatch")
-	ErrExpired   = errors.New("agenttoken: token expired")
-	ErrKind      = errors.New("agenttoken: wrong token kind")
+	ErrMalformed   = errors.New("agenttoken: malformed token")
+	ErrSignature   = errors.New("agenttoken: signature mismatch")
+	ErrExpired     = errors.New("agenttoken: token expired")
+	ErrNotYetValid = errors.New("agenttoken: token issued in the future")
+	ErrKind        = errors.New("agenttoken: wrong token kind")
+	ErrClaims      = errors.New("agenttoken: invalid claims")
 )
 
 // ApprovalClaims binds a money-moving approval token to exactly one approval
@@ -91,6 +93,12 @@ func (s *Signer) MintContinuation(c ContinuationClaims, now time.Time, ttl time.
 }
 
 func (s *Signer) mint(kind Kind, claims any, now time.Time, ttl time.Duration) (string, error) {
+	if ttl <= 0 {
+		return "", fmt.Errorf("%w: ttl must be positive", ErrClaims)
+	}
+	if err := validateClaims(kind, claims); err != nil {
+		return "", err
+	}
 	raw, err := json.Marshal(claims)
 	if err != nil {
 		return "", err
@@ -144,11 +152,59 @@ func (s *Signer) verify(kind Kind, token string, now time.Time, out any) error {
 	if env.Kind != kind {
 		return ErrKind
 	}
-	if now.Unix() > env.Exp {
+	if env.Iat <= 0 || env.Exp <= env.Iat {
+		return ErrMalformed
+	}
+	if env.Iat > now.Add(time.Minute).Unix() {
+		return ErrNotYetValid
+	}
+	if now.Unix() >= env.Exp {
 		return ErrExpired
 	}
 	if err := json.Unmarshal(env.Claims, out); err != nil {
 		return fmt.Errorf("agenttoken: decode claims: %w", err)
+	}
+	if err := validateClaims(kind, out); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateClaims(kind Kind, claims any) error {
+	missing := false
+	switch kind {
+	case KindApproval:
+		var c ApprovalClaims
+		switch v := claims.(type) {
+		case ApprovalClaims:
+			c = v
+		case *ApprovalClaims:
+			if v != nil {
+				c = *v
+			}
+		default:
+			missing = true
+		}
+		missing = missing || strings.TrimSpace(c.ApprovalID) == "" || strings.TrimSpace(c.UserID) == "" ||
+			strings.TrimSpace(c.SessionID) == "" || strings.TrimSpace(c.TrustTier) == ""
+	case KindContinuation:
+		var c ContinuationClaims
+		switch v := claims.(type) {
+		case ContinuationClaims:
+			c = v
+		case *ContinuationClaims:
+			if v != nil {
+				c = *v
+			}
+		default:
+			missing = true
+		}
+		missing = missing || strings.TrimSpace(c.WorkflowID) == "" || strings.TrimSpace(c.SessionID) == "" || strings.TrimSpace(c.UserID) == ""
+	default:
+		return ErrKind
+	}
+	if missing {
+		return ErrClaims
 	}
 	return nil
 }

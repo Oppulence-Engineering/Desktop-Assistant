@@ -18,6 +18,7 @@ import (
 // fakeCompleter scripts pass-1/pass-2 responses and records requests.
 type fakeCompleter struct {
 	pass1IDs []string
+	pass1Err error
 	pass2    map[string]string // task slug → raw JSON decision
 	pass2Err map[string]error
 	requests []llm.CompleteRequest
@@ -27,6 +28,9 @@ func (f *fakeCompleter) CompleteJSON(_ context.Context, req llm.CompleteRequest,
 	f.requests = append(f.requests, req)
 	switch req.SubUseCase {
 	case "pass1":
+		if f.pass1Err != nil {
+			return f.pass1Err
+		}
 		raw, _ := json.Marshal(map[string]any{"ids": f.pass1IDs})
 		return json.Unmarshal(raw, out)
 	case "pass2":
@@ -42,6 +46,24 @@ func (f *fakeCompleter) CompleteJSON(_ context.Context, req llm.CompleteRequest,
 		return fmt.Errorf("fake: no scripted pass2 for prompt")
 	}
 	return fmt.Errorf("fake: unknown sub use case %q", req.SubUseCase)
+}
+
+func TestRouteAlreadyCompletedPass1FinishesWithoutPermanentRetry(t *testing.T) {
+	client, u := setup(t)
+	makeTask(t, client, u, "task-a", "api", true, "x")
+	ev := makeEvent(t, client, u, "already-completed-pass1")
+
+	r := &Router{
+		Client: client, LLM: &fakeCompleter{pass1Err: llm.ErrAlreadyCompleted},
+		Starter: &fakeStarter{}, Threshold: 0.7, Model: "m", Log: zap.NewNop(),
+	}
+	if err := r.Route(context.Background(), ev.ID); err != nil {
+		t.Fatalf("already-completed pass-1 must terminate instead of retrying forever: %v", err)
+	}
+	got := client.CloudEvent.GetX(auth.WithInternal(context.Background()), ev.ID)
+	if got.RoutingStatus != StatusRouted || got.MatchedTaskCount != 0 {
+		t.Fatalf("event = %s/%d, want routed/0", got.RoutingStatus, got.MatchedTaskCount)
+	}
 }
 
 func containsSlug(prompt, slug string) bool {
@@ -89,7 +111,7 @@ func makeTask(t *testing.T, client *ent.Client, u *ent.User, slug, target string
 		SetActive(active).
 		SetExecutionTarget(target).
 		SetTriggersJSON(triggers).
-		SaveX(context.Background())
+		SaveX(auth.WithUser(context.Background(), u))
 }
 
 func makeEvent(t *testing.T, client *ent.Client, u *ent.User, dedupe string) *ent.CloudEvent {
@@ -100,7 +122,7 @@ func makeEvent(t *testing.T, client *ent.Client, u *ent.User, dedupe string) *en
 		SetDedupeKey(dedupe).
 		SetSubject("Invoice #4821 dispute").
 		SetText("Acme disputed invoice #4821.").
-		SaveX(context.Background())
+		SaveX(auth.WithUser(context.Background(), u))
 }
 
 func TestRouteThresholdGating(t *testing.T) {
@@ -271,7 +293,7 @@ func TestEventSummaryOmitsPayload(t *testing.T) {
 		SetSubject("Invoice").
 		SetText("gist here").
 		SetPayloadCiphertext([]byte("SEALED-SECRET-BYTES")).
-		SaveX(context.Background())
+		SaveX(auth.WithInternal(context.Background()))
 	s := eventSummary(ev)
 	if jsonContains(s, "SEALED") {
 		t.Fatal("requested_context must never contain payload bytes")

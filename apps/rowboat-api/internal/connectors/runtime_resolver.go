@@ -12,6 +12,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 // MCPRuntimeResolver resolves connector MCP credentials for worker-side tool
@@ -22,6 +23,13 @@ type MCPRuntimeResolver struct {
 	sealer   *crypto.Sealer
 	registry *Registry
 	ory      *oryClient
+	refresh  refreshDeduper
+}
+
+// SetRefreshDedup enables the same rotation-safe refresh path used by the HTTP
+// connector token endpoint.
+func (r *MCPRuntimeResolver) SetRefreshDedup(cache RefreshCache, sealer *crypto.Sealer, log *zap.Logger) {
+	r.refresh.configure(cache, sealer, log)
 }
 
 // NewMCPRuntimeResolver builds a worker-side resolver for connector MCP access.
@@ -82,20 +90,9 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 	if err != nil {
 		return "", "", "", fmt.Errorf("open connector %q refresh token: %w", connectorName, err)
 	}
-	tok, err := r.ory.refresh(ctx, refresh)
+	tok, err := r.refresh.refresh(auth.WithInternal(ctx), connectorName, mc, r.ory, refresh)
 	if err != nil {
 		return "", "", "", fmt.Errorf("refresh connector %q token: %w", connectorName, err)
-	}
-	upd := mc.Update().SetLastUsedAt(time.Now())
-	if tok.RefreshToken != "" {
-		sealed, err := r.sealer.SealString(tok.RefreshToken)
-		if err != nil {
-			return "", "", "", fmt.Errorf("seal connector %q rotated refresh token: %w", connectorName, err)
-		}
-		upd = upd.SetRefreshTokenEncrypted(sealed)
-	}
-	if err := upd.Exec(auth.WithInternal(ctx)); err != nil {
-		return "", "", "", fmt.Errorf("persist connector %q refreshed token: %w", connectorName, err)
 	}
 	return c.MCPURL, defaultStr(tok.TokenType, "Bearer"), tok.AccessToken, nil
 }

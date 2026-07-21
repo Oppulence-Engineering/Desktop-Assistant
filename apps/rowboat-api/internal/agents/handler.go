@@ -323,10 +323,9 @@ func (h *Handler) Approve(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "decision must be granted or denied", "bad_request")
 		return
 	}
-	resolvedBy := req.ResolvedBy
-	if resolvedBy == "" {
-		resolvedBy = u.ID.String()
-	}
+	// Audit identity comes from the authenticated actor. A caller-controlled
+	// label must not be able to impersonate a different approver.
+	resolvedBy := u.ID.String()
 	_, err := h.starter.Approve(r.Context(), u.ID.String(), sess.SessionID, agentworkflow.ApproveAction{
 		ApprovalID:    approvalID,
 		Decision:      req.Decision,

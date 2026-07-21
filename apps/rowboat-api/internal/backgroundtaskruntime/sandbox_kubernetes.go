@@ -192,8 +192,7 @@ func (e *KubernetesSandboxExecutor) ensureJob(ctx context.Context, name string, 
 		return nil
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return fmt.Errorf("create sandbox job: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
+		return fmt.Errorf("create sandbox job: kubernetes status %d", resp.StatusCode)
 	}
 	return nil
 }
@@ -223,9 +222,14 @@ func (e *KubernetesSandboxExecutor) jobSpec(name string, run SandboxRun) map[str
 		"env":             env,
 		"securityContext": map[string]any{
 			"allowPrivilegeEscalation": false,
+			"privileged":               false,
+			"readOnlyRootFilesystem":   true,
 			"capabilities":             map[string]any{"drop": []string{"ALL"}},
 		},
-		"volumeMounts": []map[string]string{{"name": "workspace", "mountPath": "/workspace"}},
+		"volumeMounts": []map[string]string{
+			{"name": "workspace", "mountPath": "/workspace"},
+			{"name": "tmp", "mountPath": "/tmp"},
+		},
 	}
 	resources := resources(e.cfg)
 	if len(resources) > 0 {
@@ -234,6 +238,10 @@ func (e *KubernetesSandboxExecutor) jobSpec(name string, run SandboxRun) map[str
 	podSpec := map[string]any{
 		"restartPolicy":                "Never",
 		"automountServiceAccountToken": false,
+		"enableServiceLinks":           false,
+		"hostIPC":                      false,
+		"hostNetwork":                  false,
+		"hostPID":                      false,
 		"securityContext": map[string]any{
 			"runAsNonRoot": true,
 			"runAsUser":    65532,
@@ -244,12 +252,18 @@ func (e *KubernetesSandboxExecutor) jobSpec(name string, run SandboxRun) map[str
 			},
 		},
 		"containers": []map[string]any{container},
-		"volumes": []map[string]any{{
-			"name": "workspace",
-			"emptyDir": map[string]string{
-				"sizeLimit": valueOrDefault(e.cfg.WorkspaceSizeLimit, "1Gi"),
+		"volumes": []map[string]any{
+			{
+				"name": "workspace",
+				"emptyDir": map[string]string{
+					"sizeLimit": valueOrDefault(e.cfg.WorkspaceSizeLimit, "1Gi"),
+				},
 			},
-		}},
+			{
+				"name":     "tmp",
+				"emptyDir": map[string]string{"sizeLimit": "64Mi"},
+			},
+		},
 	}
 	if e.cfg.ServiceAccountName != "" {
 		podSpec["serviceAccountName"] = e.cfg.ServiceAccountName
@@ -317,8 +331,7 @@ func (e *KubernetesSandboxExecutor) getJobStatus(ctx context.Context, name strin
 		return kubernetesJobStatus{}, errKubernetesNotFound
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return kubernetesJobStatus{}, fmt.Errorf("read sandbox job: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
+		return kubernetesJobStatus{}, fmt.Errorf("read sandbox job: kubernetes status %d", resp.StatusCode)
 	}
 	var job struct {
 		Status struct {
@@ -388,8 +401,7 @@ func (e *KubernetesSandboxExecutor) logs(ctx context.Context, jobName string, ma
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return "", false, fmt.Errorf("read sandbox logs: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
+		return "", false, fmt.Errorf("read sandbox logs: kubernetes status %d", resp.StatusCode)
 	}
 	if maxOutputBytes <= 0 {
 		maxOutputBytes = 64 << 10
@@ -450,8 +462,7 @@ func (e *KubernetesSandboxExecutor) firstPod(ctx context.Context, jobName string
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return "", fmt.Errorf("list sandbox pods: kubernetes status %d: %s", resp.StatusCode, strings.TrimSpace(string(msg)))
+		return "", fmt.Errorf("list sandbox pods: kubernetes status %d", resp.StatusCode)
 	}
 	var list struct {
 		Items []struct {

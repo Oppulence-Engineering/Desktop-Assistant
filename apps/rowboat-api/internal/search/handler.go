@@ -127,14 +127,14 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 
 	key := h.secrets.Exa()
 	if key == "" {
-		refund(charge, h.log)
+		refund(r.Context(), charge, h.log)
 		httpx.Error(w, http.StatusBadGateway, "search provider not configured", "provider_unconfigured")
 		return
 	}
 
 	upReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, h.baseURL+"/search", bytes.NewReader(raw))
 	if err != nil {
-		refund(charge, h.log)
+		refund(r.Context(), charge, h.log)
 		httpx.Error(w, http.StatusInternalServerError, "could not build upstream request", "internal_error")
 		return
 	}
@@ -144,7 +144,7 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.http.Do(upReq)
 	if err != nil {
-		refund(charge, h.log)
+		refund(r.Context(), charge, h.log)
 		h.log.Warn("exa upstream error", zap.Error(err))
 		httpx.Error(w, http.StatusBadGateway, "search upstream failed", "upstream_error")
 		return
@@ -152,10 +152,8 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= http.StatusBadRequest {
-		refund(charge, h.log)
-		w.Header().Set("Content-Type", proxyutil.ContentTypeOr(resp, "application/json"))
-		w.WriteHeader(resp.StatusCode)
-		_, _ = io.Copy(w, resp.Body)
+		refund(r.Context(), charge, h.log)
+		httpx.Error(w, http.StatusBadGateway, "search provider rejected the request", "upstream_error")
 		return
 	}
 
@@ -190,8 +188,8 @@ func writeQuotaError(w http.ResponseWriter, err error) {
 	}
 }
 
-func refund(charge *quota.Charge, log *zap.Logger) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func refund(reqCtx context.Context, charge *quota.Charge, log *zap.Logger) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(reqCtx), 5*time.Second)
 	defer cancel()
 	if err := charge.Refund(ctx); err != nil {
 		log.Error("exa refund", zap.Error(err))

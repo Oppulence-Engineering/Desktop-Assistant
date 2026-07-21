@@ -85,13 +85,17 @@ RFC 027 generalizes the cloud runtime ([004](./complete-004-cloud-agent-runtime.
 ## Product strategy
 
 RFC 029 is the product wedge that turns the runtime and memory primitives into a
-specific buyer-facing promise: founder/operator follow-through. It makes the
-control tower the main product point, with the agent builder, graph, MCP layer,
-and Temporal runtime as infrastructure underneath that promise.
+specific buyer-facing promise: founder/operator follow-through. RFC 030 turns
+that wedge into a cross-product revenue loop with OutboundConsole research and
+governance plus the email-verification backend, while preserving independent
+repositories and databases. The control tower remains the main product point,
+with the agent builder, graph, MCP layer, Temporal runtime, research sessions,
+and verification pipelines as infrastructure underneath that promise.
 
-| #                                        | Title                                      | Layer                          | What it adds                                                                                                                                                                |
-| ---------------------------------------- | ------------------------------------------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [029](./029-founder-operating-memory.md) | Founder Operating Memory and Control Tower | product + apps/x + rowboat-api | Daily founder brief, follow-up queue, relationship/deal memory, approval-gated actions, job portfolio, metrics, and build order around the "nothing important slips" wedge. |
+| #                                                  | Title                                              | Layer                                              | What it adds                                                                                                                                                                                                                         |
+| -------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [029](./029-founder-operating-memory.md)           | Founder Operating Memory and Control Tower         | product + apps/x + rowboat-api                     | Daily founder brief, follow-up queue, relationship/deal memory, approval-gated actions, job portfolio, metrics, and build order around the "nothing important slips" wedge.                                                          |
+| [030](./030-revenue-memory-outbound-governance.md) | Revenue Memory and Outbound Governance Integration | rowboat-api + OutboundConsole + email verification | Three-service warm-revenue loop: relationship memory and RevenueAction queue in Rowboat, composed research/verification policy in OutboundConsole, approval-gated Gmail execution, durable outcomes, identity, privacy, and rollout. |
 
 ## Email feature RFCs
 

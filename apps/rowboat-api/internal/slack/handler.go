@@ -14,6 +14,7 @@ package slack
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -41,6 +42,8 @@ type slackRuntime interface {
 	ReadThread(ctx context.Context, botToken, channel, threadTS string, limit int) ([]slackclient.Message, error)
 	PostMessage(ctx context.Context, botToken, channel, threadTS, text string) error
 }
+
+var errWorkspaceOwned = errors.New("slack workspace is already connected to another user")
 
 // Handler serves the Slack OAuth broker endpoints.
 type Handler struct {
@@ -117,7 +120,8 @@ func (h *Handler) SetOAuthFlow(authorizeURL, tokenURL, redirectURI, deepLinkSche
 
 // parkedPayload is sealed into OAuthPending.payload_encrypted by Callback.
 type parkedPayload struct {
-	AccessToken string `json:"access_token"`
+	WorkOSUserID string `json:"workos_user_id"`
+	AccessToken  string `json:"access_token"`
 	// RefreshToken is present only when the Slack app has token rotation
 	// enabled; v1 persists the access token either way (non-rotating default).
 	RefreshToken string `json:"refresh_token,omitempty"`
@@ -231,11 +235,26 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "malformed ticket", "internal_error")
 		return
 	}
+	if payload.WorkOSUserID == "" || payload.WorkOSUserID != u.WorkosUserID {
+		// Do not consume a legitimate owner's ticket when another user probes a
+		// leaked state; the owner can still complete the flow.
+		httpx.Error(w, http.StatusForbidden, "ticket does not belong to this user", "forbidden")
+		return
+	}
 	if payload.AccessToken == "" || payload.TeamID == "" {
 		// The browser flow never completed (claim raced the callback, or the
 		// install was abandoned): the parked row still holds the empty Start
 		// placeholder. Not consumed — the callback may still land.
 		httpx.Error(w, http.StatusConflict, "slack install not completed yet", "install_incomplete")
+		return
+	}
+	if err := h.ensureWorkspaceAvailable(ctx, u, payload.TeamID); err != nil {
+		if errors.Is(err, errWorkspaceOwned) {
+			httpx.Error(w, http.StatusConflict, "slack workspace is already connected to another account", "workspace_already_connected")
+			return
+		}
+		h.log.Error("slack claim: check workspace ownership", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not verify workspace ownership", "internal_error")
 		return
 	}
 
@@ -245,6 +264,10 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.persistConnection(ctx, u, payload); err != nil {
+		if errors.Is(err, errWorkspaceOwned) {
+			httpx.Error(w, http.StatusConflict, "slack workspace is already connected to another account", "workspace_already_connected")
+			return
+		}
 		h.log.Error("slack claim: persist connection", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not store connection", "internal_error")
 		return
@@ -257,6 +280,26 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		Scope:     payload.Scope,
 		BotUserID: payload.BotUserID,
 	})
+}
+
+func (h *Handler) ensureWorkspaceAvailable(ctx context.Context, u *ent.User, teamID string) error {
+	conn, err := h.client.OAuthConnection.Query().
+		Where(
+			oauthconnection.ProviderEQ("slack"),
+			oauthconnection.ExternalAccountIDEQ(strings.TrimSpace(teamID)),
+		).
+		WithUser().
+		Only(auth.WithInternalOnly(ctx))
+	if ent.IsNotFound(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if conn.Edges.User == nil || conn.Edges.User.ID != u.ID {
+		return errWorkspaceOwned
+	}
+	return nil
 }
 
 // ListWorkspaces handles GET /v1/slack-oauth/workspaces.
@@ -448,13 +491,17 @@ func (h *Handler) persistConnection(ctx context.Context, u *ent.User, payload pa
 			SetExternalAccountID(payload.TeamID).
 			Exec(ctx)
 	case ent.IsNotFound(err):
-		return h.client.OAuthConnection.Create().
+		err := h.client.OAuthConnection.Create().
 			SetUser(u).
 			SetProvider("slack").
 			SetRefreshTokenEncrypted(sealed).
 			SetScopes(scopes).
 			SetExternalAccountID(payload.TeamID).
 			Exec(ctx)
+		if ent.IsConstraintError(err) {
+			return errWorkspaceOwned
+		}
+		return err
 	default:
 		return err
 	}

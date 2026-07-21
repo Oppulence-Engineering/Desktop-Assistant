@@ -105,10 +105,22 @@ func TestKubernetesSandboxExecutorCreatesJobAndReturnsLogs(t *testing.T) {
 	if podSpec["serviceAccountName"] != "rowboat-sandbox" || podSpec["automountServiceAccountToken"] != false {
 		t.Fatalf("pod spec = %+v", podSpec)
 	}
+	for _, key := range []string{"enableServiceLinks", "hostIPC", "hostNetwork", "hostPID"} {
+		if podSpec[key] != false {
+			t.Fatalf("pod security field %s = %#v, want false", key, podSpec[key])
+		}
+	}
 	containers := podSpec["containers"].([]any)
 	container := containers[0].(map[string]any)
 	if container["image"] != "python:3.12-slim" || container["workingDir"] != "/workspace" {
 		t.Fatalf("container = %+v", container)
+	}
+	security := container["securityContext"].(map[string]any)
+	if security["privileged"] != false || security["readOnlyRootFilesystem"] != true || security["allowPrivilegeEscalation"] != false {
+		t.Fatalf("container security context = %+v", security)
+	}
+	if len(container["volumeMounts"].([]any)) != 2 || len(podSpec["volumes"].([]any)) != 2 {
+		t.Fatalf("sandbox must have bounded workspace and tmp volumes: container=%+v pod=%+v", container, podSpec)
 	}
 	if !strings.Contains(container["args"].([]any)[0].(string), "print(1)") {
 		t.Fatalf("container args = %+v", container["args"])

@@ -32,10 +32,11 @@ func setup(t *testing.T, sanctioned int) (*ent.Client, context.Context, *voice.H
 	t.Cleanup(func() { _ = d.Close() })
 	bg := context.Background()
 	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(bg)
-	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(sanctioned).SaveX(bg)
+	userCtx := auth.WithUser(bg, u)
+	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(sanctioned).SaveX(userCtx)
 	sec := secrets.NewFromConfig(appconfig.Config{ElevenLabsAPIKey: "xi-key"})
 	h := voice.New(pricing.DefaultTable(), quota.New(d.Client, zap.NewNop()), sec, zap.NewNop())
-	return d.Client, auth.WithUser(bg, u), h
+	return d.Client, userCtx, h
 }
 
 func withVoiceID(ctx context.Context, id string) context.Context {
@@ -81,6 +82,28 @@ func TestTextToSpeechProxiesAndCharges(t *testing.T) {
 	}
 	if avail, _ := credits.Available(ctx, client, 10000); avail != 10000-11 {
 		t.Fatalf("available = %d, want %d", avail, 10000-11)
+	}
+}
+
+func TestTextToSpeechUpstreamErrorIsRedactedAndRefunded(t *testing.T) {
+	client, ctx, h := setup(t, 10000)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"secret voice account acct_123"}`))
+	}))
+	defer upstream.Close()
+	h.SetUpstream(upstream.URL)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/voice/text-to-speech/v", strings.NewReader(`{"text":"Hello there"}`))
+	req.Header.Set("Idempotency-Key", "voice-upstream-redaction")
+	req = req.WithContext(withVoiceID(ctx, "v"))
+	rec := httptest.NewRecorder()
+	h.TextToSpeech(rec, req)
+	if rec.Code != http.StatusBadGateway || strings.Contains(rec.Body.String(), "acct_123") {
+		t.Fatalf("response = %d %s, want redacted 502", rec.Code, rec.Body.String())
+	}
+	if avail, _ := credits.Available(ctx, client, 10000); avail != 10000 {
+		t.Fatalf("available after refund = %d, want 10000", avail)
 	}
 }
 

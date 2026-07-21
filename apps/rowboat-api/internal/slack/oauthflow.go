@@ -17,15 +17,20 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"go.uber.org/zap"
 )
 
-// Start handles GET /oauth/slack/start. Unauthenticated (the browser has no
-// bearer); the signed-in desktop binds the result to its user at claim time
-// (first-authenticated-claimer-wins, atomic consume — same model as the
-// Google broker; start-time binding is the tracked protocol follow-up).
+// Start handles authenticated POST /v1/slack-oauth/start and binds the state
+// ticket to the verified Rowboat user before redirecting to Slack.
 func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+		return
+	}
 	if h.secrets.SlackClientID() == "" || h.secrets.SlackClientSecret() == "" {
 		h.errorPage(w, http.StatusBadGateway, "Slack isn't configured on the server yet.")
 		return
@@ -41,9 +46,8 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		h.errorPage(w, http.StatusInternalServerError, "Could not start the Slack install.")
 		return
 	}
-	// Park the issued state (empty payload) so the callback can validate it
-	// and an abandoned flow is swept by the row's TTL.
-	sealed, err := h.sealer.Seal([]byte("{}"))
+	initial, _ := json.Marshal(parkedPayload{WorkOSUserID: u.WorkosUserID})
+	sealed, err := h.sealer.Seal(initial)
 	if err != nil {
 		h.errorPage(w, http.StatusInternalServerError, "Could not start the Slack install.")
 		return
@@ -64,7 +68,7 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 	q.Set("scope", h.scopes) // bot scopes, comma-separated
 	q.Set("redirect_uri", h.redirectURI)
 	q.Set("state", state)
-	http.Redirect(w, r, h.authorizeURL+"?"+q.Encode(), http.StatusFound)
+	httpx.WriteJSON(w, http.StatusOK, map[string]string{"authorizeUrl": h.authorizeURL + "?" + q.Encode()})
 }
 
 // Callback handles GET /oauth/slack/callback (Slack's redirect target). It
@@ -74,13 +78,9 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	q := r.URL.Query()
 	state := q.Get("state")
-	if oauthErr := q.Get("error"); oauthErr != "" {
-		h.deepLink(w, state, "error")
-		return
-	}
 	code := q.Get("code")
-	if state == "" || code == "" {
-		h.errorPage(w, http.StatusBadRequest, "Missing code or state.")
+	if state == "" {
+		h.errorPage(w, http.StatusBadRequest, "Missing state.")
 		return
 	}
 
@@ -96,6 +96,24 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		_ = h.client.OAuthPending.DeleteOne(pending).Exec(dctx)
 		cancel()
 		h.errorPage(w, http.StatusBadRequest, "Install session expired. Please try again.")
+		return
+	}
+	initialRaw, err := h.sealer.Open(pending.PayloadEncrypted)
+	if err != nil {
+		h.errorPage(w, http.StatusBadRequest, "Install session is invalid. Please try again.")
+		return
+	}
+	var initial parkedPayload
+	if json.Unmarshal(initialRaw, &initial) != nil || initial.WorkOSUserID == "" {
+		h.errorPage(w, http.StatusBadRequest, "Install session is not bound to a user. Please try again.")
+		return
+	}
+	if oauthErr := q.Get("error"); oauthErr != "" {
+		h.deepLink(w, state, "error")
+		return
+	}
+	if code == "" {
+		h.errorPage(w, http.StatusBadRequest, "Missing code.")
 		return
 	}
 
@@ -148,6 +166,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	raw, _ := json.Marshal(parkedPayload{
+		WorkOSUserID: initial.WorkOSUserID,
 		AccessToken:  stok.AccessToken,
 		RefreshToken: stok.RefreshToken,
 		ExpiresIn:    stok.ExpiresIn,
@@ -176,14 +195,16 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) deepLink(w http.ResponseWriter, state, status string) {
 	target := h.deepLinkScheme + "://oauth/slack/done?session=" + url.QueryEscape(state) + "&status=" + status
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'nonce-"+state+"'; base-uri 'none'; frame-ancestors 'none'")
 	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Rowboat</title>"+
-		"<script>location.href="+jsString(target)+"</script>"+
+		"<script nonce="+jsString(state)+">location.href="+jsString(target)+"</script>"+
 		"<p style=\"font:14px system-ui;margin:3rem\">Returning to Rowboat… "+
 		"<a href="+jsString(target)+">Click here</a> if it doesn't open automatically.</p>")
 }
 
 func (h *Handler) errorPage(w http.ResponseWriter, code int, msg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; base-uri 'none'; frame-ancestors 'none'")
 	w.WriteHeader(code)
 	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Rowboat</title>"+
 		"<p style=\"font:14px system-ui;margin:3rem\">"+htmlEscape(msg)+"</p>")

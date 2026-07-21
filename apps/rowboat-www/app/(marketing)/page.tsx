@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { HomePage } from "./marketing-components";
 
 export const metadata: Metadata = {
-  title: "Oppulence — The living work graph for agents",
+  title: "Oppulence — Turn forgotten relationships into revenue",
   description:
-    "Oppulence turns email, calendar, meetings, files, and tools into an owned graph that agents can inspect before they brief, draft, update, or act.",
+    "Oppulence remembers every commercial relationship, identifies who needs attention and why, then safely prepares the next revenue action for approval.",
 };
 
 export default function Page() {

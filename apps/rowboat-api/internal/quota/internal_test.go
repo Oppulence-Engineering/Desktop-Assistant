@@ -25,8 +25,9 @@ func internalSetup(t *testing.T) (*ent.Client, context.Context, *ent.User) {
 	t.Cleanup(func() { _ = d.Close() })
 	bg := context.Background()
 	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(bg)
-	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(1_000_000).SaveX(bg)
-	return d.Client, auth.WithUser(bg, u), u
+	userCtx := auth.WithUser(bg, u)
+	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(1_000_000).SaveX(userCtx)
+	return d.Client, userCtx, u
 }
 
 // TestConsumedSinceAttributesToReservePeriod locks in the spend-cap boundary
