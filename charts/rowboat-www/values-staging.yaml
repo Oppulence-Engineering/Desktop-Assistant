@@ -15,5 +15,6 @@ ingress:
     secretName: rowboat-www-staging-tls
 
 config:
+  ROWBOAT_WWW_PUBLIC_APP_URL: https://x.staging.oppulence.io
   ROWBOAT_WWW_PUBLIC_API_BASE_URL: https://api.x.staging.oppulence.io
   ROWBOAT_WWW_API_PROXY_URL: https://api.x.staging.oppulence.io
