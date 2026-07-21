@@ -8,22 +8,22 @@ import { useEffect } from "react";
 import TurndownService from "turndown";
 import { marked } from "marked";
 import {
-  Bold,
-  Code2,
-  Heading1,
-  Heading2,
-  Heading3,
-  Italic,
-  Link2,
-  List,
-  ListOrdered,
+  ArrowUUpLeft,
+  ArrowUUpRight,
+  Code,
+  LinkSimple,
+  ListBullets,
+  ListNumbers,
   Minus,
-  Quote,
-  Redo2,
-  Strikethrough,
-  Undo2,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+  Quotes,
+  TextB,
+  TextHOne,
+  TextHThree,
+  TextHTwo,
+  TextItalic,
+  TextStrikethrough,
+} from "@phosphor-icons/react";
+import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import "./tiptap-markdown-editor.css";
 
 interface TiptapMarkdownEditorProps {
@@ -46,7 +46,7 @@ const turndownService = new TurndownService({
 });
 
 type ToolbarButtonProps = {
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   label: string;
   active?: boolean;
   disabled?: boolean;
@@ -63,7 +63,7 @@ function ToolbarButton({ icon: Icon, label, active, disabled, onClick }: Toolbar
       disabled={disabled}
       onClick={onClick}
     >
-      <Icon size={15} strokeWidth={2.25} />
+      <Icon size={15} />
     </button>
   );
 }
@@ -144,13 +144,13 @@ export function TiptapMarkdownEditor({
         <div className="tiptap-markdown-toolbar">
           <div className="tiptap-toolbar-group">
             <ToolbarButton
-              icon={Undo2}
+              icon={ArrowUUpLeft}
               label="Undo"
               onClick={() => editor.chain().focus().undo().run()}
               disabled={!editor.can().undo()}
             />
             <ToolbarButton
-              icon={Redo2}
+              icon={ArrowUUpRight}
               label="Redo"
               onClick={() => editor.chain().focus().redo().run()}
               disabled={!editor.can().redo()}
@@ -159,25 +159,25 @@ export function TiptapMarkdownEditor({
           <div className="tiptap-toolbar-separator" aria-hidden />
           <div className="tiptap-toolbar-group">
             <ToolbarButton
-              icon={Bold}
+              icon={TextB}
               label="Bold"
               active={editor.isActive("bold")}
               onClick={() => editor.chain().focus().toggleBold().run()}
             />
             <ToolbarButton
-              icon={Italic}
+              icon={TextItalic}
               label="Italic"
               active={editor.isActive("italic")}
               onClick={() => editor.chain().focus().toggleItalic().run()}
             />
             <ToolbarButton
-              icon={Strikethrough}
+              icon={TextStrikethrough}
               label="Strike"
               active={editor.isActive("strike")}
               onClick={() => editor.chain().focus().toggleStrike().run()}
             />
             <ToolbarButton
-              icon={Code2}
+              icon={Code}
               label="Code"
               active={editor.isActive("code")}
               onClick={() => editor.chain().focus().toggleCode().run()}
@@ -186,19 +186,19 @@ export function TiptapMarkdownEditor({
           <div className="tiptap-toolbar-separator" aria-hidden />
           <div className="tiptap-toolbar-group">
             <ToolbarButton
-              icon={Heading1}
+              icon={TextHOne}
               label="Heading 1"
               active={editor.isActive("heading", { level: 1 })}
               onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             />
             <ToolbarButton
-              icon={Heading2}
+              icon={TextHTwo}
               label="Heading 2"
               active={editor.isActive("heading", { level: 2 })}
               onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             />
             <ToolbarButton
-              icon={Heading3}
+              icon={TextHThree}
               label="Heading 3"
               active={editor.isActive("heading", { level: 3 })}
               onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
@@ -207,25 +207,25 @@ export function TiptapMarkdownEditor({
           <div className="tiptap-toolbar-separator" aria-hidden />
           <div className="tiptap-toolbar-group">
             <ToolbarButton
-              icon={List}
+              icon={ListBullets}
               label="Bullet list"
               active={editor.isActive("bulletList")}
               onClick={() => editor.chain().focus().toggleBulletList().run()}
             />
             <ToolbarButton
-              icon={ListOrdered}
+              icon={ListNumbers}
               label="Numbered list"
               active={editor.isActive("orderedList")}
               onClick={() => editor.chain().focus().toggleOrderedList().run()}
             />
             <ToolbarButton
-              icon={Quote}
+              icon={Quotes}
               label="Quote"
               active={editor.isActive("blockquote")}
               onClick={() => editor.chain().focus().toggleBlockquote().run()}
             />
             <ToolbarButton
-              icon={Code2}
+              icon={Code}
               label="Code block"
               active={editor.isActive("codeBlock")}
               onClick={() => editor.chain().focus().toggleCodeBlock().run()}
@@ -239,7 +239,7 @@ export function TiptapMarkdownEditor({
           <div className="tiptap-toolbar-separator" aria-hidden />
           <div className="tiptap-toolbar-group">
             <ToolbarButton
-              icon={Link2}
+              icon={LinkSimple}
               label="Link"
               active={editor.isActive("link")}
               onClick={handleLink}

@@ -1,19 +1,19 @@
 # RFC 007: Production Enablement for Cloud Background Workflows
 
-|                  |                                                                                                                                                                                              |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 007                                                                                                                                                                                          |
-| **Status**       | Draft                                                                                                                                                                                        |
-| **Track**        | Cloud-native background workflows                                                                                                                                                            |
-| **Owners**       | `apps/rowboat-api` · Platform/Infra (Hetzner k3s, Temporal Cloud, Infisical)                                                                                                                 |
-| **Created**      | 2026-06-05                                                                                                                                                                                   |
-| **Last updated** | 2026-06-06                                                                                                                                                                                   |
+|                  |                                                                                                                                                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 007                                                                                                                                                                                                                              |
+| **Status**       | Draft                                                                                                                                                                                                                            |
+| **Track**        | Cloud-native background workflows                                                                                                                                                                                                |
+| **Owners**       | `apps/rowboat-api` · Platform/Infra (Hetzner k3s, Temporal Cloud, Infisical)                                                                                                                                                     |
+| **Created**      | 2026-06-05                                                                                                                                                                                                                       |
+| **Last updated** | 2026-06-06                                                                                                                                                                                                                       |
 | **Gates**        | the production rollout of [RFC 001](./complete-001-api-owned-scheduler.md), [003](./complete-003-cloud-event-ingestion.md), [004](./complete-004-cloud-agent-runtime.md), [005](./complete-005-temporal-schedule-integration.md) |
-| **Refs**         | Supersedes former cloud workflow production-enablement plan; operational deployment reference: [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md).                             |
+| **Refs**         | Supersedes former cloud workflow production-enablement plan; operational deployment reference: [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md).                                                                 |
 
 ## Summary
 
-The local **kind** environment runs the full stack — Rowboat API, worker, Temporal,
+The local **kind** environment runs the full stack — Oppulence API, worker, Temporal,
 Postgres, Redis, devstack — and the happy-path smoke test passes
 (`scripts/rowboat-api-kind.sh`, parent RFC §4.5). Staging/production chart values are
 **pre-wired for Temporal Cloud** (API-key auth over TLS) but ship with cloud execution

@@ -55,7 +55,7 @@ Use these for knowledge extraction, reply/chat memory, and prompt context retrie
 | Provider search | Provider-native query                               | Gmail/Outlook API                  |
 | Local lexical   | Metadata, subject, sender, snippet, selected bodies | SQLite FTS or existing local index |
 | Local semantic  | Summaries, snippets, selected bodies, knowledge     | Vector index from RFC 021          |
-| Cloud metadata  | Optional account-synced metadata                    | Rowboat API                        |
+| Cloud metadata  | Optional account-synced metadata                    | Oppulence API                      |
 
 The command center should combine provider and local results where useful, but must display source/freshness.
 

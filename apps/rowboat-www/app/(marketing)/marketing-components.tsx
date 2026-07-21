@@ -562,8 +562,8 @@ export function Footer() {
           <LinearFooterGroup items={socialLinks} title="Connect" />
           <LinearFooterGroup
             items={[
-              { label: "Privacy", href: "/legal/privacy-policy" },
-              { label: "Terms", href: "/legal/terms-of-service" },
+              { label: "Privacy", href: "/privacy" },
+              { label: "Terms", href: "/terms" },
               { label: "Book a Revenue Leak Scan", href: "/book-a-demo" },
             ]}
             title="Company"

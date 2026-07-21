@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 describe("API_URL", () => {
-  it("defaults to the production Rowboat API", async () => {
+  it("defaults to the production Oppulence API", async () => {
     delete process.env.API_URL;
     vi.resetModules();
 

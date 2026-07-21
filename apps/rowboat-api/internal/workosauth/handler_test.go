@@ -147,6 +147,28 @@ func TestLoginURL(t *testing.T) {
 	}
 }
 
+func TestLoginURLProvider(t *testing.T) {
+	h := workosauth.New("client_test", "sk_test_key", "https://api.workos.com", "", zap.NewNop())
+	cases := map[string]string{
+		"GoogleOAuth": "provider=GoogleOAuth", // recognized → passed through
+		"authkit":     "provider=authkit",     // explicit default
+		"Nonsense":    "provider=authkit",     // unknown → falls back to picker
+	}
+	for requested, want := range cases {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet,
+			"/login-url?redirect_uri=http://localhost:8080/oauth/callback&state=s1&provider="+requested, nil)
+		h.LoginURL(rec, req)
+		var out struct {
+			URL string `json:"url"`
+		}
+		_ = json.Unmarshal(rec.Body.Bytes(), &out)
+		if !strings.Contains(out.URL, want) {
+			t.Errorf("provider %q: login url %q missing %q", requested, out.URL, want)
+		}
+	}
+}
+
 func TestUnconfiguredReturns502(t *testing.T) {
 	h := workosauth.New("", "", "", "", zap.NewNop()) // no creds
 	rec := httptest.NewRecorder()

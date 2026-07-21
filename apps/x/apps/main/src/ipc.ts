@@ -158,6 +158,7 @@ import {
   readRunIds as readTaskRunIds,
 } from "@x/core/dist/background-tasks/fileops.js";
 import { browserIpcHandlers } from "./browser/ipc.js";
+import { mailboxIpcHandlers } from "./ipc/mailbox.js";
 import { ensureAgentSlackAvailable } from "./agent-slack.js";
 
 /**
@@ -1040,12 +1041,16 @@ export function setupIpcHandlers() {
           };
         }
       } catch (err: unknown) {
-        managedError = err instanceof Error ? err.message : "Failed to load managed Slack workspaces";
+        managedError =
+          err instanceof Error ? err.message : "Failed to load managed Slack workspaces";
       }
       const config = await repo.getConfig();
       return {
         enabled: config.enabled,
-        workspaces: config.workspaces.map((workspace) => ({ ...workspace, source: "local" as const })),
+        workspaces: config.workspaces.map((workspace) => ({
+          ...workspace,
+          source: "local" as const,
+        })),
         error: managedError,
       };
     },
@@ -1832,5 +1837,7 @@ export function setupIpcHandlers() {
     },
     // Embedded browser handlers (WebContentsView + navigation)
     ...browserIpcHandlers,
+    // Provider-neutral mailbox handlers (email-001..004)
+    ...mailboxIpcHandlers,
   });
 }

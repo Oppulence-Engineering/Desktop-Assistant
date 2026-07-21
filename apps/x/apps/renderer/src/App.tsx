@@ -228,12 +228,7 @@ const graphPalette = [
 ];
 
 const MACOS_TRAFFIC_LIGHTS_RESERVED_PX = 16 + 12 * 3 + 8 * 2;
-const TITLEBAR_BUTTON_PX = 32;
-const TITLEBAR_BUTTON_GAP_PX = 4;
-const TITLEBAR_HEADER_GAP_PX = 8;
 const TITLEBAR_TOGGLE_MARGIN_LEFT_PX = 12;
-const TITLEBAR_BUTTONS_COLLAPSED = 1;
-const TITLEBAR_BUTTON_GAPS_COLLAPSED = 0;
 const GRAPH_TAB_PATH = "__rowboat_graph_view__";
 const SUGGESTED_TOPICS_TAB_PATH = "__rowboat_suggested_topics__";
 const MEETINGS_TAB_PATH = "__rowboat_meetings__";
@@ -738,10 +733,10 @@ function FixedSidebarToggle({ leftInsetPx }: { leftInsetPx: number }) {
   const { toggleSidebar } = useSidebar();
   return (
     <div
-      className="fixed left-0 top-0 z-50 flex h-10 items-center gap-1"
+      className="fixed left-0 top-0 z-50 flex h-12 items-center gap-1"
       style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
     >
-      <div aria-hidden="true" className="h-10 shrink-0" style={{ width: leftInsetPx }} />
+      <div aria-hidden="true" className="h-12 shrink-0" style={{ width: leftInsetPx }} />
       {/* Sidebar toggle */}
       <button
         type="button"
@@ -756,31 +751,27 @@ function FixedSidebarToggle({ leftInsetPx }: { leftInsetPx: number }) {
   );
 }
 
-/** Main content header that adjusts padding based on sidebar state */
+/** Main content header inside the workspace card (tabs + nav). */
 function ContentHeader({
   children,
   onNavigateBack,
   onNavigateForward,
   canNavigateBack,
   canNavigateForward,
-  collapsedLeftPaddingPx,
 }: {
   children: React.ReactNode;
   onNavigateBack?: () => void;
   onNavigateForward?: () => void;
   canNavigateBack?: boolean;
   canNavigateForward?: boolean;
-  collapsedLeftPaddingPx?: number;
 }) {
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
   return (
     <header
       className="rowboat-titlebar titlebar-drag-region flex h-10 shrink-0 items-stretch border-b border-border bg-background overflow-hidden"
       style={{
-        paddingLeft: isCollapsed ? (collapsedLeftPaddingPx ?? 196) : 12,
+        // Traffic lights live in the workspace topbar now, so no reserved inset.
+        paddingLeft: 12,
         paddingRight: 12,
-        transition: "padding-left 200ms linear",
       }}
     >
       {onNavigateBack && onNavigateForward ? (
@@ -895,12 +886,6 @@ function App() {
   const [activeShortcutPane, setActiveShortcutPane] = useState<ShortcutPane>("left");
   const isMac =
     typeof navigator !== "undefined" && navigator.platform.toLowerCase().includes("mac");
-  const collapsedLeftPaddingPx =
-    (isMac ? MACOS_TRAFFIC_LIGHTS_RESERVED_PX : 0) +
-    TITLEBAR_TOGGLE_MARGIN_LEFT_PX +
-    TITLEBAR_BUTTON_PX * TITLEBAR_BUTTONS_COLLAPSED +
-    TITLEBAR_BUTTON_GAP_PX * TITLEBAR_BUTTON_GAPS_COLLAPSED +
-    TITLEBAR_HEADER_GAP_PX;
 
   // Keep the latest selected path in a ref (avoids stale async updates when switching rapidly)
   const selectedPathRef = useRef<string | null>(null);
@@ -6403,218 +6388,105 @@ function App() {
           }
         }}
       >
-        <div className="rowboat-shell flex h-svh w-full overflow-hidden">
-          {/* Content sidebar with SidebarProvider for collapse functionality */}
-          <SidebarProvider
-            style={
-              {
-                "--sidebar-width": `${DEFAULT_SIDEBAR_WIDTH}px`,
-              } as React.CSSProperties
-            }
+        <div className="rowboat-shell flex h-svh w-full flex-col overflow-hidden bg-sidebar">
+          {/* Workspace topbar on the canvas — logo/wordmark left, matching the web console. */}
+          <header
+            className="titlebar-drag-region flex h-12 shrink-0 items-center justify-between bg-sidebar pr-4"
+            style={{
+              paddingLeft: isMac ? MACOS_TRAFFIC_LIGHTS_RESERVED_PX + 52 : 16,
+            }}
           >
-            <SidebarContentPanel
-              tree={tree}
-              onSelectFile={toggleExpand}
-              knowledgeActions={knowledgeActions}
-              bgTaskSummaries={bgTaskSummaries}
-              activeNav={
-                isHomeOpen
-                  ? "home"
-                  : isEmailOpen
-                    ? "email"
-                    : isMeetingsOpen
-                      ? "meetings"
-                      : isKnowledgeViewOpen ||
-                          isGraphOpen ||
-                          (selectedPath != null && selectedPath.startsWith("knowledge/"))
-                        ? "knowledge"
-                        : isBgTasksOpen
-                          ? "agents"
-                          : isWorkspaceOpen
-                            ? "workspaces"
-                            : null
+            <div className="flex items-center gap-2.5">
+              <img alt="" className="size-5" src="/logo-only.png" />
+              <span className="font-display text-sm text-foreground">Oppulence</span>
+            </div>
+            <span className="titlebar-no-drag flex items-center gap-1.5 text-sm text-foreground/70">
+              Assistant
+              <span className="rounded-sm bg-[var(--rowboat-attention)] px-1.5 py-0.5 text-[10px] font-medium text-white">
+                AI
+              </span>
+            </span>
+          </header>
+          <div className="flex min-h-0 w-full flex-1">
+            {/* Content sidebar with SidebarProvider for collapse functionality */}
+            <SidebarProvider
+              className="h-full min-h-0"
+              style={
+                {
+                  "--sidebar-width": `${DEFAULT_SIDEBAR_WIDTH}px`,
+                } as React.CSSProperties
               }
-              onOpenMeetings={openMeetingsView}
-              onOpenBgTasks={() => {
-                setBgTaskInitialSlug(null);
-                setBgTaskSlugVersion((v) => v + 1);
-                openBgTasksView();
-              }}
-              onOpenAgent={(slug) => {
-                setBgTaskInitialSlug(slug);
-                setBgTaskSlugVersion((v) => v + 1);
-                openBgTasksView();
-              }}
-              recentRuns={runs}
-              onOpenRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
-              onOpenEmail={(threadId) => openEmailView(threadId)}
-              onOpenHome={() => void navigateToView({ type: "home" })}
-              onNewChat={handleNewChatTab}
-              onToggleBrowser={handleToggleBrowser}
-              onVoiceNoteCreated={handleVoiceNoteCreated}
-              meetingRecordingState={meetingTranscription.state}
-              recordingMeetingSource={recordingMeetingSource}
-              onToggleMeetingRecording={() => {
-                void handleToggleMeeting();
-              }}
-            />
-            <SidebarInset
-              className={cn(
-                "overflow-hidden! min-h-0 min-w-0",
-                isRightPaneContext && isChatPaneInMiddle && "order-3",
-                insetAnimateMaxWidth && "transition-[max-width] duration-200 ease-linear",
-                shouldCollapseLeftPane && "pointer-events-none select-none",
-              )}
-              style={nonChatPaneStyle}
-              aria-hidden={shouldCollapseLeftPane}
-              onMouseDownCapture={() => setActiveShortcutPane("left")}
-              onFocusCapture={() => setActiveShortcutPane("left")}
             >
-              {/* Header - also serves as titlebar drag region, adjusts padding when sidebar collapsed */}
-              <ContentHeader
-                onNavigateBack={() => {
-                  void navigateBack();
+              <SidebarContentPanel
+                tree={tree}
+                onSelectFile={toggleExpand}
+                knowledgeActions={knowledgeActions}
+                bgTaskSummaries={bgTaskSummaries}
+                activeNav={
+                  isHomeOpen
+                    ? "home"
+                    : isEmailOpen
+                      ? "email"
+                      : isMeetingsOpen
+                        ? "meetings"
+                        : isKnowledgeViewOpen ||
+                            isGraphOpen ||
+                            (selectedPath != null && selectedPath.startsWith("knowledge/"))
+                          ? "knowledge"
+                          : isBgTasksOpen
+                            ? "agents"
+                            : isWorkspaceOpen
+                              ? "workspaces"
+                              : null
+                }
+                onOpenMeetings={openMeetingsView}
+                onOpenBgTasks={() => {
+                  setBgTaskInitialSlug(null);
+                  setBgTaskSlugVersion((v) => v + 1);
+                  openBgTasksView();
                 }}
-                onNavigateForward={() => {
-                  void navigateForward();
+                onOpenAgent={(slug) => {
+                  setBgTaskInitialSlug(slug);
+                  setBgTaskSlugVersion((v) => v + 1);
+                  openBgTasksView();
                 }}
-                canNavigateBack={canNavigateBack}
-                canNavigateForward={canNavigateForward}
-                collapsedLeftPaddingPx={collapsedLeftPaddingPx}
+                recentRuns={runs}
+                onOpenRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
+                onOpenEmail={(threadId) => openEmailView(threadId)}
+                onOpenHome={() => void navigateToView({ type: "home" })}
+                onNewChat={handleNewChatTab}
+                onToggleBrowser={handleToggleBrowser}
+                onVoiceNoteCreated={handleVoiceNoteCreated}
+                meetingRecordingState={meetingTranscription.state}
+                recordingMeetingSource={recordingMeetingSource}
+                onToggleMeetingRecording={() => {
+                  void handleToggleMeeting();
+                }}
+              />
+              <SidebarInset
+                className={cn(
+                  "overflow-hidden! min-h-0 min-w-0",
+                  isRightPaneContext && isChatPaneInMiddle && "order-3",
+                  insetAnimateMaxWidth && "transition-[max-width] duration-200 ease-linear",
+                  shouldCollapseLeftPane && "pointer-events-none select-none",
+                )}
+                style={nonChatPaneStyle}
+                aria-hidden={shouldCollapseLeftPane}
+                onMouseDownCapture={() => setActiveShortcutPane("left")}
+                onFocusCapture={() => setActiveShortcutPane("left")}
               >
-                {(selectedPath ||
-                  isGraphOpen ||
-                  isSuggestedTopicsOpen ||
-                  isMeetingsOpen ||
-                  isLiveNotesOpen ||
-                  isBgTasksOpen ||
-                  isEmailOpen ||
-                  isWorkspaceOpen ||
-                  isKnowledgeViewOpen ||
-                  isChatHistoryOpen ||
-                  isHomeOpen) &&
-                fileTabs.length >= 1 ? (
-                  <TabBar
-                    tabs={fileTabs}
-                    activeTabId={activeFileTabId ?? ""}
-                    getTabTitle={getFileTabTitle}
-                    getTabId={(t) => t.id}
-                    onSwitchTab={switchFileTab}
-                    onCloseTab={closeFileTab}
-                    allowSingleTabClose={
-                      fileTabs.length === 1 &&
-                      (isGraphOpen ||
-                        isSuggestedTopicsOpen ||
-                        isMeetingsOpen ||
-                        isLiveNotesOpen ||
-                        isBgTasksOpen ||
-                        isEmailOpen ||
-                        isWorkspaceOpen ||
-                        isKnowledgeViewOpen ||
-                        isChatHistoryOpen ||
-                        isHomeOpen ||
-                        (selectedPath != null && isBaseFilePath(selectedPath)))
-                    }
-                  />
-                ) : isFullScreenChat ? (
-                  <ChatHeader
-                    activeTitle={(() => {
-                      const activeTab = chatTabs.find((t) => t.id === activeChatTabId);
-                      return activeTab ? getChatTabTitle(activeTab) : "New chat";
-                    })()}
-                    onNewChatTab={handleNewChatTab}
-                    recentRuns={runs}
-                    activeRunId={runId}
-                    onSelectRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
-                    onOpenChatHistory={() => void navigateToView({ type: "chat-history" })}
-                  />
-                ) : (
-                  <TabBar
-                    tabs={chatTabs}
-                    activeTabId={activeChatTabId}
-                    getTabTitle={getChatTabTitle}
-                    getTabId={(t) => t.id}
-                    isProcessing={isChatTabProcessing}
-                    onSwitchTab={switchChatTab}
-                    onCloseTab={closeChatTab}
-                  />
-                )}
-                {selectedPath && selectedPath.endsWith(".md") && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground self-center shrink-0 pl-2">
-                    {isSaving ? (
-                      <>
-                        <LoaderIcon className="h-3 w-3 animate-spin" />
-                        <span>Saving...</span>
-                      </>
-                    ) : lastSaved ? (
-                      <>
-                        <CheckIcon className="h-3 w-3 text-green-500" />
-                        <span>Saved</span>
-                      </>
-                    ) : null}
-                  </div>
-                )}
-                {selectedPath &&
-                  selectedPath.startsWith("knowledge/") &&
-                  selectedPath.endsWith(".md") && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (versionHistoryPath) {
-                              setVersionHistoryPath(null);
-                              setViewingHistoricalVersion(null);
-                            } else {
-                              setVersionHistoryPath(selectedPath);
-                            }
-                          }}
-                          className={cn(
-                            "titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors self-center shrink-0",
-                            versionHistoryPath && "bg-accent text-foreground",
-                          )}
-                          aria-label="Version history"
-                        >
-                          <HistoryIcon className="size-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">Version history</TooltipContent>
-                    </Tooltip>
-                  )}
-                {!isFullScreenChat &&
-                  !selectedPath &&
-                  !isGraphOpen &&
-                  !isSuggestedTopicsOpen &&
-                  !isMeetingsOpen &&
-                  !isLiveNotesOpen &&
-                  !isBgTasksOpen &&
-                  !isEmailOpen &&
-                  !isWorkspaceOpen &&
-                  !isKnowledgeViewOpen &&
-                  !isChatHistoryOpen &&
-                  !selectedTask &&
-                  !isBrowserOpen && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={handleNewChatTab}
-                          className="titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors self-center shrink-0"
-                          aria-label="New chat"
-                        >
-                          <Plus className="size-5" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">New chat</TooltipContent>
-                    </Tooltip>
-                  )}
-                {/* Trailing layout control. Always mounted (just toggled invisible
-                    when inactive) so its -webkit-app-region:no-drag rect is stable —
-                    a freshly-mounted no-drag button inside the drag-region header
-                    otherwise has its first click swallowed by the window drag. */}
-                {(() => {
-                  const viewOpen =
-                    selectedPath ||
+                {/* Header - also serves as titlebar drag region, adjusts padding when sidebar collapsed */}
+                <ContentHeader
+                  onNavigateBack={() => {
+                    void navigateBack();
+                  }}
+                  onNavigateForward={() => {
+                    void navigateForward();
+                  }}
+                  canNavigateBack={canNavigateBack}
+                  canNavigateForward={canNavigateForward}
+                >
+                  {(selectedPath ||
                     isGraphOpen ||
                     isSuggestedTopicsOpen ||
                     isMeetingsOpen ||
@@ -6624,857 +6496,992 @@ function App() {
                     isWorkspaceOpen ||
                     isKnowledgeViewOpen ||
                     isChatHistoryOpen ||
-                    isHomeOpen;
-                  const action = isFullScreenChat
-                    ? {
-                        onClick: pushChatToSidePane,
-                        icon: <ArrowRight className="size-5" />,
-                        label: "Dock chat to side pane",
+                    isHomeOpen) &&
+                  fileTabs.length >= 1 ? (
+                    <TabBar
+                      tabs={fileTabs}
+                      activeTabId={activeFileTabId ?? ""}
+                      getTabTitle={getFileTabTitle}
+                      getTabId={(t) => t.id}
+                      onSwitchTab={switchFileTab}
+                      onCloseTab={closeFileTab}
+                      allowSingleTabClose={
+                        fileTabs.length === 1 &&
+                        (isGraphOpen ||
+                          isSuggestedTopicsOpen ||
+                          isMeetingsOpen ||
+                          isLiveNotesOpen ||
+                          isBgTasksOpen ||
+                          isEmailOpen ||
+                          isWorkspaceOpen ||
+                          isKnowledgeViewOpen ||
+                          isChatHistoryOpen ||
+                          isHomeOpen ||
+                          (selectedPath != null && isBaseFilePath(selectedPath)))
                       }
-                    : viewOpen && !isChatSidebarOpen
+                    />
+                  ) : isFullScreenChat ? (
+                    <ChatHeader
+                      activeTitle={(() => {
+                        const activeTab = chatTabs.find((t) => t.id === activeChatTabId);
+                        return activeTab ? getChatTabTitle(activeTab) : "New chat";
+                      })()}
+                      onNewChatTab={handleNewChatTab}
+                      recentRuns={runs}
+                      activeRunId={runId}
+                      onSelectRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
+                      onOpenChatHistory={() => void navigateToView({ type: "chat-history" })}
+                    />
+                  ) : (
+                    <TabBar
+                      tabs={chatTabs}
+                      activeTabId={activeChatTabId}
+                      getTabTitle={getChatTabTitle}
+                      getTabId={(t) => t.id}
+                      isProcessing={isChatTabProcessing}
+                      onSwitchTab={switchChatTab}
+                      onCloseTab={closeChatTab}
+                    />
+                  )}
+                  {selectedPath && selectedPath.endsWith(".md") && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground self-center shrink-0 pl-2">
+                      {isSaving ? (
+                        <>
+                          <LoaderIcon className="h-3 w-3 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : lastSaved ? (
+                        <>
+                          <CheckIcon className="h-3 w-3 text-green-500" />
+                          <span>Saved</span>
+                        </>
+                      ) : null}
+                    </div>
+                  )}
+                  {selectedPath &&
+                    selectedPath.startsWith("knowledge/") &&
+                    selectedPath.endsWith(".md") && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (versionHistoryPath) {
+                                setVersionHistoryPath(null);
+                                setViewingHistoricalVersion(null);
+                              } else {
+                                setVersionHistoryPath(selectedPath);
+                              }
+                            }}
+                            className={cn(
+                              "titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors self-center shrink-0",
+                              versionHistoryPath && "bg-accent text-foreground",
+                            )}
+                            aria-label="Version history"
+                          >
+                            <HistoryIcon className="size-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Version history</TooltipContent>
+                      </Tooltip>
+                    )}
+                  {!isFullScreenChat &&
+                    !selectedPath &&
+                    !isGraphOpen &&
+                    !isSuggestedTopicsOpen &&
+                    !isMeetingsOpen &&
+                    !isLiveNotesOpen &&
+                    !isBgTasksOpen &&
+                    !isEmailOpen &&
+                    !isWorkspaceOpen &&
+                    !isKnowledgeViewOpen &&
+                    !isChatHistoryOpen &&
+                    !selectedTask &&
+                    !isBrowserOpen && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={handleNewChatTab}
+                            className="titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors self-center shrink-0"
+                            aria-label="New chat"
+                          >
+                            <Plus className="size-5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">New chat</TooltipContent>
+                      </Tooltip>
+                    )}
+                  {/* Trailing layout control. Always mounted (just toggled invisible
+                    when inactive) so its -webkit-app-region:no-drag rect is stable —
+                    a freshly-mounted no-drag button inside the drag-region header
+                    otherwise has its first click swallowed by the window drag. */}
+                  {(() => {
+                    const viewOpen =
+                      selectedPath ||
+                      isGraphOpen ||
+                      isSuggestedTopicsOpen ||
+                      isMeetingsOpen ||
+                      isLiveNotesOpen ||
+                      isBgTasksOpen ||
+                      isEmailOpen ||
+                      isWorkspaceOpen ||
+                      isKnowledgeViewOpen ||
+                      isChatHistoryOpen ||
+                      isHomeOpen;
+                    const action = isFullScreenChat
                       ? {
-                          onClick: openChatSidePane,
-                          icon: <MessageSquare className="size-5" />,
-                          label: "Open chat",
+                          onClick: pushChatToSidePane,
+                          icon: <ArrowRight className="size-5" />,
+                          label: "Dock chat to side pane",
                         }
-                      : viewOpen && isChatSidebarOpen && !isRightPaneMaximized
+                      : viewOpen && !isChatSidebarOpen
                         ? {
-                            onClick: () => setIsChatSidebarOpen(false),
-                            icon: isChatPaneInMiddle ? (
-                              <ArrowLeft className="size-5" />
-                            ) : (
-                              <ArrowRight className="size-5" />
-                            ),
-                            label: "Expand pane",
+                            onClick: openChatSidePane,
+                            icon: <MessageSquare className="size-5" />,
+                            label: "Open chat",
                           }
-                        : null;
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={action ? action.onClick : undefined}
-                          disabled={!action}
-                          aria-hidden={!action}
-                          aria-label={action?.label}
-                          className={cn(
-                            "titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors -mr-1 self-center shrink-0",
-                            action
-                              ? "hover:bg-accent hover:text-foreground"
-                              : "invisible pointer-events-none",
-                          )}
-                        >
-                          {action?.icon}
-                        </button>
-                      </TooltipTrigger>
-                      {action && <TooltipContent side="bottom">{action.label}</TooltipContent>}
-                    </Tooltip>
-                  );
-                })()}
-              </ContentHeader>
+                        : viewOpen && isChatSidebarOpen && !isRightPaneMaximized
+                          ? {
+                              onClick: () => setIsChatSidebarOpen(false),
+                              icon: isChatPaneInMiddle ? (
+                                <ArrowLeft className="size-5" />
+                              ) : (
+                                <ArrowRight className="size-5" />
+                              ),
+                              label: "Expand pane",
+                            }
+                          : null;
+                    return (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={action ? action.onClick : undefined}
+                            disabled={!action}
+                            aria-hidden={!action}
+                            aria-label={action?.label}
+                            className={cn(
+                              "titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors -mr-1 self-center shrink-0",
+                              action
+                                ? "hover:bg-accent hover:text-foreground"
+                                : "invisible pointer-events-none",
+                            )}
+                          >
+                            {action?.icon}
+                          </button>
+                        </TooltipTrigger>
+                        {action && <TooltipContent side="bottom">{action.label}</TooltipContent>}
+                      </Tooltip>
+                    );
+                  })()}
+                </ContentHeader>
 
-              {isBrowserOpen ? (
-                <BrowserPane
-                  onClose={handleCloseBrowser}
-                  forceHidden={isSearchOpen || showMeetingPermissions}
-                />
-              ) : isHomeOpen ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <HomeView
-                    tree={tree}
-                    runs={runs}
-                    bgTaskSummaries={bgTaskSummaries}
-                    onOpenEmail={() => openEmailView()}
-                    onOpenMeetings={openMeetingsView}
-                    onOpenAgents={() => {
-                      setBgTaskInitialSlug(null);
-                      setBgTaskSlugVersion((v) => v + 1);
-                      openBgTasksView();
-                    }}
-                    onOpenAgent={(slug) => {
-                      setBgTaskInitialSlug(slug);
-                      setBgTaskSlugVersion((v) => v + 1);
-                      openBgTasksView();
-                    }}
-                    onOpenNote={(path) => navigateToFile(path)}
-                    onOpenRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
-                    onTakeMeetingNotes={() => {
-                      void handleToggleMeeting();
-                    }}
-                    onOpenChat={handleNewChatTab}
+                {isBrowserOpen ? (
+                  <BrowserPane
+                    onClose={handleCloseBrowser}
+                    forceHidden={isSearchOpen || showMeetingPermissions}
                   />
-                </div>
-              ) : isSuggestedTopicsOpen ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <SuggestedTopicsView
-                    onExploreTopic={(topic) => {
-                      const prompt = buildSuggestedTopicExplorePrompt(topic);
-                      submitFromPalette(prompt, null);
-                    }}
-                  />
-                </div>
-              ) : isMeetingsOpen ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <MeetingsView
-                    onOpenNote={(path) => navigateToFile(path)}
-                    onTakeMeetingNotes={() => {
-                      void handleToggleMeeting();
-                    }}
-                    meetingState={meetingTranscription.state}
-                    meetingSummarizing={meetingSummarizing}
-                  />
-                </div>
-              ) : isLiveNotesOpen ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <LiveNotesView
-                    onOpenNote={(path) => navigateToFile(path)}
-                    onAddNewLiveNote={() => {
-                      submitFromPalette(buildLiveNoteSetupPrompt(), null);
-                    }}
-                  />
-                </div>
-              ) : isBgTasksOpen ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <BgTasksView
-                    initialSlug={bgTaskInitialSlug}
-                    slugVersion={bgTaskSlugVersion}
-                    onCreateWithCopilot={
-                      shouldOfferBgTaskCopilot
-                        ? (description) => {
-                            submitFromPalette(buildBgTaskSetupPrompt(description), null);
-                          }
-                        : undefined
-                    }
-                    onEditWithCopilot={
-                      shouldOfferBgTaskCopilot
-                        ? (slug) => {
-                            submitFromPalette(buildBgTaskEditPrompt(slug), null);
-                          }
-                        : undefined
-                    }
-                  />
-                </div>
-              ) : isEmailOpen ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <EmailView
-                    initialThreadId={emailInitialThreadId}
-                    threadIdVersion={emailThreadIdVersion}
-                  />
-                </div>
-              ) : isWorkspaceOpen ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <WorkspaceView
-                    tree={tree}
-                    initialPath={workspaceInitialPath}
-                    actions={{
-                      remove: knowledgeActions.remove,
-                      copyPath: knowledgeActions.copyPath,
-                      revealInFileManager: knowledgeActions.revealInFileManager,
-                      createNote: knowledgeActions.createNote,
-                      createFolder: knowledgeActions.createFolder,
-                      rename: knowledgeActions.rename,
-                      onOpenInNewTab: knowledgeActions.onOpenInNewTab,
-                    }}
-                    onNavigate={(path) => {
-                      void navigateToView({
-                        type: "workspace",
-                        path: path === WORKSPACE_ROOT ? undefined : path,
-                      });
-                    }}
-                    onOpenNote={(path) => navigateToFile(path)}
-                    onCreateWorkspace={async (name) => {
-                      await knowledgeActions.createWorkspace(name);
-                    }}
-                  />
-                </div>
-              ) : isKnowledgeViewOpen ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <KnowledgeView
-                    tree={tree}
-                    actions={{
-                      createNote: knowledgeActions.createNote,
-                      createFolder: knowledgeActions.createFolder,
-                      rename: knowledgeActions.rename,
-                      remove: knowledgeActions.remove,
-                      copyPath: knowledgeActions.copyPath,
-                      revealInFileManager: knowledgeActions.revealInFileManager,
-                      onOpenInNewTab: knowledgeActions.onOpenInNewTab,
-                    }}
-                    folderPath={knowledgeViewFolderPath}
-                    onNavigateFolder={(path) => {
-                      void navigateToView({
-                        type: "knowledge-view",
-                        folderPath: path ?? undefined,
-                      });
-                    }}
-                    onOpenNote={(path) => navigateToFile(path)}
-                    onOpenGraph={() => knowledgeActions.openGraph()}
-                    onOpenSearch={() => {
-                      setSearchDefaultScope("knowledge");
-                      setIsSearchOpen(true);
-                    }}
-                    onOpenBases={() => knowledgeActions.openBases()}
-                    onVoiceNoteCreated={handleVoiceNoteCreated}
-                  />
-                </div>
-              ) : isChatHistoryOpen ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <ChatHistoryView
-                    runs={runs}
-                    currentRunId={runId}
-                    processingRunIds={processingRunIds}
-                    onSelectRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
-                    onDeleteRun={async (rid) => {
-                      try {
-                        await window.ipc.invoke("runs:delete", { runId: rid });
-                        await loadRuns();
-                      } catch (err) {
-                        console.error("Failed to delete run:", err);
-                      }
-                    }}
-                    onNewChat={handleNewChatTab}
-                    onOpenSearch={() => setIsSearchOpen(true)}
-                  />
-                </div>
-              ) : selectedPath && isBaseFilePath(selectedPath) ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <BasesView
-                    tree={tree}
-                    onSelectNote={(path) => navigateToFile(path)}
-                    config={baseConfigByPath[selectedPath] ?? DEFAULT_BASE_CONFIG}
-                    onConfigChange={(cfg) => handleBaseConfigChange(selectedPath, cfg)}
-                    isDefaultBase={selectedPath === BASES_DEFAULT_TAB_PATH}
-                    onSave={(name) => void handleBaseSave(name)}
-                    externalSearch={externalBaseSearch}
-                    onExternalSearchConsumed={() => setExternalBaseSearch(undefined)}
-                    actions={{
-                      rename: knowledgeActions.rename,
-                      remove: knowledgeActions.remove,
-                      copyPath: knowledgeActions.copyPath,
-                      revealInFileManager: knowledgeActions.revealInFileManager,
-                    }}
-                  />
-                </div>
-              ) : isGraphOpen ? (
-                <div className="flex-1 min-h-0">
-                  <GraphView
-                    nodes={graphData.nodes}
-                    edges={graphData.edges}
-                    isLoading={graphStatus === "loading"}
-                    error={graphStatus === "error" ? (graphError ?? "Failed to build graph") : null}
-                    onSelectNode={(path) => {
-                      navigateToFile(path);
-                    }}
-                  />
-                </div>
-              ) : selectedPath ? (
-                <>
-                  {/* Always-mounted persistent cache for HTML/PDF — hidden when active file is something else, so iframes preserve scroll/page/zoom across switches. */}
-                  <div
-                    className="flex-1 min-h-0 overflow-hidden"
-                    style={{
-                      display: isCacheableViewerPath(selectedPath) ? "block" : "none",
-                    }}
-                  >
-                    <PersistentViewerCache
-                      activePath={selectedPath}
-                      livePaths={fileTabs.map((t) => t.path)}
+                ) : isHomeOpen ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <HomeView
+                      tree={tree}
+                      runs={runs}
+                      bgTaskSummaries={bgTaskSummaries}
+                      onOpenEmail={() => openEmailView()}
+                      onOpenMeetings={openMeetingsView}
+                      onOpenAgents={() => {
+                        setBgTaskInitialSlug(null);
+                        setBgTaskSlugVersion((v) => v + 1);
+                        openBgTasksView();
+                      }}
+                      onOpenAgent={(slug) => {
+                        setBgTaskInitialSlug(slug);
+                        setBgTaskSlugVersion((v) => v + 1);
+                        openBgTasksView();
+                      }}
+                      onOpenNote={(path) => navigateToFile(path)}
+                      onOpenRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
+                      onTakeMeetingNotes={() => {
+                        void handleToggleMeeting();
+                      }}
+                      onOpenChat={handleNewChatTab}
                     />
                   </div>
-                  {!isCacheableViewerPath(selectedPath) &&
-                    (selectedPath.endsWith(".md") ? (
-                      <div className="flex-1 min-h-0 flex flex-row overflow-hidden">
-                        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                          {openMarkdownTabs.map((tab) => {
-                            const isActive = activeFileTabId
-                              ? tab.id === activeFileTabId || tab.path === selectedPath
-                              : tab.path === selectedPath;
-                            const isViewingHistory =
-                              viewingHistoricalVersion &&
-                              isActive &&
-                              versionHistoryPath === tab.path;
-                            const tabContent = isViewingHistory
-                              ? viewingHistoricalVersion.content
-                              : (editorContentByPath[tab.path] ??
-                                (isActive && editorPathRef.current === tab.path
-                                  ? editorContent
-                                  : ""));
+                ) : isSuggestedTopicsOpen ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <SuggestedTopicsView
+                      onExploreTopic={(topic) => {
+                        const prompt = buildSuggestedTopicExplorePrompt(topic);
+                        submitFromPalette(prompt, null);
+                      }}
+                    />
+                  </div>
+                ) : isMeetingsOpen ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <MeetingsView
+                      onOpenNote={(path) => navigateToFile(path)}
+                      onTakeMeetingNotes={() => {
+                        void handleToggleMeeting();
+                      }}
+                      meetingState={meetingTranscription.state}
+                      meetingSummarizing={meetingSummarizing}
+                    />
+                  </div>
+                ) : isLiveNotesOpen ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <LiveNotesView
+                      onOpenNote={(path) => navigateToFile(path)}
+                      onAddNewLiveNote={() => {
+                        submitFromPalette(buildLiveNoteSetupPrompt(), null);
+                      }}
+                    />
+                  </div>
+                ) : isBgTasksOpen ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <BgTasksView
+                      initialSlug={bgTaskInitialSlug}
+                      slugVersion={bgTaskSlugVersion}
+                      onCreateWithCopilot={
+                        shouldOfferBgTaskCopilot
+                          ? (description) => {
+                              submitFromPalette(buildBgTaskSetupPrompt(description), null);
+                            }
+                          : undefined
+                      }
+                      onEditWithCopilot={
+                        shouldOfferBgTaskCopilot
+                          ? (slug) => {
+                              submitFromPalette(buildBgTaskEditPrompt(slug), null);
+                            }
+                          : undefined
+                      }
+                    />
+                  </div>
+                ) : isEmailOpen ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <EmailView
+                      initialThreadId={emailInitialThreadId}
+                      threadIdVersion={emailThreadIdVersion}
+                    />
+                  </div>
+                ) : isWorkspaceOpen ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <WorkspaceView
+                      tree={tree}
+                      initialPath={workspaceInitialPath}
+                      actions={{
+                        remove: knowledgeActions.remove,
+                        copyPath: knowledgeActions.copyPath,
+                        revealInFileManager: knowledgeActions.revealInFileManager,
+                        createNote: knowledgeActions.createNote,
+                        createFolder: knowledgeActions.createFolder,
+                        rename: knowledgeActions.rename,
+                        onOpenInNewTab: knowledgeActions.onOpenInNewTab,
+                      }}
+                      onNavigate={(path) => {
+                        void navigateToView({
+                          type: "workspace",
+                          path: path === WORKSPACE_ROOT ? undefined : path,
+                        });
+                      }}
+                      onOpenNote={(path) => navigateToFile(path)}
+                      onCreateWorkspace={async (name) => {
+                        await knowledgeActions.createWorkspace(name);
+                      }}
+                    />
+                  </div>
+                ) : isKnowledgeViewOpen ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <KnowledgeView
+                      tree={tree}
+                      actions={{
+                        createNote: knowledgeActions.createNote,
+                        createFolder: knowledgeActions.createFolder,
+                        rename: knowledgeActions.rename,
+                        remove: knowledgeActions.remove,
+                        copyPath: knowledgeActions.copyPath,
+                        revealInFileManager: knowledgeActions.revealInFileManager,
+                        onOpenInNewTab: knowledgeActions.onOpenInNewTab,
+                      }}
+                      folderPath={knowledgeViewFolderPath}
+                      onNavigateFolder={(path) => {
+                        void navigateToView({
+                          type: "knowledge-view",
+                          folderPath: path ?? undefined,
+                        });
+                      }}
+                      onOpenNote={(path) => navigateToFile(path)}
+                      onOpenGraph={() => knowledgeActions.openGraph()}
+                      onOpenSearch={() => {
+                        setSearchDefaultScope("knowledge");
+                        setIsSearchOpen(true);
+                      }}
+                      onOpenBases={() => knowledgeActions.openBases()}
+                      onVoiceNoteCreated={handleVoiceNoteCreated}
+                    />
+                  </div>
+                ) : isChatHistoryOpen ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <ChatHistoryView
+                      runs={runs}
+                      currentRunId={runId}
+                      processingRunIds={processingRunIds}
+                      onSelectRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
+                      onDeleteRun={async (rid) => {
+                        try {
+                          await window.ipc.invoke("runs:delete", { runId: rid });
+                          await loadRuns();
+                        } catch (err) {
+                          console.error("Failed to delete run:", err);
+                        }
+                      }}
+                      onNewChat={handleNewChatTab}
+                      onOpenSearch={() => setIsSearchOpen(true)}
+                    />
+                  </div>
+                ) : selectedPath && isBaseFilePath(selectedPath) ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <BasesView
+                      tree={tree}
+                      onSelectNote={(path) => navigateToFile(path)}
+                      config={baseConfigByPath[selectedPath] ?? DEFAULT_BASE_CONFIG}
+                      onConfigChange={(cfg) => handleBaseConfigChange(selectedPath, cfg)}
+                      isDefaultBase={selectedPath === BASES_DEFAULT_TAB_PATH}
+                      onSave={(name) => void handleBaseSave(name)}
+                      externalSearch={externalBaseSearch}
+                      onExternalSearchConsumed={() => setExternalBaseSearch(undefined)}
+                      actions={{
+                        rename: knowledgeActions.rename,
+                        remove: knowledgeActions.remove,
+                        copyPath: knowledgeActions.copyPath,
+                        revealInFileManager: knowledgeActions.revealInFileManager,
+                      }}
+                    />
+                  </div>
+                ) : isGraphOpen ? (
+                  <div className="flex-1 min-h-0">
+                    <GraphView
+                      nodes={graphData.nodes}
+                      edges={graphData.edges}
+                      isLoading={graphStatus === "loading"}
+                      error={
+                        graphStatus === "error" ? (graphError ?? "Failed to build graph") : null
+                      }
+                      onSelectNode={(path) => {
+                        navigateToFile(path);
+                      }}
+                    />
+                  </div>
+                ) : selectedPath ? (
+                  <>
+                    {/* Always-mounted persistent cache for HTML/PDF — hidden when active file is something else, so iframes preserve scroll/page/zoom across switches. */}
+                    <div
+                      className="flex-1 min-h-0 overflow-hidden"
+                      style={{
+                        display: isCacheableViewerPath(selectedPath) ? "block" : "none",
+                      }}
+                    >
+                      <PersistentViewerCache
+                        activePath={selectedPath}
+                        livePaths={fileTabs.map((t) => t.path)}
+                      />
+                    </div>
+                    {!isCacheableViewerPath(selectedPath) &&
+                      (selectedPath.endsWith(".md") ? (
+                        <div className="flex-1 min-h-0 flex flex-row overflow-hidden">
+                          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                            {openMarkdownTabs.map((tab) => {
+                              const isActive = activeFileTabId
+                                ? tab.id === activeFileTabId || tab.path === selectedPath
+                                : tab.path === selectedPath;
+                              const isViewingHistory =
+                                viewingHistoricalVersion &&
+                                isActive &&
+                                versionHistoryPath === tab.path;
+                              const tabContent = isViewingHistory
+                                ? viewingHistoricalVersion.content
+                                : (editorContentByPath[tab.path] ??
+                                  (isActive && editorPathRef.current === tab.path
+                                    ? editorContent
+                                    : ""));
+                              return (
+                                <div
+                                  key={tab.id}
+                                  className={cn(
+                                    "min-h-0 flex-1 flex-col overflow-hidden",
+                                    isActive ? "flex" : "hidden",
+                                  )}
+                                  data-file-tab-panel={tab.id}
+                                  aria-hidden={!isActive}
+                                >
+                                  <MarkdownEditor
+                                    ref={(el) => {
+                                      if (el) editorRefsByTabId.current.set(tab.id, el);
+                                      else editorRefsByTabId.current.delete(tab.id);
+                                    }}
+                                    content={tabContent}
+                                    notePath={tab.path}
+                                    onChange={(markdown) => {
+                                      if (!isViewingHistory) handleEditorChange(tab.path, markdown);
+                                    }}
+                                    onPrimaryHeadingCommit={() => {
+                                      untitledRenameReadyPathsRef.current.add(tab.path);
+                                    }}
+                                    preserveUntitledTitleHeading={isUntitledPlaceholderName(
+                                      getBaseName(tab.path),
+                                    )}
+                                    autoFocusTitle={
+                                      isActive && isUntitledPlaceholderName(getBaseName(tab.path))
+                                    }
+                                    placeholder="Start writing..."
+                                    wikiLinks={wikiLinkConfig}
+                                    onImageUpload={handleImageUpload}
+                                    editorSessionKey={editorSessionByTabId[tab.id] ?? 0}
+                                    frontmatter={frontmatterByPathRef.current.get(tab.path) ?? null}
+                                    onFrontmatterChange={(newRaw) => {
+                                      frontmatterByPathRef.current.set(tab.path, newRaw);
+                                      // Write updated frontmatter to disk immediately
+                                      const currentBody = editorContentRef.current;
+                                      const fullContent = joinFrontmatter(newRaw, currentBody);
+                                      initialContentByPathRef.current.set(
+                                        tab.path,
+                                        splitFrontmatter(fullContent).body,
+                                      );
+                                      initialContentRef.current =
+                                        splitFrontmatter(fullContent).body;
+                                      void window.ipc.invoke("workspace:writeFile", {
+                                        path: tab.path,
+                                        data: fullContent,
+                                        opts: { encoding: "utf8" },
+                                      });
+                                    }}
+                                    onHistoryHandlersChange={(handlers) => {
+                                      if (handlers) {
+                                        fileHistoryHandlersRef.current.set(tab.id, handlers);
+                                      } else {
+                                        fileHistoryHandlersRef.current.delete(tab.id);
+                                      }
+                                    }}
+                                    editable={!isViewingHistory}
+                                    onExport={async (format) => {
+                                      // Markdown export must preserve YAML frontmatter (split off at
+                                      // open); pdf/docx render the body only. (ERRORS.md E08)
+                                      const fm = frontmatterByPathRef.current.get(tab.path) ?? null;
+                                      const markdown =
+                                        format === "md"
+                                          ? joinFrontmatter(fm, tabContent)
+                                          : tabContent;
+                                      const title = getBaseName(tab.path);
+                                      try {
+                                        await window.ipc.invoke("export:note", {
+                                          markdown,
+                                          format,
+                                          title,
+                                        });
+                                        analytics.noteExported(format);
+                                      } catch (err) {
+                                        console.error("Export failed:", err);
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <LiveNoteSidebar
+                            filePath={liveNotePanelPath}
+                            onClose={() => setLiveNotePanelPath(null)}
+                          />
+                          <RelatedNotesSidebar
+                            filePath={relatedNotesPanelPath}
+                            onOpen={navigateToFile}
+                            onClose={() => setRelatedNotesPanelPath(null)}
+                          />
+                          {versionHistoryPath && (
+                            <VersionHistoryPanel
+                              path={versionHistoryPath}
+                              onClose={() => {
+                                setVersionHistoryPath(null);
+                                setViewingHistoricalVersion(null);
+                              }}
+                              onSelectVersion={(oid, content) => {
+                                if (oid === null) {
+                                  setViewingHistoricalVersion(null);
+                                } else {
+                                  setViewingHistoricalVersion({ oid, content });
+                                }
+                              }}
+                              onRestore={async (oid) => {
+                                try {
+                                  await window.ipc.invoke("knowledge:restore", {
+                                    path: versionHistoryPath.startsWith("knowledge/")
+                                      ? versionHistoryPath.slice("knowledge/".length)
+                                      : versionHistoryPath,
+                                    oid,
+                                  });
+                                  // Reload file content
+                                  const result = await window.ipc.invoke("workspace:readFile", {
+                                    path: versionHistoryPath,
+                                  });
+                                  handleEditorChange(versionHistoryPath, result.data);
+                                  setViewingHistoricalVersion(null);
+                                  setVersionHistoryPath(null);
+                                } catch (err) {
+                                  console.error("Failed to restore version:", err);
+                                }
+                              }}
+                            />
+                          )}
+                        </div>
+                      ) : selectedPath && getViewerType(selectedPath) === "image" ? (
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                          <ImageFileViewer path={selectedPath} />
+                        </div>
+                      ) : selectedPath && getViewerType(selectedPath) === "video" ? (
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                          <VideoFileViewer path={selectedPath} />
+                        </div>
+                      ) : selectedPath && getViewerType(selectedPath) === "audio" ? (
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                          <AudioFileViewer path={selectedPath} />
+                        </div>
+                      ) : selectedPath && getViewerType(selectedPath) === "docx" ? (
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                          <DocxFileViewer path={selectedPath} />
+                        </div>
+                      ) : (
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                          <UnsupportedFileViewer path={selectedPath} />
+                        </div>
+                      ))}
+                  </>
+                ) : selectedTask ? (
+                  <div className="flex-1 min-h-0 overflow-hidden">
+                    <BackgroundTaskDetail
+                      name={selectedTask.name}
+                      description={selectedTask.description}
+                      schedule={selectedTask.schedule}
+                      enabled={selectedTask.enabled}
+                      status={selectedTask.status}
+                      nextRunAt={selectedTask.nextRunAt}
+                      lastRunAt={selectedTask.lastRunAt}
+                      lastError={selectedTask.lastError}
+                      runCount={selectedTask.runCount}
+                      onToggleEnabled={(enabled) =>
+                        handleToggleBackgroundTask(selectedTask.name, enabled)
+                      }
+                    />
+                  </div>
+                ) : (
+                  <FileCardProvider
+                    onOpenKnowledgeFile={(path) => {
+                      navigateToFile(path);
+                    }}
+                  >
+                    <div className="flex min-h-0 flex-1 flex-col">
+                      <div className="relative min-h-0 flex-1">
+                        {chatTabs.map((tab) => {
+                          const isActive = tab.id === activeChatTabId;
+                          const tabState = getChatTabStateForRender(tab.id);
+                          const tabHasConversation =
+                            tabState.conversation.length > 0 || tabState.currentAssistantMessage;
+                          const tabConversationContentClassName = tabHasConversation
+                            ? "mx-auto w-full max-w-4xl pb-28"
+                            : "mx-auto w-full max-w-4xl min-h-full items-center justify-center pb-0";
+                          return (
+                            <div
+                              key={tab.id}
+                              className={cn(
+                                "min-h-0 h-full flex-col",
+                                isActive
+                                  ? "flex"
+                                  : "pointer-events-none invisible absolute inset-0 flex",
+                              )}
+                              data-chat-tab-panel={tab.id}
+                              aria-hidden={!isActive}
+                            >
+                              <Conversation
+                                anchorMessageId={chatViewportAnchorByTab[tab.id]?.messageId}
+                                anchorRequestKey={chatViewportAnchorByTab[tab.id]?.requestKey}
+                                className="relative flex-1"
+                              >
+                                <ConversationContent className={tabConversationContentClassName}>
+                                  {!tabHasConversation ? (
+                                    <ChatEmptyState
+                                      wide
+                                      recentRuns={runs}
+                                      onSelectRun={(rid) =>
+                                        void navigateToView({
+                                          type: "chat",
+                                          runId: rid,
+                                        })
+                                      }
+                                      onOpenChatHistory={() =>
+                                        void navigateToView({
+                                          type: "chat-history",
+                                        })
+                                      }
+                                      onPickPrompt={setPresetMessage}
+                                    />
+                                  ) : (
+                                    <>
+                                      {groupConversationItems(
+                                        tabState.conversation,
+                                        (id) =>
+                                          !!tabState.allPermissionRequests.get(id) ||
+                                          !!tabState.autoPermissionDecisions.get(id),
+                                      ).map((item) => {
+                                        if (isToolGroup(item)) {
+                                          return (
+                                            <ToolGroupComponent
+                                              key={item.groupId}
+                                              group={item}
+                                              isToolOpen={(toolId) =>
+                                                isToolOpenForTab(tab.id, toolId)
+                                              }
+                                              onToolOpenChange={(toolId, open) =>
+                                                setToolOpenForTab(tab.id, toolId, open)
+                                              }
+                                            />
+                                          );
+                                        }
+                                        const autoDecision = isToolCall(item)
+                                          ? tabState.autoPermissionDecisions.get(item.id)
+                                          : undefined;
+                                        const rendered = renderConversationItem(
+                                          item,
+                                          tab.id,
+                                          autoDecision?.decision === "allow"
+                                            ? {
+                                                autoPermissionDetail: {
+                                                  decision: "allow",
+                                                  reason: autoDecision.reason,
+                                                },
+                                              }
+                                            : undefined,
+                                        );
+                                        if (isToolCall(item)) {
+                                          const deniedAutoDecision =
+                                            autoDecision?.decision === "deny" ? autoDecision : null;
+                                          const permRequest = tabState.allPermissionRequests.get(
+                                            item.id,
+                                          );
+                                          if (deniedAutoDecision || permRequest) {
+                                            const response =
+                                              tabState.permissionResponses.get(item.id) || null;
+                                            return (
+                                              <React.Fragment key={item.id}>
+                                                {deniedAutoDecision && (
+                                                  <AutoPermissionDecision
+                                                    toolCall={deniedAutoDecision.toolCall}
+                                                    permission={deniedAutoDecision.permission}
+                                                    decision={deniedAutoDecision.decision}
+                                                    reason={deniedAutoDecision.reason}
+                                                  />
+                                                )}
+                                                {permRequest && (
+                                                  <PermissionRequest
+                                                    toolCall={permRequest.toolCall}
+                                                    permission={permRequest.permission}
+                                                    onApprove={() =>
+                                                      handlePermissionResponse(
+                                                        permRequest.toolCall.toolCallId,
+                                                        permRequest.subflow,
+                                                        "approve",
+                                                      )
+                                                    }
+                                                    onApproveSession={() =>
+                                                      handlePermissionResponse(
+                                                        permRequest.toolCall.toolCallId,
+                                                        permRequest.subflow,
+                                                        "approve",
+                                                        "session",
+                                                      )
+                                                    }
+                                                    onApproveAlways={() =>
+                                                      handlePermissionResponse(
+                                                        permRequest.toolCall.toolCallId,
+                                                        permRequest.subflow,
+                                                        "approve",
+                                                        "always",
+                                                      )
+                                                    }
+                                                    onDeny={() =>
+                                                      handlePermissionResponse(
+                                                        permRequest.toolCall.toolCallId,
+                                                        permRequest.subflow,
+                                                        "deny",
+                                                      )
+                                                    }
+                                                    onSwitchAgent={async (newAgent) => {
+                                                      const runIdForSwitch = tab.runId;
+                                                      await handlePermissionResponse(
+                                                        permRequest.toolCall.toolCallId,
+                                                        permRequest.subflow,
+                                                        "deny",
+                                                      );
+                                                      window.dispatchEvent(
+                                                        new CustomEvent("code-mode-detected", {
+                                                          detail: {
+                                                            runId: runIdForSwitch,
+                                                            agent: newAgent,
+                                                          },
+                                                        }),
+                                                      );
+                                                      if (runIdForSwitch) {
+                                                        try {
+                                                          await window.ipc.invoke(
+                                                            "runs:createMessage",
+                                                            {
+                                                              runId: runIdForSwitch,
+                                                              message: `Use ${newAgent === "claude" ? "Claude Code" : "Codex"} instead — rerun the same task with the same prompt, just swap the agent binary to \`${newAgent}\`.`,
+                                                              codeMode: newAgent,
+                                                            },
+                                                          );
+                                                        } catch (err) {
+                                                          console.error(
+                                                            "Failed to send swap-agent follow-up",
+                                                            err,
+                                                          );
+                                                        }
+                                                      }
+                                                    }}
+                                                    isProcessing={isActive && isProcessing}
+                                                    response={response}
+                                                  />
+                                                )}
+                                                {rendered}
+                                              </React.Fragment>
+                                            );
+                                          }
+                                        }
+                                        return rendered;
+                                      })}
+
+                                      {Array.from(tabState.pendingAskHumanRequests.values()).map(
+                                        (request) => (
+                                          <AskHumanRequest
+                                            key={request.toolCallId}
+                                            query={request.query}
+                                            options={request.options}
+                                            onResponse={(response) =>
+                                              handleAskHumanResponse(
+                                                request.toolCallId,
+                                                request.subflow,
+                                                response,
+                                              )
+                                            }
+                                            isProcessing={isActive && isProcessing}
+                                          />
+                                        ),
+                                      )}
+
+                                      {tabState.currentAssistantMessage && (
+                                        <Message from="assistant">
+                                          <MessageContent>
+                                            <SmoothStreamingMessage
+                                              text={tabState.currentAssistantMessage.replace(
+                                                /<\/?voice>/g,
+                                                "",
+                                              )}
+                                              components={streamdownComponents}
+                                            />
+                                          </MessageContent>
+                                        </Message>
+                                      )}
+
+                                      {isActive &&
+                                        isProcessing &&
+                                        !tabState.currentAssistantMessage && (
+                                          <Message from="assistant">
+                                            <MessageContent>
+                                              <Shimmer duration={1}>Thinking...</Shimmer>
+                                            </MessageContent>
+                                          </Message>
+                                        )}
+                                    </>
+                                  )}
+                                </ConversationContent>
+                                <ConversationScrollButton />
+                              </Conversation>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="rowboat-composer-dock sticky bottom-0 z-10 bg-background pb-12 pt-0 shadow-lg">
+                        <div className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-linear-to-t from-background to-transparent" />
+                        <div className="mx-auto w-full max-w-4xl px-4">
+                          {chatTabs.map((tab) => {
+                            const isActive = tab.id === activeChatTabId;
+                            const tabState = getChatTabStateForRender(tab.id);
                             return (
                               <div
                                 key={tab.id}
-                                className={cn(
-                                  "min-h-0 flex-1 flex-col overflow-hidden",
-                                  isActive ? "flex" : "hidden",
-                                )}
-                                data-file-tab-panel={tab.id}
+                                className={isActive ? "block" : "hidden"}
+                                data-chat-input-panel={tab.id}
                                 aria-hidden={!isActive}
                               >
-                                <MarkdownEditor
-                                  ref={(el) => {
-                                    if (el) editorRefsByTabId.current.set(tab.id, el);
-                                    else editorRefsByTabId.current.delete(tab.id);
-                                  }}
-                                  content={tabContent}
-                                  notePath={tab.path}
-                                  onChange={(markdown) => {
-                                    if (!isViewingHistory) handleEditorChange(tab.path, markdown);
-                                  }}
-                                  onPrimaryHeadingCommit={() => {
-                                    untitledRenameReadyPathsRef.current.add(tab.path);
-                                  }}
-                                  preserveUntitledTitleHeading={isUntitledPlaceholderName(
-                                    getBaseName(tab.path),
-                                  )}
-                                  autoFocusTitle={
-                                    isActive && isUntitledPlaceholderName(getBaseName(tab.path))
+                                <ChatInputWithMentions
+                                  knowledgeFiles={knowledgeFiles}
+                                  recentFiles={recentWikiFiles}
+                                  visibleFiles={visibleKnowledgeFiles}
+                                  onSubmit={handlePromptSubmit}
+                                  onStop={handleStop}
+                                  isProcessing={isActive && isProcessing}
+                                  isStopping={isActive && isStopping}
+                                  isActive={isActive}
+                                  presetMessage={isActive ? presetMessage : undefined}
+                                  onPresetMessageConsumed={
+                                    isActive ? () => setPresetMessage(undefined) : undefined
                                   }
-                                  placeholder="Start writing..."
-                                  wikiLinks={wikiLinkConfig}
-                                  onImageUpload={handleImageUpload}
-                                  editorSessionKey={editorSessionByTabId[tab.id] ?? 0}
-                                  frontmatter={frontmatterByPathRef.current.get(tab.path) ?? null}
-                                  onFrontmatterChange={(newRaw) => {
-                                    frontmatterByPathRef.current.set(tab.path, newRaw);
-                                    // Write updated frontmatter to disk immediately
-                                    const currentBody = editorContentRef.current;
-                                    const fullContent = joinFrontmatter(newRaw, currentBody);
-                                    initialContentByPathRef.current.set(
-                                      tab.path,
-                                      splitFrontmatter(fullContent).body,
-                                    );
-                                    initialContentRef.current = splitFrontmatter(fullContent).body;
-                                    void window.ipc.invoke("workspace:writeFile", {
-                                      path: tab.path,
-                                      data: fullContent,
-                                      opts: { encoding: "utf8" },
-                                    });
-                                  }}
-                                  onHistoryHandlersChange={(handlers) => {
-                                    if (handlers) {
-                                      fileHistoryHandlersRef.current.set(tab.id, handlers);
+                                  runId={tabState.runId}
+                                  initialDraft={chatDraftsRef.current.get(tab.id)}
+                                  onDraftChange={(text) => setChatDraftForTab(tab.id, text)}
+                                  onSelectedModelChange={(m) => {
+                                    if (m) {
+                                      selectedModelByTabRef.current.set(tab.id, m);
                                     } else {
-                                      fileHistoryHandlersRef.current.delete(tab.id);
+                                      selectedModelByTabRef.current.delete(tab.id);
                                     }
                                   }}
-                                  editable={!isViewingHistory}
-                                  onExport={async (format) => {
-                                    // Markdown export must preserve YAML frontmatter (split off at
-                                    // open); pdf/docx render the body only. (ERRORS.md E08)
-                                    const fm = frontmatterByPathRef.current.get(tab.path) ?? null;
-                                    const markdown =
-                                      format === "md"
-                                        ? joinFrontmatter(fm, tabContent)
-                                        : tabContent;
-                                    const title = getBaseName(tab.path);
-                                    try {
-                                      await window.ipc.invoke("export:note", {
-                                        markdown,
-                                        format,
-                                        title,
-                                      });
-                                      analytics.noteExported(format);
-                                    } catch (err) {
-                                      console.error("Export failed:", err);
-                                    }
-                                  }}
+                                  workDir={workDirByTab[tab.id] ?? null}
+                                  onWorkDirChange={(v) => setTabWorkDir(tab.id, v)}
+                                  isRecording={isActive && isRecording}
+                                  recordingText={isActive ? voice.interimText : undefined}
+                                  recordingState={
+                                    isActive
+                                      ? voice.state === "connecting"
+                                        ? "connecting"
+                                        : "listening"
+                                      : undefined
+                                  }
+                                  onStartRecording={isActive ? handleStartRecording : undefined}
+                                  onSubmitRecording={isActive ? handleSubmitRecording : undefined}
+                                  onCancelRecording={isActive ? handleCancelRecording : undefined}
+                                  voiceAvailable={isActive && voiceAvailable}
+                                  ttsAvailable={isActive && ttsAvailable}
+                                  ttsEnabled={ttsEnabled}
+                                  ttsMode={ttsMode}
+                                  onToggleTts={isActive ? handleToggleTts : undefined}
+                                  onTtsModeChange={isActive ? handleTtsModeChange : undefined}
                                 />
                               </div>
                             );
                           })}
                         </div>
-                        <LiveNoteSidebar
-                          filePath={liveNotePanelPath}
-                          onClose={() => setLiveNotePanelPath(null)}
-                        />
-                        <RelatedNotesSidebar
-                          filePath={relatedNotesPanelPath}
-                          onOpen={navigateToFile}
-                          onClose={() => setRelatedNotesPanelPath(null)}
-                        />
-                        {versionHistoryPath && (
-                          <VersionHistoryPanel
-                            path={versionHistoryPath}
-                            onClose={() => {
-                              setVersionHistoryPath(null);
-                              setViewingHistoricalVersion(null);
-                            }}
-                            onSelectVersion={(oid, content) => {
-                              if (oid === null) {
-                                setViewingHistoricalVersion(null);
-                              } else {
-                                setViewingHistoricalVersion({ oid, content });
-                              }
-                            }}
-                            onRestore={async (oid) => {
-                              try {
-                                await window.ipc.invoke("knowledge:restore", {
-                                  path: versionHistoryPath.startsWith("knowledge/")
-                                    ? versionHistoryPath.slice("knowledge/".length)
-                                    : versionHistoryPath,
-                                  oid,
-                                });
-                                // Reload file content
-                                const result = await window.ipc.invoke("workspace:readFile", {
-                                  path: versionHistoryPath,
-                                });
-                                handleEditorChange(versionHistoryPath, result.data);
-                                setViewingHistoricalVersion(null);
-                                setVersionHistoryPath(null);
-                              } catch (err) {
-                                console.error("Failed to restore version:", err);
-                              }
-                            }}
-                          />
-                        )}
                       </div>
-                    ) : selectedPath && getViewerType(selectedPath) === "image" ? (
-                      <div className="flex-1 min-h-0 overflow-hidden">
-                        <ImageFileViewer path={selectedPath} />
-                      </div>
-                    ) : selectedPath && getViewerType(selectedPath) === "video" ? (
-                      <div className="flex-1 min-h-0 overflow-hidden">
-                        <VideoFileViewer path={selectedPath} />
-                      </div>
-                    ) : selectedPath && getViewerType(selectedPath) === "audio" ? (
-                      <div className="flex-1 min-h-0 overflow-hidden">
-                        <AudioFileViewer path={selectedPath} />
-                      </div>
-                    ) : selectedPath && getViewerType(selectedPath) === "docx" ? (
-                      <div className="flex-1 min-h-0 overflow-hidden">
-                        <DocxFileViewer path={selectedPath} />
-                      </div>
-                    ) : (
-                      <div className="flex-1 min-h-0 overflow-hidden">
-                        <UnsupportedFileViewer path={selectedPath} />
-                      </div>
-                    ))}
-                </>
-              ) : selectedTask ? (
-                <div className="flex-1 min-h-0 overflow-hidden">
-                  <BackgroundTaskDetail
-                    name={selectedTask.name}
-                    description={selectedTask.description}
-                    schedule={selectedTask.schedule}
-                    enabled={selectedTask.enabled}
-                    status={selectedTask.status}
-                    nextRunAt={selectedTask.nextRunAt}
-                    lastRunAt={selectedTask.lastRunAt}
-                    lastError={selectedTask.lastError}
-                    runCount={selectedTask.runCount}
-                    onToggleEnabled={(enabled) =>
-                      handleToggleBackgroundTask(selectedTask.name, enabled)
+                    </div>
+                  </FileCardProvider>
+                )}
+              </SidebarInset>
+
+              {/* Chat pane - shown when viewing files/graph */}
+              {isRightPaneContext && (
+                <ChatSidebar
+                  placement={chatPanePlacement}
+                  paneSize={chatPaneSize}
+                  className={isChatPaneInMiddle ? "order-2" : undefined}
+                  defaultWidth={DEFAULT_CHAT_PANE_WIDTH}
+                  isOpen={isChatSidebarOpen}
+                  isMaximized={isRightPaneMaximized}
+                  chatTabs={chatTabs}
+                  activeChatTabId={activeChatTabId}
+                  getChatTabTitle={getChatTabTitle}
+                  onNewChatTab={handleNewChatTabInSidebar}
+                  recentRuns={runs}
+                  onSelectRun={(rid) => {
+                    const existingTab = chatTabs.find((t) => t.runId === rid);
+                    if (existingTab) {
+                      switchChatTab(existingTab.id);
+                      return;
                     }
-                  />
-                </div>
-              ) : (
-                <FileCardProvider
+                    setChatTabs((prev) =>
+                      prev.map((t) => (t.id === activeChatTabId ? { ...t, runId: rid } : t)),
+                    );
+                    loadRun(rid);
+                  }}
+                  onOpenChatHistory={() => void navigateToView({ type: "chat-history" })}
+                  onOpenFullScreen={toggleRightPaneMaximize}
+                  conversation={conversation}
+                  currentAssistantMessage={currentAssistantMessage}
+                  chatTabStates={chatViewStateByTab}
+                  viewportAnchors={chatViewportAnchorByTab}
+                  isProcessing={isProcessing}
+                  isStopping={isStopping}
+                  onStop={handleStop}
+                  onSubmit={handlePromptSubmit}
+                  knowledgeFiles={knowledgeFiles}
+                  recentFiles={recentWikiFiles}
+                  visibleFiles={visibleKnowledgeFiles}
+                  runId={runId}
+                  presetMessage={presetMessage}
+                  onPresetMessageConsumed={() => setPresetMessage(undefined)}
+                  getInitialDraft={(tabId) => chatDraftsRef.current.get(tabId)}
+                  onDraftChangeForTab={setChatDraftForTab}
+                  onSelectedModelChangeForTab={(tabId, m) => {
+                    if (m) {
+                      selectedModelByTabRef.current.set(tabId, m);
+                    } else {
+                      selectedModelByTabRef.current.delete(tabId);
+                    }
+                  }}
+                  workDirByTab={workDirByTab}
+                  onWorkDirChangeForTab={setTabWorkDir}
+                  pendingAskHumanRequests={pendingAskHumanRequests}
+                  allPermissionRequests={allPermissionRequests}
+                  permissionResponses={permissionResponses}
+                  autoPermissionDecisions={autoPermissionDecisions}
+                  onPermissionResponse={handlePermissionResponse}
+                  onAskHumanResponse={handleAskHumanResponse}
+                  onSwitchAgent={async (toolCallId, subflow, newAgent) => {
+                    // Deny the coding-command request, then re-ask on the active run with
+                    // the swapped agent — parity with full-screen chat. (ERRORS.md E02)
+                    const runIdForSwitch = runId;
+                    await handlePermissionResponse(toolCallId, subflow, "deny");
+                    window.dispatchEvent(
+                      new CustomEvent("code-mode-detected", {
+                        detail: { runId: runIdForSwitch, agent: newAgent },
+                      }),
+                    );
+                    if (runIdForSwitch) {
+                      try {
+                        await window.ipc.invoke("runs:createMessage", {
+                          runId: runIdForSwitch,
+                          message: `Use ${newAgent === "claude" ? "Claude Code" : "Codex"} instead — rerun the same task with the same prompt, just swap the agent binary to \`${newAgent}\`.`,
+                          codeMode: newAgent,
+                        });
+                      } catch (err) {
+                        console.error("Failed to send swap-agent follow-up", err);
+                      }
+                    }
+                  }}
+                  isToolOpenForTab={isToolOpenForTab}
+                  onToolOpenChangeForTab={setToolOpenForTab}
                   onOpenKnowledgeFile={(path) => {
                     navigateToFile(path);
                   }}
-                >
-                  <div className="flex min-h-0 flex-1 flex-col">
-                    <div className="relative min-h-0 flex-1">
-                      {chatTabs.map((tab) => {
-                        const isActive = tab.id === activeChatTabId;
-                        const tabState = getChatTabStateForRender(tab.id);
-                        const tabHasConversation =
-                          tabState.conversation.length > 0 || tabState.currentAssistantMessage;
-                        const tabConversationContentClassName = tabHasConversation
-                          ? "mx-auto w-full max-w-4xl pb-28"
-                          : "mx-auto w-full max-w-4xl min-h-full items-center justify-center pb-0";
-                        return (
-                          <div
-                            key={tab.id}
-                            className={cn(
-                              "min-h-0 h-full flex-col",
-                              isActive
-                                ? "flex"
-                                : "pointer-events-none invisible absolute inset-0 flex",
-                            )}
-                            data-chat-tab-panel={tab.id}
-                            aria-hidden={!isActive}
-                          >
-                            <Conversation
-                              anchorMessageId={chatViewportAnchorByTab[tab.id]?.messageId}
-                              anchorRequestKey={chatViewportAnchorByTab[tab.id]?.requestKey}
-                              className="relative flex-1"
-                            >
-                              <ConversationContent className={tabConversationContentClassName}>
-                                {!tabHasConversation ? (
-                                  <ChatEmptyState
-                                    wide
-                                    recentRuns={runs}
-                                    onSelectRun={(rid) =>
-                                      void navigateToView({
-                                        type: "chat",
-                                        runId: rid,
-                                      })
-                                    }
-                                    onOpenChatHistory={() =>
-                                      void navigateToView({
-                                        type: "chat-history",
-                                      })
-                                    }
-                                    onPickPrompt={setPresetMessage}
-                                  />
-                                ) : (
-                                  <>
-                                    {groupConversationItems(
-                                      tabState.conversation,
-                                      (id) =>
-                                        !!tabState.allPermissionRequests.get(id) ||
-                                        !!tabState.autoPermissionDecisions.get(id),
-                                    ).map((item) => {
-                                      if (isToolGroup(item)) {
-                                        return (
-                                          <ToolGroupComponent
-                                            key={item.groupId}
-                                            group={item}
-                                            isToolOpen={(toolId) =>
-                                              isToolOpenForTab(tab.id, toolId)
-                                            }
-                                            onToolOpenChange={(toolId, open) =>
-                                              setToolOpenForTab(tab.id, toolId, open)
-                                            }
-                                          />
-                                        );
-                                      }
-                                      const autoDecision = isToolCall(item)
-                                        ? tabState.autoPermissionDecisions.get(item.id)
-                                        : undefined;
-                                      const rendered = renderConversationItem(
-                                        item,
-                                        tab.id,
-                                        autoDecision?.decision === "allow"
-                                          ? {
-                                              autoPermissionDetail: {
-                                                decision: "allow",
-                                                reason: autoDecision.reason,
-                                              },
-                                            }
-                                          : undefined,
-                                      );
-                                      if (isToolCall(item)) {
-                                        const deniedAutoDecision =
-                                          autoDecision?.decision === "deny" ? autoDecision : null;
-                                        const permRequest = tabState.allPermissionRequests.get(
-                                          item.id,
-                                        );
-                                        if (deniedAutoDecision || permRequest) {
-                                          const response =
-                                            tabState.permissionResponses.get(item.id) || null;
-                                          return (
-                                            <React.Fragment key={item.id}>
-                                              {deniedAutoDecision && (
-                                                <AutoPermissionDecision
-                                                  toolCall={deniedAutoDecision.toolCall}
-                                                  permission={deniedAutoDecision.permission}
-                                                  decision={deniedAutoDecision.decision}
-                                                  reason={deniedAutoDecision.reason}
-                                                />
-                                              )}
-                                              {permRequest && (
-                                                <PermissionRequest
-                                                  toolCall={permRequest.toolCall}
-                                                  permission={permRequest.permission}
-                                                  onApprove={() =>
-                                                    handlePermissionResponse(
-                                                      permRequest.toolCall.toolCallId,
-                                                      permRequest.subflow,
-                                                      "approve",
-                                                    )
-                                                  }
-                                                  onApproveSession={() =>
-                                                    handlePermissionResponse(
-                                                      permRequest.toolCall.toolCallId,
-                                                      permRequest.subflow,
-                                                      "approve",
-                                                      "session",
-                                                    )
-                                                  }
-                                                  onApproveAlways={() =>
-                                                    handlePermissionResponse(
-                                                      permRequest.toolCall.toolCallId,
-                                                      permRequest.subflow,
-                                                      "approve",
-                                                      "always",
-                                                    )
-                                                  }
-                                                  onDeny={() =>
-                                                    handlePermissionResponse(
-                                                      permRequest.toolCall.toolCallId,
-                                                      permRequest.subflow,
-                                                      "deny",
-                                                    )
-                                                  }
-                                                  onSwitchAgent={async (newAgent) => {
-                                                    const runIdForSwitch = tab.runId;
-                                                    await handlePermissionResponse(
-                                                      permRequest.toolCall.toolCallId,
-                                                      permRequest.subflow,
-                                                      "deny",
-                                                    );
-                                                    window.dispatchEvent(
-                                                      new CustomEvent("code-mode-detected", {
-                                                        detail: {
-                                                          runId: runIdForSwitch,
-                                                          agent: newAgent,
-                                                        },
-                                                      }),
-                                                    );
-                                                    if (runIdForSwitch) {
-                                                      try {
-                                                        await window.ipc.invoke(
-                                                          "runs:createMessage",
-                                                          {
-                                                            runId: runIdForSwitch,
-                                                            message: `Use ${newAgent === "claude" ? "Claude Code" : "Codex"} instead — rerun the same task with the same prompt, just swap the agent binary to \`${newAgent}\`.`,
-                                                            codeMode: newAgent,
-                                                          },
-                                                        );
-                                                      } catch (err) {
-                                                        console.error(
-                                                          "Failed to send swap-agent follow-up",
-                                                          err,
-                                                        );
-                                                      }
-                                                    }
-                                                  }}
-                                                  isProcessing={isActive && isProcessing}
-                                                  response={response}
-                                                />
-                                              )}
-                                              {rendered}
-                                            </React.Fragment>
-                                          );
-                                        }
-                                      }
-                                      return rendered;
-                                    })}
-
-                                    {Array.from(tabState.pendingAskHumanRequests.values()).map(
-                                      (request) => (
-                                        <AskHumanRequest
-                                          key={request.toolCallId}
-                                          query={request.query}
-                                          options={request.options}
-                                          onResponse={(response) =>
-                                            handleAskHumanResponse(
-                                              request.toolCallId,
-                                              request.subflow,
-                                              response,
-                                            )
-                                          }
-                                          isProcessing={isActive && isProcessing}
-                                        />
-                                      ),
-                                    )}
-
-                                    {tabState.currentAssistantMessage && (
-                                      <Message from="assistant">
-                                        <MessageContent>
-                                          <SmoothStreamingMessage
-                                            text={tabState.currentAssistantMessage.replace(
-                                              /<\/?voice>/g,
-                                              "",
-                                            )}
-                                            components={streamdownComponents}
-                                          />
-                                        </MessageContent>
-                                      </Message>
-                                    )}
-
-                                    {isActive &&
-                                      isProcessing &&
-                                      !tabState.currentAssistantMessage && (
-                                        <Message from="assistant">
-                                          <MessageContent>
-                                            <Shimmer duration={1}>Thinking...</Shimmer>
-                                          </MessageContent>
-                                        </Message>
-                                      )}
-                                  </>
-                                )}
-                              </ConversationContent>
-                              <ConversationScrollButton />
-                            </Conversation>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className="rowboat-composer-dock sticky bottom-0 z-10 bg-background pb-12 pt-0 shadow-lg">
-                      <div className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-linear-to-t from-background to-transparent" />
-                      <div className="mx-auto w-full max-w-4xl px-4">
-                        {chatTabs.map((tab) => {
-                          const isActive = tab.id === activeChatTabId;
-                          const tabState = getChatTabStateForRender(tab.id);
-                          return (
-                            <div
-                              key={tab.id}
-                              className={isActive ? "block" : "hidden"}
-                              data-chat-input-panel={tab.id}
-                              aria-hidden={!isActive}
-                            >
-                              <ChatInputWithMentions
-                                knowledgeFiles={knowledgeFiles}
-                                recentFiles={recentWikiFiles}
-                                visibleFiles={visibleKnowledgeFiles}
-                                onSubmit={handlePromptSubmit}
-                                onStop={handleStop}
-                                isProcessing={isActive && isProcessing}
-                                isStopping={isActive && isStopping}
-                                isActive={isActive}
-                                presetMessage={isActive ? presetMessage : undefined}
-                                onPresetMessageConsumed={
-                                  isActive ? () => setPresetMessage(undefined) : undefined
-                                }
-                                runId={tabState.runId}
-                                initialDraft={chatDraftsRef.current.get(tab.id)}
-                                onDraftChange={(text) => setChatDraftForTab(tab.id, text)}
-                                onSelectedModelChange={(m) => {
-                                  if (m) {
-                                    selectedModelByTabRef.current.set(tab.id, m);
-                                  } else {
-                                    selectedModelByTabRef.current.delete(tab.id);
-                                  }
-                                }}
-                                workDir={workDirByTab[tab.id] ?? null}
-                                onWorkDirChange={(v) => setTabWorkDir(tab.id, v)}
-                                isRecording={isActive && isRecording}
-                                recordingText={isActive ? voice.interimText : undefined}
-                                recordingState={
-                                  isActive
-                                    ? voice.state === "connecting"
-                                      ? "connecting"
-                                      : "listening"
-                                    : undefined
-                                }
-                                onStartRecording={isActive ? handleStartRecording : undefined}
-                                onSubmitRecording={isActive ? handleSubmitRecording : undefined}
-                                onCancelRecording={isActive ? handleCancelRecording : undefined}
-                                voiceAvailable={isActive && voiceAvailable}
-                                ttsAvailable={isActive && ttsAvailable}
-                                ttsEnabled={ttsEnabled}
-                                ttsMode={ttsMode}
-                                onToggleTts={isActive ? handleToggleTts : undefined}
-                                onTtsModeChange={isActive ? handleTtsModeChange : undefined}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </FileCardProvider>
+                  onActivate={() => setActiveShortcutPane("right")}
+                  isRecording={isRecording}
+                  recordingText={voice.interimText}
+                  recordingState={voice.state === "connecting" ? "connecting" : "listening"}
+                  onStartRecording={handleStartRecording}
+                  onSubmitRecording={handleSubmitRecording}
+                  onCancelRecording={handleCancelRecording}
+                  voiceAvailable={voiceAvailable}
+                  ttsAvailable={ttsAvailable}
+                  ttsEnabled={ttsEnabled}
+                  ttsMode={ttsMode}
+                  onToggleTts={handleToggleTts}
+                  onTtsModeChange={handleTtsModeChange}
+                  onIntegrationConnected={handleIntegrationConnected}
+                />
               )}
-            </SidebarInset>
-
-            {/* Chat pane - shown when viewing files/graph */}
-            {isRightPaneContext && (
-              <ChatSidebar
-                placement={chatPanePlacement}
-                paneSize={chatPaneSize}
-                className={isChatPaneInMiddle ? "order-2" : undefined}
-                defaultWidth={DEFAULT_CHAT_PANE_WIDTH}
-                isOpen={isChatSidebarOpen}
-                isMaximized={isRightPaneMaximized}
-                chatTabs={chatTabs}
-                activeChatTabId={activeChatTabId}
-                getChatTabTitle={getChatTabTitle}
-                onNewChatTab={handleNewChatTabInSidebar}
-                recentRuns={runs}
-                onSelectRun={(rid) => {
-                  const existingTab = chatTabs.find((t) => t.runId === rid);
-                  if (existingTab) {
-                    switchChatTab(existingTab.id);
-                    return;
-                  }
-                  setChatTabs((prev) =>
-                    prev.map((t) => (t.id === activeChatTabId ? { ...t, runId: rid } : t)),
-                  );
-                  loadRun(rid);
-                }}
-                onOpenChatHistory={() => void navigateToView({ type: "chat-history" })}
-                onOpenFullScreen={toggleRightPaneMaximize}
-                conversation={conversation}
-                currentAssistantMessage={currentAssistantMessage}
-                chatTabStates={chatViewStateByTab}
-                viewportAnchors={chatViewportAnchorByTab}
-                isProcessing={isProcessing}
-                isStopping={isStopping}
-                onStop={handleStop}
-                onSubmit={handlePromptSubmit}
-                knowledgeFiles={knowledgeFiles}
-                recentFiles={recentWikiFiles}
-                visibleFiles={visibleKnowledgeFiles}
-                runId={runId}
-                presetMessage={presetMessage}
-                onPresetMessageConsumed={() => setPresetMessage(undefined)}
-                getInitialDraft={(tabId) => chatDraftsRef.current.get(tabId)}
-                onDraftChangeForTab={setChatDraftForTab}
-                onSelectedModelChangeForTab={(tabId, m) => {
-                  if (m) {
-                    selectedModelByTabRef.current.set(tabId, m);
-                  } else {
-                    selectedModelByTabRef.current.delete(tabId);
-                  }
-                }}
-                workDirByTab={workDirByTab}
-                onWorkDirChangeForTab={setTabWorkDir}
-                pendingAskHumanRequests={pendingAskHumanRequests}
-                allPermissionRequests={allPermissionRequests}
-                permissionResponses={permissionResponses}
-                autoPermissionDecisions={autoPermissionDecisions}
-                onPermissionResponse={handlePermissionResponse}
-                onAskHumanResponse={handleAskHumanResponse}
-                onSwitchAgent={async (toolCallId, subflow, newAgent) => {
-                  // Deny the coding-command request, then re-ask on the active run with
-                  // the swapped agent — parity with full-screen chat. (ERRORS.md E02)
-                  const runIdForSwitch = runId;
-                  await handlePermissionResponse(toolCallId, subflow, "deny");
-                  window.dispatchEvent(
-                    new CustomEvent("code-mode-detected", {
-                      detail: { runId: runIdForSwitch, agent: newAgent },
-                    }),
-                  );
-                  if (runIdForSwitch) {
-                    try {
-                      await window.ipc.invoke("runs:createMessage", {
-                        runId: runIdForSwitch,
-                        message: `Use ${newAgent === "claude" ? "Claude Code" : "Codex"} instead — rerun the same task with the same prompt, just swap the agent binary to \`${newAgent}\`.`,
-                        codeMode: newAgent,
-                      });
-                    } catch (err) {
-                      console.error("Failed to send swap-agent follow-up", err);
-                    }
-                  }
-                }}
-                isToolOpenForTab={isToolOpenForTab}
-                onToolOpenChangeForTab={setToolOpenForTab}
-                onOpenKnowledgeFile={(path) => {
-                  navigateToFile(path);
-                }}
-                onActivate={() => setActiveShortcutPane("right")}
-                collapsedLeftPaddingPx={collapsedLeftPaddingPx}
-                isRecording={isRecording}
-                recordingText={voice.interimText}
-                recordingState={voice.state === "connecting" ? "connecting" : "listening"}
-                onStartRecording={handleStartRecording}
-                onSubmitRecording={handleSubmitRecording}
-                onCancelRecording={handleCancelRecording}
-                voiceAvailable={voiceAvailable}
-                ttsAvailable={ttsAvailable}
-                ttsEnabled={ttsEnabled}
-                ttsMode={ttsMode}
-                onToggleTts={handleToggleTts}
-                onTtsModeChange={handleTtsModeChange}
-                onIntegrationConnected={handleIntegrationConnected}
-              />
-            )}
-            {/* Rendered last so its no-drag region paints over the sidebar drag region */}
-            <FixedSidebarToggle leftInsetPx={isMac ? MACOS_TRAFFIC_LIGHTS_RESERVED_PX : 0} />
-          </SidebarProvider>
+              {/* Rendered last so its no-drag region paints over the sidebar drag region */}
+              <FixedSidebarToggle leftInsetPx={isMac ? MACOS_TRAFFIC_LIGHTS_RESERVED_PX : 0} />
+            </SidebarProvider>
+          </div>
         </div>
         <CommandPalette
           open={isSearchOpen}

@@ -1,6 +1,6 @@
 # Rowboat Python SDK
 
-A Python SDK for interacting with the Rowboat API.
+A Python SDK for interacting with the Oppulence API.
 
 ## Installation
 

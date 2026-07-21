@@ -18,5 +18,8 @@ ingress:
     secretName: rowboat-www-tls
 
 config:
+  ROWBOAT_WWW_PUBLIC_APP_URL: https://oppulence.io
   ROWBOAT_WWW_PUBLIC_API_BASE_URL: https://api.oppulence.io
   ROWBOAT_WWW_API_PROXY_URL: https://api.oppulence.io
+  # Sign-in jumps straight to Google, skipping the hosted AuthKit picker.
+  ROWBOAT_WWW_WORKOS_PROVIDER: GoogleOAuth

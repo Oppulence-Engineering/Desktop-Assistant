@@ -30,7 +30,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rowboat-www-${{ github.event.inputs.deploy_environment || 'staging' }}
+  group: rowboat-www-${{ github.event.inputs.deploy_environment || 'production' }}
   cancel-in-progress: false
 
 env:
@@ -57,7 +57,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          DEPLOY_ENV="${{ github.event.inputs.deploy_environment || 'staging' }}"
+          # Pushes to main ship straight to production (oppulence.io); staging
+          # remains available via manual workflow_dispatch.
+          DEPLOY_ENV="${{ github.event.inputs.deploy_environment || 'production' }}"
           SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-12)"
 
           case "${DEPLOY_ENV}" in
@@ -243,8 +245,21 @@ jobs:
           fi
 
       - name: Deploy Helm chart
+        env:
+          ROWBOAT_WWW_SESSION_SECRET: ${{ secrets.ROWBOAT_WWW_SESSION_SECRET }}
         run: |
           set -euo pipefail
+
+          # Session secret: injected as a k8s Secret via the chart's `secrets`
+          # values (envFrom secretRef). Production refuses to seal auth cookies
+          # without it; fail fast rather than deploying a broken sign-in.
+          EXTRA_SET=()
+          if [[ -n "${ROWBOAT_WWW_SESSION_SECRET:-}" ]]; then
+            EXTRA_SET+=(--set-string "secrets.ROWBOAT_WWW_SESSION_SECRET=${ROWBOAT_WWW_SESSION_SECRET}")
+          else
+            echo "ROWBOAT_WWW_SESSION_SECRET repository secret is not set" >&2
+            exit 1
+          fi
 
           release_status="$(
             helm status "${RELEASE_NAME}" -n "${KUBE_NAMESPACE}" -o json 2>/dev/null \
@@ -263,6 +278,7 @@ jobs:
             --set "image.tag=${IMAGE_TAG}" \
             --set-string "podAnnotations.rollout-revision=${GITHUB_SHA}" \
             --set-string "podAnnotations.rollout-run-attempt=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            "${EXTRA_SET[@]}" \
             --wait \
             --timeout 10m
 
@@ -286,6 +302,28 @@ jobs:
 
           kubectl -n "${KUBE_NAMESPACE}" get pods,deploy,hpa,ingress,certificate
           kubectl -n "${KUBE_NAMESPACE}" describe ingress rowboat-www-rowboat-www
+
+      - name: Pin smoke host to the ingress load balancer
+        # After the Tailscale step the runner's resolver (and port-53 egress)
+        # can no longer reach public DNS, so the smoke test cannot resolve the
+        # site hostname. The cluster knows where the site actually lives: read
+        # the ingress load-balancer address over the tailnet and pin it in
+        # /etc/hosts. This also makes the smoke test hit the exact ingress we
+        # just deployed rather than whatever public DNS points at.
+        run: |
+          set -euo pipefail
+          HOST="${APP_URL#https://}"
+          HOST="${HOST%%/*}"
+          # The LB reports IPv6 and IPv4 entries; pick the first IPv4.
+          IP="$(kubectl -n "${KUBE_NAMESPACE}" get ingress "${RELEASE_NAME}-rowboat-www" \
+            -o jsonpath='{range .status.loadBalancer.ingress[*]}{.ip}{"\n"}{end}' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)"
+          if [[ ! "${IP}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "ingress reported no usable load-balancer IP (got: '${IP}')" >&2
+            kubectl -n "${KUBE_NAMESPACE}" get ingress "${RELEASE_NAME}-rowboat-www" -o yaml >&2
+            exit 1
+          fi
+          echo "${IP} ${HOST}" | sudo tee -a /etc/hosts
 
       - name: Smoke test public site
         env:

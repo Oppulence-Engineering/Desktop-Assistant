@@ -1,6 +1,6 @@
 # Desktop Performance Gate
 
-`make perf-desktop` is the commit-level desktop performance gate. It packages the Electron app, starts it against the local kind Rowboat API/devstack, drives representative desktop workflows, records process-tree resource usage, captures a renderer CPU profile, and fails on resource or latency budgets.
+`make perf-desktop` is the commit-level desktop performance gate. It packages the Electron app, starts it against the local kind Oppulence API/devstack, drives representative desktop workflows, records process-tree resource usage, captures a renderer CPU profile, and fails on resource or latency budgets.
 
 Run the API stack first:
 
@@ -31,7 +31,7 @@ The default workflow covers:
 - production packaging through Electron Forge;
 - package and renderer asset size budgets;
 - cold launch to CDP, navigation, paint, signed-in shell, and usable chat input using an isolated `ROWBOAT_WORKDIR`;
-- model gateway visibility through the local Rowboat API;
+- model gateway visibility through the local Oppulence API;
 - workspace writes, recursive tree reads, search, run-history listing, and model listing through `window.ipc`, including p50/p95/max IPC timing summaries;
 - chat submission through the mock LLM gateway;
 - renderer health metrics for script, task, layout, style recalculation, DOM node count, event listener count, resource count, JS heap, and long tasks;
