@@ -475,6 +475,9 @@ function MobileMenu() {
           </Link>
         ))}
         <div className="mt-auto grid gap-2 pt-8">
+          <Link className="linear-button-secondary !h-11" href="/sign-in">
+            Sign in
+          </Link>
           <Link className="linear-button-secondary !h-11" href="/app">
             Open action queue
           </Link>
@@ -519,6 +522,9 @@ export function TopBar() {
         <div className="flex flex-1 items-center justify-end gap-2">
           <Link className="linear-nav-link hidden md:inline-flex" href="/app">
             Action queue
+          </Link>
+          <Link className="linear-nav-link hidden md:inline-flex" href="/sign-in">
+            Sign in
           </Link>
           <Link className="linear-button-primary hidden md:inline-flex" href="/book-a-demo">
             Book a scan
