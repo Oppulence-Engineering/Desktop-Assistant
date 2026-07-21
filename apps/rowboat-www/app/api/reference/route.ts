@@ -95,7 +95,7 @@ function fallbackHTML(docsURL: string): string {
     <main>
       <section>
         <h1>API reference unavailable</h1>
-        <p>The embedded Scalar reference could not reach the Rowboat API docs endpoint.</p>
+        <p>The embedded Scalar reference could not reach the Oppulence API docs endpoint.</p>
         <a href="${escapedURL}" rel="noopener noreferrer" target="_blank">Open the API docs directly</a>
       </section>
     </main>

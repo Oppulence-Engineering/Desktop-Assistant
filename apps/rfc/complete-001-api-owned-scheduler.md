@@ -1,16 +1,16 @@
 # [Complete] RFC 001: API-Owned Scheduler for Cloud Background Tasks
 
-|                       |                                                                                                                                                                                                              |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **RFC**               | 001                                                                                                                                                                                                          |
-| **Status**            | Complete — implemented (PRs 001-A…001-F) and merged to `develop` in PR #49. Multi-replica is safe via the [RFC 002](./complete-002-durable-schedule-state.md) durable lease (implemented).                              |
-| **Track**             | Cloud-native background workflows                                                                                                                                                                            |
-| **Owners**            | `apps/rowboat-api` (Go backend) · `apps/x` (desktop control plane)                                                                                                                                           |
-| **Created**           | 2026-06-05                                                                                                                                                                                                   |
-| **Last updated**      | 2026-06-08                                                                                                                                                                                                   |
-| **Depends on**        | [RFC 002 — Durable Schedule State](./complete-002-durable-schedule-state.md) (required before >1 replica)                                                                                                             |
+|                       |                                                                                                                                                                                                                                         |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**               | 001                                                                                                                                                                                                                                     |
+| **Status**            | Complete — implemented (PRs 001-A…001-F) and merged to `develop` in PR #49. Multi-replica is safe via the [RFC 002](./complete-002-durable-schedule-state.md) durable lease (implemented).                                              |
+| **Track**             | Cloud-native background workflows                                                                                                                                                                                                       |
+| **Owners**            | `apps/rowboat-api` (Go backend) · `apps/x` (desktop control plane)                                                                                                                                                                      |
+| **Created**           | 2026-06-05                                                                                                                                                                                                                              |
+| **Last updated**      | 2026-06-08                                                                                                                                                                                                                              |
+| **Depends on**        | [RFC 002 — Durable Schedule State](./complete-002-durable-schedule-state.md) (required before >1 replica)                                                                                                                               |
 | **Enables / related** | [RFC 005 — Temporal Schedules](./complete-005-temporal-schedule-integration.md), [RFC 003 — Event Ingestion](./complete-003-cloud-event-ingestion.md), [RFC 006 — Desktop Control Plane](./complete-006-desktop-cloud-control-plane.md) |
-| **Supersedes**        | Former cloud workflow planning and API execution-plan docs.                                                                                                                                                  |
+| **Supersedes**        | Former cloud workflow planning and API execution-plan docs.                                                                                                                                                                             |
 
 ## RFC map
 
@@ -34,7 +34,7 @@ their **timed triggers** are still initiated by the desktop. The desktop schedul
 desktop app is closed, **no API-target cron/window task ever fires.**
 
 This RFC moves cron/window trigger evaluation for API-target tasks into the
-Rowboat API deployment so scheduled cloud runs fire while the desktop is offline. It
+Oppulence API deployment so scheduled cloud runs fire while the desktop is offline. It
 deliberately reuses the existing run-start path — it does **not** introduce a second
 way to create runs.
 
@@ -55,7 +55,7 @@ desktop-scheduled**. Closing the laptop silently pauses every scheduled cloud jo
 
 ## Goals
 
-- Evaluate API-target `cronExpr` / `windows` triggers inside the Rowboat API deployment.
+- Evaluate API-target `cronExpr` / `windows` triggers inside the Oppulence API deployment.
 - Fire scheduled cloud runs while the desktop is offline.
 - **Bit-for-bit reuse** of the existing run-start sequence (`triggerAPIRun`) so HTTP- and
   scheduler-initiated runs are indistinguishable downstream (same events, same metrics,

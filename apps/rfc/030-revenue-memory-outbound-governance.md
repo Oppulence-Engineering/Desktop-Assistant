@@ -485,7 +485,7 @@ source_key = rowboat:<outbound_workspace_id>:<action_id>
 
 The current single-check request does not carry `source_key`; synchronous preflight idempotency therefore remains in the OutboundConsole facade. It may use existing verification history when fresh. It checks suppression before execution and reports relevant outcomes through the existing outcome API. Rowboat never stores or manages a Reacher tenant API key.
 
-## Rowboat API surface
+## Oppulence API surface
 
 | Method | Path                                      | Purpose                                                          |
 | ------ | ----------------------------------------- | ---------------------------------------------------------------- |
@@ -813,7 +813,7 @@ The first release is deliberately narrow:
 3. **The lead-scraper service is the facade.** Rowboat does not call Reacher directly.
 4. **Preflight is immutable and revision-bound.** Edit means re-evaluate.
 5. **Suppression is a hard gate.** No model or user approval silently bypasses it.
-6. **Rowboat executes the first warm actions.** The live Rowboat API already has approval-gated Gmail/Slack tools; Outbound direct sending is deferred.
+6. **Rowboat executes the first warm actions.** The live Oppulence API already has approval-gated Gmail/Slack tools; Outbound direct sending is deferred.
 7. **Only one execution owner exists per action.** Ownership is immutable after approval.
 8. **CRM uncertainty is explicit.** Missing CRM connectivity is `unknown`, never inferred safe.
 9. **Raw communications stay in Rowboat.** Cross-product context is bounded and purpose-specific.

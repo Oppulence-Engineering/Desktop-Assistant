@@ -72,11 +72,11 @@ pnpm install --ignore-workspace   # installs lefthook + prettier + commitlint an
 
 What runs, and when:
 
-| Stage | Runs | Speed |
-|---|---|---|
+| Stage          | Runs                                                                       | Speed                   |
+| -------------- | -------------------------------------------------------------------------- | ----------------------- |
 | **pre-commit** | Prettier + ESLint `--fix` on staged TS/JS; `gofmt` + `go vet` on staged Go | sub-second, staged-only |
-| **commit-msg** | commitlint (Conventional Commits) | instant |
-| **pre-push** | renderer `tsc -b` typecheck + `apps/x` unit tests | seconds |
+| **commit-msg** | commitlint (Conventional Commits)                                          | instant                 |
+| **pre-push**   | renderer `tsc -b` typecheck + `apps/x` unit tests                          | seconds                 |
 
 Bypass in a pinch: `git commit --no-verify`, or `LEFTHOOK=0 git push`. CI is the
 authoritative gate — hooks are just fast local feedback. Run the pre-commit
@@ -99,7 +99,7 @@ checks across the whole tree with `pnpm hooks:run`.
 ### Performance gate (local)
 
 ```bash
-make api-up          # bring up the local kind Rowboat API stack
+make api-up          # bring up the local kind Oppulence API stack
 make perf-desktop    # package, drive, profile, and budget-check the desktop app
 ```
 

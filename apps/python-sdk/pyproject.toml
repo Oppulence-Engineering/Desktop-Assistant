@@ -8,7 +8,7 @@ version = "5.0.1"
 authors = [
     { name = "Ramnique Singh", email = "ramnique@rowboatlabs.com" },
 ]
-description = "Python sdk for the Rowboat API"
+description = "Python sdk for the Oppulence API"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [

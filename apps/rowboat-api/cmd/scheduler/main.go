@@ -1,6 +1,6 @@
 // Command scheduler runs the API-owned background-task scheduler (RFC 001): it
 // evaluates cron/window triggers for executionTarget=api tasks inside the
-// Rowboat API deployment so scheduled cloud runs fire while the desktop is
+// Oppulence API deployment so scheduled cloud runs fire while the desktop is
 // offline. It deliberately mirrors cmd/worker: own process, own crash domain,
 // own /metrics + /healthz, and a signal-aware loop. Runs are created through
 // the shared backgroundtaskruns.Starter, so scheduler- and HTTP-initiated runs

@@ -28,13 +28,13 @@ export async function GET(): Promise<NextResponse> {
 
     const document = (await upstream.json()) as Record<string, unknown>;
     const apiBase = publicRowboatApiBaseURL().toString().replace(/\/$/, "");
-    document.servers = [{ description: "Rowboat API", url: apiBase }];
+    document.servers = [{ description: "Oppulence API", url: apiBase }];
 
     const info = document.info;
     document.info = {
       ...(isRecord(info) ? info : {}),
       description: ROWBOAT_API_DESCRIPTION,
-      title: "Rowboat API",
+      title: "Oppulence API",
     };
 
     return NextResponse.json(document, {
@@ -44,7 +44,7 @@ export async function GET(): Promise<NextResponse> {
     });
   } catch {
     return NextResponse.json(
-      { code: "api_unavailable", error: "could not reach the Rowboat API OpenAPI document" },
+      { code: "api_unavailable", error: "could not reach the Oppulence API OpenAPI document" },
       { status: 502 },
     );
   }
