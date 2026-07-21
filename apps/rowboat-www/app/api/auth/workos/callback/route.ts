@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { publicOrigin } from "@/lib/auth/origin";
 
 import { clearPKCECookie, readPKCECookie, setSessionCookie } from "@/lib/auth/cookies";
 import { exchangeWorkOSCode, sessionFromTokenBundle } from "@/lib/auth/rowboat-api";
@@ -7,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function signInRedirect(request: NextRequest, error: string) {
-  const url = new URL("/sign-in", request.nextUrl.origin);
+  const url = new URL("/sign-in", publicOrigin(request));
   url.searchParams.set("error", error);
   const response = NextResponse.redirect(url);
   clearPKCECookie(response);
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const bundle = await exchangeWorkOSCode({ code, codeVerifier: pending.codeVerifier });
-    const response = NextResponse.redirect(new URL(pending.returnTo, request.nextUrl.origin));
+    const response = NextResponse.redirect(new URL(pending.returnTo, publicOrigin(request)));
     setSessionCookie(response, sessionFromTokenBundle(bundle));
     clearPKCECookie(response);
     return response;
