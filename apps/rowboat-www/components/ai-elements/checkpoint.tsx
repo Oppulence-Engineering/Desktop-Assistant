@@ -2,22 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { BookmarkIcon, type LucideProps } from "lucide-react";
+import { BookmarkSimple, type IconProps } from "@phosphor-icons/react";
 import type { ComponentProps, HTMLAttributes } from "react";
 
 export type CheckpointProps = HTMLAttributes<HTMLDivElement>;
 
-export const Checkpoint = ({
-  className,
-  children,
-  ...props
-}: CheckpointProps) => (
+export const Checkpoint = ({ className, children, ...props }: CheckpointProps) => (
   <div
     className={cn("flex items-center gap-0.5 text-muted-foreground overflow-hidden", className)}
     {...props}
@@ -27,16 +19,10 @@ export const Checkpoint = ({
   </div>
 );
 
-export type CheckpointIconProps = LucideProps;
+export type CheckpointIconProps = IconProps;
 
-export const CheckpointIcon = ({
-  className,
-  children,
-  ...props
-}: CheckpointIconProps) =>
-  children ?? (
-    <BookmarkIcon className={cn("size-4 shrink-0", className)} {...props} />
-  );
+export const CheckpointIcon = ({ className, children, ...props }: CheckpointIconProps) =>
+  children ?? <BookmarkSimple className={cn("size-4 shrink-0", className)} {...props} />;
 
 export type CheckpointTriggerProps = ComponentProps<typeof Button> & {
   tooltip?: string;
@@ -53,13 +39,7 @@ export const CheckpointTrigger = ({
   tooltip ? (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          className={cn(className)}
-          size={size}
-          type="button"
-          variant={variant}
-          {...props}
-        >
+        <Button className={cn(className)} size={size} type="button" variant={variant} {...props}>
           {children}
         </Button>
       </TooltipTrigger>
@@ -68,13 +48,7 @@ export const CheckpointTrigger = ({
       </TooltipContent>
     </Tooltip>
   ) : (
-    <Button
-      className={cn(className)}
-      size={size}
-      type="button"
-      variant={variant}
-      {...props}
-    >
+    <Button className={cn(className)} size={size} type="button" variant={variant} {...props}>
       {children}
     </Button>
   );
