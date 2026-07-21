@@ -300,8 +300,10 @@ jobs:
           set -euo pipefail
           HOST="${APP_URL#https://}"
           HOST="${HOST%%/*}"
+          # The LB reports IPv6 and IPv4 entries; pick the first IPv4.
           IP="$(kubectl -n "${KUBE_NAMESPACE}" get ingress "${RELEASE_NAME}-rowboat-www" \
-            -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+            -o jsonpath='{range .status.loadBalancer.ingress[*]}{.ip}{"\n"}{end}' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)"
           if [[ ! "${IP}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "ingress reported no usable load-balancer IP (got: '${IP}')" >&2
             kubectl -n "${KUBE_NAMESPACE}" get ingress "${RELEASE_NAME}-rowboat-www" -o yaml >&2
