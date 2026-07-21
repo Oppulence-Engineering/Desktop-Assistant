@@ -63,7 +63,7 @@ func newWFHarness(t *testing.T) *wfHarness {
 	reg(ActivityPersistToolCall, func(_ context.Context, _ ToolCallAuditInput) error { return nil })
 	reg(ActivityPersistApproval, func(_ context.Context, _ ApprovalInput) error { return nil })
 	reg(ActivityResolveApproval, func(_ context.Context, _ ApprovalResolveInput) error { return nil })
-	reg(ActivityValidateApproval, func(_ context.Context, in ValidateApprovalInput) error {
+	reg(ActivityValidateApproval, func(_ context.Context, _ ValidateApprovalInput) error {
 		if h.validateErr != nil {
 			return h.validateErr
 		}
