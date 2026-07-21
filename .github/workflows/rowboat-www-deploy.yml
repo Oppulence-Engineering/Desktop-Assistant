@@ -30,7 +30,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rowboat-www-${{ github.event.inputs.deploy_environment || 'staging' }}
+  group: rowboat-www-${{ github.event.inputs.deploy_environment || 'production' }}
   cancel-in-progress: false
 
 env:
@@ -57,7 +57,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          DEPLOY_ENV="${{ github.event.inputs.deploy_environment || 'staging' }}"
+          # Pushes to main ship straight to production (oppulence.io); staging
+          # remains available via manual workflow_dispatch.
+          DEPLOY_ENV="${{ github.event.inputs.deploy_environment || 'production' }}"
           SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-12)"
 
           case "${DEPLOY_ENV}" in
