@@ -478,9 +478,6 @@ function MobileMenu() {
           <Link className="linear-button-secondary !h-11" href="/sign-in">
             Sign in
           </Link>
-          <Link className="linear-button-secondary !h-11" href="/app">
-            Open action queue
-          </Link>
           <Link className="linear-button-primary !h-11" href="/book-a-demo">
             Book a scan
           </Link>
@@ -520,9 +517,6 @@ export function TopBar() {
         <div className="linear-header-divider hidden lg:block" />
 
         <div className="flex flex-1 items-center justify-end gap-2">
-          <Link className="linear-nav-link hidden md:inline-flex" href="/app">
-            Action queue
-          </Link>
           <Link className="linear-nav-link hidden md:inline-flex" href="/sign-in">
             Sign in
           </Link>
