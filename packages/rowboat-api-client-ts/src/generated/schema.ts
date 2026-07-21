@@ -73,29 +73,9 @@ export interface paths {
     };
     /**
      * Handle Google OAuth callback
-     * @description Google redirect target. Exchanges the authorization code server-side, parks the token bundle under the state ticket, and returns an HTML page that deep-links back to the desktop.
+     * @description Google redirect target. Exchanges the authorization code server-side using the sealed PKCE verifier, parks the token bundle under the provider-bound state ticket, and returns an HTML page that deep-links back to the desktop.
      */
     get: operations["handleGoogleOAuthCallback"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/oauth/google/start": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Start Google OAuth consent
-     * @description Browser-facing endpoint opened by the desktop. It creates a one-time state ticket, then redirects the browser to Google's consent screen.
-     */
-    get: operations["startGoogleOAuth"];
     put?: never;
     post?: never;
     delete?: never;
@@ -116,26 +96,6 @@ export interface paths {
      * @description Slack redirect target. Exchanges the authorization code server-side, parks the sealed workspace bundle under the state ticket, and returns an HTML page that deep-links back to the desktop.
      */
     get: operations["handleSlackOAuthCallback"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/oauth/slack/start": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Start Slack workspace install
-     * @description Browser-facing endpoint opened by the desktop. It creates a one-time state ticket, then redirects the browser to Slack's OAuth v2 authorize screen with the configured bot scopes.
-     */
-    get: operations["startSlackOAuth"];
     put?: never;
     post?: never;
     delete?: never;
@@ -827,7 +787,7 @@ export interface paths {
     put?: never;
     /**
      * Claim Google OAuth token bundle
-     * @description Consumes a one-time Google OAuth session ticket, verifies it belongs to the authenticated user when bound, persists the refresh token when present, and returns the token bundle to the desktop.
+     * @description Consumes a one-time Google OAuth session ticket, requires the authenticated user to match the user that started it, persists the refresh token when present, and returns the token bundle to the desktop.
      */
     post: operations["claimGoogleOAuth"];
     delete?: never;
@@ -850,6 +810,26 @@ export interface paths {
      * @description Refreshes a Google access token using the server-held Google OAuth client id and secret. Google usually omits refresh_token on refresh; the desktop should preserve the old refresh token.
      */
     post: operations["refreshGoogleOAuth"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/google-oauth/start": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start Google OAuth consent
+     * @description Creates a one-time state ticket bound to the authenticated Rowboat user and a PKCE S256 verifier, then returns the Google consent URL for the desktop to open.
+     */
+    post: operations["startGoogleOAuth"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1027,9 +1007,29 @@ export interface paths {
     put?: never;
     /**
      * Claim Slack workspace connection
-     * @description Atomically consumes a one-time Slack install ticket and persists the workspace connection (the team_id-to-user mapping the Slack events webhook resolves against). The bot token stays server-held; the response carries workspace metadata only.
+     * @description Requires the authenticated user to match the user that started the install, atomically consumes the one-time ticket, and persists the workspace connection. The bot token stays server-held.
      */
     post: operations["claimSlackOAuth"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/slack-oauth/start": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start Slack workspace install
+     * @description Creates a one-time state ticket bound to the authenticated Rowboat user and returns the Slack install URL for the desktop to open.
+     */
+    post: operations["startSlackOAuth"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1147,7 +1147,7 @@ export interface paths {
     put?: never;
     /**
      * Generic signed webhook event
-     * @description Receives arbitrary normalized webhook events, verified via X-Webhook-Signature HMAC over the raw body using WEBHOOK_SIGNING_SECRET. The request names the owning userId; source defaults to webhook and may be mcp, github, linear, or stripe for connector/provider gateways. Payload is sealed, and routing uses the same cloud event router as provider webhooks.
+     * @description Receives arbitrary normalized webhook events, verified via X-Webhook-Signature HMAC over X-Webhook-Timestamp plus the raw body using WEBHOOK_SIGNING_SECRET. The Unix timestamp must be within five minutes of the server clock to prevent replay. The request names the owning userId; source defaults to webhook and may be mcp, github, linear, or stripe for connector/provider gateways. Payload is sealed, and routing uses the same cloud event router as provider webhooks.
      */
     post: operations["genericWebhook"];
     delete?: never;
@@ -1167,7 +1167,7 @@ export interface paths {
     put?: never;
     /**
      * Google push webhook
-     * @description Receives Gmail Pub/Sub pushes plus Google Calendar and Drive channel notifications. Verified against the shared GOOGLE_WEBHOOK_TOKEN (?token= for Pub/Sub, X-Goog-Channel-Token for channels). Events for accounts that resolve to a Rowboat user are ingested; unresolved pushes are acknowledged with 200 and dropped.
+     * @description Receives Gmail Pub/Sub pushes plus Google Calendar and Drive channel notifications. Production Gmail pushes require a Google-signed OIDC bearer token with the configured audience and service-account email. Calendar and Drive use X-Goog-Channel-Token plus an exact active watch binding. The query token is retained only for local Pub/Sub mocks. Events for unresolved accounts are acknowledged with 200 and dropped.
      */
     post: operations["googleWebhook"];
     delete?: never;
@@ -1980,7 +1980,7 @@ export interface components {
       temporalClosedAt?: string | null;
       /**
        * @description Temporal run id for the current workflow execution.
-       * @example 01971cf4-3c7d-7aa0-9ac8-ef73bc506e16
+       * @example 00000000-0000-0000-0000-000000000001
        */
       temporalRunId?: string | null;
       /**
@@ -2106,7 +2106,7 @@ export interface components {
       summary?: string | null;
       /**
        * @description Temporal run id.
-       * @example 01971cf4-3c7d-7aa0-9ac8-ef73bc506e16
+       * @example 00000000-0000-0000-0000-000000000001
        */
       temporalRunId?: string | null;
       /**
@@ -2295,7 +2295,7 @@ export interface components {
       temporalClosedAt?: string | null;
       /**
        * @description Temporal run id.
-       * @example 01971cf4-3c7d-7aa0-9ac8-ef73bc506e16
+       * @example 00000000-0000-0000-0000-000000000001
        */
       temporalRunId?: string | null;
       /**
@@ -2390,7 +2390,7 @@ export interface components {
       status: "queued" | "running" | "succeeded" | "failed" | "stopped";
       /**
        * @description Temporal run id for API-worker runs.
-       * @example 01971cf4-3c7d-7aa0-9ac8-ef73bc506e16
+       * @example 00000000-0000-0000-0000-000000000001
        */
       temporalRunId?: string | null;
       /**
@@ -2883,7 +2883,7 @@ export interface components {
     ConnectionAPIKeyRequest: {
       /**
        * @description Vendor API key. Stored sealed at rest and never returned by connector list endpoints.
-       * @example sk_vendor_abc123
+       * @example example-vendor-key
        */
       apiKey: string;
     };
@@ -4012,7 +4012,7 @@ export interface components {
     OAuthTokenBundle: {
       /**
        * @description Provider access token.
-       * @example ya29.a0AfH6S...
+       * @example example-access-token
        */
       access_token: string;
       /**
@@ -4680,7 +4680,7 @@ export interface components {
     WorkOSTokenBundle: {
       /**
        * @description JWT access token used as Authorization: Bearer for authenticated Solomon AI API calls.
-       * @example eyJhbGciOiJSUzI1NiIs...
+       * @example example-access-token
        */
       access_token: string;
       /**
@@ -5044,7 +5044,7 @@ export interface operations {
   handleGoogleOAuthCallback: {
     parameters: {
       query: {
-        /** @description Opaque state ticket minted by /oauth/google/start. */
+        /** @description Opaque user-bound state ticket minted by /v1/google-oauth/start. */
         state: string;
         /** @description Authorization code returned by Google. */
         code?: string;
@@ -5077,48 +5077,10 @@ export interface operations {
       };
     };
   };
-  startGoogleOAuth: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Redirect to Google OAuth consent. */
-      302: {
-        headers: {
-          /** @description Redirect target. */
-          Location?: string;
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description HTML error page when the flow cannot be started. */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/html": string;
-        };
-      };
-      /** @description HTML error page when Google OAuth is not configured. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/html": string;
-        };
-      };
-    };
-  };
   handleSlackOAuthCallback: {
     parameters: {
       query: {
-        /** @description Opaque state ticket minted by /oauth/slack/start. */
+        /** @description Opaque user-bound state ticket minted by /v1/slack-oauth/start. */
         state: string;
         /** @description Authorization code returned by Slack. */
         code?: string;
@@ -5142,44 +5104,6 @@ export interface operations {
       };
       /** @description HTML error page for missing or expired state/code. */
       400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/html": string;
-        };
-      };
-    };
-  };
-  startSlackOAuth: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Redirect to Slack OAuth consent. */
-      302: {
-        headers: {
-          /** @description Redirect target. */
-          Location?: string;
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description HTML error page when the flow cannot be started. */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/html": string;
-        };
-      };
-      /** @description HTML error page when Slack OAuth is not configured. */
-      502: {
         headers: {
           [name: string]: unknown;
         };
@@ -5265,10 +5189,10 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "access_token": "eyJhbGciOiJSUzI1NiIs...",
+           *       "access_token": "example-access-token",
            *       "email": "user@example.com",
            *       "expires_at": 1790784000,
-           *       "refresh_token": "refresh_token_123",
+           *       "refresh_token": "example-refresh-token",
            *       "token_type": "Bearer",
            *       "user_id": "user_01HABCDEF"
            *     }
@@ -5342,10 +5266,10 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "access_token": "eyJhbGciOiJSUzI1NiIs...",
+           *       "access_token": "example-access-token",
            *       "email": "user@example.com",
            *       "expires_at": 1790784000,
-           *       "refresh_token": "refresh_token_123",
+           *       "refresh_token": "example-refresh-token",
            *       "token_type": "Bearer",
            *       "user_id": "user_01HABCDEF"
            *     }
@@ -6564,7 +6488,7 @@ export interface operations {
            *       "status": "queued",
            *       "subUseCase": "daily-summary",
            *       "summary": "No high-priority account changes.",
-           *       "temporalRunId": "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16",
+           *       "temporalRunId": "00000000-0000-0000-0000-000000000001",
            *       "temporalStatus": "Started",
            *       "temporalWorkflowId": "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
            *       "trigger": "manual",
@@ -6635,7 +6559,7 @@ export interface operations {
            *       "status": "queued",
            *       "subUseCase": "daily-summary",
            *       "summary": "No high-priority account changes.",
-           *       "temporalRunId": "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16",
+           *       "temporalRunId": "00000000-0000-0000-0000-000000000001",
            *       "temporalStatus": "Started",
            *       "temporalWorkflowId": "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
            *       "trigger": "manual",
@@ -6686,7 +6610,7 @@ export interface operations {
            *       "slug": "daily-summary",
            *       "startedAt": "2026-06-04T21:01:00Z",
            *       "status": "running",
-           *       "temporalRunId": "01971cf4-3c7d-7aa0-9ac8-ef73bc506e16",
+           *       "temporalRunId": "00000000-0000-0000-0000-000000000001",
            *       "temporalStatus": "Running",
            *       "temporalWorkflowId": "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"
            *     }
@@ -6833,7 +6757,7 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "apiKey": "sk_vendor_abc123"
+         *       "apiKey": "example-vendor-key"
          *     }
          */
         "application/json": components["schemas"]["ConnectionAPIKeyRequest"];
@@ -7299,9 +7223,9 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "access_token": "ya29.a0AfH6S...",
+           *       "access_token": "example-access-token",
            *       "expires_at": 1790784000,
-           *       "refresh_token": "1//refresh",
+           *       "refresh_token": "example-refresh-token",
            *       "scope": "openid email profile",
            *       "token_type": "Bearer"
            *     }
@@ -7313,6 +7237,7 @@ export interface operations {
       401: components["responses"]["401"];
       403: components["responses"]["403"];
       404: components["responses"]["404"];
+      409: components["responses"]["409"];
       410: components["responses"]["410"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
@@ -7345,7 +7270,7 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "access_token": "ya29.a0AfH6S...",
+           *       "access_token": "example-access-token",
            *       "expires_at": 1790784000,
            *       "scope": "openid email profile",
            *       "token_type": "Bearer"
@@ -7359,6 +7284,37 @@ export interface operations {
       409: components["responses"]["409"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
+    };
+  };
+  startGoogleOAuth: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Bound Google authorization URL. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "authorizeUrl": "https://accounts.google.com/o/oauth2/v2/auth?..."
+           *     }
+           */
+          "application/json": {
+            /** Format: uri */
+            authorizeUrl: string;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+      502: components["responses"]["502"];
     };
   };
   invalidateConnection: {
@@ -7810,28 +7766,50 @@ export interface operations {
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
+      403: components["responses"]["403"];
       404: components["responses"]["404"];
-      /** @description The browser install has not completed yet; retry after the deep link returns. */
+      /** @description The browser install is incomplete, or the workspace is already owned by another Rowboat account. */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      410: components["responses"]["410"];
+      500: components["responses"]["500"];
+    };
+  };
+  startSlackOAuth: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Bound Slack authorization URL. */
+      200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           /**
            * @example {
-           *       "code": "install_incomplete",
-           *       "detail": "slack install not completed yet",
-           *       "requestId": "req-abc123",
-           *       "status": 409,
-           *       "title": "Conflict",
-           *       "type": "https://api.rowboat.dev/problems/install_incomplete"
+           *       "authorizeUrl": "https://slack.com/oauth/v2/authorize?..."
            *     }
            */
-          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+          "application/json": {
+            /** Format: uri */
+            authorizeUrl: string;
+          };
         };
       };
-      410: components["responses"]["410"];
+      401: components["responses"]["401"];
       500: components["responses"]["500"];
+      502: components["responses"]["502"];
     };
   };
   postSlackThreadReply: {
@@ -8037,7 +8015,10 @@ export interface operations {
   genericWebhook: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        /** @description Unix timestamp included in the webhook signature; must be within five minutes of server time. */
+        "X-Webhook-Timestamp": string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -8120,7 +8101,7 @@ export interface operations {
   googleWebhook: {
     parameters: {
       query?: {
-        /** @description Shared webhook token configured on the Pub/Sub push subscription URL. */
+        /** @description Development-only shared token for local Gmail Pub/Sub mocks; production uses OIDC bearer authentication. */
         token?: string;
       };
       header?: never;

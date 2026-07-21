@@ -24,7 +24,7 @@ const (
 
 var errConnectorRefreshInProgress = errors.New("connector refresh in progress")
 
-// refreshCache is structurally compatible with workosauth.RefreshCache. The
+// RefreshCache is structurally compatible with workosauth.RefreshCache. The
 // connector package owns only the behavior it needs and does not depend on the
 // sign-in broker implementation.
 type RefreshCache interface {
