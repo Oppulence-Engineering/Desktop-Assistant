@@ -108,10 +108,31 @@ type tokenBundle struct {
 	Email        string `json:"email,omitempty"`
 }
 
+// knownAuthKitProviders are the AuthKit `provider` values we allow callers to
+// request. "authkit" is the hosted picker; the rest jump straight to that
+// social identity provider (the connection must be enabled in WorkOS).
+var knownAuthKitProviders = map[string]bool{
+	"authkit":        true,
+	"GoogleOAuth":    true,
+	"MicrosoftOAuth": true,
+	"GitHubOAuth":    true,
+	"AppleOAuth":     true,
+}
+
+// resolveProvider validates a requested provider, defaulting to the hosted
+// AuthKit picker for empty or unrecognized values.
+func resolveProvider(requested string) string {
+	if knownAuthKitProviders[requested] {
+		return requested
+	}
+	return "authkit"
+}
+
 // LoginURL handles GET /v1/auth/workos/login-url. It returns the WorkOS AuthKit
 // authorization URL for the desktop to open in the browser, keeping WorkOS's
 // endpoint layout server-side. Required query params: redirect_uri, state.
-// Optional: code_challenge (PKCE S256).
+// Optional: code_challenge (PKCE S256), provider (AuthKit provider, default
+// "authkit").
 func (h *Handler) LoginURL(w http.ResponseWriter, r *http.Request) {
 	if !h.configured() {
 		httpx.Error(w, http.StatusBadGateway, "workos not configured", "provider_unconfigured")
@@ -129,7 +150,11 @@ func (h *Handler) LoginURL(w http.ResponseWriter, r *http.Request) {
 	v.Set("client_id", h.clientID)
 	v.Set("redirect_uri", redirectURI)
 	v.Set("state", state)
-	v.Set("provider", "authkit")
+	// provider selects the AuthKit experience: "authkit" (default) opens the
+	// hosted picker; a specific value like "GoogleOAuth" jumps straight to that
+	// identity provider. Callers opt in via ?provider=; unknown values fall back
+	// to the hosted picker so a bad param can never wedge sign-in.
+	v.Set("provider", resolveProvider(q.Get("provider")))
 	if cc := q.Get("code_challenge"); cc != "" {
 		v.Set("code_challenge", cc)
 		v.Set("code_challenge_method", "S256")
