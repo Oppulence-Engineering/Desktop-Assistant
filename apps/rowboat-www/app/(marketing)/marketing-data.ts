@@ -1251,33 +1251,8 @@ export const primaryPages: MarketingPage[] = [
     ],
     proof: baseProof,
   },
-  {
-    path: "legal/privacy-policy",
-    eyebrow: "Legal",
-    title: "Privacy policy",
-    description:
-      "Oppulence is designed around user-owned context, local-first storage, and explicit tool connections. This page provides the public privacy route expected from the marketing site.",
-    category: "legal",
-    bullets: [
-      "User data should remain portable and inspectable.",
-      "External providers are only used when configured by the user or deployment.",
-      "Sensitive workflows should preserve review and audit trails.",
-    ],
-    proof: baseProof,
-  },
-  {
-    path: "legal/terms-of-service",
-    eyebrow: "Legal",
-    title: "Terms of service",
-    description: "This public terms route should be replaced with final legal copy before launch.",
-    category: "legal",
-    bullets: [
-      "Use Oppulence in accordance with configured provider terms.",
-      "Review generated content and tool actions before relying on them.",
-      "Self-hosted operators own deployment, access, and data-control decisions.",
-    ],
-    proof: baseProof,
-  },
+  // Canonical legal pages live at /terms and /privacy (app/terms, app/privacy).
+  // The old /legal/* paths redirect there (see next.config.ts).
 ];
 
 const blogSlugs = [
