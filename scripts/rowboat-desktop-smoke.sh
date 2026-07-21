@@ -269,7 +269,7 @@ else
   const name = `Cloud workflow smoke ${slugHint}`;
   const create = await window.ipc.invoke('bg-task:create', {
     name,
-    instructions: 'Build a short markdown artifact proving this task executed in the Rowboat API Temporal worker.',
+    instructions: 'Build a short markdown artifact proving this task executed in the Oppulence API Temporal worker.',
     executionTarget: 'api',
   });
   if (!create?.success || !create.slug) {

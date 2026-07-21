@@ -1,17 +1,14 @@
 "use client";
 
-import { AppSidebar } from "@/components/app-sidebar";
-import { AuthGate, useAuthSession } from "@/components/auth-gate";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+  AppShellSidebar,
+  AppShellTopbar,
+  SETTINGS_SECTIONS,
+  type SettingsSection,
+} from "@/components/app-shell";
+import { SettingsView } from "@/components/app-settings";
+import { AuthGate, useAuthSession } from "@/components/auth-gate";
+import { CommandPalette } from "@/components/command-palette";
 import {
   PromptInput,
   PromptInputBody,
@@ -50,7 +47,13 @@ import {
   ArtifactTitle,
 } from "@/components/ai-elements/artifact";
 import { useState, useEffect, useRef, type ReactNode, useCallback } from "react";
-import { MicIcon, Save, Loader2, Lock } from "lucide-react";
+import {
+  CircleNotch,
+  FloppyDisk,
+  LockSimple,
+  Microphone,
+  SidebarSimple,
+} from "@phosphor-icons/react";
 import {
   Select,
   SelectContent,
@@ -63,6 +66,8 @@ import { JsonEditor } from "@/components/json-editor";
 import { TiptapMarkdownEditor } from "@/components/tiptap-markdown-editor";
 import { MarkdownViewer } from "@/components/markdown-viewer";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+import { getPref } from "@/lib/console-prefs";
+import { listSessions, loadSession, saveSession, type SessionMeta } from "@/lib/chat-sessions";
 
 interface ChatMessage {
   id: string;
@@ -92,7 +97,7 @@ interface ReasoningBlock {
 
 type ConversationItem = ChatMessage | ToolCall | ReasoningBlock;
 
-type ResourceKind = "agent" | "config" | "run";
+type ResourceKind = "agent" | "config" | "run" | "task" | "taskrun";
 
 type SelectedResource = {
   kind: ResourceKind;
@@ -131,6 +136,112 @@ function PageBody() {
   const isEmptyConversation =
     conversation.length === 0 && !currentAssistantMessage && !currentReasoning;
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [view, setView] = useState<"chat" | "settings">("chat");
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>("general");
+  const [sessions, setSessions] = useState<SessionMeta[]>([]);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    setSessions(listSessions());
+  }, []);
+
+  // Persist the transcript per session so history survives reloads.
+  useEffect(() => {
+    if (!runId || conversation.length === 0) return;
+    const firstMessage = conversation.find(
+      (item): item is ChatMessage => item.type === "message" && item.role === "user",
+    );
+    saveSession({
+      runId,
+      title: (firstMessage?.content || "New conversation").slice(0, 60),
+      agent: selectedAgent,
+      updatedAt: Date.now(),
+      items: conversation,
+    });
+    setSessions(listSessions());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runId, conversation]);
+
+  const startNewChat = useCallback(() => {
+    eventSourceRef.current?.close();
+    eventSourceRef.current = null;
+    committedMessageIds.current = new Set();
+    setRunId(null);
+    setConversation([]);
+    setCurrentAssistantMessage("");
+    setCurrentReasoning("");
+    setStatus("ready");
+    setSelectedResource(null);
+    setView("chat");
+  }, []);
+
+  const openSession = useCallback(
+    (nextRunId: string) => {
+      if (nextRunId === runId) {
+        setView("chat");
+        return;
+      }
+      const stored = loadSession(nextRunId);
+      if (!stored) return;
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+      committedMessageIds.current = new Set(
+        stored.items
+          .map((item) => (item as { id?: string })?.id)
+          .filter((id): id is string => Boolean(id)),
+      );
+      setConversation(stored.items as ConversationItem[]);
+      setCurrentAssistantMessage("");
+      setCurrentReasoning("");
+      setStatus("ready");
+      if (stored.agent) setSelectedAgent(stored.agent);
+      setRunId(nextRunId);
+      setSelectedResource(null);
+      setView("chat");
+    },
+    [runId],
+  );
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("app-sidebar-open");
+    if (saved !== null) setSidebarOpen(saved === "1");
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen((open) => {
+      localStorage.setItem("app-sidebar-open", open ? "0" : "1");
+      return !open;
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "[" || event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      toggleSidebar();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggleSidebar]);
   const [artifactTitle, setArtifactTitle] = useState("");
   const [artifactSubtitle, setArtifactSubtitle] = useState("");
   const [artifactText, setArtifactText] = useState("");
@@ -141,6 +252,11 @@ function PageBody() {
   const [artifactFileType, setArtifactFileType] = useState<"json" | "markdown">("json");
   const [agentOptions, setAgentOptions] = useState<string[]>(["assistant"]);
   const [selectedAgent, setSelectedAgent] = useState<string>("assistant");
+
+  useEffect(() => {
+    const preferred = getPref("default-agent");
+    if (preferred) setSelectedAgent(preferred);
+  }, []);
 
   const artifactDirty = !artifactReadOnly && artifactText !== artifactOriginal;
   const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, "");
@@ -221,7 +337,7 @@ function PageBody() {
             onClick={() => setUseMicrophone(!useMicrophone)}
             variant={useMicrophone ? "default" : "ghost"}
           >
-            <MicIcon size={16} />
+            <Microphone size={16} />
             <span className="sr-only">Microphone</span>
           </PromptInputButton>
           <Select value={selectedAgent} onValueChange={(value) => setSelectedAgent(value)}>
@@ -649,6 +765,24 @@ function PageBody() {
               throw new Error("Unsupported config file");
             }
           }
+        } else if (selectedResource.kind === "task") {
+          subtitle = "Background task";
+          readOnly = true;
+          const data = await requestJson(
+            `/background-tasks/${encodeURIComponent(selectedResource.name)}`,
+          );
+          text = JSON.stringify(data ?? {}, null, 2);
+          setArtifactFileType("json");
+        } else if (selectedResource.kind === "taskrun") {
+          subtitle = "Task run (read-only)";
+          readOnly = true;
+          const [slug, ...rest] = selectedResource.name.split("/");
+          const taskRunId = rest.join("/");
+          const data = await requestJson(
+            `/background-tasks/${encodeURIComponent(slug)}/runs/${encodeURIComponent(taskRunId)}`,
+          );
+          text = JSON.stringify(data ?? {}, null, 2);
+          setArtifactFileType("json");
         } else if (selectedResource.kind === "run") {
           subtitle = "Run (read-only)";
           readOnly = true;
@@ -828,227 +962,302 @@ function PageBody() {
   };
 
   return (
-    <>
-      <AppSidebar
-        onSelectResource={setSelectedResource}
-        user={{
-          name: session.user.email || session.user.workosUserId || "User",
-          email: session.user.email || session.user.workosUserId || "",
-          avatar: "",
+    <div className="flex h-svh w-full flex-col overflow-hidden bg-background-100 dark:bg-background">
+      <CommandPalette
+        agents={agentOptions}
+        onNavigateChat={() => {
+          setView("chat");
+          setSelectedResource(null);
         }}
+        onNewChat={startNewChat}
+        onOpenAgent={(name) => {
+          setView("chat");
+          setSelectedResource({ kind: "agent", name });
+        }}
+        onOpenSession={openSession}
+        onOpenSettings={(section) => {
+          setSettingsSection(section);
+          setView("settings");
+        }}
+        onOpenChange={setPaletteOpen}
+        onToggleSidebar={toggleSidebar}
+        open={paletteOpen}
+        sessions={sessions}
       />
-      <SidebarInset className="h-svh">
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Oppulence</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Chat</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-
-        <div className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row">
-          <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
-            {isRunProcessing && (
-              <div className="pointer-events-none absolute left-1/2 top-4 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-muted/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Working...</span>
+      <AppShellTopbar />
+      <div className="min-h-0 w-full flex-1 px-2 pb-2">
+        <section className="relative flex h-full overflow-clip rounded border bg-background dark:bg-background-50">
+          <AppShellSidebar
+            onCloseSettings={() => setView("chat")}
+            onNavigateChat={() => {
+              setView("chat");
+              setSelectedResource(null);
+            }}
+            onOpenSettings={(section) => {
+              setSettingsSection(section);
+              setView("settings");
+            }}
+            onSelectResource={(resource) => {
+              setView("chat");
+              setSelectedResource(resource);
+            }}
+            activeRunId={runId}
+            onNewChat={startNewChat}
+            onOpenSession={openSession}
+            onToggle={toggleSidebar}
+            open={sidebarOpen}
+            selected={selectedResource}
+            sessions={sessions}
+            settingsSection={settingsSection}
+            user={{
+              name: session.user.email || session.user.workosUserId || "User",
+              email: session.user.email || session.user.workosUserId || "",
+              avatar: "",
+            }}
+            view={view}
+          />
+          <main className="flex min-w-0 flex-1 flex-col">
+            <header className="flex h-14 shrink-0 items-center justify-between border-b px-3">
+              <div className="flex items-center gap-2">
+                <button
+                  aria-label="Toggle sidebar"
+                  className="flex size-7 items-center justify-center rounded-md text-primary/60 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
+                  onClick={toggleSidebar}
+                  title="Toggle sidebar  ["
+                  type="button"
+                >
+                  <SidebarSimple className="size-4" />
+                </button>
+                <span className="text-sm font-medium text-primary">
+                  {view === "settings"
+                    ? SETTINGS_SECTIONS.find((s) => s.key === settingsSection)?.label || "Settings"
+                    : "Chat"}
+                </span>
               </div>
-            )}
-            {/* Messages area */}
-            <Conversation className="flex-1 min-h-0 overflow-y-auto">
-              <div className="pointer-events-none sticky bottom-0 z-10 h-16 bg-gradient-to-t from-background via-background/80 to-transparent" />
-              <ConversationContent className="!flex !flex-col !items-center !gap-8 !p-4 pt-4 pb-32">
-                <div className="w-full max-w-3xl mx-auto space-y-4">
-                  {/* Render conversation items in order */}
-                  {conversation.map((item) => {
-                    if (item.type === "message") {
-                      return (
-                        <Message key={item.id} from={item.role}>
-                          <MessageContent>
-                            <MessageResponse>{item.content}</MessageResponse>
-                          </MessageContent>
-                        </Message>
-                      );
-                    } else if (item.type === "tool") {
-                      const stateMap: Record<
-                        ToolCall["status"],
-                        "input-streaming" | "input-available" | "output-available" | "output-error"
-                      > = {
-                        pending: "input-streaming",
-                        running: "input-available",
-                        completed: "output-available",
-                        error: "output-error",
-                      };
-
-                      return (
-                        <div key={item.id} className="mb-2">
-                          <Tool>
-                            <ToolHeader
-                              title={item.name}
-                              type="tool-call"
-                              state={stateMap[item.status] || "input-streaming"}
-                            />
-                            <ToolContent>
-                              <ToolInput input={item.input} />
-                              {item.result != null && (
-                                <ToolOutput
-                                  output={item.result as ReactNode}
-                                  errorText={undefined}
-                                />
-                              )}
-                            </ToolContent>
-                          </Tool>
-                        </div>
-                      );
-                    } else if (item.type === "reasoning") {
-                      return (
-                        <div key={item.id} className="mb-2">
-                          <Reasoning isStreaming={item.isStreaming}>
-                            <ReasoningTrigger />
-                            <ReasoningContent>{item.content}</ReasoningContent>
-                          </Reasoning>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
-
-                  {/* Streaming reasoning */}
-                  {currentReasoning && (
-                    <div className="mb-2">
-                      <Reasoning isStreaming={true}>
-                        <ReasoningTrigger />
-                        <ReasoningContent>{currentReasoning}</ReasoningContent>
-                      </Reasoning>
-                    </div>
-                  )}
-
-                  {/* Streaming message */}
-                  {currentAssistantMessage && (
-                    <Message from="assistant">
-                      <MessageContent>
-                        <MessageResponse>{currentAssistantMessage}</MessageResponse>
-                        <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
-                      </MessageContent>
-                    </Message>
-                  )}
-                </div>
-              </ConversationContent>
-            </Conversation>
-
-            {/* Input area */}
-            {isEmptyConversation ? (
-              <div className="absolute inset-0 flex items-center justify-center px-4 pb-16">
-                <div className="w-full max-w-3xl space-y-3 text-center">
-                  <h2 className="text-4xl font-semibold text-foreground/80">Oppulence</h2>
-                  {renderPromptInput()}
-                </div>
+              <div className="flex items-center gap-3">
+                <button
+                  className="hidden items-center gap-1 rounded-[2px] border px-1.5 py-0.5 font-mono text-[10px] uppercase text-primary/50 transition-colors hover:bg-background-100 hover:text-primary md:flex dark:hover:bg-background-300"
+                  onClick={() => setPaletteOpen(true)}
+                  title="Command palette"
+                  type="button"
+                >
+                  ⌘K
+                </button>
+                <span className="hidden font-mono text-xs text-primary/40 md:block">
+                  [oppulence console]
+                </span>
               </div>
+            </header>
+
+            {view === "settings" ? (
+              <SettingsView section={settingsSection} session={session} />
             ) : (
-              <div className="w-full px-4 pb-5 pt-2">
-                <div className="w-full max-w-3xl mx-auto">{renderPromptInput()}</div>
-              </div>
-            )}
-          </div>
-
-          {selectedResource && (
-            <div className="flex w-full flex-col md:w-[70%] md:max-w-4xl md:shrink-0 min-h-[260px] md:min-h-0 py-5">
-              <Artifact className="flex-1 min-h-0 h-full">
-                <ArtifactHeader>
-                  <div className="flex flex-col">
-                    <ArtifactTitle className="truncate">{artifactTitle}</ArtifactTitle>
-                    <ArtifactDescription className="text-xs">
-                      {artifactSubtitle || selectedResource.kind}
-                      {artifactReadOnly && (
-                        <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground">
-                          <Lock className="h-3 w-3" /> Read-only
-                        </span>
-                      )}
-                    </ArtifactDescription>
-                  </div>
-                  <ArtifactActions>
-                    {!artifactReadOnly && (
-                      <ArtifactAction
-                        tooltip={artifactDirty ? "Save changes" : "Saved"}
-                        disabled={!artifactDirty || artifactLoading}
-                        onClick={handleSave}
-                      >
-                        {artifactLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                      </ArtifactAction>
-                    )}
-                    <ArtifactClose onClick={() => setSelectedResource(null)} />
-                  </ArtifactActions>
-                </ArtifactHeader>
-                <ArtifactContent className="bg-muted/30">
-                  {artifactLoading ? (
-                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading
+              <div className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row">
+                <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
+                  {isRunProcessing && (
+                    <div className="pointer-events-none absolute left-1/2 top-4 z-20 flex -translate-x-1/2 items-center gap-2 rounded-[2px] border bg-background px-2.5 py-1 text-xs font-medium text-oppulence-orange">
+                      <CircleNotch className="h-3.5 w-3.5 animate-spin" />
+                      <span>Working…</span>
                     </div>
-                  ) : artifactError ? (
-                    <div className="text-sm text-red-500 whitespace-pre-wrap break-words">
-                      {artifactError}
+                  )}
+                  {/* Messages area */}
+                  <Conversation className="flex-1 min-h-0 overflow-y-auto">
+                    {!isEmptyConversation && (
+                      <div className="pointer-events-none sticky bottom-0 z-10 h-16 bg-gradient-to-t from-background via-background/80 to-transparent" />
+                    )}
+                    <ConversationContent className="!flex !flex-col !items-center !gap-8 !p-4 pt-4 pb-32">
+                      <div className="w-full max-w-3xl mx-auto space-y-4">
+                        {/* Render conversation items in order */}
+                        {conversation.map((item) => {
+                          if (item.type === "message") {
+                            return (
+                              <Message key={item.id} from={item.role}>
+                                <MessageContent>
+                                  <MessageResponse>{item.content}</MessageResponse>
+                                </MessageContent>
+                              </Message>
+                            );
+                          } else if (item.type === "tool") {
+                            const stateMap: Record<
+                              ToolCall["status"],
+                              | "input-streaming"
+                              | "input-available"
+                              | "output-available"
+                              | "output-error"
+                            > = {
+                              pending: "input-streaming",
+                              running: "input-available",
+                              completed: "output-available",
+                              error: "output-error",
+                            };
+
+                            return (
+                              <div key={item.id} className="mb-2">
+                                <Tool>
+                                  <ToolHeader
+                                    title={item.name}
+                                    type="tool-call"
+                                    state={stateMap[item.status] || "input-streaming"}
+                                  />
+                                  <ToolContent>
+                                    <ToolInput input={item.input} />
+                                    {item.result != null && (
+                                      <ToolOutput
+                                        output={item.result as ReactNode}
+                                        errorText={undefined}
+                                      />
+                                    )}
+                                  </ToolContent>
+                                </Tool>
+                              </div>
+                            );
+                          } else if (item.type === "reasoning") {
+                            return (
+                              <div key={item.id} className="mb-2">
+                                <Reasoning isStreaming={item.isStreaming}>
+                                  <ReasoningTrigger />
+                                  <ReasoningContent>{item.content}</ReasoningContent>
+                                </Reasoning>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+
+                        {/* Streaming reasoning */}
+                        {currentReasoning && (
+                          <div className="mb-2">
+                            <Reasoning isStreaming={true}>
+                              <ReasoningTrigger />
+                              <ReasoningContent>{currentReasoning}</ReasoningContent>
+                            </Reasoning>
+                          </div>
+                        )}
+
+                        {/* Streaming message */}
+                        {currentAssistantMessage && (
+                          <Message from="assistant">
+                            <MessageContent>
+                              <MessageResponse>{currentAssistantMessage}</MessageResponse>
+                              <span className="inline-block w-2 h-4 ml-1 bg-oppulence-orange animate-pulse" />
+                            </MessageContent>
+                          </Message>
+                        )}
+                      </div>
+                    </ConversationContent>
+                  </Conversation>
+
+                  {/* Input area */}
+                  {isEmptyConversation ? (
+                    <div className="absolute inset-0 flex items-center justify-center px-4 pb-16">
+                      <div className="w-full max-w-3xl space-y-4 text-center">
+                        <div className="space-y-2">
+                          <p className="font-mono text-xs text-oppulence-orange">
+                            [revenue memory and execution os]
+                          </p>
+                          <h2 className="font-display text-4xl text-foreground">Oppulence</h2>
+                        </div>
+                        {renderPromptInput()}
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex h-full flex-col gap-2">
-                      {artifactReadOnly ? (
-                        artifactFileType === "markdown" ? (
-                          <MarkdownViewer content={artifactText} />
-                        ) : (
-                          <pre className="h-full min-h-[240px] max-h-[70vh] w-full overflow-auto whitespace-pre-wrap rounded-none border bg-background p-4 font-mono text-sm leading-relaxed text-foreground">
-                            {artifactText}
-                          </pre>
-                        )
-                      ) : artifactFileType === "markdown" ? (
-                        <TiptapMarkdownEditor
-                          content={artifactText}
-                          onChange={(newContent) => setArtifactText(newContent)}
-                          readOnly={false}
-                          placeholder="Start writing your markdown..."
-                        />
-                      ) : (
-                        <JsonEditor
-                          content={artifactText}
-                          onChange={(newContent) => setArtifactText(newContent)}
-                          readOnly={false}
-                        />
-                      )}
-                      {artifactReadOnly && (
-                        <p className="text-xs text-muted-foreground">
-                          Runs are read-only; use the API to replay or inspect in detail.
-                        </p>
-                      )}
+                    <div className="w-full px-4 pb-5 pt-2">
+                      <div className="w-full max-w-3xl mx-auto">{renderPromptInput()}</div>
                     </div>
                   )}
-                </ArtifactContent>
-              </Artifact>
-            </div>
-          )}
-        </div>
-      </SidebarInset>
-    </>
+                </div>
+
+                {selectedResource && (
+                  <div className="flex w-full flex-col md:w-[70%] md:max-w-4xl md:shrink-0 min-h-[260px] md:min-h-0 py-5">
+                    <Artifact className="flex-1 min-h-0 h-full">
+                      <ArtifactHeader>
+                        <div className="flex flex-col">
+                          <ArtifactTitle className="truncate">{artifactTitle}</ArtifactTitle>
+                          <ArtifactDescription className="text-xs">
+                            {artifactSubtitle || selectedResource.kind}
+                            {artifactReadOnly && (
+                              <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground">
+                                <LockSimple className="h-3 w-3" /> Read-only
+                              </span>
+                            )}
+                          </ArtifactDescription>
+                        </div>
+                        <ArtifactActions>
+                          {!artifactReadOnly && (
+                            <ArtifactAction
+                              tooltip={artifactDirty ? "Save changes" : "Saved"}
+                              disabled={!artifactDirty || artifactLoading}
+                              onClick={handleSave}
+                            >
+                              {artifactLoading ? (
+                                <CircleNotch className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <FloppyDisk className="h-4 w-4" />
+                              )}
+                            </ArtifactAction>
+                          )}
+                          <ArtifactClose onClick={() => setSelectedResource(null)} />
+                        </ArtifactActions>
+                      </ArtifactHeader>
+                      <ArtifactContent className="bg-muted/30">
+                        {artifactLoading ? (
+                          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                            <CircleNotch className="mr-2 h-4 w-4 animate-spin" /> Loading
+                          </div>
+                        ) : artifactError ? (
+                          <div className="text-sm text-red-500 whitespace-pre-wrap break-words">
+                            {artifactError}
+                          </div>
+                        ) : (
+                          <div className="flex h-full flex-col gap-2">
+                            {artifactReadOnly ? (
+                              artifactFileType === "markdown" ? (
+                                <MarkdownViewer content={artifactText} />
+                              ) : (
+                                <pre className="h-full min-h-[240px] max-h-[70vh] w-full overflow-auto whitespace-pre-wrap rounded-none border bg-background p-4 font-mono text-sm leading-relaxed text-foreground">
+                                  {artifactText}
+                                </pre>
+                              )
+                            ) : artifactFileType === "markdown" ? (
+                              <TiptapMarkdownEditor
+                                content={artifactText}
+                                onChange={(newContent) => setArtifactText(newContent)}
+                                readOnly={false}
+                                placeholder="Start writing your markdown..."
+                              />
+                            ) : (
+                              <JsonEditor
+                                content={artifactText}
+                                onChange={(newContent) => setArtifactText(newContent)}
+                                readOnly={false}
+                              />
+                            )}
+                            {artifactReadOnly && (
+                              <p className="text-xs text-muted-foreground">
+                                Runs are read-only; use the API to replay or inspect in detail.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </ArtifactContent>
+                    </Artifact>
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
+        </section>
+      </div>
+    </div>
   );
 }
 
 export default function HomePage() {
   return (
     <AuthGate>
-      <SidebarProvider>
+      <div className="app-shell contents">
         <PageBody />
-      </SidebarProvider>
+      </div>
     </AuthGate>
   );
 }

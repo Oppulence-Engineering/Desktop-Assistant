@@ -765,7 +765,7 @@ export function SidebarContentPanel({
       : null;
 
   return (
-    <Sidebar className="rowboat-sidebar border-r-0" {...props}>
+    <Sidebar className="rowboat-sidebar border-r-0" variant="inset" {...props}>
       <SidebarHeader className="titlebar-drag-region">
         {/* Top spacer to clear the traffic lights + fixed toggle row */}
         <div className="h-8" />

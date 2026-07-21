@@ -1,4 +1,4 @@
-name: Rowboat API Quality
+name: Oppulence API Quality
 
 on:
   pull_request:

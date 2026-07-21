@@ -1,5 +1,5 @@
 // Package backgroundscheduler evaluates cron/window triggers for
-// executionTarget=api background tasks inside the Rowboat API deployment, so
+// executionTarget=api background tasks inside the Oppulence API deployment, so
 // scheduled cloud runs fire while the desktop is offline.
 //
 // The trigger parser and due math here are a deliberate, bit-for-bit port of

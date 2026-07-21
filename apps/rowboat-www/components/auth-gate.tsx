@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Loader2, LogIn } from "lucide-react";
+import { CircleNotch, SignIn } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { loadBrowserSession, loginURL } from "@/lib/auth/client";
@@ -50,10 +50,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const contextValue = useMemo(
-    () => (state.status === "authenticated" ? state : null),
-    [state],
-  );
+  const contextValue = useMemo(() => (state.status === "authenticated" ? state : null), [state]);
 
   if (state.status === "authenticated" && contextValue) {
     return (
@@ -69,14 +66,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
             <div className="text-sm font-medium text-destructive">{state.message}</div>
             <Button asChild>
               <a href={loginURL("/app")}>
-                <LogIn />
+                <SignIn />
                 Sign in
               </a>
             </Button>
           </>
         ) : (
           <>
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <CircleNotch className="h-5 w-5 animate-spin text-muted-foreground" />
             <div className="text-sm text-muted-foreground">Checking session</div>
           </>
         )}

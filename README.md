@@ -221,7 +221,7 @@ apps/x/
 
 Build chain: `shared -> core -> preload -> renderer/main`. `npm run deps` builds the workspaces; esbuild bundles the main process to a single CommonJS file because Electron Forge's dep walker can't follow pnpm symlinks. See [`apps/x/LIVE_NOTE.md`](./apps/x/LIVE_NOTE.md) for the live-note runtime.
 
-**2. Rowboat API (`apps/rowboat-api`)** - Go service plane for desktop cloud features and always-on jobs: WorkOS auth, billing/credits, LLM gateway, provider proxies, Google/Slack OAuth, connector OAuth, background tasks, event ingestion, Temporal workflows, durable agent sessions, and OpenAPI.
+**2. Oppulence API (`apps/rowboat-api`)** - Go service plane for desktop cloud features and always-on jobs: WorkOS auth, billing/credits, LLM gateway, provider proxies, Google/Slack OAuth, connector OAuth, background tasks, event ingestion, Temporal workflows, durable agent sessions, and OpenAPI.
 
 ```
 apps/rowboat-api/
@@ -247,17 +247,17 @@ apps/rowboat/src/
 └── interface-adapters/
 ```
 
-Plus Next.js routes under `app/api/` — `app/api/widget/v1/*` is what the chat widget calls; `app/api/v1/*` is the public Rowboat API.
+Plus Next.js routes under `app/api/` — `app/api/widget/v1/*` is what the chat widget calls; `app/api/v1/*` is the public Oppulence API.
 
 ### Surrounding apps
 
-| Path | What it is |
-|------|-----------|
-| `apps/rowboat-www` | Oppulence marketing site and desktop companion web app. |
-| `apps/cli` | CLI tool. |
-| `apps/python-sdk` | The `rowboat` PyPI client (used by `simulation_runner`). |
-| `apps/docs` | Docs site, shipped on port 8000 via the `docs` profile. |
-| `apps/experimental/chat_widget` | Iframe-embedded end-user chat. Talks to platform at `/api/widget/v1`. |
+| Path                                  | What it is                                                                                                                          |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/rowboat-www`                    | Oppulence marketing site and desktop companion web app.                                                                             |
+| `apps/cli`                            | CLI tool.                                                                                                                           |
+| `apps/python-sdk`                     | The `rowboat` PyPI client (used by `simulation_runner`).                                                                            |
+| `apps/docs`                           | Docs site, shipped on port 8000 via the `docs` profile.                                                                             |
+| `apps/experimental/chat_widget`       | Iframe-embedded end-user chat. Talks to platform at `/api/widget/v1`.                                                               |
 | `apps/experimental/simulation_runner` | Async Python worker — polls `test_runs` in Mongo, role-plays scenarios via OpenAI against a Rowboat workflow, writes verdicts back. |
 | `apps/experimental/tools_webhook`     | Reference Flask service that Rowboat tool-calls can POST to.                                                                        |
 
@@ -328,18 +328,18 @@ The primary surfaces ship through **separate pipelines**.
 
 End-to-end: ~6 minutes from merging the release PR to installers on the Releases page. Details in [Fork details](#fork-details) below.
 
-**Rowboat API (`apps/rowboat-api`)** has its own quality and deploy workflows: [`.github/workflows/rowboat-api-quality.yml`](./.github/workflows/rowboat-api-quality.yml) and [`.github/workflows/rowboat-api-deploy.yml`](./.github/workflows/rowboat-api-deploy.yml). Local API development uses [`docker-compose.rowboat-api.yml`](./docker-compose.rowboat-api.yml). This is the service plane for RFC 029 jobs that need scheduled/event execution while the desktop is offline.
+**Oppulence API (`apps/rowboat-api`)** has its own quality and deploy workflows: [`.github/workflows/rowboat-api-quality.yml`](./.github/workflows/rowboat-api-quality.yml) and [`.github/workflows/rowboat-api-deploy.yml`](./.github/workflows/rowboat-api-deploy.yml). Local API development uses [`docker-compose.rowboat-api.yml`](./docker-compose.rowboat-api.yml). This is the service plane for RFC 029 jobs that need scheduled/event execution while the desktop is offline.
 
 **Platform (`apps/rowboat`)** is source-distributed — no registry push in this fork. Users run `./start.sh` locally (or in their own infra), which builds the images from source and brings up the compose stack. Feature flags toggle behavior:
 
-| Flag | Effect |
-|------|--------|
-| `USE_RAG`, `USE_RAG_UPLOADS`, `USE_RAG_S3_UPLOADS` | Enables vector store, file uploads, S3 ingestion. |
-| `USE_RAG_SCRAPING` + `FIRECRAWL_API_KEY` | Web ingestion. |
-| `USE_CHAT_WIDGET` + `CHAT_WIDGET_HOST` | Mounts the widget endpoints. |
-| `USE_KLAVIS_TOOLS` | Tool integrations. |
-| `USE_BILLING` + `BILLING_API_URL` / `BILLING_API_KEY` | Talks to an external billing service. |
-| `USE_AUTH` | Auth0-gated SSR. |
+| Flag                                                  | Effect                                            |
+| ----------------------------------------------------- | ------------------------------------------------- |
+| `USE_RAG`, `USE_RAG_UPLOADS`, `USE_RAG_S3_UPLOADS`    | Enables vector store, file uploads, S3 ingestion. |
+| `USE_RAG_SCRAPING` + `FIRECRAWL_API_KEY`              | Web ingestion.                                    |
+| `USE_CHAT_WIDGET` + `CHAT_WIDGET_HOST`                | Mounts the widget endpoints.                      |
+| `USE_KLAVIS_TOOLS`                                    | Tool integrations.                                |
+| `USE_BILLING` + `BILLING_API_URL` / `BILLING_API_KEY` | Talks to an external billing service.             |
+| `USE_AUTH`                                            | Auth0-gated SSR.                                  |
 
 ### CI side-jobs
 
@@ -357,7 +357,7 @@ End-to-end: ~6 minutes from merging the release PR to installers on the Releases
 ### Summary
 
 - Desktop app (`apps/x`) is the **local-first control tower** — release-please + electron-forge + GitHub Releases + auto-update.
-- Rowboat API (`apps/rowboat-api`) is the **always-on execution plane** — scheduled jobs, event routing, connector broker, LLM gateway, Temporal worker, durable agent sessions, and observability.
+- Oppulence API (`apps/rowboat-api`) is the **always-on execution plane** — scheduled jobs, event routing, connector broker, LLM gateway, Temporal worker, durable agent sessions, and observability.
 - RowboatX (`apps/rowboatx`) is the **next control-tower UI exploration** for artifacts, queues, tools, tasks, and conversations.
 - Web platform (`apps/rowboat`) is the **older self-hosted agent-builder platform** — one Next.js image runs as three roles (server, jobs-worker, rag-worker), plus Mongo/Redis/Qdrant, with `rowboat_agents` + `copilot` as separate LLM services and the experimental apps as optional satellites.
 - These surfaces share repo-level contracts and clients where useful, but have independent release and deployment paths.
