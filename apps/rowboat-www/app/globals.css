@@ -200,6 +200,16 @@
   --selection-foreground: oklch(0.205 0 0);
 }
 
+/*
+ * Authenticated console theme ("app shell"). Scoped overrides only — the
+ * marketing pages keep their own look. Sharp 2px radii, hairline borders
+ * instead of shadows, workspace card floating on a tinted canvas, orange
+ * as the single semantic accent (use text-oppulence-orange sparingly).
+ */
+.app-shell {
+  --radius: 2px;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
