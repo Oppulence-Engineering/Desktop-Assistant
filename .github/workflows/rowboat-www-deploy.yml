@@ -289,18 +289,22 @@ jobs:
           kubectl -n "${KUBE_NAMESPACE}" get pods,deploy,hpa,ingress,certificate
           kubectl -n "${KUBE_NAMESPACE}" describe ingress rowboat-www-rowboat-www
 
-      - name: Pin public DNS for smoke host
-        # The Tailscale step swaps the runner's resolver for the tailnet's DNS,
-        # which cannot resolve the public site hostname. Resolve it via public
-        # DNS and pin it in /etc/hosts so the smoke test reaches the real site
-        # without disturbing tailnet DNS (kubectl still needs it).
+      - name: Pin smoke host to the ingress load balancer
+        # After the Tailscale step the runner's resolver (and port-53 egress)
+        # can no longer reach public DNS, so the smoke test cannot resolve the
+        # site hostname. The cluster knows where the site actually lives: read
+        # the ingress load-balancer address over the tailnet and pin it in
+        # /etc/hosts. This also makes the smoke test hit the exact ingress we
+        # just deployed rather than whatever public DNS points at.
         run: |
           set -euo pipefail
           HOST="${APP_URL#https://}"
           HOST="${HOST%%/*}"
-          IP="$(dig +short @1.1.1.1 A "${HOST}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)"
-          if [[ -z "${IP}" ]]; then
-            echo "could not resolve ${HOST} via public DNS" >&2
+          IP="$(kubectl -n "${KUBE_NAMESPACE}" get ingress "${RELEASE_NAME}-rowboat-www" \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+          if [[ ! "${IP}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "ingress reported no usable load-balancer IP (got: '${IP}')" >&2
+            kubectl -n "${KUBE_NAMESPACE}" get ingress "${RELEASE_NAME}-rowboat-www" -o yaml >&2
             exit 1
           fi
           echo "${IP} ${HOST}" | sudo tee -a /etc/hosts
