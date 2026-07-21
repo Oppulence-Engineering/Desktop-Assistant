@@ -245,8 +245,21 @@ jobs:
           fi
 
       - name: Deploy Helm chart
+        env:
+          ROWBOAT_WWW_SESSION_SECRET: ${{ secrets.ROWBOAT_WWW_SESSION_SECRET }}
         run: |
           set -euo pipefail
+
+          # Session secret: injected as a k8s Secret via the chart's `secrets`
+          # values (envFrom secretRef). Production refuses to seal auth cookies
+          # without it; fail fast rather than deploying a broken sign-in.
+          EXTRA_SET=()
+          if [[ -n "${ROWBOAT_WWW_SESSION_SECRET:-}" ]]; then
+            EXTRA_SET+=(--set-string "secrets.ROWBOAT_WWW_SESSION_SECRET=${ROWBOAT_WWW_SESSION_SECRET}")
+          else
+            echo "ROWBOAT_WWW_SESSION_SECRET repository secret is not set" >&2
+            exit 1
+          fi
 
           release_status="$(
             helm status "${RELEASE_NAME}" -n "${KUBE_NAMESPACE}" -o json 2>/dev/null \
@@ -265,6 +278,7 @@ jobs:
             --set "image.tag=${IMAGE_TAG}" \
             --set-string "podAnnotations.rollout-revision=${GITHUB_SHA}" \
             --set-string "podAnnotations.rollout-run-attempt=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            "${EXTRA_SET[@]}" \
             --wait \
             --timeout 10m
 
