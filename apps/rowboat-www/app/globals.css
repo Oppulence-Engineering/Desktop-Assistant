@@ -3000,4 +3000,98 @@
   .linear-footer {
     background: #faf9f7;
   }
+
+  /*
+   * Cossistant-style header: compact hairline bar, mono bracketed nav
+   * links ("[Product]"), lowercase wordmark, GitHub link, ink CTA.
+   */
+  .linear-header {
+    height: 60px;
+    border-bottom: 1px solid var(--linear-border);
+    background: rgb(250 249 247 / 92%);
+    backdrop-filter: blur(12px);
+  }
+
+  .linear-header::before {
+    content: none;
+  }
+
+  html[data-marketing-scrolled] .linear-header,
+  html[data-marketing-menu-open] .linear-header {
+    border-bottom-color: var(--linear-border-strong);
+    background: rgb(250 249 247 / 97%);
+  }
+
+  .linear-logo .font-display {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .linear-nav-link,
+  .linear-nav-trigger {
+    padding-inline: 8px;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  .linear-nav-link::before,
+  .linear-nav-trigger::before {
+    content: "[";
+    margin-right: 1px;
+    color: var(--linear-text-quaternary);
+  }
+
+  .linear-nav-link::after,
+  .linear-nav-trigger::after {
+    content: "]";
+    margin-left: 1px;
+    color: var(--linear-text-quaternary);
+  }
+
+  .linear-nav-link:hover::before,
+  .linear-nav-link:hover::after,
+  .linear-nav-trigger:hover::before,
+  .linear-nav-trigger:hover::after,
+  .group:hover > .linear-nav-trigger::before,
+  .group:hover > .linear-nav-trigger::after {
+    color: var(--oppulence-orange);
+  }
+
+  .linear-nav-icon::before,
+  .linear-nav-icon::after {
+    content: none;
+  }
+
+  .linear-mobile-summary {
+    height: 60px;
+  }
+
+  .linear-mobile-panel {
+    top: 60px;
+  }
+
+  .linear-mobile-panel > a {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 17px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  .linear-mobile-panel > a::before {
+    content: "[";
+    margin-right: 2px;
+    color: var(--linear-text-quaternary);
+  }
+
+  .linear-mobile-panel > a::after {
+    content: "]";
+    margin-left: 2px;
+    color: var(--linear-text-quaternary);
+  }
+
+  .linear-hero {
+    padding-top: 172px;
+  }
 }
