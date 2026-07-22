@@ -71,6 +71,59 @@ export function MarketingEffects() {
       }
     };
 
+    // Scroll-reveal choreography. Gated behind a root attribute so the page
+    // stays fully visible for no-JS visitors and reduced-motion users.
+    const revealSelector = [
+      ".linear-statement-title",
+      ".linear-benefit",
+      ".linear-product-header",
+      ".linear-product-visual",
+      ".linear-update",
+      ".linear-capabilities > header",
+      ".linear-capabilities > div > div",
+      ".linear-proof",
+      ".linear-faq > header",
+      ".linear-faq > div",
+      ".linear-final-cta",
+    ].join(", ");
+    const revealTargets = Array.from(document.querySelectorAll<HTMLElement>(revealSelector));
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let revealObserver: IntersectionObserver | undefined;
+    let revealFallback: number | undefined;
+
+    if (!reduceMotion && revealTargets.length > 0 && "IntersectionObserver" in window) {
+      const siblingIndex = new Map<Element, number>();
+      revealTargets.forEach((element) => {
+        const parent = element.parentElement;
+        const index = parent ? (siblingIndex.get(parent) ?? 0) : 0;
+        if (parent) siblingIndex.set(parent, index + 1);
+        element.style.setProperty("--reveal-delay", `${Math.min(index, 5) * 70}ms`);
+      });
+      root.setAttribute("data-marketing-reveals", "");
+      revealObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            // Reveal on intersection; also reveal anything already scrolled
+            // past so deep links never land on blank sections.
+            if (entry.isIntersecting || entry.boundingClientRect.bottom < 0) {
+              entry.target.classList.add("is-revealed");
+              revealObserver?.unobserve(entry.target);
+            }
+          });
+        },
+        { rootMargin: "0px 0px -10% 0px", threshold: 0.1 },
+      );
+      revealTargets.forEach((element) => revealObserver?.observe(element));
+
+      // Safety net: if observer callbacks never arrive (headless capture,
+      // print, embedded webviews), reveal everything after a beat so no
+      // section can stay invisible.
+      revealFallback = window.setTimeout(() => {
+        revealTargets.forEach((element) => element.classList.add("is-revealed"));
+        revealObserver?.disconnect();
+      }, 4000);
+    }
+
     syncScrollState();
     syncMobileMenuState();
     window.addEventListener("scroll", syncScrollState, { passive: true });
@@ -87,6 +140,9 @@ export function MarketingEffects() {
     });
 
     return () => {
+      if (revealFallback !== undefined) window.clearTimeout(revealFallback);
+      revealObserver?.disconnect();
+      root.removeAttribute("data-marketing-reveals");
       window.removeEventListener("scroll", syncScrollState);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("pointerdown", handlePointerDown);
