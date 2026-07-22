@@ -1198,6 +1198,7 @@ function FinalCta() {
           See how it works
         </Link>
       </div>
+      <p className="linear-cta-note">[watch is free · chase is $99/mo]</p>
     </section>
   );
 }
