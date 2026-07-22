@@ -685,14 +685,11 @@ export function HomePage() {
   return (
     <div className="flex flex-col">
       <HomeHero />
-      <HeroVisual />
-      <LogoBand />
       <ProblemSection />
       {linearHomeSections.map((section, index) => (
         <LinearProductSection index={index} key={section.title} section={section} />
       ))}
       <HomeUpdates />
-      <CapabilityIndex />
       <HomeProofBand />
       <HomeFaqSection />
       <FinalCta />
@@ -806,16 +803,6 @@ function ProblemSection() {
           this money. It leaks.
         </h2>
       </div>
-      <div className="linear-benefits linear-inset">
-        {homeProblems.map((card, index) => (
-          <article className="linear-benefit" key={card.title}>
-            <span className="linear-benefit-figure">FIG 0.{index + 2}</span>
-            <ProblemVisual index={index} />
-            <h3>{card.title}</h3>
-            <p className="linear-body">{card.body}</p>
-          </article>
-        ))}
-      </div>
     </section>
   );
 }
@@ -878,7 +865,7 @@ const linearHomeSections = [
   {
     title: "Get a short list, not another inbox.",
     description:
-      "Each week, Oppulence hands you the three to five actions worth money right now. Each one shows who needs attention, why now, and how much is at stake. You approve, edit, snooze, or reject.",
+      "Each week, Oppulence hands you the three to five actions worth money right now. Each one shows who needs attention, why now, and how much is at stake. The chase arrives already drafted, in your voice. You approve, edit, snooze, or reject.",
     label: "Revenue Action Queue",
     href: "/ai-documentation-agent",
     src: desktopScreenshots.chat,
@@ -887,20 +874,6 @@ const linearHomeSections = [
       "The highest-value moves of the week",
       "Who, why now, and how much on each item",
       "Approve, edit, snooze, or reject in one click",
-    ],
-  },
-  {
-    title: "The chase is written in your voice.",
-    description:
-      "The nudge arrives already drafted and matched to the relationship. A one-off client gets a firm reminder. A $100k repeat client gets a softer note. It sends from your own address, under your own name.",
-    label: "Drafts in your voice",
-    href: "/automated-screenshots-for-docs",
-    src: desktopScreenshots.tasks,
-    alt: "Oppulence drafting a follow-up in the owner's own voice with evidence attached",
-    bullets: [
-      "Drafts follow your writing style",
-      "Tone adapts to the value of the relationship",
-      "Messages send from your own address",
     ],
   },
   {
@@ -915,20 +888,6 @@ const linearHomeSections = [
       "You approve every send",
       "Bounced and opted-out contacts are blocked",
       "Money actions need step-up approval",
-    ],
-  },
-  {
-    title: "Each chase teaches the next one.",
-    description:
-      "Replies, meetings, edits, and payments flow back into one relationship memory. The system learns what works for your business. Your data stays yours. We do not pool it, and we do not train shared models on it.",
-    label: "Memory that compounds",
-    href: "/product",
-    src: desktopScreenshots.home,
-    alt: "Oppulence relationship timeline updated by replies, meetings, and revenue outcomes",
-    bullets: [
-      "Replies and payments update the memory",
-      "Your edits teach it your voice",
-      "We never pool or share your data",
     ],
   },
 ] as const;

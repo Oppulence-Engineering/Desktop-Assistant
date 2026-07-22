@@ -3517,4 +3517,37 @@
       0 18px 44px rgb(27 26 23 / 11%),
       0 5px 14px rgb(27 26 23 / 7%);
   }
+
+  /*
+   * Structural less-is-more. The hero visual, logo band, problem-card
+   * art row, capability wall, and two of five product sections are gone
+   * from the render. Remaining pieces tighten: text-only step cards,
+   * shorter section rhythm, breathing room after the hero.
+   */
+  .linear-hero {
+    padding-bottom: 128px;
+  }
+
+  .linear-step-art {
+    display: none;
+  }
+
+  .linear-update {
+    min-height: 0;
+    padding: 26px 32px 30px;
+  }
+
+  .linear-update > .linear-index {
+    position: static;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .linear-product-section {
+    padding-block: 96px;
+  }
+
+  .linear-product-header {
+    padding-bottom: 72px;
+  }
 }
