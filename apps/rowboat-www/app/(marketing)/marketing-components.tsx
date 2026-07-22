@@ -492,8 +492,8 @@ export function TopBar() {
     <header className="linear-header">
       <div className="linear-header-inner">
         <div className="flex flex-1 justify-start">
-          <Link aria-label="Oppulence home" className="linear-logo !h-12" href="/">
-            <InlineLogo prominent />
+          <Link aria-label="Oppulence home" className="linear-logo" href="/">
+            <InlineLogo />
           </Link>
         </div>
 
@@ -517,6 +517,15 @@ export function TopBar() {
         <div className="linear-header-divider hidden lg:block" />
 
         <div className="flex flex-1 items-center justify-end gap-2">
+          <a
+            aria-label="Oppulence on GitHub"
+            className="linear-nav-link linear-nav-icon hidden md:inline-flex"
+            href="https://github.com/Oppulence-Engineering"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <GithubLogoIcon style={{ fontSize: "1rem" }} />
+          </a>
           <Link className="linear-nav-link hidden md:inline-flex" href="/sign-in">
             Sign in
           </Link>
