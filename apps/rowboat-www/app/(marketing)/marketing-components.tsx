@@ -569,9 +569,8 @@ export function Footer() {
             title="Company"
           />
           <p className="linear-footer-note">
-            Oppulence remembers every commercial relationship, finds who needs attention and why,
-            then safely prepares the next action. © 2026 Oppulence. Open source under the MIT
-            license.
+            Oppulence watches your inbox, finds the money slipping away in silence, and chases it —
+            in your voice, with your approval. © 2026 Oppulence. Open source under the MIT license.
           </p>
         </div>
       </div>
@@ -604,31 +603,31 @@ function LinearFooterGroup({ title, items }: { title: string; items: LinkItem[] 
 
 const homeProblems = [
   {
-    title: "Warm relationships go cold.",
-    body: "The proposal, promise, objection, and last real conversation are scattered across inboxes, meetings, calendars, and CRM records.",
+    title: "The proposal goes quiet.",
+    body: "You send a $40k proposal. The client does not reply. Following up feels pushy, so you wait. Almost half of sellers never send a single follow-up — and the deal dies in the silence.",
   },
   {
-    title: "The CRM misses the promise.",
-    body: "Fields can show a stage, but they rarely explain what was said, who committed to what, or why the relationship matters now.",
+    title: "The invoice goes unpaid.",
+    body: "Most small businesses carry unpaid invoices — about $17,500 on average. Chasing a client you like feels awkward. So the money you already earned just sits there.",
   },
   {
-    title: "Sending without memory is risky.",
-    body: "A polished draft is still the wrong action if the contact opted out, changed roles, objected before, or should not hear from you yet.",
+    title: "The client fades away.",
+    body: "A good client starts to reply slower. They skip a check-in. Nobody notices the fade until the cancellation email arrives — months after the save was still possible.",
   },
 ];
 
 const homeSteps = [
   {
-    title: "Observe and remember",
-    body: "Connect communication and CRM history so every relationship, promise, objection, and outcome has a durable source trail.",
+    title: "Connect your inbox",
+    body: "Link Gmail in two minutes. Access is read-only at the start. Your mail stays yours.",
   },
   {
-    title: "Prioritize and verify",
-    body: "Rank the relationships worth attention, verify current contactability, and explain why each action matters now.",
+    title: "Watch the leak",
+    body: "Get a weekly report of every deal, invoice, and relationship going quiet — with dollar amounts attached.",
   },
   {
-    title: "Govern, act, and learn",
-    body: "Check policy and sender health, approve the next move, then use replies, meetings, and revenue outcomes to improve the memory.",
+    title: "Approve the chase",
+    body: "Review each drafted nudge and approve it with one click. A monthly receipt shows what came back.",
   },
 ];
 
@@ -697,13 +696,14 @@ function HomeHero() {
     <section className="linear-hero linear-inset">
       <div>
         <h1 className="linear-hero-title">
-          Turn forgotten relationships
-          <br className="hidden sm:block" /> into revenue.
+          Revenue does not die in negotiations.
+          <br className="hidden sm:block" /> It dies in silence.
         </h1>
         <div className="linear-hero-meta">
           <p className="linear-body max-w-[620px]">
-            Oppulence remembers every commercial relationship, identifies who needs attention and
-            why, verifies what is safe to send, and prepares the next action for your approval.
+            Oppulence watches your inbox, calendar, and billing. It finds the money that is quietly
+            slipping away — the ghosted proposal, the unpaid invoice, the client who went quiet.
+            Then it writes the chase in your voice. Nothing sends until you click Approve.
           </p>
           <Link className="linear-inline-link shrink-0" href="/book-a-demo">
             <span className="linear-new-pill">New</span>
@@ -758,9 +758,9 @@ function ProblemSection() {
     <section>
       <div className="linear-statement linear-inset">
         <h2 className="linear-statement-title">
-          <strong>Your next deal may already be in your inbox.</strong> Oppulence finds missed
-          promises, dormant champions, unanswered proposals, former customers, and neglected
-          referrals—then shows you the safest next move.
+          <strong>Your revenue rarely dies from a &ldquo;no.&rdquo;</strong> It leaks out in
+          silence: the proposal nobody nudged, the signed work nobody invoiced, the invoice nobody
+          chased, and the client who faded before anyone noticed.
         </h2>
       </div>
       <div className="linear-benefits linear-inset">
@@ -819,73 +819,73 @@ function ProblemVisual({ index }: { index: number }) {
 
 const linearHomeSections = [
   {
-    title: "Find the revenue already hiding in your history.",
+    title: "See the money that is slipping.",
     description:
-      "Scan the last 60–90 days of communication and CRM activity for unanswered proposals, dormant opportunities, missed commitments, former customers, and neglected referrals.",
+      "Oppulence scans your last 60–90 days of email, calendar, and billing. It finds ghosted proposals, dormant clients, unbilled work, and unpaid invoices. Every finding carries a dollar amount and links to its source.",
     label: "Revenue Leak Scan",
     href: "/ai-help-center",
     src: desktopScreenshots.knowledge,
     alt: "Oppulence Revenue Leak Scan showing warm opportunities and source evidence",
     bullets: [
-      "Unanswered proposals and missed promises",
-      "Dormant champions and former customers",
-      "Every finding linked to source evidence",
+      "Ghosted proposals, with the deal value attached",
+      "Dormant clients and unpaid invoices",
+      "Every finding links to the source email",
     ],
   },
   {
-    title: "Know who needs attention—and why now.",
+    title: "Get a short list, not another inbox.",
     description:
-      "Oppulence ranks the highest-value relationships into one daily action queue, with the history, commitment, opportunity, and timing behind every recommendation.",
+      "Every week, Oppulence hands you the three to five actions worth money right now. Each one shows who needs attention, why now, and how much is at stake. You approve, edit, snooze, or reject.",
     label: "Revenue Action Queue",
     href: "/ai-documentation-agent",
     src: desktopScreenshots.chat,
     alt: "Oppulence daily revenue action queue ranked by value and urgency",
     bullets: [
-      "Ten highest-value actions, not another noisy inbox",
-      "Relationship history and prior objections included",
-      "Approve, edit, snooze, or reject every action",
+      "The highest-value moves of the week",
+      "Who, why now, and how much — on every item",
+      "Approve, edit, snooze, or reject in one click",
     ],
   },
   {
-    title: "Verify the person before you prepare the message.",
+    title: "The chase is written in your voice.",
     description:
-      "Research the account, confirm the person’s current role and address, and keep the evidence attached before a draft becomes an action.",
-    label: "Research & verification",
+      "Every nudge comes pre-drafted and matched to the relationship. A one-off client gets a firm reminder. A $100k repeat client gets a softer note. It sends from your own address — not from a tool.",
+    label: "Drafts in your voice",
     href: "/automated-screenshots-for-docs",
     src: desktopScreenshots.tasks,
-    alt: "Oppulence researching an account and verifying a contact before outreach",
+    alt: "Oppulence drafting a follow-up in the owner's own voice with evidence attached",
     bullets: [
-      "Current role and contact verification",
-      "Account research with source provenance",
-      "Evidence stays attached to the proposed action",
+      "Drafts follow your writing style",
+      "Tone adapts to the value of the relationship",
+      "Messages send from your own address",
     ],
   },
   {
-    title: "Know what must not be sent.",
+    title: "Nothing sends without your click.",
     description:
-      "Check prior objections, opt-outs, suppression lists, frequency limits, sender health, and permissions before a message can leave the queue.",
+      "Every message waits for your approval. Contacts who bounced, opted out, or changed roles are never emailed. Actions that touch money need a second confirmation. When a check fails, the system stops.",
     label: "Policy & sender protection",
     href: "/integrations",
     src: desktopScreenshots.connections,
     alt: "Oppulence policy checks and sender protection before execution",
     bullets: [
-      "Suppression and opt-out checks",
-      "Frequency and permission rules",
-      "Sender and domain health",
+      "You approve every send",
+      "Bounced and opted-out contacts are blocked",
+      "Money actions need step-up approval",
     ],
   },
   {
-    title: "Let every outcome improve the next action.",
+    title: "Every chase makes the next one smarter.",
     description:
-      "Replies, meetings, human edits, CRM changes, wins, and losses flow back into the relationship memory so the system learns what good follow-through looks like for your business.",
-    label: "Closed-loop learning",
+      "Replies, meetings, edits, and payments flow back into one relationship memory. The system learns what works for your business. Your data stays yours — it is never pooled and never trains shared models.",
+    label: "Memory that compounds",
     href: "/product",
     src: desktopScreenshots.home,
     alt: "Oppulence relationship timeline updated by replies, meetings, and revenue outcomes",
     bullets: [
-      "Replies and meetings update the relationship",
-      "Human edits become learning signals",
-      "Revenue outcomes close the loop",
+      "Replies and payments update the memory",
+      "Your edits teach it your voice",
+      "Your data is never pooled or shared",
     ],
   },
 ] as const;
@@ -952,9 +952,9 @@ function HomeUpdates() {
     <section className="linear-updates">
       <div className="linear-inset">
         <h2 className="linear-statement-title !max-w-[1180px]">
-          <strong>The memory is the advantage.</strong> Message generation is not the moat. The moat
-          is the source-linked history connecting relationships, commitments, policy decisions,
-          human edits, executed actions, and revenue outcomes.
+          <strong>The memory is the moat.</strong> Anyone can draft a message. Only Oppulence knows
+          every promise, chase, objection, and outcome across your relationships — a history that
+          cannot be rebuilt anywhere else.
         </h2>
       </div>
       <div className="linear-updates-grid linear-inset">
@@ -1030,10 +1030,10 @@ function CapabilityIndex() {
   return (
     <section className="linear-capabilities linear-inset">
       <header>
-        <h2>Everything a safe revenue action needs.</h2>
+        <h2>Everything a safe chase needs.</h2>
         <p>
-          From source evidence and relationship history to verification, policy, approval,
-          execution, and the outcome that follows.
+          From detection and evidence to drafting, approval, verified sending, and the receipt that
+          shows what came back.
         </p>
       </header>
       <div>
@@ -1052,15 +1052,15 @@ function CapabilityIndex() {
 function HomeProofBand() {
   const proof = [
     {
-      title: "Every recommendation explains why this relationship matters now.",
+      title: "Every finding carries a dollar amount and its source evidence.",
       label: "Evidence before action",
     },
     {
-      title: "Verification, suppression, policy, and sender health precede execution.",
-      label: "Governed by default",
+      title: "Nothing sends without your click. Money actions need extra approval.",
+      label: "You stay in control",
     },
     {
-      title: "Replies, meetings, edits, and revenue outcomes improve the memory.",
+      title: "Replies, meetings, and payments make the memory sharper.",
       label: "Learns from outcomes",
     },
   ];
@@ -1081,32 +1081,32 @@ const homeFaqs = [
   {
     question: "Is Oppulence another CRM?",
     answer:
-      "No. Your CRM remains the system of record for opportunity state. Oppulence remembers the communication, promises, objections, and evidence around the relationship, then turns that context into the next governed action.",
+      "No. Your CRM stays the system of record. Oppulence remembers the conversations, promises, and outcomes around each relationship — then turns them into the next chase, ready for your approval.",
   },
   {
-    question: "Is this a cold-email platform?",
+    question: "Is this a cold-email tool?",
     answer:
-      "The starting point is warm revenue: dormant opportunities, missed commitments, unanswered proposals, former customers, and neglected referrals. Cold-account discovery can come later, after the system earns trust.",
-  },
-  {
-    question: "How does Oppulence decide who needs attention?",
-    answer:
-      "It combines relationship history, commitments, recency, opportunity context, prior objections, contactability, and source evidence to rank the actions most likely to recover or advance revenue.",
+      "No. Oppulence sends zero cold email. It only works the warm relationships you already have: ghosted proposals, quiet clients, unpaid invoices, and neglected referrals.",
   },
   {
     question: "Will it send messages without me?",
     answer:
-      "High-value actions are approval-gated. You can approve, edit, snooze, or reject them. Controlled autonomy should only apply to low-risk actions under explicit policies.",
+      "No. Every message waits for your click. Actions that touch money need a second confirmation. You can approve, edit, snooze, or reject anything in the queue.",
   },
   {
-    question: "What does it check before a message is sent?",
+    question: "How does it decide what matters?",
     answer:
-      "Oppulence can verify the contact, inspect prior objections and opt-outs, apply suppression and frequency rules, check permissions and sender health, and retain the policy decision in the audit trail.",
+      "It looks at the relationship history, the commitment that was made, the dollar value at stake, and the time since the last reply. Every recommendation shows its evidence.",
   },
   {
-    question: "What systems does it connect to?",
+    question: "What does it cost?",
     answer:
-      "The initial workflow centers email, calendar, meetings, and CRM data, with research, verification, policy, and sending systems connected behind one revenue action queue. Exact availability depends on deployment and rollout stage.",
+      "Watch is free: a weekly report of what is slipping, with dollar amounts. Chase is $99 per month: drafted nudges, one-click approval, and recovery receipts. One saved deal pays for years.",
+  },
+  {
+    question: "What happens to my data?",
+    answer:
+      "Your mail is read to serve you, and only you. It is never pooled with other customers and never used to train shared models. You can disconnect at any time.",
   },
 ];
 
@@ -1115,10 +1115,7 @@ function HomeFaqSection() {
     <section className="linear-faq linear-inset">
       <header>
         <h2>Frequently asked questions</h2>
-        <p className="linear-body">
-          What revenue teams ask before they connect relationship history and approve external
-          action.
-        </p>
+        <p className="linear-body">What owners ask before they connect their inbox.</p>
       </header>
       <div>
         {homeFaqs.map((item) => (
@@ -1138,14 +1135,14 @@ function HomeFaqSection() {
 function FinalCta() {
   return (
     <section className="linear-final-cta linear-inset">
-      <h2>Recover the revenue already in your relationships.</h2>
+      <h2>Find out what silence is costing you.</h2>
       <p className="linear-body max-w-xl text-balance">
-        Find the warm opportunities slipping through the cracks, understand why they matter now, and
-        approve the safest next action.
+        Connect your inbox. See the deals, invoices, and clients going quiet — with dollar amounts
+        attached. Then let Oppulence chase them, one approval at a time.
       </p>
       <div className="flex flex-col items-center gap-3 sm:flex-row">
         <Link className="linear-button-primary !h-10 !px-5" href="/book-a-demo">
-          Book a Revenue Leak Scan
+          See what is slipping
         </Link>
         <Link className="linear-button-secondary !h-10 !px-5" href="/product">
           See how it works
