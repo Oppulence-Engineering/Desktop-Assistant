@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { HomePage } from "./marketing-components";
 
 export const metadata: Metadata = {
-  title: "Oppulence — Turn forgotten relationships into revenue",
+  title: "Oppulence — Turn silence back into revenue",
   description:
-    "Oppulence remembers every commercial relationship, identifies who needs attention and why, then safely prepares the next revenue action for approval.",
+    "Oppulence watches your inbox, calendar, and billing. It finds the deals, invoices, and clients that go quiet. It writes the chase in your voice. You approve every send.",
 };
 
 export default function Page() {
