@@ -2724,4 +2724,280 @@
       animation: none !important;
     }
   }
+
+  /*
+   * Cossistant retheme. The marketing site now speaks the console design
+   * language shared with the app shell and desktop: light canvas, hairline
+   * ink borders, sharp corners, mono bracket labels, F37 Stout display
+   * type, and orange as the single accent. Overrides the Linear-dark
+   * styles above by cascade; the layout skeleton and the scroll-reveal
+   * choreography stay unchanged.
+   */
+  .marketing-polar {
+    --background: #faf9f7;
+    --background-50: #f5f4f1;
+    --background-100: #efede9;
+    --background-200: #e7e4df;
+    --background-300: #dbd8d1;
+    --foreground: #1b1a17;
+    --card: #ffffff;
+    --card-foreground: #1b1a17;
+    --popover: #ffffff;
+    --popover-foreground: #1b1a17;
+    --primary: #1b1a17;
+    --primary-foreground: #faf9f7;
+    --secondary: #efede9;
+    --secondary-foreground: #1b1a17;
+    --muted: #efede9;
+    --muted-foreground: #6f6b63;
+    --accent: #e7e4df;
+    --accent-foreground: #1b1a17;
+    --border: rgb(27 26 23 / 10%);
+    --input: rgb(27 26 23 / 16%);
+    --ring: var(--oppulence-orange);
+    --linear-violet: var(--oppulence-orange);
+    --linear-text-secondary: #43413c;
+    --linear-text-tertiary: #6f6b63;
+    --linear-text-quaternary: #9a958b;
+    --linear-border: rgb(27 26 23 / 8%);
+    --linear-border-strong: rgb(27 26 23 / 12%);
+    background: #faf9f7;
+    color: var(--foreground);
+    color-scheme: light;
+  }
+
+  html:has(.marketing-polar),
+  body:has(.marketing-polar) {
+    background: #faf9f7;
+    color-scheme: light;
+  }
+
+  .marketing-polar ::selection {
+    background: var(--oppulence-orange);
+    color: #ffffff;
+  }
+
+  .marketing-polar .font-display {
+    font-family: var(--font-f37-stout), var(--font-geist-sans), ui-sans-serif, sans-serif;
+  }
+
+  .linear-header {
+    background: linear-gradient(
+      180deg,
+      rgb(250 249 247 / 97%) 0%,
+      rgb(250 249 247 / 86%) 58%,
+      transparent 100%
+    );
+  }
+
+  .linear-header::before {
+    background: linear-gradient(180deg, #faf9f7, transparent);
+  }
+
+  html[data-marketing-scrolled] .linear-header,
+  html[data-marketing-menu-open] .linear-header {
+    border-bottom-color: var(--linear-border-strong);
+    background: linear-gradient(180deg, rgb(250 249 247 / 98%), rgb(250 249 247 / 96%));
+  }
+
+  .linear-logo img {
+    filter: none;
+  }
+
+  .linear-nav-link,
+  .linear-nav-trigger,
+  .linear-button-primary,
+  .linear-button-secondary,
+  .linear-logo,
+  .linear-new-pill {
+    border-radius: 2px;
+  }
+
+  .linear-nav-link:hover,
+  .linear-nav-trigger:hover,
+  .group:hover > .linear-nav-trigger {
+    background: rgb(27 26 23 / 6%);
+    color: var(--foreground);
+  }
+
+  .linear-button-primary {
+    border: 1px solid #14130f;
+    background: linear-gradient(180deg, #2b2924, #16150f);
+    color: #faf9f7;
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 14%) inset,
+      0 1px 2px rgb(27 26 23 / 30%);
+  }
+
+  .linear-button-primary:hover {
+    filter: none;
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 20%) inset,
+      0 0 0 1px rgb(27 26 23 / 10%),
+      0 2px 10px rgb(27 26 23 / 24%);
+  }
+
+  .linear-button-secondary {
+    border: 1px solid rgb(27 26 23 / 14%);
+    background: #ffffff;
+    color: var(--foreground);
+    box-shadow: 0 1px 2px rgb(27 26 23 / 6%);
+  }
+
+  .linear-button-secondary:hover {
+    filter: none;
+    border-color: rgb(27 26 23 / 26%);
+    background: #ffffff;
+  }
+
+  :is(
+    .linear-logo,
+    .linear-nav-link,
+    .linear-nav-trigger,
+    .linear-button-primary,
+    .linear-button-secondary,
+    .linear-inline-link,
+    .linear-product-link,
+    .linear-mobile-summary,
+    .linear-faq summary
+  ):focus-visible {
+    outline: 2px solid var(--oppulence-orange);
+  }
+
+  .linear-mobile-panel {
+    border-top-color: var(--linear-border);
+    background: rgb(250 249 247 / 98%);
+  }
+
+  .linear-new-pill {
+    background: rgb(27 26 23 / 6%);
+    color: var(--linear-text-secondary);
+  }
+
+  .linear-hero::before {
+    background: radial-gradient(
+      46% 54% at 50% 34%,
+      color-mix(in oklab, var(--oppulence-orange) 8%, transparent),
+      transparent 72%
+    );
+  }
+
+  .linear-hero-title,
+  .linear-subpage-title,
+  .linear-final-cta h2 {
+    font-family: var(--font-f37-stout), var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    background: linear-gradient(180deg, #1b1a17 58%, rgb(27 26 23 / 70%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .linear-statement-title,
+  .linear-product-title,
+  .linear-capabilities h2,
+  .linear-faq h2 {
+    font-family: var(--font-f37-stout), var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    line-height: 1.04;
+  }
+
+  .linear-hero-glow {
+    background: radial-gradient(
+      52% 58% at 50% 0%,
+      color-mix(in oklab, var(--oppulence-orange) 10%, transparent),
+      transparent 70%
+    );
+    opacity: 1;
+  }
+
+  .linear-app-frame {
+    border: 1px solid rgb(27 26 23 / 12%);
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow:
+      0 24px 64px rgb(27 26 23 / 12%),
+      0 6px 20px rgb(27 26 23 / 8%);
+  }
+
+  .linear-app-frame::after {
+    opacity: 0.18;
+  }
+
+  .linear-app-frame img {
+    border-color: rgb(27 26 23 / 10%);
+    border-radius: 3px;
+    filter: none;
+  }
+
+  .linear-benefit-figure {
+    color: var(--oppulence-orange);
+  }
+
+  .linear-problem-art,
+  .linear-step-art {
+    overflow: hidden;
+    border: 1px solid rgb(27 26 23 / 14%);
+    border-radius: 4px;
+    background: linear-gradient(180deg, #121114, #09090b);
+    box-shadow: 0 14px 34px rgb(27 26 23 / 18%);
+  }
+
+  .linear-benefit:hover {
+    background: linear-gradient(180deg, transparent 30%, rgb(27 26 23 / 3%));
+  }
+
+  .linear-update:hover,
+  .linear-proof:hover {
+    background: rgb(27 26 23 / 3%);
+  }
+
+  .linear-product-panel {
+    border: 1px solid rgb(27 26 23 / 12%);
+    border-radius: 6px;
+    background: #ffffff;
+    box-shadow: 0 1px 0 #ffffff inset;
+  }
+
+  .linear-product-panel::before {
+    background: radial-gradient(50% 80% at 85% 10%, rgb(27 26 23 / 4%), transparent 60%);
+  }
+
+  .linear-product-panel::after {
+    opacity: 0.08;
+  }
+
+  .linear-product-panel img {
+    border-color: rgb(27 26 23 / 10%);
+    filter: none;
+  }
+
+  .linear-product-panel:hover {
+    border-color: rgb(27 26 23 / 22%);
+  }
+
+  .linear-product-tab:hover,
+  .linear-capabilities > div > div:hover {
+    background: rgb(27 26 23 / 4%);
+    color: var(--foreground);
+  }
+
+  .linear-dropdown-panel .marketing-surface-strong {
+    border-color: rgb(27 26 23 / 12%);
+    box-shadow: 0 12px 32px rgb(27 26 23 / 14%);
+  }
+
+  .linear-final-cta::before {
+    background: radial-gradient(
+      50% 50% at 50% 50%,
+      color-mix(in oklab, var(--oppulence-orange) 7%, transparent),
+      transparent 70%
+    );
+  }
+
+  .linear-footer {
+    background: #faf9f7;
+  }
 }

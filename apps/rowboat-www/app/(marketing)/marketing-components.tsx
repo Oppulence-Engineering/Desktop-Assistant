@@ -695,6 +695,9 @@ function HomeHero() {
   return (
     <section className="linear-hero linear-inset">
       <div>
+        <p className="mb-5 font-mono text-xs text-oppulence-orange">
+          [revenue memory and execution]
+        </p>
         <h1 className="linear-hero-title">
           The most expensive thing
           <br className="hidden sm:block" /> in your pipeline is silence.
