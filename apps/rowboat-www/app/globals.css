@@ -3094,4 +3094,113 @@
   .linear-hero {
     padding-top: 172px;
   }
+
+  /*
+   * Red accent + deep polish pass. The marketing accent moves from orange
+   * to a signal red; every accent consumer below runs through the same
+   * variable (including the tailwind text-oppulence-orange utility, whose
+   * source var is repointed inside this scope only — the console keeps
+   * its orange). Plus: dashed engineering guides, a dotted-grid hero
+   * texture, window chrome on the hero app frame, red micro-labels, and
+   * sharper hover details.
+   */
+  .marketing-polar {
+    --marketing-red: hsla(4, 76%, 49%, 1);
+    --oppulence-orange: var(--marketing-red);
+  }
+
+  .linear-guides::before,
+  .linear-guides::after {
+    background: repeating-linear-gradient(
+      180deg,
+      var(--linear-border-strong) 0 5px,
+      transparent 5px 11px
+    );
+  }
+
+  .linear-hero::after {
+    position: absolute;
+    z-index: -1;
+    inset: -40px 0 auto;
+    height: 620px;
+    background-image: radial-gradient(rgb(27 26 23 / 8%) 1px, transparent 1px);
+    background-size: 22px 22px;
+    content: "";
+    pointer-events: none;
+    mask-image: radial-gradient(62% 74% at 50% 28%, black, transparent 78%);
+  }
+
+  .linear-app-frame {
+    padding-top: 36px;
+  }
+
+  .linear-app-frame::before {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 29px;
+    border-bottom: 1px solid rgb(27 26 23 / 8%);
+    border-radius: 4px 4px 0 0;
+    background-color: #fbfaf8;
+    background-image:
+      radial-gradient(circle 4px at 18px 15px, rgb(27 26 23 / 22%) 98%, transparent),
+      radial-gradient(circle 4px at 36px 15px, rgb(27 26 23 / 14%) 98%, transparent),
+      radial-gradient(circle 4px at 54px 15px, rgb(27 26 23 / 8%) 98%, transparent);
+    content: "";
+    pointer-events: none;
+  }
+
+  .linear-new-pill {
+    border: 1px solid color-mix(in oklab, var(--marketing-red) 28%, transparent);
+    border-radius: 2px;
+    background: color-mix(in oklab, var(--marketing-red) 8%, transparent);
+    padding: 2px 6px;
+    color: var(--marketing-red);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .linear-inline-link {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 12px;
+  }
+
+  .linear-inline-link:hover {
+    filter: none;
+    color: var(--marketing-red);
+  }
+
+  .linear-logo-caption {
+    color: var(--marketing-red);
+  }
+
+  .linear-product-link .linear-index,
+  .linear-update > .linear-index {
+    color: var(--marketing-red);
+  }
+
+  .linear-capabilities > div > div:hover svg {
+    color: var(--marketing-red);
+  }
+
+  .linear-faq details[open] summary span,
+  .linear-faq summary:hover span {
+    color: var(--marketing-red);
+  }
+
+  .linear-button-primary:hover {
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 20%) inset,
+      0 0 0 3px color-mix(in oklab, var(--marketing-red) 16%, transparent),
+      0 2px 10px rgb(27 26 23 / 24%);
+  }
+
+  .linear-button-secondary:hover {
+    border-color: color-mix(in oklab, var(--marketing-red) 45%, rgb(27 26 23 / 14%));
+  }
 }
