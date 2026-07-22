@@ -569,8 +569,8 @@ export function Footer() {
             title="Company"
           />
           <p className="linear-footer-note">
-            Oppulence watches your inbox, finds the money slipping away in silence, and chases it —
-            in your voice, with your approval. © 2026 Oppulence. Open source under the MIT license.
+            Oppulence finds the money slipping away in your inbox and chases it in your voice, with
+            your approval. © 2026 Oppulence. Open source under the MIT license.
           </p>
         </div>
       </div>
@@ -604,15 +604,15 @@ function LinearFooterGroup({ title, items }: { title: string; items: LinkItem[] 
 const homeProblems = [
   {
     title: "The proposal goes quiet.",
-    body: "You send a $40k proposal. The client does not reply. Following up feels pushy, so you wait. Almost half of sellers never send a single follow-up — and the deal dies in the silence.",
+    body: "You send a $40k proposal. The client does not reply. Following up feels pushy, so you wait. Almost half of sellers never send a single follow-up. The deal dies in the silence.",
   },
   {
     title: "The invoice goes unpaid.",
-    body: "Most small businesses carry unpaid invoices — about $17,500 on average. Chasing a client you like feels awkward. So the money you already earned just sits there.",
+    body: "Most small businesses carry unpaid invoices. The average pile is about $17,500. Chasing a client you like feels awkward. So money you already earned just sits there.",
   },
   {
     title: "The client fades away.",
-    body: "A good client starts to reply slower. They skip a check-in. Nobody notices the fade until the cancellation email arrives — months after the save was still possible.",
+    body: "A good client starts to reply slower. They skip a check-in. Nobody notices the fade until the cancellation email arrives. By then, the save is months late.",
   },
 ];
 
@@ -623,7 +623,7 @@ const homeSteps = [
   },
   {
     title: "Watch the leak",
-    body: "Get a weekly report of every deal, invoice, and relationship going quiet — with dollar amounts attached.",
+    body: "Get a weekly report of each deal, invoice, and relationship going quiet, with dollar amounts attached.",
   },
   {
     title: "Approve the chase",
@@ -696,14 +696,14 @@ function HomeHero() {
     <section className="linear-hero linear-inset">
       <div>
         <h1 className="linear-hero-title">
-          Revenue does not die in negotiations.
-          <br className="hidden sm:block" /> It dies in silence.
+          The most expensive thing
+          <br className="hidden sm:block" /> in your pipeline is silence.
         </h1>
         <div className="linear-hero-meta">
           <p className="linear-body max-w-[620px]">
-            Oppulence watches your inbox, calendar, and billing. It finds the money that is quietly
-            slipping away — the ghosted proposal, the unpaid invoice, the client who went quiet.
-            Then it writes the chase in your voice. Nothing sends until you click Approve.
+            Oppulence watches your inbox, calendar, and billing. It finds money that is about to
+            slip: a proposal with no reply, an invoice with no payment, a client who has gone quiet.
+            It writes the chase in your voice. Nothing sends until you click Approve.
           </p>
           <Link className="linear-inline-link shrink-0" href="/book-a-demo">
             <span className="linear-new-pill">New</span>
@@ -758,9 +758,9 @@ function ProblemSection() {
     <section>
       <div className="linear-statement linear-inset">
         <h2 className="linear-statement-title">
-          <strong>Your revenue rarely dies from a &ldquo;no.&rdquo;</strong> It leaks out in
-          silence: the proposal nobody nudged, the signed work nobody invoiced, the invoice nobody
-          chased, and the client who faded before anyone noticed.
+          <strong>Few deals die from a &ldquo;no.&rdquo;</strong> Most die waiting. A proposal sits
+          unanswered. Finished work goes unbilled. An old client drifts away. No one decides to lose
+          this money. It leaks.
         </h2>
       </div>
       <div className="linear-benefits linear-inset">
@@ -821,7 +821,7 @@ const linearHomeSections = [
   {
     title: "See the money that is slipping.",
     description:
-      "Oppulence scans your last 60–90 days of email, calendar, and billing. It finds ghosted proposals, dormant clients, unbilled work, and unpaid invoices. Every finding carries a dollar amount and links to its source.",
+      "Oppulence scans your last 60–90 days of email, calendar, and billing. It finds ghosted proposals, dormant clients, unbilled work, and unpaid invoices. Each finding shows a dollar amount and a link to its source.",
     label: "Revenue Leak Scan",
     href: "/ai-help-center",
     src: desktopScreenshots.knowledge,
@@ -829,27 +829,27 @@ const linearHomeSections = [
     bullets: [
       "Ghosted proposals, with the deal value attached",
       "Dormant clients and unpaid invoices",
-      "Every finding links to the source email",
+      "Each finding links to the source email",
     ],
   },
   {
     title: "Get a short list, not another inbox.",
     description:
-      "Every week, Oppulence hands you the three to five actions worth money right now. Each one shows who needs attention, why now, and how much is at stake. You approve, edit, snooze, or reject.",
+      "Each week, Oppulence hands you the three to five actions worth money right now. Each one shows who needs attention, why now, and how much is at stake. You approve, edit, snooze, or reject.",
     label: "Revenue Action Queue",
     href: "/ai-documentation-agent",
     src: desktopScreenshots.chat,
     alt: "Oppulence daily revenue action queue ranked by value and urgency",
     bullets: [
       "The highest-value moves of the week",
-      "Who, why now, and how much — on every item",
+      "Who, why now, and how much on each item",
       "Approve, edit, snooze, or reject in one click",
     ],
   },
   {
     title: "The chase is written in your voice.",
     description:
-      "Every nudge comes pre-drafted and matched to the relationship. A one-off client gets a firm reminder. A $100k repeat client gets a softer note. It sends from your own address — not from a tool.",
+      "The nudge arrives already drafted and matched to the relationship. A one-off client gets a firm reminder. A $100k repeat client gets a softer note. It sends from your own address, under your own name.",
     label: "Drafts in your voice",
     href: "/automated-screenshots-for-docs",
     src: desktopScreenshots.tasks,
@@ -863,7 +863,7 @@ const linearHomeSections = [
   {
     title: "Nothing sends without your click.",
     description:
-      "Every message waits for your approval. Contacts who bounced, opted out, or changed roles are never emailed. Actions that touch money need a second confirmation. When a check fails, the system stops.",
+      "Each message waits for your approval. The system never emails a contact who bounced, opted out, or changed roles. Actions that touch money need a second confirmation. When a check fails, the system stops.",
     label: "Policy & sender protection",
     href: "/integrations",
     src: desktopScreenshots.connections,
@@ -875,9 +875,9 @@ const linearHomeSections = [
     ],
   },
   {
-    title: "Every chase makes the next one smarter.",
+    title: "Each chase teaches the next one.",
     description:
-      "Replies, meetings, edits, and payments flow back into one relationship memory. The system learns what works for your business. Your data stays yours — it is never pooled and never trains shared models.",
+      "Replies, meetings, edits, and payments flow back into one relationship memory. The system learns what works for your business. Your data stays yours. We do not pool it, and we do not train shared models on it.",
     label: "Memory that compounds",
     href: "/product",
     src: desktopScreenshots.home,
@@ -885,7 +885,7 @@ const linearHomeSections = [
     bullets: [
       "Replies and payments update the memory",
       "Your edits teach it your voice",
-      "Your data is never pooled or shared",
+      "We never pool or share your data",
     ],
   },
 ] as const;
@@ -953,8 +953,8 @@ function HomeUpdates() {
       <div className="linear-inset">
         <h2 className="linear-statement-title !max-w-[1180px]">
           <strong>The memory is the moat.</strong> Anyone can draft a message. Only Oppulence knows
-          every promise, chase, objection, and outcome across your relationships — a history that
-          cannot be rebuilt anywhere else.
+          every promise, chase, objection, and outcome across your relationships. No one can rebuild
+          that history anywhere else.
         </h2>
       </div>
       <div className="linear-updates-grid linear-inset">
@@ -1032,8 +1032,8 @@ function CapabilityIndex() {
       <header>
         <h2>Everything a safe chase needs.</h2>
         <p>
-          From detection and evidence to drafting, approval, verified sending, and the receipt that
-          shows what came back.
+          Detection, evidence, drafting, approval, verified sending, and the receipt that shows what
+          came back.
         </p>
       </header>
       <div>
@@ -1052,7 +1052,7 @@ function CapabilityIndex() {
 function HomeProofBand() {
   const proof = [
     {
-      title: "Every finding carries a dollar amount and its source evidence.",
+      title: "Each finding shows its dollar amount and its source.",
       label: "Evidence before action",
     },
     {
@@ -1081,7 +1081,7 @@ const homeFaqs = [
   {
     question: "Is Oppulence another CRM?",
     answer:
-      "No. Your CRM stays the system of record. Oppulence remembers the conversations, promises, and outcomes around each relationship — then turns them into the next chase, ready for your approval.",
+      "No. Your CRM stays the system of record. Oppulence remembers the conversations, promises, and outcomes around each relationship. Then it turns them into the next chase, ready for your approval.",
   },
   {
     question: "Is this a cold-email tool?",
@@ -1091,12 +1091,12 @@ const homeFaqs = [
   {
     question: "Will it send messages without me?",
     answer:
-      "No. Every message waits for your click. Actions that touch money need a second confirmation. You can approve, edit, snooze, or reject anything in the queue.",
+      "No. Each message waits for your click. Actions that touch money need a second confirmation. You can approve, edit, snooze, or reject anything in the queue.",
   },
   {
     question: "How does it decide what matters?",
     answer:
-      "It looks at the relationship history, the commitment that was made, the dollar value at stake, and the time since the last reply. Every recommendation shows its evidence.",
+      "It looks at the relationship history, the commitment that was made, the dollar value at stake, and the time since the last reply. Each recommendation shows its evidence.",
   },
   {
     question: "What does it cost?",
@@ -1106,7 +1106,7 @@ const homeFaqs = [
   {
     question: "What happens to my data?",
     answer:
-      "Your mail is read to serve you, and only you. It is never pooled with other customers and never used to train shared models. You can disconnect at any time.",
+      "We read your mail to serve you and no one else. We do not pool it with other customers, and we do not train shared models on it. You can disconnect at any time.",
   },
 ];
 
@@ -1137,8 +1137,8 @@ function FinalCta() {
     <section className="linear-final-cta linear-inset">
       <h2>Find out what silence is costing you.</h2>
       <p className="linear-body max-w-xl text-balance">
-        Connect your inbox. See the deals, invoices, and clients going quiet — with dollar amounts
-        attached. Then let Oppulence chase them, one approval at a time.
+        Connect your inbox. See the deals, invoices, and clients going quiet, each with a dollar
+        amount. Then let Oppulence chase them, one approval at a time.
       </p>
       <div className="flex flex-col items-center gap-3 sm:flex-row">
         <Link className="linear-button-primary !h-10 !px-5" href="/book-a-demo">
@@ -1486,7 +1486,7 @@ function ProofGrid({ page }: { page: MarketingPage }) {
           <h2 className="mt-2 text-2xl font-semibold">Built for evidence-backed action.</h2>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-          Every workflow keeps the same standards: source evidence, current relationship context,
+          Each workflow keeps the same standards: source evidence, current relationship context,
           explicit policy decisions, and reviewable execution.
         </p>
       </div>
@@ -1710,7 +1710,7 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
             We&rsquo;d rather show real stories than invented ones.
           </h2>
           <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
-            Oppulence is early. We&rsquo;re onboarding our first operators and teams now — when they
+            Oppulence is early. We&rsquo;re onboarding our first operators and teams now. When they
             have a story worth telling, it will live here. No placeholder logos in the meantime.
           </p>
           <Button asChild className="marketing-cta-primary mt-1">
