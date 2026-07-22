@@ -3203,4 +3203,156 @@
   .linear-button-secondary:hover {
     border-color: color-mix(in oklab, var(--marketing-red) 45%, rgb(27 26 23 / 14%));
   }
+
+  /*
+   * Console vocabulary + hero artifact. Bracket eyebrows on every
+   * section, the approval-queue card as the hero's product proof, window
+   * chrome on all product panels, and finishing micro-interactions.
+   */
+  .linear-eyebrow {
+    margin-bottom: 18px;
+    color: var(--marketing-red);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+  }
+
+  .linear-final-cta .linear-eyebrow {
+    margin-bottom: 0;
+  }
+
+  .linear-hero-grid {
+    display: grid;
+    gap: 56px;
+    align-items: end;
+  }
+
+  @media (min-width: 1080px) {
+    .linear-hero-grid {
+      grid-template-columns: minmax(0, 1fr) 400px;
+    }
+  }
+
+  .linear-hero-card {
+    position: relative;
+    border: 1px solid rgb(27 26 23 / 14%);
+    border-radius: 4px;
+    background: #ffffff;
+    padding: 16px 18px 14px;
+    box-shadow:
+      0 1px 0 #ffffff inset,
+      0 16px 40px rgb(27 26 23 / 10%),
+      0 4px 12px rgb(27 26 23 / 6%);
+  }
+
+  @media (min-width: 641px) and (prefers-reduced-motion: no-preference) {
+    .linear-hero-card {
+      animation: 800ms 300ms both linear-frame-enter;
+    }
+  }
+
+  .linear-hero-card-title {
+    margin-bottom: 10px;
+    color: var(--marketing-red);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .linear-hero-card ul {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .linear-hero-card li {
+    display: grid;
+    align-items: center;
+    gap: 14px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    border-top: 1px solid var(--linear-border);
+    padding-block: 11px;
+  }
+
+  .linear-hero-card-amt {
+    color: var(--marketing-red);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .linear-hero-card-what {
+    color: var(--linear-text-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .linear-hero-card-what em {
+    display: block;
+    margin-top: 2px;
+    color: var(--linear-text-quaternary);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 10px;
+    font-style: normal;
+    letter-spacing: 0.04em;
+  }
+
+  .linear-hero-card-act {
+    border: 1px solid #14130f;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #2b2924, #16150f);
+    padding: 4px 9px;
+    color: #faf9f7;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    transition: box-shadow 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .linear-hero-card li:hover .linear-hero-card-act {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--marketing-red) 18%, transparent);
+  }
+
+  .linear-hero-card-foot {
+    margin-top: 12px;
+    border-top: 1px solid var(--linear-border);
+    padding-top: 10px;
+    color: var(--linear-text-quaternary);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  .linear-product-panel {
+    padding-top: 37px;
+  }
+
+  .linear-product-panel::before {
+    position: absolute;
+    z-index: 1;
+    inset: 0 0 auto;
+    height: 30px;
+    border-bottom: 1px solid rgb(27 26 23 / 8%);
+    border-radius: 6px 6px 0 0;
+    background-color: #fbfaf8;
+    background-image:
+      radial-gradient(circle 4px at 18px 15px, rgb(27 26 23 / 22%) 98%, transparent),
+      radial-gradient(circle 4px at 36px 15px, rgb(27 26 23 / 14%) 98%, transparent),
+      radial-gradient(circle 4px at 54px 15px, rgb(27 26 23 / 8%) 98%, transparent);
+    content: "";
+    pointer-events: none;
+  }
+
+  .linear-product-tab:hover .linear-index,
+  .linear-product-tab:hover > span:last-child,
+  .linear-capabilities > div > div:hover .linear-index {
+    color: var(--marketing-red);
+  }
+
+  .linear-faq details[open] > p {
+    animation: linear-reveal 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .linear-dropdown-panel .marketing-surface-strong {
+    border-radius: 3px;
+  }
 }
