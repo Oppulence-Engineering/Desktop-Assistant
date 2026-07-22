@@ -703,27 +703,57 @@ export function HomePage() {
 function HomeHero() {
   return (
     <section className="linear-hero linear-inset">
-      <div>
-        <p className="mb-5 font-mono text-xs text-oppulence-orange">
-          [revenue memory and execution]
-        </p>
-        <h1 className="linear-hero-title">
-          The most expensive thing
-          <br className="hidden sm:block" /> in your pipeline is silence.
-        </h1>
-        <div className="linear-hero-meta">
-          <p className="linear-body max-w-[620px]">
-            Oppulence watches your inbox, calendar, and billing. It finds money that is about to
-            slip: a proposal with no reply, an invoice with no payment, a client who has gone quiet.
-            It writes the chase in your voice. Nothing sends until you click Approve.
+      <div className="linear-hero-grid">
+        <div>
+          <p className="mb-5 font-mono text-xs text-oppulence-orange">
+            [revenue memory and execution]
           </p>
-          <Link className="linear-inline-link shrink-0" href="/book-a-demo">
-            <span className="linear-new-pill">New</span>
-            Revenue Leak Scan <span className="text-foreground/40">→</span>
-          </Link>
+          <h1 className="linear-hero-title">
+            The most expensive thing
+            <br className="hidden sm:block" /> in your pipeline is silence.
+          </h1>
+          <div className="linear-hero-meta">
+            <p className="linear-body max-w-[620px]">
+              Oppulence watches your inbox, calendar, and billing. It finds money that is about to
+              slip: a proposal with no reply, an invoice with no payment, a client who has gone
+              quiet. It writes the chase in your voice. Nothing sends until you click Approve.
+            </p>
+            <Link className="linear-inline-link shrink-0" href="/book-a-demo">
+              <span className="linear-new-pill">New</span>
+              Revenue Leak Scan <span className="text-foreground/40">→</span>
+            </Link>
+          </div>
         </div>
+        <HeroQueueCard />
       </div>
     </section>
+  );
+}
+
+function HeroQueueCard() {
+  const rows = [
+    { amount: "$40k", what: "Acme proposal · quiet for 6 days", note: "nudge drafted" },
+    { amount: "$14k", what: "Beta Corp invoice · 3 weeks overdue", note: "reminder drafted" },
+    { amount: "$8k", what: "Star client · gone quiet", note: "check-in drafted" },
+  ];
+
+  return (
+    <aside aria-label="Example weekly slip report" className="linear-hero-card">
+      <p className="linear-hero-card-title">[this week: $62,000 slipping]</p>
+      <ul>
+        {rows.map((row) => (
+          <li key={row.amount}>
+            <span className="linear-hero-card-amt">{row.amount}</span>
+            <span className="linear-hero-card-what">
+              {row.what}
+              <em>{row.note}</em>
+            </span>
+            <span className="linear-hero-card-act">approve</span>
+          </li>
+        ))}
+      </ul>
+      <p className="linear-hero-card-foot">nothing sends until you click approve</p>
+    </aside>
   );
 }
 
@@ -769,6 +799,7 @@ function ProblemSection() {
   return (
     <section>
       <div className="linear-statement linear-inset">
+        <p className="linear-eyebrow">[the problem]</p>
         <h2 className="linear-statement-title">
           <strong>Few deals die from a &ldquo;no.&rdquo;</strong> Most die waiting. A proposal sits
           unanswered. Finished work goes unbilled. An old client drifts away. No one decides to lose
@@ -922,6 +953,7 @@ function LinearProductSection({
     <section className="linear-product-section">
       <header className="linear-product-header linear-inset">
         <div>
+          <p className="linear-eyebrow">[{section.label.toLowerCase()}]</p>
           <h2 className="linear-product-title">{section.title}</h2>
         </div>
         <div className="linear-product-description">
@@ -963,6 +995,7 @@ function HomeUpdates() {
   return (
     <section className="linear-updates">
       <div className="linear-inset">
+        <p className="linear-eyebrow">[how it works]</p>
         <h2 className="linear-statement-title !max-w-[1180px]">
           <strong>The memory is the moat.</strong> Anyone can draft a message. Only Oppulence knows
           every promise, chase, objection, and outcome across your relationships. No one can rebuild
@@ -1042,7 +1075,10 @@ function CapabilityIndex() {
   return (
     <section className="linear-capabilities linear-inset">
       <header>
-        <h2>Everything a safe chase needs.</h2>
+        <div>
+          <p className="linear-eyebrow">[capability index]</p>
+          <h2>Everything a safe chase needs.</h2>
+        </div>
         <p>
           Detection, evidence, drafting, approval, verified sending, and the receipt that shows what
           came back.
@@ -1126,6 +1162,7 @@ function HomeFaqSection() {
   return (
     <section className="linear-faq linear-inset">
       <header>
+        <p className="linear-eyebrow">[faq]</p>
         <h2>Frequently asked questions</h2>
         <p className="linear-body">What owners ask before they connect their inbox.</p>
       </header>
@@ -1147,6 +1184,7 @@ function HomeFaqSection() {
 function FinalCta() {
   return (
     <section className="linear-final-cta linear-inset">
+      <p className="linear-eyebrow !mb-0">[get started]</p>
       <h2>Find out what silence is costing you.</h2>
       <p className="linear-body max-w-xl text-balance">
         Connect your inbox. See the deals, invoices, and clients going quiet, each with a dollar
