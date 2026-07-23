@@ -31,6 +31,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -88,6 +89,7 @@ const (
 	TypeLLMUsageHistory             = "LLMUsageHistory"
 	TypeMCPConnection               = "MCPConnection"
 	TypeMCPConnectionHistory        = "MCPConnectionHistory"
+	TypeMailBodyCache               = "MailBodyCache"
 	TypeMailMessageMeta             = "MailMessageMeta"
 	TypeMailThread                  = "MailThread"
 	TypeMeetingMinuteUsage          = "MeetingMinuteUsage"
@@ -28822,6 +28824,675 @@ func (m *MCPConnectionHistoryMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown MCPConnectionHistory edge %s", name)
 }
 
+// MailBodyCacheMutation represents an operation that mutates the MailBodyCache nodes in the graph.
+type MailBodyCacheMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	created_at          *time.Time
+	updated_at          *time.Time
+	provider            *string
+	provider_message_id *string
+	sealed_body         *[]byte
+	expires_at          *time.Time
+	clearedFields       map[string]struct{}
+	user                *uuid.UUID
+	cleareduser         bool
+	done                bool
+	oldValue            func(context.Context) (*MailBodyCache, error)
+	predicates          []predicate.MailBodyCache
+}
+
+var _ ent.Mutation = (*MailBodyCacheMutation)(nil)
+
+// mailbodycacheOption allows management of the mutation configuration using functional options.
+type mailbodycacheOption func(*MailBodyCacheMutation)
+
+// newMailBodyCacheMutation creates new mutation for the MailBodyCache entity.
+func newMailBodyCacheMutation(c config, op Op, opts ...mailbodycacheOption) *MailBodyCacheMutation {
+	m := &MailBodyCacheMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMailBodyCache,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMailBodyCacheID sets the ID field of the mutation.
+func withMailBodyCacheID(id uuid.UUID) mailbodycacheOption {
+	return func(m *MailBodyCacheMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *MailBodyCache
+		)
+		m.oldValue = func(ctx context.Context) (*MailBodyCache, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().MailBodyCache.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMailBodyCache sets the old MailBodyCache of the mutation.
+func withMailBodyCache(node *MailBodyCache) mailbodycacheOption {
+	return func(m *MailBodyCacheMutation) {
+		m.oldValue = func(context.Context) (*MailBodyCache, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MailBodyCacheMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MailBodyCacheMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of MailBodyCache entities.
+func (m *MailBodyCacheMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MailBodyCacheMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MailBodyCacheMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().MailBodyCache.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MailBodyCacheMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MailBodyCacheMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the MailBodyCache entity.
+// If the MailBodyCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailBodyCacheMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MailBodyCacheMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *MailBodyCacheMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *MailBodyCacheMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the MailBodyCache entity.
+// If the MailBodyCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailBodyCacheMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *MailBodyCacheMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetProvider sets the "provider" field.
+func (m *MailBodyCacheMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *MailBodyCacheMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the MailBodyCache entity.
+// If the MailBodyCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailBodyCacheMutation) OldProvider(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *MailBodyCacheMutation) ResetProvider() {
+	m.provider = nil
+}
+
+// SetProviderMessageID sets the "provider_message_id" field.
+func (m *MailBodyCacheMutation) SetProviderMessageID(s string) {
+	m.provider_message_id = &s
+}
+
+// ProviderMessageID returns the value of the "provider_message_id" field in the mutation.
+func (m *MailBodyCacheMutation) ProviderMessageID() (r string, exists bool) {
+	v := m.provider_message_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProviderMessageID returns the old "provider_message_id" field's value of the MailBodyCache entity.
+// If the MailBodyCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailBodyCacheMutation) OldProviderMessageID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProviderMessageID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProviderMessageID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProviderMessageID: %w", err)
+	}
+	return oldValue.ProviderMessageID, nil
+}
+
+// ResetProviderMessageID resets all changes to the "provider_message_id" field.
+func (m *MailBodyCacheMutation) ResetProviderMessageID() {
+	m.provider_message_id = nil
+}
+
+// SetSealedBody sets the "sealed_body" field.
+func (m *MailBodyCacheMutation) SetSealedBody(b []byte) {
+	m.sealed_body = &b
+}
+
+// SealedBody returns the value of the "sealed_body" field in the mutation.
+func (m *MailBodyCacheMutation) SealedBody() (r []byte, exists bool) {
+	v := m.sealed_body
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSealedBody returns the old "sealed_body" field's value of the MailBodyCache entity.
+// If the MailBodyCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailBodyCacheMutation) OldSealedBody(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSealedBody is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSealedBody requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSealedBody: %w", err)
+	}
+	return oldValue.SealedBody, nil
+}
+
+// ResetSealedBody resets all changes to the "sealed_body" field.
+func (m *MailBodyCacheMutation) ResetSealedBody() {
+	m.sealed_body = nil
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *MailBodyCacheMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *MailBodyCacheMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the MailBodyCache entity.
+// If the MailBodyCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailBodyCacheMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *MailBodyCacheMutation) ResetExpiresAt() {
+	m.expires_at = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *MailBodyCacheMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *MailBodyCacheMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *MailBodyCacheMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *MailBodyCacheMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *MailBodyCacheMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *MailBodyCacheMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the MailBodyCacheMutation builder.
+func (m *MailBodyCacheMutation) Where(ps ...predicate.MailBodyCache) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MailBodyCacheMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MailBodyCacheMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MailBodyCache, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MailBodyCacheMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MailBodyCacheMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (MailBodyCache).
+func (m *MailBodyCacheMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MailBodyCacheMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.created_at != nil {
+		fields = append(fields, mailbodycache.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, mailbodycache.FieldUpdatedAt)
+	}
+	if m.provider != nil {
+		fields = append(fields, mailbodycache.FieldProvider)
+	}
+	if m.provider_message_id != nil {
+		fields = append(fields, mailbodycache.FieldProviderMessageID)
+	}
+	if m.sealed_body != nil {
+		fields = append(fields, mailbodycache.FieldSealedBody)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, mailbodycache.FieldExpiresAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MailBodyCacheMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case mailbodycache.FieldCreatedAt:
+		return m.CreatedAt()
+	case mailbodycache.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case mailbodycache.FieldProvider:
+		return m.Provider()
+	case mailbodycache.FieldProviderMessageID:
+		return m.ProviderMessageID()
+	case mailbodycache.FieldSealedBody:
+		return m.SealedBody()
+	case mailbodycache.FieldExpiresAt:
+		return m.ExpiresAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MailBodyCacheMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case mailbodycache.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case mailbodycache.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case mailbodycache.FieldProvider:
+		return m.OldProvider(ctx)
+	case mailbodycache.FieldProviderMessageID:
+		return m.OldProviderMessageID(ctx)
+	case mailbodycache.FieldSealedBody:
+		return m.OldSealedBody(ctx)
+	case mailbodycache.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown MailBodyCache field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MailBodyCacheMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case mailbodycache.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case mailbodycache.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case mailbodycache.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
+	case mailbodycache.FieldProviderMessageID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProviderMessageID(v)
+		return nil
+	case mailbodycache.FieldSealedBody:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSealedBody(v)
+		return nil
+	case mailbodycache.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MailBodyCache field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MailBodyCacheMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MailBodyCacheMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MailBodyCacheMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown MailBodyCache numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MailBodyCacheMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MailBodyCacheMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MailBodyCacheMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown MailBodyCache nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MailBodyCacheMutation) ResetField(name string) error {
+	switch name {
+	case mailbodycache.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case mailbodycache.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case mailbodycache.FieldProvider:
+		m.ResetProvider()
+		return nil
+	case mailbodycache.FieldProviderMessageID:
+		m.ResetProviderMessageID()
+		return nil
+	case mailbodycache.FieldSealedBody:
+		m.ResetSealedBody()
+		return nil
+	case mailbodycache.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	}
+	return fmt.Errorf("unknown MailBodyCache field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MailBodyCacheMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, mailbodycache.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MailBodyCacheMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case mailbodycache.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MailBodyCacheMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MailBodyCacheMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MailBodyCacheMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, mailbodycache.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MailBodyCacheMutation) EdgeCleared(name string) bool {
+	switch name {
+	case mailbodycache.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MailBodyCacheMutation) ClearEdge(name string) error {
+	switch name {
+	case mailbodycache.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown MailBodyCache unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MailBodyCacheMutation) ResetEdge(name string) error {
+	switch name {
+	case mailbodycache.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown MailBodyCache edge %s", name)
+}
+
 // MailMessageMetaMutation represents an operation that mutates the MailMessageMeta nodes in the graph.
 type MailMessageMetaMutation struct {
 	config
@@ -41577,6 +42248,7 @@ type RevenueEvidenceMutation struct {
 	source                       *string
 	source_account_id            *string
 	source_record_id             *string
+	source_message_id            *string
 	source_uri                   *string
 	content_hash                 *string
 	excerpt                      *string
@@ -41899,6 +42571,55 @@ func (m *RevenueEvidenceMutation) OldSourceRecordID(ctx context.Context) (v stri
 // ResetSourceRecordID resets all changes to the "source_record_id" field.
 func (m *RevenueEvidenceMutation) ResetSourceRecordID() {
 	m.source_record_id = nil
+}
+
+// SetSourceMessageID sets the "source_message_id" field.
+func (m *RevenueEvidenceMutation) SetSourceMessageID(s string) {
+	m.source_message_id = &s
+}
+
+// SourceMessageID returns the value of the "source_message_id" field in the mutation.
+func (m *RevenueEvidenceMutation) SourceMessageID() (r string, exists bool) {
+	v := m.source_message_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceMessageID returns the old "source_message_id" field's value of the RevenueEvidence entity.
+// If the RevenueEvidence object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueEvidenceMutation) OldSourceMessageID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceMessageID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceMessageID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceMessageID: %w", err)
+	}
+	return oldValue.SourceMessageID, nil
+}
+
+// ClearSourceMessageID clears the value of the "source_message_id" field.
+func (m *RevenueEvidenceMutation) ClearSourceMessageID() {
+	m.source_message_id = nil
+	m.clearedFields[revenueevidence.FieldSourceMessageID] = struct{}{}
+}
+
+// SourceMessageIDCleared returns if the "source_message_id" field was cleared in this mutation.
+func (m *RevenueEvidenceMutation) SourceMessageIDCleared() bool {
+	_, ok := m.clearedFields[revenueevidence.FieldSourceMessageID]
+	return ok
+}
+
+// ResetSourceMessageID resets all changes to the "source_message_id" field.
+func (m *RevenueEvidenceMutation) ResetSourceMessageID() {
+	m.source_message_id = nil
+	delete(m.clearedFields, revenueevidence.FieldSourceMessageID)
 }
 
 // SetSourceURI sets the "source_uri" field.
@@ -42481,7 +43202,7 @@ func (m *RevenueEvidenceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevenueEvidenceMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, revenueevidence.FieldCreatedAt)
 	}
@@ -42496,6 +43217,9 @@ func (m *RevenueEvidenceMutation) Fields() []string {
 	}
 	if m.source_record_id != nil {
 		fields = append(fields, revenueevidence.FieldSourceRecordID)
+	}
+	if m.source_message_id != nil {
+		fields = append(fields, revenueevidence.FieldSourceMessageID)
 	}
 	if m.source_uri != nil {
 		fields = append(fields, revenueevidence.FieldSourceURI)
@@ -42536,6 +43260,8 @@ func (m *RevenueEvidenceMutation) Field(name string) (ent.Value, bool) {
 		return m.SourceAccountID()
 	case revenueevidence.FieldSourceRecordID:
 		return m.SourceRecordID()
+	case revenueevidence.FieldSourceMessageID:
+		return m.SourceMessageID()
 	case revenueevidence.FieldSourceURI:
 		return m.SourceURI()
 	case revenueevidence.FieldContentHash:
@@ -42569,6 +43295,8 @@ func (m *RevenueEvidenceMutation) OldField(ctx context.Context, name string) (en
 		return m.OldSourceAccountID(ctx)
 	case revenueevidence.FieldSourceRecordID:
 		return m.OldSourceRecordID(ctx)
+	case revenueevidence.FieldSourceMessageID:
+		return m.OldSourceMessageID(ctx)
 	case revenueevidence.FieldSourceURI:
 		return m.OldSourceURI(ctx)
 	case revenueevidence.FieldContentHash:
@@ -42626,6 +43354,13 @@ func (m *RevenueEvidenceMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSourceRecordID(v)
+		return nil
+	case revenueevidence.FieldSourceMessageID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceMessageID(v)
 		return nil
 	case revenueevidence.FieldSourceURI:
 		v, ok := value.(string)
@@ -42709,6 +43444,9 @@ func (m *RevenueEvidenceMutation) ClearedFields() []string {
 	if m.FieldCleared(revenueevidence.FieldSourceAccountID) {
 		fields = append(fields, revenueevidence.FieldSourceAccountID)
 	}
+	if m.FieldCleared(revenueevidence.FieldSourceMessageID) {
+		fields = append(fields, revenueevidence.FieldSourceMessageID)
+	}
 	if m.FieldCleared(revenueevidence.FieldSourceURI) {
 		fields = append(fields, revenueevidence.FieldSourceURI)
 	}
@@ -42734,6 +43472,9 @@ func (m *RevenueEvidenceMutation) ClearField(name string) error {
 	switch name {
 	case revenueevidence.FieldSourceAccountID:
 		m.ClearSourceAccountID()
+		return nil
+	case revenueevidence.FieldSourceMessageID:
+		m.ClearSourceMessageID()
 		return nil
 	case revenueevidence.FieldSourceURI:
 		m.ClearSourceURI()
@@ -42766,6 +43507,9 @@ func (m *RevenueEvidenceMutation) ResetField(name string) error {
 		return nil
 	case revenueevidence.FieldSourceRecordID:
 		m.ResetSourceRecordID()
+		return nil
+	case revenueevidence.FieldSourceMessageID:
+		m.ResetSourceMessageID()
 		return nil
 	case revenueevidence.FieldSourceURI:
 		m.ResetSourceURI()
@@ -50094,6 +50838,9 @@ type UserMutation struct {
 	mail_message_metas                     map[uuid.UUID]struct{}
 	removedmail_message_metas              map[uuid.UUID]struct{}
 	clearedmail_message_metas              bool
+	mail_body_caches                       map[uuid.UUID]struct{}
+	removedmail_body_caches                map[uuid.UUID]struct{}
+	clearedmail_body_caches                bool
 	done                                   bool
 	oldValue                               func(context.Context) (*User, error)
 	predicates                             []predicate.User
@@ -52176,6 +52923,60 @@ func (m *UserMutation) ResetMailMessageMetas() {
 	m.removedmail_message_metas = nil
 }
 
+// AddMailBodyCachIDs adds the "mail_body_caches" edge to the MailBodyCache entity by ids.
+func (m *UserMutation) AddMailBodyCachIDs(ids ...uuid.UUID) {
+	if m.mail_body_caches == nil {
+		m.mail_body_caches = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.mail_body_caches[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMailBodyCaches clears the "mail_body_caches" edge to the MailBodyCache entity.
+func (m *UserMutation) ClearMailBodyCaches() {
+	m.clearedmail_body_caches = true
+}
+
+// MailBodyCachesCleared reports if the "mail_body_caches" edge to the MailBodyCache entity was cleared.
+func (m *UserMutation) MailBodyCachesCleared() bool {
+	return m.clearedmail_body_caches
+}
+
+// RemoveMailBodyCachIDs removes the "mail_body_caches" edge to the MailBodyCache entity by IDs.
+func (m *UserMutation) RemoveMailBodyCachIDs(ids ...uuid.UUID) {
+	if m.removedmail_body_caches == nil {
+		m.removedmail_body_caches = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.mail_body_caches, ids[i])
+		m.removedmail_body_caches[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMailBodyCaches returns the removed IDs of the "mail_body_caches" edge to the MailBodyCache entity.
+func (m *UserMutation) RemovedMailBodyCachesIDs() (ids []uuid.UUID) {
+	for id := range m.removedmail_body_caches {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MailBodyCachesIDs returns the "mail_body_caches" edge IDs in the mutation.
+func (m *UserMutation) MailBodyCachesIDs() (ids []uuid.UUID) {
+	for id := range m.mail_body_caches {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMailBodyCaches resets all changes to the "mail_body_caches" edge.
+func (m *UserMutation) ResetMailBodyCaches() {
+	m.mail_body_caches = nil
+	m.clearedmail_body_caches = false
+	m.removedmail_body_caches = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -52392,7 +53193,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 33)
+	edges := make([]string, 0, 34)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -52491,6 +53292,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.mail_message_metas != nil {
 		edges = append(edges, user.EdgeMailMessageMetas)
+	}
+	if m.mail_body_caches != nil {
+		edges = append(edges, user.EdgeMailBodyCaches)
 	}
 	return edges
 }
@@ -52695,13 +53499,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeMailBodyCaches:
+		ids := make([]ent.Value, 0, len(m.mail_body_caches))
+		for id := range m.mail_body_caches {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 33)
+	edges := make([]string, 0, 34)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -52797,6 +53607,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedmail_message_metas != nil {
 		edges = append(edges, user.EdgeMailMessageMetas)
+	}
+	if m.removedmail_body_caches != nil {
+		edges = append(edges, user.EdgeMailBodyCaches)
 	}
 	return edges
 }
@@ -52997,13 +53810,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeMailBodyCaches:
+		ids := make([]ent.Value, 0, len(m.removedmail_body_caches))
+		for id := range m.removedmail_body_caches {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 33)
+	edges := make([]string, 0, 34)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -53103,6 +53922,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedmail_message_metas {
 		edges = append(edges, user.EdgeMailMessageMetas)
 	}
+	if m.clearedmail_body_caches {
+		edges = append(edges, user.EdgeMailBodyCaches)
+	}
 	return edges
 }
 
@@ -53176,6 +53998,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedmail_threads
 	case user.EdgeMailMessageMetas:
 		return m.clearedmail_message_metas
+	case user.EdgeMailBodyCaches:
+		return m.clearedmail_body_caches
 	}
 	return false
 }
@@ -53293,6 +54117,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeMailMessageMetas:
 		m.ResetMailMessageMetas()
+		return nil
+	case user.EdgeMailBodyCaches:
+		m.ResetMailBodyCaches()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

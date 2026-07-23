@@ -1135,6 +1135,29 @@ func HasMailMessageMetasWith(preds ...predicate.MailMessageMeta) predicate.User 
 	})
 }
 
+// HasMailBodyCaches applies the HasEdge predicate on the "mail_body_caches" edge.
+func HasMailBodyCaches() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MailBodyCachesTable, MailBodyCachesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMailBodyCachesWith applies the HasEdge predicate on the "mail_body_caches" edge with a given conditions (other predicates).
+func HasMailBodyCachesWith(preds ...predicate.MailBodyCache) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newMailBodyCachesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

@@ -35,6 +35,7 @@ import {
   evaluateAction,
   executeAction,
   getAction,
+  getSourceBody,
   rejectAction,
   RevenueAPIError,
   startCheckout,
@@ -75,6 +76,8 @@ export function ReviewSheet({
   const [rejecting, setRejecting] = React.useState(false);
   const [rejectReason, setRejectReason] = React.useState("");
   const [upsell, setUpsell] = React.useState(false);
+  const [original, setOriginal] = React.useState<string | null>(null);
+  const [loadingOriginal, setLoadingOriginal] = React.useState(false);
 
   React.useEffect(() => {
     if (action) {
@@ -84,6 +87,7 @@ export function ReviewSheet({
       setRejecting(false);
       setRejectReason("");
       setUpsell(false);
+      setOriginal(null);
     }
   }, [action]);
 
@@ -124,6 +128,23 @@ export function ReviewSheet({
       );
     } finally {
       setBusy(null);
+    }
+  };
+
+  const viewOriginal = async () => {
+    if (!action) return;
+    setLoadingOriginal(true);
+    onError("");
+    try {
+      setOriginal(await getSourceBody(action.id));
+    } catch (e) {
+      if (e instanceof RevenueAPIError && e.status === 404) {
+        setOriginal("(No original email is linked to this action.)");
+      } else {
+        onError(errMessage(e, "Could not load the original email."));
+      }
+    } finally {
+      setLoadingOriginal(false);
     }
   };
 
@@ -269,6 +290,20 @@ export function ReviewSheet({
           </Field>
 
           <PriorityBreakdown action={action} />
+
+          {/* The original email, fetched on demand (RFC 031 Layer 3). */}
+          <div className="rounded-[2px] border border-border p-3">
+            {original === null ? (
+              <Button variant="ghost" size="sm" onClick={viewOriginal} disabled={loadingOriginal}>
+                {loadingOriginal ? <CircleNotch className="animate-spin" /> : <EnvelopeSimple />}
+                View original email
+              </Button>
+            ) : (
+              <pre className="max-h-56 overflow-auto whitespace-pre-wrap font-normal text-xs text-primary/70">
+                {original}
+              </pre>
+            )}
+          </div>
 
           {isSend ? (
             <div className="flex flex-col gap-2 rounded-[2px] border border-border p-3">

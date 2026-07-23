@@ -103,11 +103,13 @@ type UserEdges struct {
 	MailThreads []*MailThread `json:"mail_threads,omitempty"`
 	// MailMessageMetas holds the value of the mail_message_metas edge.
 	MailMessageMetas []*MailMessageMeta `json:"mail_message_metas,omitempty"`
+	// MailBodyCaches holds the value of the mail_body_caches edge.
+	MailBodyCaches []*MailBodyCache `json:"mail_body_caches,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [33]bool
+	loadedTypes [34]bool
 	// totalCount holds the count of the edges above.
-	totalCount [33]map[string]int
+	totalCount [34]map[string]int
 
 	namedLedgerEntries                map[string][]*CreditLedger
 	namedMeetingMinuteUsages          map[string][]*MeetingMinuteUsage
@@ -141,6 +143,7 @@ type UserEdges struct {
 	namedRevenueLeakScans             map[string][]*RevenueLeakScan
 	namedMailThreads                  map[string][]*MailThread
 	namedMailMessageMetas             map[string][]*MailMessageMeta
+	namedMailBodyCaches               map[string][]*MailBodyCache
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -442,6 +445,15 @@ func (e UserEdges) MailMessageMetasOrErr() ([]*MailMessageMeta, error) {
 	return nil, &NotLoadedError{edge: "mail_message_metas"}
 }
 
+// MailBodyCachesOrErr returns the MailBodyCaches value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) MailBodyCachesOrErr() ([]*MailBodyCache, error) {
+	if e.loadedTypes[33] {
+		return e.MailBodyCaches, nil
+	}
+	return nil, &NotLoadedError{edge: "mail_body_caches"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -680,6 +692,11 @@ func (_m *User) QueryMailThreads() *MailThreadQuery {
 // QueryMailMessageMetas queries the "mail_message_metas" edge of the User entity.
 func (_m *User) QueryMailMessageMetas() *MailMessageMetaQuery {
 	return NewUserClient(_m.config).QueryMailMessageMetas(_m)
+}
+
+// QueryMailBodyCaches queries the "mail_body_caches" edge of the User entity.
+func (_m *User) QueryMailBodyCaches() *MailBodyCacheQuery {
+	return NewUserClient(_m.config).QueryMailBodyCaches(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -1488,6 +1505,30 @@ func (_m *User) appendNamedMailMessageMetas(name string, edges ...*MailMessageMe
 		_m.Edges.namedMailMessageMetas[name] = []*MailMessageMeta{}
 	} else {
 		_m.Edges.namedMailMessageMetas[name] = append(_m.Edges.namedMailMessageMetas[name], edges...)
+	}
+}
+
+// NamedMailBodyCaches returns the MailBodyCaches named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedMailBodyCaches(name string) ([]*MailBodyCache, error) {
+	if _m.Edges.namedMailBodyCaches == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedMailBodyCaches[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedMailBodyCaches(name string, edges ...*MailBodyCache) {
+	if _m.Edges.namedMailBodyCaches == nil {
+		_m.Edges.namedMailBodyCaches = make(map[string][]*MailBodyCache)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedMailBodyCaches[name] = []*MailBodyCache{}
+	} else {
+		_m.Edges.namedMailBodyCaches[name] = append(_m.Edges.namedMailBodyCaches[name], edges...)
 	}
 }
 

@@ -25,6 +25,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -3102,6 +3103,104 @@ func newMCPConnectionPaginateArgs(rv map[string]any) *mcpconnectionPaginateArgs 
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *MailBodyCacheQuery) CollectFields(ctx context.Context, satisfies ...string) (*MailBodyCacheQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *MailBodyCacheQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(mailbodycache.Columns))
+		selectedFields = []string{mailbodycache.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[mailbodycache.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, mailbodycache.FieldCreatedAt)
+				fieldSeen[mailbodycache.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[mailbodycache.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, mailbodycache.FieldUpdatedAt)
+				fieldSeen[mailbodycache.FieldUpdatedAt] = struct{}{}
+			}
+		case "provider":
+			if _, ok := fieldSeen[mailbodycache.FieldProvider]; !ok {
+				selectedFields = append(selectedFields, mailbodycache.FieldProvider)
+				fieldSeen[mailbodycache.FieldProvider] = struct{}{}
+			}
+		case "providerMessageID":
+			if _, ok := fieldSeen[mailbodycache.FieldProviderMessageID]; !ok {
+				selectedFields = append(selectedFields, mailbodycache.FieldProviderMessageID)
+				fieldSeen[mailbodycache.FieldProviderMessageID] = struct{}{}
+			}
+		case "expiresAt":
+			if _, ok := fieldSeen[mailbodycache.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, mailbodycache.FieldExpiresAt)
+				fieldSeen[mailbodycache.FieldExpiresAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type mailbodycachePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []MailBodyCachePaginateOption
+}
+
+func newMailBodyCachePaginateArgs(rv map[string]any) *mailbodycachePaginateArgs {
+	args := &mailbodycachePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*MailBodyCacheWhereInput); ok {
+		args.opts = append(args.opts, WithMailBodyCacheFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *MailMessageMetaQuery) CollectFields(ctx context.Context, satisfies ...string) (*MailMessageMetaQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -4589,6 +4688,11 @@ func (_q *RevenueEvidenceQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, revenueevidence.FieldSourceRecordID)
 				fieldSeen[revenueevidence.FieldSourceRecordID] = struct{}{}
 			}
+		case "sourceMessageID":
+			if _, ok := fieldSeen[revenueevidence.FieldSourceMessageID]; !ok {
+				selectedFields = append(selectedFields, revenueevidence.FieldSourceMessageID)
+				fieldSeen[revenueevidence.FieldSourceMessageID] = struct{}{}
+			}
 		case "sourceURI":
 			if _, ok := fieldSeen[revenueevidence.FieldSourceURI]; !ok {
 				selectedFields = append(selectedFields, revenueevidence.FieldSourceURI)
@@ -5866,6 +5970,19 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedMailMessageMetas(alias, func(wq *MailMessageMetaQuery) {
+				*wq = *query
+			})
+
+		case "mailBodyCaches":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&MailBodyCacheClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, mailbodycacheImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedMailBodyCaches(alias, func(wq *MailBodyCacheQuery) {
 				*wq = *query
 			})
 		case "createdAt":

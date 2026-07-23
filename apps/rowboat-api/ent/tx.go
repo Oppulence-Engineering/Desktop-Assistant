@@ -56,6 +56,8 @@ type Tx struct {
 	MCPConnection *MCPConnectionClient
 	// MCPConnectionHistory is the client for interacting with the MCPConnectionHistory builders.
 	MCPConnectionHistory *MCPConnectionHistoryClient
+	// MailBodyCache is the client for interacting with the MailBodyCache builders.
+	MailBodyCache *MailBodyCacheClient
 	// MailMessageMeta is the client for interacting with the MailMessageMeta builders.
 	MailMessageMeta *MailMessageMetaClient
 	// MailThread is the client for interacting with the MailThread builders.
@@ -247,6 +249,7 @@ func (tx *Tx) init() {
 	tx.LLMUsageHistory = NewLLMUsageHistoryClient(tx.config)
 	tx.MCPConnection = NewMCPConnectionClient(tx.config)
 	tx.MCPConnectionHistory = NewMCPConnectionHistoryClient(tx.config)
+	tx.MailBodyCache = NewMailBodyCacheClient(tx.config)
 	tx.MailMessageMeta = NewMailMessageMetaClient(tx.config)
 	tx.MailThread = NewMailThreadClient(tx.config)
 	tx.MeetingMinuteUsage = NewMeetingMinuteUsageClient(tx.config)

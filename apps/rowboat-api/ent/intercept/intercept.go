@@ -28,6 +28,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -702,6 +703,33 @@ func (f TraverseMCPConnectionHistory) Traverse(ctx context.Context, q ent.Query)
 	return fmt.Errorf("unexpected query type %T. expect *ent.MCPConnectionHistoryQuery", q)
 }
 
+// The MailBodyCacheFunc type is an adapter to allow the use of ordinary function as a Querier.
+type MailBodyCacheFunc func(context.Context, *ent.MailBodyCacheQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f MailBodyCacheFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.MailBodyCacheQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.MailBodyCacheQuery", q)
+}
+
+// The TraverseMailBodyCache type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseMailBodyCache func(context.Context, *ent.MailBodyCacheQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseMailBodyCache) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseMailBodyCache) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.MailBodyCacheQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.MailBodyCacheQuery", q)
+}
+
 // The MailMessageMetaFunc type is an adapter to allow the use of ordinary function as a Querier.
 type MailMessageMetaFunc func(context.Context, *ent.MailMessageMetaQuery) (ent.Value, error)
 
@@ -1262,6 +1290,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.MCPConnectionQuery, predicate.MCPConnection, mcpconnection.OrderOption]{typ: ent.TypeMCPConnection, tq: q}, nil
 	case *ent.MCPConnectionHistoryQuery:
 		return &query[*ent.MCPConnectionHistoryQuery, predicate.MCPConnectionHistory, mcpconnectionhistory.OrderOption]{typ: ent.TypeMCPConnectionHistory, tq: q}, nil
+	case *ent.MailBodyCacheQuery:
+		return &query[*ent.MailBodyCacheQuery, predicate.MailBodyCache, mailbodycache.OrderOption]{typ: ent.TypeMailBodyCache, tq: q}, nil
 	case *ent.MailMessageMetaQuery:
 		return &query[*ent.MailMessageMetaQuery, predicate.MailMessageMeta, mailmessagemeta.OrderOption]{typ: ent.TypeMailMessageMeta, tq: q}, nil
 	case *ent.MailThreadQuery:

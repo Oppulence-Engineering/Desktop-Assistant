@@ -306,6 +306,11 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"409": problemResponse("Invariant violation: not approved, blocked, expired decision, or workspace not linked for sends.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "action is not approved for its current revision", "not_approved")),
 	})}
+	paths["/v1/revenue-actions/{actionId}/source-body"] = obj{"get": operation("Revenue", "Get the original email body", "Returns the plain-text body of the original email behind this action (RFC 031 Layer 3), served from the sealed short-TTL cache or fetched from Gmail on demand. 404 when no source message is linked or the body is unavailable.", "getRevenueActionSourceBody", bearer(), actionParam, nil, obj{
+		"200": jsonResponse("Original email body.", objectSchema("Body.", obj{"body": stringSchema("Plain-text body.", "Hi — following up on the proposal...")}), nil),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
 	paths["/v1/revenue-actions/{actionId}/outcomes"] = obj{"post": operation("Revenue", "Record an outcome", "Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.", "recordRevenueActionOutcome", bearer(), actionParam, jsonRequest("Outcome.", objectSchema("Outcome request.", obj{
 		"kind":          stringEnum("Outcome kind.", "replied", "sent", "delivered", "bounced", "replied", "meeting_booked", "won", "lost", "dismissed", "bad_recommendation"),
 		"source":        stringEnum("Observing source.", "gmail", "gmail", "calendar", "crm", "user", "outbound"),

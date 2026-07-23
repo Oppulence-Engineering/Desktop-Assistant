@@ -317,6 +317,7 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		SetUser(u).
 		SetSource("gmail").
 		SetSourceRecordID(sum.ThreadID).
+		SetSourceMessageID(hit.Anchor.ID).
 		SetContentHash("sha256:" + hex.EncodeToString(anchorHash[:])).
 		SetExcerpt(truncateRunes(hit.Anchor.Snippet, excerptMaxRunes)).
 		SetOccurredAt(hit.Anchor.At).

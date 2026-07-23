@@ -1042,6 +1042,43 @@ var (
 			},
 		},
 	}
+	// MailBodyCachesColumns holds the columns for the "mail_body_caches" table.
+	MailBodyCachesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "provider", Type: field.TypeString, Default: "gmail"},
+		{Name: "provider_message_id", Type: field.TypeString},
+		{Name: "sealed_body", Type: field.TypeBytes},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "user_mail_body_caches", Type: field.TypeUUID},
+	}
+	// MailBodyCachesTable holds the schema information for the "mail_body_caches" table.
+	MailBodyCachesTable = &schema.Table{
+		Name:       "mail_body_caches",
+		Columns:    MailBodyCachesColumns,
+		PrimaryKey: []*schema.Column{MailBodyCachesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "mail_body_caches_users_mail_body_caches",
+				Columns:    []*schema.Column{MailBodyCachesColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "mailbodycache_provider_provider_message_id_user_mail_body_caches",
+				Unique:  true,
+				Columns: []*schema.Column{MailBodyCachesColumns[3], MailBodyCachesColumns[4], MailBodyCachesColumns[7]},
+			},
+			{
+				Name:    "mailbodycache_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{MailBodyCachesColumns[6]},
+			},
+		},
+	}
 	// MailMessageMetaColumns holds the columns for the "mail_message_meta" table.
 	MailMessageMetaColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1481,6 +1518,7 @@ var (
 		{Name: "source", Type: field.TypeString},
 		{Name: "source_account_id", Type: field.TypeString, Nullable: true},
 		{Name: "source_record_id", Type: field.TypeString},
+		{Name: "source_message_id", Type: field.TypeString, Nullable: true},
 		{Name: "source_uri", Type: field.TypeString, Nullable: true},
 		{Name: "content_hash", Type: field.TypeString},
 		{Name: "excerpt", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -1499,13 +1537,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "revenue_evidences_revenue_workspaces_evidences",
-				Columns:    []*schema.Column{RevenueEvidencesColumns[13]},
+				Columns:    []*schema.Column{RevenueEvidencesColumns[14]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "revenue_evidences_users_revenue_evidences",
-				Columns:    []*schema.Column{RevenueEvidencesColumns[14]},
+				Columns:    []*schema.Column{RevenueEvidencesColumns[15]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1514,7 +1552,7 @@ var (
 			{
 				Name:    "revenueevidence_source_source_record_id_content_hash_revenue_workspace_id",
 				Unique:  true,
-				Columns: []*schema.Column{RevenueEvidencesColumns[3], RevenueEvidencesColumns[5], RevenueEvidencesColumns[7], RevenueEvidencesColumns[13]},
+				Columns: []*schema.Column{RevenueEvidencesColumns[3], RevenueEvidencesColumns[5], RevenueEvidencesColumns[8], RevenueEvidencesColumns[14]},
 			},
 		},
 	}
@@ -1879,6 +1917,7 @@ var (
 		LlmUsageHistoriesTable,
 		McpConnectionsTable,
 		McpConnectionHistoriesTable,
+		MailBodyCachesTable,
 		MailMessageMetaTable,
 		MailThreadsTable,
 		MeetingMinuteUsagesTable,
@@ -1942,6 +1981,7 @@ func init() {
 	GoogleWatchesTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	McpConnectionsTable.ForeignKeys[0].RefTable = UsersTable
+	MailBodyCachesTable.ForeignKeys[0].RefTable = UsersTable
 	MailMessageMetaTable.ForeignKeys[0].RefTable = MailThreadsTable
 	MailMessageMetaTable.ForeignKeys[1].RefTable = UsersTable
 	MailThreadsTable.ForeignKeys[0].RefTable = RelationshipsTable

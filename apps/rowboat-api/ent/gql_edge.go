@@ -420,6 +420,14 @@ func (_m *MCPConnection) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (_m *MailBodyCache) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *MailMessageMeta) Thread(ctx context.Context) (*MailThread, error) {
 	result, err := _m.Edges.ThreadOrErr()
 	if IsNotLoaded(err) {
@@ -1268,6 +1276,18 @@ func (_m *User) MailMessageMetas(ctx context.Context) (result []*MailMessageMeta
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryMailMessageMetas().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) MailBodyCaches(ctx context.Context) (result []*MailBodyCache, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedMailBodyCaches(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.MailBodyCachesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryMailBodyCaches().All(ctx)
 	}
 	return result, err
 }

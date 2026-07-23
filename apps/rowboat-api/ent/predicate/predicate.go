@@ -72,6 +72,9 @@ type MCPConnection func(*sql.Selector)
 // MCPConnectionHistory is the predicate function for mcpconnectionhistory builders.
 type MCPConnectionHistory func(*sql.Selector)
 
+// MailBodyCache is the predicate function for mailbodycache builders.
+type MailBodyCache func(*sql.Selector)
+
 // MailMessageMeta is the predicate function for mailmessagemeta builders.
 type MailMessageMeta func(*sql.Selector)
 

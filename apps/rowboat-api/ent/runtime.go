@@ -25,6 +25,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -979,6 +980,35 @@ func init() {
 	mcpconnectionhistoryDescID := mcpconnectionhistoryFields[0].Descriptor()
 	// mcpconnectionhistory.DefaultID holds the default value on creation for the id field.
 	mcpconnectionhistory.DefaultID = mcpconnectionhistoryDescID.Default.(func() uuid.UUID)
+	mailbodycacheMixin := schema.MailBodyCache{}.Mixin()
+	mailbodycacheMixinFields0 := mailbodycacheMixin[0].Fields()
+	_ = mailbodycacheMixinFields0
+	mailbodycacheFields := schema.MailBodyCache{}.Fields()
+	_ = mailbodycacheFields
+	// mailbodycacheDescCreatedAt is the schema descriptor for created_at field.
+	mailbodycacheDescCreatedAt := mailbodycacheMixinFields0[1].Descriptor()
+	// mailbodycache.DefaultCreatedAt holds the default value on creation for the created_at field.
+	mailbodycache.DefaultCreatedAt = mailbodycacheDescCreatedAt.Default.(func() time.Time)
+	// mailbodycacheDescUpdatedAt is the schema descriptor for updated_at field.
+	mailbodycacheDescUpdatedAt := mailbodycacheMixinFields0[2].Descriptor()
+	// mailbodycache.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	mailbodycache.DefaultUpdatedAt = mailbodycacheDescUpdatedAt.Default.(func() time.Time)
+	// mailbodycache.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	mailbodycache.UpdateDefaultUpdatedAt = mailbodycacheDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// mailbodycacheDescProvider is the schema descriptor for provider field.
+	mailbodycacheDescProvider := mailbodycacheFields[0].Descriptor()
+	// mailbodycache.DefaultProvider holds the default value on creation for the provider field.
+	mailbodycache.DefaultProvider = mailbodycacheDescProvider.Default.(string)
+	// mailbodycache.ProviderValidator is a validator for the "provider" field. It is called by the builders before save.
+	mailbodycache.ProviderValidator = mailbodycacheDescProvider.Validators[0].(func(string) error)
+	// mailbodycacheDescProviderMessageID is the schema descriptor for provider_message_id field.
+	mailbodycacheDescProviderMessageID := mailbodycacheFields[1].Descriptor()
+	// mailbodycache.ProviderMessageIDValidator is a validator for the "provider_message_id" field. It is called by the builders before save.
+	mailbodycache.ProviderMessageIDValidator = mailbodycacheDescProviderMessageID.Validators[0].(func(string) error)
+	// mailbodycacheDescID is the schema descriptor for id field.
+	mailbodycacheDescID := mailbodycacheMixinFields0[0].Descriptor()
+	// mailbodycache.DefaultID holds the default value on creation for the id field.
+	mailbodycache.DefaultID = mailbodycacheDescID.Default.(func() uuid.UUID)
 	mailmessagemetaMixin := schema.MailMessageMeta{}.Mixin()
 	mailmessagemetaMixinFields0 := mailmessagemetaMixin[0].Fields()
 	_ = mailmessagemetaMixinFields0
@@ -1429,11 +1459,11 @@ func init() {
 	// revenueevidence.SourceRecordIDValidator is a validator for the "source_record_id" field. It is called by the builders before save.
 	revenueevidence.SourceRecordIDValidator = revenueevidenceDescSourceRecordID.Validators[0].(func(string) error)
 	// revenueevidenceDescContentHash is the schema descriptor for content_hash field.
-	revenueevidenceDescContentHash := revenueevidenceFields[4].Descriptor()
+	revenueevidenceDescContentHash := revenueevidenceFields[5].Descriptor()
 	// revenueevidence.ContentHashValidator is a validator for the "content_hash" field. It is called by the builders before save.
 	revenueevidence.ContentHashValidator = revenueevidenceDescContentHash.Validators[0].(func(string) error)
 	// revenueevidenceDescExternalEvidenceRefs is the schema descriptor for external_evidence_refs field.
-	revenueevidenceDescExternalEvidenceRefs := revenueevidenceFields[9].Descriptor()
+	revenueevidenceDescExternalEvidenceRefs := revenueevidenceFields[10].Descriptor()
 	// revenueevidence.DefaultExternalEvidenceRefs holds the default value on creation for the external_evidence_refs field.
 	revenueevidence.DefaultExternalEvidenceRefs = revenueevidenceDescExternalEvidenceRefs.Default.([]string)
 	// revenueevidenceDescID is the schema descriptor for id field.

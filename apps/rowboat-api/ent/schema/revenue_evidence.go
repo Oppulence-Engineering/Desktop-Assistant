@@ -26,6 +26,10 @@ func (RevenueEvidence) Fields() []ent.Field {
 				"gmail", "calendar", "meeting", "slack", "outbound", "crm")),
 		field.String("source_account_id").Optional(),
 		field.String("source_record_id").NotEmpty(),
+		// The provider message id of the anchor message, for on-demand body
+		// retrieval (RFC 031 Layer 3). Metadata only — the body is never
+		// stored here.
+		field.String("source_message_id").Optional(),
 		field.String("source_uri").Optional(),
 		field.String("content_hash").NotEmpty(),
 		field.Text("excerpt").Optional().Sensitive(),
