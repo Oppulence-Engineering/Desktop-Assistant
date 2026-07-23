@@ -263,6 +263,103 @@
         ],
         "type": "object"
       },
+      "ActionProposal": {
+        "properties": {
+          "approved_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "correlation_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "entity_id": {
+            "type": "string"
+          },
+          "executed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "financial": {
+            "type": "boolean"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "origin_run_id": {
+            "type": "string"
+          },
+          "params_json": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "result_ref": {
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "target",
+          "kind",
+          "financial",
+          "status",
+          "user"
+        ],
+        "type": "object"
+      },
       "AgentApproval": {
         "properties": {
           "approval_id": {
@@ -995,6 +1092,74 @@
           "cost_units",
           "user",
           "session"
+        ],
+        "type": "object"
+      },
+      "ApprovalToken": {
+        "properties": {
+          "consumed": {
+            "type": "boolean"
+          },
+          "consumed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "operator_user_id": {
+            "type": "string"
+          },
+          "params_hash": {
+            "type": "string"
+          },
+          "proposal_id": {
+            "type": "string"
+          },
+          "step_up": {
+            "type": "boolean"
+          },
+          "token_hash": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "token_hash",
+          "proposal_id",
+          "params_hash",
+          "operator_user_id",
+          "step_up",
+          "expires_at",
+          "consumed",
+          "user"
         ],
         "type": "object"
       },
@@ -6335,6 +6500,12 @@
             },
             "type": "array"
           },
+          "action_proposals": {
+            "items": {
+              "$ref": "#/components/schemas/ActionProposal"
+            },
+            "type": "array"
+          },
           "agent_approvals": {
             "items": {
               "$ref": "#/components/schemas/AgentApproval"
@@ -6374,6 +6545,12 @@
           "agent_turns": {
             "items": {
               "$ref": "#/components/schemas/AgentTurn"
+            },
+            "type": "array"
+          },
+          "approval_tokens": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovalToken"
             },
             "type": "array"
           },

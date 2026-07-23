@@ -12,6 +12,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -20,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -377,6 +379,255 @@ func (_m *ActionOutcome) ToEdge(order *ActionOutcomeOrder) *ActionOutcomeEdge {
 		order = DefaultActionOutcomeOrder
 	}
 	return &ActionOutcomeEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// ActionProposalEdge is the edge representation of ActionProposal.
+type ActionProposalEdge struct {
+	Node   *ActionProposal `json:"node"`
+	Cursor Cursor          `json:"cursor"`
+}
+
+// ActionProposalConnection is the connection containing edges to ActionProposal.
+type ActionProposalConnection struct {
+	Edges      []*ActionProposalEdge `json:"edges"`
+	PageInfo   PageInfo              `json:"pageInfo"`
+	TotalCount int                   `json:"totalCount"`
+}
+
+func (c *ActionProposalConnection) build(nodes []*ActionProposal, pager *actionproposalPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *ActionProposal
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *ActionProposal {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *ActionProposal {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*ActionProposalEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &ActionProposalEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// ActionProposalPaginateOption enables pagination customization.
+type ActionProposalPaginateOption func(*actionproposalPager) error
+
+// WithActionProposalOrder configures pagination ordering.
+func WithActionProposalOrder(order *ActionProposalOrder) ActionProposalPaginateOption {
+	if order == nil {
+		order = DefaultActionProposalOrder
+	}
+	o := *order
+	return func(pager *actionproposalPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultActionProposalOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithActionProposalFilter configures pagination filter.
+func WithActionProposalFilter(filter func(*ActionProposalQuery) (*ActionProposalQuery, error)) ActionProposalPaginateOption {
+	return func(pager *actionproposalPager) error {
+		if filter == nil {
+			return errors.New("ActionProposalQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type actionproposalPager struct {
+	reverse bool
+	order   *ActionProposalOrder
+	filter  func(*ActionProposalQuery) (*ActionProposalQuery, error)
+}
+
+func newActionProposalPager(opts []ActionProposalPaginateOption, reverse bool) (*actionproposalPager, error) {
+	pager := &actionproposalPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultActionProposalOrder
+	}
+	return pager, nil
+}
+
+func (p *actionproposalPager) applyFilter(query *ActionProposalQuery) (*ActionProposalQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *actionproposalPager) toCursor(_m *ActionProposal) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *actionproposalPager) applyCursors(query *ActionProposalQuery, after, before *Cursor) (*ActionProposalQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultActionProposalOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *actionproposalPager) applyOrder(query *ActionProposalQuery) *ActionProposalQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultActionProposalOrder.Field {
+		query = query.Order(DefaultActionProposalOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *actionproposalPager) orderExpr(query *ActionProposalQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultActionProposalOrder.Field {
+			b.Comma().Ident(DefaultActionProposalOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to ActionProposal.
+func (_m *ActionProposalQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...ActionProposalPaginateOption,
+) (*ActionProposalConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newActionProposalPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &ActionProposalConnection{Edges: []*ActionProposalEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// ActionProposalOrderField defines the ordering field of ActionProposal.
+type ActionProposalOrderField struct {
+	// Value extracts the ordering value from the given ActionProposal.
+	Value    func(*ActionProposal) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) actionproposal.OrderOption
+	toCursor func(*ActionProposal) Cursor
+}
+
+// ActionProposalOrder defines the ordering of ActionProposal.
+type ActionProposalOrder struct {
+	Direction OrderDirection            `json:"direction"`
+	Field     *ActionProposalOrderField `json:"field"`
+}
+
+// DefaultActionProposalOrder is the default ordering of ActionProposal.
+var DefaultActionProposalOrder = &ActionProposalOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &ActionProposalOrderField{
+		Value: func(_m *ActionProposal) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: actionproposal.FieldID,
+		toTerm: actionproposal.ByID,
+		toCursor: func(_m *ActionProposal) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts ActionProposal into ActionProposalEdge.
+func (_m *ActionProposal) ToEdge(order *ActionProposalOrder) *ActionProposalEdge {
+	if order == nil {
+		order = DefaultActionProposalOrder
+	}
+	return &ActionProposalEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}
@@ -2369,6 +2620,255 @@ func (_m *AgentTurn) ToEdge(order *AgentTurnOrder) *AgentTurnEdge {
 		order = DefaultAgentTurnOrder
 	}
 	return &AgentTurnEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// ApprovalTokenEdge is the edge representation of ApprovalToken.
+type ApprovalTokenEdge struct {
+	Node   *ApprovalToken `json:"node"`
+	Cursor Cursor         `json:"cursor"`
+}
+
+// ApprovalTokenConnection is the connection containing edges to ApprovalToken.
+type ApprovalTokenConnection struct {
+	Edges      []*ApprovalTokenEdge `json:"edges"`
+	PageInfo   PageInfo             `json:"pageInfo"`
+	TotalCount int                  `json:"totalCount"`
+}
+
+func (c *ApprovalTokenConnection) build(nodes []*ApprovalToken, pager *approvaltokenPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *ApprovalToken
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *ApprovalToken {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *ApprovalToken {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*ApprovalTokenEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &ApprovalTokenEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// ApprovalTokenPaginateOption enables pagination customization.
+type ApprovalTokenPaginateOption func(*approvaltokenPager) error
+
+// WithApprovalTokenOrder configures pagination ordering.
+func WithApprovalTokenOrder(order *ApprovalTokenOrder) ApprovalTokenPaginateOption {
+	if order == nil {
+		order = DefaultApprovalTokenOrder
+	}
+	o := *order
+	return func(pager *approvaltokenPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultApprovalTokenOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithApprovalTokenFilter configures pagination filter.
+func WithApprovalTokenFilter(filter func(*ApprovalTokenQuery) (*ApprovalTokenQuery, error)) ApprovalTokenPaginateOption {
+	return func(pager *approvaltokenPager) error {
+		if filter == nil {
+			return errors.New("ApprovalTokenQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type approvaltokenPager struct {
+	reverse bool
+	order   *ApprovalTokenOrder
+	filter  func(*ApprovalTokenQuery) (*ApprovalTokenQuery, error)
+}
+
+func newApprovalTokenPager(opts []ApprovalTokenPaginateOption, reverse bool) (*approvaltokenPager, error) {
+	pager := &approvaltokenPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultApprovalTokenOrder
+	}
+	return pager, nil
+}
+
+func (p *approvaltokenPager) applyFilter(query *ApprovalTokenQuery) (*ApprovalTokenQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *approvaltokenPager) toCursor(_m *ApprovalToken) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *approvaltokenPager) applyCursors(query *ApprovalTokenQuery, after, before *Cursor) (*ApprovalTokenQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultApprovalTokenOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *approvaltokenPager) applyOrder(query *ApprovalTokenQuery) *ApprovalTokenQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultApprovalTokenOrder.Field {
+		query = query.Order(DefaultApprovalTokenOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *approvaltokenPager) orderExpr(query *ApprovalTokenQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultApprovalTokenOrder.Field {
+			b.Comma().Ident(DefaultApprovalTokenOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to ApprovalToken.
+func (_m *ApprovalTokenQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...ApprovalTokenPaginateOption,
+) (*ApprovalTokenConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newApprovalTokenPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &ApprovalTokenConnection{Edges: []*ApprovalTokenEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// ApprovalTokenOrderField defines the ordering field of ApprovalToken.
+type ApprovalTokenOrderField struct {
+	// Value extracts the ordering value from the given ApprovalToken.
+	Value    func(*ApprovalToken) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) approvaltoken.OrderOption
+	toCursor func(*ApprovalToken) Cursor
+}
+
+// ApprovalTokenOrder defines the ordering of ApprovalToken.
+type ApprovalTokenOrder struct {
+	Direction OrderDirection           `json:"direction"`
+	Field     *ApprovalTokenOrderField `json:"field"`
+}
+
+// DefaultApprovalTokenOrder is the default ordering of ApprovalToken.
+var DefaultApprovalTokenOrder = &ApprovalTokenOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &ApprovalTokenOrderField{
+		Value: func(_m *ApprovalToken) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: approvaltoken.FieldID,
+		toTerm: approvaltoken.ByID,
+		toCursor: func(_m *ApprovalToken) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts ApprovalToken into ApprovalTokenEdge.
+func (_m *ApprovalToken) ToEdge(order *ApprovalTokenOrder) *ApprovalTokenEdge {
+	if order == nil {
+		order = DefaultApprovalTokenOrder
+	}
+	return &ApprovalTokenEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

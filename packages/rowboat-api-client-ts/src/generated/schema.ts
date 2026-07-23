@@ -1678,6 +1678,65 @@ export interface components {
       user: components["schemas"]["User"];
       workspace: components["schemas"]["RevenueWorkspace"];
     };
+    ActionProposal: {
+      /** Format: date-time */
+      approved_at?: string;
+      correlation_id?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      entity_id?: string;
+      /** Format: date-time */
+      executed_at?: string;
+      /**
+       * Format: date-time
+       * @description Credential or one-time ticket expiry timestamp.
+       * @example 2026-06-04T20:48:00Z
+       */
+      expires_at?: string;
+      financial: boolean;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      origin_run_id?: string;
+      params_json?: string;
+      rationale?: string;
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason?:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      result_ref?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      target: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
     AgentApproval: {
       approval_id: string;
       approval_token_ref?: string;
@@ -2029,6 +2088,42 @@ export interface components {
       summary?: string;
       tool_call_count: number;
       tool_calls?: components["schemas"]["AgentToolCall"][];
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    ApprovalToken: {
+      consumed: boolean;
+      /** Format: date-time */
+      consumed_at?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description Credential or one-time ticket expiry timestamp.
+       * @example 2026-06-04T20:48:00Z
+       */
+      expires_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      operator_user_id: string;
+      params_hash: string;
+      proposal_id: string;
+      step_up: boolean;
+      token_hash: string;
       /**
        * Format: date-time
        * @description Last row update timestamp.
@@ -6002,6 +6097,7 @@ export interface components {
     /** @description Local mirror of a WorkOS identity. Upserted when a verified bearer token is first seen. */
     User: {
       action_outcomes?: components["schemas"]["ActionOutcome"][];
+      action_proposals?: components["schemas"]["ActionProposal"][];
       agent_approvals?: components["schemas"]["AgentApproval"][];
       agent_definitions?: components["schemas"]["AgentDefinition"][];
       agent_session_events?: components["schemas"]["AgentSessionEvent"][];
@@ -6009,6 +6105,7 @@ export interface components {
       agent_tool_calls?: components["schemas"]["AgentToolCall"][];
       agent_tool_result_blobs?: components["schemas"]["AgentToolResultBlob"][];
       agent_turns?: components["schemas"]["AgentTurn"][];
+      approval_tokens?: components["schemas"]["ApprovalToken"][];
       /** @description Background task artifact mirrors owned by the user. */
       background_task_artifacts?: components["schemas"]["BackgroundTaskArtifact"][];
       /** @description Background task run event mirrors owned by the user. */

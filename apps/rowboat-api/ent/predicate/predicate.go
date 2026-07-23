@@ -9,6 +9,9 @@ import (
 // ActionOutcome is the predicate function for actionoutcome builders.
 type ActionOutcome func(*sql.Selector)
 
+// ActionProposal is the predicate function for actionproposal builders.
+type ActionProposal func(*sql.Selector)
+
 // AgentApproval is the predicate function for agentapproval builders.
 type AgentApproval func(*sql.Selector)
 
@@ -32,6 +35,9 @@ type AgentToolResultBlob func(*sql.Selector)
 
 // AgentTurn is the predicate function for agentturn builders.
 type AgentTurn func(*sql.Selector)
+
+// ApprovalToken is the predicate function for approvaltoken builders.
+type ApprovalToken func(*sql.Selector)
 
 // BackgroundTask is the predicate function for backgroundtask builders.
 type BackgroundTask func(*sql.Selector)

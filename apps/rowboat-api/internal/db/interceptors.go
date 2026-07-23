@@ -6,6 +6,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
@@ -13,6 +14,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -53,6 +55,8 @@ import (
 // into every update/delete predicate.
 var tenantUserColumns = map[string]string{
 	ent.TypeActionOutcome:               actionoutcome.UserColumn,
+	ent.TypeActionProposal:              actionproposal.UserColumn,
+	ent.TypeApprovalToken:               approvaltoken.UserColumn,
 	ent.TypeAgentApproval:               agentapproval.UserColumn,
 	ent.TypeAgentDefinition:             agentdefinition.UserColumn,
 	ent.TypeAgentSession:                agentsession.UserColumn,
@@ -357,6 +361,20 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.RevenueOutboxEventQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(revenueoutboxevent.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.ActionProposal.Intercept(intercept.TraverseActionProposal(
+		func(ctx context.Context, q *ent.ActionProposalQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(actionproposal.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.ApprovalToken.Intercept(intercept.TraverseApprovalToken(
+		func(ctx context.Context, q *ent.ApprovalTokenQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(approvaltoken.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 }

@@ -32,6 +32,14 @@ func (_m *ActionOutcome) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (_m *ActionProposal) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *AgentApproval) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -184,6 +192,14 @@ func (_m *AgentTurn) ToolCalls(ctx context.Context) (result []*AgentToolCall, er
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryToolCalls().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *ApprovalToken) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
 	}
 	return result, err
 }
@@ -1324,6 +1340,30 @@ func (_m *User) MailSignals(ctx context.Context) (result []*MailSignal, err erro
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryMailSignals().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) ActionProposals(ctx context.Context) (result []*ActionProposal, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedActionProposals(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ActionProposalsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryActionProposals().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) ApprovalTokens(ctx context.Context) (result []*ApprovalToken, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedApprovalTokens(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ApprovalTokensOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryApprovalTokens().All(ctx)
 	}
 	return result, err
 }
