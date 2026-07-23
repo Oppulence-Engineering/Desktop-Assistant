@@ -76,6 +76,28 @@ func addRevenueSchemas(schemas obj) {
 		"expiresAt":    stringSchema("Decision expiry; expired decisions must be re-evaluated before approval or execution.", "2026-07-13T12:00:00Z", obj{"format": "date-time"}),
 	}, "id", "revision", "revisionHash", "status", "evaluatedAt", "expiresAt")
 
+	schemas["RevenueImpact"] = objectSchema("Aggregate ROI picture for the caller's revenue queue: how many open loops were surfaced, how they were triaged, how many were acted on, and what came back.", obj{
+		"surfaced":       intSchema("Total actions ever surfaced.", 42),
+		"open":           intSchema("Actions currently open.", 8),
+		"handled":        intSchema("Actions marked handled.", 20),
+		"snoozed":        intSchema("Actions snoozed.", 3),
+		"dismissed":      intSchema("Actions dismissed.", 11),
+		"approved":       intSchema("Actions approved.", 18),
+		"executed":       intSchema("Actions executed (draft created or email sent).", 16),
+		"replied":        intSchema("Replies observed.", 6),
+		"meetingsBooked": intSchema("Meetings booked.", 2),
+		"won":            intSchema("Deals marked won.", 1),
+		"lost":           intSchema("Deals marked lost.", 1),
+		"replyRate":      obj{"type": "number", "nullable": true, "description": "Reply rate = replied / executed; null with no denominator.", "example": 0.38},
+		"meetingRate":    obj{"type": "number", "nullable": true, "description": "Meeting rate = meetings / executed; null with no denominator.", "example": 0.12},
+		"outcomes":       freeFormSchema("Raw outcome-kind counts."),
+		"byDetector": arraySchema("Per-detector contribution.", objectSchema("Detector stat.", obj{
+			"detector": stringSchema("Detector.", "unanswered_proposal"),
+			"surfaced": intSchema("Surfaced by this detector.", 12),
+			"handled":  intSchema("Handled from this detector.", 7),
+		})),
+	}, "surfaced", "open", "handled", "approved", "executed")
+
 	schemas["RevenueLeakScan"] = objectSchema("One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable.", obj{
 		"id":                   uuidSchema("Scan id.", "4d8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"status":               stringEnum("Scan status.", "completed", "pending", "running", "completed", "failed"),
@@ -116,6 +138,11 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"503": problemResponse("Policy facade unavailable; the link fails closed.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "policy preflight unavailable; the action stays pending", "facade_unavailable")),
+	})}
+
+	paths["/v1/revenue-impact"] = obj{"get": operation("Revenue", "Get the revenue impact summary", "Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.", "getRevenueImpact", bearer(), nil, nil, obj{
+		"200": jsonResponse("Impact summary.", ref("RevenueImpact"), nil),
+		"401": responseRef("401"),
 	})}
 
 	paths["/v1/revenue-leak-scans"] = obj{"post": operation("Revenue", "Start a revenue leak scan", "Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.", "startRevenueLeakScan", bearer(), nil, jsonRequestOptional("Scan options.", objectSchema("Scan request.", obj{

@@ -9,6 +9,7 @@ import type {
   ActionAudit,
   RelationshipDetail,
   RevenueAction,
+  RevenueImpact,
   RevenueLeakScan,
   RevenueOutcome,
   RevenuePolicyDecision,
@@ -58,6 +59,8 @@ const post = (path: string, body?: unknown) =>
 // --- workspace ---------------------------------------------------------------
 
 export const getWorkspace = () => call<RevenueWorkspace>("/revenue-workspaces/current");
+
+export const getImpact = () => call<RevenueImpact>("/revenue-impact");
 
 export interface LinkWorkspaceInput {
   outboundOrganizationId?: string;

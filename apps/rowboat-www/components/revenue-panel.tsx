@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   AddressBook,
+  ChartLineUp,
   CurrencyDollar,
   MagnifyingGlass,
   Plugs,
@@ -14,16 +15,18 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { getScan, getScans, getWorkspace, RevenueAPIError, startScan } from "@/lib/revenue";
+import { ImpactView } from "@/components/revenue/impact-view";
 import { QueueView } from "@/components/revenue/queue-view";
 import { RelationshipsView } from "@/components/revenue/relationships-view";
 import { ScansView } from "@/components/revenue/scans-view";
 import { WorkspaceView } from "@/components/revenue/workspace-view";
 import type { RevenueLeakScan, RevenueWorkspace } from "@/types/revenue";
 
-type Tab = "queue" | "relationships" | "scans" | "workspace";
+type Tab = "queue" | "impact" | "relationships" | "scans" | "workspace";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "queue", label: "Queue", icon: <Tray /> },
+  { key: "impact", label: "Impact", icon: <ChartLineUp /> },
   { key: "relationships", label: "Relationships", icon: <AddressBook /> },
   { key: "scans", label: "Scans", icon: <MagnifyingGlass /> },
   { key: "workspace", label: "Workspace", icon: <Plugs /> },
@@ -193,6 +196,8 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
           scanning={scanning}
           refreshKey={refreshKey}
         />
+      ) : tab === "impact" ? (
+        <ImpactView onError={setBanner} />
       ) : tab === "relationships" ? (
         <RelationshipsView onError={setBanner} onNotice={setNoticeMsg} />
       ) : tab === "scans" ? (
