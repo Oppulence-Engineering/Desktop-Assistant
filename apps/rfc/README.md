@@ -93,6 +93,14 @@ breadth the one-pager rejects for the wedge; revisit as expansion.
 > **012 → 023 + 022 → 031 → 030 → 029-slice → 032** is the path that ships it.
 > Two framings in this set should be read through the revenue-wedge lens for now:
 > 029's horizontal "everything that slips" promise and 026's command-center umbrella.
+>
+> **Littlebird parity track (033–035), placed in the same lens:**
+> [035](./035-meeting-intelligence-commitment-ledger.md) lands **Tier 3** (it _is_ the
+> spoken-commitment sensor from 032, ranked alongside email-004/email-013);
+> [033](./033-integration-parity-surface.md) is **Tier 3** packaging over already-ranked
+> rails (020/032) and explicitly interruptible by Tier 1–2 work;
+> [034](./034-floating-overlay-assistant.md) is **Tier 4** desktop polish carrying one
+> Tier-1 hook — approve-from-anywhere — which is why its Approve verb ships first.
 
 ## Cloud workflow RFCs
 
@@ -171,6 +179,19 @@ and verification pipelines as infrastructure underneath that promise.
 | [030](./030-revenue-memory-outbound-governance.md)     | Revenue Memory and Outbound Governance Integration | rowboat-api + OutboundConsole + email verification | Three-service warm-revenue loop: relationship memory and RevenueAction queue in Rowboat, composed research/verification policy in OutboundConsole, approval-gated Gmail execution, durable outcomes, identity, privacy, and rollout.    |
 | [031](./031-tiered-mail-storage-for-revenue-memory.md) | Tiered Mail Storage for Revenue Memory             | rowboat-api                                        | Four-layer cloud mail model for RFC 030's detection: metadata for every thread, derived signals for relevant ones, bodies by reference with a sealed short-TTL cache, permanent evidence snapshots — no mailbox copy at rest.           |
 | [032](./032-detection-sensor-integrations.md)          | Detection Sensor Integrations for Revenue Memory   | rowboat-api                                        | Post-Gmail/Outlook connector order ranked by slip-signal value: one e-sign, QBO/Xero behind the Stage-2 trigger, Slack channels, scheduling, CRM-as-enrichment, transcript import, docs engagement — LinkedIn cloud-side is a non-goal. |
+
+## Littlebird parity track
+
+RFCs 033–035 answer the horizontal-assistant comparison (littlebird.ai — see the
+competitive note in [`docs/one-pager.md`](../../docs/one-pager.md)) without abandoning the
+sensor-first build rule: parity where it is cheap packaging over shipped rails, past-parity
+where the ledger turns a notetaker feature into follow-through. All **Draft**.
+
+| #                                                      | Title                                                    | Layer                | What it adds                                                                                                                                                                                                                         |
+| ------------------------------------------------------ | -------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [033](./033-integration-parity-surface.md)             | Integration Parity Surface                               | rowboat-api + apps/x | Littlebird-class connector coverage as packaging: expose the shipped broker connectors, add task tools (Asana/ClickUp/Todoist/TickTick) as RFC 020 manifests powering the slipping-commitment detector, market MCP as the long tail. |
+| [034](./034-floating-overlay-assistant.md)             | Floating Overlay Assistant (Hummingbird-class)           | apps/x               | A global summonable panel over any app — Ask/Capture/**Approve** — with consented per-invocation context instead of screen recording; approving a revenue action from anywhere is the wedge hook.                                    |
+| [035](./035-meeting-intelligence-commitment-ledger.md) | Meeting Intelligence — Parity Plus the Commitment Ledger | apps/x + rowboat-api | Composes shipped on-device STT (009) + diarization (017) + email-013 briefs into bot-free every-call notes, then past parity: spoken commitments extracted into the RFC 030 ledger; unmet promises become chases.                    |
 
 ## Email feature RFCs
 
