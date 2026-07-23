@@ -197,10 +197,11 @@ func startRevenueAutoScan(ctx context.Context, cfg appconfig.Config, log *zap.Lo
 	svc := revenue.NewService(database.Client, nil, gmail, log)
 	svc.SetSweeper(gmail)
 	scanner := revenue.NewAutoScanner(svc, revenue.AutoScanConfig{
-		Interval:     cfg.RevenueAutoScanInterval,
-		MinPerUser:   cfg.RevenueAutoScanMinInterval,
-		MaxPerCycle:  cfg.RevenueAutoScanMaxPerCycle,
-		LookbackDays: cfg.RevenueAutoScanLookbackDays,
+		Interval:        cfg.RevenueAutoScanInterval,
+		MinPerUser:      cfg.RevenueAutoScanMinInterval,
+		MaxPerCycle:     cfg.RevenueAutoScanMaxPerCycle,
+		LookbackDays:    cfg.RevenueAutoScanLookbackDays,
+		RetentionMonths: cfg.RevenueMailRetentionMonths,
 	}, log)
 	go func() { _ = scanner.Run(ctx) }()
 	return nil

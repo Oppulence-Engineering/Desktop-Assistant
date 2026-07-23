@@ -25,6 +25,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -3100,6 +3102,287 @@ func newMCPConnectionPaginateArgs(rv map[string]any) *mcpconnectionPaginateArgs 
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *MailMessageMetaQuery) CollectFields(ctx context.Context, satisfies ...string) (*MailMessageMetaQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *MailMessageMetaQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(mailmessagemeta.Columns))
+		selectedFields = []string{mailmessagemeta.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "thread":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&MailThreadClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, mailthreadImplementors)...); err != nil {
+				return err
+			}
+			_q.withThread = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[mailmessagemeta.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, mailmessagemeta.FieldCreatedAt)
+				fieldSeen[mailmessagemeta.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[mailmessagemeta.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, mailmessagemeta.FieldUpdatedAt)
+				fieldSeen[mailmessagemeta.FieldUpdatedAt] = struct{}{}
+			}
+		case "providerMessageID":
+			if _, ok := fieldSeen[mailmessagemeta.FieldProviderMessageID]; !ok {
+				selectedFields = append(selectedFields, mailmessagemeta.FieldProviderMessageID)
+				fieldSeen[mailmessagemeta.FieldProviderMessageID] = struct{}{}
+			}
+		case "occurredAt":
+			if _, ok := fieldSeen[mailmessagemeta.FieldOccurredAt]; !ok {
+				selectedFields = append(selectedFields, mailmessagemeta.FieldOccurredAt)
+				fieldSeen[mailmessagemeta.FieldOccurredAt] = struct{}{}
+			}
+		case "direction":
+			if _, ok := fieldSeen[mailmessagemeta.FieldDirection]; !ok {
+				selectedFields = append(selectedFields, mailmessagemeta.FieldDirection)
+				fieldSeen[mailmessagemeta.FieldDirection] = struct{}{}
+			}
+		case "subject":
+			if _, ok := fieldSeen[mailmessagemeta.FieldSubject]; !ok {
+				selectedFields = append(selectedFields, mailmessagemeta.FieldSubject)
+				fieldSeen[mailmessagemeta.FieldSubject] = struct{}{}
+			}
+		case "labels":
+			if _, ok := fieldSeen[mailmessagemeta.FieldLabels]; !ok {
+				selectedFields = append(selectedFields, mailmessagemeta.FieldLabels)
+				fieldSeen[mailmessagemeta.FieldLabels] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type mailmessagemetaPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []MailMessageMetaPaginateOption
+}
+
+func newMailMessageMetaPaginateArgs(rv map[string]any) *mailmessagemetaPaginateArgs {
+	args := &mailmessagemetaPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*MailMessageMetaWhereInput); ok {
+		args.opts = append(args.opts, WithMailMessageMetaFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *MailThreadQuery) CollectFields(ctx context.Context, satisfies ...string) (*MailThreadQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *MailThreadQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(mailthread.Columns))
+		selectedFields = []string{mailthread.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "relationship":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relationshipImplementors)...); err != nil {
+				return err
+			}
+			_q.withRelationship = query
+
+		case "messages":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&MailMessageMetaClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, mailmessagemetaImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedMessages(alias, func(wq *MailMessageMetaQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[mailthread.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldCreatedAt)
+				fieldSeen[mailthread.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[mailthread.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldUpdatedAt)
+				fieldSeen[mailthread.FieldUpdatedAt] = struct{}{}
+			}
+		case "provider":
+			if _, ok := fieldSeen[mailthread.FieldProvider]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldProvider)
+				fieldSeen[mailthread.FieldProvider] = struct{}{}
+			}
+		case "providerThreadID":
+			if _, ok := fieldSeen[mailthread.FieldProviderThreadID]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldProviderThreadID)
+				fieldSeen[mailthread.FieldProviderThreadID] = struct{}{}
+			}
+		case "subject":
+			if _, ok := fieldSeen[mailthread.FieldSubject]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldSubject)
+				fieldSeen[mailthread.FieldSubject] = struct{}{}
+			}
+		case "accountDomain":
+			if _, ok := fieldSeen[mailthread.FieldAccountDomain]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldAccountDomain)
+				fieldSeen[mailthread.FieldAccountDomain] = struct{}{}
+			}
+		case "labels":
+			if _, ok := fieldSeen[mailthread.FieldLabels]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldLabels)
+				fieldSeen[mailthread.FieldLabels] = struct{}{}
+			}
+		case "replyState":
+			if _, ok := fieldSeen[mailthread.FieldReplyState]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldReplyState)
+				fieldSeen[mailthread.FieldReplyState] = struct{}{}
+			}
+		case "lastDirection":
+			if _, ok := fieldSeen[mailthread.FieldLastDirection]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldLastDirection)
+				fieldSeen[mailthread.FieldLastDirection] = struct{}{}
+			}
+		case "lastActivityAt":
+			if _, ok := fieldSeen[mailthread.FieldLastActivityAt]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldLastActivityAt)
+				fieldSeen[mailthread.FieldLastActivityAt] = struct{}{}
+			}
+		case "messageCount":
+			if _, ok := fieldSeen[mailthread.FieldMessageCount]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldMessageCount)
+				fieldSeen[mailthread.FieldMessageCount] = struct{}{}
+			}
+		case "outboundCount":
+			if _, ok := fieldSeen[mailthread.FieldOutboundCount]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldOutboundCount)
+				fieldSeen[mailthread.FieldOutboundCount] = struct{}{}
+			}
+		case "inboundCount":
+			if _, ok := fieldSeen[mailthread.FieldInboundCount]; !ok {
+				selectedFields = append(selectedFields, mailthread.FieldInboundCount)
+				fieldSeen[mailthread.FieldInboundCount] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type mailthreadPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []MailThreadPaginateOption
+}
+
+func newMailThreadPaginateArgs(rv map[string]any) *mailthreadPaginateArgs {
+	args := &mailthreadPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*MailThreadWhereInput); ok {
+		args.opts = append(args.opts, WithMailThreadFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *MeetingMinuteUsageQuery) CollectFields(ctx context.Context, satisfies ...string) (*MeetingMinuteUsageQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -3632,6 +3915,19 @@ func (_q *RelationshipQuery) collectField(ctx context.Context, oneNode bool, opC
 				return err
 			}
 			_q.WithNamedEvidences(alias, func(wq *RevenueEvidenceQuery) {
+				*wq = *query
+			})
+
+		case "mailThreads":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&MailThreadClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, mailthreadImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedMailThreads(alias, func(wq *MailThreadQuery) {
 				*wq = *query
 			})
 		case "createdAt":
@@ -5544,6 +5840,32 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedRevenueLeakScans(alias, func(wq *RevenueLeakScanQuery) {
+				*wq = *query
+			})
+
+		case "mailThreads":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&MailThreadClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, mailthreadImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedMailThreads(alias, func(wq *MailThreadQuery) {
+				*wq = *query
+			})
+
+		case "mailMessageMetas":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&MailMessageMetaClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, mailmessagemetaImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedMailMessageMetas(alias, func(wq *MailMessageMetaQuery) {
 				*wq = *query
 			})
 		case "createdAt":

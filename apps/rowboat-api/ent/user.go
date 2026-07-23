@@ -99,11 +99,15 @@ type UserEdges struct {
 	RevenueOutboxEvents []*RevenueOutboxEvent `json:"revenue_outbox_events,omitempty"`
 	// RevenueLeakScans holds the value of the revenue_leak_scans edge.
 	RevenueLeakScans []*RevenueLeakScan `json:"revenue_leak_scans,omitempty"`
+	// MailThreads holds the value of the mail_threads edge.
+	MailThreads []*MailThread `json:"mail_threads,omitempty"`
+	// MailMessageMetas holds the value of the mail_message_metas edge.
+	MailMessageMetas []*MailMessageMeta `json:"mail_message_metas,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [31]bool
+	loadedTypes [33]bool
 	// totalCount holds the count of the edges above.
-	totalCount [31]map[string]int
+	totalCount [33]map[string]int
 
 	namedLedgerEntries                map[string][]*CreditLedger
 	namedMeetingMinuteUsages          map[string][]*MeetingMinuteUsage
@@ -135,6 +139,8 @@ type UserEdges struct {
 	namedActionOutcomes               map[string][]*ActionOutcome
 	namedRevenueOutboxEvents          map[string][]*RevenueOutboxEvent
 	namedRevenueLeakScans             map[string][]*RevenueLeakScan
+	namedMailThreads                  map[string][]*MailThread
+	namedMailMessageMetas             map[string][]*MailMessageMeta
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -418,6 +424,24 @@ func (e UserEdges) RevenueLeakScansOrErr() ([]*RevenueLeakScan, error) {
 	return nil, &NotLoadedError{edge: "revenue_leak_scans"}
 }
 
+// MailThreadsOrErr returns the MailThreads value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) MailThreadsOrErr() ([]*MailThread, error) {
+	if e.loadedTypes[31] {
+		return e.MailThreads, nil
+	}
+	return nil, &NotLoadedError{edge: "mail_threads"}
+}
+
+// MailMessageMetasOrErr returns the MailMessageMetas value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) MailMessageMetasOrErr() ([]*MailMessageMeta, error) {
+	if e.loadedTypes[32] {
+		return e.MailMessageMetas, nil
+	}
+	return nil, &NotLoadedError{edge: "mail_message_metas"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -646,6 +670,16 @@ func (_m *User) QueryRevenueOutboxEvents() *RevenueOutboxEventQuery {
 // QueryRevenueLeakScans queries the "revenue_leak_scans" edge of the User entity.
 func (_m *User) QueryRevenueLeakScans() *RevenueLeakScanQuery {
 	return NewUserClient(_m.config).QueryRevenueLeakScans(_m)
+}
+
+// QueryMailThreads queries the "mail_threads" edge of the User entity.
+func (_m *User) QueryMailThreads() *MailThreadQuery {
+	return NewUserClient(_m.config).QueryMailThreads(_m)
+}
+
+// QueryMailMessageMetas queries the "mail_message_metas" edge of the User entity.
+func (_m *User) QueryMailMessageMetas() *MailMessageMetaQuery {
+	return NewUserClient(_m.config).QueryMailMessageMetas(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -1406,6 +1440,54 @@ func (_m *User) appendNamedRevenueLeakScans(name string, edges ...*RevenueLeakSc
 		_m.Edges.namedRevenueLeakScans[name] = []*RevenueLeakScan{}
 	} else {
 		_m.Edges.namedRevenueLeakScans[name] = append(_m.Edges.namedRevenueLeakScans[name], edges...)
+	}
+}
+
+// NamedMailThreads returns the MailThreads named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedMailThreads(name string) ([]*MailThread, error) {
+	if _m.Edges.namedMailThreads == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedMailThreads[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedMailThreads(name string, edges ...*MailThread) {
+	if _m.Edges.namedMailThreads == nil {
+		_m.Edges.namedMailThreads = make(map[string][]*MailThread)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedMailThreads[name] = []*MailThread{}
+	} else {
+		_m.Edges.namedMailThreads[name] = append(_m.Edges.namedMailThreads[name], edges...)
+	}
+}
+
+// NamedMailMessageMetas returns the MailMessageMetas named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedMailMessageMetas(name string) ([]*MailMessageMeta, error) {
+	if _m.Edges.namedMailMessageMetas == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedMailMessageMetas[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedMailMessageMetas(name string, edges ...*MailMessageMeta) {
+	if _m.Edges.namedMailMessageMetas == nil {
+		_m.Edges.namedMailMessageMetas = make(map[string][]*MailMessageMeta)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedMailMessageMetas[name] = []*MailMessageMeta{}
+	} else {
+		_m.Edges.namedMailMessageMetas[name] = append(_m.Edges.namedMailMessageMetas[name], edges...)
 	}
 }
 

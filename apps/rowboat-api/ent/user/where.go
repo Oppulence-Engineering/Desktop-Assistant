@@ -1089,6 +1089,52 @@ func HasRevenueLeakScansWith(preds ...predicate.RevenueLeakScan) predicate.User 
 	})
 }
 
+// HasMailThreads applies the HasEdge predicate on the "mail_threads" edge.
+func HasMailThreads() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MailThreadsTable, MailThreadsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMailThreadsWith applies the HasEdge predicate on the "mail_threads" edge with a given conditions (other predicates).
+func HasMailThreadsWith(preds ...predicate.MailThread) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newMailThreadsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasMailMessageMetas applies the HasEdge predicate on the "mail_message_metas" edge.
+func HasMailMessageMetas() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MailMessageMetasTable, MailMessageMetasColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMailMessageMetasWith applies the HasEdge predicate on the "mail_message_metas" edge with a given conditions (other predicates).
+func HasMailMessageMetasWith(preds ...predicate.MailMessageMeta) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newMailMessageMetasStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

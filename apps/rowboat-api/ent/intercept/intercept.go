@@ -28,6 +28,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -700,6 +702,60 @@ func (f TraverseMCPConnectionHistory) Traverse(ctx context.Context, q ent.Query)
 	return fmt.Errorf("unexpected query type %T. expect *ent.MCPConnectionHistoryQuery", q)
 }
 
+// The MailMessageMetaFunc type is an adapter to allow the use of ordinary function as a Querier.
+type MailMessageMetaFunc func(context.Context, *ent.MailMessageMetaQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f MailMessageMetaFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.MailMessageMetaQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.MailMessageMetaQuery", q)
+}
+
+// The TraverseMailMessageMeta type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseMailMessageMeta func(context.Context, *ent.MailMessageMetaQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseMailMessageMeta) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseMailMessageMeta) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.MailMessageMetaQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.MailMessageMetaQuery", q)
+}
+
+// The MailThreadFunc type is an adapter to allow the use of ordinary function as a Querier.
+type MailThreadFunc func(context.Context, *ent.MailThreadQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f MailThreadFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.MailThreadQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.MailThreadQuery", q)
+}
+
+// The TraverseMailThread type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseMailThread func(context.Context, *ent.MailThreadQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseMailThread) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseMailThread) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.MailThreadQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.MailThreadQuery", q)
+}
+
 // The MeetingMinuteUsageFunc type is an adapter to allow the use of ordinary function as a Querier.
 type MeetingMinuteUsageFunc func(context.Context, *ent.MeetingMinuteUsageQuery) (ent.Value, error)
 
@@ -1206,6 +1262,10 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.MCPConnectionQuery, predicate.MCPConnection, mcpconnection.OrderOption]{typ: ent.TypeMCPConnection, tq: q}, nil
 	case *ent.MCPConnectionHistoryQuery:
 		return &query[*ent.MCPConnectionHistoryQuery, predicate.MCPConnectionHistory, mcpconnectionhistory.OrderOption]{typ: ent.TypeMCPConnectionHistory, tq: q}, nil
+	case *ent.MailMessageMetaQuery:
+		return &query[*ent.MailMessageMetaQuery, predicate.MailMessageMeta, mailmessagemeta.OrderOption]{typ: ent.TypeMailMessageMeta, tq: q}, nil
+	case *ent.MailThreadQuery:
+		return &query[*ent.MailThreadQuery, predicate.MailThread, mailthread.OrderOption]{typ: ent.TypeMailThread, tq: q}, nil
 	case *ent.MeetingMinuteUsageQuery:
 		return &query[*ent.MeetingMinuteUsageQuery, predicate.MeetingMinuteUsage, meetingminuteusage.OrderOption]{typ: ent.TypeMeetingMinuteUsage, tq: q}, nil
 	case *ent.OAuthConnectionQuery:

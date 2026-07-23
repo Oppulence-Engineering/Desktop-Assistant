@@ -981,6 +981,29 @@ func HasEvidencesWith(preds ...predicate.RevenueEvidence) predicate.Relationship
 	})
 }
 
+// HasMailThreads applies the HasEdge predicate on the "mail_threads" edge.
+func HasMailThreads() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MailThreadsTable, MailThreadsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMailThreadsWith applies the HasEdge predicate on the "mail_threads" edge with a given conditions (other predicates).
+func HasMailThreadsWith(preds ...predicate.MailThread) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newMailThreadsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Relationship) predicate.Relationship {
 	return predicate.Relationship(sql.AndPredicates(predicates...))

@@ -53,6 +53,8 @@ func (Relationship) Edges() []ent.Edge {
 		edge.To("actions", RevenueAction.Type).
 			StorageKey(edge.Column("relationship_id")),
 		edge.To("evidences", RevenueEvidence.Type),
+		edge.To("mail_threads", MailThread.Type).
+			StorageKey(edge.Column("relationship_id")),
 	}
 }
 

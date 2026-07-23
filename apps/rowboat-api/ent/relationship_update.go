@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -302,6 +303,21 @@ func (_u *RelationshipUpdate) AddEvidences(v ...*RevenueEvidence) *RelationshipU
 	return _u.AddEvidenceIDs(ids...)
 }
 
+// AddMailThreadIDs adds the "mail_threads" edge to the MailThread entity by IDs.
+func (_u *RelationshipUpdate) AddMailThreadIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.AddMailThreadIDs(ids...)
+	return _u
+}
+
+// AddMailThreads adds the "mail_threads" edges to the MailThread entity.
+func (_u *RelationshipUpdate) AddMailThreads(v ...*MailThread) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMailThreadIDs(ids...)
+}
+
 // Mutation returns the RelationshipMutation object of the builder.
 func (_u *RelationshipUpdate) Mutation() *RelationshipMutation {
 	return _u.mutation
@@ -380,6 +396,27 @@ func (_u *RelationshipUpdate) RemoveEvidences(v ...*RevenueEvidence) *Relationsh
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEvidenceIDs(ids...)
+}
+
+// ClearMailThreads clears all "mail_threads" edges to the MailThread entity.
+func (_u *RelationshipUpdate) ClearMailThreads() *RelationshipUpdate {
+	_u.mutation.ClearMailThreads()
+	return _u
+}
+
+// RemoveMailThreadIDs removes the "mail_threads" edge to MailThread entities by IDs.
+func (_u *RelationshipUpdate) RemoveMailThreadIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.RemoveMailThreadIDs(ids...)
+	return _u
+}
+
+// RemoveMailThreads removes "mail_threads" edges to MailThread entities.
+func (_u *RelationshipUpdate) RemoveMailThreads(v ...*MailThread) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMailThreadIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -711,6 +748,51 @@ func (_u *RelationshipUpdate) sqlSave(ctx context.Context) (_node int, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.MailThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.MailThreadsTable,
+			Columns: []string{relationship.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMailThreadsIDs(); len(nodes) > 0 && !_u.mutation.MailThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.MailThreadsTable,
+			Columns: []string{relationship.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MailThreadsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.MailThreadsTable,
+			Columns: []string{relationship.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{relationship.Label}
@@ -998,6 +1080,21 @@ func (_u *RelationshipUpdateOne) AddEvidences(v ...*RevenueEvidence) *Relationsh
 	return _u.AddEvidenceIDs(ids...)
 }
 
+// AddMailThreadIDs adds the "mail_threads" edge to the MailThread entity by IDs.
+func (_u *RelationshipUpdateOne) AddMailThreadIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.AddMailThreadIDs(ids...)
+	return _u
+}
+
+// AddMailThreads adds the "mail_threads" edges to the MailThread entity.
+func (_u *RelationshipUpdateOne) AddMailThreads(v ...*MailThread) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMailThreadIDs(ids...)
+}
+
 // Mutation returns the RelationshipMutation object of the builder.
 func (_u *RelationshipUpdateOne) Mutation() *RelationshipMutation {
 	return _u.mutation
@@ -1076,6 +1173,27 @@ func (_u *RelationshipUpdateOne) RemoveEvidences(v ...*RevenueEvidence) *Relatio
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEvidenceIDs(ids...)
+}
+
+// ClearMailThreads clears all "mail_threads" edges to the MailThread entity.
+func (_u *RelationshipUpdateOne) ClearMailThreads() *RelationshipUpdateOne {
+	_u.mutation.ClearMailThreads()
+	return _u
+}
+
+// RemoveMailThreadIDs removes the "mail_threads" edge to MailThread entities by IDs.
+func (_u *RelationshipUpdateOne) RemoveMailThreadIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.RemoveMailThreadIDs(ids...)
+	return _u
+}
+
+// RemoveMailThreads removes "mail_threads" edges to MailThread entities.
+func (_u *RelationshipUpdateOne) RemoveMailThreads(v ...*MailThread) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMailThreadIDs(ids...)
 }
 
 // Where appends a list predicates to the RelationshipUpdate builder.
@@ -1430,6 +1548,51 @@ func (_u *RelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Relationsh
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MailThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.MailThreadsTable,
+			Columns: []string{relationship.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMailThreadsIDs(); len(nodes) > 0 && !_u.mutation.MailThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.MailThreadsTable,
+			Columns: []string{relationship.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MailThreadsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.MailThreadsTable,
+			Columns: []string{relationship.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -24,6 +24,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -70,6 +72,8 @@ var tenantUserColumns = map[string]string{
 	ent.TypeOAuthConnection:             oauthconnection.UserColumn,
 	ent.TypeSubscription:                subscription.UserColumn,
 	ent.TypeCommitment:                  commitment.UserColumn,
+	ent.TypeMailMessageMeta:             mailmessagemeta.UserColumn,
+	ent.TypeMailThread:                  mailthread.UserColumn,
 	ent.TypePolicyDecisionSnapshot:      policydecisionsnapshot.UserColumn,
 	ent.TypeRelationship:                relationship.UserColumn,
 	ent.TypeRevenueAction:               revenueaction.UserColumn,
@@ -265,6 +269,20 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.RevenueLeakScanQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(revenueleakscan.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.MailThread.Intercept(intercept.TraverseMailThread(
+		func(ctx context.Context, q *ent.MailThreadQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(mailthread.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.MailMessageMeta.Intercept(intercept.TraverseMailMessageMeta(
+		func(ctx context.Context, q *ent.MailMessageMetaQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(mailmessagemeta.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

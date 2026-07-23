@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -34,12 +35,14 @@ type RelationshipQuery struct {
 	withCommitments      *CommitmentQuery
 	withActions          *RevenueActionQuery
 	withEvidences        *RevenueEvidenceQuery
+	withMailThreads      *MailThreadQuery
 	withFKs              bool
 	modifiers            []func(*sql.Selector)
 	loadTotal            []func(context.Context, []*Relationship) error
 	withNamedCommitments map[string]*CommitmentQuery
 	withNamedActions     map[string]*RevenueActionQuery
 	withNamedEvidences   map[string]*RevenueEvidenceQuery
+	withNamedMailThreads map[string]*MailThreadQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -179,6 +182,28 @@ func (_q *RelationshipQuery) QueryEvidences() *RevenueEvidenceQuery {
 			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
 			sqlgraph.To(revenueevidence.Table, revenueevidence.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, relationship.EvidencesTable, relationship.EvidencesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMailThreads chains the current query on the "mail_threads" edge.
+func (_q *RelationshipQuery) QueryMailThreads() *MailThreadQuery {
+	query := (&MailThreadClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
+			sqlgraph.To(mailthread.Table, mailthread.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.MailThreadsTable, relationship.MailThreadsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -383,6 +408,7 @@ func (_q *RelationshipQuery) Clone() *RelationshipQuery {
 		withCommitments: _q.withCommitments.Clone(),
 		withActions:     _q.withActions.Clone(),
 		withEvidences:   _q.withEvidences.Clone(),
+		withMailThreads: _q.withMailThreads.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -441,6 +467,17 @@ func (_q *RelationshipQuery) WithEvidences(opts ...func(*RevenueEvidenceQuery)) 
 		opt(query)
 	}
 	_q.withEvidences = query
+	return _q
+}
+
+// WithMailThreads tells the query-builder to eager-load the nodes that are connected to
+// the "mail_threads" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithMailThreads(opts ...func(*MailThreadQuery)) *RelationshipQuery {
+	query := (&MailThreadClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withMailThreads = query
 	return _q
 }
 
@@ -523,12 +560,13 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes       = []*Relationship{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			_q.withWorkspace != nil,
 			_q.withUser != nil,
 			_q.withCommitments != nil,
 			_q.withActions != nil,
 			_q.withEvidences != nil,
+			_q.withMailThreads != nil,
 		}
 	)
 	if _q.withWorkspace != nil || _q.withUser != nil {
@@ -591,6 +629,13 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 			return nil, err
 		}
 	}
+	if query := _q.withMailThreads; query != nil {
+		if err := _q.loadMailThreads(ctx, query, nodes,
+			func(n *Relationship) { n.Edges.MailThreads = []*MailThread{} },
+			func(n *Relationship, e *MailThread) { n.Edges.MailThreads = append(n.Edges.MailThreads, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedCommitments {
 		if err := _q.loadCommitments(ctx, query, nodes,
 			func(n *Relationship) { n.appendNamedCommitments(name) },
@@ -609,6 +654,13 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		if err := _q.loadEvidences(ctx, query, nodes,
 			func(n *Relationship) { n.appendNamedEvidences(name) },
 			func(n *Relationship, e *RevenueEvidence) { n.appendNamedEvidences(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedMailThreads {
+		if err := _q.loadMailThreads(ctx, query, nodes,
+			func(n *Relationship) { n.appendNamedMailThreads(name) },
+			func(n *Relationship, e *MailThread) { n.appendNamedMailThreads(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -807,6 +859,37 @@ func (_q *RelationshipQuery) loadEvidences(ctx context.Context, query *RevenueEv
 	}
 	return nil
 }
+func (_q *RelationshipQuery) loadMailThreads(ctx context.Context, query *MailThreadQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *MailThread)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Relationship)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.MailThread(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(relationship.MailThreadsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.relationship_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "relationship_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "relationship_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *RelationshipQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -931,6 +1014,20 @@ func (_q *RelationshipQuery) WithNamedEvidences(name string, opts ...func(*Reven
 		_q.withNamedEvidences = make(map[string]*RevenueEvidenceQuery)
 	}
 	_q.withNamedEvidences[name] = query
+	return _q
+}
+
+// WithNamedMailThreads tells the query-builder to eager-load the nodes that are connected to the "mail_threads"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithNamedMailThreads(name string, opts ...func(*MailThreadQuery)) *RelationshipQuery {
+	query := (&MailThreadClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedMailThreads == nil {
+		_q.withNamedMailThreads = make(map[string]*MailThreadQuery)
+	}
+	_q.withNamedMailThreads[name] = query
 	return _q
 }
 

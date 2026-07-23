@@ -87,6 +87,10 @@ const (
 	EdgeRevenueOutboxEvents = "revenue_outbox_events"
 	// EdgeRevenueLeakScans holds the string denoting the revenue_leak_scans edge name in mutations.
 	EdgeRevenueLeakScans = "revenue_leak_scans"
+	// EdgeMailThreads holds the string denoting the mail_threads edge name in mutations.
+	EdgeMailThreads = "mail_threads"
+	// EdgeMailMessageMetas holds the string denoting the mail_message_metas edge name in mutations.
+	EdgeMailMessageMetas = "mail_message_metas"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -306,6 +310,20 @@ const (
 	RevenueLeakScansInverseTable = "revenue_leak_scans"
 	// RevenueLeakScansColumn is the table column denoting the revenue_leak_scans relation/edge.
 	RevenueLeakScansColumn = "user_revenue_leak_scans"
+	// MailThreadsTable is the table that holds the mail_threads relation/edge.
+	MailThreadsTable = "mail_threads"
+	// MailThreadsInverseTable is the table name for the MailThread entity.
+	// It exists in this package in order to avoid circular dependency with the "mailthread" package.
+	MailThreadsInverseTable = "mail_threads"
+	// MailThreadsColumn is the table column denoting the mail_threads relation/edge.
+	MailThreadsColumn = "user_mail_threads"
+	// MailMessageMetasTable is the table that holds the mail_message_metas relation/edge.
+	MailMessageMetasTable = "mail_message_meta"
+	// MailMessageMetasInverseTable is the table name for the MailMessageMeta entity.
+	// It exists in this package in order to avoid circular dependency with the "mailmessagemeta" package.
+	MailMessageMetasInverseTable = "mail_message_meta"
+	// MailMessageMetasColumn is the table column denoting the mail_message_metas relation/edge.
+	MailMessageMetasColumn = "user_mail_message_metas"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -800,6 +818,34 @@ func ByRevenueLeakScans(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newRevenueLeakScansStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByMailThreadsCount orders the results by mail_threads count.
+func ByMailThreadsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMailThreadsStep(), opts...)
+	}
+}
+
+// ByMailThreads orders the results by mail_threads terms.
+func ByMailThreads(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMailThreadsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByMailMessageMetasCount orders the results by mail_message_metas count.
+func ByMailMessageMetasCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMailMessageMetasStep(), opts...)
+	}
+}
+
+// ByMailMessageMetas orders the results by mail_message_metas terms.
+func ByMailMessageMetas(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMailMessageMetasStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -1015,5 +1061,19 @@ func newRevenueLeakScansStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RevenueLeakScansInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RevenueLeakScansTable, RevenueLeakScansColumn),
+	)
+}
+func newMailThreadsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MailThreadsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MailThreadsTable, MailThreadsColumn),
+	)
+}
+func newMailMessageMetasStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MailMessageMetasInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MailMessageMetasTable, MailMessageMetasColumn),
 	)
 }

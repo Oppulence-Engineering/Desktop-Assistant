@@ -3988,6 +3988,163 @@
         "required": ["name", "trustTier"],
         "type": "object"
       },
+      "MailMessageMeta": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "from_addr": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "provider_message_id": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "thread": {
+            "$ref": "#/components/schemas/MailThread"
+          },
+          "to_addr": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "provider_message_id",
+          "occurred_at",
+          "direction",
+          "labels",
+          "thread",
+          "user"
+        ],
+        "type": "object"
+      },
+      "MailThread": {
+        "properties": {
+          "account_domain": {
+            "type": "string"
+          },
+          "counterparty_email": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "inbound_count": {
+            "type": "integer"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "last_activity_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "last_direction": {
+            "type": "string"
+          },
+          "message_count": {
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MailMessageMeta"
+            },
+            "type": "array"
+          },
+          "outbound_count": {
+            "type": "integer"
+          },
+          "provider": {
+            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+            "example": "openai",
+            "type": "string"
+          },
+          "provider_thread_id": {
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/Relationship"
+          },
+          "reply_state": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "provider",
+          "provider_thread_id",
+          "labels",
+          "reply_state",
+          "message_count",
+          "outbound_count",
+          "inbound_count",
+          "user"
+        ],
+        "type": "object"
+      },
       "MeResponse": {
         "description": "Response for GET /v1/me.",
         "properties": {
@@ -4527,6 +4684,12 @@
           "last_touch_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "mail_threads": {
+            "items": {
+              "$ref": "#/components/schemas/MailThread"
+            },
+            "type": "array"
           },
           "next_action_at": {
             "format": "date-time",
@@ -6177,6 +6340,18 @@
             "description": "LLM usage rows for the user.",
             "items": {
               "$ref": "#/components/schemas/LLMUsage"
+            },
+            "type": "array"
+          },
+          "mail_message_metas": {
+            "items": {
+              "$ref": "#/components/schemas/MailMessageMeta"
+            },
+            "type": "array"
+          },
+          "mail_threads": {
+            "items": {
+              "$ref": "#/components/schemas/MailThread"
             },
             "type": "array"
           },
@@ -9796,6 +9971,30 @@
         ],
         "summary": "List runs triggered by a cloud event",
         "tags": ["Cloud Events"]
+      }
+    },
+    "/v1/google-oauth": {
+      "delete": {
+        "description": "Removes the user's Google connection and purges data derived from it (the RFC 031 cloud mail index; evidence quotes are retained as the user's own action history). Idempotent: returns 204 whether or not a connection existed. The user should also revoke the grant in their Google account.",
+        "operationId": "disconnectGoogle",
+        "responses": {
+          "204": {
+            "description": "Disconnected (idempotent)."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Disconnect Google",
+        "tags": ["Google OAuth"]
       }
     },
     "/v1/google-oauth/claim": {

@@ -776,6 +776,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/google-oauth": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Disconnect Google
+     * @description Removes the user's Google connection and purges data derived from it (the RFC 031 cloud mail index; evidence quotes are retained as the user's own action history). Idempotent: returns 204 whether or not a connection existed. The user should also revoke the grant in their Google account.
+     */
+    delete: operations["disconnectGoogle"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/google-oauth/claim": {
     parameters: {
       query?: never;
@@ -4290,6 +4310,78 @@ export interface components {
        */
       trustTier: "read" | "write" | "act" | "money-moving";
     };
+    MailMessageMeta: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      direction: string;
+      from_addr?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      labels: string[];
+      /** Format: date-time */
+      occurred_at: string;
+      provider_message_id: string;
+      subject?: string;
+      thread: components["schemas"]["MailThread"];
+      to_addr?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    MailThread: {
+      account_domain?: string;
+      counterparty_email?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      inbound_count: number;
+      labels: string[];
+      /** Format: date-time */
+      last_activity_at?: string;
+      last_direction?: string;
+      message_count: number;
+      messages?: components["schemas"]["MailMessageMeta"][];
+      outbound_count: number;
+      /**
+       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+       * @example openai
+       */
+      provider: string;
+      provider_thread_id: string;
+      relationship?: components["schemas"]["Relationship"];
+      reply_state: string;
+      subject?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
     /** @description Response for GET /v1/me. */
     MeResponse: {
       billing: components["schemas"]["BillingState"];
@@ -4650,6 +4742,7 @@ export interface components {
       kind: string;
       /** Format: date-time */
       last_touch_at?: string;
+      mail_threads?: components["schemas"]["MailThread"][];
       /** Format: date-time */
       next_action_at?: string;
       outbound_account_ref?: string;
@@ -5841,6 +5934,8 @@ export interface components {
       ledger_entries?: components["schemas"]["CreditLedger"][];
       /** @description LLM usage rows for the user. */
       llm_usages?: components["schemas"]["LLMUsage"][];
+      mail_message_metas?: components["schemas"]["MailMessageMeta"][];
+      mail_threads?: components["schemas"]["MailThread"][];
       /** @description MCP connector connections for the user. */
       mcp_connections?: components["schemas"]["MCPConnection"][];
       meeting_minute_usages?: components["schemas"]["MeetingMinuteUsage"][];
@@ -8510,6 +8605,26 @@ export interface operations {
       };
       401: components["responses"]["401"];
       404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  disconnectGoogle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Disconnected (idempotent). */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["401"];
       500: components["responses"]["500"];
     };
   };

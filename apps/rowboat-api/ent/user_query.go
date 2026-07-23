@@ -30,6 +30,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -86,6 +88,8 @@ type UserQuery struct {
 	withActionOutcomes                    *ActionOutcomeQuery
 	withRevenueOutboxEvents               *RevenueOutboxEventQuery
 	withRevenueLeakScans                  *RevenueLeakScanQuery
+	withMailThreads                       *MailThreadQuery
+	withMailMessageMetas                  *MailMessageMetaQuery
 	modifiers                             []func(*sql.Selector)
 	loadTotal                             []func(context.Context, []*User) error
 	withNamedLedgerEntries                map[string]*CreditLedgerQuery
@@ -118,6 +122,8 @@ type UserQuery struct {
 	withNamedActionOutcomes               map[string]*ActionOutcomeQuery
 	withNamedRevenueOutboxEvents          map[string]*RevenueOutboxEventQuery
 	withNamedRevenueLeakScans             map[string]*RevenueLeakScanQuery
+	withNamedMailThreads                  map[string]*MailThreadQuery
+	withNamedMailMessageMetas             map[string]*MailMessageMetaQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -836,6 +842,50 @@ func (_q *UserQuery) QueryRevenueLeakScans() *RevenueLeakScanQuery {
 	return query
 }
 
+// QueryMailThreads chains the current query on the "mail_threads" edge.
+func (_q *UserQuery) QueryMailThreads() *MailThreadQuery {
+	query := (&MailThreadClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(mailthread.Table, mailthread.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MailThreadsTable, user.MailThreadsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMailMessageMetas chains the current query on the "mail_message_metas" edge.
+func (_q *UserQuery) QueryMailMessageMetas() *MailMessageMetaQuery {
+	query := (&MailMessageMetaClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(mailmessagemeta.Table, mailmessagemeta.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MailMessageMetasTable, user.MailMessageMetasColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -1059,6 +1109,8 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withActionOutcomes:               _q.withActionOutcomes.Clone(),
 		withRevenueOutboxEvents:          _q.withRevenueOutboxEvents.Clone(),
 		withRevenueLeakScans:             _q.withRevenueLeakScans.Clone(),
+		withMailThreads:                  _q.withMailThreads.Clone(),
+		withMailMessageMetas:             _q.withMailMessageMetas.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -1406,6 +1458,28 @@ func (_q *UserQuery) WithRevenueLeakScans(opts ...func(*RevenueLeakScanQuery)) *
 	return _q
 }
 
+// WithMailThreads tells the query-builder to eager-load the nodes that are connected to
+// the "mail_threads" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithMailThreads(opts ...func(*MailThreadQuery)) *UserQuery {
+	query := (&MailThreadClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withMailThreads = query
+	return _q
+}
+
+// WithMailMessageMetas tells the query-builder to eager-load the nodes that are connected to
+// the "mail_message_metas" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithMailMessageMetas(opts ...func(*MailMessageMetaQuery)) *UserQuery {
+	query := (&MailMessageMetaClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withMailMessageMetas = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -1484,7 +1558,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [31]bool{
+		loadedTypes = [33]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -1516,6 +1590,8 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withActionOutcomes != nil,
 			_q.withRevenueOutboxEvents != nil,
 			_q.withRevenueLeakScans != nil,
+			_q.withMailThreads != nil,
+			_q.withMailMessageMetas != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -1777,6 +1853,20 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withMailThreads; query != nil {
+		if err := _q.loadMailThreads(ctx, query, nodes,
+			func(n *User) { n.Edges.MailThreads = []*MailThread{} },
+			func(n *User, e *MailThread) { n.Edges.MailThreads = append(n.Edges.MailThreads, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withMailMessageMetas; query != nil {
+		if err := _q.loadMailMessageMetas(ctx, query, nodes,
+			func(n *User) { n.Edges.MailMessageMetas = []*MailMessageMeta{} },
+			func(n *User, e *MailMessageMeta) { n.Edges.MailMessageMetas = append(n.Edges.MailMessageMetas, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -1984,6 +2074,20 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRevenueLeakScans(ctx, query, nodes,
 			func(n *User) { n.appendNamedRevenueLeakScans(name) },
 			func(n *User, e *RevenueLeakScan) { n.appendNamedRevenueLeakScans(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedMailThreads {
+		if err := _q.loadMailThreads(ctx, query, nodes,
+			func(n *User) { n.appendNamedMailThreads(name) },
+			func(n *User, e *MailThread) { n.appendNamedMailThreads(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedMailMessageMetas {
+		if err := _q.loadMailMessageMetas(ctx, query, nodes,
+			func(n *User) { n.appendNamedMailMessageMetas(name) },
+			func(n *User, e *MailMessageMeta) { n.appendNamedMailMessageMetas(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -2953,6 +3057,68 @@ func (_q *UserQuery) loadRevenueLeakScans(ctx context.Context, query *RevenueLea
 	}
 	return nil
 }
+func (_q *UserQuery) loadMailThreads(ctx context.Context, query *MailThreadQuery, nodes []*User, init func(*User), assign func(*User, *MailThread)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.MailThread(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.MailThreadsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_mail_threads
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_mail_threads" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_mail_threads" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadMailMessageMetas(ctx context.Context, query *MailMessageMetaQuery, nodes []*User, init func(*User), assign func(*User, *MailMessageMeta)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.MailMessageMeta(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.MailMessageMetasColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_mail_message_metas
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_mail_message_metas" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_mail_message_metas" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -3455,6 +3621,34 @@ func (_q *UserQuery) WithNamedRevenueLeakScans(name string, opts ...func(*Revenu
 		_q.withNamedRevenueLeakScans = make(map[string]*RevenueLeakScanQuery)
 	}
 	_q.withNamedRevenueLeakScans[name] = query
+	return _q
+}
+
+// WithNamedMailThreads tells the query-builder to eager-load the nodes that are connected to the "mail_threads"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedMailThreads(name string, opts ...func(*MailThreadQuery)) *UserQuery {
+	query := (&MailThreadClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedMailThreads == nil {
+		_q.withNamedMailThreads = make(map[string]*MailThreadQuery)
+	}
+	_q.withNamedMailThreads[name] = query
+	return _q
+}
+
+// WithNamedMailMessageMetas tells the query-builder to eager-load the nodes that are connected to the "mail_message_metas"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedMailMessageMetas(name string, opts ...func(*MailMessageMetaQuery)) *UserQuery {
+	query := (&MailMessageMetaClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedMailMessageMetas == nil {
+		_q.withNamedMailMessageMetas = make(map[string]*MailMessageMetaQuery)
+	}
+	_q.withNamedMailMessageMetas[name] = query
 	return _q
 }
 

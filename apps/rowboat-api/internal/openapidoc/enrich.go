@@ -1181,6 +1181,11 @@ func addVendorProxyPaths(paths obj) {
 }
 
 func addGoogleOAuthPaths(paths obj) {
+	paths["/v1/google-oauth"] = obj{"delete": operation("Google OAuth", "Disconnect Google", "Removes the user's Google connection and purges data derived from it (the RFC 031 cloud mail index; evidence quotes are retained as the user's own action history). Idempotent: returns 204 whether or not a connection existed. The user should also revoke the grant in their Google account.", "disconnectGoogle", bearer(), nil, nil, obj{
+		"204": obj{"description": "Disconnected (idempotent)."},
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
 	paths["/v1/google-oauth/start"] = obj{"post": operation("Google OAuth", "Start Google OAuth consent", "Creates a one-time state ticket bound to the authenticated Rowboat user and a PKCE S256 verifier, then returns the Google consent URL for the desktop to open.", "startGoogleOAuth", bearer(), nil, nil, obj{
 		"200": jsonResponse("Bound Google authorization URL.", obj{"type": "object", "required": []any{"authorizeUrl"}, "properties": obj{"authorizeUrl": obj{"type": "string", "format": "uri"}}}, obj{"authorizeUrl": "https://accounts.google.com/o/oauth2/v2/auth?..."}),
 		"401": responseRef("401"),

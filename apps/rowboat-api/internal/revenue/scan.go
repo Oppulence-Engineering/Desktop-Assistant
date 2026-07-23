@@ -238,6 +238,12 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 			t := sum.LastAt
 			stats.freshest = &t
 		}
+		// Layer 1 (RFC 031): record thread/message metadata for every swept
+		// thread, not just detector hits. Best-effort — indexing must not
+		// abort the scan.
+		if err := s.indexThread(ctx, u, sum); err != nil {
+			s.log.Debug("revenue: index thread", zap.Error(err))
+		}
 		hit := detectThread(sum, now)
 		if hit == nil {
 			revenuemetrics.DetectorCandidates.WithLabelValues("none", "skipped").Inc()
