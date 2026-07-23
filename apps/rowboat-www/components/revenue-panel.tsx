@@ -5,6 +5,7 @@ import {
   AddressBook,
   ChartLineUp,
   CurrencyDollar,
+  ListChecks,
   MagnifyingGlass,
   Plugs,
   Sparkle,
@@ -21,12 +22,14 @@ import { QueueView } from "@/components/revenue/queue-view";
 import { RelationshipsView } from "@/components/revenue/relationships-view";
 import { ScansView } from "@/components/revenue/scans-view";
 import { WorkspaceView } from "@/components/revenue/workspace-view";
+import { ActionsView } from "@/components/actions/actions-view";
 import type { RevenueLeakScan, RevenueWorkspace } from "@/types/revenue";
 
-type Tab = "queue" | "impact" | "relationships" | "scans" | "workspace";
+type Tab = "queue" | "actions" | "impact" | "relationships" | "scans" | "workspace";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "queue", label: "Queue", icon: <Tray /> },
+  { key: "actions", label: "Actions", icon: <ListChecks /> },
   { key: "impact", label: "Impact", icon: <ChartLineUp /> },
   { key: "relationships", label: "Relationships", icon: <AddressBook /> },
   { key: "scans", label: "Scans", icon: <MagnifyingGlass /> },
@@ -198,6 +201,8 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
           scanning={scanning}
           refreshKey={refreshKey}
         />
+      ) : tab === "actions" ? (
+        <ActionsView />
       ) : tab === "impact" ? (
         <ImpactView onError={setBanner} />
       ) : tab === "relationships" ? (

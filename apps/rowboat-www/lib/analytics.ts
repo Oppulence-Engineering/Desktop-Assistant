@@ -49,3 +49,11 @@ export const RevenueEvents = {
   WorkspaceLinked: "revenue_workspace_linked",
   UpgradeClicked: "revenue_upgrade_clicked",
 } as const;
+
+// RFC 023 closed-loop action broker events.
+export const ActionEvents = {
+  ProposalApproved: "action_proposal_approved",
+  ProposalExecuted: "action_proposal_executed",
+  ProposalRejected: "action_proposal_rejected",
+  AuditViewed: "action_audit_viewed",
+} as const;
