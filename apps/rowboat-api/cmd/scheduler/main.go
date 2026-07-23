@@ -27,9 +27,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenue"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version"
@@ -106,6 +108,15 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 	// else ever revisits those rows.
 	go quota.RunReaper(ctx, database.Client, log)
 
+	// Self-running revenue leak scans (RFC 030 WP3). Ships dark behind
+	// REVENUE_AUTO_SCAN_ENABLED; when on, every Google-connected user gets a
+	// bounded incremental scan on a cadence.
+	if cfg.RevenueAutoScanEnabled {
+		if err := startRevenueAutoScan(ctx, cfg, log, database); err != nil {
+			log.Warn("revenue auto-scan not started", zap.Error(err))
+		}
+	}
+
 	if cfg.GoogleWatchEnabled {
 		watchMgr, werr := buildWatchManager(ctx, cfg, log, database)
 		if werr != nil {
@@ -150,6 +161,40 @@ func buildWatchManager(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		CalendarBaseURL:  cfg.CalendarAPIBaseURL,
 		DriveBaseURL:     cfg.DriveAPIBaseURL,
 	}, log), nil
+}
+
+// startRevenueAutoScan builds the revenue service with its Gmail sweeper and
+// runs the background auto-scanner until the context is cancelled.
+func startRevenueAutoScan(ctx context.Context, cfg appconfig.Config, log *zap.Logger, database *db.DB) error {
+	sealer, err := crypto.NewSealer(cfg.DBEncryptionKey)
+	if err != nil {
+		return err
+	}
+	sec := secrets.NewFromConfig(cfg)
+	if err := sec.LoadInfisical(ctx, cfg); err != nil {
+		if cfg.InfisicalEnabled && cfg.IsProduction() {
+			return fmt.Errorf("infisical secret load failed in production: %w", err)
+		}
+		log.Warn("infisical load failed; using env vendor keys", zap.Error(err))
+	}
+	sec.StartRefresh(ctx, cfg, 5*time.Minute, log)
+
+	gmail := revenue.NewGmailExecutor(database.Client, sealer, sec, googleapi.New(googleapi.Config{
+		TokenURL:        cfg.GoogleTokenURL,
+		GmailBaseURL:    cfg.GmailAPIBaseURL,
+		CalendarBaseURL: cfg.CalendarAPIBaseURL,
+		DriveBaseURL:    cfg.DriveAPIBaseURL,
+	}))
+	svc := revenue.NewService(database.Client, nil, gmail, log)
+	svc.SetSweeper(gmail)
+	scanner := revenue.NewAutoScanner(svc, revenue.AutoScanConfig{
+		Interval:     cfg.RevenueAutoScanInterval,
+		MinPerUser:   cfg.RevenueAutoScanMinInterval,
+		MaxPerCycle:  cfg.RevenueAutoScanMaxPerCycle,
+		LookbackDays: cfg.RevenueAutoScanLookbackDays,
+	}, log)
+	go func() { _ = scanner.Run(ctx) }()
+	return nil
 }
 
 // startMetricsServer serves Prometheus /metrics, a liveness /healthz (200 once
