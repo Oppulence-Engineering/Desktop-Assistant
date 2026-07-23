@@ -6,8 +6,11 @@
 
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 import type {
+  ActionAudit,
+  RelationshipDetail,
   RevenueAction,
   RevenueLeakScan,
+  RevenueOutcome,
   RevenuePolicyDecision,
   RevenueRelationship,
   RevenueWorkspace,
@@ -56,6 +59,14 @@ const post = (path: string, body?: unknown) =>
 
 export const getWorkspace = () => call<RevenueWorkspace>("/revenue-workspaces/current");
 
+export interface LinkWorkspaceInput {
+  outboundOrganizationId?: string;
+  outboundWorkspaceId: string;
+}
+
+export const linkWorkspace = (input: LinkWorkspaceInput) =>
+  post("/revenue-workspaces/link", input) as Promise<RevenueWorkspace>;
+
 // --- scan --------------------------------------------------------------------
 
 export const startScan = (lookbackDays?: number) =>
@@ -65,6 +76,13 @@ export const startScan = (lookbackDays?: number) =>
   ) as Promise<RevenueLeakScan>;
 
 export const getScan = (scanId: string) => call<RevenueLeakScan>(`/revenue-leak-scans/${scanId}`);
+
+// Scan history is not a server list endpoint; the panel keeps its own record of
+// scans it started this session and re-hydrates each by id.
+export async function getScans(ids: string[]): Promise<RevenueLeakScan[]> {
+  const rows = await Promise.all(ids.map((id) => getScan(id).catch(() => null)));
+  return rows.filter((r): r is RevenueLeakScan => r !== null);
+}
 
 // --- queue reads -------------------------------------------------------------
 
@@ -76,20 +94,43 @@ export async function listActions(queueStatus = "open", limit = 25): Promise<Rev
 
 export const getAction = (actionId: string) => call<RevenueAction>(`/revenue-actions/${actionId}`);
 
-export interface ActionAudit {
-  action: RevenueAction;
-  revisions: Array<Record<string, unknown>>;
-  decisions: RevenuePolicyDecision[];
-  outcomes: Array<Record<string, unknown>>;
-}
-
 export const getAudit = (actionId: string) =>
   call<ActionAudit>(`/revenue-actions/${actionId}/audit`);
+
+export interface CreateActionInput {
+  relationshipId: string;
+  actionType: string;
+  channel: string;
+  reason: string;
+  recipientEmail?: string;
+  proposedSubject?: string;
+  proposedMessage?: string;
+  executionMode?: string;
+  priorityScore?: number;
+}
+
+export const createAction = (input: CreateActionInput) =>
+  post("/revenue-actions", input) as Promise<RevenueAction>;
+
+// --- relationships -----------------------------------------------------------
 
 export async function listRelationships(): Promise<RevenueRelationship[]> {
   const body = await call<{ relationships: RevenueRelationship[] }>("/relationships");
   return body.relationships ?? [];
 }
+
+export const getRelationship = (id: string) => call<RelationshipDetail>(`/relationships/${id}`);
+
+export interface CreateRelationshipInput {
+  kind: string;
+  displayName: string;
+  primaryEmail?: string;
+  accountDomain?: string;
+  summary?: string;
+}
+
+export const createRelationship = (input: CreateRelationshipInput) =>
+  post("/relationships", input) as Promise<RevenueRelationship>;
 
 // --- lifecycle ---------------------------------------------------------------
 
@@ -125,6 +166,16 @@ export const snoozeAction = (actionId: string, until: string) =>
 export const dismissAction = (actionId: string, reason: string) =>
   post(`/revenue-actions/${actionId}/dismiss`, { reason }) as Promise<RevenueAction>;
 
+export interface RecordOutcomeInput {
+  kind: string;
+  source: string;
+  sourceEventId: string;
+  occurredAt?: string;
+}
+
+export const recordOutcome = (actionId: string, input: RecordOutcomeInput) =>
+  post(`/revenue-actions/${actionId}/outcomes`, input) as Promise<RevenueOutcome>;
+
 // --- display helpers ---------------------------------------------------------
 
 export const DETECTOR_LABELS: Record<string, string> = {
@@ -144,6 +195,44 @@ export const ACTION_TYPE_LABELS: Record<string, string> = {
   customer_risk: "Customer risk",
   meeting_follow_up: "Meeting follow-up",
 };
+
+export const RELATIONSHIP_KIND_LABELS: Record<string, string> = {
+  person: "Person",
+  company: "Company",
+  customer: "Customer",
+  opportunity: "Opportunity",
+  referral: "Referral",
+  partner: "Partner",
+};
+
+export const OUTCOME_LABELS: Record<string, string> = {
+  sent: "Sent",
+  delivered: "Delivered",
+  bounced: "Bounced",
+  replied: "Replied",
+  meeting_booked: "Meeting booked",
+  won: "Won",
+  lost: "Lost",
+  dismissed: "Dismissed",
+  bad_recommendation: "Bad recommendation",
+};
+
+// Outcomes an operator can log by hand from the audit view.
+export const MANUAL_OUTCOMES: { value: string; label: string }[] = [
+  { value: "replied", label: "They replied" },
+  { value: "meeting_booked", label: "Meeting booked" },
+  { value: "won", label: "Won" },
+  { value: "lost", label: "Lost" },
+  { value: "bad_recommendation", label: "Bad recommendation" },
+];
+
+export const QUEUE_FILTERS: { value: string; label: string }[] = [
+  { value: "open", label: "Open" },
+  { value: "snoozed", label: "Snoozed" },
+  { value: "handled", label: "Handled" },
+  { value: "dismissed", label: "Dismissed" },
+  { value: "all", label: "All" },
+];
 
 export const PRIORITY_COMPONENT_LABELS: Record<string, string> = {
   relationship_value: "Relationship value",
