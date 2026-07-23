@@ -10,6 +10,7 @@ import {
   GenericPage,
   LegalPage,
   PricingPage,
+  ProductPage,
 } from "../marketing-components";
 import { getMarketingPage, marketingPaths } from "../marketing-data";
 
@@ -47,6 +48,10 @@ export default async function Page(props: PageProps) {
 
   if (!page) {
     notFound();
+  }
+
+  if (page.path === "product") {
+    return <ProductPage page={page} />;
   }
 
   if (page.path === "pricing") {

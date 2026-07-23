@@ -934,10 +934,10 @@ export const featureDetails: Record<string, FeatureDetail> = {
 export const primaryPages: MarketingPage[] = [
   {
     path: "product",
-    eyebrow: "Revenue Memory and Execution OS",
-    title: "From relationship history to the next safe revenue action.",
+    eyebrow: "Product",
+    title: "It watches. It drafts. You approve.",
     description:
-      "Oppulence remembers every commercial relationship, finds who needs attention and why, verifies contactability and policy, then prepares the next action for approval.",
+      "Oppulence watches your inbox, calendar, and billing. It finds money that is about to slip and drafts the chase in your voice. Nothing sends until you click Approve.",
     category: "product",
     bullets: [
       "Recover missed commitments, dormant opportunities, former customers, and neglected referrals.",
@@ -1181,9 +1181,9 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "pricing",
     eyebrow: "Pricing",
-    title: "Price the value of recovered relationships—not email volume.",
+    title: "Watch is free. Chase is $99.",
     description:
-      "Start with a Revenue Leak Scan and governed action queue, then scale by team access, monitored relationships, verification, and execution usage.",
+      "Priced on executed chases, not seats or email volume. One saved deal pays for years. Cancel at any time.",
     category: "product",
     bullets: [
       "Founders recover warm pipeline from existing communication and CRM history.",
@@ -1425,26 +1425,38 @@ export function getMarketingPage(path: string) {
 
 export const pricingPlans = [
   {
-    name: "Founder",
-    price: "Early access",
-    description: "For founder-led teams recovering warm pipeline from existing relationships.",
-    features: ["Revenue Leak Scan", "Daily action queue", "Relationship and commitment memory"],
+    name: "Watch",
+    price: "Free",
+    period: "",
+    description:
+      "See what is slipping. A weekly report of the deals, invoices, and clients going quiet.",
+    features: ["Weekly slip report", "Dollar amounts on each finding", "Links to the source email"],
+    ctaLabel: "Get the report",
+    ctaHref: "/book-a-demo",
   },
   {
-    name: "Revenue Team",
-    price: "Talk to us",
-    description: "For lean revenue teams that need shared memory and governed execution.",
-    features: ["Team action queue", "Research and verification", "Policy and execution telemetry"],
-    recommended: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Talk to us",
-    description: "For organizations that need permissions, auditability, and deployment control.",
+    name: "Chase",
+    price: "$99",
+    period: "/month",
+    description: "The chase, done for you. Drafted nudges in your voice, approved with one click.",
     features: [
-      "SSO and granular permissions",
-      "Audit and policy controls",
-      "Deployment and integration support",
+      "Everything in Watch",
+      "Drafted chases in your voice",
+      "Approve, edit, snooze, or reject",
+      "Verified, suppression-checked sends",
+      "Monthly recovery receipt",
     ],
+    recommended: true,
+    ctaLabel: "Start chasing",
+    ctaHref: "/sign-up",
+  },
+  {
+    name: "Teams",
+    price: "Talk to us",
+    period: "",
+    description: "A shared queue and governance for small revenue teams.",
+    features: ["Everything in Chase", "Shared action queue", "Roles and audit trail"],
+    ctaLabel: "Talk to us",
+    ctaHref: "/book-a-demo",
   },
 ];

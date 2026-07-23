@@ -566,25 +566,22 @@ const customerStoryIcons: {
   { icon: CheckCircleIcon, tone: "green" },
 ];
 
-function PlanCtaButton({ plan }: { plan: (typeof pricingPlans)[number] }) {
-  const href = "/book-a-demo";
-  const label =
-    plan.name === "Founder" ? "Book a scan" : plan.recommended ? "Plan rollout" : "Talk to us";
-
+export function ProductPage({ page }: { page: MarketingPage }) {
   return (
-    <Button
-      asChild
-      className={cn(
-        "mt-7 h-10 w-full justify-between px-4 font-medium",
-        plan.recommended ? "marketing-cta-primary" : "marketing-cta-secondary",
-      )}
-      variant={plan.recommended ? "default" : "ghost"}
-    >
-      <Link href={href}>
-        {label}
-        <ArrowRightIcon style={{ fontSize: "1rem" }} />
-      </Link>
-    </Button>
+    <div className="flex flex-col">
+      <section className="linear-hero linear-inset">
+        <p className="mb-5 font-mono text-xs text-oppulence-orange">[product]</p>
+        <h1 className="linear-hero-title">{page.title}</h1>
+        <div className="linear-hero-meta">
+          <p className="linear-body max-w-[620px]">{page.description}</p>
+        </div>
+      </section>
+      {linearHomeSections.map((section, index) => (
+        <LinearProductSection index={index} key={section.title} section={section} />
+      ))}
+      <HomeUpdates />
+      <FinalCta />
+    </div>
   );
 }
 
@@ -1416,70 +1413,80 @@ function ApiReferenceEmbed() {
 
 export function PricingPage({ page }: { page: MarketingPage }) {
   return (
-    <PageShell page={page}>
-      <section className="grid border-y border-primary/10 md:grid-cols-3">
+    <div className="linear-subpage-simple linear-inset">
+      <header className="linear-page-hero">
+        <p className="linear-eyebrow-red">[pricing]</p>
+        <h1 className="linear-page-title">{page.title}</h1>
+        <p className="linear-body max-w-[560px]">{page.description}</p>
+      </header>
+      <section className="linear-plan-grid">
         {pricingPlans.map((plan) => (
           <article
-            className="border-b border-primary/10 bg-background-50/40 p-6 last:border-b-0 md:border-r md:border-b-0 md:last:border-r-0"
+            className={cn("linear-plan", plan.recommended && "linear-plan-featured")}
             key={plan.name}
           >
-            <div className="flex min-h-8 items-start justify-between gap-3">
-              <h2 className="text-lg font-medium">{plan.name}</h2>
-              {plan.recommended ? (
-                <span className="rounded-full border border-[#828fff]/25 bg-[#828fff]/10 px-2 py-1 font-mono text-[10px] text-[#aeb6ff] uppercase tracking-wider">
-                  Recommended
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-6 text-3xl font-medium tracking-[-0.022em]">{plan.price}</p>
-            <p className="mt-3 min-h-16 text-sm leading-relaxed text-muted-foreground">
-              {plan.description}
+            <p className="linear-plan-name">[{plan.name.toLowerCase()}]</p>
+            <p className="linear-plan-price">
+              {plan.price}
+              {plan.period ? <span>{plan.period}</span> : null}
             </p>
-            <ul className="mt-8 space-y-3 border-primary/10 border-t pt-6">
+            <p className="linear-body">{plan.description}</p>
+            <ul>
               {plan.features.map((feature) => (
-                <li className="flex gap-3 text-sm text-foreground/80" key={feature}>
-                  <CheckCircleIcon className="mt-0.5 shrink-0 text-[#8a8f98]" fontSize="small" />
-                  <span>{feature}</span>
-                </li>
+                <li key={feature}>{feature}</li>
               ))}
             </ul>
-            <PlanCtaButton plan={plan} />
+            <Link
+              className={cn(
+                plan.recommended ? "linear-button-primary" : "linear-button-secondary",
+                "!h-10 w-full",
+              )}
+              href={plan.ctaHref}
+            >
+              {plan.ctaLabel}
+            </Link>
           </article>
         ))}
       </section>
-      <ProofGrid page={page} />
-    </PageShell>
+      <p className="linear-cta-note mt-6">
+        [usage-metered on executed chases · one saved deal pays for years]
+      </p>
+    </div>
   );
 }
 
 export function BlogIndexPage({ page }: { page: MarketingPage }) {
+  const [featured, ...rest] = blogPages;
+
   return (
-    <PageShell page={page}>
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {blogPages.slice(0, 18).map((post, index) => (
-          <Link
-            className="marketing-surface flex min-h-56 flex-col border p-5 transition-colors hover:bg-background-200"
-            href={`/${post.path}`}
-            key={post.path}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <MarketingIcon icon={FileTextIcon} tone="orange" />
-              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-                Guide {String(index + 1).padStart(2, "0")}
-              </span>
-            </div>
-            <h2 className="mt-4 line-clamp-2 font-semibold">{post.title}</h2>
-            <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-              {post.description}
-            </p>
-            <div className="mt-auto flex items-center justify-between border-primary/10 border-t pt-4 font-mono text-[10px] text-foreground/60 uppercase tracking-wider">
-              <span>Read guide</span>
-              <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
-            </div>
+    <div className="linear-subpage-simple linear-inset">
+      <header className="linear-page-hero">
+        <p className="linear-eyebrow-red">[blog]</p>
+        <h1 className="linear-page-title">{page.title}</h1>
+        <p className="linear-body max-w-[560px]">{page.description}</p>
+      </header>
+      {featured ? (
+        <Link className="linear-blog-featured" href={`/${featured.path}`}>
+          <div className="flex flex-wrap gap-2">
+            <span className="linear-chip">guide</span>
+            <span className="linear-chip">featured</span>
+          </div>
+          <h2>{featured.title}</h2>
+          <p className="linear-body max-w-[640px]">{featured.description}</p>
+          <span className="linear-blog-read">read the guide →</span>
+        </Link>
+      ) : null}
+      <section className="linear-blog-grid">
+        {rest.slice(0, 11).map((post) => (
+          <Link className="linear-blog-card" href={`/${post.path}`} key={post.path}>
+            <span className="linear-chip">guide</span>
+            <h3 className="line-clamp-2">{post.title}</h3>
+            <p className="line-clamp-3">{post.description}</p>
+            <span className="linear-blog-read">read →</span>
           </Link>
         ))}
       </section>
-    </PageShell>
+    </div>
   );
 }
 
