@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -17,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -135,6 +137,33 @@ func (f TraverseActionOutcome) Traverse(ctx context.Context, q ent.Query) error 
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.ActionOutcomeQuery", q)
+}
+
+// The ActionProposalFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ActionProposalFunc func(context.Context, *ent.ActionProposalQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ActionProposalFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ActionProposalQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ActionProposalQuery", q)
+}
+
+// The TraverseActionProposal type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseActionProposal func(context.Context, *ent.ActionProposalQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseActionProposal) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseActionProposal) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ActionProposalQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ActionProposalQuery", q)
 }
 
 // The AgentApprovalFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -351,6 +380,33 @@ func (f TraverseAgentTurn) Traverse(ctx context.Context, q ent.Query) error {
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.AgentTurnQuery", q)
+}
+
+// The ApprovalTokenFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ApprovalTokenFunc func(context.Context, *ent.ApprovalTokenQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ApprovalTokenFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ApprovalTokenQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ApprovalTokenQuery", q)
+}
+
+// The TraverseApprovalToken type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseApprovalToken func(context.Context, *ent.ApprovalTokenQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseApprovalToken) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseApprovalToken) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ApprovalTokenQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ApprovalTokenQuery", q)
 }
 
 // The BackgroundTaskFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1276,6 +1332,8 @@ func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
 	case *ent.ActionOutcomeQuery:
 		return &query[*ent.ActionOutcomeQuery, predicate.ActionOutcome, actionoutcome.OrderOption]{typ: ent.TypeActionOutcome, tq: q}, nil
+	case *ent.ActionProposalQuery:
+		return &query[*ent.ActionProposalQuery, predicate.ActionProposal, actionproposal.OrderOption]{typ: ent.TypeActionProposal, tq: q}, nil
 	case *ent.AgentApprovalQuery:
 		return &query[*ent.AgentApprovalQuery, predicate.AgentApproval, agentapproval.OrderOption]{typ: ent.TypeAgentApproval, tq: q}, nil
 	case *ent.AgentDefinitionQuery:
@@ -1292,6 +1350,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.AgentToolResultBlobQuery, predicate.AgentToolResultBlob, agenttoolresultblob.OrderOption]{typ: ent.TypeAgentToolResultBlob, tq: q}, nil
 	case *ent.AgentTurnQuery:
 		return &query[*ent.AgentTurnQuery, predicate.AgentTurn, agentturn.OrderOption]{typ: ent.TypeAgentTurn, tq: q}, nil
+	case *ent.ApprovalTokenQuery:
+		return &query[*ent.ApprovalTokenQuery, predicate.ApprovalToken, approvaltoken.OrderOption]{typ: ent.TypeApprovalToken, tq: q}, nil
 	case *ent.BackgroundTaskQuery:
 		return &query[*ent.BackgroundTaskQuery, predicate.BackgroundTask, backgroundtask.OrderOption]{typ: ent.TypeBackgroundTask, tq: q}, nil
 	case *ent.BackgroundTaskArtifactQuery:

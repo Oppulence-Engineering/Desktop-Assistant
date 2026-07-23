@@ -95,6 +95,10 @@ const (
 	EdgeMailBodyCaches = "mail_body_caches"
 	// EdgeMailSignals holds the string denoting the mail_signals edge name in mutations.
 	EdgeMailSignals = "mail_signals"
+	// EdgeActionProposals holds the string denoting the action_proposals edge name in mutations.
+	EdgeActionProposals = "action_proposals"
+	// EdgeApprovalTokens holds the string denoting the approval_tokens edge name in mutations.
+	EdgeApprovalTokens = "approval_tokens"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -342,6 +346,20 @@ const (
 	MailSignalsInverseTable = "mail_signals"
 	// MailSignalsColumn is the table column denoting the mail_signals relation/edge.
 	MailSignalsColumn = "user_mail_signals"
+	// ActionProposalsTable is the table that holds the action_proposals relation/edge.
+	ActionProposalsTable = "action_proposals"
+	// ActionProposalsInverseTable is the table name for the ActionProposal entity.
+	// It exists in this package in order to avoid circular dependency with the "actionproposal" package.
+	ActionProposalsInverseTable = "action_proposals"
+	// ActionProposalsColumn is the table column denoting the action_proposals relation/edge.
+	ActionProposalsColumn = "user_action_proposals"
+	// ApprovalTokensTable is the table that holds the approval_tokens relation/edge.
+	ApprovalTokensTable = "approval_tokens"
+	// ApprovalTokensInverseTable is the table name for the ApprovalToken entity.
+	// It exists in this package in order to avoid circular dependency with the "approvaltoken" package.
+	ApprovalTokensInverseTable = "approval_tokens"
+	// ApprovalTokensColumn is the table column denoting the approval_tokens relation/edge.
+	ApprovalTokensColumn = "user_approval_tokens"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -892,6 +910,34 @@ func ByMailSignals(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newMailSignalsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByActionProposalsCount orders the results by action_proposals count.
+func ByActionProposalsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newActionProposalsStep(), opts...)
+	}
+}
+
+// ByActionProposals orders the results by action_proposals terms.
+func ByActionProposals(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newActionProposalsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByApprovalTokensCount orders the results by approval_tokens count.
+func ByApprovalTokensCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newApprovalTokensStep(), opts...)
+	}
+}
+
+// ByApprovalTokens orders the results by approval_tokens terms.
+func ByApprovalTokens(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newApprovalTokensStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -1135,5 +1181,19 @@ func newMailSignalsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MailSignalsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MailSignalsTable, MailSignalsColumn),
+	)
+}
+func newActionProposalsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ActionProposalsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ActionProposalsTable, ActionProposalsColumn),
+	)
+}
+func newApprovalTokensStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ApprovalTokensInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ApprovalTokensTable, ApprovalTokensColumn),
 	)
 }

@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
@@ -20,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -662,6 +664,36 @@ func (_c *UserCreate) AddMailSignals(v ...*MailSignal) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddMailSignalIDs(ids...)
+}
+
+// AddActionProposalIDs adds the "action_proposals" edge to the ActionProposal entity by IDs.
+func (_c *UserCreate) AddActionProposalIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddActionProposalIDs(ids...)
+	return _c
+}
+
+// AddActionProposals adds the "action_proposals" edges to the ActionProposal entity.
+func (_c *UserCreate) AddActionProposals(v ...*ActionProposal) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddActionProposalIDs(ids...)
+}
+
+// AddApprovalTokenIDs adds the "approval_tokens" edge to the ApprovalToken entity by IDs.
+func (_c *UserCreate) AddApprovalTokenIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddApprovalTokenIDs(ids...)
+	return _c
+}
+
+// AddApprovalTokens adds the "approval_tokens" edges to the ApprovalToken entity.
+func (_c *UserCreate) AddApprovalTokens(v ...*ApprovalToken) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddApprovalTokenIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -1338,6 +1370,38 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ActionProposalsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionProposalsTable,
+			Columns: []string{user.ActionProposalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionproposal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ApprovalTokensIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ApprovalTokensTable,
+			Columns: []string{user.ApprovalTokensColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approvaltoken.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

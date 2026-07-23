@@ -194,6 +194,14 @@ func (m *Middleware) RequireStepUp(level StepUpLevel) func(http.Handler) http.Ha
 	}
 }
 
+// SatisfiesStepUp reports whether the actor meets the step-up level. It is the
+// public wrapper over satisfiesStepUp so a handler can enforce step-up
+// conditionally — e.g. the RFC 023 action broker demands recent-auth only for
+// financial approvals, which static route middleware cannot express.
+func (m *Middleware) SatisfiesStepUp(a *Actor, level StepUpLevel) bool {
+	return m.satisfiesStepUp(a, level)
+}
+
 // satisfiesStepUp reports whether the actor meets the step-up level. Recent-auth
 // and MFA fail closed when the token does not assert the needed claim.
 func (m *Middleware) satisfiesStepUp(a *Actor, level StepUpLevel) bool {

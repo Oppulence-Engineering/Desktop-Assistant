@@ -1,16 +1,16 @@
 # RFC 033: Integration Parity Surface — Littlebird-Class Coverage on the Sensor Rails
 
-|                  |                                                                                                                                                                                                                            |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 033                                                                                                                                                                                                                        |
-| **Status**       | Draft                                                                                                                                                                                                                      |
-| **Track**        | Product/platform - how the connector surface reaches perceived parity with horizontal assistants without abandoning the sensor-first build rule                                                                            |
-| **Owners**       | `rowboat/apps/rowboat-api` (broker, action engine), `apps/x/packages/core` (MCP, tools)                                                                                                                                    |
-| **Created**      | 2026-07-23                                                                                                                                                                                                                 |
-| **Last updated** | 2026-07-23                                                                                                                                                                                                                 |
-| **Depends on**   | [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 020](./020-native-third-party-action-engine.md), [RFC 032](./032-detection-sensor-integrations.md)                                                            |
-| **Related**      | [RFC 013](./013-oppulence-product-connector-fabric.md), [RFC 030](./030-revenue-memory-outbound-governance.md), [RFC 034](./034-floating-overlay-assistant.md), [RFC 035](./035-meeting-intelligence-commitment-ledger.md) |
-| **Supersedes**   | none; extends RFC 032's ranking with a parity lane it deliberately excluded                                                                                                                                                |
+|                  |                                                                                                                                                                                                                                     |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 033                                                                                                                                                                                                                                 |
+| **Status**       | Draft                                                                                                                                                                                                                               |
+| **Track**        | Product/platform - how the connector surface reaches perceived parity with horizontal assistants without abandoning the sensor-first build rule                                                                                     |
+| **Owners**       | `rowboat/apps/rowboat-api` (broker, action engine), `apps/x/packages/core` (MCP, tools)                                                                                                                                             |
+| **Created**      | 2026-07-23                                                                                                                                                                                                                          |
+| **Last updated** | 2026-07-23                                                                                                                                                                                                                          |
+| **Depends on**   | [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 020](./020-native-third-party-action-engine.md), [RFC 032](./032-detection-sensor-integrations.md)                                                                     |
+| **Related**      | [RFC 013](./013-oppulence-product-connector-fabric.md), [RFC 030](./complete-030-revenue-memory-outbound-governance.md), [RFC 034](./034-floating-overlay-assistant.md), [RFC 035](./035-meeting-intelligence-commitment-ledger.md) |
+| **Supersedes**   | none; extends RFC 032's ranking with a parity lane it deliberately excluded                                                                                                                                                         |
 
 ## Main point
 

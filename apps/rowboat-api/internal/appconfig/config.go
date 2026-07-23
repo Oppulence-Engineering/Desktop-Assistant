@@ -417,6 +417,14 @@ type Config struct {
 	// all outbound email (the sender becomes a fail-closed no-op).
 	ResendAPIKey string
 	EmailFrom    string
+
+	// Closed-loop action broker (RFC 023). Ships dark: the propose→approve→
+	// execute→watch surface mounts only when ActionsEnabled is true. The
+	// approval token is HMAC-signed with AgentSigningSecret().
+	ActionsEnabled                  bool
+	ActionTokenTTL                  time.Duration
+	ActionWatchTimeout              time.Duration
+	ActionRequireStepUpForFinancial bool
 }
 
 // AgentSigningSecret resolves the HMAC signing key for agent-runtime tokens:
@@ -705,6 +713,11 @@ func Load() Config {
 		RevenueFacadeBaseURL:         getenv("REVENUE_FACADE_BASE_URL", ""),
 		RevenueFacadeServiceToken:    getenv("REVENUE_FACADE_SERVICE_TOKEN", ""),
 		RevenueFacadeTimeout:         getdur("REVENUE_FACADE_TIMEOUT", 15*time.Second),
+
+		ActionsEnabled:                  getbool("ACTIONS_ENABLED", false),
+		ActionTokenTTL:                  getdur("ACTION_TOKEN_TTL", 5*time.Minute),
+		ActionWatchTimeout:              getdur("ACTION_WATCH_TIMEOUT", 24*time.Hour),
+		ActionRequireStepUpForFinancial: getbool("ACTION_REQUIRE_STEP_UP_FOR_FINANCIAL", true),
 	}
 }
 

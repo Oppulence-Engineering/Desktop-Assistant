@@ -1181,6 +1181,52 @@ func HasMailSignalsWith(preds ...predicate.MailSignal) predicate.User {
 	})
 }
 
+// HasActionProposals applies the HasEdge predicate on the "action_proposals" edge.
+func HasActionProposals() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ActionProposalsTable, ActionProposalsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasActionProposalsWith applies the HasEdge predicate on the "action_proposals" edge with a given conditions (other predicates).
+func HasActionProposalsWith(preds ...predicate.ActionProposal) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newActionProposalsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasApprovalTokens applies the HasEdge predicate on the "approval_tokens" edge.
+func HasApprovalTokens() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ApprovalTokensTable, ApprovalTokensColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasApprovalTokensWith applies the HasEdge predicate on the "approval_tokens" edge with a given conditions (other predicates).
+func HasApprovalTokensWith(preds ...predicate.ApprovalToken) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newApprovalTokensStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

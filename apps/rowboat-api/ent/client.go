@@ -18,6 +18,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -26,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -69,6 +71,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// ActionOutcome is the client for interacting with the ActionOutcome builders.
 	ActionOutcome *ActionOutcomeClient
+	// ActionProposal is the client for interacting with the ActionProposal builders.
+	ActionProposal *ActionProposalClient
 	// AgentApproval is the client for interacting with the AgentApproval builders.
 	AgentApproval *AgentApprovalClient
 	// AgentDefinition is the client for interacting with the AgentDefinition builders.
@@ -85,6 +89,8 @@ type Client struct {
 	AgentToolResultBlob *AgentToolResultBlobClient
 	// AgentTurn is the client for interacting with the AgentTurn builders.
 	AgentTurn *AgentTurnClient
+	// ApprovalToken is the client for interacting with the ApprovalToken builders.
+	ApprovalToken *ApprovalTokenClient
 	// BackgroundTask is the client for interacting with the BackgroundTask builders.
 	BackgroundTask *BackgroundTaskClient
 	// BackgroundTaskArtifact is the client for interacting with the BackgroundTaskArtifact builders.
@@ -170,6 +176,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.ActionOutcome = NewActionOutcomeClient(c.config)
+	c.ActionProposal = NewActionProposalClient(c.config)
 	c.AgentApproval = NewAgentApprovalClient(c.config)
 	c.AgentDefinition = NewAgentDefinitionClient(c.config)
 	c.AgentDefinitionHistory = NewAgentDefinitionHistoryClient(c.config)
@@ -178,6 +185,7 @@ func (c *Client) init() {
 	c.AgentToolCall = NewAgentToolCallClient(c.config)
 	c.AgentToolResultBlob = NewAgentToolResultBlobClient(c.config)
 	c.AgentTurn = NewAgentTurnClient(c.config)
+	c.ApprovalToken = NewApprovalTokenClient(c.config)
 	c.BackgroundTask = NewBackgroundTaskClient(c.config)
 	c.BackgroundTaskArtifact = NewBackgroundTaskArtifactClient(c.config)
 	c.BackgroundTaskRun = NewBackgroundTaskRunClient(c.config)
@@ -343,6 +351,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:                         ctx,
 		config:                      cfg,
 		ActionOutcome:               NewActionOutcomeClient(cfg),
+		ActionProposal:              NewActionProposalClient(cfg),
 		AgentApproval:               NewAgentApprovalClient(cfg),
 		AgentDefinition:             NewAgentDefinitionClient(cfg),
 		AgentDefinitionHistory:      NewAgentDefinitionHistoryClient(cfg),
@@ -351,6 +360,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		AgentToolCall:               NewAgentToolCallClient(cfg),
 		AgentToolResultBlob:         NewAgentToolResultBlobClient(cfg),
 		AgentTurn:                   NewAgentTurnClient(cfg),
+		ApprovalToken:               NewApprovalTokenClient(cfg),
 		BackgroundTask:              NewBackgroundTaskClient(cfg),
 		BackgroundTaskArtifact:      NewBackgroundTaskArtifactClient(cfg),
 		BackgroundTaskRun:           NewBackgroundTaskRunClient(cfg),
@@ -405,6 +415,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:                         ctx,
 		config:                      cfg,
 		ActionOutcome:               NewActionOutcomeClient(cfg),
+		ActionProposal:              NewActionProposalClient(cfg),
 		AgentApproval:               NewAgentApprovalClient(cfg),
 		AgentDefinition:             NewAgentDefinitionClient(cfg),
 		AgentDefinitionHistory:      NewAgentDefinitionHistoryClient(cfg),
@@ -413,6 +424,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		AgentToolCall:               NewAgentToolCallClient(cfg),
 		AgentToolResultBlob:         NewAgentToolResultBlobClient(cfg),
 		AgentTurn:                   NewAgentTurnClient(cfg),
+		ApprovalToken:               NewApprovalTokenClient(cfg),
 		BackgroundTask:              NewBackgroundTaskClient(cfg),
 		BackgroundTaskArtifact:      NewBackgroundTaskArtifactClient(cfg),
 		BackgroundTaskRun:           NewBackgroundTaskRunClient(cfg),
@@ -476,13 +488,14 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.ActionOutcome, c.AgentApproval, c.AgentDefinition, c.AgentDefinitionHistory,
-		c.AgentSession, c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob,
-		c.AgentTurn, c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
-		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
-		c.Commitment, c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory,
-		c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta,
-		c.MailSignal, c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
+		c.ActionOutcome, c.ActionProposal, c.AgentApproval, c.AgentDefinition,
+		c.AgentDefinitionHistory, c.AgentSession, c.AgentSessionEvent, c.AgentToolCall,
+		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
+		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
+		c.BackgroundTaskScheduleState, c.CloudEvent, c.Commitment, c.CreditLedger,
+		c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
+		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
+		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
 		c.OAuthConnectionHistory, c.OAuthPending, c.PolicyDecisionSnapshot,
 		c.Relationship, c.RevenueAction, c.RevenueActionRevision, c.RevenueEvidence,
 		c.RevenueLeakScan, c.RevenueOutboxEvent, c.RevenueWorkspace,
@@ -497,13 +510,14 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.ActionOutcome, c.AgentApproval, c.AgentDefinition, c.AgentDefinitionHistory,
-		c.AgentSession, c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob,
-		c.AgentTurn, c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
-		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
-		c.Commitment, c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory,
-		c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta,
-		c.MailSignal, c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
+		c.ActionOutcome, c.ActionProposal, c.AgentApproval, c.AgentDefinition,
+		c.AgentDefinitionHistory, c.AgentSession, c.AgentSessionEvent, c.AgentToolCall,
+		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
+		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
+		c.BackgroundTaskScheduleState, c.CloudEvent, c.Commitment, c.CreditLedger,
+		c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
+		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
+		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
 		c.OAuthConnectionHistory, c.OAuthPending, c.PolicyDecisionSnapshot,
 		c.Relationship, c.RevenueAction, c.RevenueActionRevision, c.RevenueEvidence,
 		c.RevenueLeakScan, c.RevenueOutboxEvent, c.RevenueWorkspace,
@@ -519,6 +533,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *ActionOutcomeMutation:
 		return c.ActionOutcome.mutate(ctx, m)
+	case *ActionProposalMutation:
+		return c.ActionProposal.mutate(ctx, m)
 	case *AgentApprovalMutation:
 		return c.AgentApproval.mutate(ctx, m)
 	case *AgentDefinitionMutation:
@@ -535,6 +551,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.AgentToolResultBlob.mutate(ctx, m)
 	case *AgentTurnMutation:
 		return c.AgentTurn.mutate(ctx, m)
+	case *ApprovalTokenMutation:
+		return c.ApprovalToken.mutate(ctx, m)
 	case *BackgroundTaskMutation:
 		return c.BackgroundTask.mutate(ctx, m)
 	case *BackgroundTaskArtifactMutation:
@@ -786,6 +804,155 @@ func (c *ActionOutcomeClient) mutate(ctx context.Context, m *ActionOutcomeMutati
 		return (&ActionOutcomeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ActionOutcome mutation op: %q", m.Op())
+	}
+}
+
+// ActionProposalClient is a client for the ActionProposal schema.
+type ActionProposalClient struct {
+	config
+}
+
+// NewActionProposalClient returns a client for the ActionProposal from the given config.
+func NewActionProposalClient(c config) *ActionProposalClient {
+	return &ActionProposalClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `actionproposal.Hooks(f(g(h())))`.
+func (c *ActionProposalClient) Use(hooks ...Hook) {
+	c.hooks.ActionProposal = append(c.hooks.ActionProposal, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `actionproposal.Intercept(f(g(h())))`.
+func (c *ActionProposalClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ActionProposal = append(c.inters.ActionProposal, interceptors...)
+}
+
+// Create returns a builder for creating a ActionProposal entity.
+func (c *ActionProposalClient) Create() *ActionProposalCreate {
+	mutation := newActionProposalMutation(c.config, OpCreate)
+	return &ActionProposalCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ActionProposal entities.
+func (c *ActionProposalClient) CreateBulk(builders ...*ActionProposalCreate) *ActionProposalCreateBulk {
+	return &ActionProposalCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ActionProposalClient) MapCreateBulk(slice any, setFunc func(*ActionProposalCreate, int)) *ActionProposalCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ActionProposalCreateBulk{err: fmt.Errorf("calling to ActionProposalClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ActionProposalCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ActionProposalCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ActionProposal.
+func (c *ActionProposalClient) Update() *ActionProposalUpdate {
+	mutation := newActionProposalMutation(c.config, OpUpdate)
+	return &ActionProposalUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ActionProposalClient) UpdateOne(_m *ActionProposal) *ActionProposalUpdateOne {
+	mutation := newActionProposalMutation(c.config, OpUpdateOne, withActionProposal(_m))
+	return &ActionProposalUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ActionProposalClient) UpdateOneID(id uuid.UUID) *ActionProposalUpdateOne {
+	mutation := newActionProposalMutation(c.config, OpUpdateOne, withActionProposalID(id))
+	return &ActionProposalUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ActionProposal.
+func (c *ActionProposalClient) Delete() *ActionProposalDelete {
+	mutation := newActionProposalMutation(c.config, OpDelete)
+	return &ActionProposalDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ActionProposalClient) DeleteOne(_m *ActionProposal) *ActionProposalDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ActionProposalClient) DeleteOneID(id uuid.UUID) *ActionProposalDeleteOne {
+	builder := c.Delete().Where(actionproposal.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ActionProposalDeleteOne{builder}
+}
+
+// Query returns a query builder for ActionProposal.
+func (c *ActionProposalClient) Query() *ActionProposalQuery {
+	return &ActionProposalQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeActionProposal},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ActionProposal entity by its id.
+func (c *ActionProposalClient) Get(ctx context.Context, id uuid.UUID) (*ActionProposal, error) {
+	return c.Query().Where(actionproposal.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ActionProposalClient) GetX(ctx context.Context, id uuid.UUID) *ActionProposal {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a ActionProposal.
+func (c *ActionProposalClient) QueryUser(_m *ActionProposal) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(actionproposal.Table, actionproposal.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, actionproposal.UserTable, actionproposal.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ActionProposalClient) Hooks() []Hook {
+	return c.hooks.ActionProposal
+}
+
+// Interceptors returns the client interceptors.
+func (c *ActionProposalClient) Interceptors() []Interceptor {
+	return c.inters.ActionProposal
+}
+
+func (c *ActionProposalClient) mutate(ctx context.Context, m *ActionProposalMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ActionProposalCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ActionProposalUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ActionProposalUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ActionProposalDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ActionProposal mutation op: %q", m.Op())
 	}
 }
 
@@ -2122,6 +2289,155 @@ func (c *AgentTurnClient) mutate(ctx context.Context, m *AgentTurnMutation) (Val
 		return (&AgentTurnDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown AgentTurn mutation op: %q", m.Op())
+	}
+}
+
+// ApprovalTokenClient is a client for the ApprovalToken schema.
+type ApprovalTokenClient struct {
+	config
+}
+
+// NewApprovalTokenClient returns a client for the ApprovalToken from the given config.
+func NewApprovalTokenClient(c config) *ApprovalTokenClient {
+	return &ApprovalTokenClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `approvaltoken.Hooks(f(g(h())))`.
+func (c *ApprovalTokenClient) Use(hooks ...Hook) {
+	c.hooks.ApprovalToken = append(c.hooks.ApprovalToken, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `approvaltoken.Intercept(f(g(h())))`.
+func (c *ApprovalTokenClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ApprovalToken = append(c.inters.ApprovalToken, interceptors...)
+}
+
+// Create returns a builder for creating a ApprovalToken entity.
+func (c *ApprovalTokenClient) Create() *ApprovalTokenCreate {
+	mutation := newApprovalTokenMutation(c.config, OpCreate)
+	return &ApprovalTokenCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ApprovalToken entities.
+func (c *ApprovalTokenClient) CreateBulk(builders ...*ApprovalTokenCreate) *ApprovalTokenCreateBulk {
+	return &ApprovalTokenCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ApprovalTokenClient) MapCreateBulk(slice any, setFunc func(*ApprovalTokenCreate, int)) *ApprovalTokenCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ApprovalTokenCreateBulk{err: fmt.Errorf("calling to ApprovalTokenClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ApprovalTokenCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ApprovalTokenCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ApprovalToken.
+func (c *ApprovalTokenClient) Update() *ApprovalTokenUpdate {
+	mutation := newApprovalTokenMutation(c.config, OpUpdate)
+	return &ApprovalTokenUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ApprovalTokenClient) UpdateOne(_m *ApprovalToken) *ApprovalTokenUpdateOne {
+	mutation := newApprovalTokenMutation(c.config, OpUpdateOne, withApprovalToken(_m))
+	return &ApprovalTokenUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ApprovalTokenClient) UpdateOneID(id uuid.UUID) *ApprovalTokenUpdateOne {
+	mutation := newApprovalTokenMutation(c.config, OpUpdateOne, withApprovalTokenID(id))
+	return &ApprovalTokenUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ApprovalToken.
+func (c *ApprovalTokenClient) Delete() *ApprovalTokenDelete {
+	mutation := newApprovalTokenMutation(c.config, OpDelete)
+	return &ApprovalTokenDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ApprovalTokenClient) DeleteOne(_m *ApprovalToken) *ApprovalTokenDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ApprovalTokenClient) DeleteOneID(id uuid.UUID) *ApprovalTokenDeleteOne {
+	builder := c.Delete().Where(approvaltoken.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ApprovalTokenDeleteOne{builder}
+}
+
+// Query returns a query builder for ApprovalToken.
+func (c *ApprovalTokenClient) Query() *ApprovalTokenQuery {
+	return &ApprovalTokenQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeApprovalToken},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ApprovalToken entity by its id.
+func (c *ApprovalTokenClient) Get(ctx context.Context, id uuid.UUID) (*ApprovalToken, error) {
+	return c.Query().Where(approvaltoken.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ApprovalTokenClient) GetX(ctx context.Context, id uuid.UUID) *ApprovalToken {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a ApprovalToken.
+func (c *ApprovalTokenClient) QueryUser(_m *ApprovalToken) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(approvaltoken.Table, approvaltoken.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, approvaltoken.UserTable, approvaltoken.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ApprovalTokenClient) Hooks() []Hook {
+	return c.hooks.ApprovalToken
+}
+
+// Interceptors returns the client interceptors.
+func (c *ApprovalTokenClient) Interceptors() []Interceptor {
+	return c.inters.ApprovalToken
+}
+
+func (c *ApprovalTokenClient) mutate(ctx context.Context, m *ApprovalTokenMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ApprovalTokenCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ApprovalTokenUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ApprovalTokenUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ApprovalTokenDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ApprovalToken mutation op: %q", m.Op())
 	}
 }
 
@@ -8281,6 +8597,38 @@ func (c *UserClient) QueryMailSignals(_m *User) *MailSignalQuery {
 	return query
 }
 
+// QueryActionProposals queries the action_proposals edge of a User.
+func (c *UserClient) QueryActionProposals(_m *User) *ActionProposalQuery {
+	query := (&ActionProposalClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(actionproposal.Table, actionproposal.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ActionProposalsTable, user.ActionProposalsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApprovalTokens queries the approval_tokens edge of a User.
+func (c *UserClient) QueryApprovalTokens(_m *User) *ApprovalTokenQuery {
+	query := (&ApprovalTokenClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(approvaltoken.Table, approvaltoken.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ApprovalTokensTable, user.ApprovalTokensColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -8442,29 +8790,29 @@ func (c *UserHistoryClient) mutate(ctx context.Context, m *UserHistoryMutation) 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		ActionOutcome, AgentApproval, AgentDefinition, AgentDefinitionHistory,
-		AgentSession, AgentSessionEvent, AgentToolCall, AgentToolResultBlob, AgentTurn,
-		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
-		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, Commitment,
-		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
-		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
-		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
-		PolicyDecisionSnapshot, Relationship, RevenueAction, RevenueActionRevision,
-		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueWorkspace,
-		RevenueWorkspaceMember, Subscription, SubscriptionHistory, User,
-		UserHistory []ent.Hook
+		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
+		AgentDefinitionHistory, AgentSession, AgentSessionEvent, AgentToolCall,
+		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
+		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
+		BackgroundTaskScheduleState, CloudEvent, Commitment, CreditLedger, GoogleWatch,
+		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
+		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
+		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
+		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueLeakScan,
+		RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, User, UserHistory []ent.Hook
 	}
 	inters struct {
-		ActionOutcome, AgentApproval, AgentDefinition, AgentDefinitionHistory,
-		AgentSession, AgentSessionEvent, AgentToolCall, AgentToolResultBlob, AgentTurn,
-		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
-		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, Commitment,
-		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
-		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
-		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
-		PolicyDecisionSnapshot, Relationship, RevenueAction, RevenueActionRevision,
-		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueWorkspace,
-		RevenueWorkspaceMember, Subscription, SubscriptionHistory, User,
-		UserHistory []ent.Interceptor
+		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
+		AgentDefinitionHistory, AgentSession, AgentSessionEvent, AgentToolCall,
+		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
+		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
+		BackgroundTaskScheduleState, CloudEvent, Commitment, CreditLedger, GoogleWatch,
+		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
+		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
+		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
+		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueLeakScan,
+		RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, User, UserHistory []ent.Interceptor
 	}
 )

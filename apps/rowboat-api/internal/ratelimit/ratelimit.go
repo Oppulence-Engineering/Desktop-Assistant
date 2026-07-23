@@ -36,6 +36,7 @@ const (
 	GroupWebhooks    = "webhooks"
 	GroupAgent       = "agent"
 	GroupRevenue     = "revenue"
+	GroupActions     = "actions"
 )
 
 // Limiter is a fixed-window rate limiter.
