@@ -21,6 +21,79 @@ to avoid parallel sources of truth.
 > initiation (cron, windows, events) and a real execution runtime into the Oppulence API,
 > and turn the desktop into the **control plane** that observes it.
 
+## Product priority ranking (July 2026)
+
+Ranking of the **active (non-complete)** RFCs against the product direction in
+[`docs/one-pager.md`](../../docs/one-pager.md): the governed revenue-recovery loop
+(**Scan → Queue → Approve → Receipt**), web-primary with the desktop as bundled context
+engine, law firms as the first vertical preset. Complete RFCs (001–006, 009–011, 017,
+021, 027) are excluded.
+
+### Tier 1 — The wedge itself
+
+| Rank | RFC                                                    | Why                                                                                                                                                               |
+| ---- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | [030](./030-revenue-memory-outbound-governance.md)     | Literally the product: the RevenueAction queue, approval-gated execution, durable outcomes. Every other ranking flows from unblocking this.                       |
+| 2    | [023](./023-closed-loop-actions.md)                    | The **Approve** mechanism — propose → approve → execute → watch with single-use scoped approval tokens. 030 specializes it; its deps are complete except 012.     |
+| 3    | [022](./022-unified-entity-graph.md)                   | The **ledger's spine** — stable Company/Person IDs across email/billing. Without it "the memory dies with one laptop"; no unrebuildable moat.                     |
+| 4    | [031](./031-tiered-mail-storage-for-revenue-memory.md) | What makes cloud **Scan** sellable to a law firm: metadata-not-mailbox-copy, sealed short-TTL bodies, permanent evidence snapshots. Trust posture.                |
+| 5    | [029](./029-founder-operating-memory.md)               | The product wrapper (brief, follow-up queue, relationship memory). Implement its **revenue slice** — the one-pager narrows "nothing slips" to "no revenue slips". |
+
+### Tier 2 — Rails the wedge can't ship without
+
+| Rank | RFC                                                         | Why                                                                                                                                        |
+| ---- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 6    | [012](./012-connector-suite-and-consent-broker.md)          | The critical-path unblocker: 023, 029, 030, **and** 032 all depend on it (consent UI, money-touching approval tokens). **Build-order #1.** |
+| 7    | [019](./019-google-push-infrastructure.md)                  | Event-driven Gmail detection. Batch polling can bootstrap the free Scan; push makes "watches your inbox" true.                             |
+| 8    | [007](./007-production-cloud-enablement.md)                 | "Runs while the laptop is closed" isn't sellable until Temporal Cloud + SLOs are on in production.                                         |
+| 9    | [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Web-primary auth + the **billing wiring** + org scoping that 022 references.                                                               |
+| 10   | [020](./020-native-third-party-action-engine.md)            | Connector/action catalog at sane unit economics — where a Clio connector for the law-firm preset gets built.                               |
+
+### Tier 3 — Vertical preset + selective context-engine depth
+
+| Rank | RFC                                                                 | Why                                                                                                    |
+| ---- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 11   | [032](./032-detection-sensor-integrations.md)                       | Post-Gmail sensor order (e-sign, QBO/Xero, scheduling, CRM-as-enrichment); law-firm preset slots here. |
+| 12   | [email-004](./email-004-reply-zero-and-drafting.md)                 | Needs-reply/awaiting-reply tracking + nudge drafts = chase drafting on the desktop side.               |
+| 13   | [email-013](./email-013-meeting-briefs-and-relationship-context.md) | Relationship evidence feeding the ledger.                                                              |
+| 14   | [email-014](./email-014-sync-reliability-rate-limits-and-repair.md) | The context engine must be dependable.                                                                 |
+| 15   | [email-015](./email-015-email-privacy-security-and-governance.md)   | Trust posture on the desktop side; pairs with 031.                                                     |
+| 16   | [025](./025-desktop-runtime-durability.md)                          | Crash-safe local queue for the context engine.                                                         |
+| 17   | [email-016](./email-016-email-evaluation-and-quality-gates.md)      | Draft-quality gates are what make one-click Approve feel safe.                                         |
+
+### Tier 4 — Valuable, not wedge-critical
+
+[014](./014-live-note-observability-cost-and-provenance.md) ·
+[024](./024-cold-primitives-ga.md) ·
+[028](./028-declarative-agent-definitions.md) ·
+[016](./016-app-family-consolidation.md) ·
+mailbox depth beyond the chase loop
+([email-001](./email-001-mailbox-provider-foundation.md),
+[email-002](./email-002-mailbox-command-center.md),
+[email-003](./email-003-ai-rules-and-action-engine.md),
+[email-010](./email-010-ai-mail-assistant-chat.md),
+[email-012](./email-012-mail-search-semantic-memory-and-knowledge.md),
+[email-017](./email-017-onboarding-permissions-and-feature-adoption.md)).
+
+### Tier 5 — Defer, per the one-pager's rejections
+
+[013](./013-oppulence-product-connector-fabric.md) and
+[026](./026-finance-command-center.md) — the AR+AP+cash cockpit is the full-back-office
+breadth the one-pager rejects for the wedge; revisit as expansion.
+[008](./008-conduit-eigen-faculties.md) — portfolio-plane expansion.
+[018](./018-a2a-delegation-and-agent-identity.md) — future protocol.
+[email-005](./email-005-newsletter-cleanup-and-cold-email-defense.md) /
+[email-006](./email-006-digest-analytics-and-insights.md) /
+[email-011](./email-011-smart-categories-tabs-and-labels.md) /
+[email-020](./email-020-email-debug-console-and-operator-tools.md) — horizontal
+"better email app" features, the graveyard's kill zone.
+
+> **Build-order inversion:** strategic importance and build order invert at the top —
+> 030 is the most important RFC, but the dependency graph says
+> **012 → 023 + 022 → 031 → 030 → 029-slice → 032** is the path that ships it.
+> Two framings in this set should be read through the revenue-wedge lens for now:
+> 029's horizontal "everything that slips" promise and 026's command-center umbrella.
+
 ## Cloud workflow RFCs
 
 | #                                                      | Title                           | Layer           | What it adds                                                                                                                    |
