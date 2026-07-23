@@ -74,13 +74,11 @@ export function MarketingEffects() {
     // Scroll-reveal choreography. Gated behind a root attribute so the page
     // stays fully visible for no-JS visitors and reduced-motion users.
     const revealSelector = [
+      ".linear-manifesto h2",
       ".linear-statement-title",
-      ".linear-benefit",
       ".linear-product-header",
       ".linear-product-visual",
       ".linear-update",
-      ".linear-capabilities > header",
-      ".linear-capabilities > div > div",
       ".linear-proof",
       ".linear-faq > header",
       ".linear-faq > div",
