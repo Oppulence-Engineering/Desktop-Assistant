@@ -3733,4 +3733,152 @@
   .linear-final-cta h2 {
     font-size: clamp(2.2rem, 4vw, 3rem);
   }
+
+  /*
+   * Cossistant neutral theme. Exact token values from their source
+   * (oklch achromatic scale): near-white ground, neutral grays, flat
+   * primary buttons, flat headlines, no ambient glow. Our red keeps the
+   * role their orange plays.
+   */
+  .marketing-polar {
+    --background: oklch(99% 0 0);
+    --background-50: oklch(98.5% 0 0);
+    --background-100: oklch(98% 0 0);
+    --background-200: oklch(97% 0 0);
+    --background-300: oklch(96% 0 0);
+    --foreground: oklch(14.5% 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(14.5% 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(14.5% 0 0);
+    --primary: oklch(20.5% 0 0);
+    --primary-foreground: oklch(98.5% 0 0);
+    --secondary: oklch(97% 0 0);
+    --secondary-foreground: oklch(20.5% 0 0);
+    --muted: oklch(97% 0 0);
+    --muted-foreground: oklch(55.6% 0 0);
+    --accent: oklch(97% 0 0);
+    --accent-foreground: oklch(20.5% 0 0);
+    --border: oklch(92.2% 0 0);
+    --input: oklch(92.2% 0 0);
+    --linear-border: oklch(92.2% 0 0);
+    --linear-border-strong: oklch(89% 0 0);
+    --linear-text-secondary: oklch(30% 0 0);
+    --linear-text-tertiary: oklch(55.6% 0 0);
+    --linear-text-quaternary: oklch(70.8% 0 0);
+    background: var(--background);
+  }
+
+  html:has(.marketing-polar),
+  body:has(.marketing-polar) {
+    background: oklch(99% 0 0);
+  }
+
+  .linear-hero::before {
+    content: none;
+  }
+
+  .linear-hero-title,
+  .linear-subpage-title,
+  .linear-final-cta h2 {
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    color: var(--foreground);
+  }
+
+  .linear-manifesto h2,
+  .linear-statement-title {
+    color: color-mix(in oklab, var(--foreground) 62%, transparent);
+  }
+
+  .linear-manifesto h2 strong,
+  .linear-statement-title strong {
+    color: var(--foreground);
+  }
+
+  .linear-button-primary {
+    border: 1px solid transparent;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    box-shadow: none;
+  }
+
+  .linear-button-primary:hover {
+    filter: none;
+    background: color-mix(in oklab, var(--primary) 88%, white);
+    box-shadow: none;
+  }
+
+  .linear-button-secondary {
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--foreground);
+    box-shadow: none;
+  }
+
+  .linear-button-secondary:hover {
+    border-color: var(--border);
+    background: var(--secondary);
+  }
+
+  .linear-button-ghost:hover,
+  .linear-nav-link:hover,
+  .linear-nav-trigger:hover,
+  .group:hover > .linear-nav-trigger {
+    background: var(--secondary);
+    color: var(--foreground);
+  }
+
+  .linear-mobile-panel {
+    background: var(--background);
+  }
+
+  .linear-hero-card {
+    border-color: var(--border);
+    box-shadow:
+      0 10px 30px rgb(0 0 0 / 5%),
+      0 2px 8px rgb(0 0 0 / 4%);
+  }
+
+  .linear-hero-card:hover {
+    box-shadow:
+      0 16px 40px rgb(0 0 0 / 7%),
+      0 4px 12px rgb(0 0 0 / 5%);
+  }
+
+  .linear-hero-card-act {
+    border-color: transparent;
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .linear-update:hover,
+  .linear-proof:hover,
+  .linear-product-tab:hover {
+    background: var(--secondary);
+  }
+
+  .linear-product-panel {
+    border-color: var(--border);
+    background: var(--card);
+    box-shadow: none;
+  }
+
+  .linear-product-panel:hover {
+    border-color: oklch(85% 0 0);
+  }
+
+  .linear-product-panel img {
+    border-color: var(--border);
+  }
+
+  .linear-dropdown-panel .marketing-surface-strong {
+    border-color: var(--border);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 8%);
+  }
+
+  .linear-final-cta::before {
+    content: none;
+  }
 }
