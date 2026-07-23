@@ -46,6 +46,9 @@ func (RevenueWorkspace) Fields() []ent.Field {
 			Default("active").
 			Validate(oneOfRevenue("status", "active", "disconnected", "repair_required")),
 		field.Time("last_verified_at").Optional().Nillable(),
+		// When the last proactive digest email was sent, so the scheduled
+		// sender can honor a per-user minimum interval.
+		field.Time("last_digest_at").Optional().Nillable(),
 	}
 }
 

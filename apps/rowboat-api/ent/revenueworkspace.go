@@ -35,6 +35,8 @@ type RevenueWorkspace struct {
 	Status string `json:"status,omitempty"`
 	// LastVerifiedAt holds the value of the "last_verified_at" field.
 	LastVerifiedAt *time.Time `json:"last_verified_at,omitempty"`
+	// LastDigestAt holds the value of the "last_digest_at" field.
+	LastDigestAt *time.Time `json:"last_digest_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RevenueWorkspaceQuery when eager-loading is set.
 	Edges                   RevenueWorkspaceEdges `json:"edges"`
@@ -180,7 +182,7 @@ func (*RevenueWorkspace) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case revenueworkspace.FieldWorkosOrgID, revenueworkspace.FieldOutboundOrganizationID, revenueworkspace.FieldOutboundWorkspaceID, revenueworkspace.FieldMode, revenueworkspace.FieldStatus:
 			values[i] = new(sql.NullString)
-		case revenueworkspace.FieldCreatedAt, revenueworkspace.FieldUpdatedAt, revenueworkspace.FieldLastVerifiedAt:
+		case revenueworkspace.FieldCreatedAt, revenueworkspace.FieldUpdatedAt, revenueworkspace.FieldLastVerifiedAt, revenueworkspace.FieldLastDigestAt:
 			values[i] = new(sql.NullTime)
 		case revenueworkspace.FieldID:
 			values[i] = new(uuid.UUID)
@@ -256,6 +258,13 @@ func (_m *RevenueWorkspace) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.LastVerifiedAt = new(time.Time)
 				*_m.LastVerifiedAt = value.Time
+			}
+		case revenueworkspace.FieldLastDigestAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_digest_at", values[i])
+			} else if value.Valid {
+				_m.LastDigestAt = new(time.Time)
+				*_m.LastDigestAt = value.Time
 			}
 		case revenueworkspace.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -375,6 +384,11 @@ func (_m *RevenueWorkspace) String() string {
 	builder.WriteString(", ")
 	if v := _m.LastVerifiedAt; v != nil {
 		builder.WriteString("last_verified_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.LastDigestAt; v != nil {
+		builder.WriteString("last_digest_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteByte(')')

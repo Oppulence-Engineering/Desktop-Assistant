@@ -153,6 +153,26 @@ func (_u *RevenueWorkspaceUpdate) ClearLastVerifiedAt() *RevenueWorkspaceUpdate 
 	return _u
 }
 
+// SetLastDigestAt sets the "last_digest_at" field.
+func (_u *RevenueWorkspaceUpdate) SetLastDigestAt(v time.Time) *RevenueWorkspaceUpdate {
+	_u.mutation.SetLastDigestAt(v)
+	return _u
+}
+
+// SetNillableLastDigestAt sets the "last_digest_at" field if the given value is not nil.
+func (_u *RevenueWorkspaceUpdate) SetNillableLastDigestAt(v *time.Time) *RevenueWorkspaceUpdate {
+	if v != nil {
+		_u.SetLastDigestAt(*v)
+	}
+	return _u
+}
+
+// ClearLastDigestAt clears the value of the "last_digest_at" field.
+func (_u *RevenueWorkspaceUpdate) ClearLastDigestAt() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearLastDigestAt()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *RevenueWorkspaceUpdate) SetUserID(id uuid.UUID) *RevenueWorkspaceUpdate {
 	_u.mutation.SetUserID(id)
@@ -597,6 +617,12 @@ func (_u *RevenueWorkspaceUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if _u.mutation.LastVerifiedAtCleared() {
 		_spec.ClearField(revenueworkspace.FieldLastVerifiedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastDigestAt(); ok {
+		_spec.SetField(revenueworkspace.FieldLastDigestAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastDigestAtCleared() {
+		_spec.ClearField(revenueworkspace.FieldLastDigestAt, field.TypeTime)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1166,6 +1192,26 @@ func (_u *RevenueWorkspaceUpdateOne) ClearLastVerifiedAt() *RevenueWorkspaceUpda
 	return _u
 }
 
+// SetLastDigestAt sets the "last_digest_at" field.
+func (_u *RevenueWorkspaceUpdateOne) SetLastDigestAt(v time.Time) *RevenueWorkspaceUpdateOne {
+	_u.mutation.SetLastDigestAt(v)
+	return _u
+}
+
+// SetNillableLastDigestAt sets the "last_digest_at" field if the given value is not nil.
+func (_u *RevenueWorkspaceUpdateOne) SetNillableLastDigestAt(v *time.Time) *RevenueWorkspaceUpdateOne {
+	if v != nil {
+		_u.SetLastDigestAt(*v)
+	}
+	return _u
+}
+
+// ClearLastDigestAt clears the value of the "last_digest_at" field.
+func (_u *RevenueWorkspaceUpdateOne) ClearLastDigestAt() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearLastDigestAt()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *RevenueWorkspaceUpdateOne) SetUserID(id uuid.UUID) *RevenueWorkspaceUpdateOne {
 	_u.mutation.SetUserID(id)
@@ -1640,6 +1686,12 @@ func (_u *RevenueWorkspaceUpdateOne) sqlSave(ctx context.Context) (_node *Revenu
 	}
 	if _u.mutation.LastVerifiedAtCleared() {
 		_spec.ClearField(revenueworkspace.FieldLastVerifiedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastDigestAt(); ok {
+		_spec.SetField(revenueworkspace.FieldLastDigestAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastDigestAtCleared() {
+		_spec.ClearField(revenueworkspace.FieldLastDigestAt, field.TypeTime)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

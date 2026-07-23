@@ -31,6 +31,8 @@ const (
 	FieldStatus = "status"
 	// FieldLastVerifiedAt holds the string denoting the last_verified_at field in the database.
 	FieldLastVerifiedAt = "last_verified_at"
+	// FieldLastDigestAt holds the string denoting the last_digest_at field in the database.
+	FieldLastDigestAt = "last_digest_at"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
@@ -136,6 +138,7 @@ var Columns = []string{
 	FieldMode,
 	FieldStatus,
 	FieldLastVerifiedAt,
+	FieldLastDigestAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "revenue_workspaces"
@@ -224,6 +227,11 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 // ByLastVerifiedAt orders the results by the last_verified_at field.
 func ByLastVerifiedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastVerifiedAt, opts...).ToFunc()
+}
+
+// ByLastDigestAt orders the results by the last_digest_at field.
+func ByLastDigestAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastDigestAt, opts...).ToFunc()
 }
 
 // ByUserField orders the results by user field.
