@@ -41,7 +41,6 @@ const jsonLd = {
       name: "Oppulence",
       url: "https://oppulence.io",
       logo: "https://oppulence.io/icon.png",
-      sameAs: ["https://github.com/Oppulence-Engineering"],
     },
     {
       "@type": "SoftwareApplication",

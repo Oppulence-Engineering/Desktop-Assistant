@@ -11,7 +11,6 @@ import CodeIcon from "@mui/icons-material/CodeOutlined";
 import EnvelopeIcon from "@mui/icons-material/MailOutlineOutlined";
 import FileTextIcon from "@mui/icons-material/DescriptionOutlined";
 import FlowArrowIcon from "@mui/icons-material/SchemaOutlined";
-import GithubLogoIcon from "@mui/icons-material/GitHub";
 import GlobeIcon from "@mui/icons-material/LanguageOutlined";
 import HardDrivesIcon from "@mui/icons-material/StorageOutlined";
 import HeadsetIcon from "@mui/icons-material/SupportAgentOutlined";
@@ -115,10 +114,6 @@ function iconForLink(item: LinkItem): { icon: SvgIconComponent; tone?: IconTone 
 
   if (key.includes("api") || key.includes("sdk") || key.includes("code")) {
     return { icon: CodeIcon, tone: "green" };
-  }
-
-  if (key.includes("github")) {
-    return { icon: GithubLogoIcon, tone: "neutral" };
   }
 
   if (key.includes("widget") || key.includes("chat") || key.includes("support")) {
@@ -439,15 +434,6 @@ export function TopBar() {
         <div className="linear-header-divider hidden lg:block" />
 
         <div className="flex flex-1 items-center justify-end gap-2">
-          <a
-            aria-label="Oppulence on GitHub"
-            className="linear-nav-link linear-nav-icon hidden md:inline-flex"
-            href="https://github.com/Oppulence-Engineering"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <GithubLogoIcon style={{ fontSize: "0.875rem" }} />
-          </a>
           <Link className="linear-nav-link hidden md:inline-flex" href="/sign-in">
             Sign in
           </Link>
@@ -501,7 +487,7 @@ export function Footer() {
           />
           <p className="linear-footer-note">
             Oppulence finds the money slipping away in your inbox and chases it in your voice, with
-            your approval. © 2026 Oppulence. Open source under the MIT license.
+            your approval. © 2026 Oppulence.
           </p>
         </div>
       </div>
@@ -1546,7 +1532,7 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
             key={story.path}
           >
             <div className="flex items-start justify-between gap-3">
-              <MarketingIcon icon={GithubLogoIcon} tone="blue" />
+              <MarketingIcon icon={BriefcaseIcon} tone="blue" />
               <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 Story
               </span>
