@@ -44,6 +44,12 @@ type fixture struct {
 	now    time.Time
 }
 
+// internalCtx is an internal-caller context (bypasses the tenant interceptor),
+// mirroring how the cloud-event router calls the broker.
+func internalCtx() context.Context {
+	return auth.WithInternal(context.Background())
+}
+
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
 	d, err := db.Open(context.Background(), appconfig.Config{

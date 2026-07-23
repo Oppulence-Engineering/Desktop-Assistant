@@ -63,8 +63,10 @@ type proposalDTO struct {
 	OriginRunID   string     `json:"originRunId,omitempty"`
 	ResultRef     string     `json:"resultRef,omitempty"`
 	Reason        string     `json:"reason,omitempty"`
+	ReturnEventID string     `json:"returnEventId,omitempty"`
 	ApprovedAt    *time.Time `json:"approvedAt,omitempty"`
 	ExecutedAt    *time.Time `json:"executedAt,omitempty"`
+	ResolvedAt    *time.Time `json:"resolvedAt,omitempty"`
 	CreatedAt     time.Time  `json:"createdAt"`
 }
 
@@ -82,8 +84,10 @@ func toDTO(p *ent.ActionProposal) proposalDTO {
 		OriginRunID:   p.OriginRunID,
 		ResultRef:     p.ResultRef,
 		Reason:        p.Reason,
+		ReturnEventID: p.ReturnEventID,
 		ApprovedAt:    p.ApprovedAt,
 		ExecutedAt:    p.ExecutedAt,
+		ResolvedAt:    p.ResolvedAt,
 		CreatedAt:     p.CreatedAt,
 	}
 }

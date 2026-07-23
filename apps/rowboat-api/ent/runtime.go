@@ -854,25 +854,25 @@ func init() {
 	// cloudevent.SourceValidator is a validator for the "source" field. It is called by the builders before save.
 	cloudevent.SourceValidator = cloudeventDescSource.Validators[0].(func(string) error)
 	// cloudeventDescRoutingJSON is the schema descriptor for routing_json field.
-	cloudeventDescRoutingJSON := cloudeventFields[7].Descriptor()
+	cloudeventDescRoutingJSON := cloudeventFields[8].Descriptor()
 	// cloudevent.RoutingJSONValidator is a validator for the "routing_json" field. It is called by the builders before save.
 	cloudevent.RoutingJSONValidator = cloudeventDescRoutingJSON.Validators[0].(func(string) error)
 	// cloudeventDescDedupeKey is the schema descriptor for dedupe_key field.
-	cloudeventDescDedupeKey := cloudeventFields[8].Descriptor()
+	cloudeventDescDedupeKey := cloudeventFields[9].Descriptor()
 	// cloudevent.DedupeKeyValidator is a validator for the "dedupe_key" field. It is called by the builders before save.
 	cloudevent.DedupeKeyValidator = cloudeventDescDedupeKey.Validators[0].(func(string) error)
 	// cloudeventDescRoutingStatus is the schema descriptor for routing_status field.
-	cloudeventDescRoutingStatus := cloudeventFields[9].Descriptor()
+	cloudeventDescRoutingStatus := cloudeventFields[10].Descriptor()
 	// cloudevent.DefaultRoutingStatus holds the default value on creation for the routing_status field.
 	cloudevent.DefaultRoutingStatus = cloudeventDescRoutingStatus.Default.(string)
 	// cloudevent.RoutingStatusValidator is a validator for the "routing_status" field. It is called by the builders before save.
 	cloudevent.RoutingStatusValidator = cloudeventDescRoutingStatus.Validators[0].(func(string) error)
 	// cloudeventDescMatchedTaskCount is the schema descriptor for matched_task_count field.
-	cloudeventDescMatchedTaskCount := cloudeventFields[10].Descriptor()
+	cloudeventDescMatchedTaskCount := cloudeventFields[11].Descriptor()
 	// cloudevent.DefaultMatchedTaskCount holds the default value on creation for the matched_task_count field.
 	cloudevent.DefaultMatchedTaskCount = cloudeventDescMatchedTaskCount.Default.(int)
 	// cloudeventDescReceivedAt is the schema descriptor for received_at field.
-	cloudeventDescReceivedAt := cloudeventFields[12].Descriptor()
+	cloudeventDescReceivedAt := cloudeventFields[13].Descriptor()
 	// cloudevent.DefaultReceivedAt holds the default value on creation for the received_at field.
 	cloudevent.DefaultReceivedAt = cloudeventDescReceivedAt.Default.(func() time.Time)
 	// cloudeventDescID is the schema descriptor for id field.

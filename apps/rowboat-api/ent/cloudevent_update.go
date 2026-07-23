@@ -91,6 +91,26 @@ func (_u *CloudEventUpdate) ClearSourceAccountID() *CloudEventUpdate {
 	return _u
 }
 
+// SetCorrelationID sets the "correlation_id" field.
+func (_u *CloudEventUpdate) SetCorrelationID(v string) *CloudEventUpdate {
+	_u.mutation.SetCorrelationID(v)
+	return _u
+}
+
+// SetNillableCorrelationID sets the "correlation_id" field if the given value is not nil.
+func (_u *CloudEventUpdate) SetNillableCorrelationID(v *string) *CloudEventUpdate {
+	if v != nil {
+		_u.SetCorrelationID(*v)
+	}
+	return _u
+}
+
+// ClearCorrelationID clears the value of the "correlation_id" field.
+func (_u *CloudEventUpdate) ClearCorrelationID() *CloudEventUpdate {
+	_u.mutation.ClearCorrelationID()
+	return _u
+}
+
 // SetEventType sets the "event_type" field.
 func (_u *CloudEventUpdate) SetEventType(v string) *CloudEventUpdate {
 	_u.mutation.SetEventType(v)
@@ -424,6 +444,12 @@ func (_u *CloudEventUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if _u.mutation.SourceAccountIDCleared() {
 		_spec.ClearField(cloudevent.FieldSourceAccountID, field.TypeString)
 	}
+	if value, ok := _u.mutation.CorrelationID(); ok {
+		_spec.SetField(cloudevent.FieldCorrelationID, field.TypeString, value)
+	}
+	if _u.mutation.CorrelationIDCleared() {
+		_spec.ClearField(cloudevent.FieldCorrelationID, field.TypeString)
+	}
 	if value, ok := _u.mutation.EventType(); ok {
 		_spec.SetField(cloudevent.FieldEventType, field.TypeString, value)
 	}
@@ -629,6 +655,26 @@ func (_u *CloudEventUpdateOne) SetNillableSourceAccountID(v *string) *CloudEvent
 // ClearSourceAccountID clears the value of the "source_account_id" field.
 func (_u *CloudEventUpdateOne) ClearSourceAccountID() *CloudEventUpdateOne {
 	_u.mutation.ClearSourceAccountID()
+	return _u
+}
+
+// SetCorrelationID sets the "correlation_id" field.
+func (_u *CloudEventUpdateOne) SetCorrelationID(v string) *CloudEventUpdateOne {
+	_u.mutation.SetCorrelationID(v)
+	return _u
+}
+
+// SetNillableCorrelationID sets the "correlation_id" field if the given value is not nil.
+func (_u *CloudEventUpdateOne) SetNillableCorrelationID(v *string) *CloudEventUpdateOne {
+	if v != nil {
+		_u.SetCorrelationID(*v)
+	}
+	return _u
+}
+
+// ClearCorrelationID clears the value of the "correlation_id" field.
+func (_u *CloudEventUpdateOne) ClearCorrelationID() *CloudEventUpdateOne {
+	_u.mutation.ClearCorrelationID()
 	return _u
 }
 
@@ -994,6 +1040,12 @@ func (_u *CloudEventUpdateOne) sqlSave(ctx context.Context) (_node *CloudEvent, 
 	}
 	if _u.mutation.SourceAccountIDCleared() {
 		_spec.ClearField(cloudevent.FieldSourceAccountID, field.TypeString)
+	}
+	if value, ok := _u.mutation.CorrelationID(); ok {
+		_spec.SetField(cloudevent.FieldCorrelationID, field.TypeString, value)
+	}
+	if _u.mutation.CorrelationIDCleared() {
+		_spec.ClearField(cloudevent.FieldCorrelationID, field.TypeString)
 	}
 	if value, ok := _u.mutation.EventType(); ok {
 		_spec.SetField(cloudevent.FieldEventType, field.TypeString, value)

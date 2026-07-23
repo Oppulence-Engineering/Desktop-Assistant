@@ -136,6 +136,16 @@ func ResultRef(v string) predicate.ActionProposal {
 	return predicate.ActionProposal(sql.FieldEQ(FieldResultRef, v))
 }
 
+// ReturnEventID applies equality check predicate on the "return_event_id" field. It's identical to ReturnEventIDEQ.
+func ReturnEventID(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldEQ(FieldReturnEventID, v))
+}
+
+// ResolvedAt applies equality check predicate on the "resolved_at" field. It's identical to ResolvedAtEQ.
+func ResolvedAt(v time.Time) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldEQ(FieldResolvedAt, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.ActionProposal {
 	return predicate.ActionProposal(sql.FieldEQ(FieldCreatedAt, v))
@@ -1094,6 +1104,131 @@ func ResultRefEqualFold(v string) predicate.ActionProposal {
 // ResultRefContainsFold applies the ContainsFold predicate on the "result_ref" field.
 func ResultRefContainsFold(v string) predicate.ActionProposal {
 	return predicate.ActionProposal(sql.FieldContainsFold(FieldResultRef, v))
+}
+
+// ReturnEventIDEQ applies the EQ predicate on the "return_event_id" field.
+func ReturnEventIDEQ(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldEQ(FieldReturnEventID, v))
+}
+
+// ReturnEventIDNEQ applies the NEQ predicate on the "return_event_id" field.
+func ReturnEventIDNEQ(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldNEQ(FieldReturnEventID, v))
+}
+
+// ReturnEventIDIn applies the In predicate on the "return_event_id" field.
+func ReturnEventIDIn(vs ...string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldIn(FieldReturnEventID, vs...))
+}
+
+// ReturnEventIDNotIn applies the NotIn predicate on the "return_event_id" field.
+func ReturnEventIDNotIn(vs ...string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldNotIn(FieldReturnEventID, vs...))
+}
+
+// ReturnEventIDGT applies the GT predicate on the "return_event_id" field.
+func ReturnEventIDGT(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldGT(FieldReturnEventID, v))
+}
+
+// ReturnEventIDGTE applies the GTE predicate on the "return_event_id" field.
+func ReturnEventIDGTE(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldGTE(FieldReturnEventID, v))
+}
+
+// ReturnEventIDLT applies the LT predicate on the "return_event_id" field.
+func ReturnEventIDLT(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldLT(FieldReturnEventID, v))
+}
+
+// ReturnEventIDLTE applies the LTE predicate on the "return_event_id" field.
+func ReturnEventIDLTE(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldLTE(FieldReturnEventID, v))
+}
+
+// ReturnEventIDContains applies the Contains predicate on the "return_event_id" field.
+func ReturnEventIDContains(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldContains(FieldReturnEventID, v))
+}
+
+// ReturnEventIDHasPrefix applies the HasPrefix predicate on the "return_event_id" field.
+func ReturnEventIDHasPrefix(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldHasPrefix(FieldReturnEventID, v))
+}
+
+// ReturnEventIDHasSuffix applies the HasSuffix predicate on the "return_event_id" field.
+func ReturnEventIDHasSuffix(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldHasSuffix(FieldReturnEventID, v))
+}
+
+// ReturnEventIDIsNil applies the IsNil predicate on the "return_event_id" field.
+func ReturnEventIDIsNil() predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldIsNull(FieldReturnEventID))
+}
+
+// ReturnEventIDNotNil applies the NotNil predicate on the "return_event_id" field.
+func ReturnEventIDNotNil() predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldNotNull(FieldReturnEventID))
+}
+
+// ReturnEventIDEqualFold applies the EqualFold predicate on the "return_event_id" field.
+func ReturnEventIDEqualFold(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldEqualFold(FieldReturnEventID, v))
+}
+
+// ReturnEventIDContainsFold applies the ContainsFold predicate on the "return_event_id" field.
+func ReturnEventIDContainsFold(v string) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldContainsFold(FieldReturnEventID, v))
+}
+
+// ResolvedAtEQ applies the EQ predicate on the "resolved_at" field.
+func ResolvedAtEQ(v time.Time) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldEQ(FieldResolvedAt, v))
+}
+
+// ResolvedAtNEQ applies the NEQ predicate on the "resolved_at" field.
+func ResolvedAtNEQ(v time.Time) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldNEQ(FieldResolvedAt, v))
+}
+
+// ResolvedAtIn applies the In predicate on the "resolved_at" field.
+func ResolvedAtIn(vs ...time.Time) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldIn(FieldResolvedAt, vs...))
+}
+
+// ResolvedAtNotIn applies the NotIn predicate on the "resolved_at" field.
+func ResolvedAtNotIn(vs ...time.Time) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldNotIn(FieldResolvedAt, vs...))
+}
+
+// ResolvedAtGT applies the GT predicate on the "resolved_at" field.
+func ResolvedAtGT(v time.Time) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldGT(FieldResolvedAt, v))
+}
+
+// ResolvedAtGTE applies the GTE predicate on the "resolved_at" field.
+func ResolvedAtGTE(v time.Time) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldGTE(FieldResolvedAt, v))
+}
+
+// ResolvedAtLT applies the LT predicate on the "resolved_at" field.
+func ResolvedAtLT(v time.Time) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldLT(FieldResolvedAt, v))
+}
+
+// ResolvedAtLTE applies the LTE predicate on the "resolved_at" field.
+func ResolvedAtLTE(v time.Time) predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldLTE(FieldResolvedAt, v))
+}
+
+// ResolvedAtIsNil applies the IsNil predicate on the "resolved_at" field.
+func ResolvedAtIsNil() predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldIsNull(FieldResolvedAt))
+}
+
+// ResolvedAtNotNil applies the NotNil predicate on the "resolved_at" field.
+func ResolvedAtNotNil() predicate.ActionProposal {
+	return predicate.ActionProposal(sql.FieldNotNull(FieldResolvedAt))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

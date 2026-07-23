@@ -51,6 +51,10 @@ type ActionProposal struct {
 	Reason string `json:"reason,omitempty"`
 	// ResultRef holds the value of the "result_ref" field.
 	ResultRef string `json:"result_ref,omitempty"`
+	// ReturnEventID holds the value of the "return_event_id" field.
+	ReturnEventID string `json:"return_event_id,omitempty"`
+	// ResolvedAt holds the value of the "resolved_at" field.
+	ResolvedAt *time.Time `json:"resolved_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ActionProposalQuery when eager-loading is set.
 	Edges                 ActionProposalEdges `json:"edges"`
@@ -87,9 +91,9 @@ func (*ActionProposal) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case actionproposal.FieldFinancial:
 			values[i] = new(sql.NullBool)
-		case actionproposal.FieldTarget, actionproposal.FieldKind, actionproposal.FieldParamsJSON, actionproposal.FieldRationale, actionproposal.FieldStatus, actionproposal.FieldCorrelationID, actionproposal.FieldEntityID, actionproposal.FieldOriginRunID, actionproposal.FieldReason, actionproposal.FieldResultRef:
+		case actionproposal.FieldTarget, actionproposal.FieldKind, actionproposal.FieldParamsJSON, actionproposal.FieldRationale, actionproposal.FieldStatus, actionproposal.FieldCorrelationID, actionproposal.FieldEntityID, actionproposal.FieldOriginRunID, actionproposal.FieldReason, actionproposal.FieldResultRef, actionproposal.FieldReturnEventID:
 			values[i] = new(sql.NullString)
-		case actionproposal.FieldCreatedAt, actionproposal.FieldUpdatedAt, actionproposal.FieldExpiresAt, actionproposal.FieldApprovedAt, actionproposal.FieldExecutedAt:
+		case actionproposal.FieldCreatedAt, actionproposal.FieldUpdatedAt, actionproposal.FieldExpiresAt, actionproposal.FieldApprovedAt, actionproposal.FieldExecutedAt, actionproposal.FieldResolvedAt:
 			values[i] = new(sql.NullTime)
 		case actionproposal.FieldID:
 			values[i] = new(uuid.UUID)
@@ -215,6 +219,19 @@ func (_m *ActionProposal) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ResultRef = value.String
 			}
+		case actionproposal.FieldReturnEventID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field return_event_id", values[i])
+			} else if value.Valid {
+				_m.ReturnEventID = value.String
+			}
+		case actionproposal.FieldResolvedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field resolved_at", values[i])
+			} else if value.Valid {
+				_m.ResolvedAt = new(time.Time)
+				*_m.ResolvedAt = value.Time
+			}
 		case actionproposal.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field user_action_proposals", values[i])
@@ -315,6 +332,14 @@ func (_m *ActionProposal) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("result_ref=")
 	builder.WriteString(_m.ResultRef)
+	builder.WriteString(", ")
+	builder.WriteString("return_event_id=")
+	builder.WriteString(_m.ReturnEventID)
+	builder.WriteString(", ")
+	if v := _m.ResolvedAt; v != nil {
+		builder.WriteString("resolved_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

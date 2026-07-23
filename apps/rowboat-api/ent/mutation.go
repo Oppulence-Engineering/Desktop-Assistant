@@ -983,31 +983,33 @@ func (m *ActionOutcomeMutation) ResetEdge(name string) error {
 // ActionProposalMutation represents an operation that mutates the ActionProposal nodes in the graph.
 type ActionProposalMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *uuid.UUID
-	created_at     *time.Time
-	updated_at     *time.Time
-	target         *string
-	kind           *string
-	params_json    *string
-	financial      *bool
-	rationale      *string
-	status         *string
-	correlation_id *string
-	entity_id      *string
-	origin_run_id  *string
-	expires_at     *time.Time
-	approved_at    *time.Time
-	executed_at    *time.Time
-	reason         *string
-	result_ref     *string
-	clearedFields  map[string]struct{}
-	user           *uuid.UUID
-	cleareduser    bool
-	done           bool
-	oldValue       func(context.Context) (*ActionProposal, error)
-	predicates     []predicate.ActionProposal
+	op              Op
+	typ             string
+	id              *uuid.UUID
+	created_at      *time.Time
+	updated_at      *time.Time
+	target          *string
+	kind            *string
+	params_json     *string
+	financial       *bool
+	rationale       *string
+	status          *string
+	correlation_id  *string
+	entity_id       *string
+	origin_run_id   *string
+	expires_at      *time.Time
+	approved_at     *time.Time
+	executed_at     *time.Time
+	reason          *string
+	result_ref      *string
+	return_event_id *string
+	resolved_at     *time.Time
+	clearedFields   map[string]struct{}
+	user            *uuid.UUID
+	cleareduser     bool
+	done            bool
+	oldValue        func(context.Context) (*ActionProposal, error)
+	predicates      []predicate.ActionProposal
 }
 
 var _ ent.Mutation = (*ActionProposalMutation)(nil)
@@ -1820,6 +1822,104 @@ func (m *ActionProposalMutation) ResetResultRef() {
 	delete(m.clearedFields, actionproposal.FieldResultRef)
 }
 
+// SetReturnEventID sets the "return_event_id" field.
+func (m *ActionProposalMutation) SetReturnEventID(s string) {
+	m.return_event_id = &s
+}
+
+// ReturnEventID returns the value of the "return_event_id" field in the mutation.
+func (m *ActionProposalMutation) ReturnEventID() (r string, exists bool) {
+	v := m.return_event_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReturnEventID returns the old "return_event_id" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldReturnEventID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReturnEventID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReturnEventID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReturnEventID: %w", err)
+	}
+	return oldValue.ReturnEventID, nil
+}
+
+// ClearReturnEventID clears the value of the "return_event_id" field.
+func (m *ActionProposalMutation) ClearReturnEventID() {
+	m.return_event_id = nil
+	m.clearedFields[actionproposal.FieldReturnEventID] = struct{}{}
+}
+
+// ReturnEventIDCleared returns if the "return_event_id" field was cleared in this mutation.
+func (m *ActionProposalMutation) ReturnEventIDCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldReturnEventID]
+	return ok
+}
+
+// ResetReturnEventID resets all changes to the "return_event_id" field.
+func (m *ActionProposalMutation) ResetReturnEventID() {
+	m.return_event_id = nil
+	delete(m.clearedFields, actionproposal.FieldReturnEventID)
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (m *ActionProposalMutation) SetResolvedAt(t time.Time) {
+	m.resolved_at = &t
+}
+
+// ResolvedAt returns the value of the "resolved_at" field in the mutation.
+func (m *ActionProposalMutation) ResolvedAt() (r time.Time, exists bool) {
+	v := m.resolved_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResolvedAt returns the old "resolved_at" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldResolvedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResolvedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResolvedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResolvedAt: %w", err)
+	}
+	return oldValue.ResolvedAt, nil
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (m *ActionProposalMutation) ClearResolvedAt() {
+	m.resolved_at = nil
+	m.clearedFields[actionproposal.FieldResolvedAt] = struct{}{}
+}
+
+// ResolvedAtCleared returns if the "resolved_at" field was cleared in this mutation.
+func (m *ActionProposalMutation) ResolvedAtCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldResolvedAt]
+	return ok
+}
+
+// ResetResolvedAt resets all changes to the "resolved_at" field.
+func (m *ActionProposalMutation) ResetResolvedAt() {
+	m.resolved_at = nil
+	delete(m.clearedFields, actionproposal.FieldResolvedAt)
+}
+
 // SetUserID sets the "user" edge to the User entity by id.
 func (m *ActionProposalMutation) SetUserID(id uuid.UUID) {
 	m.user = &id
@@ -1893,7 +1993,7 @@ func (m *ActionProposalMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ActionProposalMutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 18)
 	if m.created_at != nil {
 		fields = append(fields, actionproposal.FieldCreatedAt)
 	}
@@ -1942,6 +2042,12 @@ func (m *ActionProposalMutation) Fields() []string {
 	if m.result_ref != nil {
 		fields = append(fields, actionproposal.FieldResultRef)
 	}
+	if m.return_event_id != nil {
+		fields = append(fields, actionproposal.FieldReturnEventID)
+	}
+	if m.resolved_at != nil {
+		fields = append(fields, actionproposal.FieldResolvedAt)
+	}
 	return fields
 }
 
@@ -1982,6 +2088,10 @@ func (m *ActionProposalMutation) Field(name string) (ent.Value, bool) {
 		return m.Reason()
 	case actionproposal.FieldResultRef:
 		return m.ResultRef()
+	case actionproposal.FieldReturnEventID:
+		return m.ReturnEventID()
+	case actionproposal.FieldResolvedAt:
+		return m.ResolvedAt()
 	}
 	return nil, false
 }
@@ -2023,6 +2133,10 @@ func (m *ActionProposalMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldReason(ctx)
 	case actionproposal.FieldResultRef:
 		return m.OldResultRef(ctx)
+	case actionproposal.FieldReturnEventID:
+		return m.OldReturnEventID(ctx)
+	case actionproposal.FieldResolvedAt:
+		return m.OldResolvedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown ActionProposal field %s", name)
 }
@@ -2144,6 +2258,20 @@ func (m *ActionProposalMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetResultRef(v)
 		return nil
+	case actionproposal.FieldReturnEventID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReturnEventID(v)
+		return nil
+	case actionproposal.FieldResolvedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResolvedAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ActionProposal field %s", name)
 }
@@ -2204,6 +2332,12 @@ func (m *ActionProposalMutation) ClearedFields() []string {
 	if m.FieldCleared(actionproposal.FieldResultRef) {
 		fields = append(fields, actionproposal.FieldResultRef)
 	}
+	if m.FieldCleared(actionproposal.FieldReturnEventID) {
+		fields = append(fields, actionproposal.FieldReturnEventID)
+	}
+	if m.FieldCleared(actionproposal.FieldResolvedAt) {
+		fields = append(fields, actionproposal.FieldResolvedAt)
+	}
 	return fields
 }
 
@@ -2247,6 +2381,12 @@ func (m *ActionProposalMutation) ClearField(name string) error {
 		return nil
 	case actionproposal.FieldResultRef:
 		m.ClearResultRef()
+		return nil
+	case actionproposal.FieldReturnEventID:
+		m.ClearReturnEventID()
+		return nil
+	case actionproposal.FieldResolvedAt:
+		m.ClearResolvedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ActionProposal nullable field %s", name)
@@ -2303,6 +2443,12 @@ func (m *ActionProposalMutation) ResetField(name string) error {
 		return nil
 	case actionproposal.FieldResultRef:
 		m.ResetResultRef()
+		return nil
+	case actionproposal.FieldReturnEventID:
+		m.ResetReturnEventID()
+		return nil
+	case actionproposal.FieldResolvedAt:
+		m.ResetResolvedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ActionProposal field %s", name)
@@ -22776,6 +22922,7 @@ type CloudEventMutation struct {
 	source                *string
 	source_event_id       *string
 	source_account_id     *string
+	correlation_id        *string
 	event_type            *string
 	subject               *string
 	text                  *string
@@ -23107,6 +23254,55 @@ func (m *CloudEventMutation) SourceAccountIDCleared() bool {
 func (m *CloudEventMutation) ResetSourceAccountID() {
 	m.source_account_id = nil
 	delete(m.clearedFields, cloudevent.FieldSourceAccountID)
+}
+
+// SetCorrelationID sets the "correlation_id" field.
+func (m *CloudEventMutation) SetCorrelationID(s string) {
+	m.correlation_id = &s
+}
+
+// CorrelationID returns the value of the "correlation_id" field in the mutation.
+func (m *CloudEventMutation) CorrelationID() (r string, exists bool) {
+	v := m.correlation_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCorrelationID returns the old "correlation_id" field's value of the CloudEvent entity.
+// If the CloudEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudEventMutation) OldCorrelationID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCorrelationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCorrelationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCorrelationID: %w", err)
+	}
+	return oldValue.CorrelationID, nil
+}
+
+// ClearCorrelationID clears the value of the "correlation_id" field.
+func (m *CloudEventMutation) ClearCorrelationID() {
+	m.correlation_id = nil
+	m.clearedFields[cloudevent.FieldCorrelationID] = struct{}{}
+}
+
+// CorrelationIDCleared returns if the "correlation_id" field was cleared in this mutation.
+func (m *CloudEventMutation) CorrelationIDCleared() bool {
+	_, ok := m.clearedFields[cloudevent.FieldCorrelationID]
+	return ok
+}
+
+// ResetCorrelationID resets all changes to the "correlation_id" field.
+func (m *CloudEventMutation) ResetCorrelationID() {
+	m.correlation_id = nil
+	delete(m.clearedFields, cloudevent.FieldCorrelationID)
 }
 
 // SetEventType sets the "event_type" field.
@@ -23743,7 +23939,7 @@ func (m *CloudEventMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CloudEventMutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 17)
 	if m.created_at != nil {
 		fields = append(fields, cloudevent.FieldCreatedAt)
 	}
@@ -23758,6 +23954,9 @@ func (m *CloudEventMutation) Fields() []string {
 	}
 	if m.source_account_id != nil {
 		fields = append(fields, cloudevent.FieldSourceAccountID)
+	}
+	if m.correlation_id != nil {
+		fields = append(fields, cloudevent.FieldCorrelationID)
 	}
 	if m.event_type != nil {
 		fields = append(fields, cloudevent.FieldEventType)
@@ -23810,6 +24009,8 @@ func (m *CloudEventMutation) Field(name string) (ent.Value, bool) {
 		return m.SourceEventID()
 	case cloudevent.FieldSourceAccountID:
 		return m.SourceAccountID()
+	case cloudevent.FieldCorrelationID:
+		return m.CorrelationID()
 	case cloudevent.FieldEventType:
 		return m.EventType()
 	case cloudevent.FieldSubject:
@@ -23851,6 +24052,8 @@ func (m *CloudEventMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldSourceEventID(ctx)
 	case cloudevent.FieldSourceAccountID:
 		return m.OldSourceAccountID(ctx)
+	case cloudevent.FieldCorrelationID:
+		return m.OldCorrelationID(ctx)
 	case cloudevent.FieldEventType:
 		return m.OldEventType(ctx)
 	case cloudevent.FieldSubject:
@@ -23916,6 +24119,13 @@ func (m *CloudEventMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSourceAccountID(v)
+		return nil
+	case cloudevent.FieldCorrelationID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCorrelationID(v)
 		return nil
 	case cloudevent.FieldEventType:
 		v, ok := value.(string)
@@ -24045,6 +24255,9 @@ func (m *CloudEventMutation) ClearedFields() []string {
 	if m.FieldCleared(cloudevent.FieldSourceAccountID) {
 		fields = append(fields, cloudevent.FieldSourceAccountID)
 	}
+	if m.FieldCleared(cloudevent.FieldCorrelationID) {
+		fields = append(fields, cloudevent.FieldCorrelationID)
+	}
 	if m.FieldCleared(cloudevent.FieldEventType) {
 		fields = append(fields, cloudevent.FieldEventType)
 	}
@@ -24085,6 +24298,9 @@ func (m *CloudEventMutation) ClearField(name string) error {
 		return nil
 	case cloudevent.FieldSourceAccountID:
 		m.ClearSourceAccountID()
+		return nil
+	case cloudevent.FieldCorrelationID:
+		m.ClearCorrelationID()
 		return nil
 	case cloudevent.FieldEventType:
 		m.ClearEventType()
@@ -24129,6 +24345,9 @@ func (m *CloudEventMutation) ResetField(name string) error {
 		return nil
 	case cloudevent.FieldSourceAccountID:
 		m.ResetSourceAccountID()
+		return nil
+	case cloudevent.FieldCorrelationID:
+		m.ResetCorrelationID()
 		return nil
 	case cloudevent.FieldEventType:
 		m.ResetEventType()
