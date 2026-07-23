@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
@@ -266,6 +267,21 @@ func (_c *RelationshipCreate) AddEvidences(v ...*RevenueEvidence) *RelationshipC
 		ids[i] = v[i].ID
 	}
 	return _c.AddEvidenceIDs(ids...)
+}
+
+// AddMailThreadIDs adds the "mail_threads" edge to the MailThread entity by IDs.
+func (_c *RelationshipCreate) AddMailThreadIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddMailThreadIDs(ids...)
+	return _c
+}
+
+// AddMailThreads adds the "mail_threads" edges to the MailThread entity.
+func (_c *RelationshipCreate) AddMailThreads(v ...*MailThread) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMailThreadIDs(ids...)
 }
 
 // Mutation returns the RelationshipMutation object of the builder.
@@ -529,6 +545,22 @@ func (_c *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.MailThreadsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.MailThreadsTable,
+			Columns: []string{relationship.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

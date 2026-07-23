@@ -31,6 +31,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -86,6 +88,8 @@ const (
 	TypeLLMUsageHistory             = "LLMUsageHistory"
 	TypeMCPConnection               = "MCPConnection"
 	TypeMCPConnectionHistory        = "MCPConnectionHistory"
+	TypeMailMessageMeta             = "MailMessageMeta"
+	TypeMailThread                  = "MailThread"
 	TypeMeetingMinuteUsage          = "MeetingMinuteUsage"
 	TypeOAuthConnection             = "OAuthConnection"
 	TypeOAuthConnectionHistory      = "OAuthConnectionHistory"
@@ -28818,6 +28822,2433 @@ func (m *MCPConnectionHistoryMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown MCPConnectionHistory edge %s", name)
 }
 
+// MailMessageMetaMutation represents an operation that mutates the MailMessageMeta nodes in the graph.
+type MailMessageMetaMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	created_at          *time.Time
+	updated_at          *time.Time
+	provider_message_id *string
+	occurred_at         *time.Time
+	direction           *string
+	from_addr           *string
+	to_addr             *string
+	subject             *string
+	labels              *[]string
+	appendlabels        []string
+	clearedFields       map[string]struct{}
+	thread              *uuid.UUID
+	clearedthread       bool
+	user                *uuid.UUID
+	cleareduser         bool
+	done                bool
+	oldValue            func(context.Context) (*MailMessageMeta, error)
+	predicates          []predicate.MailMessageMeta
+}
+
+var _ ent.Mutation = (*MailMessageMetaMutation)(nil)
+
+// mailmessagemetaOption allows management of the mutation configuration using functional options.
+type mailmessagemetaOption func(*MailMessageMetaMutation)
+
+// newMailMessageMetaMutation creates new mutation for the MailMessageMeta entity.
+func newMailMessageMetaMutation(c config, op Op, opts ...mailmessagemetaOption) *MailMessageMetaMutation {
+	m := &MailMessageMetaMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMailMessageMeta,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMailMessageMetaID sets the ID field of the mutation.
+func withMailMessageMetaID(id uuid.UUID) mailmessagemetaOption {
+	return func(m *MailMessageMetaMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *MailMessageMeta
+		)
+		m.oldValue = func(ctx context.Context) (*MailMessageMeta, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().MailMessageMeta.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMailMessageMeta sets the old MailMessageMeta of the mutation.
+func withMailMessageMeta(node *MailMessageMeta) mailmessagemetaOption {
+	return func(m *MailMessageMetaMutation) {
+		m.oldValue = func(context.Context) (*MailMessageMeta, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MailMessageMetaMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MailMessageMetaMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of MailMessageMeta entities.
+func (m *MailMessageMetaMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MailMessageMetaMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MailMessageMetaMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().MailMessageMeta.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MailMessageMetaMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MailMessageMetaMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the MailMessageMeta entity.
+// If the MailMessageMeta object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailMessageMetaMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MailMessageMetaMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *MailMessageMetaMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *MailMessageMetaMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the MailMessageMeta entity.
+// If the MailMessageMeta object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailMessageMetaMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *MailMessageMetaMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetProviderMessageID sets the "provider_message_id" field.
+func (m *MailMessageMetaMutation) SetProviderMessageID(s string) {
+	m.provider_message_id = &s
+}
+
+// ProviderMessageID returns the value of the "provider_message_id" field in the mutation.
+func (m *MailMessageMetaMutation) ProviderMessageID() (r string, exists bool) {
+	v := m.provider_message_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProviderMessageID returns the old "provider_message_id" field's value of the MailMessageMeta entity.
+// If the MailMessageMeta object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailMessageMetaMutation) OldProviderMessageID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProviderMessageID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProviderMessageID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProviderMessageID: %w", err)
+	}
+	return oldValue.ProviderMessageID, nil
+}
+
+// ResetProviderMessageID resets all changes to the "provider_message_id" field.
+func (m *MailMessageMetaMutation) ResetProviderMessageID() {
+	m.provider_message_id = nil
+}
+
+// SetOccurredAt sets the "occurred_at" field.
+func (m *MailMessageMetaMutation) SetOccurredAt(t time.Time) {
+	m.occurred_at = &t
+}
+
+// OccurredAt returns the value of the "occurred_at" field in the mutation.
+func (m *MailMessageMetaMutation) OccurredAt() (r time.Time, exists bool) {
+	v := m.occurred_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOccurredAt returns the old "occurred_at" field's value of the MailMessageMeta entity.
+// If the MailMessageMeta object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailMessageMetaMutation) OldOccurredAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOccurredAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOccurredAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOccurredAt: %w", err)
+	}
+	return oldValue.OccurredAt, nil
+}
+
+// ResetOccurredAt resets all changes to the "occurred_at" field.
+func (m *MailMessageMetaMutation) ResetOccurredAt() {
+	m.occurred_at = nil
+}
+
+// SetDirection sets the "direction" field.
+func (m *MailMessageMetaMutation) SetDirection(s string) {
+	m.direction = &s
+}
+
+// Direction returns the value of the "direction" field in the mutation.
+func (m *MailMessageMetaMutation) Direction() (r string, exists bool) {
+	v := m.direction
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDirection returns the old "direction" field's value of the MailMessageMeta entity.
+// If the MailMessageMeta object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailMessageMetaMutation) OldDirection(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDirection is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDirection requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDirection: %w", err)
+	}
+	return oldValue.Direction, nil
+}
+
+// ResetDirection resets all changes to the "direction" field.
+func (m *MailMessageMetaMutation) ResetDirection() {
+	m.direction = nil
+}
+
+// SetFromAddr sets the "from_addr" field.
+func (m *MailMessageMetaMutation) SetFromAddr(s string) {
+	m.from_addr = &s
+}
+
+// FromAddr returns the value of the "from_addr" field in the mutation.
+func (m *MailMessageMetaMutation) FromAddr() (r string, exists bool) {
+	v := m.from_addr
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFromAddr returns the old "from_addr" field's value of the MailMessageMeta entity.
+// If the MailMessageMeta object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailMessageMetaMutation) OldFromAddr(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFromAddr is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFromAddr requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFromAddr: %w", err)
+	}
+	return oldValue.FromAddr, nil
+}
+
+// ClearFromAddr clears the value of the "from_addr" field.
+func (m *MailMessageMetaMutation) ClearFromAddr() {
+	m.from_addr = nil
+	m.clearedFields[mailmessagemeta.FieldFromAddr] = struct{}{}
+}
+
+// FromAddrCleared returns if the "from_addr" field was cleared in this mutation.
+func (m *MailMessageMetaMutation) FromAddrCleared() bool {
+	_, ok := m.clearedFields[mailmessagemeta.FieldFromAddr]
+	return ok
+}
+
+// ResetFromAddr resets all changes to the "from_addr" field.
+func (m *MailMessageMetaMutation) ResetFromAddr() {
+	m.from_addr = nil
+	delete(m.clearedFields, mailmessagemeta.FieldFromAddr)
+}
+
+// SetToAddr sets the "to_addr" field.
+func (m *MailMessageMetaMutation) SetToAddr(s string) {
+	m.to_addr = &s
+}
+
+// ToAddr returns the value of the "to_addr" field in the mutation.
+func (m *MailMessageMetaMutation) ToAddr() (r string, exists bool) {
+	v := m.to_addr
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldToAddr returns the old "to_addr" field's value of the MailMessageMeta entity.
+// If the MailMessageMeta object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailMessageMetaMutation) OldToAddr(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldToAddr is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldToAddr requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldToAddr: %w", err)
+	}
+	return oldValue.ToAddr, nil
+}
+
+// ClearToAddr clears the value of the "to_addr" field.
+func (m *MailMessageMetaMutation) ClearToAddr() {
+	m.to_addr = nil
+	m.clearedFields[mailmessagemeta.FieldToAddr] = struct{}{}
+}
+
+// ToAddrCleared returns if the "to_addr" field was cleared in this mutation.
+func (m *MailMessageMetaMutation) ToAddrCleared() bool {
+	_, ok := m.clearedFields[mailmessagemeta.FieldToAddr]
+	return ok
+}
+
+// ResetToAddr resets all changes to the "to_addr" field.
+func (m *MailMessageMetaMutation) ResetToAddr() {
+	m.to_addr = nil
+	delete(m.clearedFields, mailmessagemeta.FieldToAddr)
+}
+
+// SetSubject sets the "subject" field.
+func (m *MailMessageMetaMutation) SetSubject(s string) {
+	m.subject = &s
+}
+
+// Subject returns the value of the "subject" field in the mutation.
+func (m *MailMessageMetaMutation) Subject() (r string, exists bool) {
+	v := m.subject
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubject returns the old "subject" field's value of the MailMessageMeta entity.
+// If the MailMessageMeta object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailMessageMetaMutation) OldSubject(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubject is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubject requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubject: %w", err)
+	}
+	return oldValue.Subject, nil
+}
+
+// ClearSubject clears the value of the "subject" field.
+func (m *MailMessageMetaMutation) ClearSubject() {
+	m.subject = nil
+	m.clearedFields[mailmessagemeta.FieldSubject] = struct{}{}
+}
+
+// SubjectCleared returns if the "subject" field was cleared in this mutation.
+func (m *MailMessageMetaMutation) SubjectCleared() bool {
+	_, ok := m.clearedFields[mailmessagemeta.FieldSubject]
+	return ok
+}
+
+// ResetSubject resets all changes to the "subject" field.
+func (m *MailMessageMetaMutation) ResetSubject() {
+	m.subject = nil
+	delete(m.clearedFields, mailmessagemeta.FieldSubject)
+}
+
+// SetLabels sets the "labels" field.
+func (m *MailMessageMetaMutation) SetLabels(s []string) {
+	m.labels = &s
+	m.appendlabels = nil
+}
+
+// Labels returns the value of the "labels" field in the mutation.
+func (m *MailMessageMetaMutation) Labels() (r []string, exists bool) {
+	v := m.labels
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLabels returns the old "labels" field's value of the MailMessageMeta entity.
+// If the MailMessageMeta object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailMessageMetaMutation) OldLabels(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// AppendLabels adds s to the "labels" field.
+func (m *MailMessageMetaMutation) AppendLabels(s []string) {
+	m.appendlabels = append(m.appendlabels, s...)
+}
+
+// AppendedLabels returns the list of values that were appended to the "labels" field in this mutation.
+func (m *MailMessageMetaMutation) AppendedLabels() ([]string, bool) {
+	if len(m.appendlabels) == 0 {
+		return nil, false
+	}
+	return m.appendlabels, true
+}
+
+// ResetLabels resets all changes to the "labels" field.
+func (m *MailMessageMetaMutation) ResetLabels() {
+	m.labels = nil
+	m.appendlabels = nil
+}
+
+// SetThreadID sets the "thread" edge to the MailThread entity by id.
+func (m *MailMessageMetaMutation) SetThreadID(id uuid.UUID) {
+	m.thread = &id
+}
+
+// ClearThread clears the "thread" edge to the MailThread entity.
+func (m *MailMessageMetaMutation) ClearThread() {
+	m.clearedthread = true
+}
+
+// ThreadCleared reports if the "thread" edge to the MailThread entity was cleared.
+func (m *MailMessageMetaMutation) ThreadCleared() bool {
+	return m.clearedthread
+}
+
+// ThreadID returns the "thread" edge ID in the mutation.
+func (m *MailMessageMetaMutation) ThreadID() (id uuid.UUID, exists bool) {
+	if m.thread != nil {
+		return *m.thread, true
+	}
+	return
+}
+
+// ThreadIDs returns the "thread" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ThreadID instead. It exists only for internal usage by the builders.
+func (m *MailMessageMetaMutation) ThreadIDs() (ids []uuid.UUID) {
+	if id := m.thread; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetThread resets all changes to the "thread" edge.
+func (m *MailMessageMetaMutation) ResetThread() {
+	m.thread = nil
+	m.clearedthread = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *MailMessageMetaMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *MailMessageMetaMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *MailMessageMetaMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *MailMessageMetaMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *MailMessageMetaMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *MailMessageMetaMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the MailMessageMetaMutation builder.
+func (m *MailMessageMetaMutation) Where(ps ...predicate.MailMessageMeta) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MailMessageMetaMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MailMessageMetaMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MailMessageMeta, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MailMessageMetaMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MailMessageMetaMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (MailMessageMeta).
+func (m *MailMessageMetaMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MailMessageMetaMutation) Fields() []string {
+	fields := make([]string, 0, 9)
+	if m.created_at != nil {
+		fields = append(fields, mailmessagemeta.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, mailmessagemeta.FieldUpdatedAt)
+	}
+	if m.provider_message_id != nil {
+		fields = append(fields, mailmessagemeta.FieldProviderMessageID)
+	}
+	if m.occurred_at != nil {
+		fields = append(fields, mailmessagemeta.FieldOccurredAt)
+	}
+	if m.direction != nil {
+		fields = append(fields, mailmessagemeta.FieldDirection)
+	}
+	if m.from_addr != nil {
+		fields = append(fields, mailmessagemeta.FieldFromAddr)
+	}
+	if m.to_addr != nil {
+		fields = append(fields, mailmessagemeta.FieldToAddr)
+	}
+	if m.subject != nil {
+		fields = append(fields, mailmessagemeta.FieldSubject)
+	}
+	if m.labels != nil {
+		fields = append(fields, mailmessagemeta.FieldLabels)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MailMessageMetaMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case mailmessagemeta.FieldCreatedAt:
+		return m.CreatedAt()
+	case mailmessagemeta.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case mailmessagemeta.FieldProviderMessageID:
+		return m.ProviderMessageID()
+	case mailmessagemeta.FieldOccurredAt:
+		return m.OccurredAt()
+	case mailmessagemeta.FieldDirection:
+		return m.Direction()
+	case mailmessagemeta.FieldFromAddr:
+		return m.FromAddr()
+	case mailmessagemeta.FieldToAddr:
+		return m.ToAddr()
+	case mailmessagemeta.FieldSubject:
+		return m.Subject()
+	case mailmessagemeta.FieldLabels:
+		return m.Labels()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MailMessageMetaMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case mailmessagemeta.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case mailmessagemeta.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case mailmessagemeta.FieldProviderMessageID:
+		return m.OldProviderMessageID(ctx)
+	case mailmessagemeta.FieldOccurredAt:
+		return m.OldOccurredAt(ctx)
+	case mailmessagemeta.FieldDirection:
+		return m.OldDirection(ctx)
+	case mailmessagemeta.FieldFromAddr:
+		return m.OldFromAddr(ctx)
+	case mailmessagemeta.FieldToAddr:
+		return m.OldToAddr(ctx)
+	case mailmessagemeta.FieldSubject:
+		return m.OldSubject(ctx)
+	case mailmessagemeta.FieldLabels:
+		return m.OldLabels(ctx)
+	}
+	return nil, fmt.Errorf("unknown MailMessageMeta field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MailMessageMetaMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case mailmessagemeta.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case mailmessagemeta.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case mailmessagemeta.FieldProviderMessageID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProviderMessageID(v)
+		return nil
+	case mailmessagemeta.FieldOccurredAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOccurredAt(v)
+		return nil
+	case mailmessagemeta.FieldDirection:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDirection(v)
+		return nil
+	case mailmessagemeta.FieldFromAddr:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFromAddr(v)
+		return nil
+	case mailmessagemeta.FieldToAddr:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetToAddr(v)
+		return nil
+	case mailmessagemeta.FieldSubject:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubject(v)
+		return nil
+	case mailmessagemeta.FieldLabels:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabels(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MailMessageMeta field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MailMessageMetaMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MailMessageMetaMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MailMessageMetaMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown MailMessageMeta numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MailMessageMetaMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(mailmessagemeta.FieldFromAddr) {
+		fields = append(fields, mailmessagemeta.FieldFromAddr)
+	}
+	if m.FieldCleared(mailmessagemeta.FieldToAddr) {
+		fields = append(fields, mailmessagemeta.FieldToAddr)
+	}
+	if m.FieldCleared(mailmessagemeta.FieldSubject) {
+		fields = append(fields, mailmessagemeta.FieldSubject)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MailMessageMetaMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MailMessageMetaMutation) ClearField(name string) error {
+	switch name {
+	case mailmessagemeta.FieldFromAddr:
+		m.ClearFromAddr()
+		return nil
+	case mailmessagemeta.FieldToAddr:
+		m.ClearToAddr()
+		return nil
+	case mailmessagemeta.FieldSubject:
+		m.ClearSubject()
+		return nil
+	}
+	return fmt.Errorf("unknown MailMessageMeta nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MailMessageMetaMutation) ResetField(name string) error {
+	switch name {
+	case mailmessagemeta.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case mailmessagemeta.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case mailmessagemeta.FieldProviderMessageID:
+		m.ResetProviderMessageID()
+		return nil
+	case mailmessagemeta.FieldOccurredAt:
+		m.ResetOccurredAt()
+		return nil
+	case mailmessagemeta.FieldDirection:
+		m.ResetDirection()
+		return nil
+	case mailmessagemeta.FieldFromAddr:
+		m.ResetFromAddr()
+		return nil
+	case mailmessagemeta.FieldToAddr:
+		m.ResetToAddr()
+		return nil
+	case mailmessagemeta.FieldSubject:
+		m.ResetSubject()
+		return nil
+	case mailmessagemeta.FieldLabels:
+		m.ResetLabels()
+		return nil
+	}
+	return fmt.Errorf("unknown MailMessageMeta field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MailMessageMetaMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.thread != nil {
+		edges = append(edges, mailmessagemeta.EdgeThread)
+	}
+	if m.user != nil {
+		edges = append(edges, mailmessagemeta.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MailMessageMetaMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case mailmessagemeta.EdgeThread:
+		if id := m.thread; id != nil {
+			return []ent.Value{*id}
+		}
+	case mailmessagemeta.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MailMessageMetaMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MailMessageMetaMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MailMessageMetaMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedthread {
+		edges = append(edges, mailmessagemeta.EdgeThread)
+	}
+	if m.cleareduser {
+		edges = append(edges, mailmessagemeta.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MailMessageMetaMutation) EdgeCleared(name string) bool {
+	switch name {
+	case mailmessagemeta.EdgeThread:
+		return m.clearedthread
+	case mailmessagemeta.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MailMessageMetaMutation) ClearEdge(name string) error {
+	switch name {
+	case mailmessagemeta.EdgeThread:
+		m.ClearThread()
+		return nil
+	case mailmessagemeta.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown MailMessageMeta unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MailMessageMetaMutation) ResetEdge(name string) error {
+	switch name {
+	case mailmessagemeta.EdgeThread:
+		m.ResetThread()
+		return nil
+	case mailmessagemeta.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown MailMessageMeta edge %s", name)
+}
+
+// MailThreadMutation represents an operation that mutates the MailThread nodes in the graph.
+type MailThreadMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	created_at          *time.Time
+	updated_at          *time.Time
+	provider            *string
+	provider_thread_id  *string
+	subject             *string
+	counterparty_email  *string
+	account_domain      *string
+	labels              *[]string
+	appendlabels        []string
+	reply_state         *string
+	last_direction      *string
+	last_activity_at    *time.Time
+	message_count       *int
+	addmessage_count    *int
+	outbound_count      *int
+	addoutbound_count   *int
+	inbound_count       *int
+	addinbound_count    *int
+	clearedFields       map[string]struct{}
+	user                *uuid.UUID
+	cleareduser         bool
+	relationship        *uuid.UUID
+	clearedrelationship bool
+	messages            map[uuid.UUID]struct{}
+	removedmessages     map[uuid.UUID]struct{}
+	clearedmessages     bool
+	done                bool
+	oldValue            func(context.Context) (*MailThread, error)
+	predicates          []predicate.MailThread
+}
+
+var _ ent.Mutation = (*MailThreadMutation)(nil)
+
+// mailthreadOption allows management of the mutation configuration using functional options.
+type mailthreadOption func(*MailThreadMutation)
+
+// newMailThreadMutation creates new mutation for the MailThread entity.
+func newMailThreadMutation(c config, op Op, opts ...mailthreadOption) *MailThreadMutation {
+	m := &MailThreadMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMailThread,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMailThreadID sets the ID field of the mutation.
+func withMailThreadID(id uuid.UUID) mailthreadOption {
+	return func(m *MailThreadMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *MailThread
+		)
+		m.oldValue = func(ctx context.Context) (*MailThread, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().MailThread.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMailThread sets the old MailThread of the mutation.
+func withMailThread(node *MailThread) mailthreadOption {
+	return func(m *MailThreadMutation) {
+		m.oldValue = func(context.Context) (*MailThread, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MailThreadMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MailThreadMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of MailThread entities.
+func (m *MailThreadMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MailThreadMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MailThreadMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().MailThread.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MailThreadMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MailThreadMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MailThreadMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *MailThreadMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *MailThreadMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *MailThreadMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetProvider sets the "provider" field.
+func (m *MailThreadMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *MailThreadMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldProvider(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *MailThreadMutation) ResetProvider() {
+	m.provider = nil
+}
+
+// SetProviderThreadID sets the "provider_thread_id" field.
+func (m *MailThreadMutation) SetProviderThreadID(s string) {
+	m.provider_thread_id = &s
+}
+
+// ProviderThreadID returns the value of the "provider_thread_id" field in the mutation.
+func (m *MailThreadMutation) ProviderThreadID() (r string, exists bool) {
+	v := m.provider_thread_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProviderThreadID returns the old "provider_thread_id" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldProviderThreadID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProviderThreadID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProviderThreadID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProviderThreadID: %w", err)
+	}
+	return oldValue.ProviderThreadID, nil
+}
+
+// ResetProviderThreadID resets all changes to the "provider_thread_id" field.
+func (m *MailThreadMutation) ResetProviderThreadID() {
+	m.provider_thread_id = nil
+}
+
+// SetSubject sets the "subject" field.
+func (m *MailThreadMutation) SetSubject(s string) {
+	m.subject = &s
+}
+
+// Subject returns the value of the "subject" field in the mutation.
+func (m *MailThreadMutation) Subject() (r string, exists bool) {
+	v := m.subject
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubject returns the old "subject" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldSubject(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubject is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubject requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubject: %w", err)
+	}
+	return oldValue.Subject, nil
+}
+
+// ClearSubject clears the value of the "subject" field.
+func (m *MailThreadMutation) ClearSubject() {
+	m.subject = nil
+	m.clearedFields[mailthread.FieldSubject] = struct{}{}
+}
+
+// SubjectCleared returns if the "subject" field was cleared in this mutation.
+func (m *MailThreadMutation) SubjectCleared() bool {
+	_, ok := m.clearedFields[mailthread.FieldSubject]
+	return ok
+}
+
+// ResetSubject resets all changes to the "subject" field.
+func (m *MailThreadMutation) ResetSubject() {
+	m.subject = nil
+	delete(m.clearedFields, mailthread.FieldSubject)
+}
+
+// SetCounterpartyEmail sets the "counterparty_email" field.
+func (m *MailThreadMutation) SetCounterpartyEmail(s string) {
+	m.counterparty_email = &s
+}
+
+// CounterpartyEmail returns the value of the "counterparty_email" field in the mutation.
+func (m *MailThreadMutation) CounterpartyEmail() (r string, exists bool) {
+	v := m.counterparty_email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCounterpartyEmail returns the old "counterparty_email" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldCounterpartyEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCounterpartyEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCounterpartyEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCounterpartyEmail: %w", err)
+	}
+	return oldValue.CounterpartyEmail, nil
+}
+
+// ClearCounterpartyEmail clears the value of the "counterparty_email" field.
+func (m *MailThreadMutation) ClearCounterpartyEmail() {
+	m.counterparty_email = nil
+	m.clearedFields[mailthread.FieldCounterpartyEmail] = struct{}{}
+}
+
+// CounterpartyEmailCleared returns if the "counterparty_email" field was cleared in this mutation.
+func (m *MailThreadMutation) CounterpartyEmailCleared() bool {
+	_, ok := m.clearedFields[mailthread.FieldCounterpartyEmail]
+	return ok
+}
+
+// ResetCounterpartyEmail resets all changes to the "counterparty_email" field.
+func (m *MailThreadMutation) ResetCounterpartyEmail() {
+	m.counterparty_email = nil
+	delete(m.clearedFields, mailthread.FieldCounterpartyEmail)
+}
+
+// SetAccountDomain sets the "account_domain" field.
+func (m *MailThreadMutation) SetAccountDomain(s string) {
+	m.account_domain = &s
+}
+
+// AccountDomain returns the value of the "account_domain" field in the mutation.
+func (m *MailThreadMutation) AccountDomain() (r string, exists bool) {
+	v := m.account_domain
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccountDomain returns the old "account_domain" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldAccountDomain(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccountDomain is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccountDomain requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccountDomain: %w", err)
+	}
+	return oldValue.AccountDomain, nil
+}
+
+// ClearAccountDomain clears the value of the "account_domain" field.
+func (m *MailThreadMutation) ClearAccountDomain() {
+	m.account_domain = nil
+	m.clearedFields[mailthread.FieldAccountDomain] = struct{}{}
+}
+
+// AccountDomainCleared returns if the "account_domain" field was cleared in this mutation.
+func (m *MailThreadMutation) AccountDomainCleared() bool {
+	_, ok := m.clearedFields[mailthread.FieldAccountDomain]
+	return ok
+}
+
+// ResetAccountDomain resets all changes to the "account_domain" field.
+func (m *MailThreadMutation) ResetAccountDomain() {
+	m.account_domain = nil
+	delete(m.clearedFields, mailthread.FieldAccountDomain)
+}
+
+// SetLabels sets the "labels" field.
+func (m *MailThreadMutation) SetLabels(s []string) {
+	m.labels = &s
+	m.appendlabels = nil
+}
+
+// Labels returns the value of the "labels" field in the mutation.
+func (m *MailThreadMutation) Labels() (r []string, exists bool) {
+	v := m.labels
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLabels returns the old "labels" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldLabels(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// AppendLabels adds s to the "labels" field.
+func (m *MailThreadMutation) AppendLabels(s []string) {
+	m.appendlabels = append(m.appendlabels, s...)
+}
+
+// AppendedLabels returns the list of values that were appended to the "labels" field in this mutation.
+func (m *MailThreadMutation) AppendedLabels() ([]string, bool) {
+	if len(m.appendlabels) == 0 {
+		return nil, false
+	}
+	return m.appendlabels, true
+}
+
+// ResetLabels resets all changes to the "labels" field.
+func (m *MailThreadMutation) ResetLabels() {
+	m.labels = nil
+	m.appendlabels = nil
+}
+
+// SetReplyState sets the "reply_state" field.
+func (m *MailThreadMutation) SetReplyState(s string) {
+	m.reply_state = &s
+}
+
+// ReplyState returns the value of the "reply_state" field in the mutation.
+func (m *MailThreadMutation) ReplyState() (r string, exists bool) {
+	v := m.reply_state
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReplyState returns the old "reply_state" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldReplyState(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReplyState is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReplyState requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReplyState: %w", err)
+	}
+	return oldValue.ReplyState, nil
+}
+
+// ResetReplyState resets all changes to the "reply_state" field.
+func (m *MailThreadMutation) ResetReplyState() {
+	m.reply_state = nil
+}
+
+// SetLastDirection sets the "last_direction" field.
+func (m *MailThreadMutation) SetLastDirection(s string) {
+	m.last_direction = &s
+}
+
+// LastDirection returns the value of the "last_direction" field in the mutation.
+func (m *MailThreadMutation) LastDirection() (r string, exists bool) {
+	v := m.last_direction
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastDirection returns the old "last_direction" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldLastDirection(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastDirection is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastDirection requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastDirection: %w", err)
+	}
+	return oldValue.LastDirection, nil
+}
+
+// ClearLastDirection clears the value of the "last_direction" field.
+func (m *MailThreadMutation) ClearLastDirection() {
+	m.last_direction = nil
+	m.clearedFields[mailthread.FieldLastDirection] = struct{}{}
+}
+
+// LastDirectionCleared returns if the "last_direction" field was cleared in this mutation.
+func (m *MailThreadMutation) LastDirectionCleared() bool {
+	_, ok := m.clearedFields[mailthread.FieldLastDirection]
+	return ok
+}
+
+// ResetLastDirection resets all changes to the "last_direction" field.
+func (m *MailThreadMutation) ResetLastDirection() {
+	m.last_direction = nil
+	delete(m.clearedFields, mailthread.FieldLastDirection)
+}
+
+// SetLastActivityAt sets the "last_activity_at" field.
+func (m *MailThreadMutation) SetLastActivityAt(t time.Time) {
+	m.last_activity_at = &t
+}
+
+// LastActivityAt returns the value of the "last_activity_at" field in the mutation.
+func (m *MailThreadMutation) LastActivityAt() (r time.Time, exists bool) {
+	v := m.last_activity_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastActivityAt returns the old "last_activity_at" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldLastActivityAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastActivityAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastActivityAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastActivityAt: %w", err)
+	}
+	return oldValue.LastActivityAt, nil
+}
+
+// ClearLastActivityAt clears the value of the "last_activity_at" field.
+func (m *MailThreadMutation) ClearLastActivityAt() {
+	m.last_activity_at = nil
+	m.clearedFields[mailthread.FieldLastActivityAt] = struct{}{}
+}
+
+// LastActivityAtCleared returns if the "last_activity_at" field was cleared in this mutation.
+func (m *MailThreadMutation) LastActivityAtCleared() bool {
+	_, ok := m.clearedFields[mailthread.FieldLastActivityAt]
+	return ok
+}
+
+// ResetLastActivityAt resets all changes to the "last_activity_at" field.
+func (m *MailThreadMutation) ResetLastActivityAt() {
+	m.last_activity_at = nil
+	delete(m.clearedFields, mailthread.FieldLastActivityAt)
+}
+
+// SetMessageCount sets the "message_count" field.
+func (m *MailThreadMutation) SetMessageCount(i int) {
+	m.message_count = &i
+	m.addmessage_count = nil
+}
+
+// MessageCount returns the value of the "message_count" field in the mutation.
+func (m *MailThreadMutation) MessageCount() (r int, exists bool) {
+	v := m.message_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMessageCount returns the old "message_count" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldMessageCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMessageCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMessageCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMessageCount: %w", err)
+	}
+	return oldValue.MessageCount, nil
+}
+
+// AddMessageCount adds i to the "message_count" field.
+func (m *MailThreadMutation) AddMessageCount(i int) {
+	if m.addmessage_count != nil {
+		*m.addmessage_count += i
+	} else {
+		m.addmessage_count = &i
+	}
+}
+
+// AddedMessageCount returns the value that was added to the "message_count" field in this mutation.
+func (m *MailThreadMutation) AddedMessageCount() (r int, exists bool) {
+	v := m.addmessage_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMessageCount resets all changes to the "message_count" field.
+func (m *MailThreadMutation) ResetMessageCount() {
+	m.message_count = nil
+	m.addmessage_count = nil
+}
+
+// SetOutboundCount sets the "outbound_count" field.
+func (m *MailThreadMutation) SetOutboundCount(i int) {
+	m.outbound_count = &i
+	m.addoutbound_count = nil
+}
+
+// OutboundCount returns the value of the "outbound_count" field in the mutation.
+func (m *MailThreadMutation) OutboundCount() (r int, exists bool) {
+	v := m.outbound_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOutboundCount returns the old "outbound_count" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldOutboundCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOutboundCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOutboundCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOutboundCount: %w", err)
+	}
+	return oldValue.OutboundCount, nil
+}
+
+// AddOutboundCount adds i to the "outbound_count" field.
+func (m *MailThreadMutation) AddOutboundCount(i int) {
+	if m.addoutbound_count != nil {
+		*m.addoutbound_count += i
+	} else {
+		m.addoutbound_count = &i
+	}
+}
+
+// AddedOutboundCount returns the value that was added to the "outbound_count" field in this mutation.
+func (m *MailThreadMutation) AddedOutboundCount() (r int, exists bool) {
+	v := m.addoutbound_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetOutboundCount resets all changes to the "outbound_count" field.
+func (m *MailThreadMutation) ResetOutboundCount() {
+	m.outbound_count = nil
+	m.addoutbound_count = nil
+}
+
+// SetInboundCount sets the "inbound_count" field.
+func (m *MailThreadMutation) SetInboundCount(i int) {
+	m.inbound_count = &i
+	m.addinbound_count = nil
+}
+
+// InboundCount returns the value of the "inbound_count" field in the mutation.
+func (m *MailThreadMutation) InboundCount() (r int, exists bool) {
+	v := m.inbound_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInboundCount returns the old "inbound_count" field's value of the MailThread entity.
+// If the MailThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailThreadMutation) OldInboundCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInboundCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInboundCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInboundCount: %w", err)
+	}
+	return oldValue.InboundCount, nil
+}
+
+// AddInboundCount adds i to the "inbound_count" field.
+func (m *MailThreadMutation) AddInboundCount(i int) {
+	if m.addinbound_count != nil {
+		*m.addinbound_count += i
+	} else {
+		m.addinbound_count = &i
+	}
+}
+
+// AddedInboundCount returns the value that was added to the "inbound_count" field in this mutation.
+func (m *MailThreadMutation) AddedInboundCount() (r int, exists bool) {
+	v := m.addinbound_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetInboundCount resets all changes to the "inbound_count" field.
+func (m *MailThreadMutation) ResetInboundCount() {
+	m.inbound_count = nil
+	m.addinbound_count = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *MailThreadMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *MailThreadMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *MailThreadMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *MailThreadMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *MailThreadMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *MailThreadMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetRelationshipID sets the "relationship" edge to the Relationship entity by id.
+func (m *MailThreadMutation) SetRelationshipID(id uuid.UUID) {
+	m.relationship = &id
+}
+
+// ClearRelationship clears the "relationship" edge to the Relationship entity.
+func (m *MailThreadMutation) ClearRelationship() {
+	m.clearedrelationship = true
+}
+
+// RelationshipCleared reports if the "relationship" edge to the Relationship entity was cleared.
+func (m *MailThreadMutation) RelationshipCleared() bool {
+	return m.clearedrelationship
+}
+
+// RelationshipID returns the "relationship" edge ID in the mutation.
+func (m *MailThreadMutation) RelationshipID() (id uuid.UUID, exists bool) {
+	if m.relationship != nil {
+		return *m.relationship, true
+	}
+	return
+}
+
+// RelationshipIDs returns the "relationship" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationshipID instead. It exists only for internal usage by the builders.
+func (m *MailThreadMutation) RelationshipIDs() (ids []uuid.UUID) {
+	if id := m.relationship; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelationship resets all changes to the "relationship" edge.
+func (m *MailThreadMutation) ResetRelationship() {
+	m.relationship = nil
+	m.clearedrelationship = false
+}
+
+// AddMessageIDs adds the "messages" edge to the MailMessageMeta entity by ids.
+func (m *MailThreadMutation) AddMessageIDs(ids ...uuid.UUID) {
+	if m.messages == nil {
+		m.messages = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.messages[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMessages clears the "messages" edge to the MailMessageMeta entity.
+func (m *MailThreadMutation) ClearMessages() {
+	m.clearedmessages = true
+}
+
+// MessagesCleared reports if the "messages" edge to the MailMessageMeta entity was cleared.
+func (m *MailThreadMutation) MessagesCleared() bool {
+	return m.clearedmessages
+}
+
+// RemoveMessageIDs removes the "messages" edge to the MailMessageMeta entity by IDs.
+func (m *MailThreadMutation) RemoveMessageIDs(ids ...uuid.UUID) {
+	if m.removedmessages == nil {
+		m.removedmessages = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.messages, ids[i])
+		m.removedmessages[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMessages returns the removed IDs of the "messages" edge to the MailMessageMeta entity.
+func (m *MailThreadMutation) RemovedMessagesIDs() (ids []uuid.UUID) {
+	for id := range m.removedmessages {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MessagesIDs returns the "messages" edge IDs in the mutation.
+func (m *MailThreadMutation) MessagesIDs() (ids []uuid.UUID) {
+	for id := range m.messages {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMessages resets all changes to the "messages" edge.
+func (m *MailThreadMutation) ResetMessages() {
+	m.messages = nil
+	m.clearedmessages = false
+	m.removedmessages = nil
+}
+
+// Where appends a list predicates to the MailThreadMutation builder.
+func (m *MailThreadMutation) Where(ps ...predicate.MailThread) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MailThreadMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MailThreadMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MailThread, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MailThreadMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MailThreadMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (MailThread).
+func (m *MailThreadMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MailThreadMutation) Fields() []string {
+	fields := make([]string, 0, 14)
+	if m.created_at != nil {
+		fields = append(fields, mailthread.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, mailthread.FieldUpdatedAt)
+	}
+	if m.provider != nil {
+		fields = append(fields, mailthread.FieldProvider)
+	}
+	if m.provider_thread_id != nil {
+		fields = append(fields, mailthread.FieldProviderThreadID)
+	}
+	if m.subject != nil {
+		fields = append(fields, mailthread.FieldSubject)
+	}
+	if m.counterparty_email != nil {
+		fields = append(fields, mailthread.FieldCounterpartyEmail)
+	}
+	if m.account_domain != nil {
+		fields = append(fields, mailthread.FieldAccountDomain)
+	}
+	if m.labels != nil {
+		fields = append(fields, mailthread.FieldLabels)
+	}
+	if m.reply_state != nil {
+		fields = append(fields, mailthread.FieldReplyState)
+	}
+	if m.last_direction != nil {
+		fields = append(fields, mailthread.FieldLastDirection)
+	}
+	if m.last_activity_at != nil {
+		fields = append(fields, mailthread.FieldLastActivityAt)
+	}
+	if m.message_count != nil {
+		fields = append(fields, mailthread.FieldMessageCount)
+	}
+	if m.outbound_count != nil {
+		fields = append(fields, mailthread.FieldOutboundCount)
+	}
+	if m.inbound_count != nil {
+		fields = append(fields, mailthread.FieldInboundCount)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MailThreadMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case mailthread.FieldCreatedAt:
+		return m.CreatedAt()
+	case mailthread.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case mailthread.FieldProvider:
+		return m.Provider()
+	case mailthread.FieldProviderThreadID:
+		return m.ProviderThreadID()
+	case mailthread.FieldSubject:
+		return m.Subject()
+	case mailthread.FieldCounterpartyEmail:
+		return m.CounterpartyEmail()
+	case mailthread.FieldAccountDomain:
+		return m.AccountDomain()
+	case mailthread.FieldLabels:
+		return m.Labels()
+	case mailthread.FieldReplyState:
+		return m.ReplyState()
+	case mailthread.FieldLastDirection:
+		return m.LastDirection()
+	case mailthread.FieldLastActivityAt:
+		return m.LastActivityAt()
+	case mailthread.FieldMessageCount:
+		return m.MessageCount()
+	case mailthread.FieldOutboundCount:
+		return m.OutboundCount()
+	case mailthread.FieldInboundCount:
+		return m.InboundCount()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MailThreadMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case mailthread.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case mailthread.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case mailthread.FieldProvider:
+		return m.OldProvider(ctx)
+	case mailthread.FieldProviderThreadID:
+		return m.OldProviderThreadID(ctx)
+	case mailthread.FieldSubject:
+		return m.OldSubject(ctx)
+	case mailthread.FieldCounterpartyEmail:
+		return m.OldCounterpartyEmail(ctx)
+	case mailthread.FieldAccountDomain:
+		return m.OldAccountDomain(ctx)
+	case mailthread.FieldLabels:
+		return m.OldLabels(ctx)
+	case mailthread.FieldReplyState:
+		return m.OldReplyState(ctx)
+	case mailthread.FieldLastDirection:
+		return m.OldLastDirection(ctx)
+	case mailthread.FieldLastActivityAt:
+		return m.OldLastActivityAt(ctx)
+	case mailthread.FieldMessageCount:
+		return m.OldMessageCount(ctx)
+	case mailthread.FieldOutboundCount:
+		return m.OldOutboundCount(ctx)
+	case mailthread.FieldInboundCount:
+		return m.OldInboundCount(ctx)
+	}
+	return nil, fmt.Errorf("unknown MailThread field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MailThreadMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case mailthread.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case mailthread.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case mailthread.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
+	case mailthread.FieldProviderThreadID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProviderThreadID(v)
+		return nil
+	case mailthread.FieldSubject:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubject(v)
+		return nil
+	case mailthread.FieldCounterpartyEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCounterpartyEmail(v)
+		return nil
+	case mailthread.FieldAccountDomain:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccountDomain(v)
+		return nil
+	case mailthread.FieldLabels:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabels(v)
+		return nil
+	case mailthread.FieldReplyState:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReplyState(v)
+		return nil
+	case mailthread.FieldLastDirection:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastDirection(v)
+		return nil
+	case mailthread.FieldLastActivityAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastActivityAt(v)
+		return nil
+	case mailthread.FieldMessageCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMessageCount(v)
+		return nil
+	case mailthread.FieldOutboundCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOutboundCount(v)
+		return nil
+	case mailthread.FieldInboundCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInboundCount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MailThread field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MailThreadMutation) AddedFields() []string {
+	var fields []string
+	if m.addmessage_count != nil {
+		fields = append(fields, mailthread.FieldMessageCount)
+	}
+	if m.addoutbound_count != nil {
+		fields = append(fields, mailthread.FieldOutboundCount)
+	}
+	if m.addinbound_count != nil {
+		fields = append(fields, mailthread.FieldInboundCount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MailThreadMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case mailthread.FieldMessageCount:
+		return m.AddedMessageCount()
+	case mailthread.FieldOutboundCount:
+		return m.AddedOutboundCount()
+	case mailthread.FieldInboundCount:
+		return m.AddedInboundCount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MailThreadMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case mailthread.FieldMessageCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMessageCount(v)
+		return nil
+	case mailthread.FieldOutboundCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddOutboundCount(v)
+		return nil
+	case mailthread.FieldInboundCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddInboundCount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MailThread numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MailThreadMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(mailthread.FieldSubject) {
+		fields = append(fields, mailthread.FieldSubject)
+	}
+	if m.FieldCleared(mailthread.FieldCounterpartyEmail) {
+		fields = append(fields, mailthread.FieldCounterpartyEmail)
+	}
+	if m.FieldCleared(mailthread.FieldAccountDomain) {
+		fields = append(fields, mailthread.FieldAccountDomain)
+	}
+	if m.FieldCleared(mailthread.FieldLastDirection) {
+		fields = append(fields, mailthread.FieldLastDirection)
+	}
+	if m.FieldCleared(mailthread.FieldLastActivityAt) {
+		fields = append(fields, mailthread.FieldLastActivityAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MailThreadMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MailThreadMutation) ClearField(name string) error {
+	switch name {
+	case mailthread.FieldSubject:
+		m.ClearSubject()
+		return nil
+	case mailthread.FieldCounterpartyEmail:
+		m.ClearCounterpartyEmail()
+		return nil
+	case mailthread.FieldAccountDomain:
+		m.ClearAccountDomain()
+		return nil
+	case mailthread.FieldLastDirection:
+		m.ClearLastDirection()
+		return nil
+	case mailthread.FieldLastActivityAt:
+		m.ClearLastActivityAt()
+		return nil
+	}
+	return fmt.Errorf("unknown MailThread nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MailThreadMutation) ResetField(name string) error {
+	switch name {
+	case mailthread.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case mailthread.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case mailthread.FieldProvider:
+		m.ResetProvider()
+		return nil
+	case mailthread.FieldProviderThreadID:
+		m.ResetProviderThreadID()
+		return nil
+	case mailthread.FieldSubject:
+		m.ResetSubject()
+		return nil
+	case mailthread.FieldCounterpartyEmail:
+		m.ResetCounterpartyEmail()
+		return nil
+	case mailthread.FieldAccountDomain:
+		m.ResetAccountDomain()
+		return nil
+	case mailthread.FieldLabels:
+		m.ResetLabels()
+		return nil
+	case mailthread.FieldReplyState:
+		m.ResetReplyState()
+		return nil
+	case mailthread.FieldLastDirection:
+		m.ResetLastDirection()
+		return nil
+	case mailthread.FieldLastActivityAt:
+		m.ResetLastActivityAt()
+		return nil
+	case mailthread.FieldMessageCount:
+		m.ResetMessageCount()
+		return nil
+	case mailthread.FieldOutboundCount:
+		m.ResetOutboundCount()
+		return nil
+	case mailthread.FieldInboundCount:
+		m.ResetInboundCount()
+		return nil
+	}
+	return fmt.Errorf("unknown MailThread field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MailThreadMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.user != nil {
+		edges = append(edges, mailthread.EdgeUser)
+	}
+	if m.relationship != nil {
+		edges = append(edges, mailthread.EdgeRelationship)
+	}
+	if m.messages != nil {
+		edges = append(edges, mailthread.EdgeMessages)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MailThreadMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case mailthread.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case mailthread.EdgeRelationship:
+		if id := m.relationship; id != nil {
+			return []ent.Value{*id}
+		}
+	case mailthread.EdgeMessages:
+		ids := make([]ent.Value, 0, len(m.messages))
+		for id := range m.messages {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MailThreadMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.removedmessages != nil {
+		edges = append(edges, mailthread.EdgeMessages)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MailThreadMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case mailthread.EdgeMessages:
+		ids := make([]ent.Value, 0, len(m.removedmessages))
+		for id := range m.removedmessages {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MailThreadMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.cleareduser {
+		edges = append(edges, mailthread.EdgeUser)
+	}
+	if m.clearedrelationship {
+		edges = append(edges, mailthread.EdgeRelationship)
+	}
+	if m.clearedmessages {
+		edges = append(edges, mailthread.EdgeMessages)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MailThreadMutation) EdgeCleared(name string) bool {
+	switch name {
+	case mailthread.EdgeUser:
+		return m.cleareduser
+	case mailthread.EdgeRelationship:
+		return m.clearedrelationship
+	case mailthread.EdgeMessages:
+		return m.clearedmessages
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MailThreadMutation) ClearEdge(name string) error {
+	switch name {
+	case mailthread.EdgeUser:
+		m.ClearUser()
+		return nil
+	case mailthread.EdgeRelationship:
+		m.ClearRelationship()
+		return nil
+	}
+	return fmt.Errorf("unknown MailThread unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MailThreadMutation) ResetEdge(name string) error {
+	switch name {
+	case mailthread.EdgeUser:
+		m.ResetUser()
+		return nil
+	case mailthread.EdgeRelationship:
+		m.ResetRelationship()
+		return nil
+	case mailthread.EdgeMessages:
+		m.ResetMessages()
+		return nil
+	}
+	return fmt.Errorf("unknown MailThread edge %s", name)
+}
+
 // MeetingMinuteUsageMutation represents an operation that mutates the MeetingMinuteUsage nodes in the graph.
 type MeetingMinuteUsageMutation struct {
 	config
@@ -33145,6 +35576,9 @@ type RelationshipMutation struct {
 	evidences            map[uuid.UUID]struct{}
 	removedevidences     map[uuid.UUID]struct{}
 	clearedevidences     bool
+	mail_threads         map[uuid.UUID]struct{}
+	removedmail_threads  map[uuid.UUID]struct{}
+	clearedmail_threads  bool
 	done                 bool
 	oldValue             func(context.Context) (*Relationship, error)
 	predicates           []predicate.Relationship
@@ -34068,6 +36502,60 @@ func (m *RelationshipMutation) ResetEvidences() {
 	m.removedevidences = nil
 }
 
+// AddMailThreadIDs adds the "mail_threads" edge to the MailThread entity by ids.
+func (m *RelationshipMutation) AddMailThreadIDs(ids ...uuid.UUID) {
+	if m.mail_threads == nil {
+		m.mail_threads = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.mail_threads[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMailThreads clears the "mail_threads" edge to the MailThread entity.
+func (m *RelationshipMutation) ClearMailThreads() {
+	m.clearedmail_threads = true
+}
+
+// MailThreadsCleared reports if the "mail_threads" edge to the MailThread entity was cleared.
+func (m *RelationshipMutation) MailThreadsCleared() bool {
+	return m.clearedmail_threads
+}
+
+// RemoveMailThreadIDs removes the "mail_threads" edge to the MailThread entity by IDs.
+func (m *RelationshipMutation) RemoveMailThreadIDs(ids ...uuid.UUID) {
+	if m.removedmail_threads == nil {
+		m.removedmail_threads = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.mail_threads, ids[i])
+		m.removedmail_threads[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMailThreads returns the removed IDs of the "mail_threads" edge to the MailThread entity.
+func (m *RelationshipMutation) RemovedMailThreadsIDs() (ids []uuid.UUID) {
+	for id := range m.removedmail_threads {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MailThreadsIDs returns the "mail_threads" edge IDs in the mutation.
+func (m *RelationshipMutation) MailThreadsIDs() (ids []uuid.UUID) {
+	for id := range m.mail_threads {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMailThreads resets all changes to the "mail_threads" edge.
+func (m *RelationshipMutation) ResetMailThreads() {
+	m.mail_threads = nil
+	m.clearedmail_threads = false
+	m.removedmail_threads = nil
+}
+
 // Where appends a list predicates to the RelationshipMutation builder.
 func (m *RelationshipMutation) Where(ps ...predicate.Relationship) {
 	m.predicates = append(m.predicates, ps...)
@@ -34450,7 +36938,7 @@ func (m *RelationshipMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RelationshipMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.workspace != nil {
 		edges = append(edges, relationship.EdgeWorkspace)
 	}
@@ -34465,6 +36953,9 @@ func (m *RelationshipMutation) AddedEdges() []string {
 	}
 	if m.evidences != nil {
 		edges = append(edges, relationship.EdgeEvidences)
+	}
+	if m.mail_threads != nil {
+		edges = append(edges, relationship.EdgeMailThreads)
 	}
 	return edges
 }
@@ -34499,13 +36990,19 @@ func (m *RelationshipMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relationship.EdgeMailThreads:
+		ids := make([]ent.Value, 0, len(m.mail_threads))
+		for id := range m.mail_threads {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RelationshipMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedcommitments != nil {
 		edges = append(edges, relationship.EdgeCommitments)
 	}
@@ -34514,6 +37011,9 @@ func (m *RelationshipMutation) RemovedEdges() []string {
 	}
 	if m.removedevidences != nil {
 		edges = append(edges, relationship.EdgeEvidences)
+	}
+	if m.removedmail_threads != nil {
+		edges = append(edges, relationship.EdgeMailThreads)
 	}
 	return edges
 }
@@ -34540,13 +37040,19 @@ func (m *RelationshipMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relationship.EdgeMailThreads:
+		ids := make([]ent.Value, 0, len(m.removedmail_threads))
+		for id := range m.removedmail_threads {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RelationshipMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedworkspace {
 		edges = append(edges, relationship.EdgeWorkspace)
 	}
@@ -34561,6 +37067,9 @@ func (m *RelationshipMutation) ClearedEdges() []string {
 	}
 	if m.clearedevidences {
 		edges = append(edges, relationship.EdgeEvidences)
+	}
+	if m.clearedmail_threads {
+		edges = append(edges, relationship.EdgeMailThreads)
 	}
 	return edges
 }
@@ -34579,6 +37088,8 @@ func (m *RelationshipMutation) EdgeCleared(name string) bool {
 		return m.clearedactions
 	case relationship.EdgeEvidences:
 		return m.clearedevidences
+	case relationship.EdgeMailThreads:
+		return m.clearedmail_threads
 	}
 	return false
 }
@@ -34615,6 +37126,9 @@ func (m *RelationshipMutation) ResetEdge(name string) error {
 		return nil
 	case relationship.EdgeEvidences:
 		m.ResetEvidences()
+		return nil
+	case relationship.EdgeMailThreads:
+		m.ResetMailThreads()
 		return nil
 	}
 	return fmt.Errorf("unknown Relationship edge %s", name)
@@ -47574,6 +50088,12 @@ type UserMutation struct {
 	revenue_leak_scans                     map[uuid.UUID]struct{}
 	removedrevenue_leak_scans              map[uuid.UUID]struct{}
 	clearedrevenue_leak_scans              bool
+	mail_threads                           map[uuid.UUID]struct{}
+	removedmail_threads                    map[uuid.UUID]struct{}
+	clearedmail_threads                    bool
+	mail_message_metas                     map[uuid.UUID]struct{}
+	removedmail_message_metas              map[uuid.UUID]struct{}
+	clearedmail_message_metas              bool
 	done                                   bool
 	oldValue                               func(context.Context) (*User, error)
 	predicates                             []predicate.User
@@ -49548,6 +52068,114 @@ func (m *UserMutation) ResetRevenueLeakScans() {
 	m.removedrevenue_leak_scans = nil
 }
 
+// AddMailThreadIDs adds the "mail_threads" edge to the MailThread entity by ids.
+func (m *UserMutation) AddMailThreadIDs(ids ...uuid.UUID) {
+	if m.mail_threads == nil {
+		m.mail_threads = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.mail_threads[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMailThreads clears the "mail_threads" edge to the MailThread entity.
+func (m *UserMutation) ClearMailThreads() {
+	m.clearedmail_threads = true
+}
+
+// MailThreadsCleared reports if the "mail_threads" edge to the MailThread entity was cleared.
+func (m *UserMutation) MailThreadsCleared() bool {
+	return m.clearedmail_threads
+}
+
+// RemoveMailThreadIDs removes the "mail_threads" edge to the MailThread entity by IDs.
+func (m *UserMutation) RemoveMailThreadIDs(ids ...uuid.UUID) {
+	if m.removedmail_threads == nil {
+		m.removedmail_threads = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.mail_threads, ids[i])
+		m.removedmail_threads[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMailThreads returns the removed IDs of the "mail_threads" edge to the MailThread entity.
+func (m *UserMutation) RemovedMailThreadsIDs() (ids []uuid.UUID) {
+	for id := range m.removedmail_threads {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MailThreadsIDs returns the "mail_threads" edge IDs in the mutation.
+func (m *UserMutation) MailThreadsIDs() (ids []uuid.UUID) {
+	for id := range m.mail_threads {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMailThreads resets all changes to the "mail_threads" edge.
+func (m *UserMutation) ResetMailThreads() {
+	m.mail_threads = nil
+	m.clearedmail_threads = false
+	m.removedmail_threads = nil
+}
+
+// AddMailMessageMetaIDs adds the "mail_message_metas" edge to the MailMessageMeta entity by ids.
+func (m *UserMutation) AddMailMessageMetaIDs(ids ...uuid.UUID) {
+	if m.mail_message_metas == nil {
+		m.mail_message_metas = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.mail_message_metas[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMailMessageMetas clears the "mail_message_metas" edge to the MailMessageMeta entity.
+func (m *UserMutation) ClearMailMessageMetas() {
+	m.clearedmail_message_metas = true
+}
+
+// MailMessageMetasCleared reports if the "mail_message_metas" edge to the MailMessageMeta entity was cleared.
+func (m *UserMutation) MailMessageMetasCleared() bool {
+	return m.clearedmail_message_metas
+}
+
+// RemoveMailMessageMetaIDs removes the "mail_message_metas" edge to the MailMessageMeta entity by IDs.
+func (m *UserMutation) RemoveMailMessageMetaIDs(ids ...uuid.UUID) {
+	if m.removedmail_message_metas == nil {
+		m.removedmail_message_metas = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.mail_message_metas, ids[i])
+		m.removedmail_message_metas[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMailMessageMetas returns the removed IDs of the "mail_message_metas" edge to the MailMessageMeta entity.
+func (m *UserMutation) RemovedMailMessageMetasIDs() (ids []uuid.UUID) {
+	for id := range m.removedmail_message_metas {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MailMessageMetasIDs returns the "mail_message_metas" edge IDs in the mutation.
+func (m *UserMutation) MailMessageMetasIDs() (ids []uuid.UUID) {
+	for id := range m.mail_message_metas {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMailMessageMetas resets all changes to the "mail_message_metas" edge.
+func (m *UserMutation) ResetMailMessageMetas() {
+	m.mail_message_metas = nil
+	m.clearedmail_message_metas = false
+	m.removedmail_message_metas = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -49764,7 +52392,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 31)
+	edges := make([]string, 0, 33)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -49857,6 +52485,12 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.revenue_leak_scans != nil {
 		edges = append(edges, user.EdgeRevenueLeakScans)
+	}
+	if m.mail_threads != nil {
+		edges = append(edges, user.EdgeMailThreads)
+	}
+	if m.mail_message_metas != nil {
+		edges = append(edges, user.EdgeMailMessageMetas)
 	}
 	return edges
 }
@@ -50049,13 +52683,25 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeMailThreads:
+		ids := make([]ent.Value, 0, len(m.mail_threads))
+		for id := range m.mail_threads {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeMailMessageMetas:
+		ids := make([]ent.Value, 0, len(m.mail_message_metas))
+		for id := range m.mail_message_metas {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 31)
+	edges := make([]string, 0, 33)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -50145,6 +52791,12 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedrevenue_leak_scans != nil {
 		edges = append(edges, user.EdgeRevenueLeakScans)
+	}
+	if m.removedmail_threads != nil {
+		edges = append(edges, user.EdgeMailThreads)
+	}
+	if m.removedmail_message_metas != nil {
+		edges = append(edges, user.EdgeMailMessageMetas)
 	}
 	return edges
 }
@@ -50333,13 +52985,25 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeMailThreads:
+		ids := make([]ent.Value, 0, len(m.removedmail_threads))
+		for id := range m.removedmail_threads {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeMailMessageMetas:
+		ids := make([]ent.Value, 0, len(m.removedmail_message_metas))
+		for id := range m.removedmail_message_metas {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 31)
+	edges := make([]string, 0, 33)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -50433,6 +53097,12 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedrevenue_leak_scans {
 		edges = append(edges, user.EdgeRevenueLeakScans)
 	}
+	if m.clearedmail_threads {
+		edges = append(edges, user.EdgeMailThreads)
+	}
+	if m.clearedmail_message_metas {
+		edges = append(edges, user.EdgeMailMessageMetas)
+	}
 	return edges
 }
 
@@ -50502,6 +53172,10 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedrevenue_outbox_events
 	case user.EdgeRevenueLeakScans:
 		return m.clearedrevenue_leak_scans
+	case user.EdgeMailThreads:
+		return m.clearedmail_threads
+	case user.EdgeMailMessageMetas:
+		return m.clearedmail_message_metas
 	}
 	return false
 }
@@ -50613,6 +53287,12 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeRevenueLeakScans:
 		m.ResetRevenueLeakScans()
+		return nil
+	case user.EdgeMailThreads:
+		m.ResetMailThreads()
+		return nil
+	case user.EdgeMailMessageMetas:
+		m.ResetMailMessageMetas()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

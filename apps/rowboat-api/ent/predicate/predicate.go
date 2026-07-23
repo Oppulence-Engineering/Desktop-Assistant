@@ -72,6 +72,12 @@ type MCPConnection func(*sql.Selector)
 // MCPConnectionHistory is the predicate function for mcpconnectionhistory builders.
 type MCPConnectionHistory func(*sql.Selector)
 
+// MailMessageMeta is the predicate function for mailmessagemeta builders.
+type MailMessageMeta func(*sql.Selector)
+
+// MailThread is the predicate function for mailthread builders.
+type MailThread func(*sql.Selector)
+
 // MeetingMinuteUsage is the predicate function for meetingminuteusage builders.
 type MeetingMinuteUsage func(*sql.Selector)
 

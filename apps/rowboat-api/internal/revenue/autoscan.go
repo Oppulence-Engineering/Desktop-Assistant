@@ -27,6 +27,9 @@ type AutoScanConfig struct {
 	MaxPerCycle int
 	// LookbackDays is the window a first (non-incremental) auto scan reads.
 	LookbackDays int
+	// RetentionMonths prunes Layer-1 mail-index rows older than this on each
+	// sweep (RFC 031 retention). Zero disables pruning.
+	RetentionMonths int
 }
 
 // AutoScanner periodically runs an incremental leak scan for every user with a
@@ -112,6 +115,17 @@ func (a *AutoScanner) sweep(ctx context.Context) {
 	}
 	if started > 0 {
 		a.log.Info("revenue auto-scan sweep", zap.Int("candidates", len(users)), zap.Int("started", started))
+	}
+
+	// RFC 031 retention: prune Layer-1 mail-index rows past the window. This is
+	// a cross-tenant maintenance delete keyed on age, so it runs internal.
+	if a.cfg.RetentionMonths > 0 {
+		cutoff := a.svc.now().AddDate(0, -a.cfg.RetentionMonths, 0)
+		if n, err := a.svc.SweepMailRetention(ictx, cutoff); err != nil {
+			a.log.Warn("revenue mail retention sweep", zap.Error(err))
+		} else if n > 0 {
+			a.log.Info("revenue mail retention pruned", zap.Int("rows", n))
+		}
 	}
 }
 

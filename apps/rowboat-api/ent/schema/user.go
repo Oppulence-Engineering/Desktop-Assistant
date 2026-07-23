@@ -85,5 +85,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("action_outcomes", ActionOutcome.Type).Annotations(entproto.Skip()),
 		edge.To("revenue_outbox_events", RevenueOutboxEvent.Type).Annotations(entproto.Skip()),
 		edge.To("revenue_leak_scans", RevenueLeakScan.Type).Annotations(entproto.Skip()),
+		edge.To("mail_threads", MailThread.Type).Annotations(entproto.Skip()),
+		edge.To("mail_message_metas", MailMessageMeta.Type).Annotations(entproto.Skip()),
 	}
 }

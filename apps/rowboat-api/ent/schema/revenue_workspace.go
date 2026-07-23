@@ -23,6 +23,18 @@ func oneOfRevenue(name string, allowed ...string) func(string) error {
 	}
 }
 
+// oneOfRevenueOptional is oneOfRevenue that also accepts the empty string, for
+// Optional enum fields that may be unset.
+func oneOfRevenueOptional(name string, allowed ...string) func(string) error {
+	inner := oneOfRevenue(name, allowed...)
+	return func(v string) error {
+		if v == "" {
+			return nil
+		}
+		return inner(v)
+	}
+}
+
 // RevenueWorkspace maps a Rowboat tenant onto the canonical OutboundConsole
 // commercial workspace (RFC 030). Rowboat stores a mapping, never a second
 // commercial workspace model. A workspace in "local" mode has no OutboundConsole

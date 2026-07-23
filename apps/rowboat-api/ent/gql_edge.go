@@ -420,6 +420,50 @@ func (_m *MCPConnection) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (_m *MailMessageMeta) Thread(ctx context.Context) (*MailThread, error) {
+	result, err := _m.Edges.ThreadOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryThread().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *MailMessageMeta) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *MailThread) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *MailThread) Relationship(ctx context.Context) (*Relationship, error) {
+	result, err := _m.Edges.RelationshipOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationship().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *MailThread) Messages(ctx context.Context) (result []*MailMessageMeta, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedMessages(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.MessagesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryMessages().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *MeetingMinuteUsage) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -508,6 +552,18 @@ func (_m *Relationship) Evidences(ctx context.Context) (result []*RevenueEvidenc
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryEvidences().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) MailThreads(ctx context.Context) (result []*MailThread, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedMailThreads(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.MailThreadsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryMailThreads().All(ctx)
 	}
 	return result, err
 }
@@ -1188,6 +1244,30 @@ func (_m *User) RevenueLeakScans(ctx context.Context) (result []*RevenueLeakScan
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryRevenueLeakScans().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) MailThreads(ctx context.Context) (result []*MailThread, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedMailThreads(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.MailThreadsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryMailThreads().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) MailMessageMetas(ctx context.Context) (result []*MailMessageMeta, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedMailMessageMetas(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.MailMessageMetasOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryMailMessageMetas().All(ctx)
 	}
 	return result, err
 }

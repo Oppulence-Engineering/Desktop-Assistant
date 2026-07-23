@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/proto/entpb"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentchannels"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentgitops"
@@ -390,6 +391,12 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// approve+execute require an active subscription.
 	revenueSvc.SetEntitlements(revenue.NewSubscriptionEntitlements(client))
 	revenueH := revenue.NewHandler(revenueSvc, log)
+	// RFC 031: disconnecting Google purges the mail index (Layers 1-3);
+	// Layer-4 evidence quotes survive as the user's own action history.
+	googleH.SetOnDisconnect(func(ctx context.Context, u *ent.User) error {
+		_, err := revenueSvc.PurgeMailIndex(ctx, u)
+		return err
+	})
 
 	r := srv.Router()
 
@@ -584,6 +591,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Post("/start", googleH.Start)
 			r.Post("/claim", googleH.Claim)
 			r.Post("/refresh", googleH.Refresh)
+			r.Delete("/", googleH.Disconnect)
 		})
 
 		r.Route("/v1/slack-oauth", func(r chi.Router) {

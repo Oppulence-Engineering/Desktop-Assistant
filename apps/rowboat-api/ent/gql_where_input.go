@@ -26,6 +26,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -15596,6 +15598,1382 @@ func (i *MCPConnectionWhereInput) P() (predicate.MCPConnection, error) {
 	}
 }
 
+// MailMessageMetaWhereInput represents a where input for filtering MailMessageMeta queries.
+type MailMessageMetaWhereInput struct {
+	Predicates []predicate.MailMessageMeta  `json:"-"`
+	Not        *MailMessageMetaWhereInput   `json:"not,omitempty"`
+	Or         []*MailMessageMetaWhereInput `json:"or,omitempty"`
+	And        []*MailMessageMetaWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "provider_message_id" field predicates.
+	ProviderMessageID             *string  `json:"providerMessageID,omitempty"`
+	ProviderMessageIDNEQ          *string  `json:"providerMessageIDNEQ,omitempty"`
+	ProviderMessageIDIn           []string `json:"providerMessageIDIn,omitempty"`
+	ProviderMessageIDNotIn        []string `json:"providerMessageIDNotIn,omitempty"`
+	ProviderMessageIDGT           *string  `json:"providerMessageIDGT,omitempty"`
+	ProviderMessageIDGTE          *string  `json:"providerMessageIDGTE,omitempty"`
+	ProviderMessageIDLT           *string  `json:"providerMessageIDLT,omitempty"`
+	ProviderMessageIDLTE          *string  `json:"providerMessageIDLTE,omitempty"`
+	ProviderMessageIDContains     *string  `json:"providerMessageIDContains,omitempty"`
+	ProviderMessageIDHasPrefix    *string  `json:"providerMessageIDHasPrefix,omitempty"`
+	ProviderMessageIDHasSuffix    *string  `json:"providerMessageIDHasSuffix,omitempty"`
+	ProviderMessageIDEqualFold    *string  `json:"providerMessageIDEqualFold,omitempty"`
+	ProviderMessageIDContainsFold *string  `json:"providerMessageIDContainsFold,omitempty"`
+
+	// "occurred_at" field predicates.
+	OccurredAt      *time.Time  `json:"occurredAt,omitempty"`
+	OccurredAtNEQ   *time.Time  `json:"occurredAtNEQ,omitempty"`
+	OccurredAtIn    []time.Time `json:"occurredAtIn,omitempty"`
+	OccurredAtNotIn []time.Time `json:"occurredAtNotIn,omitempty"`
+	OccurredAtGT    *time.Time  `json:"occurredAtGT,omitempty"`
+	OccurredAtGTE   *time.Time  `json:"occurredAtGTE,omitempty"`
+	OccurredAtLT    *time.Time  `json:"occurredAtLT,omitempty"`
+	OccurredAtLTE   *time.Time  `json:"occurredAtLTE,omitempty"`
+
+	// "direction" field predicates.
+	Direction             *string  `json:"direction,omitempty"`
+	DirectionNEQ          *string  `json:"directionNEQ,omitempty"`
+	DirectionIn           []string `json:"directionIn,omitempty"`
+	DirectionNotIn        []string `json:"directionNotIn,omitempty"`
+	DirectionGT           *string  `json:"directionGT,omitempty"`
+	DirectionGTE          *string  `json:"directionGTE,omitempty"`
+	DirectionLT           *string  `json:"directionLT,omitempty"`
+	DirectionLTE          *string  `json:"directionLTE,omitempty"`
+	DirectionContains     *string  `json:"directionContains,omitempty"`
+	DirectionHasPrefix    *string  `json:"directionHasPrefix,omitempty"`
+	DirectionHasSuffix    *string  `json:"directionHasSuffix,omitempty"`
+	DirectionEqualFold    *string  `json:"directionEqualFold,omitempty"`
+	DirectionContainsFold *string  `json:"directionContainsFold,omitempty"`
+
+	// "from_addr" field predicates.
+	FromAddr             *string  `json:"fromAddr,omitempty"`
+	FromAddrNEQ          *string  `json:"fromAddrNEQ,omitempty"`
+	FromAddrIn           []string `json:"fromAddrIn,omitempty"`
+	FromAddrNotIn        []string `json:"fromAddrNotIn,omitempty"`
+	FromAddrGT           *string  `json:"fromAddrGT,omitempty"`
+	FromAddrGTE          *string  `json:"fromAddrGTE,omitempty"`
+	FromAddrLT           *string  `json:"fromAddrLT,omitempty"`
+	FromAddrLTE          *string  `json:"fromAddrLTE,omitempty"`
+	FromAddrContains     *string  `json:"fromAddrContains,omitempty"`
+	FromAddrHasPrefix    *string  `json:"fromAddrHasPrefix,omitempty"`
+	FromAddrHasSuffix    *string  `json:"fromAddrHasSuffix,omitempty"`
+	FromAddrIsNil        bool     `json:"fromAddrIsNil,omitempty"`
+	FromAddrNotNil       bool     `json:"fromAddrNotNil,omitempty"`
+	FromAddrEqualFold    *string  `json:"fromAddrEqualFold,omitempty"`
+	FromAddrContainsFold *string  `json:"fromAddrContainsFold,omitempty"`
+
+	// "to_addr" field predicates.
+	ToAddr             *string  `json:"toAddr,omitempty"`
+	ToAddrNEQ          *string  `json:"toAddrNEQ,omitempty"`
+	ToAddrIn           []string `json:"toAddrIn,omitempty"`
+	ToAddrNotIn        []string `json:"toAddrNotIn,omitempty"`
+	ToAddrGT           *string  `json:"toAddrGT,omitempty"`
+	ToAddrGTE          *string  `json:"toAddrGTE,omitempty"`
+	ToAddrLT           *string  `json:"toAddrLT,omitempty"`
+	ToAddrLTE          *string  `json:"toAddrLTE,omitempty"`
+	ToAddrContains     *string  `json:"toAddrContains,omitempty"`
+	ToAddrHasPrefix    *string  `json:"toAddrHasPrefix,omitempty"`
+	ToAddrHasSuffix    *string  `json:"toAddrHasSuffix,omitempty"`
+	ToAddrIsNil        bool     `json:"toAddrIsNil,omitempty"`
+	ToAddrNotNil       bool     `json:"toAddrNotNil,omitempty"`
+	ToAddrEqualFold    *string  `json:"toAddrEqualFold,omitempty"`
+	ToAddrContainsFold *string  `json:"toAddrContainsFold,omitempty"`
+
+	// "subject" field predicates.
+	Subject             *string  `json:"subject,omitempty"`
+	SubjectNEQ          *string  `json:"subjectNEQ,omitempty"`
+	SubjectIn           []string `json:"subjectIn,omitempty"`
+	SubjectNotIn        []string `json:"subjectNotIn,omitempty"`
+	SubjectGT           *string  `json:"subjectGT,omitempty"`
+	SubjectGTE          *string  `json:"subjectGTE,omitempty"`
+	SubjectLT           *string  `json:"subjectLT,omitempty"`
+	SubjectLTE          *string  `json:"subjectLTE,omitempty"`
+	SubjectContains     *string  `json:"subjectContains,omitempty"`
+	SubjectHasPrefix    *string  `json:"subjectHasPrefix,omitempty"`
+	SubjectHasSuffix    *string  `json:"subjectHasSuffix,omitempty"`
+	SubjectIsNil        bool     `json:"subjectIsNil,omitempty"`
+	SubjectNotNil       bool     `json:"subjectNotNil,omitempty"`
+	SubjectEqualFold    *string  `json:"subjectEqualFold,omitempty"`
+	SubjectContainsFold *string  `json:"subjectContainsFold,omitempty"`
+
+	// "thread" edge predicates.
+	HasThread     *bool                   `json:"hasThread,omitempty"`
+	HasThreadWith []*MailThreadWhereInput `json:"hasThreadWith,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *MailMessageMetaWhereInput) AddPredicates(predicates ...predicate.MailMessageMeta) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the MailMessageMetaWhereInput filter on the MailMessageMetaQuery builder.
+func (i *MailMessageMetaWhereInput) Filter(q *MailMessageMetaQuery) (*MailMessageMetaQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyMailMessageMetaWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyMailMessageMetaWhereInput is returned in case the MailMessageMetaWhereInput is empty.
+var ErrEmptyMailMessageMetaWhereInput = errors.New("ent: empty predicate MailMessageMetaWhereInput")
+
+// P returns a predicate for filtering mailmessagemetaslice.
+// An error is returned if the input is empty or invalid.
+func (i *MailMessageMetaWhereInput) P() (predicate.MailMessageMeta, error) {
+	var predicates []predicate.MailMessageMeta
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, mailmessagemeta.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.MailMessageMeta, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, mailmessagemeta.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.MailMessageMeta, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, mailmessagemeta.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, mailmessagemeta.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, mailmessagemeta.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, mailmessagemeta.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, mailmessagemeta.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, mailmessagemeta.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, mailmessagemeta.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, mailmessagemeta.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, mailmessagemeta.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, mailmessagemeta.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, mailmessagemeta.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, mailmessagemeta.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, mailmessagemeta.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, mailmessagemeta.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, mailmessagemeta.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, mailmessagemeta.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, mailmessagemeta.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, mailmessagemeta.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, mailmessagemeta.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.ProviderMessageID != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDEQ(*i.ProviderMessageID))
+	}
+	if i.ProviderMessageIDNEQ != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDNEQ(*i.ProviderMessageIDNEQ))
+	}
+	if len(i.ProviderMessageIDIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDIn(i.ProviderMessageIDIn...))
+	}
+	if len(i.ProviderMessageIDNotIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDNotIn(i.ProviderMessageIDNotIn...))
+	}
+	if i.ProviderMessageIDGT != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDGT(*i.ProviderMessageIDGT))
+	}
+	if i.ProviderMessageIDGTE != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDGTE(*i.ProviderMessageIDGTE))
+	}
+	if i.ProviderMessageIDLT != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDLT(*i.ProviderMessageIDLT))
+	}
+	if i.ProviderMessageIDLTE != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDLTE(*i.ProviderMessageIDLTE))
+	}
+	if i.ProviderMessageIDContains != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDContains(*i.ProviderMessageIDContains))
+	}
+	if i.ProviderMessageIDHasPrefix != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDHasPrefix(*i.ProviderMessageIDHasPrefix))
+	}
+	if i.ProviderMessageIDHasSuffix != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDHasSuffix(*i.ProviderMessageIDHasSuffix))
+	}
+	if i.ProviderMessageIDEqualFold != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDEqualFold(*i.ProviderMessageIDEqualFold))
+	}
+	if i.ProviderMessageIDContainsFold != nil {
+		predicates = append(predicates, mailmessagemeta.ProviderMessageIDContainsFold(*i.ProviderMessageIDContainsFold))
+	}
+	if i.OccurredAt != nil {
+		predicates = append(predicates, mailmessagemeta.OccurredAtEQ(*i.OccurredAt))
+	}
+	if i.OccurredAtNEQ != nil {
+		predicates = append(predicates, mailmessagemeta.OccurredAtNEQ(*i.OccurredAtNEQ))
+	}
+	if len(i.OccurredAtIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.OccurredAtIn(i.OccurredAtIn...))
+	}
+	if len(i.OccurredAtNotIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.OccurredAtNotIn(i.OccurredAtNotIn...))
+	}
+	if i.OccurredAtGT != nil {
+		predicates = append(predicates, mailmessagemeta.OccurredAtGT(*i.OccurredAtGT))
+	}
+	if i.OccurredAtGTE != nil {
+		predicates = append(predicates, mailmessagemeta.OccurredAtGTE(*i.OccurredAtGTE))
+	}
+	if i.OccurredAtLT != nil {
+		predicates = append(predicates, mailmessagemeta.OccurredAtLT(*i.OccurredAtLT))
+	}
+	if i.OccurredAtLTE != nil {
+		predicates = append(predicates, mailmessagemeta.OccurredAtLTE(*i.OccurredAtLTE))
+	}
+	if i.Direction != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionEQ(*i.Direction))
+	}
+	if i.DirectionNEQ != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionNEQ(*i.DirectionNEQ))
+	}
+	if len(i.DirectionIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.DirectionIn(i.DirectionIn...))
+	}
+	if len(i.DirectionNotIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.DirectionNotIn(i.DirectionNotIn...))
+	}
+	if i.DirectionGT != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionGT(*i.DirectionGT))
+	}
+	if i.DirectionGTE != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionGTE(*i.DirectionGTE))
+	}
+	if i.DirectionLT != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionLT(*i.DirectionLT))
+	}
+	if i.DirectionLTE != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionLTE(*i.DirectionLTE))
+	}
+	if i.DirectionContains != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionContains(*i.DirectionContains))
+	}
+	if i.DirectionHasPrefix != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionHasPrefix(*i.DirectionHasPrefix))
+	}
+	if i.DirectionHasSuffix != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionHasSuffix(*i.DirectionHasSuffix))
+	}
+	if i.DirectionEqualFold != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionEqualFold(*i.DirectionEqualFold))
+	}
+	if i.DirectionContainsFold != nil {
+		predicates = append(predicates, mailmessagemeta.DirectionContainsFold(*i.DirectionContainsFold))
+	}
+	if i.FromAddr != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrEQ(*i.FromAddr))
+	}
+	if i.FromAddrNEQ != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrNEQ(*i.FromAddrNEQ))
+	}
+	if len(i.FromAddrIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.FromAddrIn(i.FromAddrIn...))
+	}
+	if len(i.FromAddrNotIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.FromAddrNotIn(i.FromAddrNotIn...))
+	}
+	if i.FromAddrGT != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrGT(*i.FromAddrGT))
+	}
+	if i.FromAddrGTE != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrGTE(*i.FromAddrGTE))
+	}
+	if i.FromAddrLT != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrLT(*i.FromAddrLT))
+	}
+	if i.FromAddrLTE != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrLTE(*i.FromAddrLTE))
+	}
+	if i.FromAddrContains != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrContains(*i.FromAddrContains))
+	}
+	if i.FromAddrHasPrefix != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrHasPrefix(*i.FromAddrHasPrefix))
+	}
+	if i.FromAddrHasSuffix != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrHasSuffix(*i.FromAddrHasSuffix))
+	}
+	if i.FromAddrIsNil {
+		predicates = append(predicates, mailmessagemeta.FromAddrIsNil())
+	}
+	if i.FromAddrNotNil {
+		predicates = append(predicates, mailmessagemeta.FromAddrNotNil())
+	}
+	if i.FromAddrEqualFold != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrEqualFold(*i.FromAddrEqualFold))
+	}
+	if i.FromAddrContainsFold != nil {
+		predicates = append(predicates, mailmessagemeta.FromAddrContainsFold(*i.FromAddrContainsFold))
+	}
+	if i.ToAddr != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrEQ(*i.ToAddr))
+	}
+	if i.ToAddrNEQ != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrNEQ(*i.ToAddrNEQ))
+	}
+	if len(i.ToAddrIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.ToAddrIn(i.ToAddrIn...))
+	}
+	if len(i.ToAddrNotIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.ToAddrNotIn(i.ToAddrNotIn...))
+	}
+	if i.ToAddrGT != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrGT(*i.ToAddrGT))
+	}
+	if i.ToAddrGTE != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrGTE(*i.ToAddrGTE))
+	}
+	if i.ToAddrLT != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrLT(*i.ToAddrLT))
+	}
+	if i.ToAddrLTE != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrLTE(*i.ToAddrLTE))
+	}
+	if i.ToAddrContains != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrContains(*i.ToAddrContains))
+	}
+	if i.ToAddrHasPrefix != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrHasPrefix(*i.ToAddrHasPrefix))
+	}
+	if i.ToAddrHasSuffix != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrHasSuffix(*i.ToAddrHasSuffix))
+	}
+	if i.ToAddrIsNil {
+		predicates = append(predicates, mailmessagemeta.ToAddrIsNil())
+	}
+	if i.ToAddrNotNil {
+		predicates = append(predicates, mailmessagemeta.ToAddrNotNil())
+	}
+	if i.ToAddrEqualFold != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrEqualFold(*i.ToAddrEqualFold))
+	}
+	if i.ToAddrContainsFold != nil {
+		predicates = append(predicates, mailmessagemeta.ToAddrContainsFold(*i.ToAddrContainsFold))
+	}
+	if i.Subject != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectEQ(*i.Subject))
+	}
+	if i.SubjectNEQ != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectNEQ(*i.SubjectNEQ))
+	}
+	if len(i.SubjectIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.SubjectIn(i.SubjectIn...))
+	}
+	if len(i.SubjectNotIn) > 0 {
+		predicates = append(predicates, mailmessagemeta.SubjectNotIn(i.SubjectNotIn...))
+	}
+	if i.SubjectGT != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectGT(*i.SubjectGT))
+	}
+	if i.SubjectGTE != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectGTE(*i.SubjectGTE))
+	}
+	if i.SubjectLT != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectLT(*i.SubjectLT))
+	}
+	if i.SubjectLTE != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectLTE(*i.SubjectLTE))
+	}
+	if i.SubjectContains != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectContains(*i.SubjectContains))
+	}
+	if i.SubjectHasPrefix != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectHasPrefix(*i.SubjectHasPrefix))
+	}
+	if i.SubjectHasSuffix != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectHasSuffix(*i.SubjectHasSuffix))
+	}
+	if i.SubjectIsNil {
+		predicates = append(predicates, mailmessagemeta.SubjectIsNil())
+	}
+	if i.SubjectNotNil {
+		predicates = append(predicates, mailmessagemeta.SubjectNotNil())
+	}
+	if i.SubjectEqualFold != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectEqualFold(*i.SubjectEqualFold))
+	}
+	if i.SubjectContainsFold != nil {
+		predicates = append(predicates, mailmessagemeta.SubjectContainsFold(*i.SubjectContainsFold))
+	}
+
+	if i.HasThread != nil {
+		p := mailmessagemeta.HasThread()
+		if !*i.HasThread {
+			p = mailmessagemeta.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasThreadWith) > 0 {
+		with := make([]predicate.MailThread, 0, len(i.HasThreadWith))
+		for _, w := range i.HasThreadWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasThreadWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, mailmessagemeta.HasThreadWith(with...))
+	}
+	if i.HasUser != nil {
+		p := mailmessagemeta.HasUser()
+		if !*i.HasUser {
+			p = mailmessagemeta.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, mailmessagemeta.HasUserWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyMailMessageMetaWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return mailmessagemeta.And(predicates...), nil
+	}
+}
+
+// MailThreadWhereInput represents a where input for filtering MailThread queries.
+type MailThreadWhereInput struct {
+	Predicates []predicate.MailThread  `json:"-"`
+	Not        *MailThreadWhereInput   `json:"not,omitempty"`
+	Or         []*MailThreadWhereInput `json:"or,omitempty"`
+	And        []*MailThreadWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "provider" field predicates.
+	Provider             *string  `json:"provider,omitempty"`
+	ProviderNEQ          *string  `json:"providerNEQ,omitempty"`
+	ProviderIn           []string `json:"providerIn,omitempty"`
+	ProviderNotIn        []string `json:"providerNotIn,omitempty"`
+	ProviderGT           *string  `json:"providerGT,omitempty"`
+	ProviderGTE          *string  `json:"providerGTE,omitempty"`
+	ProviderLT           *string  `json:"providerLT,omitempty"`
+	ProviderLTE          *string  `json:"providerLTE,omitempty"`
+	ProviderContains     *string  `json:"providerContains,omitempty"`
+	ProviderHasPrefix    *string  `json:"providerHasPrefix,omitempty"`
+	ProviderHasSuffix    *string  `json:"providerHasSuffix,omitempty"`
+	ProviderEqualFold    *string  `json:"providerEqualFold,omitempty"`
+	ProviderContainsFold *string  `json:"providerContainsFold,omitempty"`
+
+	// "provider_thread_id" field predicates.
+	ProviderThreadID             *string  `json:"providerThreadID,omitempty"`
+	ProviderThreadIDNEQ          *string  `json:"providerThreadIDNEQ,omitempty"`
+	ProviderThreadIDIn           []string `json:"providerThreadIDIn,omitempty"`
+	ProviderThreadIDNotIn        []string `json:"providerThreadIDNotIn,omitempty"`
+	ProviderThreadIDGT           *string  `json:"providerThreadIDGT,omitempty"`
+	ProviderThreadIDGTE          *string  `json:"providerThreadIDGTE,omitempty"`
+	ProviderThreadIDLT           *string  `json:"providerThreadIDLT,omitempty"`
+	ProviderThreadIDLTE          *string  `json:"providerThreadIDLTE,omitempty"`
+	ProviderThreadIDContains     *string  `json:"providerThreadIDContains,omitempty"`
+	ProviderThreadIDHasPrefix    *string  `json:"providerThreadIDHasPrefix,omitempty"`
+	ProviderThreadIDHasSuffix    *string  `json:"providerThreadIDHasSuffix,omitempty"`
+	ProviderThreadIDEqualFold    *string  `json:"providerThreadIDEqualFold,omitempty"`
+	ProviderThreadIDContainsFold *string  `json:"providerThreadIDContainsFold,omitempty"`
+
+	// "subject" field predicates.
+	Subject             *string  `json:"subject,omitempty"`
+	SubjectNEQ          *string  `json:"subjectNEQ,omitempty"`
+	SubjectIn           []string `json:"subjectIn,omitempty"`
+	SubjectNotIn        []string `json:"subjectNotIn,omitempty"`
+	SubjectGT           *string  `json:"subjectGT,omitempty"`
+	SubjectGTE          *string  `json:"subjectGTE,omitempty"`
+	SubjectLT           *string  `json:"subjectLT,omitempty"`
+	SubjectLTE          *string  `json:"subjectLTE,omitempty"`
+	SubjectContains     *string  `json:"subjectContains,omitempty"`
+	SubjectHasPrefix    *string  `json:"subjectHasPrefix,omitempty"`
+	SubjectHasSuffix    *string  `json:"subjectHasSuffix,omitempty"`
+	SubjectIsNil        bool     `json:"subjectIsNil,omitempty"`
+	SubjectNotNil       bool     `json:"subjectNotNil,omitempty"`
+	SubjectEqualFold    *string  `json:"subjectEqualFold,omitempty"`
+	SubjectContainsFold *string  `json:"subjectContainsFold,omitempty"`
+
+	// "counterparty_email" field predicates.
+	CounterpartyEmail             *string  `json:"counterpartyEmail,omitempty"`
+	CounterpartyEmailNEQ          *string  `json:"counterpartyEmailNEQ,omitempty"`
+	CounterpartyEmailIn           []string `json:"counterpartyEmailIn,omitempty"`
+	CounterpartyEmailNotIn        []string `json:"counterpartyEmailNotIn,omitempty"`
+	CounterpartyEmailGT           *string  `json:"counterpartyEmailGT,omitempty"`
+	CounterpartyEmailGTE          *string  `json:"counterpartyEmailGTE,omitempty"`
+	CounterpartyEmailLT           *string  `json:"counterpartyEmailLT,omitempty"`
+	CounterpartyEmailLTE          *string  `json:"counterpartyEmailLTE,omitempty"`
+	CounterpartyEmailContains     *string  `json:"counterpartyEmailContains,omitempty"`
+	CounterpartyEmailHasPrefix    *string  `json:"counterpartyEmailHasPrefix,omitempty"`
+	CounterpartyEmailHasSuffix    *string  `json:"counterpartyEmailHasSuffix,omitempty"`
+	CounterpartyEmailIsNil        bool     `json:"counterpartyEmailIsNil,omitempty"`
+	CounterpartyEmailNotNil       bool     `json:"counterpartyEmailNotNil,omitempty"`
+	CounterpartyEmailEqualFold    *string  `json:"counterpartyEmailEqualFold,omitempty"`
+	CounterpartyEmailContainsFold *string  `json:"counterpartyEmailContainsFold,omitempty"`
+
+	// "account_domain" field predicates.
+	AccountDomain             *string  `json:"accountDomain,omitempty"`
+	AccountDomainNEQ          *string  `json:"accountDomainNEQ,omitempty"`
+	AccountDomainIn           []string `json:"accountDomainIn,omitempty"`
+	AccountDomainNotIn        []string `json:"accountDomainNotIn,omitempty"`
+	AccountDomainGT           *string  `json:"accountDomainGT,omitempty"`
+	AccountDomainGTE          *string  `json:"accountDomainGTE,omitempty"`
+	AccountDomainLT           *string  `json:"accountDomainLT,omitempty"`
+	AccountDomainLTE          *string  `json:"accountDomainLTE,omitempty"`
+	AccountDomainContains     *string  `json:"accountDomainContains,omitempty"`
+	AccountDomainHasPrefix    *string  `json:"accountDomainHasPrefix,omitempty"`
+	AccountDomainHasSuffix    *string  `json:"accountDomainHasSuffix,omitempty"`
+	AccountDomainIsNil        bool     `json:"accountDomainIsNil,omitempty"`
+	AccountDomainNotNil       bool     `json:"accountDomainNotNil,omitempty"`
+	AccountDomainEqualFold    *string  `json:"accountDomainEqualFold,omitempty"`
+	AccountDomainContainsFold *string  `json:"accountDomainContainsFold,omitempty"`
+
+	// "reply_state" field predicates.
+	ReplyState             *string  `json:"replyState,omitempty"`
+	ReplyStateNEQ          *string  `json:"replyStateNEQ,omitempty"`
+	ReplyStateIn           []string `json:"replyStateIn,omitempty"`
+	ReplyStateNotIn        []string `json:"replyStateNotIn,omitempty"`
+	ReplyStateGT           *string  `json:"replyStateGT,omitempty"`
+	ReplyStateGTE          *string  `json:"replyStateGTE,omitempty"`
+	ReplyStateLT           *string  `json:"replyStateLT,omitempty"`
+	ReplyStateLTE          *string  `json:"replyStateLTE,omitempty"`
+	ReplyStateContains     *string  `json:"replyStateContains,omitempty"`
+	ReplyStateHasPrefix    *string  `json:"replyStateHasPrefix,omitempty"`
+	ReplyStateHasSuffix    *string  `json:"replyStateHasSuffix,omitempty"`
+	ReplyStateEqualFold    *string  `json:"replyStateEqualFold,omitempty"`
+	ReplyStateContainsFold *string  `json:"replyStateContainsFold,omitempty"`
+
+	// "last_direction" field predicates.
+	LastDirection             *string  `json:"lastDirection,omitempty"`
+	LastDirectionNEQ          *string  `json:"lastDirectionNEQ,omitempty"`
+	LastDirectionIn           []string `json:"lastDirectionIn,omitempty"`
+	LastDirectionNotIn        []string `json:"lastDirectionNotIn,omitempty"`
+	LastDirectionGT           *string  `json:"lastDirectionGT,omitempty"`
+	LastDirectionGTE          *string  `json:"lastDirectionGTE,omitempty"`
+	LastDirectionLT           *string  `json:"lastDirectionLT,omitempty"`
+	LastDirectionLTE          *string  `json:"lastDirectionLTE,omitempty"`
+	LastDirectionContains     *string  `json:"lastDirectionContains,omitempty"`
+	LastDirectionHasPrefix    *string  `json:"lastDirectionHasPrefix,omitempty"`
+	LastDirectionHasSuffix    *string  `json:"lastDirectionHasSuffix,omitempty"`
+	LastDirectionIsNil        bool     `json:"lastDirectionIsNil,omitempty"`
+	LastDirectionNotNil       bool     `json:"lastDirectionNotNil,omitempty"`
+	LastDirectionEqualFold    *string  `json:"lastDirectionEqualFold,omitempty"`
+	LastDirectionContainsFold *string  `json:"lastDirectionContainsFold,omitempty"`
+
+	// "last_activity_at" field predicates.
+	LastActivityAt       *time.Time  `json:"lastActivityAt,omitempty"`
+	LastActivityAtNEQ    *time.Time  `json:"lastActivityAtNEQ,omitempty"`
+	LastActivityAtIn     []time.Time `json:"lastActivityAtIn,omitempty"`
+	LastActivityAtNotIn  []time.Time `json:"lastActivityAtNotIn,omitempty"`
+	LastActivityAtGT     *time.Time  `json:"lastActivityAtGT,omitempty"`
+	LastActivityAtGTE    *time.Time  `json:"lastActivityAtGTE,omitempty"`
+	LastActivityAtLT     *time.Time  `json:"lastActivityAtLT,omitempty"`
+	LastActivityAtLTE    *time.Time  `json:"lastActivityAtLTE,omitempty"`
+	LastActivityAtIsNil  bool        `json:"lastActivityAtIsNil,omitempty"`
+	LastActivityAtNotNil bool        `json:"lastActivityAtNotNil,omitempty"`
+
+	// "message_count" field predicates.
+	MessageCount      *int  `json:"messageCount,omitempty"`
+	MessageCountNEQ   *int  `json:"messageCountNEQ,omitempty"`
+	MessageCountIn    []int `json:"messageCountIn,omitempty"`
+	MessageCountNotIn []int `json:"messageCountNotIn,omitempty"`
+	MessageCountGT    *int  `json:"messageCountGT,omitempty"`
+	MessageCountGTE   *int  `json:"messageCountGTE,omitempty"`
+	MessageCountLT    *int  `json:"messageCountLT,omitempty"`
+	MessageCountLTE   *int  `json:"messageCountLTE,omitempty"`
+
+	// "outbound_count" field predicates.
+	OutboundCount      *int  `json:"outboundCount,omitempty"`
+	OutboundCountNEQ   *int  `json:"outboundCountNEQ,omitempty"`
+	OutboundCountIn    []int `json:"outboundCountIn,omitempty"`
+	OutboundCountNotIn []int `json:"outboundCountNotIn,omitempty"`
+	OutboundCountGT    *int  `json:"outboundCountGT,omitempty"`
+	OutboundCountGTE   *int  `json:"outboundCountGTE,omitempty"`
+	OutboundCountLT    *int  `json:"outboundCountLT,omitempty"`
+	OutboundCountLTE   *int  `json:"outboundCountLTE,omitempty"`
+
+	// "inbound_count" field predicates.
+	InboundCount      *int  `json:"inboundCount,omitempty"`
+	InboundCountNEQ   *int  `json:"inboundCountNEQ,omitempty"`
+	InboundCountIn    []int `json:"inboundCountIn,omitempty"`
+	InboundCountNotIn []int `json:"inboundCountNotIn,omitempty"`
+	InboundCountGT    *int  `json:"inboundCountGT,omitempty"`
+	InboundCountGTE   *int  `json:"inboundCountGTE,omitempty"`
+	InboundCountLT    *int  `json:"inboundCountLT,omitempty"`
+	InboundCountLTE   *int  `json:"inboundCountLTE,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+
+	// "relationship" edge predicates.
+	HasRelationship     *bool                     `json:"hasRelationship,omitempty"`
+	HasRelationshipWith []*RelationshipWhereInput `json:"hasRelationshipWith,omitempty"`
+
+	// "messages" edge predicates.
+	HasMessages     *bool                        `json:"hasMessages,omitempty"`
+	HasMessagesWith []*MailMessageMetaWhereInput `json:"hasMessagesWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *MailThreadWhereInput) AddPredicates(predicates ...predicate.MailThread) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the MailThreadWhereInput filter on the MailThreadQuery builder.
+func (i *MailThreadWhereInput) Filter(q *MailThreadQuery) (*MailThreadQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyMailThreadWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyMailThreadWhereInput is returned in case the MailThreadWhereInput is empty.
+var ErrEmptyMailThreadWhereInput = errors.New("ent: empty predicate MailThreadWhereInput")
+
+// P returns a predicate for filtering mailthreads.
+// An error is returned if the input is empty or invalid.
+func (i *MailThreadWhereInput) P() (predicate.MailThread, error) {
+	var predicates []predicate.MailThread
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, mailthread.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.MailThread, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, mailthread.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.MailThread, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, mailthread.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, mailthread.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, mailthread.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, mailthread.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, mailthread.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, mailthread.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, mailthread.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, mailthread.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, mailthread.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, mailthread.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, mailthread.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, mailthread.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, mailthread.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, mailthread.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, mailthread.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, mailthread.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, mailthread.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, mailthread.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, mailthread.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, mailthread.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, mailthread.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, mailthread.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, mailthread.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, mailthread.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, mailthread.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.Provider != nil {
+		predicates = append(predicates, mailthread.ProviderEQ(*i.Provider))
+	}
+	if i.ProviderNEQ != nil {
+		predicates = append(predicates, mailthread.ProviderNEQ(*i.ProviderNEQ))
+	}
+	if len(i.ProviderIn) > 0 {
+		predicates = append(predicates, mailthread.ProviderIn(i.ProviderIn...))
+	}
+	if len(i.ProviderNotIn) > 0 {
+		predicates = append(predicates, mailthread.ProviderNotIn(i.ProviderNotIn...))
+	}
+	if i.ProviderGT != nil {
+		predicates = append(predicates, mailthread.ProviderGT(*i.ProviderGT))
+	}
+	if i.ProviderGTE != nil {
+		predicates = append(predicates, mailthread.ProviderGTE(*i.ProviderGTE))
+	}
+	if i.ProviderLT != nil {
+		predicates = append(predicates, mailthread.ProviderLT(*i.ProviderLT))
+	}
+	if i.ProviderLTE != nil {
+		predicates = append(predicates, mailthread.ProviderLTE(*i.ProviderLTE))
+	}
+	if i.ProviderContains != nil {
+		predicates = append(predicates, mailthread.ProviderContains(*i.ProviderContains))
+	}
+	if i.ProviderHasPrefix != nil {
+		predicates = append(predicates, mailthread.ProviderHasPrefix(*i.ProviderHasPrefix))
+	}
+	if i.ProviderHasSuffix != nil {
+		predicates = append(predicates, mailthread.ProviderHasSuffix(*i.ProviderHasSuffix))
+	}
+	if i.ProviderEqualFold != nil {
+		predicates = append(predicates, mailthread.ProviderEqualFold(*i.ProviderEqualFold))
+	}
+	if i.ProviderContainsFold != nil {
+		predicates = append(predicates, mailthread.ProviderContainsFold(*i.ProviderContainsFold))
+	}
+	if i.ProviderThreadID != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDEQ(*i.ProviderThreadID))
+	}
+	if i.ProviderThreadIDNEQ != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDNEQ(*i.ProviderThreadIDNEQ))
+	}
+	if len(i.ProviderThreadIDIn) > 0 {
+		predicates = append(predicates, mailthread.ProviderThreadIDIn(i.ProviderThreadIDIn...))
+	}
+	if len(i.ProviderThreadIDNotIn) > 0 {
+		predicates = append(predicates, mailthread.ProviderThreadIDNotIn(i.ProviderThreadIDNotIn...))
+	}
+	if i.ProviderThreadIDGT != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDGT(*i.ProviderThreadIDGT))
+	}
+	if i.ProviderThreadIDGTE != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDGTE(*i.ProviderThreadIDGTE))
+	}
+	if i.ProviderThreadIDLT != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDLT(*i.ProviderThreadIDLT))
+	}
+	if i.ProviderThreadIDLTE != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDLTE(*i.ProviderThreadIDLTE))
+	}
+	if i.ProviderThreadIDContains != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDContains(*i.ProviderThreadIDContains))
+	}
+	if i.ProviderThreadIDHasPrefix != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDHasPrefix(*i.ProviderThreadIDHasPrefix))
+	}
+	if i.ProviderThreadIDHasSuffix != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDHasSuffix(*i.ProviderThreadIDHasSuffix))
+	}
+	if i.ProviderThreadIDEqualFold != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDEqualFold(*i.ProviderThreadIDEqualFold))
+	}
+	if i.ProviderThreadIDContainsFold != nil {
+		predicates = append(predicates, mailthread.ProviderThreadIDContainsFold(*i.ProviderThreadIDContainsFold))
+	}
+	if i.Subject != nil {
+		predicates = append(predicates, mailthread.SubjectEQ(*i.Subject))
+	}
+	if i.SubjectNEQ != nil {
+		predicates = append(predicates, mailthread.SubjectNEQ(*i.SubjectNEQ))
+	}
+	if len(i.SubjectIn) > 0 {
+		predicates = append(predicates, mailthread.SubjectIn(i.SubjectIn...))
+	}
+	if len(i.SubjectNotIn) > 0 {
+		predicates = append(predicates, mailthread.SubjectNotIn(i.SubjectNotIn...))
+	}
+	if i.SubjectGT != nil {
+		predicates = append(predicates, mailthread.SubjectGT(*i.SubjectGT))
+	}
+	if i.SubjectGTE != nil {
+		predicates = append(predicates, mailthread.SubjectGTE(*i.SubjectGTE))
+	}
+	if i.SubjectLT != nil {
+		predicates = append(predicates, mailthread.SubjectLT(*i.SubjectLT))
+	}
+	if i.SubjectLTE != nil {
+		predicates = append(predicates, mailthread.SubjectLTE(*i.SubjectLTE))
+	}
+	if i.SubjectContains != nil {
+		predicates = append(predicates, mailthread.SubjectContains(*i.SubjectContains))
+	}
+	if i.SubjectHasPrefix != nil {
+		predicates = append(predicates, mailthread.SubjectHasPrefix(*i.SubjectHasPrefix))
+	}
+	if i.SubjectHasSuffix != nil {
+		predicates = append(predicates, mailthread.SubjectHasSuffix(*i.SubjectHasSuffix))
+	}
+	if i.SubjectIsNil {
+		predicates = append(predicates, mailthread.SubjectIsNil())
+	}
+	if i.SubjectNotNil {
+		predicates = append(predicates, mailthread.SubjectNotNil())
+	}
+	if i.SubjectEqualFold != nil {
+		predicates = append(predicates, mailthread.SubjectEqualFold(*i.SubjectEqualFold))
+	}
+	if i.SubjectContainsFold != nil {
+		predicates = append(predicates, mailthread.SubjectContainsFold(*i.SubjectContainsFold))
+	}
+	if i.CounterpartyEmail != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailEQ(*i.CounterpartyEmail))
+	}
+	if i.CounterpartyEmailNEQ != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailNEQ(*i.CounterpartyEmailNEQ))
+	}
+	if len(i.CounterpartyEmailIn) > 0 {
+		predicates = append(predicates, mailthread.CounterpartyEmailIn(i.CounterpartyEmailIn...))
+	}
+	if len(i.CounterpartyEmailNotIn) > 0 {
+		predicates = append(predicates, mailthread.CounterpartyEmailNotIn(i.CounterpartyEmailNotIn...))
+	}
+	if i.CounterpartyEmailGT != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailGT(*i.CounterpartyEmailGT))
+	}
+	if i.CounterpartyEmailGTE != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailGTE(*i.CounterpartyEmailGTE))
+	}
+	if i.CounterpartyEmailLT != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailLT(*i.CounterpartyEmailLT))
+	}
+	if i.CounterpartyEmailLTE != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailLTE(*i.CounterpartyEmailLTE))
+	}
+	if i.CounterpartyEmailContains != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailContains(*i.CounterpartyEmailContains))
+	}
+	if i.CounterpartyEmailHasPrefix != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailHasPrefix(*i.CounterpartyEmailHasPrefix))
+	}
+	if i.CounterpartyEmailHasSuffix != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailHasSuffix(*i.CounterpartyEmailHasSuffix))
+	}
+	if i.CounterpartyEmailIsNil {
+		predicates = append(predicates, mailthread.CounterpartyEmailIsNil())
+	}
+	if i.CounterpartyEmailNotNil {
+		predicates = append(predicates, mailthread.CounterpartyEmailNotNil())
+	}
+	if i.CounterpartyEmailEqualFold != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailEqualFold(*i.CounterpartyEmailEqualFold))
+	}
+	if i.CounterpartyEmailContainsFold != nil {
+		predicates = append(predicates, mailthread.CounterpartyEmailContainsFold(*i.CounterpartyEmailContainsFold))
+	}
+	if i.AccountDomain != nil {
+		predicates = append(predicates, mailthread.AccountDomainEQ(*i.AccountDomain))
+	}
+	if i.AccountDomainNEQ != nil {
+		predicates = append(predicates, mailthread.AccountDomainNEQ(*i.AccountDomainNEQ))
+	}
+	if len(i.AccountDomainIn) > 0 {
+		predicates = append(predicates, mailthread.AccountDomainIn(i.AccountDomainIn...))
+	}
+	if len(i.AccountDomainNotIn) > 0 {
+		predicates = append(predicates, mailthread.AccountDomainNotIn(i.AccountDomainNotIn...))
+	}
+	if i.AccountDomainGT != nil {
+		predicates = append(predicates, mailthread.AccountDomainGT(*i.AccountDomainGT))
+	}
+	if i.AccountDomainGTE != nil {
+		predicates = append(predicates, mailthread.AccountDomainGTE(*i.AccountDomainGTE))
+	}
+	if i.AccountDomainLT != nil {
+		predicates = append(predicates, mailthread.AccountDomainLT(*i.AccountDomainLT))
+	}
+	if i.AccountDomainLTE != nil {
+		predicates = append(predicates, mailthread.AccountDomainLTE(*i.AccountDomainLTE))
+	}
+	if i.AccountDomainContains != nil {
+		predicates = append(predicates, mailthread.AccountDomainContains(*i.AccountDomainContains))
+	}
+	if i.AccountDomainHasPrefix != nil {
+		predicates = append(predicates, mailthread.AccountDomainHasPrefix(*i.AccountDomainHasPrefix))
+	}
+	if i.AccountDomainHasSuffix != nil {
+		predicates = append(predicates, mailthread.AccountDomainHasSuffix(*i.AccountDomainHasSuffix))
+	}
+	if i.AccountDomainIsNil {
+		predicates = append(predicates, mailthread.AccountDomainIsNil())
+	}
+	if i.AccountDomainNotNil {
+		predicates = append(predicates, mailthread.AccountDomainNotNil())
+	}
+	if i.AccountDomainEqualFold != nil {
+		predicates = append(predicates, mailthread.AccountDomainEqualFold(*i.AccountDomainEqualFold))
+	}
+	if i.AccountDomainContainsFold != nil {
+		predicates = append(predicates, mailthread.AccountDomainContainsFold(*i.AccountDomainContainsFold))
+	}
+	if i.ReplyState != nil {
+		predicates = append(predicates, mailthread.ReplyStateEQ(*i.ReplyState))
+	}
+	if i.ReplyStateNEQ != nil {
+		predicates = append(predicates, mailthread.ReplyStateNEQ(*i.ReplyStateNEQ))
+	}
+	if len(i.ReplyStateIn) > 0 {
+		predicates = append(predicates, mailthread.ReplyStateIn(i.ReplyStateIn...))
+	}
+	if len(i.ReplyStateNotIn) > 0 {
+		predicates = append(predicates, mailthread.ReplyStateNotIn(i.ReplyStateNotIn...))
+	}
+	if i.ReplyStateGT != nil {
+		predicates = append(predicates, mailthread.ReplyStateGT(*i.ReplyStateGT))
+	}
+	if i.ReplyStateGTE != nil {
+		predicates = append(predicates, mailthread.ReplyStateGTE(*i.ReplyStateGTE))
+	}
+	if i.ReplyStateLT != nil {
+		predicates = append(predicates, mailthread.ReplyStateLT(*i.ReplyStateLT))
+	}
+	if i.ReplyStateLTE != nil {
+		predicates = append(predicates, mailthread.ReplyStateLTE(*i.ReplyStateLTE))
+	}
+	if i.ReplyStateContains != nil {
+		predicates = append(predicates, mailthread.ReplyStateContains(*i.ReplyStateContains))
+	}
+	if i.ReplyStateHasPrefix != nil {
+		predicates = append(predicates, mailthread.ReplyStateHasPrefix(*i.ReplyStateHasPrefix))
+	}
+	if i.ReplyStateHasSuffix != nil {
+		predicates = append(predicates, mailthread.ReplyStateHasSuffix(*i.ReplyStateHasSuffix))
+	}
+	if i.ReplyStateEqualFold != nil {
+		predicates = append(predicates, mailthread.ReplyStateEqualFold(*i.ReplyStateEqualFold))
+	}
+	if i.ReplyStateContainsFold != nil {
+		predicates = append(predicates, mailthread.ReplyStateContainsFold(*i.ReplyStateContainsFold))
+	}
+	if i.LastDirection != nil {
+		predicates = append(predicates, mailthread.LastDirectionEQ(*i.LastDirection))
+	}
+	if i.LastDirectionNEQ != nil {
+		predicates = append(predicates, mailthread.LastDirectionNEQ(*i.LastDirectionNEQ))
+	}
+	if len(i.LastDirectionIn) > 0 {
+		predicates = append(predicates, mailthread.LastDirectionIn(i.LastDirectionIn...))
+	}
+	if len(i.LastDirectionNotIn) > 0 {
+		predicates = append(predicates, mailthread.LastDirectionNotIn(i.LastDirectionNotIn...))
+	}
+	if i.LastDirectionGT != nil {
+		predicates = append(predicates, mailthread.LastDirectionGT(*i.LastDirectionGT))
+	}
+	if i.LastDirectionGTE != nil {
+		predicates = append(predicates, mailthread.LastDirectionGTE(*i.LastDirectionGTE))
+	}
+	if i.LastDirectionLT != nil {
+		predicates = append(predicates, mailthread.LastDirectionLT(*i.LastDirectionLT))
+	}
+	if i.LastDirectionLTE != nil {
+		predicates = append(predicates, mailthread.LastDirectionLTE(*i.LastDirectionLTE))
+	}
+	if i.LastDirectionContains != nil {
+		predicates = append(predicates, mailthread.LastDirectionContains(*i.LastDirectionContains))
+	}
+	if i.LastDirectionHasPrefix != nil {
+		predicates = append(predicates, mailthread.LastDirectionHasPrefix(*i.LastDirectionHasPrefix))
+	}
+	if i.LastDirectionHasSuffix != nil {
+		predicates = append(predicates, mailthread.LastDirectionHasSuffix(*i.LastDirectionHasSuffix))
+	}
+	if i.LastDirectionIsNil {
+		predicates = append(predicates, mailthread.LastDirectionIsNil())
+	}
+	if i.LastDirectionNotNil {
+		predicates = append(predicates, mailthread.LastDirectionNotNil())
+	}
+	if i.LastDirectionEqualFold != nil {
+		predicates = append(predicates, mailthread.LastDirectionEqualFold(*i.LastDirectionEqualFold))
+	}
+	if i.LastDirectionContainsFold != nil {
+		predicates = append(predicates, mailthread.LastDirectionContainsFold(*i.LastDirectionContainsFold))
+	}
+	if i.LastActivityAt != nil {
+		predicates = append(predicates, mailthread.LastActivityAtEQ(*i.LastActivityAt))
+	}
+	if i.LastActivityAtNEQ != nil {
+		predicates = append(predicates, mailthread.LastActivityAtNEQ(*i.LastActivityAtNEQ))
+	}
+	if len(i.LastActivityAtIn) > 0 {
+		predicates = append(predicates, mailthread.LastActivityAtIn(i.LastActivityAtIn...))
+	}
+	if len(i.LastActivityAtNotIn) > 0 {
+		predicates = append(predicates, mailthread.LastActivityAtNotIn(i.LastActivityAtNotIn...))
+	}
+	if i.LastActivityAtGT != nil {
+		predicates = append(predicates, mailthread.LastActivityAtGT(*i.LastActivityAtGT))
+	}
+	if i.LastActivityAtGTE != nil {
+		predicates = append(predicates, mailthread.LastActivityAtGTE(*i.LastActivityAtGTE))
+	}
+	if i.LastActivityAtLT != nil {
+		predicates = append(predicates, mailthread.LastActivityAtLT(*i.LastActivityAtLT))
+	}
+	if i.LastActivityAtLTE != nil {
+		predicates = append(predicates, mailthread.LastActivityAtLTE(*i.LastActivityAtLTE))
+	}
+	if i.LastActivityAtIsNil {
+		predicates = append(predicates, mailthread.LastActivityAtIsNil())
+	}
+	if i.LastActivityAtNotNil {
+		predicates = append(predicates, mailthread.LastActivityAtNotNil())
+	}
+	if i.MessageCount != nil {
+		predicates = append(predicates, mailthread.MessageCountEQ(*i.MessageCount))
+	}
+	if i.MessageCountNEQ != nil {
+		predicates = append(predicates, mailthread.MessageCountNEQ(*i.MessageCountNEQ))
+	}
+	if len(i.MessageCountIn) > 0 {
+		predicates = append(predicates, mailthread.MessageCountIn(i.MessageCountIn...))
+	}
+	if len(i.MessageCountNotIn) > 0 {
+		predicates = append(predicates, mailthread.MessageCountNotIn(i.MessageCountNotIn...))
+	}
+	if i.MessageCountGT != nil {
+		predicates = append(predicates, mailthread.MessageCountGT(*i.MessageCountGT))
+	}
+	if i.MessageCountGTE != nil {
+		predicates = append(predicates, mailthread.MessageCountGTE(*i.MessageCountGTE))
+	}
+	if i.MessageCountLT != nil {
+		predicates = append(predicates, mailthread.MessageCountLT(*i.MessageCountLT))
+	}
+	if i.MessageCountLTE != nil {
+		predicates = append(predicates, mailthread.MessageCountLTE(*i.MessageCountLTE))
+	}
+	if i.OutboundCount != nil {
+		predicates = append(predicates, mailthread.OutboundCountEQ(*i.OutboundCount))
+	}
+	if i.OutboundCountNEQ != nil {
+		predicates = append(predicates, mailthread.OutboundCountNEQ(*i.OutboundCountNEQ))
+	}
+	if len(i.OutboundCountIn) > 0 {
+		predicates = append(predicates, mailthread.OutboundCountIn(i.OutboundCountIn...))
+	}
+	if len(i.OutboundCountNotIn) > 0 {
+		predicates = append(predicates, mailthread.OutboundCountNotIn(i.OutboundCountNotIn...))
+	}
+	if i.OutboundCountGT != nil {
+		predicates = append(predicates, mailthread.OutboundCountGT(*i.OutboundCountGT))
+	}
+	if i.OutboundCountGTE != nil {
+		predicates = append(predicates, mailthread.OutboundCountGTE(*i.OutboundCountGTE))
+	}
+	if i.OutboundCountLT != nil {
+		predicates = append(predicates, mailthread.OutboundCountLT(*i.OutboundCountLT))
+	}
+	if i.OutboundCountLTE != nil {
+		predicates = append(predicates, mailthread.OutboundCountLTE(*i.OutboundCountLTE))
+	}
+	if i.InboundCount != nil {
+		predicates = append(predicates, mailthread.InboundCountEQ(*i.InboundCount))
+	}
+	if i.InboundCountNEQ != nil {
+		predicates = append(predicates, mailthread.InboundCountNEQ(*i.InboundCountNEQ))
+	}
+	if len(i.InboundCountIn) > 0 {
+		predicates = append(predicates, mailthread.InboundCountIn(i.InboundCountIn...))
+	}
+	if len(i.InboundCountNotIn) > 0 {
+		predicates = append(predicates, mailthread.InboundCountNotIn(i.InboundCountNotIn...))
+	}
+	if i.InboundCountGT != nil {
+		predicates = append(predicates, mailthread.InboundCountGT(*i.InboundCountGT))
+	}
+	if i.InboundCountGTE != nil {
+		predicates = append(predicates, mailthread.InboundCountGTE(*i.InboundCountGTE))
+	}
+	if i.InboundCountLT != nil {
+		predicates = append(predicates, mailthread.InboundCountLT(*i.InboundCountLT))
+	}
+	if i.InboundCountLTE != nil {
+		predicates = append(predicates, mailthread.InboundCountLTE(*i.InboundCountLTE))
+	}
+
+	if i.HasUser != nil {
+		p := mailthread.HasUser()
+		if !*i.HasUser {
+			p = mailthread.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, mailthread.HasUserWith(with...))
+	}
+	if i.HasRelationship != nil {
+		p := mailthread.HasRelationship()
+		if !*i.HasRelationship {
+			p = mailthread.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRelationshipWith) > 0 {
+		with := make([]predicate.Relationship, 0, len(i.HasRelationshipWith))
+		for _, w := range i.HasRelationshipWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRelationshipWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, mailthread.HasRelationshipWith(with...))
+	}
+	if i.HasMessages != nil {
+		p := mailthread.HasMessages()
+		if !*i.HasMessages {
+			p = mailthread.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasMessagesWith) > 0 {
+		with := make([]predicate.MailMessageMeta, 0, len(i.HasMessagesWith))
+		for _, w := range i.HasMessagesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasMessagesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, mailthread.HasMessagesWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyMailThreadWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return mailthread.And(predicates...), nil
+	}
+}
+
 // MeetingMinuteUsageWhereInput represents a where input for filtering MeetingMinuteUsage queries.
 type MeetingMinuteUsageWhereInput struct {
 	Predicates []predicate.MeetingMinuteUsage  `json:"-"`
@@ -17638,6 +19016,10 @@ type RelationshipWhereInput struct {
 	// "evidences" edge predicates.
 	HasEvidences     *bool                        `json:"hasEvidences,omitempty"`
 	HasEvidencesWith []*RevenueEvidenceWhereInput `json:"hasEvidencesWith,omitempty"`
+
+	// "mail_threads" edge predicates.
+	HasMailThreads     *bool                   `json:"hasMailThreads,omitempty"`
+	HasMailThreadsWith []*MailThreadWhereInput `json:"hasMailThreadsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -18275,6 +19657,24 @@ func (i *RelationshipWhereInput) P() (predicate.Relationship, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, relationship.HasEvidencesWith(with...))
+	}
+	if i.HasMailThreads != nil {
+		p := relationship.HasMailThreads()
+		if !*i.HasMailThreads {
+			p = relationship.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasMailThreadsWith) > 0 {
+		with := make([]predicate.MailThread, 0, len(i.HasMailThreadsWith))
+		for _, w := range i.HasMailThreadsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasMailThreadsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relationship.HasMailThreadsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -25385,6 +26785,14 @@ type UserWhereInput struct {
 	// "revenue_leak_scans" edge predicates.
 	HasRevenueLeakScans     *bool                        `json:"hasRevenueLeakScans,omitempty"`
 	HasRevenueLeakScansWith []*RevenueLeakScanWhereInput `json:"hasRevenueLeakScansWith,omitempty"`
+
+	// "mail_threads" edge predicates.
+	HasMailThreads     *bool                   `json:"hasMailThreads,omitempty"`
+	HasMailThreadsWith []*MailThreadWhereInput `json:"hasMailThreadsWith,omitempty"`
+
+	// "mail_message_metas" edge predicates.
+	HasMailMessageMetas     *bool                        `json:"hasMailMessageMetas,omitempty"`
+	HasMailMessageMetasWith []*MailMessageMetaWhereInput `json:"hasMailMessageMetasWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -26217,6 +27625,42 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasRevenueLeakScansWith(with...))
+	}
+	if i.HasMailThreads != nil {
+		p := user.HasMailThreads()
+		if !*i.HasMailThreads {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasMailThreadsWith) > 0 {
+		with := make([]predicate.MailThread, 0, len(i.HasMailThreadsWith))
+		for _, w := range i.HasMailThreadsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasMailThreadsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasMailThreadsWith(with...))
+	}
+	if i.HasMailMessageMetas != nil {
+		p := user.HasMailMessageMetas()
+		if !*i.HasMailMessageMetas {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasMailMessageMetasWith) > 0 {
+		with := make([]predicate.MailMessageMeta, 0, len(i.HasMailMessageMetasWith))
+		for _, w := range i.HasMailMessageMetasWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasMailMessageMetasWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasMailMessageMetasWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

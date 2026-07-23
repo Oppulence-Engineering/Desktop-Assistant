@@ -37,6 +37,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -107,6 +109,10 @@ type Client struct {
 	MCPConnection *MCPConnectionClient
 	// MCPConnectionHistory is the client for interacting with the MCPConnectionHistory builders.
 	MCPConnectionHistory *MCPConnectionHistoryClient
+	// MailMessageMeta is the client for interacting with the MailMessageMeta builders.
+	MailMessageMeta *MailMessageMetaClient
+	// MailThread is the client for interacting with the MailThread builders.
+	MailThread *MailThreadClient
 	// MeetingMinuteUsage is the client for interacting with the MeetingMinuteUsage builders.
 	MeetingMinuteUsage *MeetingMinuteUsageClient
 	// OAuthConnection is the client for interacting with the OAuthConnection builders.
@@ -179,6 +185,8 @@ func (c *Client) init() {
 	c.LLMUsageHistory = NewLLMUsageHistoryClient(c.config)
 	c.MCPConnection = NewMCPConnectionClient(c.config)
 	c.MCPConnectionHistory = NewMCPConnectionHistoryClient(c.config)
+	c.MailMessageMeta = NewMailMessageMetaClient(c.config)
+	c.MailThread = NewMailThreadClient(c.config)
 	c.MeetingMinuteUsage = NewMeetingMinuteUsageClient(c.config)
 	c.OAuthConnection = NewOAuthConnectionClient(c.config)
 	c.OAuthConnectionHistory = NewOAuthConnectionHistoryClient(c.config)
@@ -348,6 +356,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		LLMUsageHistory:             NewLLMUsageHistoryClient(cfg),
 		MCPConnection:               NewMCPConnectionClient(cfg),
 		MCPConnectionHistory:        NewMCPConnectionHistoryClient(cfg),
+		MailMessageMeta:             NewMailMessageMetaClient(cfg),
+		MailThread:                  NewMailThreadClient(cfg),
 		MeetingMinuteUsage:          NewMeetingMinuteUsageClient(cfg),
 		OAuthConnection:             NewOAuthConnectionClient(cfg),
 		OAuthConnectionHistory:      NewOAuthConnectionHistoryClient(cfg),
@@ -406,6 +416,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		LLMUsageHistory:             NewLLMUsageHistoryClient(cfg),
 		MCPConnection:               NewMCPConnectionClient(cfg),
 		MCPConnectionHistory:        NewMCPConnectionHistoryClient(cfg),
+		MailMessageMeta:             NewMailMessageMetaClient(cfg),
+		MailThread:                  NewMailThreadClient(cfg),
 		MeetingMinuteUsage:          NewMeetingMinuteUsageClient(cfg),
 		OAuthConnection:             NewOAuthConnectionClient(cfg),
 		OAuthConnectionHistory:      NewOAuthConnectionHistoryClient(cfg),
@@ -457,9 +469,9 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AgentTurn, c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
 		c.Commitment, c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory,
-		c.MCPConnection, c.MCPConnectionHistory, c.MeetingMinuteUsage,
-		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending,
-		c.PolicyDecisionSnapshot, c.Relationship, c.RevenueAction,
+		c.MCPConnection, c.MCPConnectionHistory, c.MailMessageMeta, c.MailThread,
+		c.MeetingMinuteUsage, c.OAuthConnection, c.OAuthConnectionHistory,
+		c.OAuthPending, c.PolicyDecisionSnapshot, c.Relationship, c.RevenueAction,
 		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
 		c.RevenueOutboxEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
 		c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
@@ -477,9 +489,9 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AgentTurn, c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
 		c.Commitment, c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory,
-		c.MCPConnection, c.MCPConnectionHistory, c.MeetingMinuteUsage,
-		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending,
-		c.PolicyDecisionSnapshot, c.Relationship, c.RevenueAction,
+		c.MCPConnection, c.MCPConnectionHistory, c.MailMessageMeta, c.MailThread,
+		c.MeetingMinuteUsage, c.OAuthConnection, c.OAuthConnectionHistory,
+		c.OAuthPending, c.PolicyDecisionSnapshot, c.Relationship, c.RevenueAction,
 		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
 		c.RevenueOutboxEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
 		c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
@@ -535,6 +547,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.MCPConnection.mutate(ctx, m)
 	case *MCPConnectionHistoryMutation:
 		return c.MCPConnectionHistory.mutate(ctx, m)
+	case *MailMessageMetaMutation:
+		return c.MailMessageMeta.mutate(ctx, m)
+	case *MailThreadMutation:
+		return c.MailThread.mutate(ctx, m)
 	case *MeetingMinuteUsageMutation:
 		return c.MeetingMinuteUsage.mutate(ctx, m)
 	case *OAuthConnectionMutation:
@@ -4236,6 +4252,352 @@ func (c *MCPConnectionHistoryClient) mutate(ctx context.Context, m *MCPConnectio
 	}
 }
 
+// MailMessageMetaClient is a client for the MailMessageMeta schema.
+type MailMessageMetaClient struct {
+	config
+}
+
+// NewMailMessageMetaClient returns a client for the MailMessageMeta from the given config.
+func NewMailMessageMetaClient(c config) *MailMessageMetaClient {
+	return &MailMessageMetaClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `mailmessagemeta.Hooks(f(g(h())))`.
+func (c *MailMessageMetaClient) Use(hooks ...Hook) {
+	c.hooks.MailMessageMeta = append(c.hooks.MailMessageMeta, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `mailmessagemeta.Intercept(f(g(h())))`.
+func (c *MailMessageMetaClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MailMessageMeta = append(c.inters.MailMessageMeta, interceptors...)
+}
+
+// Create returns a builder for creating a MailMessageMeta entity.
+func (c *MailMessageMetaClient) Create() *MailMessageMetaCreate {
+	mutation := newMailMessageMetaMutation(c.config, OpCreate)
+	return &MailMessageMetaCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MailMessageMeta entities.
+func (c *MailMessageMetaClient) CreateBulk(builders ...*MailMessageMetaCreate) *MailMessageMetaCreateBulk {
+	return &MailMessageMetaCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MailMessageMetaClient) MapCreateBulk(slice any, setFunc func(*MailMessageMetaCreate, int)) *MailMessageMetaCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MailMessageMetaCreateBulk{err: fmt.Errorf("calling to MailMessageMetaClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MailMessageMetaCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MailMessageMetaCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MailMessageMeta.
+func (c *MailMessageMetaClient) Update() *MailMessageMetaUpdate {
+	mutation := newMailMessageMetaMutation(c.config, OpUpdate)
+	return &MailMessageMetaUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MailMessageMetaClient) UpdateOne(_m *MailMessageMeta) *MailMessageMetaUpdateOne {
+	mutation := newMailMessageMetaMutation(c.config, OpUpdateOne, withMailMessageMeta(_m))
+	return &MailMessageMetaUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MailMessageMetaClient) UpdateOneID(id uuid.UUID) *MailMessageMetaUpdateOne {
+	mutation := newMailMessageMetaMutation(c.config, OpUpdateOne, withMailMessageMetaID(id))
+	return &MailMessageMetaUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MailMessageMeta.
+func (c *MailMessageMetaClient) Delete() *MailMessageMetaDelete {
+	mutation := newMailMessageMetaMutation(c.config, OpDelete)
+	return &MailMessageMetaDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MailMessageMetaClient) DeleteOne(_m *MailMessageMeta) *MailMessageMetaDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MailMessageMetaClient) DeleteOneID(id uuid.UUID) *MailMessageMetaDeleteOne {
+	builder := c.Delete().Where(mailmessagemeta.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MailMessageMetaDeleteOne{builder}
+}
+
+// Query returns a query builder for MailMessageMeta.
+func (c *MailMessageMetaClient) Query() *MailMessageMetaQuery {
+	return &MailMessageMetaQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMailMessageMeta},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MailMessageMeta entity by its id.
+func (c *MailMessageMetaClient) Get(ctx context.Context, id uuid.UUID) (*MailMessageMeta, error) {
+	return c.Query().Where(mailmessagemeta.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MailMessageMetaClient) GetX(ctx context.Context, id uuid.UUID) *MailMessageMeta {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryThread queries the thread edge of a MailMessageMeta.
+func (c *MailMessageMetaClient) QueryThread(_m *MailMessageMeta) *MailThreadQuery {
+	query := (&MailThreadClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mailmessagemeta.Table, mailmessagemeta.FieldID, id),
+			sqlgraph.To(mailthread.Table, mailthread.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mailmessagemeta.ThreadTable, mailmessagemeta.ThreadColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a MailMessageMeta.
+func (c *MailMessageMetaClient) QueryUser(_m *MailMessageMeta) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mailmessagemeta.Table, mailmessagemeta.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mailmessagemeta.UserTable, mailmessagemeta.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MailMessageMetaClient) Hooks() []Hook {
+	return c.hooks.MailMessageMeta
+}
+
+// Interceptors returns the client interceptors.
+func (c *MailMessageMetaClient) Interceptors() []Interceptor {
+	return c.inters.MailMessageMeta
+}
+
+func (c *MailMessageMetaClient) mutate(ctx context.Context, m *MailMessageMetaMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MailMessageMetaCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MailMessageMetaUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MailMessageMetaUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MailMessageMetaDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MailMessageMeta mutation op: %q", m.Op())
+	}
+}
+
+// MailThreadClient is a client for the MailThread schema.
+type MailThreadClient struct {
+	config
+}
+
+// NewMailThreadClient returns a client for the MailThread from the given config.
+func NewMailThreadClient(c config) *MailThreadClient {
+	return &MailThreadClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `mailthread.Hooks(f(g(h())))`.
+func (c *MailThreadClient) Use(hooks ...Hook) {
+	c.hooks.MailThread = append(c.hooks.MailThread, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `mailthread.Intercept(f(g(h())))`.
+func (c *MailThreadClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MailThread = append(c.inters.MailThread, interceptors...)
+}
+
+// Create returns a builder for creating a MailThread entity.
+func (c *MailThreadClient) Create() *MailThreadCreate {
+	mutation := newMailThreadMutation(c.config, OpCreate)
+	return &MailThreadCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MailThread entities.
+func (c *MailThreadClient) CreateBulk(builders ...*MailThreadCreate) *MailThreadCreateBulk {
+	return &MailThreadCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MailThreadClient) MapCreateBulk(slice any, setFunc func(*MailThreadCreate, int)) *MailThreadCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MailThreadCreateBulk{err: fmt.Errorf("calling to MailThreadClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MailThreadCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MailThreadCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MailThread.
+func (c *MailThreadClient) Update() *MailThreadUpdate {
+	mutation := newMailThreadMutation(c.config, OpUpdate)
+	return &MailThreadUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MailThreadClient) UpdateOne(_m *MailThread) *MailThreadUpdateOne {
+	mutation := newMailThreadMutation(c.config, OpUpdateOne, withMailThread(_m))
+	return &MailThreadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MailThreadClient) UpdateOneID(id uuid.UUID) *MailThreadUpdateOne {
+	mutation := newMailThreadMutation(c.config, OpUpdateOne, withMailThreadID(id))
+	return &MailThreadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MailThread.
+func (c *MailThreadClient) Delete() *MailThreadDelete {
+	mutation := newMailThreadMutation(c.config, OpDelete)
+	return &MailThreadDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MailThreadClient) DeleteOne(_m *MailThread) *MailThreadDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MailThreadClient) DeleteOneID(id uuid.UUID) *MailThreadDeleteOne {
+	builder := c.Delete().Where(mailthread.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MailThreadDeleteOne{builder}
+}
+
+// Query returns a query builder for MailThread.
+func (c *MailThreadClient) Query() *MailThreadQuery {
+	return &MailThreadQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMailThread},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MailThread entity by its id.
+func (c *MailThreadClient) Get(ctx context.Context, id uuid.UUID) (*MailThread, error) {
+	return c.Query().Where(mailthread.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MailThreadClient) GetX(ctx context.Context, id uuid.UUID) *MailThread {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a MailThread.
+func (c *MailThreadClient) QueryUser(_m *MailThread) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mailthread.Table, mailthread.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mailthread.UserTable, mailthread.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationship queries the relationship edge of a MailThread.
+func (c *MailThreadClient) QueryRelationship(_m *MailThread) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mailthread.Table, mailthread.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mailthread.RelationshipTable, mailthread.RelationshipColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMessages queries the messages edge of a MailThread.
+func (c *MailThreadClient) QueryMessages(_m *MailThread) *MailMessageMetaQuery {
+	query := (&MailMessageMetaClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mailthread.Table, mailthread.FieldID, id),
+			sqlgraph.To(mailmessagemeta.Table, mailmessagemeta.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, mailthread.MessagesTable, mailthread.MessagesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MailThreadClient) Hooks() []Hook {
+	return c.hooks.MailThread
+}
+
+// Interceptors returns the client interceptors.
+func (c *MailThreadClient) Interceptors() []Interceptor {
+	return c.inters.MailThread
+}
+
+func (c *MailThreadClient) mutate(ctx context.Context, m *MailThreadMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MailThreadCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MailThreadUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MailThreadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MailThreadDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MailThread mutation op: %q", m.Op())
+	}
+}
+
 // MeetingMinuteUsageClient is a client for the MeetingMinuteUsage schema.
 type MeetingMinuteUsageClient struct {
 	config
@@ -5162,6 +5524,22 @@ func (c *RelationshipClient) QueryEvidences(_m *Relationship) *RevenueEvidenceQu
 			sqlgraph.From(relationship.Table, relationship.FieldID, id),
 			sqlgraph.To(revenueevidence.Table, revenueevidence.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, relationship.EvidencesTable, relationship.EvidencesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMailThreads queries the mail_threads edge of a Relationship.
+func (c *RelationshipClient) QueryMailThreads(_m *Relationship) *MailThreadQuery {
+	query := (&MailThreadClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(mailthread.Table, mailthread.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.MailThreadsTable, relationship.MailThreadsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -7491,6 +7869,38 @@ func (c *UserClient) QueryRevenueLeakScans(_m *User) *RevenueLeakScanQuery {
 	return query
 }
 
+// QueryMailThreads queries the mail_threads edge of a User.
+func (c *UserClient) QueryMailThreads(_m *User) *MailThreadQuery {
+	query := (&MailThreadClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(mailthread.Table, mailthread.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MailThreadsTable, user.MailThreadsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMailMessageMetas queries the mail_message_metas edge of a User.
+func (c *UserClient) QueryMailMessageMetas(_m *User) *MailMessageMetaQuery {
+	query := (&MailMessageMetaClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(mailmessagemeta.Table, mailmessagemeta.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MailMessageMetasTable, user.MailMessageMetasColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -7657,11 +8067,11 @@ type (
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
 		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, Commitment,
 		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
-		MCPConnectionHistory, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
-		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueLeakScan,
-		RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
-		SubscriptionHistory, User, UserHistory []ent.Hook
+		MCPConnectionHistory, MailMessageMeta, MailThread, MeetingMinuteUsage,
+		OAuthConnection, OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot,
+		Relationship, RevenueAction, RevenueActionRevision, RevenueEvidence,
+		RevenueLeakScan, RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember,
+		Subscription, SubscriptionHistory, User, UserHistory []ent.Hook
 	}
 	inters struct {
 		ActionOutcome, AgentApproval, AgentDefinition, AgentDefinitionHistory,
@@ -7669,10 +8079,10 @@ type (
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
 		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, Commitment,
 		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
-		MCPConnectionHistory, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
-		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueLeakScan,
-		RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
-		SubscriptionHistory, User, UserHistory []ent.Interceptor
+		MCPConnectionHistory, MailMessageMeta, MailThread, MeetingMinuteUsage,
+		OAuthConnection, OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot,
+		Relationship, RevenueAction, RevenueActionRevision, RevenueEvidence,
+		RevenueLeakScan, RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember,
+		Subscription, SubscriptionHistory, User, UserHistory []ent.Interceptor
 	}
 )

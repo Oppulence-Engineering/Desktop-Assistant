@@ -27,6 +27,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -150,6 +152,16 @@ var mcpconnectionImplementors = []string{"MCPConnection", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*MCPConnection) IsNode() {}
+
+var mailmessagemetaImplementors = []string{"MailMessageMeta", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*MailMessageMeta) IsNode() {}
+
+var mailthreadImplementors = []string{"MailThread", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*MailThread) IsNode() {}
 
 var meetingminuteusageImplementors = []string{"MeetingMinuteUsage", "Node"}
 
@@ -455,6 +467,24 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(mcpconnection.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, mcpconnectionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case mailmessagemeta.Table:
+		query := c.MailMessageMeta.Query().
+			Where(mailmessagemeta.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, mailmessagemetaImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case mailthread.Table:
+		query := c.MailThread.Query().
+			Where(mailthread.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, mailthreadImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -966,6 +996,38 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.MCPConnection.Query().
 			Where(mcpconnection.IDIn(ids...))
 		query, err := query.CollectFields(ctx, mcpconnectionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case mailmessagemeta.Table:
+		query := c.MailMessageMeta.Query().
+			Where(mailmessagemeta.IDIn(ids...))
+		query, err := query.CollectFields(ctx, mailmessagemetaImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case mailthread.Table:
+		query := c.MailThread.Query().
+			Where(mailthread.IDIn(ids...))
+		query, err := query.CollectFields(ctx, mailthreadImplementors...)
 		if err != nil {
 			return nil, err
 		}
