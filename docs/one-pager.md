@@ -57,6 +57,10 @@ Connect + Execute rails exist; Scan, Queue, and billing wiring don't.
 - Money movement or regulated collections — killed Plastiq ($226M), GetBack ($600M).
 - Any Gmail-add-on form factor.
 
+## Competitive note: Littlebird (littlebird.ai)
+
+Littlebird ("Remember everything: the AI search engine for your life") overlaps only with the **context-engine half** — screen observation, meeting notes, chat-with-context, briefings — sold horizontally to seven personas at $17–100/mo usage credits. It has **none of the wedge**: no leak detection with dollar amounts, no proactive queue, no approval-gated execution (their pages confirm no autonomous sends), no recovery receipts, no commercial ledger, no vertical, no outcome pricing. It _validates_ the decision to never sell the desktop standalone — that layer is contested by Littlebird, Rewind-style recorders, OS-level recall, and big-lab memory features. Their screen-recording posture is a liability in our vertical (privilege/confidentiality review blocks it at law firms); our consented, evidence-snapshot model is the sellable posture. **Watch trigger:** they already integrate Stripe/Mercury/Ramp/Close — if Littlebird ships a proactive queue + governed sending + money outcomes, reassess. Until then: validator of the layer, not a competitor to the wedge.
+
 ---
 
 _Evidence base: loot-drop.io dataset — 1,749 dead-startup autopsies (~8,700 extracted insights), 1,000 rebuild ideas, 944 community votes. Top convergent lesson across the corpus: verticalize (62% of autopsies), focus, distribute through partners, lead with trust. Access + full findings: memory notes `loot-drop-dataset` / `loot-drop-graveyard-findings`._
