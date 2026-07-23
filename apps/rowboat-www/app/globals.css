@@ -3881,4 +3881,91 @@
   .linear-final-cta::before {
     content: none;
   }
+
+  /*
+   * Theme completion. Base fixes: everything runs on tokens (no stray
+   * hard-coded grounds), small mono text lifts to tertiary for contrast.
+   * Then the dark theme, using cossistant's exact dark scale — their
+   * accent brightens on dark (orange 44% -> 50%), so the red does too.
+   */
+  .linear-footer {
+    background: var(--background);
+  }
+
+  .linear-hero-card {
+    background: var(--card);
+  }
+
+  .linear-hero-card-foot,
+  .linear-cta-note {
+    color: var(--linear-text-tertiary);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .marketing-polar {
+      --background: oklch(14.5% 0 0);
+      --background-50: oklch(15.5% 0 0);
+      --background-100: oklch(16.5% 0 0);
+      --background-200: oklch(18.5% 0 0);
+      --background-300: oklch(20.5% 0 0);
+      --foreground: oklch(98.5% 0 0);
+      --card: oklch(16.5% 0 0);
+      --card-foreground: oklch(98.5% 0 0);
+      --popover: oklch(14.5% 0 0);
+      --popover-foreground: oklch(98.5% 0 0);
+      --primary: oklch(98.5% 0 0);
+      --primary-foreground: oklch(20.5% 0 0);
+      --secondary: oklch(26.9% 0 0);
+      --secondary-foreground: oklch(98.5% 0 0);
+      --muted: oklch(26.9% 0 0);
+      --muted-foreground: oklch(70.8% 0 0);
+      --accent: oklch(26.9% 0 0);
+      --accent-foreground: oklch(98.5% 0 0);
+      --border: oklch(26.9% 0 0);
+      --input: oklch(26.9% 0 0);
+      --linear-border: oklch(26.9% 0 0);
+      --linear-border-strong: oklch(30% 0 0);
+      --linear-text-secondary: oklch(85% 0 0);
+      --linear-text-tertiary: oklch(70.8% 0 0);
+      --linear-text-quaternary: oklch(55% 0 0);
+      --marketing-red: hsla(4, 85%, 60%, 1);
+      background: var(--background);
+      color-scheme: dark;
+    }
+
+    html:has(.marketing-polar),
+    body:has(.marketing-polar) {
+      background: oklch(14.5% 0 0);
+      color-scheme: dark;
+    }
+
+    .linear-button-primary:hover {
+      background: color-mix(in oklab, var(--primary) 90%, black);
+    }
+
+    .linear-button-ghost:hover,
+    .linear-nav-link:hover,
+    .linear-nav-trigger:hover,
+    .group:hover > .linear-nav-trigger {
+      background: var(--secondary);
+    }
+
+    .linear-product-panel:hover {
+      border-color: oklch(36% 0 0);
+    }
+
+    .linear-product-panel img {
+      filter: brightness(0.92);
+    }
+
+    .marketing-polar ::selection {
+      background: var(--marketing-red);
+      color: #ffffff;
+    }
+
+    .linear-logo img,
+    .linear-footer img {
+      filter: invert(1);
+    }
+  }
 }

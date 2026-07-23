@@ -610,21 +610,6 @@ function LinearFooterGroup({ title, items }: { title: string; items: LinkItem[] 
   );
 }
 
-const homeProblems = [
-  {
-    title: "The proposal goes quiet.",
-    body: "You send a $40k proposal. The client does not reply. Following up feels pushy, so you wait. Almost half of sellers never send a single follow-up. The deal dies in the silence.",
-  },
-  {
-    title: "The invoice goes unpaid.",
-    body: "Most small businesses carry unpaid invoices. The average pile is about $17,500. Chasing a client you like feels awkward. So money you already earned just sits there.",
-  },
-  {
-    title: "The client fades away.",
-    body: "A good client starts to reply slower. They skip a check-in. Nobody notices the fade until the cancellation email arrives. By then, the save is months late.",
-  },
-];
-
 const homeSteps = [
   {
     title: "Connect your inbox",
@@ -720,7 +705,7 @@ function HomeHero() {
         <HeroQueueCard />
       </div>
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <p className="font-mono text-xs text-[var(--linear-text-quaternary)]">
+        <p className="font-mono text-xs text-[var(--linear-text-tertiary)]">
           watches gmail · calendar · billing
         </p>
         <Link className="linear-inline-link shrink-0" href="/book-a-demo">
@@ -759,44 +744,6 @@ function HeroQueueCard() {
   );
 }
 
-function HeroVisual() {
-  return (
-    <section className="linear-hero-visual">
-      <div className="linear-hero-glow" />
-      <div className="linear-app-frame">
-        <Image
-          alt="The Oppulence revenue action queue with relationship context and recommended actions"
-          height={960}
-          priority
-          sizes="(max-width: 640px) 780px, (max-width: 1440px) 92vw, 1320px"
-          src={desktopScreenshots.home}
-          width={1440}
-        />
-      </div>
-    </section>
-  );
-}
-
-function LogoBand() {
-  return (
-    <section aria-label="Connected tools" className="linear-logo-band">
-      <div className="linear-logo-cell linear-logo-caption">
-        One loop across your revenue systems
-      </div>
-      {integrationGroups.slice(0, 6).map((item) => {
-        const { icon: Icon } = iconForLink({ href: item, label: item });
-
-        return (
-          <div className="linear-logo-cell" key={item}>
-            <Icon style={{ fontSize: "1rem" }} />
-            {item}
-          </div>
-        );
-      })}
-    </section>
-  );
-}
-
 function ProblemSection() {
   return (
     <section className="linear-manifesto linear-inset">
@@ -814,46 +761,6 @@ function ProblemSection() {
         <strong>Nothing sends until you click Approve.</strong>
       </h2>
     </section>
-  );
-}
-
-function ProblemVisual({ index }: { index: number }) {
-  if (index === 0) {
-    return (
-      <div aria-hidden="true" className="linear-problem-art linear-problem-orbit">
-        <span className="linear-problem-orbit-ring" />
-        <span className="linear-problem-node linear-problem-node-a" />
-        <span className="linear-problem-node linear-problem-node-b" />
-        <span className="linear-problem-node linear-problem-node-c" />
-        <span className="linear-problem-orbit-break" />
-      </div>
-    );
-  }
-
-  if (index === 1) {
-    return (
-      <div aria-hidden="true" className="linear-problem-art linear-problem-stack">
-        <span className="linear-problem-plane linear-problem-plane-back" />
-        <span className="linear-problem-plane linear-problem-plane-middle" />
-        <span className="linear-problem-plane linear-problem-plane-front">
-          <i />
-          <i />
-          <i />
-        </span>
-        <span className="linear-problem-thread" />
-      </div>
-    );
-  }
-
-  return (
-    <div aria-hidden="true" className="linear-problem-art linear-problem-path">
-      <span className="linear-problem-path-rail" />
-      <span className="linear-problem-path-signal" />
-      <span className="linear-problem-path-gate">
-        <i />
-      </span>
-      <span className="linear-problem-path-echo" />
-    </div>
   );
 }
 
@@ -1019,50 +926,6 @@ function HomeStepVisual({ index }: { index: number }) {
       <span className="linear-step-loop-node linear-step-loop-node-c" />
       <span className="linear-step-loop-core" />
     </div>
-  );
-}
-
-const capabilityTiles: { label: string; icon: SvgIconComponent }[] = [
-  { label: "Revenue Leak Scan", icon: MagnifyingGlassIcon },
-  { label: "Revenue Action Queue", icon: TrayIcon },
-  { label: "Relationship memory", icon: BrainIcon },
-  { label: "Commitment tracking", icon: CalendarDotsIcon },
-  { label: "Source evidence", icon: FileTextIcon },
-  { label: "Contact verification", icon: SealCheckIcon },
-  { label: "Account research", icon: GlobeIcon },
-  { label: "Suppression checks", icon: CircleIcon },
-  { label: "Frequency policies", icon: PathIcon },
-  { label: "Sender health", icon: ChartLineIcon },
-  { label: "Human approvals", icon: CheckCircleIcon },
-  { label: "Execution telemetry", icon: FlowArrowIcon },
-  { label: "Meeting briefs", icon: CalendarDotsIcon },
-  { label: "CRM outcome sync", icon: PlugsConnectedIcon },
-  { label: "Audit history", icon: HardDrivesIcon },
-];
-
-function CapabilityIndex() {
-  return (
-    <section className="linear-capabilities linear-inset">
-      <header>
-        <div>
-          <p className="linear-eyebrow">[capability index]</p>
-          <h2>Everything a safe chase needs.</h2>
-        </div>
-        <p>
-          Detection, evidence, drafting, approval, verified sending, and the receipt that shows what
-          came back.
-        </p>
-      </header>
-      <div>
-        {capabilityTiles.map(({ icon: Icon, label }, index) => (
-          <div key={label}>
-            <span className="linear-index">{String(index + 1).padStart(2, "0")}</span>
-            <Icon aria-hidden="true" />
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 
