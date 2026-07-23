@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/mail"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -68,10 +69,28 @@ func (s *Service) StartScan(ctx context.Context, u *ent.User, lookbackDays int) 
 	if err != nil {
 		return nil, err
 	}
+	// A process crash or restart can leave a scan wedged in "running" forever.
+	// Reap any whose start is older than the run can possibly last before the
+	// guard below — otherwise one dead scan would block the user's scans
+	// permanently.
+	staleBefore := s.now().Add(-2 * scanDeadline)
+	if _, err := s.client.RevenueLeakScan.Update().
+		Where(
+			revenueleakscan.HasUserWith(user.IDEQ(u.ID)),
+			revenueleakscan.StatusIn("pending", "running"),
+			revenueleakscan.StartedAtLT(staleBefore),
+		).
+		SetStatus("failed").
+		SetError("scan abandoned (process restart)").
+		SetCompletedAt(s.now()).
+		Save(ctx); err != nil {
+		return nil, err
+	}
 	running, err := s.client.RevenueLeakScan.Query().
 		Where(
 			revenueleakscan.HasUserWith(user.IDEQ(u.ID)),
 			revenueleakscan.StatusIn("pending", "running"),
+			revenueleakscan.StartedAtGTE(staleBefore),
 		).
 		Exist(ctx)
 	if err != nil {
@@ -97,6 +116,19 @@ func (s *Service) StartScan(ctx context.Context, u *ent.User, lookbackDays int) 
 	bg, cancel := context.WithTimeout(auth.WithUser(context.WithoutCancel(ctx), u), scanDeadline)
 	go func() {
 		defer cancel()
+		// A panic in a detector (e.g. malformed provider header data) must
+		// not take down the shared multi-tenant process. Recover, mark the
+		// scan failed, and move on.
+		defer func() {
+			if r := recover(); r != nil {
+				s.log.Error("revenue: scan panicked", zap.String("scan", scan.ID.String()), zap.Any("panic", r))
+				_, _ = s.client.RevenueLeakScan.UpdateOneID(scan.ID).
+					SetStatus("failed").
+					SetError("scan aborted by an internal error").
+					SetCompletedAt(s.now()).
+					Save(bg)
+			}
+		}()
 		s.runScan(bg, u, scan)
 	}()
 	return scan, nil
@@ -163,6 +195,14 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		return stats, err
 	}
 	now := s.now()
+
+	// Phase 1 — detect. Collect every candidate first so the action cap can
+	// keep the HIGHEST-priority candidates, not merely the first swept.
+	type candidate struct {
+		sum *threadSummary
+		hit *detectorHit
+	}
+	var candidates []candidate
 	for _, msgs := range threads {
 		stats.threads++
 		sum := summarizeThread(selfEmail, msgs)
@@ -180,12 +220,20 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		}
 		stats.candidates++
 		revenuemetrics.DetectorCandidates.WithLabelValues(hit.Detector, "candidate").Inc()
+		candidates = append(candidates, candidate{sum: sum, hit: hit})
+	}
+
+	// Phase 2 — rank, then materialize the top scanMaxActions.
+	sort.SliceStable(candidates, func(i, j int) bool {
+		return scoreOf(candidates[i].hit.Components) > scoreOf(candidates[j].hit.Components)
+	})
+	for _, c := range candidates {
 		if stats.actions >= scanMaxActions {
-			continue // count candidates past the cap, emit nothing more
+			break
 		}
-		created, madeRel, madeEv, err := s.materializeHit(ctx, u, sum, hit)
+		created, madeRel, madeEv, err := s.materializeHit(ctx, u, c.sum, c.hit)
 		if err != nil {
-			s.log.Warn("revenue: materialize scan hit", zap.String("detector", hit.Detector), zap.Error(err))
+			s.log.Warn("revenue: materialize scan hit", zap.String("detector", c.hit.Detector), zap.Error(err))
 			continue
 		}
 		if madeRel {
@@ -253,7 +301,11 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		return false, createdRel, false, err
 	}
 
-	dedupeKey := hit.Detector + ":" + sum.ThreadID
+	// Thread-scoped, NOT detector-scoped: a thread yields at most one queue
+	// item. Keying on the detector let a rerun whose winning detector changed
+	// (e.g. waiting_on_me → dormant_warm_opportunity as the thread aged)
+	// create a second action for the same underlying open loop.
+	dedupeKey := "scan:" + sum.ThreadID
 	existed, err := s.client.RevenueAction.Query().
 		Where(revenueaction.DedupeKeyEQ(dedupeKey)).
 		Exist(ctx)
@@ -361,7 +413,12 @@ func summarizeThread(selfEmail string, msgs []googleapi.GmailThreadMessage) *thr
 func detectThread(sum *threadSummary, now time.Time) *detectorHit {
 	age := now.Sub(sum.LastAt)
 	ageDays := int(age.Hours() / 24)
-	text := sum.Subject + " " + lastSnippet(sum)
+	// Match keyword signals against the LAST message snippet only. The Subject
+	// persists for the life of a thread, so matching it made a single
+	// "proposal"/"follow up" in the subject fire forever regardless of what
+	// the latest message actually said. The subject is still used to compose
+	// the proposed reply, never as a trigger.
+	text := lastSnippet(sum)
 
 	// requested_follow_up_due: an explicit follow-up promise with nothing after it.
 	if followUpRe.MatchString(text) && age >= 14*24*time.Hour {
@@ -524,7 +581,7 @@ func parseAddress(header string) (email, name string) {
 		}
 		return "", ""
 	}
-	return strings.ToLower(addr.Address), addr.Name
+	return strings.ToLower(addr.Address), strings.TrimSpace(addr.Name)
 }
 
 func isNoReply(email string) bool {
@@ -545,8 +602,11 @@ func domainOf(email string) string {
 }
 
 func firstName(sum *threadSummary) string {
-	if sum.CounterpartyName != "" {
-		return strings.Fields(sum.CounterpartyName)[0]
+	// strings.Fields, not [0] on a possibly-empty slice: a display name that
+	// is non-empty but all-whitespace (a crafted "  " <addr> header) yields
+	// zero fields and would panic on index [0].
+	if fields := strings.Fields(sum.CounterpartyName); len(fields) > 0 {
+		return fields[0]
 	}
 	if i := strings.IndexByte(sum.Counterparty, '@'); i > 0 {
 		return sum.Counterparty[:i]

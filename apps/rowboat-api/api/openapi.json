@@ -10975,20 +10975,26 @@
                 "properties": {
                   "actionType": {
                     "description": "Action type.",
+                    "enum": [
+                      "warm_follow_up",
+                      "proposal_nudge",
+                      "referral_reconnect",
+                      "customer_risk",
+                      "meeting_follow_up"
+                    ],
                     "example": "warm_follow_up",
-                    "nullable": true,
                     "type": "string"
                   },
                   "channel": {
                     "description": "Channel.",
+                    "enum": ["email", "slack", "call", "crm_task"],
                     "example": "email",
-                    "nullable": true,
                     "type": "string"
                   },
                   "executionMode": {
                     "description": "Execution mode.",
+                    "enum": ["draft", "send"],
                     "example": "draft",
-                    "nullable": true,
                     "type": "string"
                   },
                   "proposedMessage": {
@@ -11039,6 +11045,9 @@
               }
             },
             "description": "Action at its new revision."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
           },
           "401": {
             "$ref": "#/components/responses/401"
