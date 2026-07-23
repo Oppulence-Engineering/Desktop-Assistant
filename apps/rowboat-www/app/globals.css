@@ -4071,4 +4071,58 @@
   .linear-hero-card li:active .linear-hero-card-act {
     transform: scale(0.96);
   }
+
+  /*
+   * Polish round 3 — mobile deep-pass. Our custom display rules are
+   * declared after Tailwind's utilities inside the same layer, so they
+   * were overriding `hidden md:` on the header cluster; enforce the
+   * intended breakpoints here. Shell padding and display type step down
+   * on small screens; hero CTAs go full-width.
+   */
+  .linear-nav-link,
+  .linear-nav-trigger {
+    white-space: nowrap;
+  }
+
+  @media (max-width: 767px) {
+    .linear-header .linear-nav-link,
+    .linear-header .linear-nav-icon,
+    .linear-header .linear-button-primary {
+      display: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .marketing-polar {
+      --linear-outer: 20px;
+      --linear-inset: 4px;
+    }
+
+    .linear-hero-title {
+      font-size: clamp(2.05rem, 9.4vw, 2.6rem);
+    }
+
+    .linear-hero .linear-button-primary,
+    .linear-hero .linear-button-ghost {
+      width: 100%;
+    }
+
+    .linear-manifesto h2,
+    .linear-statement-title {
+      font-size: clamp(1.35rem, 5.6vw, 1.7rem);
+    }
+
+    .linear-hero-band {
+      margin-top: 40px;
+      padding-block: 32px;
+    }
+
+    .linear-hero-card {
+      padding: 14px 14px 12px;
+    }
+
+    .linear-final-cta h2 {
+      font-size: clamp(1.9rem, 8.6vw, 2.2rem);
+    }
+  }
 }
