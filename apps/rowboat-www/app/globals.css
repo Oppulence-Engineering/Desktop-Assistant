@@ -4009,4 +4009,66 @@
   .linear-proof p:first-child {
     text-wrap: pretty;
   }
+
+  /*
+   * Polish round 2 — motion refinement. Reveals travel less and settle
+   * faster; queue rows cascade in after the card; arrows nudge on hover;
+   * buttons transition their fills; the approve chip presses.
+   */
+  html[data-marketing-reveals] .is-revealed {
+    animation-duration: 600ms;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .linear-hero-card li {
+      animation: linear-reveal 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .linear-hero-card li:nth-child(1) {
+      animation-delay: 480ms;
+    }
+
+    .linear-hero-card li:nth-child(2) {
+      animation-delay: 560ms;
+    }
+
+    .linear-hero-card li:nth-child(3) {
+      animation-delay: 640ms;
+    }
+
+    .linear-hero-card-foot {
+      animation: linear-fade-in 400ms 760ms both;
+    }
+  }
+
+  .linear-inline-link > span:last-child,
+  .linear-button-ghost > span:last-child,
+  .linear-product-link > span:last-child {
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .linear-inline-link:hover > span:last-child,
+  .linear-button-ghost:hover > span:last-child,
+  .linear-product-link:hover > span:last-child {
+    transform: translateX(2px);
+  }
+
+  .linear-button-primary,
+  .linear-button-secondary,
+  .linear-button-ghost {
+    transition:
+      background 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      border-color 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      transform 160ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .linear-hero-card-act {
+    transition:
+      transform 140ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      box-shadow 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .linear-hero-card li:active .linear-hero-card-act {
+    transform: scale(0.96);
+  }
 }
