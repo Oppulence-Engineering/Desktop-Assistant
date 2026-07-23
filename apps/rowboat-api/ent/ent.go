@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -26,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -36,6 +38,14 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -100,6 +110,7 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			actionoutcome.Table:               actionoutcome.ValidColumn,
 			agentapproval.Table:               agentapproval.ValidColumn,
 			agentdefinition.Table:             agentdefinition.ValidColumn,
 			agentdefinitionhistory.Table:      agentdefinitionhistory.ValidColumn,
@@ -114,6 +125,7 @@ func checkColumn(t, c string) error {
 			backgroundtaskrunevent.Table:      backgroundtaskrunevent.ValidColumn,
 			backgroundtaskschedulestate.Table: backgroundtaskschedulestate.ValidColumn,
 			cloudevent.Table:                  cloudevent.ValidColumn,
+			commitment.Table:                  commitment.ValidColumn,
 			creditledger.Table:                creditledger.ValidColumn,
 			googlewatch.Table:                 googlewatch.ValidColumn,
 			llmusage.Table:                    llmusage.ValidColumn,
@@ -124,6 +136,14 @@ func checkColumn(t, c string) error {
 			oauthconnection.Table:             oauthconnection.ValidColumn,
 			oauthconnectionhistory.Table:      oauthconnectionhistory.ValidColumn,
 			oauthpending.Table:                oauthpending.ValidColumn,
+			policydecisionsnapshot.Table:      policydecisionsnapshot.ValidColumn,
+			relationship.Table:                relationship.ValidColumn,
+			revenueaction.Table:               revenueaction.ValidColumn,
+			revenueactionrevision.Table:       revenueactionrevision.ValidColumn,
+			revenueevidence.Table:             revenueevidence.ValidColumn,
+			revenueoutboxevent.Table:          revenueoutboxevent.ValidColumn,
+			revenueworkspace.Table:            revenueworkspace.ValidColumn,
+			revenueworkspacemember.Table:      revenueworkspacemember.ValidColumn,
 			subscription.Table:                subscription.ValidColumn,
 			subscriptionhistory.Table:         subscriptionhistory.ValidColumn,
 			user.Table:                        user.ValidColumn,

@@ -9,6 +9,53 @@ import (
 )
 
 var (
+	// ActionOutcomesColumns holds the columns for the "action_outcomes" table.
+	ActionOutcomesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "source", Type: field.TypeString},
+		{Name: "source_event_id", Type: field.TypeString},
+		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "metadata_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "revenue_action_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_action_outcomes", Type: field.TypeUUID},
+	}
+	// ActionOutcomesTable holds the schema information for the "action_outcomes" table.
+	ActionOutcomesTable = &schema.Table{
+		Name:       "action_outcomes",
+		Columns:    ActionOutcomesColumns,
+		PrimaryKey: []*schema.Column{ActionOutcomesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "action_outcomes_revenue_actions_outcomes",
+				Columns:    []*schema.Column{ActionOutcomesColumns[8]},
+				RefColumns: []*schema.Column{RevenueActionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "action_outcomes_revenue_workspaces_outcomes",
+				Columns:    []*schema.Column{ActionOutcomesColumns[9]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "action_outcomes_users_action_outcomes",
+				Columns:    []*schema.Column{ActionOutcomesColumns[10]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "actionoutcome_source_source_event_id_revenue_action_id",
+				Unique:  true,
+				Columns: []*schema.Column{ActionOutcomesColumns[4], ActionOutcomesColumns[5], ActionOutcomesColumns[8]},
+			},
+		},
+	}
 	// AgentApprovalsColumns holds the columns for the "agent_approvals" table.
 	AgentApprovalsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -738,6 +785,47 @@ var (
 			},
 		},
 	}
+	// CommitmentsColumns holds the columns for the "commitments" table.
+	CommitmentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "direction", Type: field.TypeString},
+		{Name: "text", Type: field.TypeString, Size: 2147483647},
+		{Name: "status", Type: field.TypeString, Default: "open"},
+		{Name: "due_at", Type: field.TypeTime, Nullable: true},
+		{Name: "confidence", Type: field.TypeFloat64},
+		{Name: "user_confirmed", Type: field.TypeBool, Default: false},
+		{Name: "relationship_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_commitments", Type: field.TypeUUID},
+	}
+	// CommitmentsTable holds the schema information for the "commitments" table.
+	CommitmentsTable = &schema.Table{
+		Name:       "commitments",
+		Columns:    CommitmentsColumns,
+		PrimaryKey: []*schema.Column{CommitmentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "commitments_relationships_commitments",
+				Columns:    []*schema.Column{CommitmentsColumns[9]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "commitments_revenue_workspaces_commitments",
+				Columns:    []*schema.Column{CommitmentsColumns[10]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "commitments_users_commitments",
+				Columns:    []*schema.Column{CommitmentsColumns[11]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// CreditLedgersColumns holds the columns for the "credit_ledgers" table.
 	CreditLedgersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1066,6 +1154,388 @@ var (
 			},
 		},
 	}
+	// PolicyDecisionSnapshotsColumns holds the columns for the "policy_decision_snapshots" table.
+	PolicyDecisionSnapshotsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "action_revision", Type: field.TypeInt},
+		{Name: "revision_hash", Type: field.TypeString},
+		{Name: "status", Type: field.TypeString},
+		{Name: "outbound_lead_id", Type: field.TypeString, Nullable: true},
+		{Name: "verification_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "suppression_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "research_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "crm_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "reason_codes", Type: field.TypeJSON},
+		{Name: "evidence_refs", Type: field.TypeJSON},
+		{Name: "evaluated_at", Type: field.TypeTime},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "response_hash", Type: field.TypeString},
+		{Name: "revenue_action_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_policy_decision_snapshots", Type: field.TypeUUID},
+	}
+	// PolicyDecisionSnapshotsTable holds the schema information for the "policy_decision_snapshots" table.
+	PolicyDecisionSnapshotsTable = &schema.Table{
+		Name:       "policy_decision_snapshots",
+		Columns:    PolicyDecisionSnapshotsColumns,
+		PrimaryKey: []*schema.Column{PolicyDecisionSnapshotsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "policy_decision_snapshots_revenue_actions_decisions",
+				Columns:    []*schema.Column{PolicyDecisionSnapshotsColumns[16]},
+				RefColumns: []*schema.Column{RevenueActionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "policy_decision_snapshots_revenue_workspaces_decisions",
+				Columns:    []*schema.Column{PolicyDecisionSnapshotsColumns[17]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "policy_decision_snapshots_users_policy_decision_snapshots",
+				Columns:    []*schema.Column{PolicyDecisionSnapshotsColumns[18]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// RelationshipsColumns holds the columns for the "relationships" table.
+	RelationshipsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "display_name", Type: field.TypeString},
+		{Name: "primary_email", Type: field.TypeString, Nullable: true},
+		{Name: "account_domain", Type: field.TypeString, Nullable: true},
+		{Name: "outbound_lead_id", Type: field.TypeString, Nullable: true},
+		{Name: "outbound_account_ref", Type: field.TypeString, Nullable: true},
+		{Name: "resource_refs", Type: field.TypeJSON},
+		{Name: "summary", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "last_touch_at", Type: field.TypeTime, Nullable: true},
+		{Name: "next_action_at", Type: field.TypeTime, Nullable: true},
+		{Name: "status", Type: field.TypeString, Default: "active"},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_relationships", Type: field.TypeUUID},
+	}
+	// RelationshipsTable holds the schema information for the "relationships" table.
+	RelationshipsTable = &schema.Table{
+		Name:       "relationships",
+		Columns:    RelationshipsColumns,
+		PrimaryKey: []*schema.Column{RelationshipsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relationships_revenue_workspaces_relationships",
+				Columns:    []*schema.Column{RelationshipsColumns[14]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationships_users_relationships",
+				Columns:    []*schema.Column{RelationshipsColumns[15]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relationship_primary_email_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipsColumns[5], RelationshipsColumns[14]},
+			},
+			{
+				Name:    "relationship_status_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipsColumns[13], RelationshipsColumns[14]},
+			},
+		},
+	}
+	// RevenueActionsColumns holds the columns for the "revenue_actions" table.
+	RevenueActionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "action_type", Type: field.TypeString},
+		{Name: "channel", Type: field.TypeString},
+		{Name: "detector", Type: field.TypeString},
+		{Name: "dedupe_key", Type: field.TypeString},
+		{Name: "revision", Type: field.TypeInt, Default: 1},
+		{Name: "revision_hash", Type: field.TypeString},
+		{Name: "reason", Type: field.TypeString, Size: 2147483647},
+		{Name: "recipient_email", Type: field.TypeString, Nullable: true},
+		{Name: "proposed_subject", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "proposed_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "sender_account_ref", Type: field.TypeString, Nullable: true},
+		{Name: "assigned_user_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "priority_score", Type: field.TypeInt},
+		{Name: "priority_components_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "queue_status", Type: field.TypeString, Default: "open"},
+		{Name: "policy_status", Type: field.TypeString, Default: "pending"},
+		{Name: "approval_status", Type: field.TypeString, Default: "pending"},
+		{Name: "execution_status", Type: field.TypeString, Default: "pending"},
+		{Name: "execution_owner", Type: field.TypeString, Default: "rowboat"},
+		{Name: "approved_revision", Type: field.TypeInt, Nullable: true},
+		{Name: "approved_decision_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "approved_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "approved_at", Type: field.TypeTime, Nullable: true},
+		{Name: "execution_idempotency_key", Type: field.TypeString, Nullable: true},
+		{Name: "execution_mode", Type: field.TypeString, Default: "draft"},
+		{Name: "provider_message_id", Type: field.TypeString, Nullable: true},
+		{Name: "provider_thread_id", Type: field.TypeString, Nullable: true},
+		{Name: "executed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "execution_error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "dismiss_reason", Type: field.TypeString, Nullable: true},
+		{Name: "snoozed_until", Type: field.TypeTime, Nullable: true},
+		{Name: "due_at", Type: field.TypeTime, Nullable: true},
+		{Name: "handled_at", Type: field.TypeTime, Nullable: true},
+		{Name: "relationship_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_revenue_actions", Type: field.TypeUUID},
+	}
+	// RevenueActionsTable holds the schema information for the "revenue_actions" table.
+	RevenueActionsTable = &schema.Table{
+		Name:       "revenue_actions",
+		Columns:    RevenueActionsColumns,
+		PrimaryKey: []*schema.Column{RevenueActionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "revenue_actions_relationships_actions",
+				Columns:    []*schema.Column{RevenueActionsColumns[36]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "revenue_actions_revenue_workspaces_actions",
+				Columns:    []*schema.Column{RevenueActionsColumns[37]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "revenue_actions_users_revenue_actions",
+				Columns:    []*schema.Column{RevenueActionsColumns[38]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "revenueaction_dedupe_key_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{RevenueActionsColumns[6], RevenueActionsColumns[37]},
+			},
+			{
+				Name:    "revenueaction_queue_status_priority_score_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{RevenueActionsColumns[17], RevenueActionsColumns[15], RevenueActionsColumns[37]},
+			},
+		},
+	}
+	// RevenueActionRevisionsColumns holds the columns for the "revenue_action_revisions" table.
+	RevenueActionRevisionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "revision", Type: field.TypeInt},
+		{Name: "revision_hash", Type: field.TypeString},
+		{Name: "action_type", Type: field.TypeString},
+		{Name: "channel", Type: field.TypeString},
+		{Name: "recipient_email", Type: field.TypeString, Nullable: true},
+		{Name: "reason", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "proposed_subject", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "proposed_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "sender_account_ref", Type: field.TypeString, Nullable: true},
+		{Name: "assigned_user_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "created_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "revenue_action_id", Type: field.TypeUUID},
+		{Name: "user_revenue_action_revisions", Type: field.TypeUUID},
+	}
+	// RevenueActionRevisionsTable holds the schema information for the "revenue_action_revisions" table.
+	RevenueActionRevisionsTable = &schema.Table{
+		Name:       "revenue_action_revisions",
+		Columns:    RevenueActionRevisionsColumns,
+		PrimaryKey: []*schema.Column{RevenueActionRevisionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "revenue_action_revisions_revenue_actions_revisions",
+				Columns:    []*schema.Column{RevenueActionRevisionsColumns[14]},
+				RefColumns: []*schema.Column{RevenueActionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "revenue_action_revisions_users_revenue_action_revisions",
+				Columns:    []*schema.Column{RevenueActionRevisionsColumns[15]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "revenueactionrevision_revision_revenue_action_id",
+				Unique:  true,
+				Columns: []*schema.Column{RevenueActionRevisionsColumns[3], RevenueActionRevisionsColumns[14]},
+			},
+		},
+	}
+	// RevenueEvidencesColumns holds the columns for the "revenue_evidences" table.
+	RevenueEvidencesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "source", Type: field.TypeString},
+		{Name: "source_account_id", Type: field.TypeString, Nullable: true},
+		{Name: "source_record_id", Type: field.TypeString},
+		{Name: "source_uri", Type: field.TypeString, Nullable: true},
+		{Name: "content_hash", Type: field.TypeString},
+		{Name: "excerpt", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "payload_ciphertext", Type: field.TypeBytes, Nullable: true},
+		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "observed_at", Type: field.TypeTime},
+		{Name: "external_evidence_refs", Type: field.TypeJSON},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_revenue_evidences", Type: field.TypeUUID},
+	}
+	// RevenueEvidencesTable holds the schema information for the "revenue_evidences" table.
+	RevenueEvidencesTable = &schema.Table{
+		Name:       "revenue_evidences",
+		Columns:    RevenueEvidencesColumns,
+		PrimaryKey: []*schema.Column{RevenueEvidencesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "revenue_evidences_revenue_workspaces_evidences",
+				Columns:    []*schema.Column{RevenueEvidencesColumns[13]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "revenue_evidences_users_revenue_evidences",
+				Columns:    []*schema.Column{RevenueEvidencesColumns[14]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "revenueevidence_source_source_record_id_content_hash_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{RevenueEvidencesColumns[3], RevenueEvidencesColumns[5], RevenueEvidencesColumns[7], RevenueEvidencesColumns[13]},
+			},
+		},
+	}
+	// RevenueOutboxEventsColumns holds the columns for the "revenue_outbox_events" table.
+	RevenueOutboxEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "event_type", Type: field.TypeString},
+		{Name: "schema_version", Type: field.TypeInt, Default: 1},
+		{Name: "action_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "correlation_id", Type: field.TypeString, Nullable: true},
+		{Name: "causation_id", Type: field.TypeString, Nullable: true},
+		{Name: "idempotency_key", Type: field.TypeString, Unique: true},
+		{Name: "payload_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "delivery_status", Type: field.TypeString, Default: "pending"},
+		{Name: "attempts", Type: field.TypeInt, Default: 0},
+		{Name: "next_attempt_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_revenue_outbox_events", Type: field.TypeUUID},
+	}
+	// RevenueOutboxEventsTable holds the schema information for the "revenue_outbox_events" table.
+	RevenueOutboxEventsTable = &schema.Table{
+		Name:       "revenue_outbox_events",
+		Columns:    RevenueOutboxEventsColumns,
+		PrimaryKey: []*schema.Column{RevenueOutboxEventsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "revenue_outbox_events_revenue_workspaces_outbox_events",
+				Columns:    []*schema.Column{RevenueOutboxEventsColumns[15]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "revenue_outbox_events_users_revenue_outbox_events",
+				Columns:    []*schema.Column{RevenueOutboxEventsColumns[16]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "revenueoutboxevent_delivery_status_next_attempt_at",
+				Unique:  false,
+				Columns: []*schema.Column{RevenueOutboxEventsColumns[11], RevenueOutboxEventsColumns[13]},
+			},
+		},
+	}
+	// RevenueWorkspacesColumns holds the columns for the "revenue_workspaces" table.
+	RevenueWorkspacesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "workos_org_id", Type: field.TypeString, Nullable: true},
+		{Name: "outbound_organization_id", Type: field.TypeString, Nullable: true},
+		{Name: "outbound_workspace_id", Type: field.TypeString, Unique: true, Nullable: true},
+		{Name: "mode", Type: field.TypeString, Default: "local"},
+		{Name: "status", Type: field.TypeString, Default: "active"},
+		{Name: "last_verified_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_revenue_workspaces", Type: field.TypeUUID},
+	}
+	// RevenueWorkspacesTable holds the schema information for the "revenue_workspaces" table.
+	RevenueWorkspacesTable = &schema.Table{
+		Name:       "revenue_workspaces",
+		Columns:    RevenueWorkspacesColumns,
+		PrimaryKey: []*schema.Column{RevenueWorkspacesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "revenue_workspaces_users_revenue_workspaces",
+				Columns:    []*schema.Column{RevenueWorkspacesColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// RevenueWorkspaceMembersColumns holds the columns for the "revenue_workspace_members" table.
+	RevenueWorkspaceMembersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "role", Type: field.TypeString, Default: "member"},
+		{Name: "outbound_account_id", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeString, Default: "active"},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_revenue_workspace_members", Type: field.TypeUUID},
+	}
+	// RevenueWorkspaceMembersTable holds the schema information for the "revenue_workspace_members" table.
+	RevenueWorkspaceMembersTable = &schema.Table{
+		Name:       "revenue_workspace_members",
+		Columns:    RevenueWorkspaceMembersColumns,
+		PrimaryKey: []*schema.Column{RevenueWorkspaceMembersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "revenue_workspace_members_revenue_workspaces_members",
+				Columns:    []*schema.Column{RevenueWorkspaceMembersColumns[6]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "revenue_workspace_members_users_revenue_workspace_members",
+				Columns:    []*schema.Column{RevenueWorkspaceMembersColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "revenueworkspacemember_revenue_workspace_id_user_revenue_workspace_members",
+				Unique:  true,
+				Columns: []*schema.Column{RevenueWorkspaceMembersColumns[6], RevenueWorkspaceMembersColumns[7]},
+			},
+		},
+	}
 	// SubscriptionsColumns holds the columns for the "subscriptions" table.
 	SubscriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1161,8 +1631,84 @@ var (
 			},
 		},
 	}
+	// CommitmentEvidencesColumns holds the columns for the "commitment_evidences" table.
+	CommitmentEvidencesColumns = []*schema.Column{
+		{Name: "commitment_id", Type: field.TypeUUID},
+		{Name: "revenue_evidence_id", Type: field.TypeUUID},
+	}
+	// CommitmentEvidencesTable holds the schema information for the "commitment_evidences" table.
+	CommitmentEvidencesTable = &schema.Table{
+		Name:       "commitment_evidences",
+		Columns:    CommitmentEvidencesColumns,
+		PrimaryKey: []*schema.Column{CommitmentEvidencesColumns[0], CommitmentEvidencesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "commitment_evidences_commitment_id",
+				Columns:    []*schema.Column{CommitmentEvidencesColumns[0]},
+				RefColumns: []*schema.Column{CommitmentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "commitment_evidences_revenue_evidence_id",
+				Columns:    []*schema.Column{CommitmentEvidencesColumns[1]},
+				RefColumns: []*schema.Column{RevenueEvidencesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// RelationshipEvidencesColumns holds the columns for the "relationship_evidences" table.
+	RelationshipEvidencesColumns = []*schema.Column{
+		{Name: "relationship_id", Type: field.TypeUUID},
+		{Name: "revenue_evidence_id", Type: field.TypeUUID},
+	}
+	// RelationshipEvidencesTable holds the schema information for the "relationship_evidences" table.
+	RelationshipEvidencesTable = &schema.Table{
+		Name:       "relationship_evidences",
+		Columns:    RelationshipEvidencesColumns,
+		PrimaryKey: []*schema.Column{RelationshipEvidencesColumns[0], RelationshipEvidencesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relationship_evidences_relationship_id",
+				Columns:    []*schema.Column{RelationshipEvidencesColumns[0]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "relationship_evidences_revenue_evidence_id",
+				Columns:    []*schema.Column{RelationshipEvidencesColumns[1]},
+				RefColumns: []*schema.Column{RevenueEvidencesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// RevenueActionEvidencesColumns holds the columns for the "revenue_action_evidences" table.
+	RevenueActionEvidencesColumns = []*schema.Column{
+		{Name: "revenue_action_id", Type: field.TypeUUID},
+		{Name: "revenue_evidence_id", Type: field.TypeUUID},
+	}
+	// RevenueActionEvidencesTable holds the schema information for the "revenue_action_evidences" table.
+	RevenueActionEvidencesTable = &schema.Table{
+		Name:       "revenue_action_evidences",
+		Columns:    RevenueActionEvidencesColumns,
+		PrimaryKey: []*schema.Column{RevenueActionEvidencesColumns[0], RevenueActionEvidencesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "revenue_action_evidences_revenue_action_id",
+				Columns:    []*schema.Column{RevenueActionEvidencesColumns[0]},
+				RefColumns: []*schema.Column{RevenueActionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "revenue_action_evidences_revenue_evidence_id",
+				Columns:    []*schema.Column{RevenueActionEvidencesColumns[1]},
+				RefColumns: []*schema.Column{RevenueEvidencesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		ActionOutcomesTable,
 		AgentApprovalsTable,
 		AgentDefinitionsTable,
 		AgentdefinitionHistoryTable,
@@ -1177,6 +1723,7 @@ var (
 		BackgroundTaskRunEventsTable,
 		BackgroundTaskScheduleStatesTable,
 		CloudEventsTable,
+		CommitmentsTable,
 		CreditLedgersTable,
 		GoogleWatchesTable,
 		LlmUsagesTable,
@@ -1187,14 +1734,28 @@ var (
 		OauthConnectionsTable,
 		OauthConnectionHistoriesTable,
 		OauthPendingsTable,
+		PolicyDecisionSnapshotsTable,
+		RelationshipsTable,
+		RevenueActionsTable,
+		RevenueActionRevisionsTable,
+		RevenueEvidencesTable,
+		RevenueOutboxEventsTable,
+		RevenueWorkspacesTable,
+		RevenueWorkspaceMembersTable,
 		SubscriptionsTable,
 		SubscriptionHistoriesTable,
 		UsersTable,
 		UserHistoriesTable,
+		CommitmentEvidencesTable,
+		RelationshipEvidencesTable,
+		RevenueActionEvidencesTable,
 	}
 )
 
 func init() {
+	ActionOutcomesTable.ForeignKeys[0].RefTable = RevenueActionsTable
+	ActionOutcomesTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	ActionOutcomesTable.ForeignKeys[2].RefTable = UsersTable
 	AgentApprovalsTable.ForeignKeys[0].RefTable = AgentSessionsTable
 	AgentApprovalsTable.ForeignKeys[1].RefTable = UsersTable
 	AgentDefinitionsTable.ForeignKeys[0].RefTable = UsersTable
@@ -1222,11 +1783,37 @@ func init() {
 	BackgroundTaskScheduleStatesTable.ForeignKeys[0].RefTable = BackgroundTasksTable
 	BackgroundTaskScheduleStatesTable.ForeignKeys[1].RefTable = UsersTable
 	CloudEventsTable.ForeignKeys[0].RefTable = UsersTable
+	CommitmentsTable.ForeignKeys[0].RefTable = RelationshipsTable
+	CommitmentsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	CommitmentsTable.ForeignKeys[2].RefTable = UsersTable
 	CreditLedgersTable.ForeignKeys[0].RefTable = UsersTable
 	GoogleWatchesTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	McpConnectionsTable.ForeignKeys[0].RefTable = UsersTable
 	MeetingMinuteUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	OauthConnectionsTable.ForeignKeys[0].RefTable = UsersTable
+	PolicyDecisionSnapshotsTable.ForeignKeys[0].RefTable = RevenueActionsTable
+	PolicyDecisionSnapshotsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	PolicyDecisionSnapshotsTable.ForeignKeys[2].RefTable = UsersTable
+	RelationshipsTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	RelationshipsTable.ForeignKeys[1].RefTable = UsersTable
+	RevenueActionsTable.ForeignKeys[0].RefTable = RelationshipsTable
+	RevenueActionsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	RevenueActionsTable.ForeignKeys[2].RefTable = UsersTable
+	RevenueActionRevisionsTable.ForeignKeys[0].RefTable = RevenueActionsTable
+	RevenueActionRevisionsTable.ForeignKeys[1].RefTable = UsersTable
+	RevenueEvidencesTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	RevenueEvidencesTable.ForeignKeys[1].RefTable = UsersTable
+	RevenueOutboxEventsTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	RevenueOutboxEventsTable.ForeignKeys[1].RefTable = UsersTable
+	RevenueWorkspacesTable.ForeignKeys[0].RefTable = UsersTable
+	RevenueWorkspaceMembersTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	RevenueWorkspaceMembersTable.ForeignKeys[1].RefTable = UsersTable
 	SubscriptionsTable.ForeignKeys[0].RefTable = UsersTable
+	CommitmentEvidencesTable.ForeignKeys[0].RefTable = CommitmentsTable
+	CommitmentEvidencesTable.ForeignKeys[1].RefTable = RevenueEvidencesTable
+	RelationshipEvidencesTable.ForeignKeys[0].RefTable = RelationshipsTable
+	RelationshipEvidencesTable.ForeignKeys[1].RefTable = RevenueEvidencesTable
+	RevenueActionEvidencesTable.ForeignKeys[0].RefTable = RevenueActionsTable
+	RevenueActionEvidencesTable.ForeignKeys[1].RefTable = RevenueEvidencesTable
 }

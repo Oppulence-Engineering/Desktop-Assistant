@@ -5,6 +5,7 @@ package ent
 import (
 	"time"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -19,6 +20,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -29,6 +31,14 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
@@ -41,6 +51,41 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	actionoutcomeMixin := schema.ActionOutcome{}.Mixin()
+	actionoutcomeMixinFields0 := actionoutcomeMixin[0].Fields()
+	_ = actionoutcomeMixinFields0
+	actionoutcomeFields := schema.ActionOutcome{}.Fields()
+	_ = actionoutcomeFields
+	// actionoutcomeDescCreatedAt is the schema descriptor for created_at field.
+	actionoutcomeDescCreatedAt := actionoutcomeMixinFields0[1].Descriptor()
+	// actionoutcome.DefaultCreatedAt holds the default value on creation for the created_at field.
+	actionoutcome.DefaultCreatedAt = actionoutcomeDescCreatedAt.Default.(func() time.Time)
+	// actionoutcomeDescUpdatedAt is the schema descriptor for updated_at field.
+	actionoutcomeDescUpdatedAt := actionoutcomeMixinFields0[2].Descriptor()
+	// actionoutcome.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	actionoutcome.DefaultUpdatedAt = actionoutcomeDescUpdatedAt.Default.(func() time.Time)
+	// actionoutcome.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	actionoutcome.UpdateDefaultUpdatedAt = actionoutcomeDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// actionoutcomeDescKind is the schema descriptor for kind field.
+	actionoutcomeDescKind := actionoutcomeFields[0].Descriptor()
+	// actionoutcome.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	actionoutcome.KindValidator = actionoutcomeDescKind.Validators[0].(func(string) error)
+	// actionoutcomeDescSource is the schema descriptor for source field.
+	actionoutcomeDescSource := actionoutcomeFields[1].Descriptor()
+	// actionoutcome.SourceValidator is a validator for the "source" field. It is called by the builders before save.
+	actionoutcome.SourceValidator = actionoutcomeDescSource.Validators[0].(func(string) error)
+	// actionoutcomeDescSourceEventID is the schema descriptor for source_event_id field.
+	actionoutcomeDescSourceEventID := actionoutcomeFields[2].Descriptor()
+	// actionoutcome.SourceEventIDValidator is a validator for the "source_event_id" field. It is called by the builders before save.
+	actionoutcome.SourceEventIDValidator = actionoutcomeDescSourceEventID.Validators[0].(func(string) error)
+	// actionoutcomeDescMetadataJSON is the schema descriptor for metadata_json field.
+	actionoutcomeDescMetadataJSON := actionoutcomeFields[4].Descriptor()
+	// actionoutcome.MetadataJSONValidator is a validator for the "metadata_json" field. It is called by the builders before save.
+	actionoutcome.MetadataJSONValidator = actionoutcomeDescMetadataJSON.Validators[0].(func(string) error)
+	// actionoutcomeDescID is the schema descriptor for id field.
+	actionoutcomeDescID := actionoutcomeMixinFields0[0].Descriptor()
+	// actionoutcome.DefaultID holds the default value on creation for the id field.
+	actionoutcome.DefaultID = actionoutcomeDescID.Default.(func() uuid.UUID)
 	agentapprovalMixin := schema.AgentApproval{}.Mixin()
 	agentapprovalMixinFields0 := agentapprovalMixin[0].Fields()
 	_ = agentapprovalMixinFields0
@@ -743,6 +788,61 @@ func init() {
 	cloudeventDescID := cloudeventMixinFields0[0].Descriptor()
 	// cloudevent.DefaultID holds the default value on creation for the id field.
 	cloudevent.DefaultID = cloudeventDescID.Default.(func() uuid.UUID)
+	commitmentMixin := schema.Commitment{}.Mixin()
+	commitmentMixinFields0 := commitmentMixin[0].Fields()
+	_ = commitmentMixinFields0
+	commitmentFields := schema.Commitment{}.Fields()
+	_ = commitmentFields
+	// commitmentDescCreatedAt is the schema descriptor for created_at field.
+	commitmentDescCreatedAt := commitmentMixinFields0[1].Descriptor()
+	// commitment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	commitment.DefaultCreatedAt = commitmentDescCreatedAt.Default.(func() time.Time)
+	// commitmentDescUpdatedAt is the schema descriptor for updated_at field.
+	commitmentDescUpdatedAt := commitmentMixinFields0[2].Descriptor()
+	// commitment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	commitment.DefaultUpdatedAt = commitmentDescUpdatedAt.Default.(func() time.Time)
+	// commitment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	commitment.UpdateDefaultUpdatedAt = commitmentDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// commitmentDescDirection is the schema descriptor for direction field.
+	commitmentDescDirection := commitmentFields[0].Descriptor()
+	// commitment.DirectionValidator is a validator for the "direction" field. It is called by the builders before save.
+	commitment.DirectionValidator = commitmentDescDirection.Validators[0].(func(string) error)
+	// commitmentDescText is the schema descriptor for text field.
+	commitmentDescText := commitmentFields[1].Descriptor()
+	// commitment.TextValidator is a validator for the "text" field. It is called by the builders before save.
+	commitment.TextValidator = commitmentDescText.Validators[0].(func(string) error)
+	// commitmentDescStatus is the schema descriptor for status field.
+	commitmentDescStatus := commitmentFields[2].Descriptor()
+	// commitment.DefaultStatus holds the default value on creation for the status field.
+	commitment.DefaultStatus = commitmentDescStatus.Default.(string)
+	// commitment.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	commitment.StatusValidator = commitmentDescStatus.Validators[0].(func(string) error)
+	// commitmentDescConfidence is the schema descriptor for confidence field.
+	commitmentDescConfidence := commitmentFields[4].Descriptor()
+	// commitment.ConfidenceValidator is a validator for the "confidence" field. It is called by the builders before save.
+	commitment.ConfidenceValidator = func() func(float64) error {
+		validators := commitmentDescConfidence.Validators
+		fns := [...]func(float64) error{
+			validators[0].(func(float64) error),
+			validators[1].(func(float64) error),
+		}
+		return func(confidence float64) error {
+			for _, fn := range fns {
+				if err := fn(confidence); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// commitmentDescUserConfirmed is the schema descriptor for user_confirmed field.
+	commitmentDescUserConfirmed := commitmentFields[5].Descriptor()
+	// commitment.DefaultUserConfirmed holds the default value on creation for the user_confirmed field.
+	commitment.DefaultUserConfirmed = commitmentDescUserConfirmed.Default.(bool)
+	// commitmentDescID is the schema descriptor for id field.
+	commitmentDescID := commitmentMixinFields0[0].Descriptor()
+	// commitment.DefaultID holds the default value on creation for the id field.
+	commitment.DefaultID = commitmentDescID.Default.(func() uuid.UUID)
 	creditledgerFields := schema.CreditLedger{}.Fields()
 	_ = creditledgerFields
 	// creditledgerDescTs is the schema descriptor for ts field.
@@ -972,6 +1072,390 @@ func init() {
 	oauthpendingDescID := oauthpendingMixinFields0[0].Descriptor()
 	// oauthpending.DefaultID holds the default value on creation for the id field.
 	oauthpending.DefaultID = oauthpendingDescID.Default.(func() uuid.UUID)
+	policydecisionsnapshotMixin := schema.PolicyDecisionSnapshot{}.Mixin()
+	policydecisionsnapshotMixinFields0 := policydecisionsnapshotMixin[0].Fields()
+	_ = policydecisionsnapshotMixinFields0
+	policydecisionsnapshotFields := schema.PolicyDecisionSnapshot{}.Fields()
+	_ = policydecisionsnapshotFields
+	// policydecisionsnapshotDescCreatedAt is the schema descriptor for created_at field.
+	policydecisionsnapshotDescCreatedAt := policydecisionsnapshotMixinFields0[1].Descriptor()
+	// policydecisionsnapshot.DefaultCreatedAt holds the default value on creation for the created_at field.
+	policydecisionsnapshot.DefaultCreatedAt = policydecisionsnapshotDescCreatedAt.Default.(func() time.Time)
+	// policydecisionsnapshotDescUpdatedAt is the schema descriptor for updated_at field.
+	policydecisionsnapshotDescUpdatedAt := policydecisionsnapshotMixinFields0[2].Descriptor()
+	// policydecisionsnapshot.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	policydecisionsnapshot.DefaultUpdatedAt = policydecisionsnapshotDescUpdatedAt.Default.(func() time.Time)
+	// policydecisionsnapshot.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	policydecisionsnapshot.UpdateDefaultUpdatedAt = policydecisionsnapshotDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// policydecisionsnapshotDescActionRevision is the schema descriptor for action_revision field.
+	policydecisionsnapshotDescActionRevision := policydecisionsnapshotFields[0].Descriptor()
+	// policydecisionsnapshot.ActionRevisionValidator is a validator for the "action_revision" field. It is called by the builders before save.
+	policydecisionsnapshot.ActionRevisionValidator = policydecisionsnapshotDescActionRevision.Validators[0].(func(int) error)
+	// policydecisionsnapshotDescRevisionHash is the schema descriptor for revision_hash field.
+	policydecisionsnapshotDescRevisionHash := policydecisionsnapshotFields[1].Descriptor()
+	// policydecisionsnapshot.RevisionHashValidator is a validator for the "revision_hash" field. It is called by the builders before save.
+	policydecisionsnapshot.RevisionHashValidator = policydecisionsnapshotDescRevisionHash.Validators[0].(func(string) error)
+	// policydecisionsnapshotDescStatus is the schema descriptor for status field.
+	policydecisionsnapshotDescStatus := policydecisionsnapshotFields[2].Descriptor()
+	// policydecisionsnapshot.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	policydecisionsnapshot.StatusValidator = policydecisionsnapshotDescStatus.Validators[0].(func(string) error)
+	// policydecisionsnapshotDescVerificationJSON is the schema descriptor for verification_json field.
+	policydecisionsnapshotDescVerificationJSON := policydecisionsnapshotFields[4].Descriptor()
+	// policydecisionsnapshot.VerificationJSONValidator is a validator for the "verification_json" field. It is called by the builders before save.
+	policydecisionsnapshot.VerificationJSONValidator = policydecisionsnapshotDescVerificationJSON.Validators[0].(func(string) error)
+	// policydecisionsnapshotDescSuppressionJSON is the schema descriptor for suppression_json field.
+	policydecisionsnapshotDescSuppressionJSON := policydecisionsnapshotFields[5].Descriptor()
+	// policydecisionsnapshot.SuppressionJSONValidator is a validator for the "suppression_json" field. It is called by the builders before save.
+	policydecisionsnapshot.SuppressionJSONValidator = policydecisionsnapshotDescSuppressionJSON.Validators[0].(func(string) error)
+	// policydecisionsnapshotDescResearchJSON is the schema descriptor for research_json field.
+	policydecisionsnapshotDescResearchJSON := policydecisionsnapshotFields[6].Descriptor()
+	// policydecisionsnapshot.ResearchJSONValidator is a validator for the "research_json" field. It is called by the builders before save.
+	policydecisionsnapshot.ResearchJSONValidator = policydecisionsnapshotDescResearchJSON.Validators[0].(func(string) error)
+	// policydecisionsnapshotDescCrmJSON is the schema descriptor for crm_json field.
+	policydecisionsnapshotDescCrmJSON := policydecisionsnapshotFields[7].Descriptor()
+	// policydecisionsnapshot.CrmJSONValidator is a validator for the "crm_json" field. It is called by the builders before save.
+	policydecisionsnapshot.CrmJSONValidator = policydecisionsnapshotDescCrmJSON.Validators[0].(func(string) error)
+	// policydecisionsnapshotDescReasonCodes is the schema descriptor for reason_codes field.
+	policydecisionsnapshotDescReasonCodes := policydecisionsnapshotFields[8].Descriptor()
+	// policydecisionsnapshot.DefaultReasonCodes holds the default value on creation for the reason_codes field.
+	policydecisionsnapshot.DefaultReasonCodes = policydecisionsnapshotDescReasonCodes.Default.([]string)
+	// policydecisionsnapshotDescEvidenceRefs is the schema descriptor for evidence_refs field.
+	policydecisionsnapshotDescEvidenceRefs := policydecisionsnapshotFields[9].Descriptor()
+	// policydecisionsnapshot.DefaultEvidenceRefs holds the default value on creation for the evidence_refs field.
+	policydecisionsnapshot.DefaultEvidenceRefs = policydecisionsnapshotDescEvidenceRefs.Default.([]string)
+	// policydecisionsnapshotDescResponseHash is the schema descriptor for response_hash field.
+	policydecisionsnapshotDescResponseHash := policydecisionsnapshotFields[12].Descriptor()
+	// policydecisionsnapshot.ResponseHashValidator is a validator for the "response_hash" field. It is called by the builders before save.
+	policydecisionsnapshot.ResponseHashValidator = policydecisionsnapshotDescResponseHash.Validators[0].(func(string) error)
+	// policydecisionsnapshotDescID is the schema descriptor for id field.
+	policydecisionsnapshotDescID := policydecisionsnapshotMixinFields0[0].Descriptor()
+	// policydecisionsnapshot.DefaultID holds the default value on creation for the id field.
+	policydecisionsnapshot.DefaultID = policydecisionsnapshotDescID.Default.(func() uuid.UUID)
+	relationshipMixin := schema.Relationship{}.Mixin()
+	relationshipMixinFields0 := relationshipMixin[0].Fields()
+	_ = relationshipMixinFields0
+	relationshipFields := schema.Relationship{}.Fields()
+	_ = relationshipFields
+	// relationshipDescCreatedAt is the schema descriptor for created_at field.
+	relationshipDescCreatedAt := relationshipMixinFields0[1].Descriptor()
+	// relationship.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relationship.DefaultCreatedAt = relationshipDescCreatedAt.Default.(func() time.Time)
+	// relationshipDescUpdatedAt is the schema descriptor for updated_at field.
+	relationshipDescUpdatedAt := relationshipMixinFields0[2].Descriptor()
+	// relationship.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relationship.DefaultUpdatedAt = relationshipDescUpdatedAt.Default.(func() time.Time)
+	// relationship.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relationship.UpdateDefaultUpdatedAt = relationshipDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relationshipDescKind is the schema descriptor for kind field.
+	relationshipDescKind := relationshipFields[0].Descriptor()
+	// relationship.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	relationship.KindValidator = relationshipDescKind.Validators[0].(func(string) error)
+	// relationshipDescDisplayName is the schema descriptor for display_name field.
+	relationshipDescDisplayName := relationshipFields[1].Descriptor()
+	// relationship.DisplayNameValidator is a validator for the "display_name" field. It is called by the builders before save.
+	relationship.DisplayNameValidator = relationshipDescDisplayName.Validators[0].(func(string) error)
+	// relationshipDescResourceRefs is the schema descriptor for resource_refs field.
+	relationshipDescResourceRefs := relationshipFields[6].Descriptor()
+	// relationship.DefaultResourceRefs holds the default value on creation for the resource_refs field.
+	relationship.DefaultResourceRefs = relationshipDescResourceRefs.Default.([]string)
+	// relationshipDescStatus is the schema descriptor for status field.
+	relationshipDescStatus := relationshipFields[10].Descriptor()
+	// relationship.DefaultStatus holds the default value on creation for the status field.
+	relationship.DefaultStatus = relationshipDescStatus.Default.(string)
+	// relationship.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	relationship.StatusValidator = relationshipDescStatus.Validators[0].(func(string) error)
+	// relationshipDescID is the schema descriptor for id field.
+	relationshipDescID := relationshipMixinFields0[0].Descriptor()
+	// relationship.DefaultID holds the default value on creation for the id field.
+	relationship.DefaultID = relationshipDescID.Default.(func() uuid.UUID)
+	revenueactionMixin := schema.RevenueAction{}.Mixin()
+	revenueactionMixinFields0 := revenueactionMixin[0].Fields()
+	_ = revenueactionMixinFields0
+	revenueactionFields := schema.RevenueAction{}.Fields()
+	_ = revenueactionFields
+	// revenueactionDescCreatedAt is the schema descriptor for created_at field.
+	revenueactionDescCreatedAt := revenueactionMixinFields0[1].Descriptor()
+	// revenueaction.DefaultCreatedAt holds the default value on creation for the created_at field.
+	revenueaction.DefaultCreatedAt = revenueactionDescCreatedAt.Default.(func() time.Time)
+	// revenueactionDescUpdatedAt is the schema descriptor for updated_at field.
+	revenueactionDescUpdatedAt := revenueactionMixinFields0[2].Descriptor()
+	// revenueaction.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	revenueaction.DefaultUpdatedAt = revenueactionDescUpdatedAt.Default.(func() time.Time)
+	// revenueaction.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	revenueaction.UpdateDefaultUpdatedAt = revenueactionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// revenueactionDescActionType is the schema descriptor for action_type field.
+	revenueactionDescActionType := revenueactionFields[0].Descriptor()
+	// revenueaction.ActionTypeValidator is a validator for the "action_type" field. It is called by the builders before save.
+	revenueaction.ActionTypeValidator = revenueactionDescActionType.Validators[0].(func(string) error)
+	// revenueactionDescChannel is the schema descriptor for channel field.
+	revenueactionDescChannel := revenueactionFields[1].Descriptor()
+	// revenueaction.ChannelValidator is a validator for the "channel" field. It is called by the builders before save.
+	revenueaction.ChannelValidator = revenueactionDescChannel.Validators[0].(func(string) error)
+	// revenueactionDescDetector is the schema descriptor for detector field.
+	revenueactionDescDetector := revenueactionFields[2].Descriptor()
+	// revenueaction.DetectorValidator is a validator for the "detector" field. It is called by the builders before save.
+	revenueaction.DetectorValidator = revenueactionDescDetector.Validators[0].(func(string) error)
+	// revenueactionDescDedupeKey is the schema descriptor for dedupe_key field.
+	revenueactionDescDedupeKey := revenueactionFields[3].Descriptor()
+	// revenueaction.DedupeKeyValidator is a validator for the "dedupe_key" field. It is called by the builders before save.
+	revenueaction.DedupeKeyValidator = revenueactionDescDedupeKey.Validators[0].(func(string) error)
+	// revenueactionDescRevision is the schema descriptor for revision field.
+	revenueactionDescRevision := revenueactionFields[4].Descriptor()
+	// revenueaction.DefaultRevision holds the default value on creation for the revision field.
+	revenueaction.DefaultRevision = revenueactionDescRevision.Default.(int)
+	// revenueaction.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
+	revenueaction.RevisionValidator = revenueactionDescRevision.Validators[0].(func(int) error)
+	// revenueactionDescRevisionHash is the schema descriptor for revision_hash field.
+	revenueactionDescRevisionHash := revenueactionFields[5].Descriptor()
+	// revenueaction.RevisionHashValidator is a validator for the "revision_hash" field. It is called by the builders before save.
+	revenueaction.RevisionHashValidator = revenueactionDescRevisionHash.Validators[0].(func(string) error)
+	// revenueactionDescReason is the schema descriptor for reason field.
+	revenueactionDescReason := revenueactionFields[6].Descriptor()
+	// revenueaction.ReasonValidator is a validator for the "reason" field. It is called by the builders before save.
+	revenueaction.ReasonValidator = revenueactionDescReason.Validators[0].(func(string) error)
+	// revenueactionDescPriorityScore is the schema descriptor for priority_score field.
+	revenueactionDescPriorityScore := revenueactionFields[12].Descriptor()
+	// revenueaction.PriorityScoreValidator is a validator for the "priority_score" field. It is called by the builders before save.
+	revenueaction.PriorityScoreValidator = func() func(int) error {
+		validators := revenueactionDescPriorityScore.Validators
+		fns := [...]func(int) error{
+			validators[0].(func(int) error),
+			validators[1].(func(int) error),
+		}
+		return func(priority_score int) error {
+			for _, fn := range fns {
+				if err := fn(priority_score); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// revenueactionDescPriorityComponentsJSON is the schema descriptor for priority_components_json field.
+	revenueactionDescPriorityComponentsJSON := revenueactionFields[13].Descriptor()
+	// revenueaction.PriorityComponentsJSONValidator is a validator for the "priority_components_json" field. It is called by the builders before save.
+	revenueaction.PriorityComponentsJSONValidator = revenueactionDescPriorityComponentsJSON.Validators[0].(func(string) error)
+	// revenueactionDescQueueStatus is the schema descriptor for queue_status field.
+	revenueactionDescQueueStatus := revenueactionFields[14].Descriptor()
+	// revenueaction.DefaultQueueStatus holds the default value on creation for the queue_status field.
+	revenueaction.DefaultQueueStatus = revenueactionDescQueueStatus.Default.(string)
+	// revenueaction.QueueStatusValidator is a validator for the "queue_status" field. It is called by the builders before save.
+	revenueaction.QueueStatusValidator = revenueactionDescQueueStatus.Validators[0].(func(string) error)
+	// revenueactionDescPolicyStatus is the schema descriptor for policy_status field.
+	revenueactionDescPolicyStatus := revenueactionFields[15].Descriptor()
+	// revenueaction.DefaultPolicyStatus holds the default value on creation for the policy_status field.
+	revenueaction.DefaultPolicyStatus = revenueactionDescPolicyStatus.Default.(string)
+	// revenueaction.PolicyStatusValidator is a validator for the "policy_status" field. It is called by the builders before save.
+	revenueaction.PolicyStatusValidator = revenueactionDescPolicyStatus.Validators[0].(func(string) error)
+	// revenueactionDescApprovalStatus is the schema descriptor for approval_status field.
+	revenueactionDescApprovalStatus := revenueactionFields[16].Descriptor()
+	// revenueaction.DefaultApprovalStatus holds the default value on creation for the approval_status field.
+	revenueaction.DefaultApprovalStatus = revenueactionDescApprovalStatus.Default.(string)
+	// revenueaction.ApprovalStatusValidator is a validator for the "approval_status" field. It is called by the builders before save.
+	revenueaction.ApprovalStatusValidator = revenueactionDescApprovalStatus.Validators[0].(func(string) error)
+	// revenueactionDescExecutionStatus is the schema descriptor for execution_status field.
+	revenueactionDescExecutionStatus := revenueactionFields[17].Descriptor()
+	// revenueaction.DefaultExecutionStatus holds the default value on creation for the execution_status field.
+	revenueaction.DefaultExecutionStatus = revenueactionDescExecutionStatus.Default.(string)
+	// revenueaction.ExecutionStatusValidator is a validator for the "execution_status" field. It is called by the builders before save.
+	revenueaction.ExecutionStatusValidator = revenueactionDescExecutionStatus.Validators[0].(func(string) error)
+	// revenueactionDescExecutionOwner is the schema descriptor for execution_owner field.
+	revenueactionDescExecutionOwner := revenueactionFields[18].Descriptor()
+	// revenueaction.DefaultExecutionOwner holds the default value on creation for the execution_owner field.
+	revenueaction.DefaultExecutionOwner = revenueactionDescExecutionOwner.Default.(string)
+	// revenueaction.ExecutionOwnerValidator is a validator for the "execution_owner" field. It is called by the builders before save.
+	revenueaction.ExecutionOwnerValidator = revenueactionDescExecutionOwner.Validators[0].(func(string) error)
+	// revenueactionDescExecutionMode is the schema descriptor for execution_mode field.
+	revenueactionDescExecutionMode := revenueactionFields[24].Descriptor()
+	// revenueaction.DefaultExecutionMode holds the default value on creation for the execution_mode field.
+	revenueaction.DefaultExecutionMode = revenueactionDescExecutionMode.Default.(string)
+	// revenueaction.ExecutionModeValidator is a validator for the "execution_mode" field. It is called by the builders before save.
+	revenueaction.ExecutionModeValidator = revenueactionDescExecutionMode.Validators[0].(func(string) error)
+	// revenueactionDescID is the schema descriptor for id field.
+	revenueactionDescID := revenueactionMixinFields0[0].Descriptor()
+	// revenueaction.DefaultID holds the default value on creation for the id field.
+	revenueaction.DefaultID = revenueactionDescID.Default.(func() uuid.UUID)
+	revenueactionrevisionMixin := schema.RevenueActionRevision{}.Mixin()
+	revenueactionrevisionMixinFields0 := revenueactionrevisionMixin[0].Fields()
+	_ = revenueactionrevisionMixinFields0
+	revenueactionrevisionFields := schema.RevenueActionRevision{}.Fields()
+	_ = revenueactionrevisionFields
+	// revenueactionrevisionDescCreatedAt is the schema descriptor for created_at field.
+	revenueactionrevisionDescCreatedAt := revenueactionrevisionMixinFields0[1].Descriptor()
+	// revenueactionrevision.DefaultCreatedAt holds the default value on creation for the created_at field.
+	revenueactionrevision.DefaultCreatedAt = revenueactionrevisionDescCreatedAt.Default.(func() time.Time)
+	// revenueactionrevisionDescUpdatedAt is the schema descriptor for updated_at field.
+	revenueactionrevisionDescUpdatedAt := revenueactionrevisionMixinFields0[2].Descriptor()
+	// revenueactionrevision.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	revenueactionrevision.DefaultUpdatedAt = revenueactionrevisionDescUpdatedAt.Default.(func() time.Time)
+	// revenueactionrevision.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	revenueactionrevision.UpdateDefaultUpdatedAt = revenueactionrevisionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// revenueactionrevisionDescRevision is the schema descriptor for revision field.
+	revenueactionrevisionDescRevision := revenueactionrevisionFields[0].Descriptor()
+	// revenueactionrevision.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
+	revenueactionrevision.RevisionValidator = revenueactionrevisionDescRevision.Validators[0].(func(int) error)
+	// revenueactionrevisionDescRevisionHash is the schema descriptor for revision_hash field.
+	revenueactionrevisionDescRevisionHash := revenueactionrevisionFields[1].Descriptor()
+	// revenueactionrevision.RevisionHashValidator is a validator for the "revision_hash" field. It is called by the builders before save.
+	revenueactionrevision.RevisionHashValidator = revenueactionrevisionDescRevisionHash.Validators[0].(func(string) error)
+	// revenueactionrevisionDescActionType is the schema descriptor for action_type field.
+	revenueactionrevisionDescActionType := revenueactionrevisionFields[2].Descriptor()
+	// revenueactionrevision.ActionTypeValidator is a validator for the "action_type" field. It is called by the builders before save.
+	revenueactionrevision.ActionTypeValidator = revenueactionrevisionDescActionType.Validators[0].(func(string) error)
+	// revenueactionrevisionDescChannel is the schema descriptor for channel field.
+	revenueactionrevisionDescChannel := revenueactionrevisionFields[3].Descriptor()
+	// revenueactionrevision.ChannelValidator is a validator for the "channel" field. It is called by the builders before save.
+	revenueactionrevision.ChannelValidator = revenueactionrevisionDescChannel.Validators[0].(func(string) error)
+	// revenueactionrevisionDescID is the schema descriptor for id field.
+	revenueactionrevisionDescID := revenueactionrevisionMixinFields0[0].Descriptor()
+	// revenueactionrevision.DefaultID holds the default value on creation for the id field.
+	revenueactionrevision.DefaultID = revenueactionrevisionDescID.Default.(func() uuid.UUID)
+	revenueevidenceMixin := schema.RevenueEvidence{}.Mixin()
+	revenueevidenceMixinFields0 := revenueevidenceMixin[0].Fields()
+	_ = revenueevidenceMixinFields0
+	revenueevidenceFields := schema.RevenueEvidence{}.Fields()
+	_ = revenueevidenceFields
+	// revenueevidenceDescCreatedAt is the schema descriptor for created_at field.
+	revenueevidenceDescCreatedAt := revenueevidenceMixinFields0[1].Descriptor()
+	// revenueevidence.DefaultCreatedAt holds the default value on creation for the created_at field.
+	revenueevidence.DefaultCreatedAt = revenueevidenceDescCreatedAt.Default.(func() time.Time)
+	// revenueevidenceDescUpdatedAt is the schema descriptor for updated_at field.
+	revenueevidenceDescUpdatedAt := revenueevidenceMixinFields0[2].Descriptor()
+	// revenueevidence.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	revenueevidence.DefaultUpdatedAt = revenueevidenceDescUpdatedAt.Default.(func() time.Time)
+	// revenueevidence.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	revenueevidence.UpdateDefaultUpdatedAt = revenueevidenceDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// revenueevidenceDescSource is the schema descriptor for source field.
+	revenueevidenceDescSource := revenueevidenceFields[0].Descriptor()
+	// revenueevidence.SourceValidator is a validator for the "source" field. It is called by the builders before save.
+	revenueevidence.SourceValidator = revenueevidenceDescSource.Validators[0].(func(string) error)
+	// revenueevidenceDescSourceRecordID is the schema descriptor for source_record_id field.
+	revenueevidenceDescSourceRecordID := revenueevidenceFields[2].Descriptor()
+	// revenueevidence.SourceRecordIDValidator is a validator for the "source_record_id" field. It is called by the builders before save.
+	revenueevidence.SourceRecordIDValidator = revenueevidenceDescSourceRecordID.Validators[0].(func(string) error)
+	// revenueevidenceDescContentHash is the schema descriptor for content_hash field.
+	revenueevidenceDescContentHash := revenueevidenceFields[4].Descriptor()
+	// revenueevidence.ContentHashValidator is a validator for the "content_hash" field. It is called by the builders before save.
+	revenueevidence.ContentHashValidator = revenueevidenceDescContentHash.Validators[0].(func(string) error)
+	// revenueevidenceDescExternalEvidenceRefs is the schema descriptor for external_evidence_refs field.
+	revenueevidenceDescExternalEvidenceRefs := revenueevidenceFields[9].Descriptor()
+	// revenueevidence.DefaultExternalEvidenceRefs holds the default value on creation for the external_evidence_refs field.
+	revenueevidence.DefaultExternalEvidenceRefs = revenueevidenceDescExternalEvidenceRefs.Default.([]string)
+	// revenueevidenceDescID is the schema descriptor for id field.
+	revenueevidenceDescID := revenueevidenceMixinFields0[0].Descriptor()
+	// revenueevidence.DefaultID holds the default value on creation for the id field.
+	revenueevidence.DefaultID = revenueevidenceDescID.Default.(func() uuid.UUID)
+	revenueoutboxeventMixin := schema.RevenueOutboxEvent{}.Mixin()
+	revenueoutboxeventMixinFields0 := revenueoutboxeventMixin[0].Fields()
+	_ = revenueoutboxeventMixinFields0
+	revenueoutboxeventFields := schema.RevenueOutboxEvent{}.Fields()
+	_ = revenueoutboxeventFields
+	// revenueoutboxeventDescCreatedAt is the schema descriptor for created_at field.
+	revenueoutboxeventDescCreatedAt := revenueoutboxeventMixinFields0[1].Descriptor()
+	// revenueoutboxevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	revenueoutboxevent.DefaultCreatedAt = revenueoutboxeventDescCreatedAt.Default.(func() time.Time)
+	// revenueoutboxeventDescUpdatedAt is the schema descriptor for updated_at field.
+	revenueoutboxeventDescUpdatedAt := revenueoutboxeventMixinFields0[2].Descriptor()
+	// revenueoutboxevent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	revenueoutboxevent.DefaultUpdatedAt = revenueoutboxeventDescUpdatedAt.Default.(func() time.Time)
+	// revenueoutboxevent.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	revenueoutboxevent.UpdateDefaultUpdatedAt = revenueoutboxeventDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// revenueoutboxeventDescEventType is the schema descriptor for event_type field.
+	revenueoutboxeventDescEventType := revenueoutboxeventFields[0].Descriptor()
+	// revenueoutboxevent.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	revenueoutboxevent.EventTypeValidator = revenueoutboxeventDescEventType.Validators[0].(func(string) error)
+	// revenueoutboxeventDescSchemaVersion is the schema descriptor for schema_version field.
+	revenueoutboxeventDescSchemaVersion := revenueoutboxeventFields[1].Descriptor()
+	// revenueoutboxevent.DefaultSchemaVersion holds the default value on creation for the schema_version field.
+	revenueoutboxevent.DefaultSchemaVersion = revenueoutboxeventDescSchemaVersion.Default.(int)
+	// revenueoutboxevent.SchemaVersionValidator is a validator for the "schema_version" field. It is called by the builders before save.
+	revenueoutboxevent.SchemaVersionValidator = revenueoutboxeventDescSchemaVersion.Validators[0].(func(int) error)
+	// revenueoutboxeventDescIdempotencyKey is the schema descriptor for idempotency_key field.
+	revenueoutboxeventDescIdempotencyKey := revenueoutboxeventFields[5].Descriptor()
+	// revenueoutboxevent.IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
+	revenueoutboxevent.IdempotencyKeyValidator = revenueoutboxeventDescIdempotencyKey.Validators[0].(func(string) error)
+	// revenueoutboxeventDescPayloadJSON is the schema descriptor for payload_json field.
+	revenueoutboxeventDescPayloadJSON := revenueoutboxeventFields[6].Descriptor()
+	// revenueoutboxevent.PayloadJSONValidator is a validator for the "payload_json" field. It is called by the builders before save.
+	revenueoutboxevent.PayloadJSONValidator = revenueoutboxeventDescPayloadJSON.Validators[0].(func(string) error)
+	// revenueoutboxeventDescDeliveryStatus is the schema descriptor for delivery_status field.
+	revenueoutboxeventDescDeliveryStatus := revenueoutboxeventFields[8].Descriptor()
+	// revenueoutboxevent.DefaultDeliveryStatus holds the default value on creation for the delivery_status field.
+	revenueoutboxevent.DefaultDeliveryStatus = revenueoutboxeventDescDeliveryStatus.Default.(string)
+	// revenueoutboxevent.DeliveryStatusValidator is a validator for the "delivery_status" field. It is called by the builders before save.
+	revenueoutboxevent.DeliveryStatusValidator = revenueoutboxeventDescDeliveryStatus.Validators[0].(func(string) error)
+	// revenueoutboxeventDescAttempts is the schema descriptor for attempts field.
+	revenueoutboxeventDescAttempts := revenueoutboxeventFields[9].Descriptor()
+	// revenueoutboxevent.DefaultAttempts holds the default value on creation for the attempts field.
+	revenueoutboxevent.DefaultAttempts = revenueoutboxeventDescAttempts.Default.(int)
+	// revenueoutboxevent.AttemptsValidator is a validator for the "attempts" field. It is called by the builders before save.
+	revenueoutboxevent.AttemptsValidator = revenueoutboxeventDescAttempts.Validators[0].(func(int) error)
+	// revenueoutboxeventDescID is the schema descriptor for id field.
+	revenueoutboxeventDescID := revenueoutboxeventMixinFields0[0].Descriptor()
+	// revenueoutboxevent.DefaultID holds the default value on creation for the id field.
+	revenueoutboxevent.DefaultID = revenueoutboxeventDescID.Default.(func() uuid.UUID)
+	revenueworkspaceMixin := schema.RevenueWorkspace{}.Mixin()
+	revenueworkspaceMixinFields0 := revenueworkspaceMixin[0].Fields()
+	_ = revenueworkspaceMixinFields0
+	revenueworkspaceFields := schema.RevenueWorkspace{}.Fields()
+	_ = revenueworkspaceFields
+	// revenueworkspaceDescCreatedAt is the schema descriptor for created_at field.
+	revenueworkspaceDescCreatedAt := revenueworkspaceMixinFields0[1].Descriptor()
+	// revenueworkspace.DefaultCreatedAt holds the default value on creation for the created_at field.
+	revenueworkspace.DefaultCreatedAt = revenueworkspaceDescCreatedAt.Default.(func() time.Time)
+	// revenueworkspaceDescUpdatedAt is the schema descriptor for updated_at field.
+	revenueworkspaceDescUpdatedAt := revenueworkspaceMixinFields0[2].Descriptor()
+	// revenueworkspace.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	revenueworkspace.DefaultUpdatedAt = revenueworkspaceDescUpdatedAt.Default.(func() time.Time)
+	// revenueworkspace.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	revenueworkspace.UpdateDefaultUpdatedAt = revenueworkspaceDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// revenueworkspaceDescMode is the schema descriptor for mode field.
+	revenueworkspaceDescMode := revenueworkspaceFields[3].Descriptor()
+	// revenueworkspace.DefaultMode holds the default value on creation for the mode field.
+	revenueworkspace.DefaultMode = revenueworkspaceDescMode.Default.(string)
+	// revenueworkspace.ModeValidator is a validator for the "mode" field. It is called by the builders before save.
+	revenueworkspace.ModeValidator = revenueworkspaceDescMode.Validators[0].(func(string) error)
+	// revenueworkspaceDescStatus is the schema descriptor for status field.
+	revenueworkspaceDescStatus := revenueworkspaceFields[4].Descriptor()
+	// revenueworkspace.DefaultStatus holds the default value on creation for the status field.
+	revenueworkspace.DefaultStatus = revenueworkspaceDescStatus.Default.(string)
+	// revenueworkspace.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	revenueworkspace.StatusValidator = revenueworkspaceDescStatus.Validators[0].(func(string) error)
+	// revenueworkspaceDescID is the schema descriptor for id field.
+	revenueworkspaceDescID := revenueworkspaceMixinFields0[0].Descriptor()
+	// revenueworkspace.DefaultID holds the default value on creation for the id field.
+	revenueworkspace.DefaultID = revenueworkspaceDescID.Default.(func() uuid.UUID)
+	revenueworkspacememberMixin := schema.RevenueWorkspaceMember{}.Mixin()
+	revenueworkspacememberMixinFields0 := revenueworkspacememberMixin[0].Fields()
+	_ = revenueworkspacememberMixinFields0
+	revenueworkspacememberFields := schema.RevenueWorkspaceMember{}.Fields()
+	_ = revenueworkspacememberFields
+	// revenueworkspacememberDescCreatedAt is the schema descriptor for created_at field.
+	revenueworkspacememberDescCreatedAt := revenueworkspacememberMixinFields0[1].Descriptor()
+	// revenueworkspacemember.DefaultCreatedAt holds the default value on creation for the created_at field.
+	revenueworkspacemember.DefaultCreatedAt = revenueworkspacememberDescCreatedAt.Default.(func() time.Time)
+	// revenueworkspacememberDescUpdatedAt is the schema descriptor for updated_at field.
+	revenueworkspacememberDescUpdatedAt := revenueworkspacememberMixinFields0[2].Descriptor()
+	// revenueworkspacemember.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	revenueworkspacemember.DefaultUpdatedAt = revenueworkspacememberDescUpdatedAt.Default.(func() time.Time)
+	// revenueworkspacemember.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	revenueworkspacemember.UpdateDefaultUpdatedAt = revenueworkspacememberDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// revenueworkspacememberDescRole is the schema descriptor for role field.
+	revenueworkspacememberDescRole := revenueworkspacememberFields[0].Descriptor()
+	// revenueworkspacemember.DefaultRole holds the default value on creation for the role field.
+	revenueworkspacemember.DefaultRole = revenueworkspacememberDescRole.Default.(string)
+	// revenueworkspacemember.RoleValidator is a validator for the "role" field. It is called by the builders before save.
+	revenueworkspacemember.RoleValidator = revenueworkspacememberDescRole.Validators[0].(func(string) error)
+	// revenueworkspacememberDescStatus is the schema descriptor for status field.
+	revenueworkspacememberDescStatus := revenueworkspacememberFields[2].Descriptor()
+	// revenueworkspacemember.DefaultStatus holds the default value on creation for the status field.
+	revenueworkspacemember.DefaultStatus = revenueworkspacememberDescStatus.Default.(string)
+	// revenueworkspacemember.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	revenueworkspacemember.StatusValidator = revenueworkspacememberDescStatus.Validators[0].(func(string) error)
+	// revenueworkspacememberDescID is the schema descriptor for id field.
+	revenueworkspacememberDescID := revenueworkspacememberMixinFields0[0].Descriptor()
+	// revenueworkspacemember.DefaultID holds the default value on creation for the id field.
+	revenueworkspacemember.DefaultID = revenueworkspacememberDescID.Default.(func() uuid.UUID)
 	subscriptionMixin := schema.Subscription{}.Mixin()
 	subscriptionMixinFields0 := subscriptionMixin[0].Fields()
 	_ = subscriptionMixinFields0

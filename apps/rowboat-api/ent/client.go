@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -31,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -41,6 +43,14 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -52,6 +62,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// ActionOutcome is the client for interacting with the ActionOutcome builders.
+	ActionOutcome *ActionOutcomeClient
 	// AgentApproval is the client for interacting with the AgentApproval builders.
 	AgentApproval *AgentApprovalClient
 	// AgentDefinition is the client for interacting with the AgentDefinition builders.
@@ -80,6 +92,8 @@ type Client struct {
 	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
 	// CloudEvent is the client for interacting with the CloudEvent builders.
 	CloudEvent *CloudEventClient
+	// Commitment is the client for interacting with the Commitment builders.
+	Commitment *CommitmentClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
 	// GoogleWatch is the client for interacting with the GoogleWatch builders.
@@ -100,6 +114,22 @@ type Client struct {
 	OAuthConnectionHistory *OAuthConnectionHistoryClient
 	// OAuthPending is the client for interacting with the OAuthPending builders.
 	OAuthPending *OAuthPendingClient
+	// PolicyDecisionSnapshot is the client for interacting with the PolicyDecisionSnapshot builders.
+	PolicyDecisionSnapshot *PolicyDecisionSnapshotClient
+	// Relationship is the client for interacting with the Relationship builders.
+	Relationship *RelationshipClient
+	// RevenueAction is the client for interacting with the RevenueAction builders.
+	RevenueAction *RevenueActionClient
+	// RevenueActionRevision is the client for interacting with the RevenueActionRevision builders.
+	RevenueActionRevision *RevenueActionRevisionClient
+	// RevenueEvidence is the client for interacting with the RevenueEvidence builders.
+	RevenueEvidence *RevenueEvidenceClient
+	// RevenueOutboxEvent is the client for interacting with the RevenueOutboxEvent builders.
+	RevenueOutboxEvent *RevenueOutboxEventClient
+	// RevenueWorkspace is the client for interacting with the RevenueWorkspace builders.
+	RevenueWorkspace *RevenueWorkspaceClient
+	// RevenueWorkspaceMember is the client for interacting with the RevenueWorkspaceMember builders.
+	RevenueWorkspaceMember *RevenueWorkspaceMemberClient
 	// Subscription is the client for interacting with the Subscription builders.
 	Subscription *SubscriptionClient
 	// SubscriptionHistory is the client for interacting with the SubscriptionHistory builders.
@@ -124,6 +154,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.ActionOutcome = NewActionOutcomeClient(c.config)
 	c.AgentApproval = NewAgentApprovalClient(c.config)
 	c.AgentDefinition = NewAgentDefinitionClient(c.config)
 	c.AgentDefinitionHistory = NewAgentDefinitionHistoryClient(c.config)
@@ -138,6 +169,7 @@ func (c *Client) init() {
 	c.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(c.config)
 	c.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(c.config)
 	c.CloudEvent = NewCloudEventClient(c.config)
+	c.Commitment = NewCommitmentClient(c.config)
 	c.CreditLedger = NewCreditLedgerClient(c.config)
 	c.GoogleWatch = NewGoogleWatchClient(c.config)
 	c.LLMUsage = NewLLMUsageClient(c.config)
@@ -148,6 +180,14 @@ func (c *Client) init() {
 	c.OAuthConnection = NewOAuthConnectionClient(c.config)
 	c.OAuthConnectionHistory = NewOAuthConnectionHistoryClient(c.config)
 	c.OAuthPending = NewOAuthPendingClient(c.config)
+	c.PolicyDecisionSnapshot = NewPolicyDecisionSnapshotClient(c.config)
+	c.Relationship = NewRelationshipClient(c.config)
+	c.RevenueAction = NewRevenueActionClient(c.config)
+	c.RevenueActionRevision = NewRevenueActionRevisionClient(c.config)
+	c.RevenueEvidence = NewRevenueEvidenceClient(c.config)
+	c.RevenueOutboxEvent = NewRevenueOutboxEventClient(c.config)
+	c.RevenueWorkspace = NewRevenueWorkspaceClient(c.config)
+	c.RevenueWorkspaceMember = NewRevenueWorkspaceMemberClient(c.config)
 	c.Subscription = NewSubscriptionClient(c.config)
 	c.SubscriptionHistory = NewSubscriptionHistoryClient(c.config)
 	c.User = NewUserClient(c.config)
@@ -282,6 +322,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                         ctx,
 		config:                      cfg,
+		ActionOutcome:               NewActionOutcomeClient(cfg),
 		AgentApproval:               NewAgentApprovalClient(cfg),
 		AgentDefinition:             NewAgentDefinitionClient(cfg),
 		AgentDefinitionHistory:      NewAgentDefinitionHistoryClient(cfg),
@@ -296,6 +337,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BackgroundTaskRunEvent:      NewBackgroundTaskRunEventClient(cfg),
 		BackgroundTaskScheduleState: NewBackgroundTaskScheduleStateClient(cfg),
 		CloudEvent:                  NewCloudEventClient(cfg),
+		Commitment:                  NewCommitmentClient(cfg),
 		CreditLedger:                NewCreditLedgerClient(cfg),
 		GoogleWatch:                 NewGoogleWatchClient(cfg),
 		LLMUsage:                    NewLLMUsageClient(cfg),
@@ -306,6 +348,14 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		OAuthConnection:             NewOAuthConnectionClient(cfg),
 		OAuthConnectionHistory:      NewOAuthConnectionHistoryClient(cfg),
 		OAuthPending:                NewOAuthPendingClient(cfg),
+		PolicyDecisionSnapshot:      NewPolicyDecisionSnapshotClient(cfg),
+		Relationship:                NewRelationshipClient(cfg),
+		RevenueAction:               NewRevenueActionClient(cfg),
+		RevenueActionRevision:       NewRevenueActionRevisionClient(cfg),
+		RevenueEvidence:             NewRevenueEvidenceClient(cfg),
+		RevenueOutboxEvent:          NewRevenueOutboxEventClient(cfg),
+		RevenueWorkspace:            NewRevenueWorkspaceClient(cfg),
+		RevenueWorkspaceMember:      NewRevenueWorkspaceMemberClient(cfg),
 		Subscription:                NewSubscriptionClient(cfg),
 		SubscriptionHistory:         NewSubscriptionHistoryClient(cfg),
 		User:                        NewUserClient(cfg),
@@ -329,6 +379,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                         ctx,
 		config:                      cfg,
+		ActionOutcome:               NewActionOutcomeClient(cfg),
 		AgentApproval:               NewAgentApprovalClient(cfg),
 		AgentDefinition:             NewAgentDefinitionClient(cfg),
 		AgentDefinitionHistory:      NewAgentDefinitionHistoryClient(cfg),
@@ -343,6 +394,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BackgroundTaskRunEvent:      NewBackgroundTaskRunEventClient(cfg),
 		BackgroundTaskScheduleState: NewBackgroundTaskScheduleStateClient(cfg),
 		CloudEvent:                  NewCloudEventClient(cfg),
+		Commitment:                  NewCommitmentClient(cfg),
 		CreditLedger:                NewCreditLedgerClient(cfg),
 		GoogleWatch:                 NewGoogleWatchClient(cfg),
 		LLMUsage:                    NewLLMUsageClient(cfg),
@@ -353,6 +405,14 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		OAuthConnection:             NewOAuthConnectionClient(cfg),
 		OAuthConnectionHistory:      NewOAuthConnectionHistoryClient(cfg),
 		OAuthPending:                NewOAuthPendingClient(cfg),
+		PolicyDecisionSnapshot:      NewPolicyDecisionSnapshotClient(cfg),
+		Relationship:                NewRelationshipClient(cfg),
+		RevenueAction:               NewRevenueActionClient(cfg),
+		RevenueActionRevision:       NewRevenueActionRevisionClient(cfg),
+		RevenueEvidence:             NewRevenueEvidenceClient(cfg),
+		RevenueOutboxEvent:          NewRevenueOutboxEventClient(cfg),
+		RevenueWorkspace:            NewRevenueWorkspaceClient(cfg),
+		RevenueWorkspaceMember:      NewRevenueWorkspaceMemberClient(cfg),
 		Subscription:                NewSubscriptionClient(cfg),
 		SubscriptionHistory:         NewSubscriptionHistoryClient(cfg),
 		User:                        NewUserClient(cfg),
@@ -363,7 +423,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		AgentApproval.
+//		ActionOutcome.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -386,13 +446,16 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.AgentApproval, c.AgentDefinition, c.AgentDefinitionHistory, c.AgentSession,
-		c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob, c.AgentTurn,
-		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
+		c.ActionOutcome, c.AgentApproval, c.AgentDefinition, c.AgentDefinitionHistory,
+		c.AgentSession, c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob,
+		c.AgentTurn, c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
-		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
-		c.MCPConnectionHistory, c.MeetingMinuteUsage, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
+		c.Commitment, c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory,
+		c.MCPConnection, c.MCPConnectionHistory, c.MeetingMinuteUsage,
+		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending,
+		c.PolicyDecisionSnapshot, c.Relationship, c.RevenueAction,
+		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueOutboxEvent,
+		c.RevenueWorkspace, c.RevenueWorkspaceMember, c.Subscription,
 		c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Use(hooks...)
@@ -403,13 +466,16 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.AgentApproval, c.AgentDefinition, c.AgentDefinitionHistory, c.AgentSession,
-		c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob, c.AgentTurn,
-		c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
+		c.ActionOutcome, c.AgentApproval, c.AgentDefinition, c.AgentDefinitionHistory,
+		c.AgentSession, c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob,
+		c.AgentTurn, c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
-		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
-		c.MCPConnectionHistory, c.MeetingMinuteUsage, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.Subscription,
+		c.Commitment, c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory,
+		c.MCPConnection, c.MCPConnectionHistory, c.MeetingMinuteUsage,
+		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending,
+		c.PolicyDecisionSnapshot, c.Relationship, c.RevenueAction,
+		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueOutboxEvent,
+		c.RevenueWorkspace, c.RevenueWorkspaceMember, c.Subscription,
 		c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Intercept(interceptors...)
@@ -419,6 +485,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *ActionOutcomeMutation:
+		return c.ActionOutcome.mutate(ctx, m)
 	case *AgentApprovalMutation:
 		return c.AgentApproval.mutate(ctx, m)
 	case *AgentDefinitionMutation:
@@ -447,6 +515,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BackgroundTaskScheduleState.mutate(ctx, m)
 	case *CloudEventMutation:
 		return c.CloudEvent.mutate(ctx, m)
+	case *CommitmentMutation:
+		return c.Commitment.mutate(ctx, m)
 	case *CreditLedgerMutation:
 		return c.CreditLedger.mutate(ctx, m)
 	case *GoogleWatchMutation:
@@ -467,6 +537,22 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.OAuthConnectionHistory.mutate(ctx, m)
 	case *OAuthPendingMutation:
 		return c.OAuthPending.mutate(ctx, m)
+	case *PolicyDecisionSnapshotMutation:
+		return c.PolicyDecisionSnapshot.mutate(ctx, m)
+	case *RelationshipMutation:
+		return c.Relationship.mutate(ctx, m)
+	case *RevenueActionMutation:
+		return c.RevenueAction.mutate(ctx, m)
+	case *RevenueActionRevisionMutation:
+		return c.RevenueActionRevision.mutate(ctx, m)
+	case *RevenueEvidenceMutation:
+		return c.RevenueEvidence.mutate(ctx, m)
+	case *RevenueOutboxEventMutation:
+		return c.RevenueOutboxEvent.mutate(ctx, m)
+	case *RevenueWorkspaceMutation:
+		return c.RevenueWorkspace.mutate(ctx, m)
+	case *RevenueWorkspaceMemberMutation:
+		return c.RevenueWorkspaceMember.mutate(ctx, m)
 	case *SubscriptionMutation:
 		return c.Subscription.mutate(ctx, m)
 	case *SubscriptionHistoryMutation:
@@ -477,6 +563,187 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UserHistory.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// ActionOutcomeClient is a client for the ActionOutcome schema.
+type ActionOutcomeClient struct {
+	config
+}
+
+// NewActionOutcomeClient returns a client for the ActionOutcome from the given config.
+func NewActionOutcomeClient(c config) *ActionOutcomeClient {
+	return &ActionOutcomeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `actionoutcome.Hooks(f(g(h())))`.
+func (c *ActionOutcomeClient) Use(hooks ...Hook) {
+	c.hooks.ActionOutcome = append(c.hooks.ActionOutcome, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `actionoutcome.Intercept(f(g(h())))`.
+func (c *ActionOutcomeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ActionOutcome = append(c.inters.ActionOutcome, interceptors...)
+}
+
+// Create returns a builder for creating a ActionOutcome entity.
+func (c *ActionOutcomeClient) Create() *ActionOutcomeCreate {
+	mutation := newActionOutcomeMutation(c.config, OpCreate)
+	return &ActionOutcomeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ActionOutcome entities.
+func (c *ActionOutcomeClient) CreateBulk(builders ...*ActionOutcomeCreate) *ActionOutcomeCreateBulk {
+	return &ActionOutcomeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ActionOutcomeClient) MapCreateBulk(slice any, setFunc func(*ActionOutcomeCreate, int)) *ActionOutcomeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ActionOutcomeCreateBulk{err: fmt.Errorf("calling to ActionOutcomeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ActionOutcomeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ActionOutcomeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ActionOutcome.
+func (c *ActionOutcomeClient) Update() *ActionOutcomeUpdate {
+	mutation := newActionOutcomeMutation(c.config, OpUpdate)
+	return &ActionOutcomeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ActionOutcomeClient) UpdateOne(_m *ActionOutcome) *ActionOutcomeUpdateOne {
+	mutation := newActionOutcomeMutation(c.config, OpUpdateOne, withActionOutcome(_m))
+	return &ActionOutcomeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ActionOutcomeClient) UpdateOneID(id uuid.UUID) *ActionOutcomeUpdateOne {
+	mutation := newActionOutcomeMutation(c.config, OpUpdateOne, withActionOutcomeID(id))
+	return &ActionOutcomeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ActionOutcome.
+func (c *ActionOutcomeClient) Delete() *ActionOutcomeDelete {
+	mutation := newActionOutcomeMutation(c.config, OpDelete)
+	return &ActionOutcomeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ActionOutcomeClient) DeleteOne(_m *ActionOutcome) *ActionOutcomeDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ActionOutcomeClient) DeleteOneID(id uuid.UUID) *ActionOutcomeDeleteOne {
+	builder := c.Delete().Where(actionoutcome.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ActionOutcomeDeleteOne{builder}
+}
+
+// Query returns a query builder for ActionOutcome.
+func (c *ActionOutcomeClient) Query() *ActionOutcomeQuery {
+	return &ActionOutcomeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeActionOutcome},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ActionOutcome entity by its id.
+func (c *ActionOutcomeClient) Get(ctx context.Context, id uuid.UUID) (*ActionOutcome, error) {
+	return c.Query().Where(actionoutcome.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ActionOutcomeClient) GetX(ctx context.Context, id uuid.UUID) *ActionOutcome {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a ActionOutcome.
+func (c *ActionOutcomeClient) QueryWorkspace(_m *ActionOutcome) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(actionoutcome.Table, actionoutcome.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, actionoutcome.WorkspaceTable, actionoutcome.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAction queries the action edge of a ActionOutcome.
+func (c *ActionOutcomeClient) QueryAction(_m *ActionOutcome) *RevenueActionQuery {
+	query := (&RevenueActionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(actionoutcome.Table, actionoutcome.FieldID, id),
+			sqlgraph.To(revenueaction.Table, revenueaction.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, actionoutcome.ActionTable, actionoutcome.ActionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a ActionOutcome.
+func (c *ActionOutcomeClient) QueryUser(_m *ActionOutcome) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(actionoutcome.Table, actionoutcome.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, actionoutcome.UserTable, actionoutcome.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ActionOutcomeClient) Hooks() []Hook {
+	return c.hooks.ActionOutcome
+}
+
+// Interceptors returns the client interceptors.
+func (c *ActionOutcomeClient) Interceptors() []Interceptor {
+	return c.inters.ActionOutcome
+}
+
+func (c *ActionOutcomeClient) mutate(ctx context.Context, m *ActionOutcomeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ActionOutcomeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ActionOutcomeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ActionOutcomeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ActionOutcomeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ActionOutcome mutation op: %q", m.Op())
 	}
 }
 
@@ -2902,6 +3169,203 @@ func (c *CloudEventClient) mutate(ctx context.Context, m *CloudEventMutation) (V
 	}
 }
 
+// CommitmentClient is a client for the Commitment schema.
+type CommitmentClient struct {
+	config
+}
+
+// NewCommitmentClient returns a client for the Commitment from the given config.
+func NewCommitmentClient(c config) *CommitmentClient {
+	return &CommitmentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `commitment.Hooks(f(g(h())))`.
+func (c *CommitmentClient) Use(hooks ...Hook) {
+	c.hooks.Commitment = append(c.hooks.Commitment, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `commitment.Intercept(f(g(h())))`.
+func (c *CommitmentClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Commitment = append(c.inters.Commitment, interceptors...)
+}
+
+// Create returns a builder for creating a Commitment entity.
+func (c *CommitmentClient) Create() *CommitmentCreate {
+	mutation := newCommitmentMutation(c.config, OpCreate)
+	return &CommitmentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Commitment entities.
+func (c *CommitmentClient) CreateBulk(builders ...*CommitmentCreate) *CommitmentCreateBulk {
+	return &CommitmentCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CommitmentClient) MapCreateBulk(slice any, setFunc func(*CommitmentCreate, int)) *CommitmentCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CommitmentCreateBulk{err: fmt.Errorf("calling to CommitmentClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CommitmentCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CommitmentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Commitment.
+func (c *CommitmentClient) Update() *CommitmentUpdate {
+	mutation := newCommitmentMutation(c.config, OpUpdate)
+	return &CommitmentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommitmentClient) UpdateOne(_m *Commitment) *CommitmentUpdateOne {
+	mutation := newCommitmentMutation(c.config, OpUpdateOne, withCommitment(_m))
+	return &CommitmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommitmentClient) UpdateOneID(id uuid.UUID) *CommitmentUpdateOne {
+	mutation := newCommitmentMutation(c.config, OpUpdateOne, withCommitmentID(id))
+	return &CommitmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Commitment.
+func (c *CommitmentClient) Delete() *CommitmentDelete {
+	mutation := newCommitmentMutation(c.config, OpDelete)
+	return &CommitmentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommitmentClient) DeleteOne(_m *Commitment) *CommitmentDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommitmentClient) DeleteOneID(id uuid.UUID) *CommitmentDeleteOne {
+	builder := c.Delete().Where(commitment.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommitmentDeleteOne{builder}
+}
+
+// Query returns a query builder for Commitment.
+func (c *CommitmentClient) Query() *CommitmentQuery {
+	return &CommitmentQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommitment},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Commitment entity by its id.
+func (c *CommitmentClient) Get(ctx context.Context, id uuid.UUID) (*Commitment, error) {
+	return c.Query().Where(commitment.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommitmentClient) GetX(ctx context.Context, id uuid.UUID) *Commitment {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a Commitment.
+func (c *CommitmentClient) QueryWorkspace(_m *Commitment) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commitment.Table, commitment.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, commitment.WorkspaceTable, commitment.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationship queries the relationship edge of a Commitment.
+func (c *CommitmentClient) QueryRelationship(_m *Commitment) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commitment.Table, commitment.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, commitment.RelationshipTable, commitment.RelationshipColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a Commitment.
+func (c *CommitmentClient) QueryUser(_m *Commitment) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commitment.Table, commitment.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, commitment.UserTable, commitment.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEvidences queries the evidences edge of a Commitment.
+func (c *CommitmentClient) QueryEvidences(_m *Commitment) *RevenueEvidenceQuery {
+	query := (&RevenueEvidenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commitment.Table, commitment.FieldID, id),
+			sqlgraph.To(revenueevidence.Table, revenueevidence.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, commitment.EvidencesTable, commitment.EvidencesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommitmentClient) Hooks() []Hook {
+	return c.hooks.Commitment
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommitmentClient) Interceptors() []Interceptor {
+	return c.inters.Commitment
+}
+
+func (c *CommitmentClient) mutate(ctx context.Context, m *CommitmentMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommitmentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommitmentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommitmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommitmentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Commitment mutation op: %q", m.Op())
+	}
+}
+
 // CreditLedgerClient is a client for the CreditLedger schema.
 type CreditLedgerClient struct {
 	config
@@ -4328,6 +4792,1630 @@ func (c *OAuthPendingClient) mutate(ctx context.Context, m *OAuthPendingMutation
 	}
 }
 
+// PolicyDecisionSnapshotClient is a client for the PolicyDecisionSnapshot schema.
+type PolicyDecisionSnapshotClient struct {
+	config
+}
+
+// NewPolicyDecisionSnapshotClient returns a client for the PolicyDecisionSnapshot from the given config.
+func NewPolicyDecisionSnapshotClient(c config) *PolicyDecisionSnapshotClient {
+	return &PolicyDecisionSnapshotClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `policydecisionsnapshot.Hooks(f(g(h())))`.
+func (c *PolicyDecisionSnapshotClient) Use(hooks ...Hook) {
+	c.hooks.PolicyDecisionSnapshot = append(c.hooks.PolicyDecisionSnapshot, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `policydecisionsnapshot.Intercept(f(g(h())))`.
+func (c *PolicyDecisionSnapshotClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PolicyDecisionSnapshot = append(c.inters.PolicyDecisionSnapshot, interceptors...)
+}
+
+// Create returns a builder for creating a PolicyDecisionSnapshot entity.
+func (c *PolicyDecisionSnapshotClient) Create() *PolicyDecisionSnapshotCreate {
+	mutation := newPolicyDecisionSnapshotMutation(c.config, OpCreate)
+	return &PolicyDecisionSnapshotCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PolicyDecisionSnapshot entities.
+func (c *PolicyDecisionSnapshotClient) CreateBulk(builders ...*PolicyDecisionSnapshotCreate) *PolicyDecisionSnapshotCreateBulk {
+	return &PolicyDecisionSnapshotCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PolicyDecisionSnapshotClient) MapCreateBulk(slice any, setFunc func(*PolicyDecisionSnapshotCreate, int)) *PolicyDecisionSnapshotCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PolicyDecisionSnapshotCreateBulk{err: fmt.Errorf("calling to PolicyDecisionSnapshotClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PolicyDecisionSnapshotCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PolicyDecisionSnapshotCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PolicyDecisionSnapshot.
+func (c *PolicyDecisionSnapshotClient) Update() *PolicyDecisionSnapshotUpdate {
+	mutation := newPolicyDecisionSnapshotMutation(c.config, OpUpdate)
+	return &PolicyDecisionSnapshotUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PolicyDecisionSnapshotClient) UpdateOne(_m *PolicyDecisionSnapshot) *PolicyDecisionSnapshotUpdateOne {
+	mutation := newPolicyDecisionSnapshotMutation(c.config, OpUpdateOne, withPolicyDecisionSnapshot(_m))
+	return &PolicyDecisionSnapshotUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PolicyDecisionSnapshotClient) UpdateOneID(id uuid.UUID) *PolicyDecisionSnapshotUpdateOne {
+	mutation := newPolicyDecisionSnapshotMutation(c.config, OpUpdateOne, withPolicyDecisionSnapshotID(id))
+	return &PolicyDecisionSnapshotUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PolicyDecisionSnapshot.
+func (c *PolicyDecisionSnapshotClient) Delete() *PolicyDecisionSnapshotDelete {
+	mutation := newPolicyDecisionSnapshotMutation(c.config, OpDelete)
+	return &PolicyDecisionSnapshotDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PolicyDecisionSnapshotClient) DeleteOne(_m *PolicyDecisionSnapshot) *PolicyDecisionSnapshotDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PolicyDecisionSnapshotClient) DeleteOneID(id uuid.UUID) *PolicyDecisionSnapshotDeleteOne {
+	builder := c.Delete().Where(policydecisionsnapshot.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PolicyDecisionSnapshotDeleteOne{builder}
+}
+
+// Query returns a query builder for PolicyDecisionSnapshot.
+func (c *PolicyDecisionSnapshotClient) Query() *PolicyDecisionSnapshotQuery {
+	return &PolicyDecisionSnapshotQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePolicyDecisionSnapshot},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a PolicyDecisionSnapshot entity by its id.
+func (c *PolicyDecisionSnapshotClient) Get(ctx context.Context, id uuid.UUID) (*PolicyDecisionSnapshot, error) {
+	return c.Query().Where(policydecisionsnapshot.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PolicyDecisionSnapshotClient) GetX(ctx context.Context, id uuid.UUID) *PolicyDecisionSnapshot {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a PolicyDecisionSnapshot.
+func (c *PolicyDecisionSnapshotClient) QueryWorkspace(_m *PolicyDecisionSnapshot) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(policydecisionsnapshot.Table, policydecisionsnapshot.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, policydecisionsnapshot.WorkspaceTable, policydecisionsnapshot.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAction queries the action edge of a PolicyDecisionSnapshot.
+func (c *PolicyDecisionSnapshotClient) QueryAction(_m *PolicyDecisionSnapshot) *RevenueActionQuery {
+	query := (&RevenueActionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(policydecisionsnapshot.Table, policydecisionsnapshot.FieldID, id),
+			sqlgraph.To(revenueaction.Table, revenueaction.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, policydecisionsnapshot.ActionTable, policydecisionsnapshot.ActionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a PolicyDecisionSnapshot.
+func (c *PolicyDecisionSnapshotClient) QueryUser(_m *PolicyDecisionSnapshot) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(policydecisionsnapshot.Table, policydecisionsnapshot.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, policydecisionsnapshot.UserTable, policydecisionsnapshot.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PolicyDecisionSnapshotClient) Hooks() []Hook {
+	return c.hooks.PolicyDecisionSnapshot
+}
+
+// Interceptors returns the client interceptors.
+func (c *PolicyDecisionSnapshotClient) Interceptors() []Interceptor {
+	return c.inters.PolicyDecisionSnapshot
+}
+
+func (c *PolicyDecisionSnapshotClient) mutate(ctx context.Context, m *PolicyDecisionSnapshotMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PolicyDecisionSnapshotCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PolicyDecisionSnapshotUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PolicyDecisionSnapshotUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PolicyDecisionSnapshotDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PolicyDecisionSnapshot mutation op: %q", m.Op())
+	}
+}
+
+// RelationshipClient is a client for the Relationship schema.
+type RelationshipClient struct {
+	config
+}
+
+// NewRelationshipClient returns a client for the Relationship from the given config.
+func NewRelationshipClient(c config) *RelationshipClient {
+	return &RelationshipClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relationship.Hooks(f(g(h())))`.
+func (c *RelationshipClient) Use(hooks ...Hook) {
+	c.hooks.Relationship = append(c.hooks.Relationship, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relationship.Intercept(f(g(h())))`.
+func (c *RelationshipClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Relationship = append(c.inters.Relationship, interceptors...)
+}
+
+// Create returns a builder for creating a Relationship entity.
+func (c *RelationshipClient) Create() *RelationshipCreate {
+	mutation := newRelationshipMutation(c.config, OpCreate)
+	return &RelationshipCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Relationship entities.
+func (c *RelationshipClient) CreateBulk(builders ...*RelationshipCreate) *RelationshipCreateBulk {
+	return &RelationshipCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelationshipClient) MapCreateBulk(slice any, setFunc func(*RelationshipCreate, int)) *RelationshipCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelationshipCreateBulk{err: fmt.Errorf("calling to RelationshipClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelationshipCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelationshipCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Relationship.
+func (c *RelationshipClient) Update() *RelationshipUpdate {
+	mutation := newRelationshipMutation(c.config, OpUpdate)
+	return &RelationshipUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelationshipClient) UpdateOne(_m *Relationship) *RelationshipUpdateOne {
+	mutation := newRelationshipMutation(c.config, OpUpdateOne, withRelationship(_m))
+	return &RelationshipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelationshipClient) UpdateOneID(id uuid.UUID) *RelationshipUpdateOne {
+	mutation := newRelationshipMutation(c.config, OpUpdateOne, withRelationshipID(id))
+	return &RelationshipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Relationship.
+func (c *RelationshipClient) Delete() *RelationshipDelete {
+	mutation := newRelationshipMutation(c.config, OpDelete)
+	return &RelationshipDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelationshipClient) DeleteOne(_m *Relationship) *RelationshipDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelationshipClient) DeleteOneID(id uuid.UUID) *RelationshipDeleteOne {
+	builder := c.Delete().Where(relationship.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelationshipDeleteOne{builder}
+}
+
+// Query returns a query builder for Relationship.
+func (c *RelationshipClient) Query() *RelationshipQuery {
+	return &RelationshipQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelationship},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Relationship entity by its id.
+func (c *RelationshipClient) Get(ctx context.Context, id uuid.UUID) (*Relationship, error) {
+	return c.Query().Where(relationship.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelationshipClient) GetX(ctx context.Context, id uuid.UUID) *Relationship {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a Relationship.
+func (c *RelationshipClient) QueryWorkspace(_m *Relationship) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationship.WorkspaceTable, relationship.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a Relationship.
+func (c *RelationshipClient) QueryUser(_m *Relationship) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationship.UserTable, relationship.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommitments queries the commitments edge of a Relationship.
+func (c *RelationshipClient) QueryCommitments(_m *Relationship) *CommitmentQuery {
+	query := (&CommitmentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(commitment.Table, commitment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.CommitmentsTable, relationship.CommitmentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryActions queries the actions edge of a Relationship.
+func (c *RelationshipClient) QueryActions(_m *Relationship) *RevenueActionQuery {
+	query := (&RevenueActionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(revenueaction.Table, revenueaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.ActionsTable, relationship.ActionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEvidences queries the evidences edge of a Relationship.
+func (c *RelationshipClient) QueryEvidences(_m *Relationship) *RevenueEvidenceQuery {
+	query := (&RevenueEvidenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(revenueevidence.Table, revenueevidence.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, relationship.EvidencesTable, relationship.EvidencesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelationshipClient) Hooks() []Hook {
+	return c.hooks.Relationship
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelationshipClient) Interceptors() []Interceptor {
+	return c.inters.Relationship
+}
+
+func (c *RelationshipClient) mutate(ctx context.Context, m *RelationshipMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelationshipCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelationshipUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelationshipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelationshipDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Relationship mutation op: %q", m.Op())
+	}
+}
+
+// RevenueActionClient is a client for the RevenueAction schema.
+type RevenueActionClient struct {
+	config
+}
+
+// NewRevenueActionClient returns a client for the RevenueAction from the given config.
+func NewRevenueActionClient(c config) *RevenueActionClient {
+	return &RevenueActionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `revenueaction.Hooks(f(g(h())))`.
+func (c *RevenueActionClient) Use(hooks ...Hook) {
+	c.hooks.RevenueAction = append(c.hooks.RevenueAction, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `revenueaction.Intercept(f(g(h())))`.
+func (c *RevenueActionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RevenueAction = append(c.inters.RevenueAction, interceptors...)
+}
+
+// Create returns a builder for creating a RevenueAction entity.
+func (c *RevenueActionClient) Create() *RevenueActionCreate {
+	mutation := newRevenueActionMutation(c.config, OpCreate)
+	return &RevenueActionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RevenueAction entities.
+func (c *RevenueActionClient) CreateBulk(builders ...*RevenueActionCreate) *RevenueActionCreateBulk {
+	return &RevenueActionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RevenueActionClient) MapCreateBulk(slice any, setFunc func(*RevenueActionCreate, int)) *RevenueActionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RevenueActionCreateBulk{err: fmt.Errorf("calling to RevenueActionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RevenueActionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RevenueActionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RevenueAction.
+func (c *RevenueActionClient) Update() *RevenueActionUpdate {
+	mutation := newRevenueActionMutation(c.config, OpUpdate)
+	return &RevenueActionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RevenueActionClient) UpdateOne(_m *RevenueAction) *RevenueActionUpdateOne {
+	mutation := newRevenueActionMutation(c.config, OpUpdateOne, withRevenueAction(_m))
+	return &RevenueActionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RevenueActionClient) UpdateOneID(id uuid.UUID) *RevenueActionUpdateOne {
+	mutation := newRevenueActionMutation(c.config, OpUpdateOne, withRevenueActionID(id))
+	return &RevenueActionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RevenueAction.
+func (c *RevenueActionClient) Delete() *RevenueActionDelete {
+	mutation := newRevenueActionMutation(c.config, OpDelete)
+	return &RevenueActionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RevenueActionClient) DeleteOne(_m *RevenueAction) *RevenueActionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RevenueActionClient) DeleteOneID(id uuid.UUID) *RevenueActionDeleteOne {
+	builder := c.Delete().Where(revenueaction.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RevenueActionDeleteOne{builder}
+}
+
+// Query returns a query builder for RevenueAction.
+func (c *RevenueActionClient) Query() *RevenueActionQuery {
+	return &RevenueActionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRevenueAction},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RevenueAction entity by its id.
+func (c *RevenueActionClient) Get(ctx context.Context, id uuid.UUID) (*RevenueAction, error) {
+	return c.Query().Where(revenueaction.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RevenueActionClient) GetX(ctx context.Context, id uuid.UUID) *RevenueAction {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a RevenueAction.
+func (c *RevenueActionClient) QueryWorkspace(_m *RevenueAction) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueaction.Table, revenueaction.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueaction.WorkspaceTable, revenueaction.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationship queries the relationship edge of a RevenueAction.
+func (c *RevenueActionClient) QueryRelationship(_m *RevenueAction) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueaction.Table, revenueaction.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueaction.RelationshipTable, revenueaction.RelationshipColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RevenueAction.
+func (c *RevenueActionClient) QueryUser(_m *RevenueAction) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueaction.Table, revenueaction.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueaction.UserTable, revenueaction.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEvidences queries the evidences edge of a RevenueAction.
+func (c *RevenueActionClient) QueryEvidences(_m *RevenueAction) *RevenueEvidenceQuery {
+	query := (&RevenueEvidenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueaction.Table, revenueaction.FieldID, id),
+			sqlgraph.To(revenueevidence.Table, revenueevidence.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, revenueaction.EvidencesTable, revenueaction.EvidencesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRevisions queries the revisions edge of a RevenueAction.
+func (c *RevenueActionClient) QueryRevisions(_m *RevenueAction) *RevenueActionRevisionQuery {
+	query := (&RevenueActionRevisionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueaction.Table, revenueaction.FieldID, id),
+			sqlgraph.To(revenueactionrevision.Table, revenueactionrevision.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueaction.RevisionsTable, revenueaction.RevisionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDecisions queries the decisions edge of a RevenueAction.
+func (c *RevenueActionClient) QueryDecisions(_m *RevenueAction) *PolicyDecisionSnapshotQuery {
+	query := (&PolicyDecisionSnapshotClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueaction.Table, revenueaction.FieldID, id),
+			sqlgraph.To(policydecisionsnapshot.Table, policydecisionsnapshot.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueaction.DecisionsTable, revenueaction.DecisionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOutcomes queries the outcomes edge of a RevenueAction.
+func (c *RevenueActionClient) QueryOutcomes(_m *RevenueAction) *ActionOutcomeQuery {
+	query := (&ActionOutcomeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueaction.Table, revenueaction.FieldID, id),
+			sqlgraph.To(actionoutcome.Table, actionoutcome.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueaction.OutcomesTable, revenueaction.OutcomesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RevenueActionClient) Hooks() []Hook {
+	return c.hooks.RevenueAction
+}
+
+// Interceptors returns the client interceptors.
+func (c *RevenueActionClient) Interceptors() []Interceptor {
+	return c.inters.RevenueAction
+}
+
+func (c *RevenueActionClient) mutate(ctx context.Context, m *RevenueActionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RevenueActionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RevenueActionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RevenueActionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RevenueActionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RevenueAction mutation op: %q", m.Op())
+	}
+}
+
+// RevenueActionRevisionClient is a client for the RevenueActionRevision schema.
+type RevenueActionRevisionClient struct {
+	config
+}
+
+// NewRevenueActionRevisionClient returns a client for the RevenueActionRevision from the given config.
+func NewRevenueActionRevisionClient(c config) *RevenueActionRevisionClient {
+	return &RevenueActionRevisionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `revenueactionrevision.Hooks(f(g(h())))`.
+func (c *RevenueActionRevisionClient) Use(hooks ...Hook) {
+	c.hooks.RevenueActionRevision = append(c.hooks.RevenueActionRevision, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `revenueactionrevision.Intercept(f(g(h())))`.
+func (c *RevenueActionRevisionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RevenueActionRevision = append(c.inters.RevenueActionRevision, interceptors...)
+}
+
+// Create returns a builder for creating a RevenueActionRevision entity.
+func (c *RevenueActionRevisionClient) Create() *RevenueActionRevisionCreate {
+	mutation := newRevenueActionRevisionMutation(c.config, OpCreate)
+	return &RevenueActionRevisionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RevenueActionRevision entities.
+func (c *RevenueActionRevisionClient) CreateBulk(builders ...*RevenueActionRevisionCreate) *RevenueActionRevisionCreateBulk {
+	return &RevenueActionRevisionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RevenueActionRevisionClient) MapCreateBulk(slice any, setFunc func(*RevenueActionRevisionCreate, int)) *RevenueActionRevisionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RevenueActionRevisionCreateBulk{err: fmt.Errorf("calling to RevenueActionRevisionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RevenueActionRevisionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RevenueActionRevisionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RevenueActionRevision.
+func (c *RevenueActionRevisionClient) Update() *RevenueActionRevisionUpdate {
+	mutation := newRevenueActionRevisionMutation(c.config, OpUpdate)
+	return &RevenueActionRevisionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RevenueActionRevisionClient) UpdateOne(_m *RevenueActionRevision) *RevenueActionRevisionUpdateOne {
+	mutation := newRevenueActionRevisionMutation(c.config, OpUpdateOne, withRevenueActionRevision(_m))
+	return &RevenueActionRevisionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RevenueActionRevisionClient) UpdateOneID(id uuid.UUID) *RevenueActionRevisionUpdateOne {
+	mutation := newRevenueActionRevisionMutation(c.config, OpUpdateOne, withRevenueActionRevisionID(id))
+	return &RevenueActionRevisionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RevenueActionRevision.
+func (c *RevenueActionRevisionClient) Delete() *RevenueActionRevisionDelete {
+	mutation := newRevenueActionRevisionMutation(c.config, OpDelete)
+	return &RevenueActionRevisionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RevenueActionRevisionClient) DeleteOne(_m *RevenueActionRevision) *RevenueActionRevisionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RevenueActionRevisionClient) DeleteOneID(id uuid.UUID) *RevenueActionRevisionDeleteOne {
+	builder := c.Delete().Where(revenueactionrevision.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RevenueActionRevisionDeleteOne{builder}
+}
+
+// Query returns a query builder for RevenueActionRevision.
+func (c *RevenueActionRevisionClient) Query() *RevenueActionRevisionQuery {
+	return &RevenueActionRevisionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRevenueActionRevision},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RevenueActionRevision entity by its id.
+func (c *RevenueActionRevisionClient) Get(ctx context.Context, id uuid.UUID) (*RevenueActionRevision, error) {
+	return c.Query().Where(revenueactionrevision.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RevenueActionRevisionClient) GetX(ctx context.Context, id uuid.UUID) *RevenueActionRevision {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryAction queries the action edge of a RevenueActionRevision.
+func (c *RevenueActionRevisionClient) QueryAction(_m *RevenueActionRevision) *RevenueActionQuery {
+	query := (&RevenueActionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueactionrevision.Table, revenueactionrevision.FieldID, id),
+			sqlgraph.To(revenueaction.Table, revenueaction.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueactionrevision.ActionTable, revenueactionrevision.ActionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RevenueActionRevision.
+func (c *RevenueActionRevisionClient) QueryUser(_m *RevenueActionRevision) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueactionrevision.Table, revenueactionrevision.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueactionrevision.UserTable, revenueactionrevision.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RevenueActionRevisionClient) Hooks() []Hook {
+	return c.hooks.RevenueActionRevision
+}
+
+// Interceptors returns the client interceptors.
+func (c *RevenueActionRevisionClient) Interceptors() []Interceptor {
+	return c.inters.RevenueActionRevision
+}
+
+func (c *RevenueActionRevisionClient) mutate(ctx context.Context, m *RevenueActionRevisionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RevenueActionRevisionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RevenueActionRevisionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RevenueActionRevisionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RevenueActionRevisionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RevenueActionRevision mutation op: %q", m.Op())
+	}
+}
+
+// RevenueEvidenceClient is a client for the RevenueEvidence schema.
+type RevenueEvidenceClient struct {
+	config
+}
+
+// NewRevenueEvidenceClient returns a client for the RevenueEvidence from the given config.
+func NewRevenueEvidenceClient(c config) *RevenueEvidenceClient {
+	return &RevenueEvidenceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `revenueevidence.Hooks(f(g(h())))`.
+func (c *RevenueEvidenceClient) Use(hooks ...Hook) {
+	c.hooks.RevenueEvidence = append(c.hooks.RevenueEvidence, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `revenueevidence.Intercept(f(g(h())))`.
+func (c *RevenueEvidenceClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RevenueEvidence = append(c.inters.RevenueEvidence, interceptors...)
+}
+
+// Create returns a builder for creating a RevenueEvidence entity.
+func (c *RevenueEvidenceClient) Create() *RevenueEvidenceCreate {
+	mutation := newRevenueEvidenceMutation(c.config, OpCreate)
+	return &RevenueEvidenceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RevenueEvidence entities.
+func (c *RevenueEvidenceClient) CreateBulk(builders ...*RevenueEvidenceCreate) *RevenueEvidenceCreateBulk {
+	return &RevenueEvidenceCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RevenueEvidenceClient) MapCreateBulk(slice any, setFunc func(*RevenueEvidenceCreate, int)) *RevenueEvidenceCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RevenueEvidenceCreateBulk{err: fmt.Errorf("calling to RevenueEvidenceClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RevenueEvidenceCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RevenueEvidenceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RevenueEvidence.
+func (c *RevenueEvidenceClient) Update() *RevenueEvidenceUpdate {
+	mutation := newRevenueEvidenceMutation(c.config, OpUpdate)
+	return &RevenueEvidenceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RevenueEvidenceClient) UpdateOne(_m *RevenueEvidence) *RevenueEvidenceUpdateOne {
+	mutation := newRevenueEvidenceMutation(c.config, OpUpdateOne, withRevenueEvidence(_m))
+	return &RevenueEvidenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RevenueEvidenceClient) UpdateOneID(id uuid.UUID) *RevenueEvidenceUpdateOne {
+	mutation := newRevenueEvidenceMutation(c.config, OpUpdateOne, withRevenueEvidenceID(id))
+	return &RevenueEvidenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RevenueEvidence.
+func (c *RevenueEvidenceClient) Delete() *RevenueEvidenceDelete {
+	mutation := newRevenueEvidenceMutation(c.config, OpDelete)
+	return &RevenueEvidenceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RevenueEvidenceClient) DeleteOne(_m *RevenueEvidence) *RevenueEvidenceDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RevenueEvidenceClient) DeleteOneID(id uuid.UUID) *RevenueEvidenceDeleteOne {
+	builder := c.Delete().Where(revenueevidence.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RevenueEvidenceDeleteOne{builder}
+}
+
+// Query returns a query builder for RevenueEvidence.
+func (c *RevenueEvidenceClient) Query() *RevenueEvidenceQuery {
+	return &RevenueEvidenceQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRevenueEvidence},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RevenueEvidence entity by its id.
+func (c *RevenueEvidenceClient) Get(ctx context.Context, id uuid.UUID) (*RevenueEvidence, error) {
+	return c.Query().Where(revenueevidence.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RevenueEvidenceClient) GetX(ctx context.Context, id uuid.UUID) *RevenueEvidence {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a RevenueEvidence.
+func (c *RevenueEvidenceClient) QueryWorkspace(_m *RevenueEvidence) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueevidence.Table, revenueevidence.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueevidence.WorkspaceTable, revenueevidence.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RevenueEvidence.
+func (c *RevenueEvidenceClient) QueryUser(_m *RevenueEvidence) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueevidence.Table, revenueevidence.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueevidence.UserTable, revenueevidence.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationships queries the relationships edge of a RevenueEvidence.
+func (c *RevenueEvidenceClient) QueryRelationships(_m *RevenueEvidence) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueevidence.Table, revenueevidence.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, revenueevidence.RelationshipsTable, revenueevidence.RelationshipsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommitments queries the commitments edge of a RevenueEvidence.
+func (c *RevenueEvidenceClient) QueryCommitments(_m *RevenueEvidence) *CommitmentQuery {
+	query := (&CommitmentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueevidence.Table, revenueevidence.FieldID, id),
+			sqlgraph.To(commitment.Table, commitment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, revenueevidence.CommitmentsTable, revenueevidence.CommitmentsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryActions queries the actions edge of a RevenueEvidence.
+func (c *RevenueEvidenceClient) QueryActions(_m *RevenueEvidence) *RevenueActionQuery {
+	query := (&RevenueActionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueevidence.Table, revenueevidence.FieldID, id),
+			sqlgraph.To(revenueaction.Table, revenueaction.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, revenueevidence.ActionsTable, revenueevidence.ActionsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RevenueEvidenceClient) Hooks() []Hook {
+	return c.hooks.RevenueEvidence
+}
+
+// Interceptors returns the client interceptors.
+func (c *RevenueEvidenceClient) Interceptors() []Interceptor {
+	return c.inters.RevenueEvidence
+}
+
+func (c *RevenueEvidenceClient) mutate(ctx context.Context, m *RevenueEvidenceMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RevenueEvidenceCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RevenueEvidenceUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RevenueEvidenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RevenueEvidenceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RevenueEvidence mutation op: %q", m.Op())
+	}
+}
+
+// RevenueOutboxEventClient is a client for the RevenueOutboxEvent schema.
+type RevenueOutboxEventClient struct {
+	config
+}
+
+// NewRevenueOutboxEventClient returns a client for the RevenueOutboxEvent from the given config.
+func NewRevenueOutboxEventClient(c config) *RevenueOutboxEventClient {
+	return &RevenueOutboxEventClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `revenueoutboxevent.Hooks(f(g(h())))`.
+func (c *RevenueOutboxEventClient) Use(hooks ...Hook) {
+	c.hooks.RevenueOutboxEvent = append(c.hooks.RevenueOutboxEvent, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `revenueoutboxevent.Intercept(f(g(h())))`.
+func (c *RevenueOutboxEventClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RevenueOutboxEvent = append(c.inters.RevenueOutboxEvent, interceptors...)
+}
+
+// Create returns a builder for creating a RevenueOutboxEvent entity.
+func (c *RevenueOutboxEventClient) Create() *RevenueOutboxEventCreate {
+	mutation := newRevenueOutboxEventMutation(c.config, OpCreate)
+	return &RevenueOutboxEventCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RevenueOutboxEvent entities.
+func (c *RevenueOutboxEventClient) CreateBulk(builders ...*RevenueOutboxEventCreate) *RevenueOutboxEventCreateBulk {
+	return &RevenueOutboxEventCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RevenueOutboxEventClient) MapCreateBulk(slice any, setFunc func(*RevenueOutboxEventCreate, int)) *RevenueOutboxEventCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RevenueOutboxEventCreateBulk{err: fmt.Errorf("calling to RevenueOutboxEventClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RevenueOutboxEventCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RevenueOutboxEventCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RevenueOutboxEvent.
+func (c *RevenueOutboxEventClient) Update() *RevenueOutboxEventUpdate {
+	mutation := newRevenueOutboxEventMutation(c.config, OpUpdate)
+	return &RevenueOutboxEventUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RevenueOutboxEventClient) UpdateOne(_m *RevenueOutboxEvent) *RevenueOutboxEventUpdateOne {
+	mutation := newRevenueOutboxEventMutation(c.config, OpUpdateOne, withRevenueOutboxEvent(_m))
+	return &RevenueOutboxEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RevenueOutboxEventClient) UpdateOneID(id uuid.UUID) *RevenueOutboxEventUpdateOne {
+	mutation := newRevenueOutboxEventMutation(c.config, OpUpdateOne, withRevenueOutboxEventID(id))
+	return &RevenueOutboxEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RevenueOutboxEvent.
+func (c *RevenueOutboxEventClient) Delete() *RevenueOutboxEventDelete {
+	mutation := newRevenueOutboxEventMutation(c.config, OpDelete)
+	return &RevenueOutboxEventDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RevenueOutboxEventClient) DeleteOne(_m *RevenueOutboxEvent) *RevenueOutboxEventDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RevenueOutboxEventClient) DeleteOneID(id uuid.UUID) *RevenueOutboxEventDeleteOne {
+	builder := c.Delete().Where(revenueoutboxevent.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RevenueOutboxEventDeleteOne{builder}
+}
+
+// Query returns a query builder for RevenueOutboxEvent.
+func (c *RevenueOutboxEventClient) Query() *RevenueOutboxEventQuery {
+	return &RevenueOutboxEventQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRevenueOutboxEvent},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RevenueOutboxEvent entity by its id.
+func (c *RevenueOutboxEventClient) Get(ctx context.Context, id uuid.UUID) (*RevenueOutboxEvent, error) {
+	return c.Query().Where(revenueoutboxevent.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RevenueOutboxEventClient) GetX(ctx context.Context, id uuid.UUID) *RevenueOutboxEvent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a RevenueOutboxEvent.
+func (c *RevenueOutboxEventClient) QueryWorkspace(_m *RevenueOutboxEvent) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueoutboxevent.Table, revenueoutboxevent.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueoutboxevent.WorkspaceTable, revenueoutboxevent.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RevenueOutboxEvent.
+func (c *RevenueOutboxEventClient) QueryUser(_m *RevenueOutboxEvent) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueoutboxevent.Table, revenueoutboxevent.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueoutboxevent.UserTable, revenueoutboxevent.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RevenueOutboxEventClient) Hooks() []Hook {
+	return c.hooks.RevenueOutboxEvent
+}
+
+// Interceptors returns the client interceptors.
+func (c *RevenueOutboxEventClient) Interceptors() []Interceptor {
+	return c.inters.RevenueOutboxEvent
+}
+
+func (c *RevenueOutboxEventClient) mutate(ctx context.Context, m *RevenueOutboxEventMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RevenueOutboxEventCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RevenueOutboxEventUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RevenueOutboxEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RevenueOutboxEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RevenueOutboxEvent mutation op: %q", m.Op())
+	}
+}
+
+// RevenueWorkspaceClient is a client for the RevenueWorkspace schema.
+type RevenueWorkspaceClient struct {
+	config
+}
+
+// NewRevenueWorkspaceClient returns a client for the RevenueWorkspace from the given config.
+func NewRevenueWorkspaceClient(c config) *RevenueWorkspaceClient {
+	return &RevenueWorkspaceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `revenueworkspace.Hooks(f(g(h())))`.
+func (c *RevenueWorkspaceClient) Use(hooks ...Hook) {
+	c.hooks.RevenueWorkspace = append(c.hooks.RevenueWorkspace, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `revenueworkspace.Intercept(f(g(h())))`.
+func (c *RevenueWorkspaceClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RevenueWorkspace = append(c.inters.RevenueWorkspace, interceptors...)
+}
+
+// Create returns a builder for creating a RevenueWorkspace entity.
+func (c *RevenueWorkspaceClient) Create() *RevenueWorkspaceCreate {
+	mutation := newRevenueWorkspaceMutation(c.config, OpCreate)
+	return &RevenueWorkspaceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RevenueWorkspace entities.
+func (c *RevenueWorkspaceClient) CreateBulk(builders ...*RevenueWorkspaceCreate) *RevenueWorkspaceCreateBulk {
+	return &RevenueWorkspaceCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RevenueWorkspaceClient) MapCreateBulk(slice any, setFunc func(*RevenueWorkspaceCreate, int)) *RevenueWorkspaceCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RevenueWorkspaceCreateBulk{err: fmt.Errorf("calling to RevenueWorkspaceClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RevenueWorkspaceCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RevenueWorkspaceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RevenueWorkspace.
+func (c *RevenueWorkspaceClient) Update() *RevenueWorkspaceUpdate {
+	mutation := newRevenueWorkspaceMutation(c.config, OpUpdate)
+	return &RevenueWorkspaceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RevenueWorkspaceClient) UpdateOne(_m *RevenueWorkspace) *RevenueWorkspaceUpdateOne {
+	mutation := newRevenueWorkspaceMutation(c.config, OpUpdateOne, withRevenueWorkspace(_m))
+	return &RevenueWorkspaceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RevenueWorkspaceClient) UpdateOneID(id uuid.UUID) *RevenueWorkspaceUpdateOne {
+	mutation := newRevenueWorkspaceMutation(c.config, OpUpdateOne, withRevenueWorkspaceID(id))
+	return &RevenueWorkspaceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RevenueWorkspace.
+func (c *RevenueWorkspaceClient) Delete() *RevenueWorkspaceDelete {
+	mutation := newRevenueWorkspaceMutation(c.config, OpDelete)
+	return &RevenueWorkspaceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RevenueWorkspaceClient) DeleteOne(_m *RevenueWorkspace) *RevenueWorkspaceDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RevenueWorkspaceClient) DeleteOneID(id uuid.UUID) *RevenueWorkspaceDeleteOne {
+	builder := c.Delete().Where(revenueworkspace.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RevenueWorkspaceDeleteOne{builder}
+}
+
+// Query returns a query builder for RevenueWorkspace.
+func (c *RevenueWorkspaceClient) Query() *RevenueWorkspaceQuery {
+	return &RevenueWorkspaceQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRevenueWorkspace},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RevenueWorkspace entity by its id.
+func (c *RevenueWorkspaceClient) Get(ctx context.Context, id uuid.UUID) (*RevenueWorkspace, error) {
+	return c.Query().Where(revenueworkspace.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RevenueWorkspaceClient) GetX(ctx context.Context, id uuid.UUID) *RevenueWorkspace {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryUser(_m *RevenueWorkspace) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueworkspace.UserTable, revenueworkspace.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMembers queries the members edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryMembers(_m *RevenueWorkspace) *RevenueWorkspaceMemberQuery {
+	query := (&RevenueWorkspaceMemberClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(revenueworkspacemember.Table, revenueworkspacemember.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.MembersTable, revenueworkspace.MembersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationships queries the relationships edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryRelationships(_m *RevenueWorkspace) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipsTable, revenueworkspace.RelationshipsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEvidences queries the evidences edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryEvidences(_m *RevenueWorkspace) *RevenueEvidenceQuery {
+	query := (&RevenueEvidenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(revenueevidence.Table, revenueevidence.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.EvidencesTable, revenueworkspace.EvidencesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommitments queries the commitments edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryCommitments(_m *RevenueWorkspace) *CommitmentQuery {
+	query := (&CommitmentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(commitment.Table, commitment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommitmentsTable, revenueworkspace.CommitmentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryActions queries the actions edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryActions(_m *RevenueWorkspace) *RevenueActionQuery {
+	query := (&RevenueActionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(revenueaction.Table, revenueaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.ActionsTable, revenueworkspace.ActionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDecisions queries the decisions edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryDecisions(_m *RevenueWorkspace) *PolicyDecisionSnapshotQuery {
+	query := (&PolicyDecisionSnapshotClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(policydecisionsnapshot.Table, policydecisionsnapshot.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.DecisionsTable, revenueworkspace.DecisionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOutcomes queries the outcomes edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryOutcomes(_m *RevenueWorkspace) *ActionOutcomeQuery {
+	query := (&ActionOutcomeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(actionoutcome.Table, actionoutcome.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.OutcomesTable, revenueworkspace.OutcomesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOutboxEvents queries the outbox_events edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryOutboxEvents(_m *RevenueWorkspace) *RevenueOutboxEventQuery {
+	query := (&RevenueOutboxEventClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(revenueoutboxevent.Table, revenueoutboxevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.OutboxEventsTable, revenueworkspace.OutboxEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RevenueWorkspaceClient) Hooks() []Hook {
+	return c.hooks.RevenueWorkspace
+}
+
+// Interceptors returns the client interceptors.
+func (c *RevenueWorkspaceClient) Interceptors() []Interceptor {
+	return c.inters.RevenueWorkspace
+}
+
+func (c *RevenueWorkspaceClient) mutate(ctx context.Context, m *RevenueWorkspaceMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RevenueWorkspaceCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RevenueWorkspaceUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RevenueWorkspaceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RevenueWorkspaceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RevenueWorkspace mutation op: %q", m.Op())
+	}
+}
+
+// RevenueWorkspaceMemberClient is a client for the RevenueWorkspaceMember schema.
+type RevenueWorkspaceMemberClient struct {
+	config
+}
+
+// NewRevenueWorkspaceMemberClient returns a client for the RevenueWorkspaceMember from the given config.
+func NewRevenueWorkspaceMemberClient(c config) *RevenueWorkspaceMemberClient {
+	return &RevenueWorkspaceMemberClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `revenueworkspacemember.Hooks(f(g(h())))`.
+func (c *RevenueWorkspaceMemberClient) Use(hooks ...Hook) {
+	c.hooks.RevenueWorkspaceMember = append(c.hooks.RevenueWorkspaceMember, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `revenueworkspacemember.Intercept(f(g(h())))`.
+func (c *RevenueWorkspaceMemberClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RevenueWorkspaceMember = append(c.inters.RevenueWorkspaceMember, interceptors...)
+}
+
+// Create returns a builder for creating a RevenueWorkspaceMember entity.
+func (c *RevenueWorkspaceMemberClient) Create() *RevenueWorkspaceMemberCreate {
+	mutation := newRevenueWorkspaceMemberMutation(c.config, OpCreate)
+	return &RevenueWorkspaceMemberCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RevenueWorkspaceMember entities.
+func (c *RevenueWorkspaceMemberClient) CreateBulk(builders ...*RevenueWorkspaceMemberCreate) *RevenueWorkspaceMemberCreateBulk {
+	return &RevenueWorkspaceMemberCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RevenueWorkspaceMemberClient) MapCreateBulk(slice any, setFunc func(*RevenueWorkspaceMemberCreate, int)) *RevenueWorkspaceMemberCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RevenueWorkspaceMemberCreateBulk{err: fmt.Errorf("calling to RevenueWorkspaceMemberClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RevenueWorkspaceMemberCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RevenueWorkspaceMemberCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RevenueWorkspaceMember.
+func (c *RevenueWorkspaceMemberClient) Update() *RevenueWorkspaceMemberUpdate {
+	mutation := newRevenueWorkspaceMemberMutation(c.config, OpUpdate)
+	return &RevenueWorkspaceMemberUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RevenueWorkspaceMemberClient) UpdateOne(_m *RevenueWorkspaceMember) *RevenueWorkspaceMemberUpdateOne {
+	mutation := newRevenueWorkspaceMemberMutation(c.config, OpUpdateOne, withRevenueWorkspaceMember(_m))
+	return &RevenueWorkspaceMemberUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RevenueWorkspaceMemberClient) UpdateOneID(id uuid.UUID) *RevenueWorkspaceMemberUpdateOne {
+	mutation := newRevenueWorkspaceMemberMutation(c.config, OpUpdateOne, withRevenueWorkspaceMemberID(id))
+	return &RevenueWorkspaceMemberUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RevenueWorkspaceMember.
+func (c *RevenueWorkspaceMemberClient) Delete() *RevenueWorkspaceMemberDelete {
+	mutation := newRevenueWorkspaceMemberMutation(c.config, OpDelete)
+	return &RevenueWorkspaceMemberDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RevenueWorkspaceMemberClient) DeleteOne(_m *RevenueWorkspaceMember) *RevenueWorkspaceMemberDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RevenueWorkspaceMemberClient) DeleteOneID(id uuid.UUID) *RevenueWorkspaceMemberDeleteOne {
+	builder := c.Delete().Where(revenueworkspacemember.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RevenueWorkspaceMemberDeleteOne{builder}
+}
+
+// Query returns a query builder for RevenueWorkspaceMember.
+func (c *RevenueWorkspaceMemberClient) Query() *RevenueWorkspaceMemberQuery {
+	return &RevenueWorkspaceMemberQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRevenueWorkspaceMember},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RevenueWorkspaceMember entity by its id.
+func (c *RevenueWorkspaceMemberClient) Get(ctx context.Context, id uuid.UUID) (*RevenueWorkspaceMember, error) {
+	return c.Query().Where(revenueworkspacemember.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RevenueWorkspaceMemberClient) GetX(ctx context.Context, id uuid.UUID) *RevenueWorkspaceMember {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a RevenueWorkspaceMember.
+func (c *RevenueWorkspaceMemberClient) QueryWorkspace(_m *RevenueWorkspaceMember) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspacemember.Table, revenueworkspacemember.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueworkspacemember.WorkspaceTable, revenueworkspacemember.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RevenueWorkspaceMember.
+func (c *RevenueWorkspaceMemberClient) QueryUser(_m *RevenueWorkspaceMember) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspacemember.Table, revenueworkspacemember.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueworkspacemember.UserTable, revenueworkspacemember.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RevenueWorkspaceMemberClient) Hooks() []Hook {
+	return c.hooks.RevenueWorkspaceMember
+}
+
+// Interceptors returns the client interceptors.
+func (c *RevenueWorkspaceMemberClient) Interceptors() []Interceptor {
+	return c.inters.RevenueWorkspaceMember
+}
+
+func (c *RevenueWorkspaceMemberClient) mutate(ctx context.Context, m *RevenueWorkspaceMemberMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RevenueWorkspaceMemberCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RevenueWorkspaceMemberUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RevenueWorkspaceMemberUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RevenueWorkspaceMemberDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RevenueWorkspaceMember mutation op: %q", m.Op())
+	}
+}
+
 // SubscriptionClient is a client for the Subscription schema.
 type SubscriptionClient struct {
 	config
@@ -5038,6 +7126,166 @@ func (c *UserClient) QueryAgentToolResultBlobs(_m *User) *AgentToolResultBlobQue
 	return query
 }
 
+// QueryRevenueWorkspaces queries the revenue_workspaces edge of a User.
+func (c *UserClient) QueryRevenueWorkspaces(_m *User) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueWorkspacesTable, user.RevenueWorkspacesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRevenueWorkspaceMembers queries the revenue_workspace_members edge of a User.
+func (c *UserClient) QueryRevenueWorkspaceMembers(_m *User) *RevenueWorkspaceMemberQuery {
+	query := (&RevenueWorkspaceMemberClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(revenueworkspacemember.Table, revenueworkspacemember.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueWorkspaceMembersTable, user.RevenueWorkspaceMembersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationships queries the relationships edge of a User.
+func (c *UserClient) QueryRelationships(_m *User) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipsTable, user.RelationshipsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRevenueEvidences queries the revenue_evidences edge of a User.
+func (c *UserClient) QueryRevenueEvidences(_m *User) *RevenueEvidenceQuery {
+	query := (&RevenueEvidenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(revenueevidence.Table, revenueevidence.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueEvidencesTable, user.RevenueEvidencesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommitments queries the commitments edge of a User.
+func (c *UserClient) QueryCommitments(_m *User) *CommitmentQuery {
+	query := (&CommitmentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(commitment.Table, commitment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommitmentsTable, user.CommitmentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRevenueActions queries the revenue_actions edge of a User.
+func (c *UserClient) QueryRevenueActions(_m *User) *RevenueActionQuery {
+	query := (&RevenueActionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(revenueaction.Table, revenueaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueActionsTable, user.RevenueActionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRevenueActionRevisions queries the revenue_action_revisions edge of a User.
+func (c *UserClient) QueryRevenueActionRevisions(_m *User) *RevenueActionRevisionQuery {
+	query := (&RevenueActionRevisionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(revenueactionrevision.Table, revenueactionrevision.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueActionRevisionsTable, user.RevenueActionRevisionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPolicyDecisionSnapshots queries the policy_decision_snapshots edge of a User.
+func (c *UserClient) QueryPolicyDecisionSnapshots(_m *User) *PolicyDecisionSnapshotQuery {
+	query := (&PolicyDecisionSnapshotClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(policydecisionsnapshot.Table, policydecisionsnapshot.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PolicyDecisionSnapshotsTable, user.PolicyDecisionSnapshotsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryActionOutcomes queries the action_outcomes edge of a User.
+func (c *UserClient) QueryActionOutcomes(_m *User) *ActionOutcomeQuery {
+	query := (&ActionOutcomeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(actionoutcome.Table, actionoutcome.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ActionOutcomesTable, user.ActionOutcomesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRevenueOutboxEvents queries the revenue_outbox_events edge of a User.
+func (c *UserClient) QueryRevenueOutboxEvents(_m *User) *RevenueOutboxEventQuery {
+	query := (&RevenueOutboxEventClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(revenueoutboxevent.Table, revenueoutboxevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueOutboxEventsTable, user.RevenueOutboxEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -5199,21 +7447,27 @@ func (c *UserHistoryClient) mutate(ctx context.Context, m *UserHistoryMutation) 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AgentApproval, AgentDefinition, AgentDefinitionHistory, AgentSession,
-		AgentSessionEvent, AgentToolCall, AgentToolResultBlob, AgentTurn,
+		ActionOutcome, AgentApproval, AgentDefinition, AgentDefinitionHistory,
+		AgentSession, AgentSessionEvent, AgentToolCall, AgentToolResultBlob, AgentTurn,
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
-		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, CreditLedger,
-		GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
-		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
-		Subscription, SubscriptionHistory, User, UserHistory []ent.Hook
+		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, Commitment,
+		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, MeetingMinuteUsage, OAuthConnection,
+		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
+		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueOutboxEvent,
+		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
+		User, UserHistory []ent.Hook
 	}
 	inters struct {
-		AgentApproval, AgentDefinition, AgentDefinitionHistory, AgentSession,
-		AgentSessionEvent, AgentToolCall, AgentToolResultBlob, AgentTurn,
+		ActionOutcome, AgentApproval, AgentDefinition, AgentDefinitionHistory,
+		AgentSession, AgentSessionEvent, AgentToolCall, AgentToolResultBlob, AgentTurn,
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
-		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, CreditLedger,
-		GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
-		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
-		Subscription, SubscriptionHistory, User, UserHistory []ent.Interceptor
+		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, Commitment,
+		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, MeetingMinuteUsage, OAuthConnection,
+		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
+		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueOutboxEvent,
+		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
+		User, UserHistory []ent.Interceptor
 	}
 )

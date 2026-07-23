@@ -9,6 +9,18 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
 
+// The ActionOutcomeFunc type is an adapter to allow the use of ordinary
+// function as ActionOutcome mutator.
+type ActionOutcomeFunc func(context.Context, *ent.ActionOutcomeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ActionOutcomeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ActionOutcomeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ActionOutcomeMutation", m)
+}
+
 // The AgentApprovalFunc type is an adapter to allow the use of ordinary
 // function as AgentApproval mutator.
 type AgentApprovalFunc func(context.Context, *ent.AgentApprovalMutation) (ent.Value, error)
@@ -177,6 +189,18 @@ func (f CloudEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CloudEventMutation", m)
 }
 
+// The CommitmentFunc type is an adapter to allow the use of ordinary
+// function as Commitment mutator.
+type CommitmentFunc func(context.Context, *ent.CommitmentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommitmentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommitmentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommitmentMutation", m)
+}
+
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary
 // function as CreditLedger mutator.
 type CreditLedgerFunc func(context.Context, *ent.CreditLedgerMutation) (ent.Value, error)
@@ -295,6 +319,102 @@ func (f OAuthPendingFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OAuthPendingMutation", m)
+}
+
+// The PolicyDecisionSnapshotFunc type is an adapter to allow the use of ordinary
+// function as PolicyDecisionSnapshot mutator.
+type PolicyDecisionSnapshotFunc func(context.Context, *ent.PolicyDecisionSnapshotMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PolicyDecisionSnapshotFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PolicyDecisionSnapshotMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PolicyDecisionSnapshotMutation", m)
+}
+
+// The RelationshipFunc type is an adapter to allow the use of ordinary
+// function as Relationship mutator.
+type RelationshipFunc func(context.Context, *ent.RelationshipMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipMutation", m)
+}
+
+// The RevenueActionFunc type is an adapter to allow the use of ordinary
+// function as RevenueAction mutator.
+type RevenueActionFunc func(context.Context, *ent.RevenueActionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RevenueActionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RevenueActionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueActionMutation", m)
+}
+
+// The RevenueActionRevisionFunc type is an adapter to allow the use of ordinary
+// function as RevenueActionRevision mutator.
+type RevenueActionRevisionFunc func(context.Context, *ent.RevenueActionRevisionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RevenueActionRevisionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RevenueActionRevisionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueActionRevisionMutation", m)
+}
+
+// The RevenueEvidenceFunc type is an adapter to allow the use of ordinary
+// function as RevenueEvidence mutator.
+type RevenueEvidenceFunc func(context.Context, *ent.RevenueEvidenceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RevenueEvidenceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RevenueEvidenceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueEvidenceMutation", m)
+}
+
+// The RevenueOutboxEventFunc type is an adapter to allow the use of ordinary
+// function as RevenueOutboxEvent mutator.
+type RevenueOutboxEventFunc func(context.Context, *ent.RevenueOutboxEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RevenueOutboxEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RevenueOutboxEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueOutboxEventMutation", m)
+}
+
+// The RevenueWorkspaceFunc type is an adapter to allow the use of ordinary
+// function as RevenueWorkspace mutator.
+type RevenueWorkspaceFunc func(context.Context, *ent.RevenueWorkspaceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RevenueWorkspaceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RevenueWorkspaceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueWorkspaceMutation", m)
+}
+
+// The RevenueWorkspaceMemberFunc type is an adapter to allow the use of ordinary
+// function as RevenueWorkspaceMember mutator.
+type RevenueWorkspaceMemberFunc func(context.Context, *ent.RevenueWorkspaceMemberMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RevenueWorkspaceMemberFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RevenueWorkspaceMemberMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueWorkspaceMemberMutation", m)
 }
 
 // The SubscriptionFunc type is an adapter to allow the use of ordinary

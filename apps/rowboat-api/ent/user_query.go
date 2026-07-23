@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
@@ -25,13 +26,22 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -64,6 +74,16 @@ type UserQuery struct {
 	withAgentToolCalls                    *AgentToolCallQuery
 	withAgentApprovals                    *AgentApprovalQuery
 	withAgentToolResultBlobs              *AgentToolResultBlobQuery
+	withRevenueWorkspaces                 *RevenueWorkspaceQuery
+	withRevenueWorkspaceMembers           *RevenueWorkspaceMemberQuery
+	withRelationships                     *RelationshipQuery
+	withRevenueEvidences                  *RevenueEvidenceQuery
+	withCommitments                       *CommitmentQuery
+	withRevenueActions                    *RevenueActionQuery
+	withRevenueActionRevisions            *RevenueActionRevisionQuery
+	withPolicyDecisionSnapshots           *PolicyDecisionSnapshotQuery
+	withActionOutcomes                    *ActionOutcomeQuery
+	withRevenueOutboxEvents               *RevenueOutboxEventQuery
 	modifiers                             []func(*sql.Selector)
 	loadTotal                             []func(context.Context, []*User) error
 	withNamedLedgerEntries                map[string]*CreditLedgerQuery
@@ -85,6 +105,16 @@ type UserQuery struct {
 	withNamedAgentToolCalls               map[string]*AgentToolCallQuery
 	withNamedAgentApprovals               map[string]*AgentApprovalQuery
 	withNamedAgentToolResultBlobs         map[string]*AgentToolResultBlobQuery
+	withNamedRevenueWorkspaces            map[string]*RevenueWorkspaceQuery
+	withNamedRevenueWorkspaceMembers      map[string]*RevenueWorkspaceMemberQuery
+	withNamedRelationships                map[string]*RelationshipQuery
+	withNamedRevenueEvidences             map[string]*RevenueEvidenceQuery
+	withNamedCommitments                  map[string]*CommitmentQuery
+	withNamedRevenueActions               map[string]*RevenueActionQuery
+	withNamedRevenueActionRevisions       map[string]*RevenueActionRevisionQuery
+	withNamedPolicyDecisionSnapshots      map[string]*PolicyDecisionSnapshotQuery
+	withNamedActionOutcomes               map[string]*ActionOutcomeQuery
+	withNamedRevenueOutboxEvents          map[string]*RevenueOutboxEventQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -561,6 +591,226 @@ func (_q *UserQuery) QueryAgentToolResultBlobs() *AgentToolResultBlobQuery {
 	return query
 }
 
+// QueryRevenueWorkspaces chains the current query on the "revenue_workspaces" edge.
+func (_q *UserQuery) QueryRevenueWorkspaces() *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueWorkspacesTable, user.RevenueWorkspacesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRevenueWorkspaceMembers chains the current query on the "revenue_workspace_members" edge.
+func (_q *UserQuery) QueryRevenueWorkspaceMembers() *RevenueWorkspaceMemberQuery {
+	query := (&RevenueWorkspaceMemberClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(revenueworkspacemember.Table, revenueworkspacemember.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueWorkspaceMembersTable, user.RevenueWorkspaceMembersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelationships chains the current query on the "relationships" edge.
+func (_q *UserQuery) QueryRelationships() *RelationshipQuery {
+	query := (&RelationshipClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipsTable, user.RelationshipsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRevenueEvidences chains the current query on the "revenue_evidences" edge.
+func (_q *UserQuery) QueryRevenueEvidences() *RevenueEvidenceQuery {
+	query := (&RevenueEvidenceClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(revenueevidence.Table, revenueevidence.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueEvidencesTable, user.RevenueEvidencesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommitments chains the current query on the "commitments" edge.
+func (_q *UserQuery) QueryCommitments() *CommitmentQuery {
+	query := (&CommitmentClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(commitment.Table, commitment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommitmentsTable, user.CommitmentsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRevenueActions chains the current query on the "revenue_actions" edge.
+func (_q *UserQuery) QueryRevenueActions() *RevenueActionQuery {
+	query := (&RevenueActionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(revenueaction.Table, revenueaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueActionsTable, user.RevenueActionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRevenueActionRevisions chains the current query on the "revenue_action_revisions" edge.
+func (_q *UserQuery) QueryRevenueActionRevisions() *RevenueActionRevisionQuery {
+	query := (&RevenueActionRevisionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(revenueactionrevision.Table, revenueactionrevision.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueActionRevisionsTable, user.RevenueActionRevisionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPolicyDecisionSnapshots chains the current query on the "policy_decision_snapshots" edge.
+func (_q *UserQuery) QueryPolicyDecisionSnapshots() *PolicyDecisionSnapshotQuery {
+	query := (&PolicyDecisionSnapshotClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(policydecisionsnapshot.Table, policydecisionsnapshot.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PolicyDecisionSnapshotsTable, user.PolicyDecisionSnapshotsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryActionOutcomes chains the current query on the "action_outcomes" edge.
+func (_q *UserQuery) QueryActionOutcomes() *ActionOutcomeQuery {
+	query := (&ActionOutcomeClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(actionoutcome.Table, actionoutcome.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ActionOutcomesTable, user.ActionOutcomesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRevenueOutboxEvents chains the current query on the "revenue_outbox_events" edge.
+func (_q *UserQuery) QueryRevenueOutboxEvents() *RevenueOutboxEventQuery {
+	query := (&RevenueOutboxEventClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(revenueoutboxevent.Table, revenueoutboxevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueOutboxEventsTable, user.RevenueOutboxEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -773,6 +1023,16 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withAgentToolCalls:               _q.withAgentToolCalls.Clone(),
 		withAgentApprovals:               _q.withAgentApprovals.Clone(),
 		withAgentToolResultBlobs:         _q.withAgentToolResultBlobs.Clone(),
+		withRevenueWorkspaces:            _q.withRevenueWorkspaces.Clone(),
+		withRevenueWorkspaceMembers:      _q.withRevenueWorkspaceMembers.Clone(),
+		withRelationships:                _q.withRelationships.Clone(),
+		withRevenueEvidences:             _q.withRevenueEvidences.Clone(),
+		withCommitments:                  _q.withCommitments.Clone(),
+		withRevenueActions:               _q.withRevenueActions.Clone(),
+		withRevenueActionRevisions:       _q.withRevenueActionRevisions.Clone(),
+		withPolicyDecisionSnapshots:      _q.withPolicyDecisionSnapshots.Clone(),
+		withActionOutcomes:               _q.withActionOutcomes.Clone(),
+		withRevenueOutboxEvents:          _q.withRevenueOutboxEvents.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -999,6 +1259,116 @@ func (_q *UserQuery) WithAgentToolResultBlobs(opts ...func(*AgentToolResultBlobQ
 	return _q
 }
 
+// WithRevenueWorkspaces tells the query-builder to eager-load the nodes that are connected to
+// the "revenue_workspaces" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRevenueWorkspaces(opts ...func(*RevenueWorkspaceQuery)) *UserQuery {
+	query := (&RevenueWorkspaceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRevenueWorkspaces = query
+	return _q
+}
+
+// WithRevenueWorkspaceMembers tells the query-builder to eager-load the nodes that are connected to
+// the "revenue_workspace_members" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRevenueWorkspaceMembers(opts ...func(*RevenueWorkspaceMemberQuery)) *UserQuery {
+	query := (&RevenueWorkspaceMemberClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRevenueWorkspaceMembers = query
+	return _q
+}
+
+// WithRelationships tells the query-builder to eager-load the nodes that are connected to
+// the "relationships" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRelationships(opts ...func(*RelationshipQuery)) *UserQuery {
+	query := (&RelationshipClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelationships = query
+	return _q
+}
+
+// WithRevenueEvidences tells the query-builder to eager-load the nodes that are connected to
+// the "revenue_evidences" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRevenueEvidences(opts ...func(*RevenueEvidenceQuery)) *UserQuery {
+	query := (&RevenueEvidenceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRevenueEvidences = query
+	return _q
+}
+
+// WithCommitments tells the query-builder to eager-load the nodes that are connected to
+// the "commitments" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithCommitments(opts ...func(*CommitmentQuery)) *UserQuery {
+	query := (&CommitmentClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommitments = query
+	return _q
+}
+
+// WithRevenueActions tells the query-builder to eager-load the nodes that are connected to
+// the "revenue_actions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRevenueActions(opts ...func(*RevenueActionQuery)) *UserQuery {
+	query := (&RevenueActionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRevenueActions = query
+	return _q
+}
+
+// WithRevenueActionRevisions tells the query-builder to eager-load the nodes that are connected to
+// the "revenue_action_revisions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRevenueActionRevisions(opts ...func(*RevenueActionRevisionQuery)) *UserQuery {
+	query := (&RevenueActionRevisionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRevenueActionRevisions = query
+	return _q
+}
+
+// WithPolicyDecisionSnapshots tells the query-builder to eager-load the nodes that are connected to
+// the "policy_decision_snapshots" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithPolicyDecisionSnapshots(opts ...func(*PolicyDecisionSnapshotQuery)) *UserQuery {
+	query := (&PolicyDecisionSnapshotClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPolicyDecisionSnapshots = query
+	return _q
+}
+
+// WithActionOutcomes tells the query-builder to eager-load the nodes that are connected to
+// the "action_outcomes" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithActionOutcomes(opts ...func(*ActionOutcomeQuery)) *UserQuery {
+	query := (&ActionOutcomeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withActionOutcomes = query
+	return _q
+}
+
+// WithRevenueOutboxEvents tells the query-builder to eager-load the nodes that are connected to
+// the "revenue_outbox_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRevenueOutboxEvents(opts ...func(*RevenueOutboxEventQuery)) *UserQuery {
+	query := (&RevenueOutboxEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRevenueOutboxEvents = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -1077,7 +1447,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [20]bool{
+		loadedTypes = [30]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -1098,6 +1468,16 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withAgentToolCalls != nil,
 			_q.withAgentApprovals != nil,
 			_q.withAgentToolResultBlobs != nil,
+			_q.withRevenueWorkspaces != nil,
+			_q.withRevenueWorkspaceMembers != nil,
+			_q.withRelationships != nil,
+			_q.withRevenueEvidences != nil,
+			_q.withCommitments != nil,
+			_q.withRevenueActions != nil,
+			_q.withRevenueActionRevisions != nil,
+			_q.withPolicyDecisionSnapshots != nil,
+			_q.withActionOutcomes != nil,
+			_q.withRevenueOutboxEvents != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -1274,6 +1654,84 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withRevenueWorkspaces; query != nil {
+		if err := _q.loadRevenueWorkspaces(ctx, query, nodes,
+			func(n *User) { n.Edges.RevenueWorkspaces = []*RevenueWorkspace{} },
+			func(n *User, e *RevenueWorkspace) { n.Edges.RevenueWorkspaces = append(n.Edges.RevenueWorkspaces, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRevenueWorkspaceMembers; query != nil {
+		if err := _q.loadRevenueWorkspaceMembers(ctx, query, nodes,
+			func(n *User) { n.Edges.RevenueWorkspaceMembers = []*RevenueWorkspaceMember{} },
+			func(n *User, e *RevenueWorkspaceMember) {
+				n.Edges.RevenueWorkspaceMembers = append(n.Edges.RevenueWorkspaceMembers, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRelationships; query != nil {
+		if err := _q.loadRelationships(ctx, query, nodes,
+			func(n *User) { n.Edges.Relationships = []*Relationship{} },
+			func(n *User, e *Relationship) { n.Edges.Relationships = append(n.Edges.Relationships, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRevenueEvidences; query != nil {
+		if err := _q.loadRevenueEvidences(ctx, query, nodes,
+			func(n *User) { n.Edges.RevenueEvidences = []*RevenueEvidence{} },
+			func(n *User, e *RevenueEvidence) { n.Edges.RevenueEvidences = append(n.Edges.RevenueEvidences, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommitments; query != nil {
+		if err := _q.loadCommitments(ctx, query, nodes,
+			func(n *User) { n.Edges.Commitments = []*Commitment{} },
+			func(n *User, e *Commitment) { n.Edges.Commitments = append(n.Edges.Commitments, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRevenueActions; query != nil {
+		if err := _q.loadRevenueActions(ctx, query, nodes,
+			func(n *User) { n.Edges.RevenueActions = []*RevenueAction{} },
+			func(n *User, e *RevenueAction) { n.Edges.RevenueActions = append(n.Edges.RevenueActions, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRevenueActionRevisions; query != nil {
+		if err := _q.loadRevenueActionRevisions(ctx, query, nodes,
+			func(n *User) { n.Edges.RevenueActionRevisions = []*RevenueActionRevision{} },
+			func(n *User, e *RevenueActionRevision) {
+				n.Edges.RevenueActionRevisions = append(n.Edges.RevenueActionRevisions, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPolicyDecisionSnapshots; query != nil {
+		if err := _q.loadPolicyDecisionSnapshots(ctx, query, nodes,
+			func(n *User) { n.Edges.PolicyDecisionSnapshots = []*PolicyDecisionSnapshot{} },
+			func(n *User, e *PolicyDecisionSnapshot) {
+				n.Edges.PolicyDecisionSnapshots = append(n.Edges.PolicyDecisionSnapshots, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withActionOutcomes; query != nil {
+		if err := _q.loadActionOutcomes(ctx, query, nodes,
+			func(n *User) { n.Edges.ActionOutcomes = []*ActionOutcome{} },
+			func(n *User, e *ActionOutcome) { n.Edges.ActionOutcomes = append(n.Edges.ActionOutcomes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRevenueOutboxEvents; query != nil {
+		if err := _q.loadRevenueOutboxEvents(ctx, query, nodes,
+			func(n *User) { n.Edges.RevenueOutboxEvents = []*RevenueOutboxEvent{} },
+			func(n *User, e *RevenueOutboxEvent) {
+				n.Edges.RevenueOutboxEvents = append(n.Edges.RevenueOutboxEvents, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -1404,6 +1862,76 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadAgentToolResultBlobs(ctx, query, nodes,
 			func(n *User) { n.appendNamedAgentToolResultBlobs(name) },
 			func(n *User, e *AgentToolResultBlob) { n.appendNamedAgentToolResultBlobs(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRevenueWorkspaces {
+		if err := _q.loadRevenueWorkspaces(ctx, query, nodes,
+			func(n *User) { n.appendNamedRevenueWorkspaces(name) },
+			func(n *User, e *RevenueWorkspace) { n.appendNamedRevenueWorkspaces(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRevenueWorkspaceMembers {
+		if err := _q.loadRevenueWorkspaceMembers(ctx, query, nodes,
+			func(n *User) { n.appendNamedRevenueWorkspaceMembers(name) },
+			func(n *User, e *RevenueWorkspaceMember) { n.appendNamedRevenueWorkspaceMembers(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelationships {
+		if err := _q.loadRelationships(ctx, query, nodes,
+			func(n *User) { n.appendNamedRelationships(name) },
+			func(n *User, e *Relationship) { n.appendNamedRelationships(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRevenueEvidences {
+		if err := _q.loadRevenueEvidences(ctx, query, nodes,
+			func(n *User) { n.appendNamedRevenueEvidences(name) },
+			func(n *User, e *RevenueEvidence) { n.appendNamedRevenueEvidences(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommitments {
+		if err := _q.loadCommitments(ctx, query, nodes,
+			func(n *User) { n.appendNamedCommitments(name) },
+			func(n *User, e *Commitment) { n.appendNamedCommitments(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRevenueActions {
+		if err := _q.loadRevenueActions(ctx, query, nodes,
+			func(n *User) { n.appendNamedRevenueActions(name) },
+			func(n *User, e *RevenueAction) { n.appendNamedRevenueActions(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRevenueActionRevisions {
+		if err := _q.loadRevenueActionRevisions(ctx, query, nodes,
+			func(n *User) { n.appendNamedRevenueActionRevisions(name) },
+			func(n *User, e *RevenueActionRevision) { n.appendNamedRevenueActionRevisions(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPolicyDecisionSnapshots {
+		if err := _q.loadPolicyDecisionSnapshots(ctx, query, nodes,
+			func(n *User) { n.appendNamedPolicyDecisionSnapshots(name) },
+			func(n *User, e *PolicyDecisionSnapshot) { n.appendNamedPolicyDecisionSnapshots(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedActionOutcomes {
+		if err := _q.loadActionOutcomes(ctx, query, nodes,
+			func(n *User) { n.appendNamedActionOutcomes(name) },
+			func(n *User, e *ActionOutcome) { n.appendNamedActionOutcomes(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRevenueOutboxEvents {
+		if err := _q.loadRevenueOutboxEvents(ctx, query, nodes,
+			func(n *User) { n.appendNamedRevenueOutboxEvents(name) },
+			func(n *User, e *RevenueOutboxEvent) { n.appendNamedRevenueOutboxEvents(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -2032,6 +2560,316 @@ func (_q *UserQuery) loadAgentToolResultBlobs(ctx context.Context, query *AgentT
 	}
 	return nil
 }
+func (_q *UserQuery) loadRevenueWorkspaces(ctx context.Context, query *RevenueWorkspaceQuery, nodes []*User, init func(*User), assign func(*User, *RevenueWorkspace)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RevenueWorkspace(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RevenueWorkspacesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_revenue_workspaces
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_revenue_workspaces" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_revenue_workspaces" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRevenueWorkspaceMembers(ctx context.Context, query *RevenueWorkspaceMemberQuery, nodes []*User, init func(*User), assign func(*User, *RevenueWorkspaceMember)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RevenueWorkspaceMember(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RevenueWorkspaceMembersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_revenue_workspace_members
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_revenue_workspace_members" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_revenue_workspace_members" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRelationships(ctx context.Context, query *RelationshipQuery, nodes []*User, init func(*User), assign func(*User, *Relationship)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RelationshipsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_relationships
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_relationships" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_relationships" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRevenueEvidences(ctx context.Context, query *RevenueEvidenceQuery, nodes []*User, init func(*User), assign func(*User, *RevenueEvidence)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RevenueEvidence(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RevenueEvidencesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_revenue_evidences
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_revenue_evidences" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_revenue_evidences" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadCommitments(ctx context.Context, query *CommitmentQuery, nodes []*User, init func(*User), assign func(*User, *Commitment)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Commitment(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CommitmentsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_commitments
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_commitments" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_commitments" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRevenueActions(ctx context.Context, query *RevenueActionQuery, nodes []*User, init func(*User), assign func(*User, *RevenueAction)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RevenueActionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_revenue_actions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_revenue_actions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_revenue_actions" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRevenueActionRevisions(ctx context.Context, query *RevenueActionRevisionQuery, nodes []*User, init func(*User), assign func(*User, *RevenueActionRevision)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RevenueActionRevision(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RevenueActionRevisionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_revenue_action_revisions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_revenue_action_revisions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_revenue_action_revisions" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadPolicyDecisionSnapshots(ctx context.Context, query *PolicyDecisionSnapshotQuery, nodes []*User, init func(*User), assign func(*User, *PolicyDecisionSnapshot)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PolicyDecisionSnapshot(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.PolicyDecisionSnapshotsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_policy_decision_snapshots
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_policy_decision_snapshots" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_policy_decision_snapshots" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadActionOutcomes(ctx context.Context, query *ActionOutcomeQuery, nodes []*User, init func(*User), assign func(*User, *ActionOutcome)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ActionOutcome(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ActionOutcomesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_action_outcomes
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_action_outcomes" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_action_outcomes" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRevenueOutboxEvents(ctx context.Context, query *RevenueOutboxEventQuery, nodes []*User, init func(*User), assign func(*User, *RevenueOutboxEvent)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RevenueOutboxEvent(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RevenueOutboxEventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_revenue_outbox_events
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_revenue_outbox_events" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_revenue_outbox_events" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -2380,6 +3218,146 @@ func (_q *UserQuery) WithNamedAgentToolResultBlobs(name string, opts ...func(*Ag
 		_q.withNamedAgentToolResultBlobs = make(map[string]*AgentToolResultBlobQuery)
 	}
 	_q.withNamedAgentToolResultBlobs[name] = query
+	return _q
+}
+
+// WithNamedRevenueWorkspaces tells the query-builder to eager-load the nodes that are connected to the "revenue_workspaces"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRevenueWorkspaces(name string, opts ...func(*RevenueWorkspaceQuery)) *UserQuery {
+	query := (&RevenueWorkspaceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRevenueWorkspaces == nil {
+		_q.withNamedRevenueWorkspaces = make(map[string]*RevenueWorkspaceQuery)
+	}
+	_q.withNamedRevenueWorkspaces[name] = query
+	return _q
+}
+
+// WithNamedRevenueWorkspaceMembers tells the query-builder to eager-load the nodes that are connected to the "revenue_workspace_members"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRevenueWorkspaceMembers(name string, opts ...func(*RevenueWorkspaceMemberQuery)) *UserQuery {
+	query := (&RevenueWorkspaceMemberClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRevenueWorkspaceMembers == nil {
+		_q.withNamedRevenueWorkspaceMembers = make(map[string]*RevenueWorkspaceMemberQuery)
+	}
+	_q.withNamedRevenueWorkspaceMembers[name] = query
+	return _q
+}
+
+// WithNamedRelationships tells the query-builder to eager-load the nodes that are connected to the "relationships"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRelationships(name string, opts ...func(*RelationshipQuery)) *UserQuery {
+	query := (&RelationshipClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelationships == nil {
+		_q.withNamedRelationships = make(map[string]*RelationshipQuery)
+	}
+	_q.withNamedRelationships[name] = query
+	return _q
+}
+
+// WithNamedRevenueEvidences tells the query-builder to eager-load the nodes that are connected to the "revenue_evidences"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRevenueEvidences(name string, opts ...func(*RevenueEvidenceQuery)) *UserQuery {
+	query := (&RevenueEvidenceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRevenueEvidences == nil {
+		_q.withNamedRevenueEvidences = make(map[string]*RevenueEvidenceQuery)
+	}
+	_q.withNamedRevenueEvidences[name] = query
+	return _q
+}
+
+// WithNamedCommitments tells the query-builder to eager-load the nodes that are connected to the "commitments"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedCommitments(name string, opts ...func(*CommitmentQuery)) *UserQuery {
+	query := (&CommitmentClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommitments == nil {
+		_q.withNamedCommitments = make(map[string]*CommitmentQuery)
+	}
+	_q.withNamedCommitments[name] = query
+	return _q
+}
+
+// WithNamedRevenueActions tells the query-builder to eager-load the nodes that are connected to the "revenue_actions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRevenueActions(name string, opts ...func(*RevenueActionQuery)) *UserQuery {
+	query := (&RevenueActionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRevenueActions == nil {
+		_q.withNamedRevenueActions = make(map[string]*RevenueActionQuery)
+	}
+	_q.withNamedRevenueActions[name] = query
+	return _q
+}
+
+// WithNamedRevenueActionRevisions tells the query-builder to eager-load the nodes that are connected to the "revenue_action_revisions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRevenueActionRevisions(name string, opts ...func(*RevenueActionRevisionQuery)) *UserQuery {
+	query := (&RevenueActionRevisionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRevenueActionRevisions == nil {
+		_q.withNamedRevenueActionRevisions = make(map[string]*RevenueActionRevisionQuery)
+	}
+	_q.withNamedRevenueActionRevisions[name] = query
+	return _q
+}
+
+// WithNamedPolicyDecisionSnapshots tells the query-builder to eager-load the nodes that are connected to the "policy_decision_snapshots"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedPolicyDecisionSnapshots(name string, opts ...func(*PolicyDecisionSnapshotQuery)) *UserQuery {
+	query := (&PolicyDecisionSnapshotClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPolicyDecisionSnapshots == nil {
+		_q.withNamedPolicyDecisionSnapshots = make(map[string]*PolicyDecisionSnapshotQuery)
+	}
+	_q.withNamedPolicyDecisionSnapshots[name] = query
+	return _q
+}
+
+// WithNamedActionOutcomes tells the query-builder to eager-load the nodes that are connected to the "action_outcomes"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedActionOutcomes(name string, opts ...func(*ActionOutcomeQuery)) *UserQuery {
+	query := (&ActionOutcomeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedActionOutcomes == nil {
+		_q.withNamedActionOutcomes = make(map[string]*ActionOutcomeQuery)
+	}
+	_q.withNamedActionOutcomes[name] = query
+	return _q
+}
+
+// WithNamedRevenueOutboxEvents tells the query-builder to eager-load the nodes that are connected to the "revenue_outbox_events"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRevenueOutboxEvents(name string, opts ...func(*RevenueOutboxEventQuery)) *UserQuery {
+	query := (&RevenueOutboxEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRevenueOutboxEvents == nil {
+		_q.withNamedRevenueOutboxEvents = make(map[string]*RevenueOutboxEventQuery)
+	}
+	_q.withNamedRevenueOutboxEvents[name] = query
 	return _q
 }
 

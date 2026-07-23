@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
@@ -24,13 +25,22 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -411,6 +421,156 @@ func (_u *UserUpdate) AddAgentToolResultBlobs(v ...*AgentToolResultBlob) *UserUp
 		ids[i] = v[i].ID
 	}
 	return _u.AddAgentToolResultBlobIDs(ids...)
+}
+
+// AddRevenueWorkspaceIDs adds the "revenue_workspaces" edge to the RevenueWorkspace entity by IDs.
+func (_u *UserUpdate) AddRevenueWorkspaceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddRevenueWorkspaceIDs(ids...)
+	return _u
+}
+
+// AddRevenueWorkspaces adds the "revenue_workspaces" edges to the RevenueWorkspace entity.
+func (_u *UserUpdate) AddRevenueWorkspaces(v ...*RevenueWorkspace) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueWorkspaceIDs(ids...)
+}
+
+// AddRevenueWorkspaceMemberIDs adds the "revenue_workspace_members" edge to the RevenueWorkspaceMember entity by IDs.
+func (_u *UserUpdate) AddRevenueWorkspaceMemberIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddRevenueWorkspaceMemberIDs(ids...)
+	return _u
+}
+
+// AddRevenueWorkspaceMembers adds the "revenue_workspace_members" edges to the RevenueWorkspaceMember entity.
+func (_u *UserUpdate) AddRevenueWorkspaceMembers(v ...*RevenueWorkspaceMember) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueWorkspaceMemberIDs(ids...)
+}
+
+// AddRelationshipIDs adds the "relationships" edge to the Relationship entity by IDs.
+func (_u *UserUpdate) AddRelationshipIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddRelationshipIDs(ids...)
+	return _u
+}
+
+// AddRelationships adds the "relationships" edges to the Relationship entity.
+func (_u *UserUpdate) AddRelationships(v ...*Relationship) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRelationshipIDs(ids...)
+}
+
+// AddRevenueEvidenceIDs adds the "revenue_evidences" edge to the RevenueEvidence entity by IDs.
+func (_u *UserUpdate) AddRevenueEvidenceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddRevenueEvidenceIDs(ids...)
+	return _u
+}
+
+// AddRevenueEvidences adds the "revenue_evidences" edges to the RevenueEvidence entity.
+func (_u *UserUpdate) AddRevenueEvidences(v ...*RevenueEvidence) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueEvidenceIDs(ids...)
+}
+
+// AddCommitmentIDs adds the "commitments" edge to the Commitment entity by IDs.
+func (_u *UserUpdate) AddCommitmentIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddCommitmentIDs(ids...)
+	return _u
+}
+
+// AddCommitments adds the "commitments" edges to the Commitment entity.
+func (_u *UserUpdate) AddCommitments(v ...*Commitment) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommitmentIDs(ids...)
+}
+
+// AddRevenueActionIDs adds the "revenue_actions" edge to the RevenueAction entity by IDs.
+func (_u *UserUpdate) AddRevenueActionIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddRevenueActionIDs(ids...)
+	return _u
+}
+
+// AddRevenueActions adds the "revenue_actions" edges to the RevenueAction entity.
+func (_u *UserUpdate) AddRevenueActions(v ...*RevenueAction) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueActionIDs(ids...)
+}
+
+// AddRevenueActionRevisionIDs adds the "revenue_action_revisions" edge to the RevenueActionRevision entity by IDs.
+func (_u *UserUpdate) AddRevenueActionRevisionIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddRevenueActionRevisionIDs(ids...)
+	return _u
+}
+
+// AddRevenueActionRevisions adds the "revenue_action_revisions" edges to the RevenueActionRevision entity.
+func (_u *UserUpdate) AddRevenueActionRevisions(v ...*RevenueActionRevision) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueActionRevisionIDs(ids...)
+}
+
+// AddPolicyDecisionSnapshotIDs adds the "policy_decision_snapshots" edge to the PolicyDecisionSnapshot entity by IDs.
+func (_u *UserUpdate) AddPolicyDecisionSnapshotIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddPolicyDecisionSnapshotIDs(ids...)
+	return _u
+}
+
+// AddPolicyDecisionSnapshots adds the "policy_decision_snapshots" edges to the PolicyDecisionSnapshot entity.
+func (_u *UserUpdate) AddPolicyDecisionSnapshots(v ...*PolicyDecisionSnapshot) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPolicyDecisionSnapshotIDs(ids...)
+}
+
+// AddActionOutcomeIDs adds the "action_outcomes" edge to the ActionOutcome entity by IDs.
+func (_u *UserUpdate) AddActionOutcomeIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddActionOutcomeIDs(ids...)
+	return _u
+}
+
+// AddActionOutcomes adds the "action_outcomes" edges to the ActionOutcome entity.
+func (_u *UserUpdate) AddActionOutcomes(v ...*ActionOutcome) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddActionOutcomeIDs(ids...)
+}
+
+// AddRevenueOutboxEventIDs adds the "revenue_outbox_events" edge to the RevenueOutboxEvent entity by IDs.
+func (_u *UserUpdate) AddRevenueOutboxEventIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddRevenueOutboxEventIDs(ids...)
+	return _u
+}
+
+// AddRevenueOutboxEvents adds the "revenue_outbox_events" edges to the RevenueOutboxEvent entity.
+func (_u *UserUpdate) AddRevenueOutboxEvents(v ...*RevenueOutboxEvent) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueOutboxEventIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -821,6 +981,216 @@ func (_u *UserUpdate) RemoveAgentToolResultBlobs(v ...*AgentToolResultBlob) *Use
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAgentToolResultBlobIDs(ids...)
+}
+
+// ClearRevenueWorkspaces clears all "revenue_workspaces" edges to the RevenueWorkspace entity.
+func (_u *UserUpdate) ClearRevenueWorkspaces() *UserUpdate {
+	_u.mutation.ClearRevenueWorkspaces()
+	return _u
+}
+
+// RemoveRevenueWorkspaceIDs removes the "revenue_workspaces" edge to RevenueWorkspace entities by IDs.
+func (_u *UserUpdate) RemoveRevenueWorkspaceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveRevenueWorkspaceIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueWorkspaces removes "revenue_workspaces" edges to RevenueWorkspace entities.
+func (_u *UserUpdate) RemoveRevenueWorkspaces(v ...*RevenueWorkspace) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueWorkspaceIDs(ids...)
+}
+
+// ClearRevenueWorkspaceMembers clears all "revenue_workspace_members" edges to the RevenueWorkspaceMember entity.
+func (_u *UserUpdate) ClearRevenueWorkspaceMembers() *UserUpdate {
+	_u.mutation.ClearRevenueWorkspaceMembers()
+	return _u
+}
+
+// RemoveRevenueWorkspaceMemberIDs removes the "revenue_workspace_members" edge to RevenueWorkspaceMember entities by IDs.
+func (_u *UserUpdate) RemoveRevenueWorkspaceMemberIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveRevenueWorkspaceMemberIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueWorkspaceMembers removes "revenue_workspace_members" edges to RevenueWorkspaceMember entities.
+func (_u *UserUpdate) RemoveRevenueWorkspaceMembers(v ...*RevenueWorkspaceMember) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueWorkspaceMemberIDs(ids...)
+}
+
+// ClearRelationships clears all "relationships" edges to the Relationship entity.
+func (_u *UserUpdate) ClearRelationships() *UserUpdate {
+	_u.mutation.ClearRelationships()
+	return _u
+}
+
+// RemoveRelationshipIDs removes the "relationships" edge to Relationship entities by IDs.
+func (_u *UserUpdate) RemoveRelationshipIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveRelationshipIDs(ids...)
+	return _u
+}
+
+// RemoveRelationships removes "relationships" edges to Relationship entities.
+func (_u *UserUpdate) RemoveRelationships(v ...*Relationship) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRelationshipIDs(ids...)
+}
+
+// ClearRevenueEvidences clears all "revenue_evidences" edges to the RevenueEvidence entity.
+func (_u *UserUpdate) ClearRevenueEvidences() *UserUpdate {
+	_u.mutation.ClearRevenueEvidences()
+	return _u
+}
+
+// RemoveRevenueEvidenceIDs removes the "revenue_evidences" edge to RevenueEvidence entities by IDs.
+func (_u *UserUpdate) RemoveRevenueEvidenceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveRevenueEvidenceIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueEvidences removes "revenue_evidences" edges to RevenueEvidence entities.
+func (_u *UserUpdate) RemoveRevenueEvidences(v ...*RevenueEvidence) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueEvidenceIDs(ids...)
+}
+
+// ClearCommitments clears all "commitments" edges to the Commitment entity.
+func (_u *UserUpdate) ClearCommitments() *UserUpdate {
+	_u.mutation.ClearCommitments()
+	return _u
+}
+
+// RemoveCommitmentIDs removes the "commitments" edge to Commitment entities by IDs.
+func (_u *UserUpdate) RemoveCommitmentIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveCommitmentIDs(ids...)
+	return _u
+}
+
+// RemoveCommitments removes "commitments" edges to Commitment entities.
+func (_u *UserUpdate) RemoveCommitments(v ...*Commitment) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommitmentIDs(ids...)
+}
+
+// ClearRevenueActions clears all "revenue_actions" edges to the RevenueAction entity.
+func (_u *UserUpdate) ClearRevenueActions() *UserUpdate {
+	_u.mutation.ClearRevenueActions()
+	return _u
+}
+
+// RemoveRevenueActionIDs removes the "revenue_actions" edge to RevenueAction entities by IDs.
+func (_u *UserUpdate) RemoveRevenueActionIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveRevenueActionIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueActions removes "revenue_actions" edges to RevenueAction entities.
+func (_u *UserUpdate) RemoveRevenueActions(v ...*RevenueAction) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueActionIDs(ids...)
+}
+
+// ClearRevenueActionRevisions clears all "revenue_action_revisions" edges to the RevenueActionRevision entity.
+func (_u *UserUpdate) ClearRevenueActionRevisions() *UserUpdate {
+	_u.mutation.ClearRevenueActionRevisions()
+	return _u
+}
+
+// RemoveRevenueActionRevisionIDs removes the "revenue_action_revisions" edge to RevenueActionRevision entities by IDs.
+func (_u *UserUpdate) RemoveRevenueActionRevisionIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveRevenueActionRevisionIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueActionRevisions removes "revenue_action_revisions" edges to RevenueActionRevision entities.
+func (_u *UserUpdate) RemoveRevenueActionRevisions(v ...*RevenueActionRevision) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueActionRevisionIDs(ids...)
+}
+
+// ClearPolicyDecisionSnapshots clears all "policy_decision_snapshots" edges to the PolicyDecisionSnapshot entity.
+func (_u *UserUpdate) ClearPolicyDecisionSnapshots() *UserUpdate {
+	_u.mutation.ClearPolicyDecisionSnapshots()
+	return _u
+}
+
+// RemovePolicyDecisionSnapshotIDs removes the "policy_decision_snapshots" edge to PolicyDecisionSnapshot entities by IDs.
+func (_u *UserUpdate) RemovePolicyDecisionSnapshotIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemovePolicyDecisionSnapshotIDs(ids...)
+	return _u
+}
+
+// RemovePolicyDecisionSnapshots removes "policy_decision_snapshots" edges to PolicyDecisionSnapshot entities.
+func (_u *UserUpdate) RemovePolicyDecisionSnapshots(v ...*PolicyDecisionSnapshot) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePolicyDecisionSnapshotIDs(ids...)
+}
+
+// ClearActionOutcomes clears all "action_outcomes" edges to the ActionOutcome entity.
+func (_u *UserUpdate) ClearActionOutcomes() *UserUpdate {
+	_u.mutation.ClearActionOutcomes()
+	return _u
+}
+
+// RemoveActionOutcomeIDs removes the "action_outcomes" edge to ActionOutcome entities by IDs.
+func (_u *UserUpdate) RemoveActionOutcomeIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveActionOutcomeIDs(ids...)
+	return _u
+}
+
+// RemoveActionOutcomes removes "action_outcomes" edges to ActionOutcome entities.
+func (_u *UserUpdate) RemoveActionOutcomes(v ...*ActionOutcome) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveActionOutcomeIDs(ids...)
+}
+
+// ClearRevenueOutboxEvents clears all "revenue_outbox_events" edges to the RevenueOutboxEvent entity.
+func (_u *UserUpdate) ClearRevenueOutboxEvents() *UserUpdate {
+	_u.mutation.ClearRevenueOutboxEvents()
+	return _u
+}
+
+// RemoveRevenueOutboxEventIDs removes the "revenue_outbox_events" edge to RevenueOutboxEvent entities by IDs.
+func (_u *UserUpdate) RemoveRevenueOutboxEventIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveRevenueOutboxEventIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueOutboxEvents removes "revenue_outbox_events" edges to RevenueOutboxEvent entities.
+func (_u *UserUpdate) RemoveRevenueOutboxEvents(v ...*RevenueOutboxEvent) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueOutboxEventIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1783,6 +2153,456 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.RevenueWorkspacesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspacesTable,
+			Columns: []string{user.RevenueWorkspacesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueWorkspacesIDs(); len(nodes) > 0 && !_u.mutation.RevenueWorkspacesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspacesTable,
+			Columns: []string{user.RevenueWorkspacesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueWorkspacesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspacesTable,
+			Columns: []string{user.RevenueWorkspacesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueWorkspaceMembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspaceMembersTable,
+			Columns: []string{user.RevenueWorkspaceMembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspacemember.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueWorkspaceMembersIDs(); len(nodes) > 0 && !_u.mutation.RevenueWorkspaceMembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspaceMembersTable,
+			Columns: []string{user.RevenueWorkspaceMembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspacemember.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueWorkspaceMembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspaceMembersTable,
+			Columns: []string{user.RevenueWorkspaceMembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspacemember.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RelationshipsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipsTable,
+			Columns: []string{user.RelationshipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRelationshipsIDs(); len(nodes) > 0 && !_u.mutation.RelationshipsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipsTable,
+			Columns: []string{user.RelationshipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelationshipsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipsTable,
+			Columns: []string{user.RelationshipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueEvidencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueEvidencesTable,
+			Columns: []string{user.RevenueEvidencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueEvidencesIDs(); len(nodes) > 0 && !_u.mutation.RevenueEvidencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueEvidencesTable,
+			Columns: []string{user.RevenueEvidencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueEvidencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueEvidencesTable,
+			Columns: []string{user.RevenueEvidencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommitmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommitmentsTable,
+			Columns: []string{user.CommitmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitment.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommitmentsIDs(); len(nodes) > 0 && !_u.mutation.CommitmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommitmentsTable,
+			Columns: []string{user.CommitmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommitmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommitmentsTable,
+			Columns: []string{user.CommitmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueActionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionsTable,
+			Columns: []string{user.RevenueActionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueActionsIDs(); len(nodes) > 0 && !_u.mutation.RevenueActionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionsTable,
+			Columns: []string{user.RevenueActionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueActionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionsTable,
+			Columns: []string{user.RevenueActionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueActionRevisionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionRevisionsTable,
+			Columns: []string{user.RevenueActionRevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueactionrevision.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueActionRevisionsIDs(); len(nodes) > 0 && !_u.mutation.RevenueActionRevisionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionRevisionsTable,
+			Columns: []string{user.RevenueActionRevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueactionrevision.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueActionRevisionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionRevisionsTable,
+			Columns: []string{user.RevenueActionRevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueactionrevision.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PolicyDecisionSnapshotsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PolicyDecisionSnapshotsTable,
+			Columns: []string{user.PolicyDecisionSnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(policydecisionsnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPolicyDecisionSnapshotsIDs(); len(nodes) > 0 && !_u.mutation.PolicyDecisionSnapshotsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PolicyDecisionSnapshotsTable,
+			Columns: []string{user.PolicyDecisionSnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(policydecisionsnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PolicyDecisionSnapshotsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PolicyDecisionSnapshotsTable,
+			Columns: []string{user.PolicyDecisionSnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(policydecisionsnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ActionOutcomesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionOutcomesTable,
+			Columns: []string{user.ActionOutcomesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionoutcome.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedActionOutcomesIDs(); len(nodes) > 0 && !_u.mutation.ActionOutcomesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionOutcomesTable,
+			Columns: []string{user.ActionOutcomesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionoutcome.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ActionOutcomesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionOutcomesTable,
+			Columns: []string{user.ActionOutcomesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionoutcome.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueOutboxEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueOutboxEventsTable,
+			Columns: []string{user.RevenueOutboxEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueoutboxevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueOutboxEventsIDs(); len(nodes) > 0 && !_u.mutation.RevenueOutboxEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueOutboxEventsTable,
+			Columns: []string{user.RevenueOutboxEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueoutboxevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueOutboxEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueOutboxEventsTable,
+			Columns: []string{user.RevenueOutboxEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueoutboxevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -2165,6 +2985,156 @@ func (_u *UserUpdateOne) AddAgentToolResultBlobs(v ...*AgentToolResultBlob) *Use
 		ids[i] = v[i].ID
 	}
 	return _u.AddAgentToolResultBlobIDs(ids...)
+}
+
+// AddRevenueWorkspaceIDs adds the "revenue_workspaces" edge to the RevenueWorkspace entity by IDs.
+func (_u *UserUpdateOne) AddRevenueWorkspaceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddRevenueWorkspaceIDs(ids...)
+	return _u
+}
+
+// AddRevenueWorkspaces adds the "revenue_workspaces" edges to the RevenueWorkspace entity.
+func (_u *UserUpdateOne) AddRevenueWorkspaces(v ...*RevenueWorkspace) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueWorkspaceIDs(ids...)
+}
+
+// AddRevenueWorkspaceMemberIDs adds the "revenue_workspace_members" edge to the RevenueWorkspaceMember entity by IDs.
+func (_u *UserUpdateOne) AddRevenueWorkspaceMemberIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddRevenueWorkspaceMemberIDs(ids...)
+	return _u
+}
+
+// AddRevenueWorkspaceMembers adds the "revenue_workspace_members" edges to the RevenueWorkspaceMember entity.
+func (_u *UserUpdateOne) AddRevenueWorkspaceMembers(v ...*RevenueWorkspaceMember) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueWorkspaceMemberIDs(ids...)
+}
+
+// AddRelationshipIDs adds the "relationships" edge to the Relationship entity by IDs.
+func (_u *UserUpdateOne) AddRelationshipIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddRelationshipIDs(ids...)
+	return _u
+}
+
+// AddRelationships adds the "relationships" edges to the Relationship entity.
+func (_u *UserUpdateOne) AddRelationships(v ...*Relationship) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRelationshipIDs(ids...)
+}
+
+// AddRevenueEvidenceIDs adds the "revenue_evidences" edge to the RevenueEvidence entity by IDs.
+func (_u *UserUpdateOne) AddRevenueEvidenceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddRevenueEvidenceIDs(ids...)
+	return _u
+}
+
+// AddRevenueEvidences adds the "revenue_evidences" edges to the RevenueEvidence entity.
+func (_u *UserUpdateOne) AddRevenueEvidences(v ...*RevenueEvidence) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueEvidenceIDs(ids...)
+}
+
+// AddCommitmentIDs adds the "commitments" edge to the Commitment entity by IDs.
+func (_u *UserUpdateOne) AddCommitmentIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddCommitmentIDs(ids...)
+	return _u
+}
+
+// AddCommitments adds the "commitments" edges to the Commitment entity.
+func (_u *UserUpdateOne) AddCommitments(v ...*Commitment) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommitmentIDs(ids...)
+}
+
+// AddRevenueActionIDs adds the "revenue_actions" edge to the RevenueAction entity by IDs.
+func (_u *UserUpdateOne) AddRevenueActionIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddRevenueActionIDs(ids...)
+	return _u
+}
+
+// AddRevenueActions adds the "revenue_actions" edges to the RevenueAction entity.
+func (_u *UserUpdateOne) AddRevenueActions(v ...*RevenueAction) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueActionIDs(ids...)
+}
+
+// AddRevenueActionRevisionIDs adds the "revenue_action_revisions" edge to the RevenueActionRevision entity by IDs.
+func (_u *UserUpdateOne) AddRevenueActionRevisionIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddRevenueActionRevisionIDs(ids...)
+	return _u
+}
+
+// AddRevenueActionRevisions adds the "revenue_action_revisions" edges to the RevenueActionRevision entity.
+func (_u *UserUpdateOne) AddRevenueActionRevisions(v ...*RevenueActionRevision) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueActionRevisionIDs(ids...)
+}
+
+// AddPolicyDecisionSnapshotIDs adds the "policy_decision_snapshots" edge to the PolicyDecisionSnapshot entity by IDs.
+func (_u *UserUpdateOne) AddPolicyDecisionSnapshotIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddPolicyDecisionSnapshotIDs(ids...)
+	return _u
+}
+
+// AddPolicyDecisionSnapshots adds the "policy_decision_snapshots" edges to the PolicyDecisionSnapshot entity.
+func (_u *UserUpdateOne) AddPolicyDecisionSnapshots(v ...*PolicyDecisionSnapshot) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPolicyDecisionSnapshotIDs(ids...)
+}
+
+// AddActionOutcomeIDs adds the "action_outcomes" edge to the ActionOutcome entity by IDs.
+func (_u *UserUpdateOne) AddActionOutcomeIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddActionOutcomeIDs(ids...)
+	return _u
+}
+
+// AddActionOutcomes adds the "action_outcomes" edges to the ActionOutcome entity.
+func (_u *UserUpdateOne) AddActionOutcomes(v ...*ActionOutcome) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddActionOutcomeIDs(ids...)
+}
+
+// AddRevenueOutboxEventIDs adds the "revenue_outbox_events" edge to the RevenueOutboxEvent entity by IDs.
+func (_u *UserUpdateOne) AddRevenueOutboxEventIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddRevenueOutboxEventIDs(ids...)
+	return _u
+}
+
+// AddRevenueOutboxEvents adds the "revenue_outbox_events" edges to the RevenueOutboxEvent entity.
+func (_u *UserUpdateOne) AddRevenueOutboxEvents(v ...*RevenueOutboxEvent) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueOutboxEventIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -2575,6 +3545,216 @@ func (_u *UserUpdateOne) RemoveAgentToolResultBlobs(v ...*AgentToolResultBlob) *
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAgentToolResultBlobIDs(ids...)
+}
+
+// ClearRevenueWorkspaces clears all "revenue_workspaces" edges to the RevenueWorkspace entity.
+func (_u *UserUpdateOne) ClearRevenueWorkspaces() *UserUpdateOne {
+	_u.mutation.ClearRevenueWorkspaces()
+	return _u
+}
+
+// RemoveRevenueWorkspaceIDs removes the "revenue_workspaces" edge to RevenueWorkspace entities by IDs.
+func (_u *UserUpdateOne) RemoveRevenueWorkspaceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveRevenueWorkspaceIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueWorkspaces removes "revenue_workspaces" edges to RevenueWorkspace entities.
+func (_u *UserUpdateOne) RemoveRevenueWorkspaces(v ...*RevenueWorkspace) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueWorkspaceIDs(ids...)
+}
+
+// ClearRevenueWorkspaceMembers clears all "revenue_workspace_members" edges to the RevenueWorkspaceMember entity.
+func (_u *UserUpdateOne) ClearRevenueWorkspaceMembers() *UserUpdateOne {
+	_u.mutation.ClearRevenueWorkspaceMembers()
+	return _u
+}
+
+// RemoveRevenueWorkspaceMemberIDs removes the "revenue_workspace_members" edge to RevenueWorkspaceMember entities by IDs.
+func (_u *UserUpdateOne) RemoveRevenueWorkspaceMemberIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveRevenueWorkspaceMemberIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueWorkspaceMembers removes "revenue_workspace_members" edges to RevenueWorkspaceMember entities.
+func (_u *UserUpdateOne) RemoveRevenueWorkspaceMembers(v ...*RevenueWorkspaceMember) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueWorkspaceMemberIDs(ids...)
+}
+
+// ClearRelationships clears all "relationships" edges to the Relationship entity.
+func (_u *UserUpdateOne) ClearRelationships() *UserUpdateOne {
+	_u.mutation.ClearRelationships()
+	return _u
+}
+
+// RemoveRelationshipIDs removes the "relationships" edge to Relationship entities by IDs.
+func (_u *UserUpdateOne) RemoveRelationshipIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveRelationshipIDs(ids...)
+	return _u
+}
+
+// RemoveRelationships removes "relationships" edges to Relationship entities.
+func (_u *UserUpdateOne) RemoveRelationships(v ...*Relationship) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRelationshipIDs(ids...)
+}
+
+// ClearRevenueEvidences clears all "revenue_evidences" edges to the RevenueEvidence entity.
+func (_u *UserUpdateOne) ClearRevenueEvidences() *UserUpdateOne {
+	_u.mutation.ClearRevenueEvidences()
+	return _u
+}
+
+// RemoveRevenueEvidenceIDs removes the "revenue_evidences" edge to RevenueEvidence entities by IDs.
+func (_u *UserUpdateOne) RemoveRevenueEvidenceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveRevenueEvidenceIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueEvidences removes "revenue_evidences" edges to RevenueEvidence entities.
+func (_u *UserUpdateOne) RemoveRevenueEvidences(v ...*RevenueEvidence) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueEvidenceIDs(ids...)
+}
+
+// ClearCommitments clears all "commitments" edges to the Commitment entity.
+func (_u *UserUpdateOne) ClearCommitments() *UserUpdateOne {
+	_u.mutation.ClearCommitments()
+	return _u
+}
+
+// RemoveCommitmentIDs removes the "commitments" edge to Commitment entities by IDs.
+func (_u *UserUpdateOne) RemoveCommitmentIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveCommitmentIDs(ids...)
+	return _u
+}
+
+// RemoveCommitments removes "commitments" edges to Commitment entities.
+func (_u *UserUpdateOne) RemoveCommitments(v ...*Commitment) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommitmentIDs(ids...)
+}
+
+// ClearRevenueActions clears all "revenue_actions" edges to the RevenueAction entity.
+func (_u *UserUpdateOne) ClearRevenueActions() *UserUpdateOne {
+	_u.mutation.ClearRevenueActions()
+	return _u
+}
+
+// RemoveRevenueActionIDs removes the "revenue_actions" edge to RevenueAction entities by IDs.
+func (_u *UserUpdateOne) RemoveRevenueActionIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveRevenueActionIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueActions removes "revenue_actions" edges to RevenueAction entities.
+func (_u *UserUpdateOne) RemoveRevenueActions(v ...*RevenueAction) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueActionIDs(ids...)
+}
+
+// ClearRevenueActionRevisions clears all "revenue_action_revisions" edges to the RevenueActionRevision entity.
+func (_u *UserUpdateOne) ClearRevenueActionRevisions() *UserUpdateOne {
+	_u.mutation.ClearRevenueActionRevisions()
+	return _u
+}
+
+// RemoveRevenueActionRevisionIDs removes the "revenue_action_revisions" edge to RevenueActionRevision entities by IDs.
+func (_u *UserUpdateOne) RemoveRevenueActionRevisionIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveRevenueActionRevisionIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueActionRevisions removes "revenue_action_revisions" edges to RevenueActionRevision entities.
+func (_u *UserUpdateOne) RemoveRevenueActionRevisions(v ...*RevenueActionRevision) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueActionRevisionIDs(ids...)
+}
+
+// ClearPolicyDecisionSnapshots clears all "policy_decision_snapshots" edges to the PolicyDecisionSnapshot entity.
+func (_u *UserUpdateOne) ClearPolicyDecisionSnapshots() *UserUpdateOne {
+	_u.mutation.ClearPolicyDecisionSnapshots()
+	return _u
+}
+
+// RemovePolicyDecisionSnapshotIDs removes the "policy_decision_snapshots" edge to PolicyDecisionSnapshot entities by IDs.
+func (_u *UserUpdateOne) RemovePolicyDecisionSnapshotIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemovePolicyDecisionSnapshotIDs(ids...)
+	return _u
+}
+
+// RemovePolicyDecisionSnapshots removes "policy_decision_snapshots" edges to PolicyDecisionSnapshot entities.
+func (_u *UserUpdateOne) RemovePolicyDecisionSnapshots(v ...*PolicyDecisionSnapshot) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePolicyDecisionSnapshotIDs(ids...)
+}
+
+// ClearActionOutcomes clears all "action_outcomes" edges to the ActionOutcome entity.
+func (_u *UserUpdateOne) ClearActionOutcomes() *UserUpdateOne {
+	_u.mutation.ClearActionOutcomes()
+	return _u
+}
+
+// RemoveActionOutcomeIDs removes the "action_outcomes" edge to ActionOutcome entities by IDs.
+func (_u *UserUpdateOne) RemoveActionOutcomeIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveActionOutcomeIDs(ids...)
+	return _u
+}
+
+// RemoveActionOutcomes removes "action_outcomes" edges to ActionOutcome entities.
+func (_u *UserUpdateOne) RemoveActionOutcomes(v ...*ActionOutcome) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveActionOutcomeIDs(ids...)
+}
+
+// ClearRevenueOutboxEvents clears all "revenue_outbox_events" edges to the RevenueOutboxEvent entity.
+func (_u *UserUpdateOne) ClearRevenueOutboxEvents() *UserUpdateOne {
+	_u.mutation.ClearRevenueOutboxEvents()
+	return _u
+}
+
+// RemoveRevenueOutboxEventIDs removes the "revenue_outbox_events" edge to RevenueOutboxEvent entities by IDs.
+func (_u *UserUpdateOne) RemoveRevenueOutboxEventIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveRevenueOutboxEventIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueOutboxEvents removes "revenue_outbox_events" edges to RevenueOutboxEvent entities.
+func (_u *UserUpdateOne) RemoveRevenueOutboxEvents(v ...*RevenueOutboxEvent) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueOutboxEventIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -3560,6 +4740,456 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenttoolresultblob.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueWorkspacesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspacesTable,
+			Columns: []string{user.RevenueWorkspacesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueWorkspacesIDs(); len(nodes) > 0 && !_u.mutation.RevenueWorkspacesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspacesTable,
+			Columns: []string{user.RevenueWorkspacesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueWorkspacesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspacesTable,
+			Columns: []string{user.RevenueWorkspacesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueWorkspaceMembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspaceMembersTable,
+			Columns: []string{user.RevenueWorkspaceMembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspacemember.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueWorkspaceMembersIDs(); len(nodes) > 0 && !_u.mutation.RevenueWorkspaceMembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspaceMembersTable,
+			Columns: []string{user.RevenueWorkspaceMembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspacemember.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueWorkspaceMembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspaceMembersTable,
+			Columns: []string{user.RevenueWorkspaceMembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspacemember.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RelationshipsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipsTable,
+			Columns: []string{user.RelationshipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRelationshipsIDs(); len(nodes) > 0 && !_u.mutation.RelationshipsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipsTable,
+			Columns: []string{user.RelationshipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelationshipsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipsTable,
+			Columns: []string{user.RelationshipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueEvidencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueEvidencesTable,
+			Columns: []string{user.RevenueEvidencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueEvidencesIDs(); len(nodes) > 0 && !_u.mutation.RevenueEvidencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueEvidencesTable,
+			Columns: []string{user.RevenueEvidencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueEvidencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueEvidencesTable,
+			Columns: []string{user.RevenueEvidencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommitmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommitmentsTable,
+			Columns: []string{user.CommitmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitment.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommitmentsIDs(); len(nodes) > 0 && !_u.mutation.CommitmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommitmentsTable,
+			Columns: []string{user.CommitmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommitmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommitmentsTable,
+			Columns: []string{user.CommitmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueActionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionsTable,
+			Columns: []string{user.RevenueActionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueActionsIDs(); len(nodes) > 0 && !_u.mutation.RevenueActionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionsTable,
+			Columns: []string{user.RevenueActionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueActionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionsTable,
+			Columns: []string{user.RevenueActionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueActionRevisionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionRevisionsTable,
+			Columns: []string{user.RevenueActionRevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueactionrevision.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueActionRevisionsIDs(); len(nodes) > 0 && !_u.mutation.RevenueActionRevisionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionRevisionsTable,
+			Columns: []string{user.RevenueActionRevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueactionrevision.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueActionRevisionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionRevisionsTable,
+			Columns: []string{user.RevenueActionRevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueactionrevision.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PolicyDecisionSnapshotsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PolicyDecisionSnapshotsTable,
+			Columns: []string{user.PolicyDecisionSnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(policydecisionsnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPolicyDecisionSnapshotsIDs(); len(nodes) > 0 && !_u.mutation.PolicyDecisionSnapshotsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PolicyDecisionSnapshotsTable,
+			Columns: []string{user.PolicyDecisionSnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(policydecisionsnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PolicyDecisionSnapshotsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PolicyDecisionSnapshotsTable,
+			Columns: []string{user.PolicyDecisionSnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(policydecisionsnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ActionOutcomesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionOutcomesTable,
+			Columns: []string{user.ActionOutcomesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionoutcome.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedActionOutcomesIDs(); len(nodes) > 0 && !_u.mutation.ActionOutcomesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionOutcomesTable,
+			Columns: []string{user.ActionOutcomesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionoutcome.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ActionOutcomesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionOutcomesTable,
+			Columns: []string{user.ActionOutcomesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionoutcome.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueOutboxEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueOutboxEventsTable,
+			Columns: []string{user.RevenueOutboxEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueoutboxevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueOutboxEventsIDs(); len(nodes) > 0 && !_u.mutation.RevenueOutboxEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueOutboxEventsTable,
+			Columns: []string{user.RevenueOutboxEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueoutboxevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueOutboxEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueOutboxEventsTable,
+			Columns: []string{user.RevenueOutboxEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueoutboxevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
