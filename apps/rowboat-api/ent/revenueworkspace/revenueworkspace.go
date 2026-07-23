@@ -49,6 +49,8 @@ const (
 	EdgeOutcomes = "outcomes"
 	// EdgeOutboxEvents holds the string denoting the outbox_events edge name in mutations.
 	EdgeOutboxEvents = "outbox_events"
+	// EdgeScans holds the string denoting the scans edge name in mutations.
+	EdgeScans = "scans"
 	// Table holds the table name of the revenueworkspace in the database.
 	Table = "revenue_workspaces"
 	// UserTable is the table that holds the user relation/edge.
@@ -114,6 +116,13 @@ const (
 	OutboxEventsInverseTable = "revenue_outbox_events"
 	// OutboxEventsColumn is the table column denoting the outbox_events relation/edge.
 	OutboxEventsColumn = "revenue_workspace_id"
+	// ScansTable is the table that holds the scans relation/edge.
+	ScansTable = "revenue_leak_scans"
+	// ScansInverseTable is the table name for the RevenueLeakScan entity.
+	// It exists in this package in order to avoid circular dependency with the "revenueleakscan" package.
+	ScansInverseTable = "revenue_leak_scans"
+	// ScansColumn is the table column denoting the scans relation/edge.
+	ScansColumn = "revenue_workspace_id"
 )
 
 // Columns holds all SQL columns for revenueworkspace fields.
@@ -335,6 +344,20 @@ func ByOutboxEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newOutboxEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByScansCount orders the results by scans count.
+func ByScansCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newScansStep(), opts...)
+	}
+}
+
+// ByScans orders the results by scans terms.
+func ByScans(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newScansStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -396,5 +419,12 @@ func newOutboxEventsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OutboxEventsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, OutboxEventsTable, OutboxEventsColumn),
+	)
+}
+func newScansStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ScansInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ScansTable, ScansColumn),
 	)
 }

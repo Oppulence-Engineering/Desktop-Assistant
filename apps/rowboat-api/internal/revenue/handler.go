@@ -36,6 +36,10 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/current", h.CurrentWorkspace)
 		r.Post("/link", h.LinkWorkspace)
 	})
+	r.Route("/v1/revenue-leak-scans", func(r chi.Router) {
+		r.Post("/", h.StartScan)
+		r.Get("/{scanId}", h.GetScan)
+	})
 	r.Route("/v1/relationships", func(r chi.Router) {
 		r.Get("/", h.ListRelationships)
 		r.Post("/", h.CreateRelationship)
@@ -338,6 +342,84 @@ func (h *Handler) LinkWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, h.workspaceDTO(ws))
+}
+
+// --- scan endpoints ----------------------------------------------------------
+
+type scanDTO struct {
+	ID                   string     `json:"id"`
+	Status               string     `json:"status"`
+	Mode                 string     `json:"mode"`
+	LookbackDays         int        `json:"lookbackDays"`
+	ThreadsSeen          int        `json:"threadsSeen"`
+	CandidatesSeen       int        `json:"candidatesSeen"`
+	RelationshipsCreated int        `json:"relationshipsCreated"`
+	EvidencesCreated     int        `json:"evidencesCreated"`
+	ActionsCreated       int        `json:"actionsCreated"`
+	StartedAt            *time.Time `json:"startedAt,omitempty"`
+	CompletedAt          *time.Time `json:"completedAt,omitempty"`
+	SourceFreshnessAt    *time.Time `json:"sourceFreshnessAt,omitempty"`
+	Error                string     `json:"error,omitempty"`
+}
+
+func scanToDTO(sc *ent.RevenueLeakScan) scanDTO {
+	return scanDTO{
+		ID:                   sc.ID.String(),
+		Status:               sc.Status,
+		Mode:                 sc.Mode,
+		LookbackDays:         sc.LookbackDays,
+		ThreadsSeen:          sc.ThreadsSeen,
+		CandidatesSeen:       sc.CandidatesSeen,
+		RelationshipsCreated: sc.RelationshipsCreated,
+		EvidencesCreated:     sc.EvidencesCreated,
+		ActionsCreated:       sc.ActionsCreated,
+		StartedAt:            sc.StartedAt,
+		CompletedAt:          sc.CompletedAt,
+		SourceFreshnessAt:    sc.SourceFreshnessAt,
+		Error:                sc.Error,
+	}
+}
+
+// StartScan starts a bounded historical scan.
+func (h *Handler) StartScan(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		LookbackDays int `json:"lookbackDays"`
+	}
+	// The body is optional: the default lookback is 90 days.
+	if r.ContentLength != 0 && !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	scan, err := h.svc.StartScan(r.Context(), u, body.LookbackDays)
+	if err != nil {
+		if errors.Is(err, ErrScanUnavailable) {
+			httpx.Error(w, http.StatusConflict, err.Error(), "scan_unavailable")
+			return
+		}
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusAccepted, scanToDTO(scan))
+}
+
+// GetScan returns scan progress, counts, errors, and freshness.
+func (h *Handler) GetScan(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.viewer(w, r); !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "scanId")
+	if !ok {
+		return
+	}
+	scan, err := h.svc.GetScan(r.Context(), id)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, scanToDTO(scan))
 }
 
 // --- relationship endpoints --------------------------------------------------

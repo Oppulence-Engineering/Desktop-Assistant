@@ -854,6 +854,30 @@ func (f RevenueEvidenceMutationRuleFunc) EvalMutation(ctx context.Context, m ent
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.RevenueEvidenceMutation", m)
 }
 
+// The RevenueLeakScanQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type RevenueLeakScanQueryRuleFunc func(context.Context, *ent.RevenueLeakScanQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f RevenueLeakScanQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RevenueLeakScanQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.RevenueLeakScanQuery", q)
+}
+
+// The RevenueLeakScanMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type RevenueLeakScanMutationRuleFunc func(context.Context, *ent.RevenueLeakScanMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f RevenueLeakScanMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.RevenueLeakScanMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.RevenueLeakScanMutation", m)
+}
+
 // The RevenueOutboxEventQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type RevenueOutboxEventQueryRuleFunc func(context.Context, *ent.RevenueOutboxEventQuery) error

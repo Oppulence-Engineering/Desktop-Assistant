@@ -38,6 +38,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -582,6 +583,21 @@ func (_c *UserCreate) AddRevenueOutboxEvents(v ...*RevenueOutboxEvent) *UserCrea
 		ids[i] = v[i].ID
 	}
 	return _c.AddRevenueOutboxEventIDs(ids...)
+}
+
+// AddRevenueLeakScanIDs adds the "revenue_leak_scans" edge to the RevenueLeakScan entity by IDs.
+func (_c *UserCreate) AddRevenueLeakScanIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRevenueLeakScanIDs(ids...)
+	return _c
+}
+
+// AddRevenueLeakScans adds the "revenue_leak_scans" edges to the RevenueLeakScan entity.
+func (_c *UserCreate) AddRevenueLeakScans(v ...*RevenueLeakScan) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRevenueLeakScanIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -1178,6 +1194,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueoutboxevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RevenueLeakScansIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueLeakScansTable,
+			Columns: []string{user.RevenueLeakScansColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueleakscan.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

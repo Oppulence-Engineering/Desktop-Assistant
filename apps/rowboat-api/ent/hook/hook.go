@@ -381,6 +381,18 @@ func (f RevenueEvidenceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueEvidenceMutation", m)
 }
 
+// The RevenueLeakScanFunc type is an adapter to allow the use of ordinary
+// function as RevenueLeakScan mutator.
+type RevenueLeakScanFunc func(context.Context, *ent.RevenueLeakScanMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RevenueLeakScanFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RevenueLeakScanMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueLeakScanMutation", m)
+}
+
 // The RevenueOutboxEventFunc type is an adapter to allow the use of ordinary
 // function as RevenueOutboxEvent mutator.
 type RevenueOutboxEventFunc func(context.Context, *ent.RevenueOutboxEventMutation) (ent.Value, error)

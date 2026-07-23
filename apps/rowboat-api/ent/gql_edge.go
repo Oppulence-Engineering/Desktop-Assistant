@@ -652,6 +652,22 @@ func (_m *RevenueEvidence) Actions(ctx context.Context) (result []*RevenueAction
 	return result, err
 }
 
+func (_m *RevenueLeakScan) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueLeakScan) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *RevenueOutboxEvent) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
 	result, err := _m.Edges.WorkspaceOrErr()
 	if IsNotLoaded(err) {
@@ -768,6 +784,18 @@ func (_m *RevenueWorkspace) OutboxEvents(ctx context.Context) (result []*Revenue
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryOutboxEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) Scans(ctx context.Context) (result []*RevenueLeakScan, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedScans(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ScansOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryScans().All(ctx)
 	}
 	return result, err
 }
@@ -1148,6 +1176,18 @@ func (_m *User) RevenueOutboxEvents(ctx context.Context) (result []*RevenueOutbo
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryRevenueOutboxEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RevenueLeakScans(ctx context.Context) (result []*RevenueLeakScan, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRevenueLeakScans(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RevenueLeakScansOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRevenueLeakScans().All(ctx)
 	}
 	return result, err
 }

@@ -34,6 +34,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -4359,6 +4360,160 @@ func newRevenueEvidencePaginateArgs(rv map[string]any) *revenueevidencePaginateA
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RevenueLeakScanQuery) CollectFields(ctx context.Context, satisfies ...string) (*RevenueLeakScanQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RevenueLeakScanQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(revenueleakscan.Columns))
+		selectedFields = []string{revenueleakscan.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[revenueleakscan.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldCreatedAt)
+				fieldSeen[revenueleakscan.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[revenueleakscan.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldUpdatedAt)
+				fieldSeen[revenueleakscan.FieldUpdatedAt] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[revenueleakscan.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldStatus)
+				fieldSeen[revenueleakscan.FieldStatus] = struct{}{}
+			}
+		case "mode":
+			if _, ok := fieldSeen[revenueleakscan.FieldMode]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldMode)
+				fieldSeen[revenueleakscan.FieldMode] = struct{}{}
+			}
+		case "lookbackDays":
+			if _, ok := fieldSeen[revenueleakscan.FieldLookbackDays]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldLookbackDays)
+				fieldSeen[revenueleakscan.FieldLookbackDays] = struct{}{}
+			}
+		case "threadsSeen":
+			if _, ok := fieldSeen[revenueleakscan.FieldThreadsSeen]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldThreadsSeen)
+				fieldSeen[revenueleakscan.FieldThreadsSeen] = struct{}{}
+			}
+		case "candidatesSeen":
+			if _, ok := fieldSeen[revenueleakscan.FieldCandidatesSeen]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldCandidatesSeen)
+				fieldSeen[revenueleakscan.FieldCandidatesSeen] = struct{}{}
+			}
+		case "relationshipsCreated":
+			if _, ok := fieldSeen[revenueleakscan.FieldRelationshipsCreated]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldRelationshipsCreated)
+				fieldSeen[revenueleakscan.FieldRelationshipsCreated] = struct{}{}
+			}
+		case "evidencesCreated":
+			if _, ok := fieldSeen[revenueleakscan.FieldEvidencesCreated]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldEvidencesCreated)
+				fieldSeen[revenueleakscan.FieldEvidencesCreated] = struct{}{}
+			}
+		case "actionsCreated":
+			if _, ok := fieldSeen[revenueleakscan.FieldActionsCreated]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldActionsCreated)
+				fieldSeen[revenueleakscan.FieldActionsCreated] = struct{}{}
+			}
+		case "startedAt":
+			if _, ok := fieldSeen[revenueleakscan.FieldStartedAt]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldStartedAt)
+				fieldSeen[revenueleakscan.FieldStartedAt] = struct{}{}
+			}
+		case "completedAt":
+			if _, ok := fieldSeen[revenueleakscan.FieldCompletedAt]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldCompletedAt)
+				fieldSeen[revenueleakscan.FieldCompletedAt] = struct{}{}
+			}
+		case "error":
+			if _, ok := fieldSeen[revenueleakscan.FieldError]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldError)
+				fieldSeen[revenueleakscan.FieldError] = struct{}{}
+			}
+		case "sourceFreshnessAt":
+			if _, ok := fieldSeen[revenueleakscan.FieldSourceFreshnessAt]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldSourceFreshnessAt)
+				fieldSeen[revenueleakscan.FieldSourceFreshnessAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type revenueleakscanPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RevenueLeakScanPaginateOption
+}
+
+func newRevenueLeakScanPaginateArgs(rv map[string]any) *revenueleakscanPaginateArgs {
+	args := &revenueleakscanPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*RevenueLeakScanWhereInput); ok {
+		args.opts = append(args.opts, WithRevenueLeakScanFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *RevenueOutboxEventQuery) CollectFields(ctx context.Context, satisfies ...string) (*RevenueOutboxEventQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -4646,6 +4801,19 @@ func (_q *RevenueWorkspaceQuery) collectField(ctx context.Context, oneNode bool,
 				return err
 			}
 			_q.WithNamedOutboxEvents(alias, func(wq *RevenueOutboxEventQuery) {
+				*wq = *query
+			})
+
+		case "scans":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueLeakScanClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, revenueleakscanImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedScans(alias, func(wq *RevenueLeakScanQuery) {
 				*wq = *query
 			})
 		case "createdAt":
@@ -5358,6 +5526,19 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedRevenueOutboxEvents(alias, func(wq *RevenueOutboxEventQuery) {
+				*wq = *query
+			})
+
+		case "revenueLeakScans":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueLeakScanClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, revenueleakscanImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRevenueLeakScans(alias, func(wq *RevenueLeakScanQuery) {
 				*wq = *query
 			})
 		case "createdAt":

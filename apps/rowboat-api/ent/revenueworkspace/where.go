@@ -788,6 +788,29 @@ func HasOutboxEventsWith(preds ...predicate.RevenueOutboxEvent) predicate.Revenu
 	})
 }
 
+// HasScans applies the HasEdge predicate on the "scans" edge.
+func HasScans() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ScansTable, ScansColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasScansWith applies the HasEdge predicate on the "scans" edge with a given conditions (other predicates).
+func HasScansWith(preds ...predicate.RevenueLeakScan) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newScansStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.RevenueWorkspace) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.AndPredicates(predicates...))

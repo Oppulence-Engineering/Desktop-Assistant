@@ -1424,6 +1424,53 @@ var (
 			},
 		},
 	}
+	// RevenueLeakScansColumns holds the columns for the "revenue_leak_scans" table.
+	RevenueLeakScansColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "status", Type: field.TypeString, Default: "pending"},
+		{Name: "mode", Type: field.TypeString, Default: "local"},
+		{Name: "lookback_days", Type: field.TypeInt, Default: 90},
+		{Name: "threads_seen", Type: field.TypeInt, Default: 0},
+		{Name: "candidates_seen", Type: field.TypeInt, Default: 0},
+		{Name: "relationships_created", Type: field.TypeInt, Default: 0},
+		{Name: "evidences_created", Type: field.TypeInt, Default: 0},
+		{Name: "actions_created", Type: field.TypeInt, Default: 0},
+		{Name: "started_at", Type: field.TypeTime, Nullable: true},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "source_freshness_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_revenue_leak_scans", Type: field.TypeUUID},
+	}
+	// RevenueLeakScansTable holds the schema information for the "revenue_leak_scans" table.
+	RevenueLeakScansTable = &schema.Table{
+		Name:       "revenue_leak_scans",
+		Columns:    RevenueLeakScansColumns,
+		PrimaryKey: []*schema.Column{RevenueLeakScansColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "revenue_leak_scans_revenue_workspaces_scans",
+				Columns:    []*schema.Column{RevenueLeakScansColumns[15]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "revenue_leak_scans_users_revenue_leak_scans",
+				Columns:    []*schema.Column{RevenueLeakScansColumns[16]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "revenueleakscan_status_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{RevenueLeakScansColumns[3], RevenueLeakScansColumns[15]},
+			},
+		},
+	}
 	// RevenueOutboxEventsColumns holds the columns for the "revenue_outbox_events" table.
 	RevenueOutboxEventsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1739,6 +1786,7 @@ var (
 		RevenueActionsTable,
 		RevenueActionRevisionsTable,
 		RevenueEvidencesTable,
+		RevenueLeakScansTable,
 		RevenueOutboxEventsTable,
 		RevenueWorkspacesTable,
 		RevenueWorkspaceMembersTable,
@@ -1804,6 +1852,8 @@ func init() {
 	RevenueActionRevisionsTable.ForeignKeys[1].RefTable = UsersTable
 	RevenueEvidencesTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
 	RevenueEvidencesTable.ForeignKeys[1].RefTable = UsersTable
+	RevenueLeakScansTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	RevenueLeakScansTable.ForeignKeys[1].RefTable = UsersTable
 	RevenueOutboxEventsTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
 	RevenueOutboxEventsTable.ForeignKeys[1].RefTable = UsersTable
 	RevenueWorkspacesTable.ForeignKeys[0].RefTable = UsersTable

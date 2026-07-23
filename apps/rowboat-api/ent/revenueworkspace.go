@@ -62,11 +62,13 @@ type RevenueWorkspaceEdges struct {
 	Outcomes []*ActionOutcome `json:"outcomes,omitempty"`
 	// OutboxEvents holds the value of the outbox_events edge.
 	OutboxEvents []*RevenueOutboxEvent `json:"outbox_events,omitempty"`
+	// Scans holds the value of the scans edge.
+	Scans []*RevenueLeakScan `json:"scans,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [9]bool
+	loadedTypes [10]bool
 	// totalCount holds the count of the edges above.
-	totalCount [9]map[string]int
+	totalCount [10]map[string]int
 
 	namedMembers       map[string][]*RevenueWorkspaceMember
 	namedRelationships map[string][]*Relationship
@@ -76,6 +78,7 @@ type RevenueWorkspaceEdges struct {
 	namedDecisions     map[string][]*PolicyDecisionSnapshot
 	namedOutcomes      map[string][]*ActionOutcome
 	namedOutboxEvents  map[string][]*RevenueOutboxEvent
+	namedScans         map[string][]*RevenueLeakScan
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -159,6 +162,15 @@ func (e RevenueWorkspaceEdges) OutboxEventsOrErr() ([]*RevenueOutboxEvent, error
 		return e.OutboxEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "outbox_events"}
+}
+
+// ScansOrErr returns the Scans value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) ScansOrErr() ([]*RevenueLeakScan, error) {
+	if e.loadedTypes[9] {
+		return e.Scans, nil
+	}
+	return nil, &NotLoadedError{edge: "scans"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -308,6 +320,11 @@ func (_m *RevenueWorkspace) QueryOutcomes() *ActionOutcomeQuery {
 // QueryOutboxEvents queries the "outbox_events" edge of the RevenueWorkspace entity.
 func (_m *RevenueWorkspace) QueryOutboxEvents() *RevenueOutboxEventQuery {
 	return NewRevenueWorkspaceClient(_m.config).QueryOutboxEvents(_m)
+}
+
+// QueryScans queries the "scans" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryScans() *RevenueLeakScanQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryScans(_m)
 }
 
 // Update returns a builder for updating this RevenueWorkspace.
@@ -553,6 +570,30 @@ func (_m *RevenueWorkspace) appendNamedOutboxEvents(name string, edges ...*Reven
 		_m.Edges.namedOutboxEvents[name] = []*RevenueOutboxEvent{}
 	} else {
 		_m.Edges.namedOutboxEvents[name] = append(_m.Edges.namedOutboxEvents[name], edges...)
+	}
+}
+
+// NamedScans returns the Scans named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedScans(name string) ([]*RevenueLeakScan, error) {
+	if _m.Edges.namedScans == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedScans[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedScans(name string, edges ...*RevenueLeakScan) {
+	if _m.Edges.namedScans == nil {
+		_m.Edges.namedScans = make(map[string][]*RevenueLeakScan)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedScans[name] = []*RevenueLeakScan{}
+	} else {
+		_m.Edges.namedScans[name] = append(_m.Edges.namedScans[name], edges...)
 	}
 }
 

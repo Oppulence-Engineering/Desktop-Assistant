@@ -84,5 +84,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("policy_decision_snapshots", PolicyDecisionSnapshot.Type).Annotations(entproto.Skip()),
 		edge.To("action_outcomes", ActionOutcome.Type).Annotations(entproto.Skip()),
 		edge.To("revenue_outbox_events", RevenueOutboxEvent.Type).Annotations(entproto.Skip()),
+		edge.To("revenue_leak_scans", RevenueLeakScan.Type).Annotations(entproto.Skip()),
 	}
 }

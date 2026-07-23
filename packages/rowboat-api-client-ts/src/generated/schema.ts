@@ -1244,6 +1244,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/revenue-leak-scans": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start a revenue leak scan
+     * @description Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.
+     */
+    post: operations["startRevenueLeakScan"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-leak-scans/{scanId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get scan progress
+     * @description Returns progress, counts, errors, and source freshness for one scan.
+     */
+    get: operations["getRevenueLeakScan"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/revenue-workspaces/current": {
     parameters: {
       query?: never;
@@ -4873,6 +4913,80 @@ export interface components {
       user: components["schemas"]["User"];
       workspace: components["schemas"]["RevenueWorkspace"];
     };
+    /** @description One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable. */
+    RevenueLeakScan: {
+      /**
+       * @description New queue actions created.
+       * @example 5
+       */
+      actionsCreated?: number;
+      /**
+       * @description Detector candidates found.
+       * @example 7
+       */
+      candidatesSeen?: number;
+      /**
+       * Format: date-time
+       * @description Completion time.
+       * @example 2026-07-23T12:00:40Z
+       */
+      completedAt?: string | null;
+      /**
+       * @description Bounded failure reason.
+       * @example
+       */
+      error?: string;
+      /**
+       * @description New evidence rows recorded.
+       * @example 5
+       */
+      evidencesCreated?: number;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Historical lookback in days.
+       * @example 90
+       */
+      lookbackDays: number;
+      /**
+       * @description Workspace mode at scan time.
+       * @example local
+       * @enum {string}
+       */
+      mode: "local" | "linked";
+      /**
+       * @description New relationships recorded.
+       * @example 3
+       */
+      relationshipsCreated?: number;
+      /**
+       * Format: date-time
+       * @description Newest source timestamp observed (incremental cursor).
+       * @example 2026-07-22T09:00:00Z
+       */
+      sourceFreshnessAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Start time.
+       * @example 2026-07-23T12:00:00Z
+       */
+      startedAt?: string | null;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       * @enum {string}
+       */
+      status: "pending" | "running" | "completed" | "failed";
+      /**
+       * @description Threads examined.
+       * @example 42
+       */
+      threadsSeen?: number;
+    };
     RevenueOutboxEvent: {
       /** Format: uuid */
       action_id?: string;
@@ -5555,6 +5669,7 @@ export interface components {
       revenue_action_revisions?: components["schemas"]["RevenueActionRevision"][];
       revenue_actions?: components["schemas"]["RevenueAction"][];
       revenue_evidences?: components["schemas"]["RevenueEvidence"][];
+      revenue_leak_scans?: components["schemas"]["RevenueLeakScan"][];
       revenue_outbox_events?: components["schemas"]["RevenueOutboxEvent"][];
       revenue_workspace_members?: components["schemas"]["RevenueWorkspaceMember"][];
       revenue_workspaces?: components["schemas"]["RevenueWorkspace"][];
@@ -9433,6 +9548,87 @@ export interface operations {
         };
       };
       400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  startRevenueLeakScan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Scan options. */
+    requestBody?: {
+      content: {
+        /**
+         * @example {
+         *       "lookbackDays": 90
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Historical lookback in days (default 90, max 365).
+           * @example 90
+           */
+          lookbackDays?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Scan started. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueLeakScan"];
+        };
+      };
+      401: components["responses"]["401"];
+      /** @description A scan is already running, or no scan source is configured. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "scan_unavailable",
+           *       "detail": "revenue: scan unavailable: a scan is already running",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/scan_unavailable"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  getRevenueLeakScan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Scan id. */
+        scanId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Scan state. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueLeakScan"];
+        };
+      };
       401: components["responses"]["401"];
       404: components["responses"]["404"];
     };

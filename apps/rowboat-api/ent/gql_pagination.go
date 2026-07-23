@@ -39,6 +39,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -7095,6 +7096,255 @@ func (_m *RevenueEvidence) ToEdge(order *RevenueEvidenceOrder) *RevenueEvidenceE
 		order = DefaultRevenueEvidenceOrder
 	}
 	return &RevenueEvidenceEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RevenueLeakScanEdge is the edge representation of RevenueLeakScan.
+type RevenueLeakScanEdge struct {
+	Node   *RevenueLeakScan `json:"node"`
+	Cursor Cursor           `json:"cursor"`
+}
+
+// RevenueLeakScanConnection is the connection containing edges to RevenueLeakScan.
+type RevenueLeakScanConnection struct {
+	Edges      []*RevenueLeakScanEdge `json:"edges"`
+	PageInfo   PageInfo               `json:"pageInfo"`
+	TotalCount int                    `json:"totalCount"`
+}
+
+func (c *RevenueLeakScanConnection) build(nodes []*RevenueLeakScan, pager *revenueleakscanPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RevenueLeakScan
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RevenueLeakScan {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RevenueLeakScan {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RevenueLeakScanEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RevenueLeakScanEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RevenueLeakScanPaginateOption enables pagination customization.
+type RevenueLeakScanPaginateOption func(*revenueleakscanPager) error
+
+// WithRevenueLeakScanOrder configures pagination ordering.
+func WithRevenueLeakScanOrder(order *RevenueLeakScanOrder) RevenueLeakScanPaginateOption {
+	if order == nil {
+		order = DefaultRevenueLeakScanOrder
+	}
+	o := *order
+	return func(pager *revenueleakscanPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRevenueLeakScanOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRevenueLeakScanFilter configures pagination filter.
+func WithRevenueLeakScanFilter(filter func(*RevenueLeakScanQuery) (*RevenueLeakScanQuery, error)) RevenueLeakScanPaginateOption {
+	return func(pager *revenueleakscanPager) error {
+		if filter == nil {
+			return errors.New("RevenueLeakScanQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type revenueleakscanPager struct {
+	reverse bool
+	order   *RevenueLeakScanOrder
+	filter  func(*RevenueLeakScanQuery) (*RevenueLeakScanQuery, error)
+}
+
+func newRevenueLeakScanPager(opts []RevenueLeakScanPaginateOption, reverse bool) (*revenueleakscanPager, error) {
+	pager := &revenueleakscanPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRevenueLeakScanOrder
+	}
+	return pager, nil
+}
+
+func (p *revenueleakscanPager) applyFilter(query *RevenueLeakScanQuery) (*RevenueLeakScanQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *revenueleakscanPager) toCursor(_m *RevenueLeakScan) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *revenueleakscanPager) applyCursors(query *RevenueLeakScanQuery, after, before *Cursor) (*RevenueLeakScanQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRevenueLeakScanOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *revenueleakscanPager) applyOrder(query *RevenueLeakScanQuery) *RevenueLeakScanQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRevenueLeakScanOrder.Field {
+		query = query.Order(DefaultRevenueLeakScanOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *revenueleakscanPager) orderExpr(query *RevenueLeakScanQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRevenueLeakScanOrder.Field {
+			b.Comma().Ident(DefaultRevenueLeakScanOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RevenueLeakScan.
+func (_m *RevenueLeakScanQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RevenueLeakScanPaginateOption,
+) (*RevenueLeakScanConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRevenueLeakScanPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RevenueLeakScanConnection{Edges: []*RevenueLeakScanEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// RevenueLeakScanOrderField defines the ordering field of RevenueLeakScan.
+type RevenueLeakScanOrderField struct {
+	// Value extracts the ordering value from the given RevenueLeakScan.
+	Value    func(*RevenueLeakScan) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) revenueleakscan.OrderOption
+	toCursor func(*RevenueLeakScan) Cursor
+}
+
+// RevenueLeakScanOrder defines the ordering of RevenueLeakScan.
+type RevenueLeakScanOrder struct {
+	Direction OrderDirection             `json:"direction"`
+	Field     *RevenueLeakScanOrderField `json:"field"`
+}
+
+// DefaultRevenueLeakScanOrder is the default ordering of RevenueLeakScan.
+var DefaultRevenueLeakScanOrder = &RevenueLeakScanOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RevenueLeakScanOrderField{
+		Value: func(_m *RevenueLeakScan) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: revenueleakscan.FieldID,
+		toTerm: revenueleakscan.ByID,
+		toCursor: func(_m *RevenueLeakScan) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RevenueLeakScan into RevenueLeakScanEdge.
+func (_m *RevenueLeakScan) ToEdge(order *RevenueLeakScanOrder) *RevenueLeakScanEdge {
+	if order == nil {
+		order = DefaultRevenueLeakScanOrder
+	}
+	return &RevenueLeakScanEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

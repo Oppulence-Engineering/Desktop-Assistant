@@ -76,6 +76,22 @@ func addRevenueSchemas(schemas obj) {
 		"expiresAt":    stringSchema("Decision expiry; expired decisions must be re-evaluated before approval or execution.", "2026-07-13T12:00:00Z", obj{"format": "date-time"}),
 	}, "id", "revision", "revisionHash", "status", "evaluatedAt", "expiresAt")
 
+	schemas["RevenueLeakScan"] = objectSchema("One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable.", obj{
+		"id":                   uuidSchema("Scan id.", "4d8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"status":               stringEnum("Scan status.", "completed", "pending", "running", "completed", "failed"),
+		"mode":                 stringEnum("Workspace mode at scan time.", "local", "local", "linked"),
+		"lookbackDays":         intSchema("Historical lookback in days.", 90),
+		"threadsSeen":          intSchema("Threads examined.", 42),
+		"candidatesSeen":       intSchema("Detector candidates found.", 7),
+		"relationshipsCreated": intSchema("New relationships recorded.", 3),
+		"evidencesCreated":     intSchema("New evidence rows recorded.", 5),
+		"actionsCreated":       intSchema("New queue actions created.", 5),
+		"startedAt":            stringSchema("Start time.", "2026-07-23T12:00:00Z", obj{"format": "date-time"}, nullable()),
+		"completedAt":          stringSchema("Completion time.", "2026-07-23T12:00:40Z", obj{"format": "date-time"}, nullable()),
+		"sourceFreshnessAt":    stringSchema("Newest source timestamp observed (incremental cursor).", "2026-07-22T09:00:00Z", obj{"format": "date-time"}, nullable()),
+		"error":                stringSchema("Bounded failure reason.", ""),
+	}, "id", "status", "mode", "lookbackDays")
+
 	schemas["RevenueOutcome"] = objectSchema("One observed action outcome, append-only and idempotent on (action, source, sourceEventId).", obj{
 		"id":            uuidSchema("Outcome id.", "3c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"kind":          stringEnum("Outcome kind.", "replied", "sent", "delivered", "bounced", "replied", "meeting_booked", "won", "lost", "dismissed", "bad_recommendation"),
@@ -100,6 +116,19 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"503": problemResponse("Policy facade unavailable; the link fails closed.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "policy preflight unavailable; the action stays pending", "facade_unavailable")),
+	})}
+
+	paths["/v1/revenue-leak-scans"] = obj{"post": operation("Revenue", "Start a revenue leak scan", "Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.", "startRevenueLeakScan", bearer(), nil, jsonRequestOptional("Scan options.", objectSchema("Scan request.", obj{
+		"lookbackDays": intSchema("Historical lookback in days (default 90, max 365).", 90),
+	}), obj{"lookbackDays": 90}), obj{
+		"202": jsonResponse("Scan started.", ref("RevenueLeakScan"), nil),
+		"401": responseRef("401"),
+		"409": problemResponse("A scan is already running, or no scan source is configured.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "revenue: scan unavailable: a scan is already running", "scan_unavailable")),
+	})}
+	paths["/v1/revenue-leak-scans/{scanId}"] = obj{"get": operation("Revenue", "Get scan progress", "Returns progress, counts, errors, and source freshness for one scan.", "getRevenueLeakScan", bearer(), []any{obj{"name": "scanId", "in": "path", "required": true, "description": "Scan id.", "schema": obj{"type": "string", "format": "uuid"}}}, nil, obj{
+		"200": jsonResponse("Scan state.", ref("RevenueLeakScan"), nil),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
 	})}
 
 	paths["/v1/relationships"] = obj{

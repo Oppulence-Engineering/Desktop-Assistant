@@ -63,4 +63,23 @@ var (
 		Name: "revenue_duplicate_operations_prevented_total",
 		Help: "Duplicate revenue operations answered idempotently, by operation.",
 	}, []string{"operation"})
+
+	// Scans counts revenue leak scans by terminal status and workspace mode.
+	Scans = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "revenue_leak_scans_total",
+		Help: "Revenue leak scans, by status and mode.",
+	}, []string{"status", "mode"})
+
+	// ScanDuration observes scan wall-clock by workspace mode.
+	ScanDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "revenue_leak_scan_duration_seconds",
+		Help:    "Revenue leak scan duration, by mode.",
+		Buckets: []float64{1, 5, 15, 30, 60, 120, 300},
+	}, []string{"mode"})
+
+	// DetectorCandidates counts detector evaluations by detector and result.
+	DetectorCandidates = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "revenue_detector_candidates_total",
+		Help: "Detector evaluations during scans, by detector and result.",
+	}, []string{"detector", "result"})
 )

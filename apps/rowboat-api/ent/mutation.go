@@ -43,6 +43,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -94,6 +95,7 @@ const (
 	TypeRevenueAction               = "RevenueAction"
 	TypeRevenueActionRevision       = "RevenueActionRevision"
 	TypeRevenueEvidence             = "RevenueEvidence"
+	TypeRevenueLeakScan             = "RevenueLeakScan"
 	TypeRevenueOutboxEvent          = "RevenueOutboxEvent"
 	TypeRevenueWorkspace            = "RevenueWorkspace"
 	TypeRevenueWorkspaceMember      = "RevenueWorkspaceMember"
@@ -40448,6 +40450,1446 @@ func (m *RevenueEvidenceMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown RevenueEvidence edge %s", name)
 }
 
+// RevenueLeakScanMutation represents an operation that mutates the RevenueLeakScan nodes in the graph.
+type RevenueLeakScanMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *uuid.UUID
+	created_at               *time.Time
+	updated_at               *time.Time
+	status                   *string
+	mode                     *string
+	lookback_days            *int
+	addlookback_days         *int
+	threads_seen             *int
+	addthreads_seen          *int
+	candidates_seen          *int
+	addcandidates_seen       *int
+	relationships_created    *int
+	addrelationships_created *int
+	evidences_created        *int
+	addevidences_created     *int
+	actions_created          *int
+	addactions_created       *int
+	started_at               *time.Time
+	completed_at             *time.Time
+	error                    *string
+	source_freshness_at      *time.Time
+	clearedFields            map[string]struct{}
+	workspace                *uuid.UUID
+	clearedworkspace         bool
+	user                     *uuid.UUID
+	cleareduser              bool
+	done                     bool
+	oldValue                 func(context.Context) (*RevenueLeakScan, error)
+	predicates               []predicate.RevenueLeakScan
+}
+
+var _ ent.Mutation = (*RevenueLeakScanMutation)(nil)
+
+// revenueleakscanOption allows management of the mutation configuration using functional options.
+type revenueleakscanOption func(*RevenueLeakScanMutation)
+
+// newRevenueLeakScanMutation creates new mutation for the RevenueLeakScan entity.
+func newRevenueLeakScanMutation(c config, op Op, opts ...revenueleakscanOption) *RevenueLeakScanMutation {
+	m := &RevenueLeakScanMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRevenueLeakScan,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRevenueLeakScanID sets the ID field of the mutation.
+func withRevenueLeakScanID(id uuid.UUID) revenueleakscanOption {
+	return func(m *RevenueLeakScanMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RevenueLeakScan
+		)
+		m.oldValue = func(ctx context.Context) (*RevenueLeakScan, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RevenueLeakScan.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRevenueLeakScan sets the old RevenueLeakScan of the mutation.
+func withRevenueLeakScan(node *RevenueLeakScan) revenueleakscanOption {
+	return func(m *RevenueLeakScanMutation) {
+		m.oldValue = func(context.Context) (*RevenueLeakScan, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RevenueLeakScanMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RevenueLeakScanMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of RevenueLeakScan entities.
+func (m *RevenueLeakScanMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RevenueLeakScanMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RevenueLeakScanMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RevenueLeakScan.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RevenueLeakScanMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RevenueLeakScanMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RevenueLeakScanMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RevenueLeakScanMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RevenueLeakScanMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RevenueLeakScanMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *RevenueLeakScanMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *RevenueLeakScanMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *RevenueLeakScanMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetMode sets the "mode" field.
+func (m *RevenueLeakScanMutation) SetMode(s string) {
+	m.mode = &s
+}
+
+// Mode returns the value of the "mode" field in the mutation.
+func (m *RevenueLeakScanMutation) Mode() (r string, exists bool) {
+	v := m.mode
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMode returns the old "mode" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldMode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMode: %w", err)
+	}
+	return oldValue.Mode, nil
+}
+
+// ResetMode resets all changes to the "mode" field.
+func (m *RevenueLeakScanMutation) ResetMode() {
+	m.mode = nil
+}
+
+// SetLookbackDays sets the "lookback_days" field.
+func (m *RevenueLeakScanMutation) SetLookbackDays(i int) {
+	m.lookback_days = &i
+	m.addlookback_days = nil
+}
+
+// LookbackDays returns the value of the "lookback_days" field in the mutation.
+func (m *RevenueLeakScanMutation) LookbackDays() (r int, exists bool) {
+	v := m.lookback_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLookbackDays returns the old "lookback_days" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldLookbackDays(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLookbackDays is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLookbackDays requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLookbackDays: %w", err)
+	}
+	return oldValue.LookbackDays, nil
+}
+
+// AddLookbackDays adds i to the "lookback_days" field.
+func (m *RevenueLeakScanMutation) AddLookbackDays(i int) {
+	if m.addlookback_days != nil {
+		*m.addlookback_days += i
+	} else {
+		m.addlookback_days = &i
+	}
+}
+
+// AddedLookbackDays returns the value that was added to the "lookback_days" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedLookbackDays() (r int, exists bool) {
+	v := m.addlookback_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLookbackDays resets all changes to the "lookback_days" field.
+func (m *RevenueLeakScanMutation) ResetLookbackDays() {
+	m.lookback_days = nil
+	m.addlookback_days = nil
+}
+
+// SetThreadsSeen sets the "threads_seen" field.
+func (m *RevenueLeakScanMutation) SetThreadsSeen(i int) {
+	m.threads_seen = &i
+	m.addthreads_seen = nil
+}
+
+// ThreadsSeen returns the value of the "threads_seen" field in the mutation.
+func (m *RevenueLeakScanMutation) ThreadsSeen() (r int, exists bool) {
+	v := m.threads_seen
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldThreadsSeen returns the old "threads_seen" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldThreadsSeen(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldThreadsSeen is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldThreadsSeen requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldThreadsSeen: %w", err)
+	}
+	return oldValue.ThreadsSeen, nil
+}
+
+// AddThreadsSeen adds i to the "threads_seen" field.
+func (m *RevenueLeakScanMutation) AddThreadsSeen(i int) {
+	if m.addthreads_seen != nil {
+		*m.addthreads_seen += i
+	} else {
+		m.addthreads_seen = &i
+	}
+}
+
+// AddedThreadsSeen returns the value that was added to the "threads_seen" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedThreadsSeen() (r int, exists bool) {
+	v := m.addthreads_seen
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetThreadsSeen resets all changes to the "threads_seen" field.
+func (m *RevenueLeakScanMutation) ResetThreadsSeen() {
+	m.threads_seen = nil
+	m.addthreads_seen = nil
+}
+
+// SetCandidatesSeen sets the "candidates_seen" field.
+func (m *RevenueLeakScanMutation) SetCandidatesSeen(i int) {
+	m.candidates_seen = &i
+	m.addcandidates_seen = nil
+}
+
+// CandidatesSeen returns the value of the "candidates_seen" field in the mutation.
+func (m *RevenueLeakScanMutation) CandidatesSeen() (r int, exists bool) {
+	v := m.candidates_seen
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCandidatesSeen returns the old "candidates_seen" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldCandidatesSeen(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCandidatesSeen is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCandidatesSeen requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCandidatesSeen: %w", err)
+	}
+	return oldValue.CandidatesSeen, nil
+}
+
+// AddCandidatesSeen adds i to the "candidates_seen" field.
+func (m *RevenueLeakScanMutation) AddCandidatesSeen(i int) {
+	if m.addcandidates_seen != nil {
+		*m.addcandidates_seen += i
+	} else {
+		m.addcandidates_seen = &i
+	}
+}
+
+// AddedCandidatesSeen returns the value that was added to the "candidates_seen" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedCandidatesSeen() (r int, exists bool) {
+	v := m.addcandidates_seen
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCandidatesSeen resets all changes to the "candidates_seen" field.
+func (m *RevenueLeakScanMutation) ResetCandidatesSeen() {
+	m.candidates_seen = nil
+	m.addcandidates_seen = nil
+}
+
+// SetRelationshipsCreated sets the "relationships_created" field.
+func (m *RevenueLeakScanMutation) SetRelationshipsCreated(i int) {
+	m.relationships_created = &i
+	m.addrelationships_created = nil
+}
+
+// RelationshipsCreated returns the value of the "relationships_created" field in the mutation.
+func (m *RevenueLeakScanMutation) RelationshipsCreated() (r int, exists bool) {
+	v := m.relationships_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelationshipsCreated returns the old "relationships_created" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldRelationshipsCreated(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelationshipsCreated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelationshipsCreated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelationshipsCreated: %w", err)
+	}
+	return oldValue.RelationshipsCreated, nil
+}
+
+// AddRelationshipsCreated adds i to the "relationships_created" field.
+func (m *RevenueLeakScanMutation) AddRelationshipsCreated(i int) {
+	if m.addrelationships_created != nil {
+		*m.addrelationships_created += i
+	} else {
+		m.addrelationships_created = &i
+	}
+}
+
+// AddedRelationshipsCreated returns the value that was added to the "relationships_created" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedRelationshipsCreated() (r int, exists bool) {
+	v := m.addrelationships_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRelationshipsCreated resets all changes to the "relationships_created" field.
+func (m *RevenueLeakScanMutation) ResetRelationshipsCreated() {
+	m.relationships_created = nil
+	m.addrelationships_created = nil
+}
+
+// SetEvidencesCreated sets the "evidences_created" field.
+func (m *RevenueLeakScanMutation) SetEvidencesCreated(i int) {
+	m.evidences_created = &i
+	m.addevidences_created = nil
+}
+
+// EvidencesCreated returns the value of the "evidences_created" field in the mutation.
+func (m *RevenueLeakScanMutation) EvidencesCreated() (r int, exists bool) {
+	v := m.evidences_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEvidencesCreated returns the old "evidences_created" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldEvidencesCreated(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEvidencesCreated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEvidencesCreated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEvidencesCreated: %w", err)
+	}
+	return oldValue.EvidencesCreated, nil
+}
+
+// AddEvidencesCreated adds i to the "evidences_created" field.
+func (m *RevenueLeakScanMutation) AddEvidencesCreated(i int) {
+	if m.addevidences_created != nil {
+		*m.addevidences_created += i
+	} else {
+		m.addevidences_created = &i
+	}
+}
+
+// AddedEvidencesCreated returns the value that was added to the "evidences_created" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedEvidencesCreated() (r int, exists bool) {
+	v := m.addevidences_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetEvidencesCreated resets all changes to the "evidences_created" field.
+func (m *RevenueLeakScanMutation) ResetEvidencesCreated() {
+	m.evidences_created = nil
+	m.addevidences_created = nil
+}
+
+// SetActionsCreated sets the "actions_created" field.
+func (m *RevenueLeakScanMutation) SetActionsCreated(i int) {
+	m.actions_created = &i
+	m.addactions_created = nil
+}
+
+// ActionsCreated returns the value of the "actions_created" field in the mutation.
+func (m *RevenueLeakScanMutation) ActionsCreated() (r int, exists bool) {
+	v := m.actions_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActionsCreated returns the old "actions_created" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldActionsCreated(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActionsCreated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActionsCreated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActionsCreated: %w", err)
+	}
+	return oldValue.ActionsCreated, nil
+}
+
+// AddActionsCreated adds i to the "actions_created" field.
+func (m *RevenueLeakScanMutation) AddActionsCreated(i int) {
+	if m.addactions_created != nil {
+		*m.addactions_created += i
+	} else {
+		m.addactions_created = &i
+	}
+}
+
+// AddedActionsCreated returns the value that was added to the "actions_created" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedActionsCreated() (r int, exists bool) {
+	v := m.addactions_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetActionsCreated resets all changes to the "actions_created" field.
+func (m *RevenueLeakScanMutation) ResetActionsCreated() {
+	m.actions_created = nil
+	m.addactions_created = nil
+}
+
+// SetStartedAt sets the "started_at" field.
+func (m *RevenueLeakScanMutation) SetStartedAt(t time.Time) {
+	m.started_at = &t
+}
+
+// StartedAt returns the value of the "started_at" field in the mutation.
+func (m *RevenueLeakScanMutation) StartedAt() (r time.Time, exists bool) {
+	v := m.started_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStartedAt returns the old "started_at" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldStartedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStartedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStartedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartedAt: %w", err)
+	}
+	return oldValue.StartedAt, nil
+}
+
+// ClearStartedAt clears the value of the "started_at" field.
+func (m *RevenueLeakScanMutation) ClearStartedAt() {
+	m.started_at = nil
+	m.clearedFields[revenueleakscan.FieldStartedAt] = struct{}{}
+}
+
+// StartedAtCleared returns if the "started_at" field was cleared in this mutation.
+func (m *RevenueLeakScanMutation) StartedAtCleared() bool {
+	_, ok := m.clearedFields[revenueleakscan.FieldStartedAt]
+	return ok
+}
+
+// ResetStartedAt resets all changes to the "started_at" field.
+func (m *RevenueLeakScanMutation) ResetStartedAt() {
+	m.started_at = nil
+	delete(m.clearedFields, revenueleakscan.FieldStartedAt)
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (m *RevenueLeakScanMutation) SetCompletedAt(t time.Time) {
+	m.completed_at = &t
+}
+
+// CompletedAt returns the value of the "completed_at" field in the mutation.
+func (m *RevenueLeakScanMutation) CompletedAt() (r time.Time, exists bool) {
+	v := m.completed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompletedAt returns the old "completed_at" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldCompletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompletedAt: %w", err)
+	}
+	return oldValue.CompletedAt, nil
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (m *RevenueLeakScanMutation) ClearCompletedAt() {
+	m.completed_at = nil
+	m.clearedFields[revenueleakscan.FieldCompletedAt] = struct{}{}
+}
+
+// CompletedAtCleared returns if the "completed_at" field was cleared in this mutation.
+func (m *RevenueLeakScanMutation) CompletedAtCleared() bool {
+	_, ok := m.clearedFields[revenueleakscan.FieldCompletedAt]
+	return ok
+}
+
+// ResetCompletedAt resets all changes to the "completed_at" field.
+func (m *RevenueLeakScanMutation) ResetCompletedAt() {
+	m.completed_at = nil
+	delete(m.clearedFields, revenueleakscan.FieldCompletedAt)
+}
+
+// SetError sets the "error" field.
+func (m *RevenueLeakScanMutation) SetError(s string) {
+	m.error = &s
+}
+
+// Error returns the value of the "error" field in the mutation.
+func (m *RevenueLeakScanMutation) Error() (r string, exists bool) {
+	v := m.error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldError returns the old "error" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldError: %w", err)
+	}
+	return oldValue.Error, nil
+}
+
+// ClearError clears the value of the "error" field.
+func (m *RevenueLeakScanMutation) ClearError() {
+	m.error = nil
+	m.clearedFields[revenueleakscan.FieldError] = struct{}{}
+}
+
+// ErrorCleared returns if the "error" field was cleared in this mutation.
+func (m *RevenueLeakScanMutation) ErrorCleared() bool {
+	_, ok := m.clearedFields[revenueleakscan.FieldError]
+	return ok
+}
+
+// ResetError resets all changes to the "error" field.
+func (m *RevenueLeakScanMutation) ResetError() {
+	m.error = nil
+	delete(m.clearedFields, revenueleakscan.FieldError)
+}
+
+// SetSourceFreshnessAt sets the "source_freshness_at" field.
+func (m *RevenueLeakScanMutation) SetSourceFreshnessAt(t time.Time) {
+	m.source_freshness_at = &t
+}
+
+// SourceFreshnessAt returns the value of the "source_freshness_at" field in the mutation.
+func (m *RevenueLeakScanMutation) SourceFreshnessAt() (r time.Time, exists bool) {
+	v := m.source_freshness_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceFreshnessAt returns the old "source_freshness_at" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldSourceFreshnessAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceFreshnessAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceFreshnessAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceFreshnessAt: %w", err)
+	}
+	return oldValue.SourceFreshnessAt, nil
+}
+
+// ClearSourceFreshnessAt clears the value of the "source_freshness_at" field.
+func (m *RevenueLeakScanMutation) ClearSourceFreshnessAt() {
+	m.source_freshness_at = nil
+	m.clearedFields[revenueleakscan.FieldSourceFreshnessAt] = struct{}{}
+}
+
+// SourceFreshnessAtCleared returns if the "source_freshness_at" field was cleared in this mutation.
+func (m *RevenueLeakScanMutation) SourceFreshnessAtCleared() bool {
+	_, ok := m.clearedFields[revenueleakscan.FieldSourceFreshnessAt]
+	return ok
+}
+
+// ResetSourceFreshnessAt resets all changes to the "source_freshness_at" field.
+func (m *RevenueLeakScanMutation) ResetSourceFreshnessAt() {
+	m.source_freshness_at = nil
+	delete(m.clearedFields, revenueleakscan.FieldSourceFreshnessAt)
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *RevenueLeakScanMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *RevenueLeakScanMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *RevenueLeakScanMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *RevenueLeakScanMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *RevenueLeakScanMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *RevenueLeakScanMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *RevenueLeakScanMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *RevenueLeakScanMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *RevenueLeakScanMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *RevenueLeakScanMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *RevenueLeakScanMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *RevenueLeakScanMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the RevenueLeakScanMutation builder.
+func (m *RevenueLeakScanMutation) Where(ps ...predicate.RevenueLeakScan) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RevenueLeakScanMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RevenueLeakScanMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RevenueLeakScan, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RevenueLeakScanMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RevenueLeakScanMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RevenueLeakScan).
+func (m *RevenueLeakScanMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RevenueLeakScanMutation) Fields() []string {
+	fields := make([]string, 0, 14)
+	if m.created_at != nil {
+		fields = append(fields, revenueleakscan.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, revenueleakscan.FieldUpdatedAt)
+	}
+	if m.status != nil {
+		fields = append(fields, revenueleakscan.FieldStatus)
+	}
+	if m.mode != nil {
+		fields = append(fields, revenueleakscan.FieldMode)
+	}
+	if m.lookback_days != nil {
+		fields = append(fields, revenueleakscan.FieldLookbackDays)
+	}
+	if m.threads_seen != nil {
+		fields = append(fields, revenueleakscan.FieldThreadsSeen)
+	}
+	if m.candidates_seen != nil {
+		fields = append(fields, revenueleakscan.FieldCandidatesSeen)
+	}
+	if m.relationships_created != nil {
+		fields = append(fields, revenueleakscan.FieldRelationshipsCreated)
+	}
+	if m.evidences_created != nil {
+		fields = append(fields, revenueleakscan.FieldEvidencesCreated)
+	}
+	if m.actions_created != nil {
+		fields = append(fields, revenueleakscan.FieldActionsCreated)
+	}
+	if m.started_at != nil {
+		fields = append(fields, revenueleakscan.FieldStartedAt)
+	}
+	if m.completed_at != nil {
+		fields = append(fields, revenueleakscan.FieldCompletedAt)
+	}
+	if m.error != nil {
+		fields = append(fields, revenueleakscan.FieldError)
+	}
+	if m.source_freshness_at != nil {
+		fields = append(fields, revenueleakscan.FieldSourceFreshnessAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RevenueLeakScanMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case revenueleakscan.FieldCreatedAt:
+		return m.CreatedAt()
+	case revenueleakscan.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case revenueleakscan.FieldStatus:
+		return m.Status()
+	case revenueleakscan.FieldMode:
+		return m.Mode()
+	case revenueleakscan.FieldLookbackDays:
+		return m.LookbackDays()
+	case revenueleakscan.FieldThreadsSeen:
+		return m.ThreadsSeen()
+	case revenueleakscan.FieldCandidatesSeen:
+		return m.CandidatesSeen()
+	case revenueleakscan.FieldRelationshipsCreated:
+		return m.RelationshipsCreated()
+	case revenueleakscan.FieldEvidencesCreated:
+		return m.EvidencesCreated()
+	case revenueleakscan.FieldActionsCreated:
+		return m.ActionsCreated()
+	case revenueleakscan.FieldStartedAt:
+		return m.StartedAt()
+	case revenueleakscan.FieldCompletedAt:
+		return m.CompletedAt()
+	case revenueleakscan.FieldError:
+		return m.Error()
+	case revenueleakscan.FieldSourceFreshnessAt:
+		return m.SourceFreshnessAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RevenueLeakScanMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case revenueleakscan.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case revenueleakscan.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case revenueleakscan.FieldStatus:
+		return m.OldStatus(ctx)
+	case revenueleakscan.FieldMode:
+		return m.OldMode(ctx)
+	case revenueleakscan.FieldLookbackDays:
+		return m.OldLookbackDays(ctx)
+	case revenueleakscan.FieldThreadsSeen:
+		return m.OldThreadsSeen(ctx)
+	case revenueleakscan.FieldCandidatesSeen:
+		return m.OldCandidatesSeen(ctx)
+	case revenueleakscan.FieldRelationshipsCreated:
+		return m.OldRelationshipsCreated(ctx)
+	case revenueleakscan.FieldEvidencesCreated:
+		return m.OldEvidencesCreated(ctx)
+	case revenueleakscan.FieldActionsCreated:
+		return m.OldActionsCreated(ctx)
+	case revenueleakscan.FieldStartedAt:
+		return m.OldStartedAt(ctx)
+	case revenueleakscan.FieldCompletedAt:
+		return m.OldCompletedAt(ctx)
+	case revenueleakscan.FieldError:
+		return m.OldError(ctx)
+	case revenueleakscan.FieldSourceFreshnessAt:
+		return m.OldSourceFreshnessAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown RevenueLeakScan field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RevenueLeakScanMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case revenueleakscan.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case revenueleakscan.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case revenueleakscan.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case revenueleakscan.FieldMode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMode(v)
+		return nil
+	case revenueleakscan.FieldLookbackDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLookbackDays(v)
+		return nil
+	case revenueleakscan.FieldThreadsSeen:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetThreadsSeen(v)
+		return nil
+	case revenueleakscan.FieldCandidatesSeen:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCandidatesSeen(v)
+		return nil
+	case revenueleakscan.FieldRelationshipsCreated:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelationshipsCreated(v)
+		return nil
+	case revenueleakscan.FieldEvidencesCreated:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEvidencesCreated(v)
+		return nil
+	case revenueleakscan.FieldActionsCreated:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActionsCreated(v)
+		return nil
+	case revenueleakscan.FieldStartedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStartedAt(v)
+		return nil
+	case revenueleakscan.FieldCompletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompletedAt(v)
+		return nil
+	case revenueleakscan.FieldError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetError(v)
+		return nil
+	case revenueleakscan.FieldSourceFreshnessAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceFreshnessAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RevenueLeakScan field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RevenueLeakScanMutation) AddedFields() []string {
+	var fields []string
+	if m.addlookback_days != nil {
+		fields = append(fields, revenueleakscan.FieldLookbackDays)
+	}
+	if m.addthreads_seen != nil {
+		fields = append(fields, revenueleakscan.FieldThreadsSeen)
+	}
+	if m.addcandidates_seen != nil {
+		fields = append(fields, revenueleakscan.FieldCandidatesSeen)
+	}
+	if m.addrelationships_created != nil {
+		fields = append(fields, revenueleakscan.FieldRelationshipsCreated)
+	}
+	if m.addevidences_created != nil {
+		fields = append(fields, revenueleakscan.FieldEvidencesCreated)
+	}
+	if m.addactions_created != nil {
+		fields = append(fields, revenueleakscan.FieldActionsCreated)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RevenueLeakScanMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case revenueleakscan.FieldLookbackDays:
+		return m.AddedLookbackDays()
+	case revenueleakscan.FieldThreadsSeen:
+		return m.AddedThreadsSeen()
+	case revenueleakscan.FieldCandidatesSeen:
+		return m.AddedCandidatesSeen()
+	case revenueleakscan.FieldRelationshipsCreated:
+		return m.AddedRelationshipsCreated()
+	case revenueleakscan.FieldEvidencesCreated:
+		return m.AddedEvidencesCreated()
+	case revenueleakscan.FieldActionsCreated:
+		return m.AddedActionsCreated()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RevenueLeakScanMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case revenueleakscan.FieldLookbackDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLookbackDays(v)
+		return nil
+	case revenueleakscan.FieldThreadsSeen:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddThreadsSeen(v)
+		return nil
+	case revenueleakscan.FieldCandidatesSeen:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCandidatesSeen(v)
+		return nil
+	case revenueleakscan.FieldRelationshipsCreated:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRelationshipsCreated(v)
+		return nil
+	case revenueleakscan.FieldEvidencesCreated:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddEvidencesCreated(v)
+		return nil
+	case revenueleakscan.FieldActionsCreated:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddActionsCreated(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RevenueLeakScan numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RevenueLeakScanMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(revenueleakscan.FieldStartedAt) {
+		fields = append(fields, revenueleakscan.FieldStartedAt)
+	}
+	if m.FieldCleared(revenueleakscan.FieldCompletedAt) {
+		fields = append(fields, revenueleakscan.FieldCompletedAt)
+	}
+	if m.FieldCleared(revenueleakscan.FieldError) {
+		fields = append(fields, revenueleakscan.FieldError)
+	}
+	if m.FieldCleared(revenueleakscan.FieldSourceFreshnessAt) {
+		fields = append(fields, revenueleakscan.FieldSourceFreshnessAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RevenueLeakScanMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RevenueLeakScanMutation) ClearField(name string) error {
+	switch name {
+	case revenueleakscan.FieldStartedAt:
+		m.ClearStartedAt()
+		return nil
+	case revenueleakscan.FieldCompletedAt:
+		m.ClearCompletedAt()
+		return nil
+	case revenueleakscan.FieldError:
+		m.ClearError()
+		return nil
+	case revenueleakscan.FieldSourceFreshnessAt:
+		m.ClearSourceFreshnessAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RevenueLeakScan nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RevenueLeakScanMutation) ResetField(name string) error {
+	switch name {
+	case revenueleakscan.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case revenueleakscan.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case revenueleakscan.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case revenueleakscan.FieldMode:
+		m.ResetMode()
+		return nil
+	case revenueleakscan.FieldLookbackDays:
+		m.ResetLookbackDays()
+		return nil
+	case revenueleakscan.FieldThreadsSeen:
+		m.ResetThreadsSeen()
+		return nil
+	case revenueleakscan.FieldCandidatesSeen:
+		m.ResetCandidatesSeen()
+		return nil
+	case revenueleakscan.FieldRelationshipsCreated:
+		m.ResetRelationshipsCreated()
+		return nil
+	case revenueleakscan.FieldEvidencesCreated:
+		m.ResetEvidencesCreated()
+		return nil
+	case revenueleakscan.FieldActionsCreated:
+		m.ResetActionsCreated()
+		return nil
+	case revenueleakscan.FieldStartedAt:
+		m.ResetStartedAt()
+		return nil
+	case revenueleakscan.FieldCompletedAt:
+		m.ResetCompletedAt()
+		return nil
+	case revenueleakscan.FieldError:
+		m.ResetError()
+		return nil
+	case revenueleakscan.FieldSourceFreshnessAt:
+		m.ResetSourceFreshnessAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RevenueLeakScan field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RevenueLeakScanMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.workspace != nil {
+		edges = append(edges, revenueleakscan.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, revenueleakscan.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RevenueLeakScanMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case revenueleakscan.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case revenueleakscan.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RevenueLeakScanMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RevenueLeakScanMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RevenueLeakScanMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedworkspace {
+		edges = append(edges, revenueleakscan.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, revenueleakscan.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RevenueLeakScanMutation) EdgeCleared(name string) bool {
+	switch name {
+	case revenueleakscan.EdgeWorkspace:
+		return m.clearedworkspace
+	case revenueleakscan.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RevenueLeakScanMutation) ClearEdge(name string) error {
+	switch name {
+	case revenueleakscan.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case revenueleakscan.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RevenueLeakScan unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RevenueLeakScanMutation) ResetEdge(name string) error {
+	switch name {
+	case revenueleakscan.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case revenueleakscan.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RevenueLeakScan edge %s", name)
+}
+
 // RevenueOutboxEventMutation represents an operation that mutates the RevenueOutboxEvent nodes in the graph.
 type RevenueOutboxEventMutation struct {
 	config
@@ -41835,6 +43277,9 @@ type RevenueWorkspaceMutation struct {
 	outbox_events            map[uuid.UUID]struct{}
 	removedoutbox_events     map[uuid.UUID]struct{}
 	clearedoutbox_events     bool
+	scans                    map[uuid.UUID]struct{}
+	removedscans             map[uuid.UUID]struct{}
+	clearedscans             bool
 	done                     bool
 	oldValue                 func(context.Context) (*RevenueWorkspace, error)
 	predicates               []predicate.RevenueWorkspace
@@ -42755,6 +44200,60 @@ func (m *RevenueWorkspaceMutation) ResetOutboxEvents() {
 	m.removedoutbox_events = nil
 }
 
+// AddScanIDs adds the "scans" edge to the RevenueLeakScan entity by ids.
+func (m *RevenueWorkspaceMutation) AddScanIDs(ids ...uuid.UUID) {
+	if m.scans == nil {
+		m.scans = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.scans[ids[i]] = struct{}{}
+	}
+}
+
+// ClearScans clears the "scans" edge to the RevenueLeakScan entity.
+func (m *RevenueWorkspaceMutation) ClearScans() {
+	m.clearedscans = true
+}
+
+// ScansCleared reports if the "scans" edge to the RevenueLeakScan entity was cleared.
+func (m *RevenueWorkspaceMutation) ScansCleared() bool {
+	return m.clearedscans
+}
+
+// RemoveScanIDs removes the "scans" edge to the RevenueLeakScan entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveScanIDs(ids ...uuid.UUID) {
+	if m.removedscans == nil {
+		m.removedscans = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.scans, ids[i])
+		m.removedscans[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedScans returns the removed IDs of the "scans" edge to the RevenueLeakScan entity.
+func (m *RevenueWorkspaceMutation) RemovedScansIDs() (ids []uuid.UUID) {
+	for id := range m.removedscans {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ScansIDs returns the "scans" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) ScansIDs() (ids []uuid.UUID) {
+	for id := range m.scans {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetScans resets all changes to the "scans" edge.
+func (m *RevenueWorkspaceMutation) ResetScans() {
+	m.scans = nil
+	m.clearedscans = false
+	m.removedscans = nil
+}
+
 // Where appends a list predicates to the RevenueWorkspaceMutation builder.
 func (m *RevenueWorkspaceMutation) Where(ps ...predicate.RevenueWorkspace) {
 	m.predicates = append(m.predicates, ps...)
@@ -43034,7 +44533,7 @@ func (m *RevenueWorkspaceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RevenueWorkspaceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 9)
+	edges := make([]string, 0, 10)
 	if m.user != nil {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -43061,6 +44560,9 @@ func (m *RevenueWorkspaceMutation) AddedEdges() []string {
 	}
 	if m.outbox_events != nil {
 		edges = append(edges, revenueworkspace.EdgeOutboxEvents)
+	}
+	if m.scans != nil {
+		edges = append(edges, revenueworkspace.EdgeScans)
 	}
 	return edges
 }
@@ -43121,13 +44623,19 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeScans:
+		ids := make([]ent.Value, 0, len(m.scans))
+		for id := range m.scans {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 9)
+	edges := make([]string, 0, 10)
 	if m.removedmembers != nil {
 		edges = append(edges, revenueworkspace.EdgeMembers)
 	}
@@ -43151,6 +44659,9 @@ func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
 	}
 	if m.removedoutbox_events != nil {
 		edges = append(edges, revenueworkspace.EdgeOutboxEvents)
+	}
+	if m.removedscans != nil {
+		edges = append(edges, revenueworkspace.EdgeScans)
 	}
 	return edges
 }
@@ -43207,13 +44718,19 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeScans:
+		ids := make([]ent.Value, 0, len(m.removedscans))
+		for id := range m.removedscans {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 9)
+	edges := make([]string, 0, 10)
 	if m.cleareduser {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -43241,6 +44758,9 @@ func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
 	if m.clearedoutbox_events {
 		edges = append(edges, revenueworkspace.EdgeOutboxEvents)
 	}
+	if m.clearedscans {
+		edges = append(edges, revenueworkspace.EdgeScans)
+	}
 	return edges
 }
 
@@ -43266,6 +44786,8 @@ func (m *RevenueWorkspaceMutation) EdgeCleared(name string) bool {
 		return m.clearedoutcomes
 	case revenueworkspace.EdgeOutboxEvents:
 		return m.clearedoutbox_events
+	case revenueworkspace.EdgeScans:
+		return m.clearedscans
 	}
 	return false
 }
@@ -43311,6 +44833,9 @@ func (m *RevenueWorkspaceMutation) ResetEdge(name string) error {
 		return nil
 	case revenueworkspace.EdgeOutboxEvents:
 		m.ResetOutboxEvents()
+		return nil
+	case revenueworkspace.EdgeScans:
+		m.ResetScans()
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace edge %s", name)
@@ -45973,6 +47498,9 @@ type UserMutation struct {
 	revenue_outbox_events                  map[uuid.UUID]struct{}
 	removedrevenue_outbox_events           map[uuid.UUID]struct{}
 	clearedrevenue_outbox_events           bool
+	revenue_leak_scans                     map[uuid.UUID]struct{}
+	removedrevenue_leak_scans              map[uuid.UUID]struct{}
+	clearedrevenue_leak_scans              bool
 	done                                   bool
 	oldValue                               func(context.Context) (*User, error)
 	predicates                             []predicate.User
@@ -47893,6 +49421,60 @@ func (m *UserMutation) ResetRevenueOutboxEvents() {
 	m.removedrevenue_outbox_events = nil
 }
 
+// AddRevenueLeakScanIDs adds the "revenue_leak_scans" edge to the RevenueLeakScan entity by ids.
+func (m *UserMutation) AddRevenueLeakScanIDs(ids ...uuid.UUID) {
+	if m.revenue_leak_scans == nil {
+		m.revenue_leak_scans = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.revenue_leak_scans[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRevenueLeakScans clears the "revenue_leak_scans" edge to the RevenueLeakScan entity.
+func (m *UserMutation) ClearRevenueLeakScans() {
+	m.clearedrevenue_leak_scans = true
+}
+
+// RevenueLeakScansCleared reports if the "revenue_leak_scans" edge to the RevenueLeakScan entity was cleared.
+func (m *UserMutation) RevenueLeakScansCleared() bool {
+	return m.clearedrevenue_leak_scans
+}
+
+// RemoveRevenueLeakScanIDs removes the "revenue_leak_scans" edge to the RevenueLeakScan entity by IDs.
+func (m *UserMutation) RemoveRevenueLeakScanIDs(ids ...uuid.UUID) {
+	if m.removedrevenue_leak_scans == nil {
+		m.removedrevenue_leak_scans = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.revenue_leak_scans, ids[i])
+		m.removedrevenue_leak_scans[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRevenueLeakScans returns the removed IDs of the "revenue_leak_scans" edge to the RevenueLeakScan entity.
+func (m *UserMutation) RemovedRevenueLeakScansIDs() (ids []uuid.UUID) {
+	for id := range m.removedrevenue_leak_scans {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RevenueLeakScansIDs returns the "revenue_leak_scans" edge IDs in the mutation.
+func (m *UserMutation) RevenueLeakScansIDs() (ids []uuid.UUID) {
+	for id := range m.revenue_leak_scans {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRevenueLeakScans resets all changes to the "revenue_leak_scans" edge.
+func (m *UserMutation) ResetRevenueLeakScans() {
+	m.revenue_leak_scans = nil
+	m.clearedrevenue_leak_scans = false
+	m.removedrevenue_leak_scans = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -48109,7 +49691,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 30)
+	edges := make([]string, 0, 31)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -48199,6 +49781,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.revenue_outbox_events != nil {
 		edges = append(edges, user.EdgeRevenueOutboxEvents)
+	}
+	if m.revenue_leak_scans != nil {
+		edges = append(edges, user.EdgeRevenueLeakScans)
 	}
 	return edges
 }
@@ -48385,13 +49970,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeRevenueLeakScans:
+		ids := make([]ent.Value, 0, len(m.revenue_leak_scans))
+		for id := range m.revenue_leak_scans {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 30)
+	edges := make([]string, 0, 31)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -48478,6 +50069,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedrevenue_outbox_events != nil {
 		edges = append(edges, user.EdgeRevenueOutboxEvents)
+	}
+	if m.removedrevenue_leak_scans != nil {
+		edges = append(edges, user.EdgeRevenueLeakScans)
 	}
 	return edges
 }
@@ -48660,13 +50254,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeRevenueLeakScans:
+		ids := make([]ent.Value, 0, len(m.removedrevenue_leak_scans))
+		for id := range m.removedrevenue_leak_scans {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 30)
+	edges := make([]string, 0, 31)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -48757,6 +50357,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedrevenue_outbox_events {
 		edges = append(edges, user.EdgeRevenueOutboxEvents)
 	}
+	if m.clearedrevenue_leak_scans {
+		edges = append(edges, user.EdgeRevenueLeakScans)
+	}
 	return edges
 }
 
@@ -48824,6 +50427,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedaction_outcomes
 	case user.EdgeRevenueOutboxEvents:
 		return m.clearedrevenue_outbox_events
+	case user.EdgeRevenueLeakScans:
+		return m.clearedrevenue_leak_scans
 	}
 	return false
 }
@@ -48932,6 +50537,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeRevenueOutboxEvents:
 		m.ResetRevenueOutboxEvents()
+		return nil
+	case user.EdgeRevenueLeakScans:
+		m.ResetRevenueLeakScans()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)
