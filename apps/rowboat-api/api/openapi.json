@@ -4987,6 +4987,110 @@
         ],
         "type": "object"
       },
+      "RevenueImpact": {
+        "description": "Aggregate ROI picture for the caller's revenue queue: how many open loops were surfaced, how they were triaged, how many were acted on, and what came back.",
+        "properties": {
+          "approved": {
+            "description": "Actions approved.",
+            "example": 18,
+            "type": "integer"
+          },
+          "byDetector": {
+            "description": "Per-detector contribution.",
+            "items": {
+              "description": "Detector stat.",
+              "properties": {
+                "detector": {
+                  "description": "Detector.",
+                  "example": "unanswered_proposal",
+                  "type": "string"
+                },
+                "handled": {
+                  "description": "Handled from this detector.",
+                  "example": 7,
+                  "type": "integer"
+                },
+                "surfaced": {
+                  "description": "Surfaced by this detector.",
+                  "example": 12,
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "dismissed": {
+            "description": "Actions dismissed.",
+            "example": 11,
+            "type": "integer"
+          },
+          "executed": {
+            "description": "Actions executed (draft created or email sent).",
+            "example": 16,
+            "type": "integer"
+          },
+          "handled": {
+            "description": "Actions marked handled.",
+            "example": 20,
+            "type": "integer"
+          },
+          "lost": {
+            "description": "Deals marked lost.",
+            "example": 1,
+            "type": "integer"
+          },
+          "meetingRate": {
+            "description": "Meeting rate = meetings / executed; null with no denominator.",
+            "example": 0.12,
+            "nullable": true,
+            "type": "number"
+          },
+          "meetingsBooked": {
+            "description": "Meetings booked.",
+            "example": 2,
+            "type": "integer"
+          },
+          "open": {
+            "description": "Actions currently open.",
+            "example": 8,
+            "type": "integer"
+          },
+          "outcomes": {
+            "additionalProperties": true,
+            "description": "Raw outcome-kind counts.",
+            "type": "object"
+          },
+          "replied": {
+            "description": "Replies observed.",
+            "example": 6,
+            "type": "integer"
+          },
+          "replyRate": {
+            "description": "Reply rate = replied / executed; null with no denominator.",
+            "example": 0.38,
+            "nullable": true,
+            "type": "number"
+          },
+          "snoozed": {
+            "description": "Actions snoozed.",
+            "example": 3,
+            "type": "integer"
+          },
+          "surfaced": {
+            "description": "Total actions ever surfaced.",
+            "example": 42,
+            "type": "integer"
+          },
+          "won": {
+            "description": "Deals marked won.",
+            "example": 1,
+            "type": "integer"
+          }
+        },
+        "required": ["surfaced", "open", "handled", "approved", "executed"],
+        "type": "object"
+      },
       "RevenueLeakScan": {
         "description": "One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable.",
         "properties": {
@@ -11445,6 +11549,34 @@
           }
         ],
         "summary": "Snooze an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-impact": {
+      "get": {
+        "description": "Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.",
+        "operationId": "getRevenueImpact",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueImpact"
+                }
+              }
+            },
+            "description": "Impact summary."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get the revenue impact summary",
         "tags": ["Revenue"]
       }
     },

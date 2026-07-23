@@ -1244,6 +1244,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/revenue-impact": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the revenue impact summary
+     * @description Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.
+     */
+    get: operations["getRevenueImpact"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/revenue-leak-scans": {
     parameters: {
       query?: never;
@@ -4912,6 +4932,96 @@ export interface components {
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
       workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description Aggregate ROI picture for the caller's revenue queue: how many open loops were surfaced, how they were triaged, how many were acted on, and what came back. */
+    RevenueImpact: {
+      /**
+       * @description Actions approved.
+       * @example 18
+       */
+      approved: number;
+      /** @description Per-detector contribution. */
+      byDetector?: {
+        /**
+         * @description Detector.
+         * @example unanswered_proposal
+         */
+        detector?: string;
+        /**
+         * @description Handled from this detector.
+         * @example 7
+         */
+        handled?: number;
+        /**
+         * @description Surfaced by this detector.
+         * @example 12
+         */
+        surfaced?: number;
+      }[];
+      /**
+       * @description Actions dismissed.
+       * @example 11
+       */
+      dismissed?: number;
+      /**
+       * @description Actions executed (draft created or email sent).
+       * @example 16
+       */
+      executed: number;
+      /**
+       * @description Actions marked handled.
+       * @example 20
+       */
+      handled: number;
+      /**
+       * @description Deals marked lost.
+       * @example 1
+       */
+      lost?: number;
+      /**
+       * @description Meeting rate = meetings / executed; null with no denominator.
+       * @example 0.12
+       */
+      meetingRate?: number | null;
+      /**
+       * @description Meetings booked.
+       * @example 2
+       */
+      meetingsBooked?: number;
+      /**
+       * @description Actions currently open.
+       * @example 8
+       */
+      open: number;
+      /** @description Raw outcome-kind counts. */
+      outcomes?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Replies observed.
+       * @example 6
+       */
+      replied?: number;
+      /**
+       * @description Reply rate = replied / executed; null with no denominator.
+       * @example 0.38
+       */
+      replyRate?: number | null;
+      /**
+       * @description Actions snoozed.
+       * @example 3
+       */
+      snoozed?: number;
+      /**
+       * @description Total actions ever surfaced.
+       * @example 42
+       */
+      surfaced: number;
+      /**
+       * @description Deals marked won.
+       * @example 1
+       */
+      won?: number;
     };
     /** @description One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable. */
     RevenueLeakScan: {
@@ -9559,6 +9669,27 @@ export interface operations {
       400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
+    };
+  };
+  getRevenueImpact: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Impact summary. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueImpact"];
+        };
+      };
+      401: components["responses"]["401"];
     };
   };
   startRevenueLeakScan: {

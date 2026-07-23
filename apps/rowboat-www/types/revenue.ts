@@ -171,3 +171,27 @@ export interface RelationshipDetail {
   relationship: RevenueRelationship;
   actions: RevenueAction[];
 }
+
+export interface DetectorStat {
+  detector: string;
+  surfaced: number;
+  handled: number;
+}
+
+export interface RevenueImpact {
+  surfaced: number;
+  open: number;
+  handled: number;
+  snoozed: number;
+  dismissed: number;
+  approved: number;
+  executed: number;
+  replied: number;
+  meetingsBooked: number;
+  won: number;
+  lost: number;
+  replyRate: number | null;
+  meetingRate: number | null;
+  outcomes: Record<string, number>;
+  byDetector: DetectorStat[];
+}
