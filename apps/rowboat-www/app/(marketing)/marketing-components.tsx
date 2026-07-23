@@ -735,7 +735,9 @@ function HeroQueueCard() {
               {row.what}
               <em>{row.note}</em>
             </span>
-            <span className="linear-hero-card-act">approve</span>
+            <span aria-hidden="true" className="linear-hero-card-act">
+              approve
+            </span>
           </li>
         ))}
       </ul>
