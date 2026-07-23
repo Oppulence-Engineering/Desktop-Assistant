@@ -95,8 +95,12 @@ const (
 
 // ExecRequest is what an Executor needs to perform one action revision.
 type ExecRequest struct {
-	Action         *ent.RevenueAction
-	Workspace      *ent.RevenueWorkspace
+	Action    *ent.RevenueAction
+	Workspace *ent.RevenueWorkspace
+	// UserID is the assigned executing user, verified by the service against
+	// invariant 11 before the executor runs; the executor resolves the sender
+	// credential for exactly this user.
+	UserID         uuid.UUID
 	Mode           string // draft | send
 	IdempotencyKey string
 }
@@ -1065,6 +1069,7 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 	result, execErr := s.executor.Execute(ctx, ExecRequest{
 		Action:         action,
 		Workspace:      ws,
+		UserID:         u.ID,
 		Mode:           action.ExecutionMode,
 		IdempotencyKey: idem,
 	})

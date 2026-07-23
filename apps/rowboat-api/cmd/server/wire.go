@@ -29,6 +29,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/docs"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/feedback"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/gqlapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/minutes"
@@ -376,7 +377,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 				Timeout:      cfg.RevenueFacadeTimeout,
 			})
 		}
-		revenueH = revenue.NewHandler(revenue.NewService(client, facade, nil, log), log)
+		// Gmail is the first execution owner (draft in the operator's own
+		// mailbox by default; sends stay gated behind approval + preflight).
+		gmailExec := revenue.NewGmailExecutor(client, sealer, sec, googleapi.New(googleapi.Config{
+			TokenURL:        cfg.GoogleTokenURL,
+			GmailBaseURL:    cfg.GmailAPIBaseURL,
+			CalendarBaseURL: cfg.CalendarAPIBaseURL,
+			DriveBaseURL:    cfg.DriveAPIBaseURL,
+		}))
+		revenueH = revenue.NewHandler(revenue.NewService(client, facade, gmailExec, log), log)
 	}
 
 	r := srv.Router()
