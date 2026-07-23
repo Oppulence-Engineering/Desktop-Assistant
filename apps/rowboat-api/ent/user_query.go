@@ -39,6 +39,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -84,6 +85,7 @@ type UserQuery struct {
 	withPolicyDecisionSnapshots           *PolicyDecisionSnapshotQuery
 	withActionOutcomes                    *ActionOutcomeQuery
 	withRevenueOutboxEvents               *RevenueOutboxEventQuery
+	withRevenueLeakScans                  *RevenueLeakScanQuery
 	modifiers                             []func(*sql.Selector)
 	loadTotal                             []func(context.Context, []*User) error
 	withNamedLedgerEntries                map[string]*CreditLedgerQuery
@@ -115,6 +117,7 @@ type UserQuery struct {
 	withNamedPolicyDecisionSnapshots      map[string]*PolicyDecisionSnapshotQuery
 	withNamedActionOutcomes               map[string]*ActionOutcomeQuery
 	withNamedRevenueOutboxEvents          map[string]*RevenueOutboxEventQuery
+	withNamedRevenueLeakScans             map[string]*RevenueLeakScanQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -811,6 +814,28 @@ func (_q *UserQuery) QueryRevenueOutboxEvents() *RevenueOutboxEventQuery {
 	return query
 }
 
+// QueryRevenueLeakScans chains the current query on the "revenue_leak_scans" edge.
+func (_q *UserQuery) QueryRevenueLeakScans() *RevenueLeakScanQuery {
+	query := (&RevenueLeakScanClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(revenueleakscan.Table, revenueleakscan.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueLeakScansTable, user.RevenueLeakScansColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -1033,6 +1058,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withPolicyDecisionSnapshots:      _q.withPolicyDecisionSnapshots.Clone(),
 		withActionOutcomes:               _q.withActionOutcomes.Clone(),
 		withRevenueOutboxEvents:          _q.withRevenueOutboxEvents.Clone(),
+		withRevenueLeakScans:             _q.withRevenueLeakScans.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -1369,6 +1395,17 @@ func (_q *UserQuery) WithRevenueOutboxEvents(opts ...func(*RevenueOutboxEventQue
 	return _q
 }
 
+// WithRevenueLeakScans tells the query-builder to eager-load the nodes that are connected to
+// the "revenue_leak_scans" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRevenueLeakScans(opts ...func(*RevenueLeakScanQuery)) *UserQuery {
+	query := (&RevenueLeakScanClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRevenueLeakScans = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -1447,7 +1484,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [30]bool{
+		loadedTypes = [31]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -1478,6 +1515,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withPolicyDecisionSnapshots != nil,
 			_q.withActionOutcomes != nil,
 			_q.withRevenueOutboxEvents != nil,
+			_q.withRevenueLeakScans != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -1732,6 +1770,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withRevenueLeakScans; query != nil {
+		if err := _q.loadRevenueLeakScans(ctx, query, nodes,
+			func(n *User) { n.Edges.RevenueLeakScans = []*RevenueLeakScan{} },
+			func(n *User, e *RevenueLeakScan) { n.Edges.RevenueLeakScans = append(n.Edges.RevenueLeakScans, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -1932,6 +1977,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRevenueOutboxEvents(ctx, query, nodes,
 			func(n *User) { n.appendNamedRevenueOutboxEvents(name) },
 			func(n *User, e *RevenueOutboxEvent) { n.appendNamedRevenueOutboxEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRevenueLeakScans {
+		if err := _q.loadRevenueLeakScans(ctx, query, nodes,
+			func(n *User) { n.appendNamedRevenueLeakScans(name) },
+			func(n *User, e *RevenueLeakScan) { n.appendNamedRevenueLeakScans(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -2870,6 +2922,37 @@ func (_q *UserQuery) loadRevenueOutboxEvents(ctx context.Context, query *Revenue
 	}
 	return nil
 }
+func (_q *UserQuery) loadRevenueLeakScans(ctx context.Context, query *RevenueLeakScanQuery, nodes []*User, init func(*User), assign func(*User, *RevenueLeakScan)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RevenueLeakScan(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RevenueLeakScansColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_revenue_leak_scans
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_revenue_leak_scans" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_revenue_leak_scans" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -3358,6 +3441,20 @@ func (_q *UserQuery) WithNamedRevenueOutboxEvents(name string, opts ...func(*Rev
 		_q.withNamedRevenueOutboxEvents = make(map[string]*RevenueOutboxEventQuery)
 	}
 	_q.withNamedRevenueOutboxEvents[name] = query
+	return _q
+}
+
+// WithNamedRevenueLeakScans tells the query-builder to eager-load the nodes that are connected to the "revenue_leak_scans"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRevenueLeakScans(name string, opts ...func(*RevenueLeakScanQuery)) *UserQuery {
+	query := (&RevenueLeakScanClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRevenueLeakScans == nil {
+		_q.withNamedRevenueLeakScans = make(map[string]*RevenueLeakScanQuery)
+	}
+	_q.withNamedRevenueLeakScans[name] = query
 	return _q
 }
 

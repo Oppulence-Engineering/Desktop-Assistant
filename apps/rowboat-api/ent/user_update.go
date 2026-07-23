@@ -38,6 +38,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -571,6 +572,21 @@ func (_u *UserUpdate) AddRevenueOutboxEvents(v ...*RevenueOutboxEvent) *UserUpda
 		ids[i] = v[i].ID
 	}
 	return _u.AddRevenueOutboxEventIDs(ids...)
+}
+
+// AddRevenueLeakScanIDs adds the "revenue_leak_scans" edge to the RevenueLeakScan entity by IDs.
+func (_u *UserUpdate) AddRevenueLeakScanIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddRevenueLeakScanIDs(ids...)
+	return _u
+}
+
+// AddRevenueLeakScans adds the "revenue_leak_scans" edges to the RevenueLeakScan entity.
+func (_u *UserUpdate) AddRevenueLeakScans(v ...*RevenueLeakScan) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueLeakScanIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -1191,6 +1207,27 @@ func (_u *UserUpdate) RemoveRevenueOutboxEvents(v ...*RevenueOutboxEvent) *UserU
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRevenueOutboxEventIDs(ids...)
+}
+
+// ClearRevenueLeakScans clears all "revenue_leak_scans" edges to the RevenueLeakScan entity.
+func (_u *UserUpdate) ClearRevenueLeakScans() *UserUpdate {
+	_u.mutation.ClearRevenueLeakScans()
+	return _u
+}
+
+// RemoveRevenueLeakScanIDs removes the "revenue_leak_scans" edge to RevenueLeakScan entities by IDs.
+func (_u *UserUpdate) RemoveRevenueLeakScanIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveRevenueLeakScanIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueLeakScans removes "revenue_leak_scans" edges to RevenueLeakScan entities.
+func (_u *UserUpdate) RemoveRevenueLeakScans(v ...*RevenueLeakScan) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueLeakScanIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -2603,6 +2640,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.RevenueLeakScansCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueLeakScansTable,
+			Columns: []string{user.RevenueLeakScansColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueleakscan.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueLeakScansIDs(); len(nodes) > 0 && !_u.mutation.RevenueLeakScansCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueLeakScansTable,
+			Columns: []string{user.RevenueLeakScansColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueleakscan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueLeakScansIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueLeakScansTable,
+			Columns: []string{user.RevenueLeakScansColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueleakscan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -3135,6 +3217,21 @@ func (_u *UserUpdateOne) AddRevenueOutboxEvents(v ...*RevenueOutboxEvent) *UserU
 		ids[i] = v[i].ID
 	}
 	return _u.AddRevenueOutboxEventIDs(ids...)
+}
+
+// AddRevenueLeakScanIDs adds the "revenue_leak_scans" edge to the RevenueLeakScan entity by IDs.
+func (_u *UserUpdateOne) AddRevenueLeakScanIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddRevenueLeakScanIDs(ids...)
+	return _u
+}
+
+// AddRevenueLeakScans adds the "revenue_leak_scans" edges to the RevenueLeakScan entity.
+func (_u *UserUpdateOne) AddRevenueLeakScans(v ...*RevenueLeakScan) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueLeakScanIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -3755,6 +3852,27 @@ func (_u *UserUpdateOne) RemoveRevenueOutboxEvents(v ...*RevenueOutboxEvent) *Us
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRevenueOutboxEventIDs(ids...)
+}
+
+// ClearRevenueLeakScans clears all "revenue_leak_scans" edges to the RevenueLeakScan entity.
+func (_u *UserUpdateOne) ClearRevenueLeakScans() *UserUpdateOne {
+	_u.mutation.ClearRevenueLeakScans()
+	return _u
+}
+
+// RemoveRevenueLeakScanIDs removes the "revenue_leak_scans" edge to RevenueLeakScan entities by IDs.
+func (_u *UserUpdateOne) RemoveRevenueLeakScanIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveRevenueLeakScanIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueLeakScans removes "revenue_leak_scans" edges to RevenueLeakScan entities.
+func (_u *UserUpdateOne) RemoveRevenueLeakScans(v ...*RevenueLeakScan) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueLeakScanIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -5190,6 +5308,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueoutboxevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueLeakScansCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueLeakScansTable,
+			Columns: []string{user.RevenueLeakScansColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueleakscan.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueLeakScansIDs(); len(nodes) > 0 && !_u.mutation.RevenueLeakScansCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueLeakScansTable,
+			Columns: []string{user.RevenueLeakScansColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueleakscan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueLeakScansIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueLeakScansTable,
+			Columns: []string{user.RevenueLeakScansColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueleakscan.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -19,8 +21,9 @@ import (
 
 // Gmail OAuth scopes (mirrors backgroundtaskruntime's connector tools).
 const (
-	scopeGmailCompose = "https://www.googleapis.com/auth/gmail.compose"
-	scopeGmailSend    = "https://www.googleapis.com/auth/gmail.send"
+	scopeGmailReadonly = "https://www.googleapis.com/auth/gmail.readonly"
+	scopeGmailCompose  = "https://www.googleapis.com/auth/gmail.compose"
+	scopeGmailSend     = "https://www.googleapis.com/auth/gmail.send"
 )
 
 // GmailExecutor performs email-channel revenue actions through the executing
@@ -82,33 +85,69 @@ func (e *GmailExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResu
 	return &ExecResult{ProviderMessageID: id}, nil
 }
 
+// SweepThreads implements ThreadSweeper for the revenue leak scan (RFC 030
+// WP3): one threads.list plus one metadata-only threads.get per thread,
+// scoped to the scanning user's own mailbox with the read-only scope. The
+// second return value is the user's own address for counterparty
+// classification.
+func (e *GmailExecutor) SweepThreads(ctx context.Context, userID uuid.UUID, lookbackDays, maxThreads int) ([][]googleapi.GmailThreadMessage, string, error) {
+	conn, token, err := e.connection(ctx, userID, scopeGmailReadonly)
+	if err != nil {
+		return nil, "", err
+	}
+	// Sent-anchored query: every revenue-relevant thread has at least one
+	// outbound message, and it keeps newsletter/notification noise out.
+	query := fmt.Sprintf("in:sent newer_than:%dd", lookbackDays)
+	ids, err := e.google.ListThreadIDs(ctx, token, query, maxThreads)
+	if err != nil {
+		return nil, "", fmt.Errorf("revenue: gmail thread sweep: %w", err)
+	}
+	threads := make([][]googleapi.GmailThreadMessage, 0, len(ids))
+	for _, id := range ids {
+		msgs, err := e.google.GetThreadMessages(ctx, token, id)
+		if err != nil {
+			// One unreadable thread must not abort the sweep.
+			continue
+		}
+		threads = append(threads, msgs)
+	}
+	return threads, conn.ExternalAccountID, nil
+}
+
 // accessToken resolves the assigned user's Google credential, enforcing
 // invariant 11 at the credential layer: the sender connection is looked up
 // for exactly req.UserID, never substituted.
 func (e *GmailExecutor) accessToken(ctx context.Context, req ExecRequest, requiredScope string) (string, error) {
+	_, token, err := e.connection(ctx, req.UserID, requiredScope)
+	return token, err
+}
+
+// connection loads the user's Google connection, checks the scope, and mints
+// an access token.
+func (e *GmailExecutor) connection(ctx context.Context, userID uuid.UUID, requiredScope string) (*ent.OAuthConnection, string, error) {
 	conn, err := e.client.OAuthConnection.Query().
 		Where(
 			oauthconnection.ProviderEQ("google"),
-			oauthconnection.HasUserWith(user.IDEQ(req.UserID)),
+			oauthconnection.HasUserWith(user.IDEQ(userID)),
 		).
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return "", errors.New("revenue: google is not connected for the assigned user")
+			return nil, "", errors.New("revenue: google is not connected for the assigned user")
 		}
-		return "", fmt.Errorf("revenue: load google connection: %w", err)
+		return nil, "", fmt.Errorf("revenue: load google connection: %w", err)
 	}
 	if !slices.Contains(conn.Scopes, requiredScope) {
-		return "", fmt.Errorf("revenue: google connection is missing the %s scope; reconnect Google to grant it", requiredScope)
+		return nil, "", fmt.Errorf("revenue: google connection is missing the %s scope; reconnect Google to grant it", requiredScope)
 	}
 	token, err := e.google.AccessTokenForConnection(ctx, e.sealer, e.secrets, conn)
 	if err != nil {
 		if errors.Is(err, googleapi.ErrReconnectRequired) {
-			return "", errors.New("revenue: google refresh token is invalid; reconnect Google")
+			return nil, "", errors.New("revenue: google refresh token is invalid; reconnect Google")
 		}
-		return "", fmt.Errorf("revenue: could not obtain a google access token: %w", err)
+		return nil, "", fmt.Errorf("revenue: could not obtain a google access token: %w", err)
 	}
-	return token, nil
+	return conn, token, nil
 }
 
 // googleStatusRe matches googleapi's status-error format ("returned 503").

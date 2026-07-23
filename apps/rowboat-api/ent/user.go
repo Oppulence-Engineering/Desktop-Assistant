@@ -97,11 +97,13 @@ type UserEdges struct {
 	ActionOutcomes []*ActionOutcome `json:"action_outcomes,omitempty"`
 	// RevenueOutboxEvents holds the value of the revenue_outbox_events edge.
 	RevenueOutboxEvents []*RevenueOutboxEvent `json:"revenue_outbox_events,omitempty"`
+	// RevenueLeakScans holds the value of the revenue_leak_scans edge.
+	RevenueLeakScans []*RevenueLeakScan `json:"revenue_leak_scans,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [30]bool
+	loadedTypes [31]bool
 	// totalCount holds the count of the edges above.
-	totalCount [30]map[string]int
+	totalCount [31]map[string]int
 
 	namedLedgerEntries                map[string][]*CreditLedger
 	namedMeetingMinuteUsages          map[string][]*MeetingMinuteUsage
@@ -132,6 +134,7 @@ type UserEdges struct {
 	namedPolicyDecisionSnapshots      map[string][]*PolicyDecisionSnapshot
 	namedActionOutcomes               map[string][]*ActionOutcome
 	namedRevenueOutboxEvents          map[string][]*RevenueOutboxEvent
+	namedRevenueLeakScans             map[string][]*RevenueLeakScan
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -406,6 +409,15 @@ func (e UserEdges) RevenueOutboxEventsOrErr() ([]*RevenueOutboxEvent, error) {
 	return nil, &NotLoadedError{edge: "revenue_outbox_events"}
 }
 
+// RevenueLeakScansOrErr returns the RevenueLeakScans value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RevenueLeakScansOrErr() ([]*RevenueLeakScan, error) {
+	if e.loadedTypes[30] {
+		return e.RevenueLeakScans, nil
+	}
+	return nil, &NotLoadedError{edge: "revenue_leak_scans"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -629,6 +641,11 @@ func (_m *User) QueryActionOutcomes() *ActionOutcomeQuery {
 // QueryRevenueOutboxEvents queries the "revenue_outbox_events" edge of the User entity.
 func (_m *User) QueryRevenueOutboxEvents() *RevenueOutboxEventQuery {
 	return NewUserClient(_m.config).QueryRevenueOutboxEvents(_m)
+}
+
+// QueryRevenueLeakScans queries the "revenue_leak_scans" edge of the User entity.
+func (_m *User) QueryRevenueLeakScans() *RevenueLeakScanQuery {
+	return NewUserClient(_m.config).QueryRevenueLeakScans(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -1365,6 +1382,30 @@ func (_m *User) appendNamedRevenueOutboxEvents(name string, edges ...*RevenueOut
 		_m.Edges.namedRevenueOutboxEvents[name] = []*RevenueOutboxEvent{}
 	} else {
 		_m.Edges.namedRevenueOutboxEvents[name] = append(_m.Edges.namedRevenueOutboxEvents[name], edges...)
+	}
+}
+
+// NamedRevenueLeakScans returns the RevenueLeakScans named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRevenueLeakScans(name string) ([]*RevenueLeakScan, error) {
+	if _m.Edges.namedRevenueLeakScans == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRevenueLeakScans[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRevenueLeakScans(name string, edges ...*RevenueLeakScan) {
+	if _m.Edges.namedRevenueLeakScans == nil {
+		_m.Edges.namedRevenueLeakScans = make(map[string][]*RevenueLeakScan)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRevenueLeakScans[name] = []*RevenueLeakScan{}
+	} else {
+		_m.Edges.namedRevenueLeakScans[name] = append(_m.Edges.namedRevenueLeakScans[name], edges...)
 	}
 }
 

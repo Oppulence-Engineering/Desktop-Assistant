@@ -19,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -42,6 +43,7 @@ type RevenueWorkspaceQuery struct {
 	withDecisions          *PolicyDecisionSnapshotQuery
 	withOutcomes           *ActionOutcomeQuery
 	withOutboxEvents       *RevenueOutboxEventQuery
+	withScans              *RevenueLeakScanQuery
 	withFKs                bool
 	modifiers              []func(*sql.Selector)
 	loadTotal              []func(context.Context, []*RevenueWorkspace) error
@@ -53,6 +55,7 @@ type RevenueWorkspaceQuery struct {
 	withNamedDecisions     map[string]*PolicyDecisionSnapshotQuery
 	withNamedOutcomes      map[string]*ActionOutcomeQuery
 	withNamedOutboxEvents  map[string]*RevenueOutboxEventQuery
+	withNamedScans         map[string]*RevenueLeakScanQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -287,6 +290,28 @@ func (_q *RevenueWorkspaceQuery) QueryOutboxEvents() *RevenueOutboxEventQuery {
 	return query
 }
 
+// QueryScans chains the current query on the "scans" edge.
+func (_q *RevenueWorkspaceQuery) QueryScans() *RevenueLeakScanQuery {
+	query := (&RevenueLeakScanClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(revenueleakscan.Table, revenueleakscan.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.ScansTable, revenueworkspace.ScansColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first RevenueWorkspace entity from the query.
 // Returns a *NotFoundError when no RevenueWorkspace was found.
 func (_q *RevenueWorkspaceQuery) First(ctx context.Context) (*RevenueWorkspace, error) {
@@ -488,6 +513,7 @@ func (_q *RevenueWorkspaceQuery) Clone() *RevenueWorkspaceQuery {
 		withDecisions:     _q.withDecisions.Clone(),
 		withOutcomes:      _q.withOutcomes.Clone(),
 		withOutboxEvents:  _q.withOutboxEvents.Clone(),
+		withScans:         _q.withScans.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -593,6 +619,17 @@ func (_q *RevenueWorkspaceQuery) WithOutboxEvents(opts ...func(*RevenueOutboxEve
 	return _q
 }
 
+// WithScans tells the query-builder to eager-load the nodes that are connected to
+// the "scans" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithScans(opts ...func(*RevenueLeakScanQuery)) *RevenueWorkspaceQuery {
+	query := (&RevenueLeakScanClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withScans = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -672,7 +709,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		nodes       = []*RevenueWorkspace{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [9]bool{
+		loadedTypes = [10]bool{
 			_q.withUser != nil,
 			_q.withMembers != nil,
 			_q.withRelationships != nil,
@@ -682,6 +719,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			_q.withDecisions != nil,
 			_q.withOutcomes != nil,
 			_q.withOutboxEvents != nil,
+			_q.withScans != nil,
 		}
 	)
 	if _q.withUser != nil {
@@ -775,6 +813,13 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			return nil, err
 		}
 	}
+	if query := _q.withScans; query != nil {
+		if err := _q.loadScans(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.Scans = []*RevenueLeakScan{} },
+			func(n *RevenueWorkspace, e *RevenueLeakScan) { n.Edges.Scans = append(n.Edges.Scans, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedMembers {
 		if err := _q.loadMembers(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedMembers(name) },
@@ -828,6 +873,13 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		if err := _q.loadOutboxEvents(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedOutboxEvents(name) },
 			func(n *RevenueWorkspace, e *RevenueOutboxEvent) { n.appendNamedOutboxEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedScans {
+		if err := _q.loadScans(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedScans(name) },
+			func(n *RevenueWorkspace, e *RevenueLeakScan) { n.appendNamedScans(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1119,6 +1171,37 @@ func (_q *RevenueWorkspaceQuery) loadOutboxEvents(ctx context.Context, query *Re
 	}
 	return nil
 }
+func (_q *RevenueWorkspaceQuery) loadScans(ctx context.Context, query *RevenueLeakScanQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *RevenueLeakScan)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RevenueLeakScan(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.ScansColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *RevenueWorkspaceQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -1313,6 +1396,20 @@ func (_q *RevenueWorkspaceQuery) WithNamedOutboxEvents(name string, opts ...func
 		_q.withNamedOutboxEvents = make(map[string]*RevenueOutboxEventQuery)
 	}
 	_q.withNamedOutboxEvents[name] = query
+	return _q
+}
+
+// WithNamedScans tells the query-builder to eager-load the nodes that are connected to the "scans"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedScans(name string, opts ...func(*RevenueLeakScanQuery)) *RevenueWorkspaceQuery {
+	query := (&RevenueLeakScanClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedScans == nil {
+		_q.withNamedScans = make(map[string]*RevenueLeakScanQuery)
+	}
+	_q.withNamedScans[name] = query
 	return _q
 }
 

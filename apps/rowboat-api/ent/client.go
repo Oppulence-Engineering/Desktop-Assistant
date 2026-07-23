@@ -48,6 +48,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -124,6 +125,8 @@ type Client struct {
 	RevenueActionRevision *RevenueActionRevisionClient
 	// RevenueEvidence is the client for interacting with the RevenueEvidence builders.
 	RevenueEvidence *RevenueEvidenceClient
+	// RevenueLeakScan is the client for interacting with the RevenueLeakScan builders.
+	RevenueLeakScan *RevenueLeakScanClient
 	// RevenueOutboxEvent is the client for interacting with the RevenueOutboxEvent builders.
 	RevenueOutboxEvent *RevenueOutboxEventClient
 	// RevenueWorkspace is the client for interacting with the RevenueWorkspace builders.
@@ -185,6 +188,7 @@ func (c *Client) init() {
 	c.RevenueAction = NewRevenueActionClient(c.config)
 	c.RevenueActionRevision = NewRevenueActionRevisionClient(c.config)
 	c.RevenueEvidence = NewRevenueEvidenceClient(c.config)
+	c.RevenueLeakScan = NewRevenueLeakScanClient(c.config)
 	c.RevenueOutboxEvent = NewRevenueOutboxEventClient(c.config)
 	c.RevenueWorkspace = NewRevenueWorkspaceClient(c.config)
 	c.RevenueWorkspaceMember = NewRevenueWorkspaceMemberClient(c.config)
@@ -353,6 +357,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		RevenueAction:               NewRevenueActionClient(cfg),
 		RevenueActionRevision:       NewRevenueActionRevisionClient(cfg),
 		RevenueEvidence:             NewRevenueEvidenceClient(cfg),
+		RevenueLeakScan:             NewRevenueLeakScanClient(cfg),
 		RevenueOutboxEvent:          NewRevenueOutboxEventClient(cfg),
 		RevenueWorkspace:            NewRevenueWorkspaceClient(cfg),
 		RevenueWorkspaceMember:      NewRevenueWorkspaceMemberClient(cfg),
@@ -410,6 +415,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		RevenueAction:               NewRevenueActionClient(cfg),
 		RevenueActionRevision:       NewRevenueActionRevisionClient(cfg),
 		RevenueEvidence:             NewRevenueEvidenceClient(cfg),
+		RevenueLeakScan:             NewRevenueLeakScanClient(cfg),
 		RevenueOutboxEvent:          NewRevenueOutboxEventClient(cfg),
 		RevenueWorkspace:            NewRevenueWorkspaceClient(cfg),
 		RevenueWorkspaceMember:      NewRevenueWorkspaceMemberClient(cfg),
@@ -454,9 +460,9 @@ func (c *Client) Use(hooks ...Hook) {
 		c.MCPConnection, c.MCPConnectionHistory, c.MeetingMinuteUsage,
 		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending,
 		c.PolicyDecisionSnapshot, c.Relationship, c.RevenueAction,
-		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueOutboxEvent,
-		c.RevenueWorkspace, c.RevenueWorkspaceMember, c.Subscription,
-		c.SubscriptionHistory, c.User, c.UserHistory,
+		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
+		c.RevenueOutboxEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
+		c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Use(hooks...)
 	}
@@ -474,9 +480,9 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.MCPConnection, c.MCPConnectionHistory, c.MeetingMinuteUsage,
 		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending,
 		c.PolicyDecisionSnapshot, c.Relationship, c.RevenueAction,
-		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueOutboxEvent,
-		c.RevenueWorkspace, c.RevenueWorkspaceMember, c.Subscription,
-		c.SubscriptionHistory, c.User, c.UserHistory,
+		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
+		c.RevenueOutboxEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
+		c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -547,6 +553,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.RevenueActionRevision.mutate(ctx, m)
 	case *RevenueEvidenceMutation:
 		return c.RevenueEvidence.mutate(ctx, m)
+	case *RevenueLeakScanMutation:
+		return c.RevenueLeakScan.mutate(ctx, m)
 	case *RevenueOutboxEventMutation:
 		return c.RevenueOutboxEvent.mutate(ctx, m)
 	case *RevenueWorkspaceMutation:
@@ -5809,6 +5817,171 @@ func (c *RevenueEvidenceClient) mutate(ctx context.Context, m *RevenueEvidenceMu
 	}
 }
 
+// RevenueLeakScanClient is a client for the RevenueLeakScan schema.
+type RevenueLeakScanClient struct {
+	config
+}
+
+// NewRevenueLeakScanClient returns a client for the RevenueLeakScan from the given config.
+func NewRevenueLeakScanClient(c config) *RevenueLeakScanClient {
+	return &RevenueLeakScanClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `revenueleakscan.Hooks(f(g(h())))`.
+func (c *RevenueLeakScanClient) Use(hooks ...Hook) {
+	c.hooks.RevenueLeakScan = append(c.hooks.RevenueLeakScan, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `revenueleakscan.Intercept(f(g(h())))`.
+func (c *RevenueLeakScanClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RevenueLeakScan = append(c.inters.RevenueLeakScan, interceptors...)
+}
+
+// Create returns a builder for creating a RevenueLeakScan entity.
+func (c *RevenueLeakScanClient) Create() *RevenueLeakScanCreate {
+	mutation := newRevenueLeakScanMutation(c.config, OpCreate)
+	return &RevenueLeakScanCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RevenueLeakScan entities.
+func (c *RevenueLeakScanClient) CreateBulk(builders ...*RevenueLeakScanCreate) *RevenueLeakScanCreateBulk {
+	return &RevenueLeakScanCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RevenueLeakScanClient) MapCreateBulk(slice any, setFunc func(*RevenueLeakScanCreate, int)) *RevenueLeakScanCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RevenueLeakScanCreateBulk{err: fmt.Errorf("calling to RevenueLeakScanClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RevenueLeakScanCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RevenueLeakScanCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RevenueLeakScan.
+func (c *RevenueLeakScanClient) Update() *RevenueLeakScanUpdate {
+	mutation := newRevenueLeakScanMutation(c.config, OpUpdate)
+	return &RevenueLeakScanUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RevenueLeakScanClient) UpdateOne(_m *RevenueLeakScan) *RevenueLeakScanUpdateOne {
+	mutation := newRevenueLeakScanMutation(c.config, OpUpdateOne, withRevenueLeakScan(_m))
+	return &RevenueLeakScanUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RevenueLeakScanClient) UpdateOneID(id uuid.UUID) *RevenueLeakScanUpdateOne {
+	mutation := newRevenueLeakScanMutation(c.config, OpUpdateOne, withRevenueLeakScanID(id))
+	return &RevenueLeakScanUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RevenueLeakScan.
+func (c *RevenueLeakScanClient) Delete() *RevenueLeakScanDelete {
+	mutation := newRevenueLeakScanMutation(c.config, OpDelete)
+	return &RevenueLeakScanDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RevenueLeakScanClient) DeleteOne(_m *RevenueLeakScan) *RevenueLeakScanDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RevenueLeakScanClient) DeleteOneID(id uuid.UUID) *RevenueLeakScanDeleteOne {
+	builder := c.Delete().Where(revenueleakscan.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RevenueLeakScanDeleteOne{builder}
+}
+
+// Query returns a query builder for RevenueLeakScan.
+func (c *RevenueLeakScanClient) Query() *RevenueLeakScanQuery {
+	return &RevenueLeakScanQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRevenueLeakScan},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RevenueLeakScan entity by its id.
+func (c *RevenueLeakScanClient) Get(ctx context.Context, id uuid.UUID) (*RevenueLeakScan, error) {
+	return c.Query().Where(revenueleakscan.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RevenueLeakScanClient) GetX(ctx context.Context, id uuid.UUID) *RevenueLeakScan {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a RevenueLeakScan.
+func (c *RevenueLeakScanClient) QueryWorkspace(_m *RevenueLeakScan) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueleakscan.Table, revenueleakscan.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueleakscan.WorkspaceTable, revenueleakscan.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RevenueLeakScan.
+func (c *RevenueLeakScanClient) QueryUser(_m *RevenueLeakScan) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueleakscan.Table, revenueleakscan.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenueleakscan.UserTable, revenueleakscan.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RevenueLeakScanClient) Hooks() []Hook {
+	return c.hooks.RevenueLeakScan
+}
+
+// Interceptors returns the client interceptors.
+func (c *RevenueLeakScanClient) Interceptors() []Interceptor {
+	return c.inters.RevenueLeakScan
+}
+
+func (c *RevenueLeakScanClient) mutate(ctx context.Context, m *RevenueLeakScanMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RevenueLeakScanCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RevenueLeakScanUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RevenueLeakScanUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RevenueLeakScanDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RevenueLeakScan mutation op: %q", m.Op())
+	}
+}
+
 // RevenueOutboxEventClient is a client for the RevenueOutboxEvent schema.
 type RevenueOutboxEventClient struct {
 	config
@@ -6219,6 +6392,22 @@ func (c *RevenueWorkspaceClient) QueryOutboxEvents(_m *RevenueWorkspace) *Revenu
 			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
 			sqlgraph.To(revenueoutboxevent.Table, revenueoutboxevent.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.OutboxEventsTable, revenueworkspace.OutboxEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryScans queries the scans edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryScans(_m *RevenueWorkspace) *RevenueLeakScanQuery {
+	query := (&RevenueLeakScanClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(revenueleakscan.Table, revenueleakscan.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.ScansTable, revenueworkspace.ScansColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -7286,6 +7475,22 @@ func (c *UserClient) QueryRevenueOutboxEvents(_m *User) *RevenueOutboxEventQuery
 	return query
 }
 
+// QueryRevenueLeakScans queries the revenue_leak_scans edge of a User.
+func (c *UserClient) QueryRevenueLeakScans(_m *User) *RevenueLeakScanQuery {
+	query := (&RevenueLeakScanClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(revenueleakscan.Table, revenueleakscan.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueLeakScansTable, user.RevenueLeakScansColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -7454,9 +7659,9 @@ type (
 		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
 		MCPConnectionHistory, MeetingMinuteUsage, OAuthConnection,
 		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
-		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueOutboxEvent,
-		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		User, UserHistory []ent.Hook
+		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueLeakScan,
+		RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, User, UserHistory []ent.Hook
 	}
 	inters struct {
 		ActionOutcome, AgentApproval, AgentDefinition, AgentDefinitionHistory,
@@ -7466,8 +7671,8 @@ type (
 		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
 		MCPConnectionHistory, MeetingMinuteUsage, OAuthConnection,
 		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
-		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueOutboxEvent,
-		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		User, UserHistory []ent.Interceptor
+		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueLeakScan,
+		RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, User, UserHistory []ent.Interceptor
 	}
 )

@@ -43,6 +43,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -141,6 +142,7 @@ func checkColumn(t, c string) error {
 			revenueaction.Table:               revenueaction.ValidColumn,
 			revenueactionrevision.Table:       revenueactionrevision.ValidColumn,
 			revenueevidence.Table:             revenueevidence.ValidColumn,
+			revenueleakscan.Table:             revenueleakscan.ValidColumn,
 			revenueoutboxevent.Table:          revenueoutboxevent.ValidColumn,
 			revenueworkspace.Table:            revenueworkspace.ValidColumn,
 			revenueworkspacemember.Table:      revenueworkspacemember.ValidColumn,

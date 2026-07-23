@@ -36,6 +36,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -189,6 +190,11 @@ var revenueevidenceImplementors = []string{"RevenueEvidence", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*RevenueEvidence) IsNode() {}
+
+var revenueleakscanImplementors = []string{"RevenueLeakScan", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RevenueLeakScan) IsNode() {}
 
 var revenueoutboxeventImplementors = []string{"RevenueOutboxEvent", "Node"}
 
@@ -521,6 +527,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(revenueevidence.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, revenueevidenceImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case revenueleakscan.Table:
+		query := c.RevenueLeakScan.Query().
+			Where(revenueleakscan.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, revenueleakscanImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1079,6 +1094,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.RevenueEvidence.Query().
 			Where(revenueevidence.IDIn(ids...))
 		query, err := query.CollectFields(ctx, revenueevidenceImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case revenueleakscan.Table:
+		query := c.RevenueLeakScan.Query().
+			Where(revenueleakscan.IDIn(ids...))
+		query, err := query.CollectFields(ctx, revenueleakscanImplementors...)
 		if err != nil {
 			return nil, err
 		}

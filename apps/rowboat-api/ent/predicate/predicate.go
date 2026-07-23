@@ -99,6 +99,9 @@ type RevenueActionRevision func(*sql.Selector)
 // RevenueEvidence is the predicate function for revenueevidence builders.
 type RevenueEvidence func(*sql.Selector)
 
+// RevenueLeakScan is the predicate function for revenueleakscan builders.
+type RevenueLeakScan func(*sql.Selector)
+
 // RevenueOutboxEvent is the predicate function for revenueoutboxevent builders.
 type RevenueOutboxEvent func(*sql.Selector)
 

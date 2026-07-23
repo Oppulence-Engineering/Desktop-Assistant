@@ -40,6 +40,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -942,6 +943,33 @@ func (f TraverseRevenueEvidence) Traverse(ctx context.Context, q ent.Query) erro
 	return fmt.Errorf("unexpected query type %T. expect *ent.RevenueEvidenceQuery", q)
 }
 
+// The RevenueLeakScanFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RevenueLeakScanFunc func(context.Context, *ent.RevenueLeakScanQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RevenueLeakScanFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RevenueLeakScanQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RevenueLeakScanQuery", q)
+}
+
+// The TraverseRevenueLeakScan type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRevenueLeakScan func(context.Context, *ent.RevenueLeakScanQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRevenueLeakScan) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRevenueLeakScan) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RevenueLeakScanQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RevenueLeakScanQuery", q)
+}
+
 // The RevenueOutboxEventFunc type is an adapter to allow the use of ordinary function as a Querier.
 type RevenueOutboxEventFunc func(context.Context, *ent.RevenueOutboxEventQuery) (ent.Value, error)
 
@@ -1196,6 +1224,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.RevenueActionRevisionQuery, predicate.RevenueActionRevision, revenueactionrevision.OrderOption]{typ: ent.TypeRevenueActionRevision, tq: q}, nil
 	case *ent.RevenueEvidenceQuery:
 		return &query[*ent.RevenueEvidenceQuery, predicate.RevenueEvidence, revenueevidence.OrderOption]{typ: ent.TypeRevenueEvidence, tq: q}, nil
+	case *ent.RevenueLeakScanQuery:
+		return &query[*ent.RevenueLeakScanQuery, predicate.RevenueLeakScan, revenueleakscan.OrderOption]{typ: ent.TypeRevenueLeakScan, tq: q}, nil
 	case *ent.RevenueOutboxEventQuery:
 		return &query[*ent.RevenueOutboxEventQuery, predicate.RevenueOutboxEvent, revenueoutboxevent.OrderOption]{typ: ent.TypeRevenueOutboxEvent, tq: q}, nil
 	case *ent.RevenueWorkspaceQuery:

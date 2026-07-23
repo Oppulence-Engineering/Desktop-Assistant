@@ -1066,6 +1066,29 @@ func HasRevenueOutboxEventsWith(preds ...predicate.RevenueOutboxEvent) predicate
 	})
 }
 
+// HasRevenueLeakScans applies the HasEdge predicate on the "revenue_leak_scans" edge.
+func HasRevenueLeakScans() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RevenueLeakScansTable, RevenueLeakScansColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRevenueLeakScansWith applies the HasEdge predicate on the "revenue_leak_scans" edge with a given conditions (other predicates).
+func HasRevenueLeakScansWith(preds ...predicate.RevenueLeakScan) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newRevenueLeakScansStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

@@ -74,6 +74,8 @@ type Tx struct {
 	RevenueActionRevision *RevenueActionRevisionClient
 	// RevenueEvidence is the client for interacting with the RevenueEvidence builders.
 	RevenueEvidence *RevenueEvidenceClient
+	// RevenueLeakScan is the client for interacting with the RevenueLeakScan builders.
+	RevenueLeakScan *RevenueLeakScanClient
 	// RevenueOutboxEvent is the client for interacting with the RevenueOutboxEvent builders.
 	RevenueOutboxEvent *RevenueOutboxEventClient
 	// RevenueWorkspace is the client for interacting with the RevenueWorkspace builders.
@@ -250,6 +252,7 @@ func (tx *Tx) init() {
 	tx.RevenueAction = NewRevenueActionClient(tx.config)
 	tx.RevenueActionRevision = NewRevenueActionRevisionClient(tx.config)
 	tx.RevenueEvidence = NewRevenueEvidenceClient(tx.config)
+	tx.RevenueLeakScan = NewRevenueLeakScanClient(tx.config)
 	tx.RevenueOutboxEvent = NewRevenueOutboxEventClient(tx.config)
 	tx.RevenueWorkspace = NewRevenueWorkspaceClient(tx.config)
 	tx.RevenueWorkspaceMember = NewRevenueWorkspaceMemberClient(tx.config)

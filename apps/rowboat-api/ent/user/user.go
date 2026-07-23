@@ -85,6 +85,8 @@ const (
 	EdgeActionOutcomes = "action_outcomes"
 	// EdgeRevenueOutboxEvents holds the string denoting the revenue_outbox_events edge name in mutations.
 	EdgeRevenueOutboxEvents = "revenue_outbox_events"
+	// EdgeRevenueLeakScans holds the string denoting the revenue_leak_scans edge name in mutations.
+	EdgeRevenueLeakScans = "revenue_leak_scans"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -297,6 +299,13 @@ const (
 	RevenueOutboxEventsInverseTable = "revenue_outbox_events"
 	// RevenueOutboxEventsColumn is the table column denoting the revenue_outbox_events relation/edge.
 	RevenueOutboxEventsColumn = "user_revenue_outbox_events"
+	// RevenueLeakScansTable is the table that holds the revenue_leak_scans relation/edge.
+	RevenueLeakScansTable = "revenue_leak_scans"
+	// RevenueLeakScansInverseTable is the table name for the RevenueLeakScan entity.
+	// It exists in this package in order to avoid circular dependency with the "revenueleakscan" package.
+	RevenueLeakScansInverseTable = "revenue_leak_scans"
+	// RevenueLeakScansColumn is the table column denoting the revenue_leak_scans relation/edge.
+	RevenueLeakScansColumn = "user_revenue_leak_scans"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -777,6 +786,20 @@ func ByRevenueOutboxEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpti
 		sqlgraph.OrderByNeighborTerms(s, newRevenueOutboxEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByRevenueLeakScansCount orders the results by revenue_leak_scans count.
+func ByRevenueLeakScansCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRevenueLeakScansStep(), opts...)
+	}
+}
+
+// ByRevenueLeakScans orders the results by revenue_leak_scans terms.
+func ByRevenueLeakScans(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRevenueLeakScansStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -985,5 +1008,12 @@ func newRevenueOutboxEventsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RevenueOutboxEventsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RevenueOutboxEventsTable, RevenueOutboxEventsColumn),
+	)
+}
+func newRevenueLeakScansStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RevenueLeakScansInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RevenueLeakScansTable, RevenueLeakScansColumn),
 	)
 }

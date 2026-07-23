@@ -4987,6 +4987,87 @@
         ],
         "type": "object"
       },
+      "RevenueLeakScan": {
+        "description": "One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable.",
+        "properties": {
+          "actionsCreated": {
+            "description": "New queue actions created.",
+            "example": 5,
+            "type": "integer"
+          },
+          "candidatesSeen": {
+            "description": "Detector candidates found.",
+            "example": 7,
+            "type": "integer"
+          },
+          "completedAt": {
+            "description": "Completion time.",
+            "example": "2026-07-23T12:00:40Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "error": {
+            "description": "Bounded failure reason.",
+            "example": "",
+            "type": "string"
+          },
+          "evidencesCreated": {
+            "description": "New evidence rows recorded.",
+            "example": 5,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "lookbackDays": {
+            "description": "Historical lookback in days.",
+            "example": 90,
+            "type": "integer"
+          },
+          "mode": {
+            "description": "Workspace mode at scan time.",
+            "enum": ["local", "linked"],
+            "example": "local",
+            "type": "string"
+          },
+          "relationshipsCreated": {
+            "description": "New relationships recorded.",
+            "example": 3,
+            "type": "integer"
+          },
+          "sourceFreshnessAt": {
+            "description": "Newest source timestamp observed (incremental cursor).",
+            "example": "2026-07-22T09:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "startedAt": {
+            "description": "Start time.",
+            "example": "2026-07-23T12:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": ["pending", "running", "completed", "failed"],
+            "example": "active",
+            "type": "string"
+          },
+          "threadsSeen": {
+            "description": "Threads examined.",
+            "example": 42,
+            "type": "integer"
+          }
+        },
+        "required": ["id", "status", "mode", "lookbackDays"],
+        "type": "object"
+      },
       "RevenueOutboxEvent": {
         "properties": {
           "action_id": {
@@ -5979,6 +6060,12 @@
           "revenue_evidences": {
             "items": {
               "$ref": "#/components/schemas/RevenueEvidence"
+            },
+            "type": "array"
+          },
+          "revenue_leak_scans": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueLeakScan"
             },
             "type": "array"
           },
@@ -11349,6 +11436,117 @@
           }
         ],
         "summary": "Snooze an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-leak-scans": {
+      "post": {
+        "description": "Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.",
+        "operationId": "startRevenueLeakScan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "lookbackDays": 90
+              },
+              "schema": {
+                "description": "Scan request.",
+                "properties": {
+                  "lookbackDays": {
+                    "description": "Historical lookback in days (default 90, max 365).",
+                    "example": 90,
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "description": "Scan options.",
+          "required": false
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueLeakScan"
+                }
+              }
+            },
+            "description": "Scan started."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "scan_unavailable",
+                  "detail": "revenue: scan unavailable: a scan is already running",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/scan_unavailable"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "A scan is already running, or no scan source is configured."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Start a revenue leak scan",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-leak-scans/{scanId}": {
+      "get": {
+        "description": "Returns progress, counts, errors, and source freshness for one scan.",
+        "operationId": "getRevenueLeakScan",
+        "parameters": [
+          {
+            "description": "Scan id.",
+            "in": "path",
+            "name": "scanId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueLeakScan"
+                }
+              }
+            },
+            "description": "Scan state."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get scan progress",
         "tags": ["Revenue"]
       }
     },

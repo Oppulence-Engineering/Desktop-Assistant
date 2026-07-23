@@ -71,5 +71,7 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("outbox_events", RevenueOutboxEvent.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("scans", RevenueLeakScan.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
 	}
 }

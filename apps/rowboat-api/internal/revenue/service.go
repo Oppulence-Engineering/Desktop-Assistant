@@ -134,6 +134,7 @@ type Service struct {
 	client   *ent.Client
 	facade   FacadeClient
 	executor Executor
+	sweeper  ThreadSweeper
 	log      *zap.Logger
 	now      func() time.Time
 }

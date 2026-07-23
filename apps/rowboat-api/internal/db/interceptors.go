@@ -32,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -74,6 +75,7 @@ var tenantUserColumns = map[string]string{
 	ent.TypeRevenueAction:               revenueaction.UserColumn,
 	ent.TypeRevenueActionRevision:       revenueactionrevision.UserColumn,
 	ent.TypeRevenueEvidence:             revenueevidence.UserColumn,
+	ent.TypeRevenueLeakScan:             revenueleakscan.UserColumn,
 	ent.TypeRevenueOutboxEvent:          revenueoutboxevent.UserColumn,
 	ent.TypeRevenueWorkspace:            revenueworkspace.UserColumn,
 	ent.TypeRevenueWorkspaceMember:      revenueworkspacemember.UserColumn,
@@ -256,6 +258,13 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.RevenueWorkspaceMemberQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(revenueworkspacemember.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RevenueLeakScan.Intercept(intercept.TraverseRevenueLeakScan(
+		func(ctx context.Context, q *ent.RevenueLeakScanQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(revenueleakscan.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

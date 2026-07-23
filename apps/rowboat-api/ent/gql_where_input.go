@@ -36,6 +36,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -21889,6 +21890,742 @@ func (i *RevenueEvidenceWhereInput) P() (predicate.RevenueEvidence, error) {
 	}
 }
 
+// RevenueLeakScanWhereInput represents a where input for filtering RevenueLeakScan queries.
+type RevenueLeakScanWhereInput struct {
+	Predicates []predicate.RevenueLeakScan  `json:"-"`
+	Not        *RevenueLeakScanWhereInput   `json:"not,omitempty"`
+	Or         []*RevenueLeakScanWhereInput `json:"or,omitempty"`
+	And        []*RevenueLeakScanWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "status" field predicates.
+	Status             *string  `json:"status,omitempty"`
+	StatusNEQ          *string  `json:"statusNEQ,omitempty"`
+	StatusIn           []string `json:"statusIn,omitempty"`
+	StatusNotIn        []string `json:"statusNotIn,omitempty"`
+	StatusGT           *string  `json:"statusGT,omitempty"`
+	StatusGTE          *string  `json:"statusGTE,omitempty"`
+	StatusLT           *string  `json:"statusLT,omitempty"`
+	StatusLTE          *string  `json:"statusLTE,omitempty"`
+	StatusContains     *string  `json:"statusContains,omitempty"`
+	StatusHasPrefix    *string  `json:"statusHasPrefix,omitempty"`
+	StatusHasSuffix    *string  `json:"statusHasSuffix,omitempty"`
+	StatusEqualFold    *string  `json:"statusEqualFold,omitempty"`
+	StatusContainsFold *string  `json:"statusContainsFold,omitempty"`
+
+	// "mode" field predicates.
+	Mode             *string  `json:"mode,omitempty"`
+	ModeNEQ          *string  `json:"modeNEQ,omitempty"`
+	ModeIn           []string `json:"modeIn,omitempty"`
+	ModeNotIn        []string `json:"modeNotIn,omitempty"`
+	ModeGT           *string  `json:"modeGT,omitempty"`
+	ModeGTE          *string  `json:"modeGTE,omitempty"`
+	ModeLT           *string  `json:"modeLT,omitempty"`
+	ModeLTE          *string  `json:"modeLTE,omitempty"`
+	ModeContains     *string  `json:"modeContains,omitempty"`
+	ModeHasPrefix    *string  `json:"modeHasPrefix,omitempty"`
+	ModeHasSuffix    *string  `json:"modeHasSuffix,omitempty"`
+	ModeEqualFold    *string  `json:"modeEqualFold,omitempty"`
+	ModeContainsFold *string  `json:"modeContainsFold,omitempty"`
+
+	// "lookback_days" field predicates.
+	LookbackDays      *int  `json:"lookbackDays,omitempty"`
+	LookbackDaysNEQ   *int  `json:"lookbackDaysNEQ,omitempty"`
+	LookbackDaysIn    []int `json:"lookbackDaysIn,omitempty"`
+	LookbackDaysNotIn []int `json:"lookbackDaysNotIn,omitempty"`
+	LookbackDaysGT    *int  `json:"lookbackDaysGT,omitempty"`
+	LookbackDaysGTE   *int  `json:"lookbackDaysGTE,omitempty"`
+	LookbackDaysLT    *int  `json:"lookbackDaysLT,omitempty"`
+	LookbackDaysLTE   *int  `json:"lookbackDaysLTE,omitempty"`
+
+	// "threads_seen" field predicates.
+	ThreadsSeen      *int  `json:"threadsSeen,omitempty"`
+	ThreadsSeenNEQ   *int  `json:"threadsSeenNEQ,omitempty"`
+	ThreadsSeenIn    []int `json:"threadsSeenIn,omitempty"`
+	ThreadsSeenNotIn []int `json:"threadsSeenNotIn,omitempty"`
+	ThreadsSeenGT    *int  `json:"threadsSeenGT,omitempty"`
+	ThreadsSeenGTE   *int  `json:"threadsSeenGTE,omitempty"`
+	ThreadsSeenLT    *int  `json:"threadsSeenLT,omitempty"`
+	ThreadsSeenLTE   *int  `json:"threadsSeenLTE,omitempty"`
+
+	// "candidates_seen" field predicates.
+	CandidatesSeen      *int  `json:"candidatesSeen,omitempty"`
+	CandidatesSeenNEQ   *int  `json:"candidatesSeenNEQ,omitempty"`
+	CandidatesSeenIn    []int `json:"candidatesSeenIn,omitempty"`
+	CandidatesSeenNotIn []int `json:"candidatesSeenNotIn,omitempty"`
+	CandidatesSeenGT    *int  `json:"candidatesSeenGT,omitempty"`
+	CandidatesSeenGTE   *int  `json:"candidatesSeenGTE,omitempty"`
+	CandidatesSeenLT    *int  `json:"candidatesSeenLT,omitempty"`
+	CandidatesSeenLTE   *int  `json:"candidatesSeenLTE,omitempty"`
+
+	// "relationships_created" field predicates.
+	RelationshipsCreated      *int  `json:"relationshipsCreated,omitempty"`
+	RelationshipsCreatedNEQ   *int  `json:"relationshipsCreatedNEQ,omitempty"`
+	RelationshipsCreatedIn    []int `json:"relationshipsCreatedIn,omitempty"`
+	RelationshipsCreatedNotIn []int `json:"relationshipsCreatedNotIn,omitempty"`
+	RelationshipsCreatedGT    *int  `json:"relationshipsCreatedGT,omitempty"`
+	RelationshipsCreatedGTE   *int  `json:"relationshipsCreatedGTE,omitempty"`
+	RelationshipsCreatedLT    *int  `json:"relationshipsCreatedLT,omitempty"`
+	RelationshipsCreatedLTE   *int  `json:"relationshipsCreatedLTE,omitempty"`
+
+	// "evidences_created" field predicates.
+	EvidencesCreated      *int  `json:"evidencesCreated,omitempty"`
+	EvidencesCreatedNEQ   *int  `json:"evidencesCreatedNEQ,omitempty"`
+	EvidencesCreatedIn    []int `json:"evidencesCreatedIn,omitempty"`
+	EvidencesCreatedNotIn []int `json:"evidencesCreatedNotIn,omitempty"`
+	EvidencesCreatedGT    *int  `json:"evidencesCreatedGT,omitempty"`
+	EvidencesCreatedGTE   *int  `json:"evidencesCreatedGTE,omitempty"`
+	EvidencesCreatedLT    *int  `json:"evidencesCreatedLT,omitempty"`
+	EvidencesCreatedLTE   *int  `json:"evidencesCreatedLTE,omitempty"`
+
+	// "actions_created" field predicates.
+	ActionsCreated      *int  `json:"actionsCreated,omitempty"`
+	ActionsCreatedNEQ   *int  `json:"actionsCreatedNEQ,omitempty"`
+	ActionsCreatedIn    []int `json:"actionsCreatedIn,omitempty"`
+	ActionsCreatedNotIn []int `json:"actionsCreatedNotIn,omitempty"`
+	ActionsCreatedGT    *int  `json:"actionsCreatedGT,omitempty"`
+	ActionsCreatedGTE   *int  `json:"actionsCreatedGTE,omitempty"`
+	ActionsCreatedLT    *int  `json:"actionsCreatedLT,omitempty"`
+	ActionsCreatedLTE   *int  `json:"actionsCreatedLTE,omitempty"`
+
+	// "started_at" field predicates.
+	StartedAt       *time.Time  `json:"startedAt,omitempty"`
+	StartedAtNEQ    *time.Time  `json:"startedAtNEQ,omitempty"`
+	StartedAtIn     []time.Time `json:"startedAtIn,omitempty"`
+	StartedAtNotIn  []time.Time `json:"startedAtNotIn,omitempty"`
+	StartedAtGT     *time.Time  `json:"startedAtGT,omitempty"`
+	StartedAtGTE    *time.Time  `json:"startedAtGTE,omitempty"`
+	StartedAtLT     *time.Time  `json:"startedAtLT,omitempty"`
+	StartedAtLTE    *time.Time  `json:"startedAtLTE,omitempty"`
+	StartedAtIsNil  bool        `json:"startedAtIsNil,omitempty"`
+	StartedAtNotNil bool        `json:"startedAtNotNil,omitempty"`
+
+	// "completed_at" field predicates.
+	CompletedAt       *time.Time  `json:"completedAt,omitempty"`
+	CompletedAtNEQ    *time.Time  `json:"completedAtNEQ,omitempty"`
+	CompletedAtIn     []time.Time `json:"completedAtIn,omitempty"`
+	CompletedAtNotIn  []time.Time `json:"completedAtNotIn,omitempty"`
+	CompletedAtGT     *time.Time  `json:"completedAtGT,omitempty"`
+	CompletedAtGTE    *time.Time  `json:"completedAtGTE,omitempty"`
+	CompletedAtLT     *time.Time  `json:"completedAtLT,omitempty"`
+	CompletedAtLTE    *time.Time  `json:"completedAtLTE,omitempty"`
+	CompletedAtIsNil  bool        `json:"completedAtIsNil,omitempty"`
+	CompletedAtNotNil bool        `json:"completedAtNotNil,omitempty"`
+
+	// "error" field predicates.
+	Error             *string  `json:"error,omitempty"`
+	ErrorNEQ          *string  `json:"errorNEQ,omitempty"`
+	ErrorIn           []string `json:"errorIn,omitempty"`
+	ErrorNotIn        []string `json:"errorNotIn,omitempty"`
+	ErrorGT           *string  `json:"errorGT,omitempty"`
+	ErrorGTE          *string  `json:"errorGTE,omitempty"`
+	ErrorLT           *string  `json:"errorLT,omitempty"`
+	ErrorLTE          *string  `json:"errorLTE,omitempty"`
+	ErrorContains     *string  `json:"errorContains,omitempty"`
+	ErrorHasPrefix    *string  `json:"errorHasPrefix,omitempty"`
+	ErrorHasSuffix    *string  `json:"errorHasSuffix,omitempty"`
+	ErrorIsNil        bool     `json:"errorIsNil,omitempty"`
+	ErrorNotNil       bool     `json:"errorNotNil,omitempty"`
+	ErrorEqualFold    *string  `json:"errorEqualFold,omitempty"`
+	ErrorContainsFold *string  `json:"errorContainsFold,omitempty"`
+
+	// "source_freshness_at" field predicates.
+	SourceFreshnessAt       *time.Time  `json:"sourceFreshnessAt,omitempty"`
+	SourceFreshnessAtNEQ    *time.Time  `json:"sourceFreshnessAtNEQ,omitempty"`
+	SourceFreshnessAtIn     []time.Time `json:"sourceFreshnessAtIn,omitempty"`
+	SourceFreshnessAtNotIn  []time.Time `json:"sourceFreshnessAtNotIn,omitempty"`
+	SourceFreshnessAtGT     *time.Time  `json:"sourceFreshnessAtGT,omitempty"`
+	SourceFreshnessAtGTE    *time.Time  `json:"sourceFreshnessAtGTE,omitempty"`
+	SourceFreshnessAtLT     *time.Time  `json:"sourceFreshnessAtLT,omitempty"`
+	SourceFreshnessAtLTE    *time.Time  `json:"sourceFreshnessAtLTE,omitempty"`
+	SourceFreshnessAtIsNil  bool        `json:"sourceFreshnessAtIsNil,omitempty"`
+	SourceFreshnessAtNotNil bool        `json:"sourceFreshnessAtNotNil,omitempty"`
+
+	// "workspace" edge predicates.
+	HasWorkspace     *bool                         `json:"hasWorkspace,omitempty"`
+	HasWorkspaceWith []*RevenueWorkspaceWhereInput `json:"hasWorkspaceWith,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *RevenueLeakScanWhereInput) AddPredicates(predicates ...predicate.RevenueLeakScan) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the RevenueLeakScanWhereInput filter on the RevenueLeakScanQuery builder.
+func (i *RevenueLeakScanWhereInput) Filter(q *RevenueLeakScanQuery) (*RevenueLeakScanQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyRevenueLeakScanWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyRevenueLeakScanWhereInput is returned in case the RevenueLeakScanWhereInput is empty.
+var ErrEmptyRevenueLeakScanWhereInput = errors.New("ent: empty predicate RevenueLeakScanWhereInput")
+
+// P returns a predicate for filtering revenueleakscans.
+// An error is returned if the input is empty or invalid.
+func (i *RevenueLeakScanWhereInput) P() (predicate.RevenueLeakScan, error) {
+	var predicates []predicate.RevenueLeakScan
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, revenueleakscan.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.RevenueLeakScan, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, revenueleakscan.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.RevenueLeakScan, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, revenueleakscan.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, revenueleakscan.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, revenueleakscan.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, revenueleakscan.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, revenueleakscan.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, revenueleakscan.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, revenueleakscan.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, revenueleakscan.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, revenueleakscan.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, revenueleakscan.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, revenueleakscan.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, revenueleakscan.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, revenueleakscan.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, revenueleakscan.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, revenueleakscan.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, revenueleakscan.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, revenueleakscan.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, revenueleakscan.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, revenueleakscan.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, revenueleakscan.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, revenueleakscan.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, revenueleakscan.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.Status != nil {
+		predicates = append(predicates, revenueleakscan.StatusEQ(*i.Status))
+	}
+	if i.StatusNEQ != nil {
+		predicates = append(predicates, revenueleakscan.StatusNEQ(*i.StatusNEQ))
+	}
+	if len(i.StatusIn) > 0 {
+		predicates = append(predicates, revenueleakscan.StatusIn(i.StatusIn...))
+	}
+	if len(i.StatusNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.StatusNotIn(i.StatusNotIn...))
+	}
+	if i.StatusGT != nil {
+		predicates = append(predicates, revenueleakscan.StatusGT(*i.StatusGT))
+	}
+	if i.StatusGTE != nil {
+		predicates = append(predicates, revenueleakscan.StatusGTE(*i.StatusGTE))
+	}
+	if i.StatusLT != nil {
+		predicates = append(predicates, revenueleakscan.StatusLT(*i.StatusLT))
+	}
+	if i.StatusLTE != nil {
+		predicates = append(predicates, revenueleakscan.StatusLTE(*i.StatusLTE))
+	}
+	if i.StatusContains != nil {
+		predicates = append(predicates, revenueleakscan.StatusContains(*i.StatusContains))
+	}
+	if i.StatusHasPrefix != nil {
+		predicates = append(predicates, revenueleakscan.StatusHasPrefix(*i.StatusHasPrefix))
+	}
+	if i.StatusHasSuffix != nil {
+		predicates = append(predicates, revenueleakscan.StatusHasSuffix(*i.StatusHasSuffix))
+	}
+	if i.StatusEqualFold != nil {
+		predicates = append(predicates, revenueleakscan.StatusEqualFold(*i.StatusEqualFold))
+	}
+	if i.StatusContainsFold != nil {
+		predicates = append(predicates, revenueleakscan.StatusContainsFold(*i.StatusContainsFold))
+	}
+	if i.Mode != nil {
+		predicates = append(predicates, revenueleakscan.ModeEQ(*i.Mode))
+	}
+	if i.ModeNEQ != nil {
+		predicates = append(predicates, revenueleakscan.ModeNEQ(*i.ModeNEQ))
+	}
+	if len(i.ModeIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ModeIn(i.ModeIn...))
+	}
+	if len(i.ModeNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ModeNotIn(i.ModeNotIn...))
+	}
+	if i.ModeGT != nil {
+		predicates = append(predicates, revenueleakscan.ModeGT(*i.ModeGT))
+	}
+	if i.ModeGTE != nil {
+		predicates = append(predicates, revenueleakscan.ModeGTE(*i.ModeGTE))
+	}
+	if i.ModeLT != nil {
+		predicates = append(predicates, revenueleakscan.ModeLT(*i.ModeLT))
+	}
+	if i.ModeLTE != nil {
+		predicates = append(predicates, revenueleakscan.ModeLTE(*i.ModeLTE))
+	}
+	if i.ModeContains != nil {
+		predicates = append(predicates, revenueleakscan.ModeContains(*i.ModeContains))
+	}
+	if i.ModeHasPrefix != nil {
+		predicates = append(predicates, revenueleakscan.ModeHasPrefix(*i.ModeHasPrefix))
+	}
+	if i.ModeHasSuffix != nil {
+		predicates = append(predicates, revenueleakscan.ModeHasSuffix(*i.ModeHasSuffix))
+	}
+	if i.ModeEqualFold != nil {
+		predicates = append(predicates, revenueleakscan.ModeEqualFold(*i.ModeEqualFold))
+	}
+	if i.ModeContainsFold != nil {
+		predicates = append(predicates, revenueleakscan.ModeContainsFold(*i.ModeContainsFold))
+	}
+	if i.LookbackDays != nil {
+		predicates = append(predicates, revenueleakscan.LookbackDaysEQ(*i.LookbackDays))
+	}
+	if i.LookbackDaysNEQ != nil {
+		predicates = append(predicates, revenueleakscan.LookbackDaysNEQ(*i.LookbackDaysNEQ))
+	}
+	if len(i.LookbackDaysIn) > 0 {
+		predicates = append(predicates, revenueleakscan.LookbackDaysIn(i.LookbackDaysIn...))
+	}
+	if len(i.LookbackDaysNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.LookbackDaysNotIn(i.LookbackDaysNotIn...))
+	}
+	if i.LookbackDaysGT != nil {
+		predicates = append(predicates, revenueleakscan.LookbackDaysGT(*i.LookbackDaysGT))
+	}
+	if i.LookbackDaysGTE != nil {
+		predicates = append(predicates, revenueleakscan.LookbackDaysGTE(*i.LookbackDaysGTE))
+	}
+	if i.LookbackDaysLT != nil {
+		predicates = append(predicates, revenueleakscan.LookbackDaysLT(*i.LookbackDaysLT))
+	}
+	if i.LookbackDaysLTE != nil {
+		predicates = append(predicates, revenueleakscan.LookbackDaysLTE(*i.LookbackDaysLTE))
+	}
+	if i.ThreadsSeen != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSeenEQ(*i.ThreadsSeen))
+	}
+	if i.ThreadsSeenNEQ != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSeenNEQ(*i.ThreadsSeenNEQ))
+	}
+	if len(i.ThreadsSeenIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ThreadsSeenIn(i.ThreadsSeenIn...))
+	}
+	if len(i.ThreadsSeenNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ThreadsSeenNotIn(i.ThreadsSeenNotIn...))
+	}
+	if i.ThreadsSeenGT != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSeenGT(*i.ThreadsSeenGT))
+	}
+	if i.ThreadsSeenGTE != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSeenGTE(*i.ThreadsSeenGTE))
+	}
+	if i.ThreadsSeenLT != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSeenLT(*i.ThreadsSeenLT))
+	}
+	if i.ThreadsSeenLTE != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSeenLTE(*i.ThreadsSeenLTE))
+	}
+	if i.CandidatesSeen != nil {
+		predicates = append(predicates, revenueleakscan.CandidatesSeenEQ(*i.CandidatesSeen))
+	}
+	if i.CandidatesSeenNEQ != nil {
+		predicates = append(predicates, revenueleakscan.CandidatesSeenNEQ(*i.CandidatesSeenNEQ))
+	}
+	if len(i.CandidatesSeenIn) > 0 {
+		predicates = append(predicates, revenueleakscan.CandidatesSeenIn(i.CandidatesSeenIn...))
+	}
+	if len(i.CandidatesSeenNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.CandidatesSeenNotIn(i.CandidatesSeenNotIn...))
+	}
+	if i.CandidatesSeenGT != nil {
+		predicates = append(predicates, revenueleakscan.CandidatesSeenGT(*i.CandidatesSeenGT))
+	}
+	if i.CandidatesSeenGTE != nil {
+		predicates = append(predicates, revenueleakscan.CandidatesSeenGTE(*i.CandidatesSeenGTE))
+	}
+	if i.CandidatesSeenLT != nil {
+		predicates = append(predicates, revenueleakscan.CandidatesSeenLT(*i.CandidatesSeenLT))
+	}
+	if i.CandidatesSeenLTE != nil {
+		predicates = append(predicates, revenueleakscan.CandidatesSeenLTE(*i.CandidatesSeenLTE))
+	}
+	if i.RelationshipsCreated != nil {
+		predicates = append(predicates, revenueleakscan.RelationshipsCreatedEQ(*i.RelationshipsCreated))
+	}
+	if i.RelationshipsCreatedNEQ != nil {
+		predicates = append(predicates, revenueleakscan.RelationshipsCreatedNEQ(*i.RelationshipsCreatedNEQ))
+	}
+	if len(i.RelationshipsCreatedIn) > 0 {
+		predicates = append(predicates, revenueleakscan.RelationshipsCreatedIn(i.RelationshipsCreatedIn...))
+	}
+	if len(i.RelationshipsCreatedNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.RelationshipsCreatedNotIn(i.RelationshipsCreatedNotIn...))
+	}
+	if i.RelationshipsCreatedGT != nil {
+		predicates = append(predicates, revenueleakscan.RelationshipsCreatedGT(*i.RelationshipsCreatedGT))
+	}
+	if i.RelationshipsCreatedGTE != nil {
+		predicates = append(predicates, revenueleakscan.RelationshipsCreatedGTE(*i.RelationshipsCreatedGTE))
+	}
+	if i.RelationshipsCreatedLT != nil {
+		predicates = append(predicates, revenueleakscan.RelationshipsCreatedLT(*i.RelationshipsCreatedLT))
+	}
+	if i.RelationshipsCreatedLTE != nil {
+		predicates = append(predicates, revenueleakscan.RelationshipsCreatedLTE(*i.RelationshipsCreatedLTE))
+	}
+	if i.EvidencesCreated != nil {
+		predicates = append(predicates, revenueleakscan.EvidencesCreatedEQ(*i.EvidencesCreated))
+	}
+	if i.EvidencesCreatedNEQ != nil {
+		predicates = append(predicates, revenueleakscan.EvidencesCreatedNEQ(*i.EvidencesCreatedNEQ))
+	}
+	if len(i.EvidencesCreatedIn) > 0 {
+		predicates = append(predicates, revenueleakscan.EvidencesCreatedIn(i.EvidencesCreatedIn...))
+	}
+	if len(i.EvidencesCreatedNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.EvidencesCreatedNotIn(i.EvidencesCreatedNotIn...))
+	}
+	if i.EvidencesCreatedGT != nil {
+		predicates = append(predicates, revenueleakscan.EvidencesCreatedGT(*i.EvidencesCreatedGT))
+	}
+	if i.EvidencesCreatedGTE != nil {
+		predicates = append(predicates, revenueleakscan.EvidencesCreatedGTE(*i.EvidencesCreatedGTE))
+	}
+	if i.EvidencesCreatedLT != nil {
+		predicates = append(predicates, revenueleakscan.EvidencesCreatedLT(*i.EvidencesCreatedLT))
+	}
+	if i.EvidencesCreatedLTE != nil {
+		predicates = append(predicates, revenueleakscan.EvidencesCreatedLTE(*i.EvidencesCreatedLTE))
+	}
+	if i.ActionsCreated != nil {
+		predicates = append(predicates, revenueleakscan.ActionsCreatedEQ(*i.ActionsCreated))
+	}
+	if i.ActionsCreatedNEQ != nil {
+		predicates = append(predicates, revenueleakscan.ActionsCreatedNEQ(*i.ActionsCreatedNEQ))
+	}
+	if len(i.ActionsCreatedIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ActionsCreatedIn(i.ActionsCreatedIn...))
+	}
+	if len(i.ActionsCreatedNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ActionsCreatedNotIn(i.ActionsCreatedNotIn...))
+	}
+	if i.ActionsCreatedGT != nil {
+		predicates = append(predicates, revenueleakscan.ActionsCreatedGT(*i.ActionsCreatedGT))
+	}
+	if i.ActionsCreatedGTE != nil {
+		predicates = append(predicates, revenueleakscan.ActionsCreatedGTE(*i.ActionsCreatedGTE))
+	}
+	if i.ActionsCreatedLT != nil {
+		predicates = append(predicates, revenueleakscan.ActionsCreatedLT(*i.ActionsCreatedLT))
+	}
+	if i.ActionsCreatedLTE != nil {
+		predicates = append(predicates, revenueleakscan.ActionsCreatedLTE(*i.ActionsCreatedLTE))
+	}
+	if i.StartedAt != nil {
+		predicates = append(predicates, revenueleakscan.StartedAtEQ(*i.StartedAt))
+	}
+	if i.StartedAtNEQ != nil {
+		predicates = append(predicates, revenueleakscan.StartedAtNEQ(*i.StartedAtNEQ))
+	}
+	if len(i.StartedAtIn) > 0 {
+		predicates = append(predicates, revenueleakscan.StartedAtIn(i.StartedAtIn...))
+	}
+	if len(i.StartedAtNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.StartedAtNotIn(i.StartedAtNotIn...))
+	}
+	if i.StartedAtGT != nil {
+		predicates = append(predicates, revenueleakscan.StartedAtGT(*i.StartedAtGT))
+	}
+	if i.StartedAtGTE != nil {
+		predicates = append(predicates, revenueleakscan.StartedAtGTE(*i.StartedAtGTE))
+	}
+	if i.StartedAtLT != nil {
+		predicates = append(predicates, revenueleakscan.StartedAtLT(*i.StartedAtLT))
+	}
+	if i.StartedAtLTE != nil {
+		predicates = append(predicates, revenueleakscan.StartedAtLTE(*i.StartedAtLTE))
+	}
+	if i.StartedAtIsNil {
+		predicates = append(predicates, revenueleakscan.StartedAtIsNil())
+	}
+	if i.StartedAtNotNil {
+		predicates = append(predicates, revenueleakscan.StartedAtNotNil())
+	}
+	if i.CompletedAt != nil {
+		predicates = append(predicates, revenueleakscan.CompletedAtEQ(*i.CompletedAt))
+	}
+	if i.CompletedAtNEQ != nil {
+		predicates = append(predicates, revenueleakscan.CompletedAtNEQ(*i.CompletedAtNEQ))
+	}
+	if len(i.CompletedAtIn) > 0 {
+		predicates = append(predicates, revenueleakscan.CompletedAtIn(i.CompletedAtIn...))
+	}
+	if len(i.CompletedAtNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.CompletedAtNotIn(i.CompletedAtNotIn...))
+	}
+	if i.CompletedAtGT != nil {
+		predicates = append(predicates, revenueleakscan.CompletedAtGT(*i.CompletedAtGT))
+	}
+	if i.CompletedAtGTE != nil {
+		predicates = append(predicates, revenueleakscan.CompletedAtGTE(*i.CompletedAtGTE))
+	}
+	if i.CompletedAtLT != nil {
+		predicates = append(predicates, revenueleakscan.CompletedAtLT(*i.CompletedAtLT))
+	}
+	if i.CompletedAtLTE != nil {
+		predicates = append(predicates, revenueleakscan.CompletedAtLTE(*i.CompletedAtLTE))
+	}
+	if i.CompletedAtIsNil {
+		predicates = append(predicates, revenueleakscan.CompletedAtIsNil())
+	}
+	if i.CompletedAtNotNil {
+		predicates = append(predicates, revenueleakscan.CompletedAtNotNil())
+	}
+	if i.Error != nil {
+		predicates = append(predicates, revenueleakscan.ErrorEQ(*i.Error))
+	}
+	if i.ErrorNEQ != nil {
+		predicates = append(predicates, revenueleakscan.ErrorNEQ(*i.ErrorNEQ))
+	}
+	if len(i.ErrorIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ErrorIn(i.ErrorIn...))
+	}
+	if len(i.ErrorNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ErrorNotIn(i.ErrorNotIn...))
+	}
+	if i.ErrorGT != nil {
+		predicates = append(predicates, revenueleakscan.ErrorGT(*i.ErrorGT))
+	}
+	if i.ErrorGTE != nil {
+		predicates = append(predicates, revenueleakscan.ErrorGTE(*i.ErrorGTE))
+	}
+	if i.ErrorLT != nil {
+		predicates = append(predicates, revenueleakscan.ErrorLT(*i.ErrorLT))
+	}
+	if i.ErrorLTE != nil {
+		predicates = append(predicates, revenueleakscan.ErrorLTE(*i.ErrorLTE))
+	}
+	if i.ErrorContains != nil {
+		predicates = append(predicates, revenueleakscan.ErrorContains(*i.ErrorContains))
+	}
+	if i.ErrorHasPrefix != nil {
+		predicates = append(predicates, revenueleakscan.ErrorHasPrefix(*i.ErrorHasPrefix))
+	}
+	if i.ErrorHasSuffix != nil {
+		predicates = append(predicates, revenueleakscan.ErrorHasSuffix(*i.ErrorHasSuffix))
+	}
+	if i.ErrorIsNil {
+		predicates = append(predicates, revenueleakscan.ErrorIsNil())
+	}
+	if i.ErrorNotNil {
+		predicates = append(predicates, revenueleakscan.ErrorNotNil())
+	}
+	if i.ErrorEqualFold != nil {
+		predicates = append(predicates, revenueleakscan.ErrorEqualFold(*i.ErrorEqualFold))
+	}
+	if i.ErrorContainsFold != nil {
+		predicates = append(predicates, revenueleakscan.ErrorContainsFold(*i.ErrorContainsFold))
+	}
+	if i.SourceFreshnessAt != nil {
+		predicates = append(predicates, revenueleakscan.SourceFreshnessAtEQ(*i.SourceFreshnessAt))
+	}
+	if i.SourceFreshnessAtNEQ != nil {
+		predicates = append(predicates, revenueleakscan.SourceFreshnessAtNEQ(*i.SourceFreshnessAtNEQ))
+	}
+	if len(i.SourceFreshnessAtIn) > 0 {
+		predicates = append(predicates, revenueleakscan.SourceFreshnessAtIn(i.SourceFreshnessAtIn...))
+	}
+	if len(i.SourceFreshnessAtNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.SourceFreshnessAtNotIn(i.SourceFreshnessAtNotIn...))
+	}
+	if i.SourceFreshnessAtGT != nil {
+		predicates = append(predicates, revenueleakscan.SourceFreshnessAtGT(*i.SourceFreshnessAtGT))
+	}
+	if i.SourceFreshnessAtGTE != nil {
+		predicates = append(predicates, revenueleakscan.SourceFreshnessAtGTE(*i.SourceFreshnessAtGTE))
+	}
+	if i.SourceFreshnessAtLT != nil {
+		predicates = append(predicates, revenueleakscan.SourceFreshnessAtLT(*i.SourceFreshnessAtLT))
+	}
+	if i.SourceFreshnessAtLTE != nil {
+		predicates = append(predicates, revenueleakscan.SourceFreshnessAtLTE(*i.SourceFreshnessAtLTE))
+	}
+	if i.SourceFreshnessAtIsNil {
+		predicates = append(predicates, revenueleakscan.SourceFreshnessAtIsNil())
+	}
+	if i.SourceFreshnessAtNotNil {
+		predicates = append(predicates, revenueleakscan.SourceFreshnessAtNotNil())
+	}
+
+	if i.HasWorkspace != nil {
+		p := revenueleakscan.HasWorkspace()
+		if !*i.HasWorkspace {
+			p = revenueleakscan.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasWorkspaceWith) > 0 {
+		with := make([]predicate.RevenueWorkspace, 0, len(i.HasWorkspaceWith))
+		for _, w := range i.HasWorkspaceWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasWorkspaceWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, revenueleakscan.HasWorkspaceWith(with...))
+	}
+	if i.HasUser != nil {
+		p := revenueleakscan.HasUser()
+		if !*i.HasUser {
+			p = revenueleakscan.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, revenueleakscan.HasUserWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyRevenueLeakScanWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return revenueleakscan.And(predicates...), nil
+	}
+}
+
 // RevenueOutboxEventWhereInput represents a where input for filtering RevenueOutboxEvent queries.
 type RevenueOutboxEventWhereInput struct {
 	Predicates []predicate.RevenueOutboxEvent  `json:"-"`
@@ -22886,6 +23623,10 @@ type RevenueWorkspaceWhereInput struct {
 	// "outbox_events" edge predicates.
 	HasOutboxEvents     *bool                           `json:"hasOutboxEvents,omitempty"`
 	HasOutboxEventsWith []*RevenueOutboxEventWhereInput `json:"hasOutboxEventsWith,omitempty"`
+
+	// "scans" edge predicates.
+	HasScans     *bool                        `json:"hasScans,omitempty"`
+	HasScansWith []*RevenueLeakScanWhereInput `json:"hasScansWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -23436,6 +24177,24 @@ func (i *RevenueWorkspaceWhereInput) P() (predicate.RevenueWorkspace, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, revenueworkspace.HasOutboxEventsWith(with...))
+	}
+	if i.HasScans != nil {
+		p := revenueworkspace.HasScans()
+		if !*i.HasScans {
+			p = revenueworkspace.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasScansWith) > 0 {
+		with := make([]predicate.RevenueLeakScan, 0, len(i.HasScansWith))
+		for _, w := range i.HasScansWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasScansWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, revenueworkspace.HasScansWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -24580,6 +25339,10 @@ type UserWhereInput struct {
 	// "revenue_outbox_events" edge predicates.
 	HasRevenueOutboxEvents     *bool                           `json:"hasRevenueOutboxEvents,omitempty"`
 	HasRevenueOutboxEventsWith []*RevenueOutboxEventWhereInput `json:"hasRevenueOutboxEventsWith,omitempty"`
+
+	// "revenue_leak_scans" edge predicates.
+	HasRevenueLeakScans     *bool                        `json:"hasRevenueLeakScans,omitempty"`
+	HasRevenueLeakScansWith []*RevenueLeakScanWhereInput `json:"hasRevenueLeakScansWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -25394,6 +26157,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasRevenueOutboxEventsWith(with...))
+	}
+	if i.HasRevenueLeakScans != nil {
+		p := user.HasRevenueLeakScans()
+		if !*i.HasRevenueLeakScans {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRevenueLeakScansWith) > 0 {
+		with := make([]predicate.RevenueLeakScan, 0, len(i.HasRevenueLeakScansWith))
+		for _, w := range i.HasRevenueLeakScansWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRevenueLeakScansWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasRevenueLeakScansWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

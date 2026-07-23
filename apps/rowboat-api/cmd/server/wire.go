@@ -385,7 +385,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			CalendarBaseURL: cfg.CalendarAPIBaseURL,
 			DriveBaseURL:    cfg.DriveAPIBaseURL,
 		}))
-		revenueH = revenue.NewHandler(revenue.NewService(client, facade, gmailExec, log), log)
+		revenueSvc := revenue.NewService(client, facade, gmailExec, log)
+		// The Gmail backend also feeds the leak scan (read-only sweep).
+		revenueSvc.SetSweeper(gmailExec)
+		revenueH = revenue.NewHandler(revenueSvc, log)
 	}
 
 	r := srv.Router()
