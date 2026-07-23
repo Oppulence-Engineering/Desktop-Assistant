@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -264,6 +265,25 @@ func (_c *MailThreadCreate) AddMessages(v ...*MailMessageMeta) *MailThreadCreate
 		ids[i] = v[i].ID
 	}
 	return _c.AddMessageIDs(ids...)
+}
+
+// SetSignalID sets the "signal" edge to the MailSignal entity by ID.
+func (_c *MailThreadCreate) SetSignalID(id uuid.UUID) *MailThreadCreate {
+	_c.mutation.SetSignalID(id)
+	return _c
+}
+
+// SetNillableSignalID sets the "signal" edge to the MailSignal entity by ID if the given value is not nil.
+func (_c *MailThreadCreate) SetNillableSignalID(id *uuid.UUID) *MailThreadCreate {
+	if id != nil {
+		_c = _c.SetSignalID(*id)
+	}
+	return _c
+}
+
+// SetSignal sets the "signal" edge to the MailSignal entity.
+func (_c *MailThreadCreate) SetSignal(v *MailSignal) *MailThreadCreate {
+	return _c.SetSignalID(v.ID)
 }
 
 // Mutation returns the MailThreadMutation object of the builder.
@@ -541,6 +561,22 @@ func (_c *MailThreadCreate) createSpec() (*MailThread, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailmessagemeta.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SignalIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   mailthread.SignalTable,
+			Columns: []string{mailthread.SignalColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

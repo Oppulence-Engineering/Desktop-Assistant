@@ -26,6 +26,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -74,6 +75,7 @@ var tenantUserColumns = map[string]string{
 	ent.TypeSubscription:                subscription.UserColumn,
 	ent.TypeCommitment:                  commitment.UserColumn,
 	ent.TypeMailBodyCache:               mailbodycache.UserColumn,
+	ent.TypeMailSignal:                  mailsignal.UserColumn,
 	ent.TypeMailMessageMeta:             mailmessagemeta.UserColumn,
 	ent.TypeMailThread:                  mailthread.UserColumn,
 	ent.TypePolicyDecisionSnapshot:      policydecisionsnapshot.UserColumn,
@@ -292,6 +294,13 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.MailBodyCacheQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(mailbodycache.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.MailSignal.Intercept(intercept.TraverseMailSignal(
+		func(ctx context.Context, q *ent.MailSignalQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(mailsignal.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

@@ -444,6 +444,22 @@ func (_m *MailMessageMeta) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (_m *MailSignal) Thread(ctx context.Context) (*MailThread, error) {
+	result, err := _m.Edges.ThreadOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryThread().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *MailSignal) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *MailThread) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -470,6 +486,14 @@ func (_m *MailThread) Messages(ctx context.Context) (result []*MailMessageMeta, 
 		result, err = _m.QueryMessages().All(ctx)
 	}
 	return result, err
+}
+
+func (_m *MailThread) Signal(ctx context.Context) (*MailSignal, error) {
+	result, err := _m.Edges.SignalOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QuerySignal().Only(ctx)
+	}
+	return result, MaskNotFound(err)
 }
 
 func (_m *MeetingMinuteUsage) User(ctx context.Context) (*User, error) {
@@ -1288,6 +1312,18 @@ func (_m *User) MailBodyCaches(ctx context.Context) (result []*MailBodyCache, er
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryMailBodyCaches().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) MailSignals(ctx context.Context) (result []*MailSignal, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedMailSignals(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.MailSignalsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryMailSignals().All(ctx)
 	}
 	return result, err
 }

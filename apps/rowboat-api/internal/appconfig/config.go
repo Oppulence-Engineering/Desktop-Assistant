@@ -394,13 +394,15 @@ type Config struct {
 	// the scheduler only starts it when RevenueAutoScanEnabled is true. It
 	// runs an incremental leak scan for every Google-connected user no more
 	// often than RevenueAutoScanMinInterval.
-	RevenueAutoScanEnabled      bool
-	RevenueAutoScanInterval     time.Duration
-	RevenueAutoScanMinInterval  time.Duration
-	RevenueAutoScanMaxPerCycle  int
-	RevenueAutoScanLookbackDays int
-	RevenueMailRetentionMonths  int
-	MailBodyCacheTTLHours       int
+	RevenueAutoScanEnabled       bool
+	RevenueAutoScanInterval      time.Duration
+	RevenueAutoScanMinInterval   time.Duration
+	RevenueAutoScanMaxPerCycle   int
+	RevenueAutoScanLookbackDays  int
+	RevenueMailRetentionMonths   int
+	MailBodyCacheTTLHours        int
+	RevenueSemanticMemoryEnabled bool
+	EmbeddingsModel              string
 
 	// Proactive digest (RFC 030). Ships dark behind RevenueDigestEnabled and
 	// requires a configured email provider. Emails each user with open
@@ -683,22 +685,24 @@ func Load() Config {
 		AgentDeclarativeToolsEnabled: getbool("AGENT_DECLARATIVE_TOOLS_ENABLED", false),
 		AgentGitOpsEnabled:           getbool("AGENT_GITOPS_ENABLED", false),
 
-		RevenueAutoScanEnabled:      getbool("REVENUE_AUTO_SCAN_ENABLED", false),
-		RevenueAutoScanInterval:     getdur("REVENUE_AUTO_SCAN_INTERVAL", time.Hour),
-		RevenueAutoScanMinInterval:  getdur("REVENUE_AUTO_SCAN_MIN_INTERVAL", 24*time.Hour),
-		RevenueAutoScanMaxPerCycle:  getint("REVENUE_AUTO_SCAN_MAX_PER_CYCLE", 200),
-		RevenueAutoScanLookbackDays: getint("REVENUE_AUTO_SCAN_LOOKBACK_DAYS", 90),
-		RevenueMailRetentionMonths:  getint("REVENUE_MAIL_RETENTION_MONTHS", 18),
-		MailBodyCacheTTLHours:       getint("MAIL_BODY_CACHE_TTL_HOURS", 72),
-		RevenueDigestEnabled:        getbool("REVENUE_DIGEST_ENABLED", false),
-		RevenueDigestInterval:       getdur("REVENUE_DIGEST_INTERVAL", time.Hour),
-		RevenueDigestMinInterval:    getdur("REVENUE_DIGEST_MIN_INTERVAL", 7*24*time.Hour),
-		RevenueDigestMaxPerCycle:    getint("REVENUE_DIGEST_MAX_PER_CYCLE", 200),
-		ResendAPIKey:                getenv("RESEND_API_KEY", ""),
-		EmailFrom:                   getenv("EMAIL_FROM", "Oppulence <digest@oppulence.io>"),
-		RevenueFacadeBaseURL:        getenv("REVENUE_FACADE_BASE_URL", ""),
-		RevenueFacadeServiceToken:   getenv("REVENUE_FACADE_SERVICE_TOKEN", ""),
-		RevenueFacadeTimeout:        getdur("REVENUE_FACADE_TIMEOUT", 15*time.Second),
+		RevenueAutoScanEnabled:       getbool("REVENUE_AUTO_SCAN_ENABLED", false),
+		RevenueAutoScanInterval:      getdur("REVENUE_AUTO_SCAN_INTERVAL", time.Hour),
+		RevenueAutoScanMinInterval:   getdur("REVENUE_AUTO_SCAN_MIN_INTERVAL", 24*time.Hour),
+		RevenueAutoScanMaxPerCycle:   getint("REVENUE_AUTO_SCAN_MAX_PER_CYCLE", 200),
+		RevenueAutoScanLookbackDays:  getint("REVENUE_AUTO_SCAN_LOOKBACK_DAYS", 90),
+		RevenueMailRetentionMonths:   getint("REVENUE_MAIL_RETENTION_MONTHS", 18),
+		MailBodyCacheTTLHours:        getint("MAIL_BODY_CACHE_TTL_HOURS", 72),
+		RevenueSemanticMemoryEnabled: getbool("REVENUE_SEMANTIC_MEMORY_ENABLED", false),
+		EmbeddingsModel:              getenv("EMBEDDINGS_MODEL", "text-embedding-3-small"),
+		RevenueDigestEnabled:         getbool("REVENUE_DIGEST_ENABLED", false),
+		RevenueDigestInterval:        getdur("REVENUE_DIGEST_INTERVAL", time.Hour),
+		RevenueDigestMinInterval:     getdur("REVENUE_DIGEST_MIN_INTERVAL", 7*24*time.Hour),
+		RevenueDigestMaxPerCycle:     getint("REVENUE_DIGEST_MAX_PER_CYCLE", 200),
+		ResendAPIKey:                 getenv("RESEND_API_KEY", ""),
+		EmailFrom:                    getenv("EMAIL_FROM", "Oppulence <digest@oppulence.io>"),
+		RevenueFacadeBaseURL:         getenv("REVENUE_FACADE_BASE_URL", ""),
+		RevenueFacadeServiceToken:    getenv("REVENUE_FACADE_SERVICE_TOKEN", ""),
+		RevenueFacadeTimeout:         getdur("REVENUE_FACADE_TIMEOUT", 15*time.Second),
 	}
 }
 

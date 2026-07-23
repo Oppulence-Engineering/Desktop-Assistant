@@ -158,6 +158,21 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Impact summary.", ref("RevenueImpact"), nil),
 		"401": responseRef("401"),
 	})}
+	paths["/v1/revenue-search"] = obj{"get": operation("Revenue", "Semantic search over mail", "Natural-language search over the caller's Layer-2 signals (RFC 031). Returns available=false with no matches when semantic memory is not configured.", "revenueSemanticSearch", bearer(), []any{obj{"name": "q", "in": "query", "required": true, "description": "Search query.", "schema": obj{"type": "string"}}}, nil, obj{
+		"200": jsonResponse("Ranked matches.", objectSchema("Search result.", obj{
+			"available": boolSchema("Whether semantic memory is configured.", true),
+			"matches": arraySchema("Ranked matches.", objectSchema("Match.", obj{
+				"threadId":       stringSchema("Provider thread id.", "thr_01"),
+				"subject":        stringSchema("Thread subject.", "Proposal follow-up"),
+				"counterparty":   stringSchema("Counterparty email.", "buyer@example.com"),
+				"classification": stringEnum("Signal class.", "deal", "deal", "invoice", "client", "referral", "other"),
+				"summary":        stringSchema("Derived summary.", "Unanswered proposal from 10 days ago."),
+				"score":          numberSchema("Cosine similarity.", 0.82),
+			})),
+		}), nil),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+	})}
 	paths["/v1/revenue-digest"] = obj{"get": operation("Revenue", "Preview the proactive digest", "Returns the digest content the scheduled email is built from: the top open loops and running impact counts.", "getRevenueDigest", bearer(), nil, nil, obj{
 		"200": jsonResponse("Digest content.", ref("RevenueDigest"), nil),
 		"401": responseRef("401"),

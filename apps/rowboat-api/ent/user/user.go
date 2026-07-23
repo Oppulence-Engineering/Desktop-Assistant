@@ -93,6 +93,8 @@ const (
 	EdgeMailMessageMetas = "mail_message_metas"
 	// EdgeMailBodyCaches holds the string denoting the mail_body_caches edge name in mutations.
 	EdgeMailBodyCaches = "mail_body_caches"
+	// EdgeMailSignals holds the string denoting the mail_signals edge name in mutations.
+	EdgeMailSignals = "mail_signals"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -333,6 +335,13 @@ const (
 	MailBodyCachesInverseTable = "mail_body_caches"
 	// MailBodyCachesColumn is the table column denoting the mail_body_caches relation/edge.
 	MailBodyCachesColumn = "user_mail_body_caches"
+	// MailSignalsTable is the table that holds the mail_signals relation/edge.
+	MailSignalsTable = "mail_signals"
+	// MailSignalsInverseTable is the table name for the MailSignal entity.
+	// It exists in this package in order to avoid circular dependency with the "mailsignal" package.
+	MailSignalsInverseTable = "mail_signals"
+	// MailSignalsColumn is the table column denoting the mail_signals relation/edge.
+	MailSignalsColumn = "user_mail_signals"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -869,6 +878,20 @@ func ByMailBodyCaches(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newMailBodyCachesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByMailSignalsCount orders the results by mail_signals count.
+func ByMailSignalsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMailSignalsStep(), opts...)
+	}
+}
+
+// ByMailSignals orders the results by mail_signals terms.
+func ByMailSignals(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMailSignalsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -1105,5 +1128,12 @@ func newMailBodyCachesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MailBodyCachesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MailBodyCachesTable, MailBodyCachesColumn),
+	)
+}
+func newMailSignalsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MailSignalsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MailSignalsTable, MailSignalsColumn),
 	)
 }

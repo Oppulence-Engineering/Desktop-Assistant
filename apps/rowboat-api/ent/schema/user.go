@@ -88,5 +88,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("mail_threads", MailThread.Type).Annotations(entproto.Skip()),
 		edge.To("mail_message_metas", MailMessageMeta.Type).Annotations(entproto.Skip()),
 		edge.To("mail_body_caches", MailBodyCache.Type).Annotations(entproto.Skip()),
+		edge.To("mail_signals", MailSignal.Type).Annotations(entproto.Skip()),
 	}
 }

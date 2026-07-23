@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
@@ -91,6 +92,7 @@ const (
 	TypeMCPConnectionHistory        = "MCPConnectionHistory"
 	TypeMailBodyCache               = "MailBodyCache"
 	TypeMailMessageMeta             = "MailMessageMeta"
+	TypeMailSignal                  = "MailSignal"
 	TypeMailThread                  = "MailThread"
 	TypeMeetingMinuteUsage          = "MeetingMinuteUsage"
 	TypeOAuthConnection             = "OAuthConnection"
@@ -30459,6 +30461,848 @@ func (m *MailMessageMetaMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown MailMessageMeta edge %s", name)
 }
 
+// MailSignalMutation represents an operation that mutates the MailSignal nodes in the graph.
+type MailSignalMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *uuid.UUID
+	created_at      *time.Time
+	updated_at      *time.Time
+	classification  *string
+	summary         *string
+	embedding_model *string
+	embedding       *[]byte
+	computed_at     *time.Time
+	clearedFields   map[string]struct{}
+	thread          *uuid.UUID
+	clearedthread   bool
+	user            *uuid.UUID
+	cleareduser     bool
+	done            bool
+	oldValue        func(context.Context) (*MailSignal, error)
+	predicates      []predicate.MailSignal
+}
+
+var _ ent.Mutation = (*MailSignalMutation)(nil)
+
+// mailsignalOption allows management of the mutation configuration using functional options.
+type mailsignalOption func(*MailSignalMutation)
+
+// newMailSignalMutation creates new mutation for the MailSignal entity.
+func newMailSignalMutation(c config, op Op, opts ...mailsignalOption) *MailSignalMutation {
+	m := &MailSignalMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMailSignal,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMailSignalID sets the ID field of the mutation.
+func withMailSignalID(id uuid.UUID) mailsignalOption {
+	return func(m *MailSignalMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *MailSignal
+		)
+		m.oldValue = func(ctx context.Context) (*MailSignal, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().MailSignal.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMailSignal sets the old MailSignal of the mutation.
+func withMailSignal(node *MailSignal) mailsignalOption {
+	return func(m *MailSignalMutation) {
+		m.oldValue = func(context.Context) (*MailSignal, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MailSignalMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MailSignalMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of MailSignal entities.
+func (m *MailSignalMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MailSignalMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MailSignalMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().MailSignal.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MailSignalMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MailSignalMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the MailSignal entity.
+// If the MailSignal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailSignalMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MailSignalMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *MailSignalMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *MailSignalMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the MailSignal entity.
+// If the MailSignal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailSignalMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *MailSignalMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetClassification sets the "classification" field.
+func (m *MailSignalMutation) SetClassification(s string) {
+	m.classification = &s
+}
+
+// Classification returns the value of the "classification" field in the mutation.
+func (m *MailSignalMutation) Classification() (r string, exists bool) {
+	v := m.classification
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClassification returns the old "classification" field's value of the MailSignal entity.
+// If the MailSignal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailSignalMutation) OldClassification(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClassification is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClassification requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClassification: %w", err)
+	}
+	return oldValue.Classification, nil
+}
+
+// ResetClassification resets all changes to the "classification" field.
+func (m *MailSignalMutation) ResetClassification() {
+	m.classification = nil
+}
+
+// SetSummary sets the "summary" field.
+func (m *MailSignalMutation) SetSummary(s string) {
+	m.summary = &s
+}
+
+// Summary returns the value of the "summary" field in the mutation.
+func (m *MailSignalMutation) Summary() (r string, exists bool) {
+	v := m.summary
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSummary returns the old "summary" field's value of the MailSignal entity.
+// If the MailSignal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailSignalMutation) OldSummary(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSummary is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSummary requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSummary: %w", err)
+	}
+	return oldValue.Summary, nil
+}
+
+// ClearSummary clears the value of the "summary" field.
+func (m *MailSignalMutation) ClearSummary() {
+	m.summary = nil
+	m.clearedFields[mailsignal.FieldSummary] = struct{}{}
+}
+
+// SummaryCleared returns if the "summary" field was cleared in this mutation.
+func (m *MailSignalMutation) SummaryCleared() bool {
+	_, ok := m.clearedFields[mailsignal.FieldSummary]
+	return ok
+}
+
+// ResetSummary resets all changes to the "summary" field.
+func (m *MailSignalMutation) ResetSummary() {
+	m.summary = nil
+	delete(m.clearedFields, mailsignal.FieldSummary)
+}
+
+// SetEmbeddingModel sets the "embedding_model" field.
+func (m *MailSignalMutation) SetEmbeddingModel(s string) {
+	m.embedding_model = &s
+}
+
+// EmbeddingModel returns the value of the "embedding_model" field in the mutation.
+func (m *MailSignalMutation) EmbeddingModel() (r string, exists bool) {
+	v := m.embedding_model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmbeddingModel returns the old "embedding_model" field's value of the MailSignal entity.
+// If the MailSignal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailSignalMutation) OldEmbeddingModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmbeddingModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmbeddingModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmbeddingModel: %w", err)
+	}
+	return oldValue.EmbeddingModel, nil
+}
+
+// ClearEmbeddingModel clears the value of the "embedding_model" field.
+func (m *MailSignalMutation) ClearEmbeddingModel() {
+	m.embedding_model = nil
+	m.clearedFields[mailsignal.FieldEmbeddingModel] = struct{}{}
+}
+
+// EmbeddingModelCleared returns if the "embedding_model" field was cleared in this mutation.
+func (m *MailSignalMutation) EmbeddingModelCleared() bool {
+	_, ok := m.clearedFields[mailsignal.FieldEmbeddingModel]
+	return ok
+}
+
+// ResetEmbeddingModel resets all changes to the "embedding_model" field.
+func (m *MailSignalMutation) ResetEmbeddingModel() {
+	m.embedding_model = nil
+	delete(m.clearedFields, mailsignal.FieldEmbeddingModel)
+}
+
+// SetEmbedding sets the "embedding" field.
+func (m *MailSignalMutation) SetEmbedding(b []byte) {
+	m.embedding = &b
+}
+
+// Embedding returns the value of the "embedding" field in the mutation.
+func (m *MailSignalMutation) Embedding() (r []byte, exists bool) {
+	v := m.embedding
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmbedding returns the old "embedding" field's value of the MailSignal entity.
+// If the MailSignal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailSignalMutation) OldEmbedding(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmbedding is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmbedding requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmbedding: %w", err)
+	}
+	return oldValue.Embedding, nil
+}
+
+// ClearEmbedding clears the value of the "embedding" field.
+func (m *MailSignalMutation) ClearEmbedding() {
+	m.embedding = nil
+	m.clearedFields[mailsignal.FieldEmbedding] = struct{}{}
+}
+
+// EmbeddingCleared returns if the "embedding" field was cleared in this mutation.
+func (m *MailSignalMutation) EmbeddingCleared() bool {
+	_, ok := m.clearedFields[mailsignal.FieldEmbedding]
+	return ok
+}
+
+// ResetEmbedding resets all changes to the "embedding" field.
+func (m *MailSignalMutation) ResetEmbedding() {
+	m.embedding = nil
+	delete(m.clearedFields, mailsignal.FieldEmbedding)
+}
+
+// SetComputedAt sets the "computed_at" field.
+func (m *MailSignalMutation) SetComputedAt(t time.Time) {
+	m.computed_at = &t
+}
+
+// ComputedAt returns the value of the "computed_at" field in the mutation.
+func (m *MailSignalMutation) ComputedAt() (r time.Time, exists bool) {
+	v := m.computed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldComputedAt returns the old "computed_at" field's value of the MailSignal entity.
+// If the MailSignal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailSignalMutation) OldComputedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldComputedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldComputedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldComputedAt: %w", err)
+	}
+	return oldValue.ComputedAt, nil
+}
+
+// ResetComputedAt resets all changes to the "computed_at" field.
+func (m *MailSignalMutation) ResetComputedAt() {
+	m.computed_at = nil
+}
+
+// SetThreadID sets the "thread" edge to the MailThread entity by id.
+func (m *MailSignalMutation) SetThreadID(id uuid.UUID) {
+	m.thread = &id
+}
+
+// ClearThread clears the "thread" edge to the MailThread entity.
+func (m *MailSignalMutation) ClearThread() {
+	m.clearedthread = true
+}
+
+// ThreadCleared reports if the "thread" edge to the MailThread entity was cleared.
+func (m *MailSignalMutation) ThreadCleared() bool {
+	return m.clearedthread
+}
+
+// ThreadID returns the "thread" edge ID in the mutation.
+func (m *MailSignalMutation) ThreadID() (id uuid.UUID, exists bool) {
+	if m.thread != nil {
+		return *m.thread, true
+	}
+	return
+}
+
+// ThreadIDs returns the "thread" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ThreadID instead. It exists only for internal usage by the builders.
+func (m *MailSignalMutation) ThreadIDs() (ids []uuid.UUID) {
+	if id := m.thread; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetThread resets all changes to the "thread" edge.
+func (m *MailSignalMutation) ResetThread() {
+	m.thread = nil
+	m.clearedthread = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *MailSignalMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *MailSignalMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *MailSignalMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *MailSignalMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *MailSignalMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *MailSignalMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the MailSignalMutation builder.
+func (m *MailSignalMutation) Where(ps ...predicate.MailSignal) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MailSignalMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MailSignalMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MailSignal, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MailSignalMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MailSignalMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (MailSignal).
+func (m *MailSignalMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MailSignalMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.created_at != nil {
+		fields = append(fields, mailsignal.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, mailsignal.FieldUpdatedAt)
+	}
+	if m.classification != nil {
+		fields = append(fields, mailsignal.FieldClassification)
+	}
+	if m.summary != nil {
+		fields = append(fields, mailsignal.FieldSummary)
+	}
+	if m.embedding_model != nil {
+		fields = append(fields, mailsignal.FieldEmbeddingModel)
+	}
+	if m.embedding != nil {
+		fields = append(fields, mailsignal.FieldEmbedding)
+	}
+	if m.computed_at != nil {
+		fields = append(fields, mailsignal.FieldComputedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MailSignalMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case mailsignal.FieldCreatedAt:
+		return m.CreatedAt()
+	case mailsignal.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case mailsignal.FieldClassification:
+		return m.Classification()
+	case mailsignal.FieldSummary:
+		return m.Summary()
+	case mailsignal.FieldEmbeddingModel:
+		return m.EmbeddingModel()
+	case mailsignal.FieldEmbedding:
+		return m.Embedding()
+	case mailsignal.FieldComputedAt:
+		return m.ComputedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MailSignalMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case mailsignal.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case mailsignal.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case mailsignal.FieldClassification:
+		return m.OldClassification(ctx)
+	case mailsignal.FieldSummary:
+		return m.OldSummary(ctx)
+	case mailsignal.FieldEmbeddingModel:
+		return m.OldEmbeddingModel(ctx)
+	case mailsignal.FieldEmbedding:
+		return m.OldEmbedding(ctx)
+	case mailsignal.FieldComputedAt:
+		return m.OldComputedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown MailSignal field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MailSignalMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case mailsignal.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case mailsignal.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case mailsignal.FieldClassification:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClassification(v)
+		return nil
+	case mailsignal.FieldSummary:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSummary(v)
+		return nil
+	case mailsignal.FieldEmbeddingModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmbeddingModel(v)
+		return nil
+	case mailsignal.FieldEmbedding:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmbedding(v)
+		return nil
+	case mailsignal.FieldComputedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetComputedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MailSignal field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MailSignalMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MailSignalMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MailSignalMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown MailSignal numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MailSignalMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(mailsignal.FieldSummary) {
+		fields = append(fields, mailsignal.FieldSummary)
+	}
+	if m.FieldCleared(mailsignal.FieldEmbeddingModel) {
+		fields = append(fields, mailsignal.FieldEmbeddingModel)
+	}
+	if m.FieldCleared(mailsignal.FieldEmbedding) {
+		fields = append(fields, mailsignal.FieldEmbedding)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MailSignalMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MailSignalMutation) ClearField(name string) error {
+	switch name {
+	case mailsignal.FieldSummary:
+		m.ClearSummary()
+		return nil
+	case mailsignal.FieldEmbeddingModel:
+		m.ClearEmbeddingModel()
+		return nil
+	case mailsignal.FieldEmbedding:
+		m.ClearEmbedding()
+		return nil
+	}
+	return fmt.Errorf("unknown MailSignal nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MailSignalMutation) ResetField(name string) error {
+	switch name {
+	case mailsignal.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case mailsignal.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case mailsignal.FieldClassification:
+		m.ResetClassification()
+		return nil
+	case mailsignal.FieldSummary:
+		m.ResetSummary()
+		return nil
+	case mailsignal.FieldEmbeddingModel:
+		m.ResetEmbeddingModel()
+		return nil
+	case mailsignal.FieldEmbedding:
+		m.ResetEmbedding()
+		return nil
+	case mailsignal.FieldComputedAt:
+		m.ResetComputedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown MailSignal field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MailSignalMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.thread != nil {
+		edges = append(edges, mailsignal.EdgeThread)
+	}
+	if m.user != nil {
+		edges = append(edges, mailsignal.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MailSignalMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case mailsignal.EdgeThread:
+		if id := m.thread; id != nil {
+			return []ent.Value{*id}
+		}
+	case mailsignal.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MailSignalMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MailSignalMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MailSignalMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedthread {
+		edges = append(edges, mailsignal.EdgeThread)
+	}
+	if m.cleareduser {
+		edges = append(edges, mailsignal.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MailSignalMutation) EdgeCleared(name string) bool {
+	switch name {
+	case mailsignal.EdgeThread:
+		return m.clearedthread
+	case mailsignal.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MailSignalMutation) ClearEdge(name string) error {
+	switch name {
+	case mailsignal.EdgeThread:
+		m.ClearThread()
+		return nil
+	case mailsignal.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown MailSignal unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MailSignalMutation) ResetEdge(name string) error {
+	switch name {
+	case mailsignal.EdgeThread:
+		m.ResetThread()
+		return nil
+	case mailsignal.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown MailSignal edge %s", name)
+}
+
 // MailThreadMutation represents an operation that mutates the MailThread nodes in the graph.
 type MailThreadMutation struct {
 	config
@@ -30491,6 +31335,8 @@ type MailThreadMutation struct {
 	messages            map[uuid.UUID]struct{}
 	removedmessages     map[uuid.UUID]struct{}
 	clearedmessages     bool
+	signal              *uuid.UUID
+	clearedsignal       bool
 	done                bool
 	oldValue            func(context.Context) (*MailThread, error)
 	predicates          []predicate.MailThread
@@ -31376,6 +32222,45 @@ func (m *MailThreadMutation) ResetMessages() {
 	m.removedmessages = nil
 }
 
+// SetSignalID sets the "signal" edge to the MailSignal entity by id.
+func (m *MailThreadMutation) SetSignalID(id uuid.UUID) {
+	m.signal = &id
+}
+
+// ClearSignal clears the "signal" edge to the MailSignal entity.
+func (m *MailThreadMutation) ClearSignal() {
+	m.clearedsignal = true
+}
+
+// SignalCleared reports if the "signal" edge to the MailSignal entity was cleared.
+func (m *MailThreadMutation) SignalCleared() bool {
+	return m.clearedsignal
+}
+
+// SignalID returns the "signal" edge ID in the mutation.
+func (m *MailThreadMutation) SignalID() (id uuid.UUID, exists bool) {
+	if m.signal != nil {
+		return *m.signal, true
+	}
+	return
+}
+
+// SignalIDs returns the "signal" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SignalID instead. It exists only for internal usage by the builders.
+func (m *MailThreadMutation) SignalIDs() (ids []uuid.UUID) {
+	if id := m.signal; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSignal resets all changes to the "signal" edge.
+func (m *MailThreadMutation) ResetSignal() {
+	m.signal = nil
+	m.clearedsignal = false
+}
+
 // Where appends a list predicates to the MailThreadMutation builder.
 func (m *MailThreadMutation) Where(ps ...predicate.MailThread) {
 	m.predicates = append(m.predicates, ps...)
@@ -31802,7 +32687,7 @@ func (m *MailThreadMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MailThreadMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.user != nil {
 		edges = append(edges, mailthread.EdgeUser)
 	}
@@ -31811,6 +32696,9 @@ func (m *MailThreadMutation) AddedEdges() []string {
 	}
 	if m.messages != nil {
 		edges = append(edges, mailthread.EdgeMessages)
+	}
+	if m.signal != nil {
+		edges = append(edges, mailthread.EdgeSignal)
 	}
 	return edges
 }
@@ -31833,13 +32721,17 @@ func (m *MailThreadMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case mailthread.EdgeSignal:
+		if id := m.signal; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MailThreadMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedmessages != nil {
 		edges = append(edges, mailthread.EdgeMessages)
 	}
@@ -31862,7 +32754,7 @@ func (m *MailThreadMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MailThreadMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.cleareduser {
 		edges = append(edges, mailthread.EdgeUser)
 	}
@@ -31871,6 +32763,9 @@ func (m *MailThreadMutation) ClearedEdges() []string {
 	}
 	if m.clearedmessages {
 		edges = append(edges, mailthread.EdgeMessages)
+	}
+	if m.clearedsignal {
+		edges = append(edges, mailthread.EdgeSignal)
 	}
 	return edges
 }
@@ -31885,6 +32780,8 @@ func (m *MailThreadMutation) EdgeCleared(name string) bool {
 		return m.clearedrelationship
 	case mailthread.EdgeMessages:
 		return m.clearedmessages
+	case mailthread.EdgeSignal:
+		return m.clearedsignal
 	}
 	return false
 }
@@ -31898,6 +32795,9 @@ func (m *MailThreadMutation) ClearEdge(name string) error {
 		return nil
 	case mailthread.EdgeRelationship:
 		m.ClearRelationship()
+		return nil
+	case mailthread.EdgeSignal:
+		m.ClearSignal()
 		return nil
 	}
 	return fmt.Errorf("unknown MailThread unique edge %s", name)
@@ -31915,6 +32815,9 @@ func (m *MailThreadMutation) ResetEdge(name string) error {
 		return nil
 	case mailthread.EdgeMessages:
 		m.ResetMessages()
+		return nil
+	case mailthread.EdgeSignal:
+		m.ResetSignal()
 		return nil
 	}
 	return fmt.Errorf("unknown MailThread edge %s", name)
@@ -50841,6 +51744,9 @@ type UserMutation struct {
 	mail_body_caches                       map[uuid.UUID]struct{}
 	removedmail_body_caches                map[uuid.UUID]struct{}
 	clearedmail_body_caches                bool
+	mail_signals                           map[uuid.UUID]struct{}
+	removedmail_signals                    map[uuid.UUID]struct{}
+	clearedmail_signals                    bool
 	done                                   bool
 	oldValue                               func(context.Context) (*User, error)
 	predicates                             []predicate.User
@@ -52977,6 +53883,60 @@ func (m *UserMutation) ResetMailBodyCaches() {
 	m.removedmail_body_caches = nil
 }
 
+// AddMailSignalIDs adds the "mail_signals" edge to the MailSignal entity by ids.
+func (m *UserMutation) AddMailSignalIDs(ids ...uuid.UUID) {
+	if m.mail_signals == nil {
+		m.mail_signals = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.mail_signals[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMailSignals clears the "mail_signals" edge to the MailSignal entity.
+func (m *UserMutation) ClearMailSignals() {
+	m.clearedmail_signals = true
+}
+
+// MailSignalsCleared reports if the "mail_signals" edge to the MailSignal entity was cleared.
+func (m *UserMutation) MailSignalsCleared() bool {
+	return m.clearedmail_signals
+}
+
+// RemoveMailSignalIDs removes the "mail_signals" edge to the MailSignal entity by IDs.
+func (m *UserMutation) RemoveMailSignalIDs(ids ...uuid.UUID) {
+	if m.removedmail_signals == nil {
+		m.removedmail_signals = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.mail_signals, ids[i])
+		m.removedmail_signals[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMailSignals returns the removed IDs of the "mail_signals" edge to the MailSignal entity.
+func (m *UserMutation) RemovedMailSignalsIDs() (ids []uuid.UUID) {
+	for id := range m.removedmail_signals {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MailSignalsIDs returns the "mail_signals" edge IDs in the mutation.
+func (m *UserMutation) MailSignalsIDs() (ids []uuid.UUID) {
+	for id := range m.mail_signals {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMailSignals resets all changes to the "mail_signals" edge.
+func (m *UserMutation) ResetMailSignals() {
+	m.mail_signals = nil
+	m.clearedmail_signals = false
+	m.removedmail_signals = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -53193,7 +54153,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 34)
+	edges := make([]string, 0, 35)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -53295,6 +54255,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.mail_body_caches != nil {
 		edges = append(edges, user.EdgeMailBodyCaches)
+	}
+	if m.mail_signals != nil {
+		edges = append(edges, user.EdgeMailSignals)
 	}
 	return edges
 }
@@ -53505,13 +54468,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeMailSignals:
+		ids := make([]ent.Value, 0, len(m.mail_signals))
+		for id := range m.mail_signals {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 34)
+	edges := make([]string, 0, 35)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -53610,6 +54579,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedmail_body_caches != nil {
 		edges = append(edges, user.EdgeMailBodyCaches)
+	}
+	if m.removedmail_signals != nil {
+		edges = append(edges, user.EdgeMailSignals)
 	}
 	return edges
 }
@@ -53816,13 +54788,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeMailSignals:
+		ids := make([]ent.Value, 0, len(m.removedmail_signals))
+		for id := range m.removedmail_signals {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 34)
+	edges := make([]string, 0, 35)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -53925,6 +54903,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedmail_body_caches {
 		edges = append(edges, user.EdgeMailBodyCaches)
 	}
+	if m.clearedmail_signals {
+		edges = append(edges, user.EdgeMailSignals)
+	}
 	return edges
 }
 
@@ -54000,6 +54981,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedmail_message_metas
 	case user.EdgeMailBodyCaches:
 		return m.clearedmail_body_caches
+	case user.EdgeMailSignals:
+		return m.clearedmail_signals
 	}
 	return false
 }
@@ -54120,6 +55103,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeMailBodyCaches:
 		m.ResetMailBodyCaches()
+		return nil
+	case user.EdgeMailSignals:
+		m.ResetMailSignals()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

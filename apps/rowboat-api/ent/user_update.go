@@ -31,6 +31,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -635,6 +636,21 @@ func (_u *UserUpdate) AddMailBodyCaches(v ...*MailBodyCache) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMailBodyCachIDs(ids...)
+}
+
+// AddMailSignalIDs adds the "mail_signals" edge to the MailSignal entity by IDs.
+func (_u *UserUpdate) AddMailSignalIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddMailSignalIDs(ids...)
+	return _u
+}
+
+// AddMailSignals adds the "mail_signals" edges to the MailSignal entity.
+func (_u *UserUpdate) AddMailSignals(v ...*MailSignal) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMailSignalIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -1339,6 +1355,27 @@ func (_u *UserUpdate) RemoveMailBodyCaches(v ...*MailBodyCache) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMailBodyCachIDs(ids...)
+}
+
+// ClearMailSignals clears all "mail_signals" edges to the MailSignal entity.
+func (_u *UserUpdate) ClearMailSignals() *UserUpdate {
+	_u.mutation.ClearMailSignals()
+	return _u
+}
+
+// RemoveMailSignalIDs removes the "mail_signals" edge to MailSignal entities by IDs.
+func (_u *UserUpdate) RemoveMailSignalIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveMailSignalIDs(ids...)
+	return _u
+}
+
+// RemoveMailSignals removes "mail_signals" edges to MailSignal entities.
+func (_u *UserUpdate) RemoveMailSignals(v ...*MailSignal) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMailSignalIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -2931,6 +2968,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.MailSignalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailSignalsTable,
+			Columns: []string{user.MailSignalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMailSignalsIDs(); len(nodes) > 0 && !_u.mutation.MailSignalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailSignalsTable,
+			Columns: []string{user.MailSignalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MailSignalsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailSignalsTable,
+			Columns: []string{user.MailSignalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -3523,6 +3605,21 @@ func (_u *UserUpdateOne) AddMailBodyCaches(v ...*MailBodyCache) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMailBodyCachIDs(ids...)
+}
+
+// AddMailSignalIDs adds the "mail_signals" edge to the MailSignal entity by IDs.
+func (_u *UserUpdateOne) AddMailSignalIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddMailSignalIDs(ids...)
+	return _u
+}
+
+// AddMailSignals adds the "mail_signals" edges to the MailSignal entity.
+func (_u *UserUpdateOne) AddMailSignals(v ...*MailSignal) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMailSignalIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -4227,6 +4324,27 @@ func (_u *UserUpdateOne) RemoveMailBodyCaches(v ...*MailBodyCache) *UserUpdateOn
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMailBodyCachIDs(ids...)
+}
+
+// ClearMailSignals clears all "mail_signals" edges to the MailSignal entity.
+func (_u *UserUpdateOne) ClearMailSignals() *UserUpdateOne {
+	_u.mutation.ClearMailSignals()
+	return _u
+}
+
+// RemoveMailSignalIDs removes the "mail_signals" edge to MailSignal entities by IDs.
+func (_u *UserUpdateOne) RemoveMailSignalIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveMailSignalIDs(ids...)
+	return _u
+}
+
+// RemoveMailSignals removes "mail_signals" edges to MailSignal entities.
+func (_u *UserUpdateOne) RemoveMailSignals(v ...*MailSignal) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMailSignalIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -5842,6 +5960,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailbodycache.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MailSignalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailSignalsTable,
+			Columns: []string{user.MailSignalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMailSignalsIDs(); len(nodes) > 0 && !_u.mutation.MailSignalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailSignalsTable,
+			Columns: []string{user.MailSignalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MailSignalsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailSignalsTable,
+			Columns: []string{user.MailSignalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

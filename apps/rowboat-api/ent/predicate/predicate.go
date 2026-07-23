@@ -78,6 +78,9 @@ type MailBodyCache func(*sql.Selector)
 // MailMessageMeta is the predicate function for mailmessagemeta builders.
 type MailMessageMeta func(*sql.Selector)
 
+// MailSignal is the predicate function for mailsignal builders.
+type MailSignal func(*sql.Selector)
+
 // MailThread is the predicate function for mailthread builders.
 type MailThread func(*sql.Selector)
 

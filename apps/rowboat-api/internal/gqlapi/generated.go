@@ -570,6 +570,17 @@ type ComplexityRoot struct {
 		User              func(childComplexity int) int
 	}
 
+	MailSignal struct {
+		Classification func(childComplexity int) int
+		ComputedAt     func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		EmbeddingModel func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Thread         func(childComplexity int) int
+		UpdatedAt      func(childComplexity int) int
+		User           func(childComplexity int) int
+	}
+
 	MailThread struct {
 		AccountDomain    func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
@@ -585,6 +596,7 @@ type ComplexityRoot struct {
 		ProviderThreadID func(childComplexity int) int
 		Relationship     func(childComplexity int) int
 		ReplyState       func(childComplexity int) int
+		Signal           func(childComplexity int) int
 		Subject          func(childComplexity int) int
 		UpdatedAt        func(childComplexity int) int
 		User             func(childComplexity int) int
@@ -865,6 +877,7 @@ type ComplexityRoot struct {
 		LlmUsages                    func(childComplexity int) int
 		MailBodyCaches               func(childComplexity int) int
 		MailMessageMetas             func(childComplexity int) int
+		MailSignals                  func(childComplexity int) int
 		MailThreads                  func(childComplexity int) int
 		McpConnections               func(childComplexity int) int
 		MeetingMinuteUsages          func(childComplexity int) int
@@ -3369,6 +3382,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.MailMessageMeta.User(childComplexity), true
 
+	case "MailSignal.classification":
+		if e.ComplexityRoot.MailSignal.Classification == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MailSignal.Classification(childComplexity), true
+	case "MailSignal.computedAt":
+		if e.ComplexityRoot.MailSignal.ComputedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MailSignal.ComputedAt(childComplexity), true
+	case "MailSignal.createdAt":
+		if e.ComplexityRoot.MailSignal.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MailSignal.CreatedAt(childComplexity), true
+	case "MailSignal.embeddingModel":
+		if e.ComplexityRoot.MailSignal.EmbeddingModel == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MailSignal.EmbeddingModel(childComplexity), true
+	case "MailSignal.id":
+		if e.ComplexityRoot.MailSignal.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MailSignal.ID(childComplexity), true
+	case "MailSignal.thread":
+		if e.ComplexityRoot.MailSignal.Thread == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MailSignal.Thread(childComplexity), true
+	case "MailSignal.updatedAt":
+		if e.ComplexityRoot.MailSignal.UpdatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MailSignal.UpdatedAt(childComplexity), true
+	case "MailSignal.user":
+		if e.ComplexityRoot.MailSignal.User == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MailSignal.User(childComplexity), true
+
 	case "MailThread.accountDomain":
 		if e.ComplexityRoot.MailThread.AccountDomain == nil {
 			break
@@ -3453,6 +3515,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.MailThread.ReplyState(childComplexity), true
+	case "MailThread.signal":
+		if e.ComplexityRoot.MailThread.Signal == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MailThread.Signal(childComplexity), true
 	case "MailThread.subject":
 		if e.ComplexityRoot.MailThread.Subject == nil {
 			break
@@ -4944,6 +5012,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.User.MailMessageMetas(childComplexity), true
+	case "User.mailSignals":
+		if e.ComplexityRoot.User.MailSignals == nil {
+			break
+		}
+
+		return e.ComplexityRoot.User.MailSignals(childComplexity), true
 	case "User.mailThreads":
 		if e.ComplexityRoot.User.MailThreads == nil {
 			break
@@ -5110,6 +5184,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputMCPConnectionWhereInput,
 		ec.unmarshalInputMailBodyCacheWhereInput,
 		ec.unmarshalInputMailMessageMetaWhereInput,
+		ec.unmarshalInputMailSignalWhereInput,
 		ec.unmarshalInputMailThreadWhereInput,
 		ec.unmarshalInputMeetingMinuteUsageWhereInput,
 		ec.unmarshalInputOAuthConnectionWhereInput,
@@ -6204,6 +6279,28 @@ func (ec *executionContext) childFields_MailMessageMeta(ctx context.Context, fie
 	return nil, fmt.Errorf("no field named %q was found under type MailMessageMeta", field.Name)
 }
 
+func (ec *executionContext) childFields_MailSignal(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_MailSignal_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_MailSignal_createdAt(ctx, field)
+	case "updatedAt":
+		return ec.fieldContext_MailSignal_updatedAt(ctx, field)
+	case "classification":
+		return ec.fieldContext_MailSignal_classification(ctx, field)
+	case "embeddingModel":
+		return ec.fieldContext_MailSignal_embeddingModel(ctx, field)
+	case "computedAt":
+		return ec.fieldContext_MailSignal_computedAt(ctx, field)
+	case "thread":
+		return ec.fieldContext_MailSignal_thread(ctx, field)
+	case "user":
+		return ec.fieldContext_MailSignal_user(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type MailSignal", field.Name)
+}
+
 func (ec *executionContext) childFields_MailThread(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -6240,6 +6337,8 @@ func (ec *executionContext) childFields_MailThread(ctx context.Context, field gr
 		return ec.fieldContext_MailThread_relationship(ctx, field)
 	case "messages":
 		return ec.fieldContext_MailThread_messages(ctx, field)
+	case "signal":
+		return ec.fieldContext_MailThread_signal(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type MailThread", field.Name)
 }
@@ -6778,6 +6877,8 @@ func (ec *executionContext) childFields_User(ctx context.Context, field graphql.
 		return ec.fieldContext_User_mailMessageMetas(ctx, field)
 	case "mailBodyCaches":
 		return ec.fieldContext_User_mailBodyCaches(ctx, field)
+	case "mailSignals":
+		return ec.fieldContext_User_mailSignals(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 }
@@ -17452,6 +17553,208 @@ func (ec *executionContext) fieldContext_MailMessageMeta_user(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _MailSignal_id(ctx context.Context, field graphql.CollectedField, obj *ent.MailSignal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MailSignal_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v uuid.UUID) graphql.Marshaler {
+			return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MailSignal_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MailSignal", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _MailSignal_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.MailSignal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MailSignal_createdAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MailSignal_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MailSignal", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _MailSignal_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.MailSignal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MailSignal_updatedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MailSignal_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MailSignal", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _MailSignal_classification(ctx context.Context, field graphql.CollectedField, obj *ent.MailSignal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MailSignal_classification(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Classification, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MailSignal_classification(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MailSignal", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MailSignal_embeddingModel(ctx context.Context, field graphql.CollectedField, obj *ent.MailSignal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MailSignal_embeddingModel(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.EmbeddingModel, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MailSignal_embeddingModel(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MailSignal", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MailSignal_computedAt(ctx context.Context, field graphql.CollectedField, obj *ent.MailSignal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MailSignal_computedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ComputedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MailSignal_computedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MailSignal", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _MailSignal_thread(ctx context.Context, field graphql.CollectedField, obj *ent.MailSignal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MailSignal_thread(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Thread(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.MailThread) graphql.Marshaler {
+			return ec.marshalNMailThread2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailThread(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MailSignal_thread(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MailSignal",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_MailThread(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MailSignal_user(ctx context.Context, field graphql.CollectedField, obj *ent.MailSignal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MailSignal_user(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.User(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.User) graphql.Marshaler {
+			return ec.marshalNUser2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐUser(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MailSignal_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MailSignal",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_User(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MailThread_id(ctx context.Context, field graphql.CollectedField, obj *ent.MailThread) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -17865,6 +18168,38 @@ func (ec *executionContext) fieldContext_MailThread_messages(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_MailMessageMeta(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MailThread_signal(ctx context.Context, field graphql.CollectedField, obj *ent.MailThread) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MailThread_signal(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Signal(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.MailSignal) graphql.Marshaler {
+			return ec.marshalOMailSignal2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignal(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MailThread_signal(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MailThread",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_MailSignal(ctx, field)
 		},
 	}
 	return fc, nil
@@ -24616,6 +24951,38 @@ func (ec *executionContext) fieldContext_User_mailBodyCaches(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_MailBodyCache(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_mailSignals(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_User_mailSignals(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.MailSignals(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*ent.MailSignal) graphql.Marshaler {
+			return ec.marshalOMailSignal2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_User_mailSignals(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_MailSignal(ctx, field)
 		},
 	}
 	return fc, nil
@@ -50389,6 +50756,498 @@ func (ec *executionContext) unmarshalInputMailMessageMetaWhereInput(ctx context.
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputMailSignalWhereInput(ctx context.Context, obj any) (ent.MailSignalWhereInput, error) {
+	var it ent.MailSignalWhereInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "classification", "classificationNEQ", "classificationIn", "classificationNotIn", "classificationGT", "classificationGTE", "classificationLT", "classificationLTE", "classificationContains", "classificationHasPrefix", "classificationHasSuffix", "classificationEqualFold", "classificationContainsFold", "embeddingModel", "embeddingModelNEQ", "embeddingModelIn", "embeddingModelNotIn", "embeddingModelGT", "embeddingModelGTE", "embeddingModelLT", "embeddingModelLTE", "embeddingModelContains", "embeddingModelHasPrefix", "embeddingModelHasSuffix", "embeddingModelIsNil", "embeddingModelNotNil", "embeddingModelEqualFold", "embeddingModelContainsFold", "computedAt", "computedAtNEQ", "computedAtIn", "computedAtNotIn", "computedAtGT", "computedAtGTE", "computedAtLT", "computedAtLTE", "hasThread", "hasThreadWith", "hasUser", "hasUserWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalOMailSignalWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalOMailSignalWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalOMailSignalWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNEQ = data
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDIn = data
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNotIn = data
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGT = data
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGTE = data
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLT = data
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLTE = data
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "updatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNEQ = data
+		case "updatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtIn = data
+		case "updatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNotIn = data
+		case "updatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGT = data
+		case "updatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGTE = data
+		case "updatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLT = data
+		case "updatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLTE = data
+		case "classification":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classification"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Classification = data
+		case "classificationNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationNEQ = data
+		case "classificationIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationIn = data
+		case "classificationNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationNotIn = data
+		case "classificationGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationGT = data
+		case "classificationGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationGTE = data
+		case "classificationLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationLT = data
+		case "classificationLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationLTE = data
+		case "classificationContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationContains = data
+		case "classificationHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationHasPrefix = data
+		case "classificationHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationHasSuffix = data
+		case "classificationEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationEqualFold = data
+		case "classificationContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationContainsFold = data
+		case "embeddingModel":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModel"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModel = data
+		case "embeddingModelNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelNEQ = data
+		case "embeddingModelIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelIn = data
+		case "embeddingModelNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelNotIn = data
+		case "embeddingModelGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelGT = data
+		case "embeddingModelGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelGTE = data
+		case "embeddingModelLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelLT = data
+		case "embeddingModelLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelLTE = data
+		case "embeddingModelContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelContains = data
+		case "embeddingModelHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelHasPrefix = data
+		case "embeddingModelHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelHasSuffix = data
+		case "embeddingModelIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelIsNil = data
+		case "embeddingModelNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelNotNil = data
+		case "embeddingModelEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelEqualFold = data
+		case "embeddingModelContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("embeddingModelContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmbeddingModelContainsFold = data
+		case "computedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("computedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ComputedAt = data
+		case "computedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("computedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ComputedAtNEQ = data
+		case "computedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("computedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ComputedAtIn = data
+		case "computedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("computedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ComputedAtNotIn = data
+		case "computedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("computedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ComputedAtGT = data
+		case "computedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("computedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ComputedAtGTE = data
+		case "computedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("computedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ComputedAtLT = data
+		case "computedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("computedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ComputedAtLTE = data
+		case "hasThread":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasThread"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasThread = data
+		case "hasThreadWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasThreadWith"))
+			data, err := ec.unmarshalOMailThreadWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailThreadWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasThreadWith = data
+		case "hasUser":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUser"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasUser = data
+		case "hasUserWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUserWith"))
+			data, err := ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasUserWith = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputMailThreadWhereInput(ctx context.Context, obj any) (ent.MailThreadWhereInput, error) {
 	var it ent.MailThreadWhereInput
 	if obj == nil {
@@ -50400,7 +51259,7 @@ func (ec *executionContext) unmarshalInputMailThreadWhereInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerEqualFold", "providerContainsFold", "providerThreadID", "providerThreadIDNEQ", "providerThreadIDIn", "providerThreadIDNotIn", "providerThreadIDGT", "providerThreadIDGTE", "providerThreadIDLT", "providerThreadIDLTE", "providerThreadIDContains", "providerThreadIDHasPrefix", "providerThreadIDHasSuffix", "providerThreadIDEqualFold", "providerThreadIDContainsFold", "subject", "subjectNEQ", "subjectIn", "subjectNotIn", "subjectGT", "subjectGTE", "subjectLT", "subjectLTE", "subjectContains", "subjectHasPrefix", "subjectHasSuffix", "subjectIsNil", "subjectNotNil", "subjectEqualFold", "subjectContainsFold", "accountDomain", "accountDomainNEQ", "accountDomainIn", "accountDomainNotIn", "accountDomainGT", "accountDomainGTE", "accountDomainLT", "accountDomainLTE", "accountDomainContains", "accountDomainHasPrefix", "accountDomainHasSuffix", "accountDomainIsNil", "accountDomainNotNil", "accountDomainEqualFold", "accountDomainContainsFold", "replyState", "replyStateNEQ", "replyStateIn", "replyStateNotIn", "replyStateGT", "replyStateGTE", "replyStateLT", "replyStateLTE", "replyStateContains", "replyStateHasPrefix", "replyStateHasSuffix", "replyStateEqualFold", "replyStateContainsFold", "lastDirection", "lastDirectionNEQ", "lastDirectionIn", "lastDirectionNotIn", "lastDirectionGT", "lastDirectionGTE", "lastDirectionLT", "lastDirectionLTE", "lastDirectionContains", "lastDirectionHasPrefix", "lastDirectionHasSuffix", "lastDirectionIsNil", "lastDirectionNotNil", "lastDirectionEqualFold", "lastDirectionContainsFold", "lastActivityAt", "lastActivityAtNEQ", "lastActivityAtIn", "lastActivityAtNotIn", "lastActivityAtGT", "lastActivityAtGTE", "lastActivityAtLT", "lastActivityAtLTE", "lastActivityAtIsNil", "lastActivityAtNotNil", "messageCount", "messageCountNEQ", "messageCountIn", "messageCountNotIn", "messageCountGT", "messageCountGTE", "messageCountLT", "messageCountLTE", "outboundCount", "outboundCountNEQ", "outboundCountIn", "outboundCountNotIn", "outboundCountGT", "outboundCountGTE", "outboundCountLT", "outboundCountLTE", "inboundCount", "inboundCountNEQ", "inboundCountIn", "inboundCountNotIn", "inboundCountGT", "inboundCountGTE", "inboundCountLT", "inboundCountLTE", "hasUser", "hasUserWith", "hasRelationship", "hasRelationshipWith", "hasMessages", "hasMessagesWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerEqualFold", "providerContainsFold", "providerThreadID", "providerThreadIDNEQ", "providerThreadIDIn", "providerThreadIDNotIn", "providerThreadIDGT", "providerThreadIDGTE", "providerThreadIDLT", "providerThreadIDLTE", "providerThreadIDContains", "providerThreadIDHasPrefix", "providerThreadIDHasSuffix", "providerThreadIDEqualFold", "providerThreadIDContainsFold", "subject", "subjectNEQ", "subjectIn", "subjectNotIn", "subjectGT", "subjectGTE", "subjectLT", "subjectLTE", "subjectContains", "subjectHasPrefix", "subjectHasSuffix", "subjectIsNil", "subjectNotNil", "subjectEqualFold", "subjectContainsFold", "accountDomain", "accountDomainNEQ", "accountDomainIn", "accountDomainNotIn", "accountDomainGT", "accountDomainGTE", "accountDomainLT", "accountDomainLTE", "accountDomainContains", "accountDomainHasPrefix", "accountDomainHasSuffix", "accountDomainIsNil", "accountDomainNotNil", "accountDomainEqualFold", "accountDomainContainsFold", "replyState", "replyStateNEQ", "replyStateIn", "replyStateNotIn", "replyStateGT", "replyStateGTE", "replyStateLT", "replyStateLTE", "replyStateContains", "replyStateHasPrefix", "replyStateHasSuffix", "replyStateEqualFold", "replyStateContainsFold", "lastDirection", "lastDirectionNEQ", "lastDirectionIn", "lastDirectionNotIn", "lastDirectionGT", "lastDirectionGTE", "lastDirectionLT", "lastDirectionLTE", "lastDirectionContains", "lastDirectionHasPrefix", "lastDirectionHasSuffix", "lastDirectionIsNil", "lastDirectionNotNil", "lastDirectionEqualFold", "lastDirectionContainsFold", "lastActivityAt", "lastActivityAtNEQ", "lastActivityAtIn", "lastActivityAtNotIn", "lastActivityAtGT", "lastActivityAtGTE", "lastActivityAtLT", "lastActivityAtLTE", "lastActivityAtIsNil", "lastActivityAtNotNil", "messageCount", "messageCountNEQ", "messageCountIn", "messageCountNotIn", "messageCountGT", "messageCountGTE", "messageCountLT", "messageCountLTE", "outboundCount", "outboundCountNEQ", "outboundCountIn", "outboundCountNotIn", "outboundCountGT", "outboundCountGTE", "outboundCountLT", "outboundCountLTE", "inboundCount", "inboundCountNEQ", "inboundCountIn", "inboundCountNotIn", "inboundCountGT", "inboundCountGTE", "inboundCountLT", "inboundCountLTE", "hasUser", "hasUserWith", "hasRelationship", "hasRelationshipWith", "hasMessages", "hasMessagesWith", "hasSignal", "hasSignalWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -51464,6 +52323,20 @@ func (ec *executionContext) unmarshalInputMailThreadWhereInput(ctx context.Conte
 				return it, err
 			}
 			it.HasMessagesWith = data
+		case "hasSignal":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSignal"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasSignal = data
+		case "hasSignalWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSignalWith"))
+			data, err := ec.unmarshalOMailSignalWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasSignalWith = data
 		}
 	}
 	return it, nil
@@ -63950,7 +64823,7 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailIsNil", "emailNotNil", "emailEqualFold", "emailContainsFold", "workosUserID", "workosUserIDNEQ", "workosUserIDIn", "workosUserIDNotIn", "workosUserIDGT", "workosUserIDGTE", "workosUserIDLT", "workosUserIDLTE", "workosUserIDContains", "workosUserIDHasPrefix", "workosUserIDHasSuffix", "workosUserIDEqualFold", "workosUserIDContainsFold", "workosOrgID", "workosOrgIDNEQ", "workosOrgIDIn", "workosOrgIDNotIn", "workosOrgIDGT", "workosOrgIDGTE", "workosOrgIDLT", "workosOrgIDLTE", "workosOrgIDContains", "workosOrgIDHasPrefix", "workosOrgIDHasSuffix", "workosOrgIDIsNil", "workosOrgIDNotNil", "workosOrgIDEqualFold", "workosOrgIDContainsFold", "hasSubscription", "hasSubscriptionWith", "hasLedgerEntries", "hasLedgerEntriesWith", "hasMeetingMinuteUsages", "hasMeetingMinuteUsagesWith", "hasLlmUsages", "hasLlmUsagesWith", "hasOauthConnections", "hasOauthConnectionsWith", "hasMcpConnections", "hasMcpConnectionsWith", "hasBackgroundTasks", "hasBackgroundTasksWith", "hasBackgroundTaskArtifacts", "hasBackgroundTaskArtifactsWith", "hasBackgroundTaskRuns", "hasBackgroundTaskRunsWith", "hasBackgroundTaskRunEvents", "hasBackgroundTaskRunEventsWith", "hasBackgroundTaskScheduleStates", "hasBackgroundTaskScheduleStatesWith", "hasCloudEvents", "hasCloudEventsWith", "hasGoogleWatches", "hasGoogleWatchesWith", "hasAgentDefinitions", "hasAgentDefinitionsWith", "hasAgentSessions", "hasAgentSessionsWith", "hasAgentTurns", "hasAgentTurnsWith", "hasAgentSessionEvents", "hasAgentSessionEventsWith", "hasAgentToolCalls", "hasAgentToolCallsWith", "hasAgentApprovals", "hasAgentApprovalsWith", "hasAgentToolResultBlobs", "hasAgentToolResultBlobsWith", "hasRevenueWorkspaces", "hasRevenueWorkspacesWith", "hasRevenueWorkspaceMembers", "hasRevenueWorkspaceMembersWith", "hasRelationships", "hasRelationshipsWith", "hasRevenueEvidences", "hasRevenueEvidencesWith", "hasCommitments", "hasCommitmentsWith", "hasRevenueActions", "hasRevenueActionsWith", "hasRevenueActionRevisions", "hasRevenueActionRevisionsWith", "hasPolicyDecisionSnapshots", "hasPolicyDecisionSnapshotsWith", "hasActionOutcomes", "hasActionOutcomesWith", "hasRevenueOutboxEvents", "hasRevenueOutboxEventsWith", "hasRevenueLeakScans", "hasRevenueLeakScansWith", "hasMailThreads", "hasMailThreadsWith", "hasMailMessageMetas", "hasMailMessageMetasWith", "hasMailBodyCaches", "hasMailBodyCachesWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailIsNil", "emailNotNil", "emailEqualFold", "emailContainsFold", "workosUserID", "workosUserIDNEQ", "workosUserIDIn", "workosUserIDNotIn", "workosUserIDGT", "workosUserIDGTE", "workosUserIDLT", "workosUserIDLTE", "workosUserIDContains", "workosUserIDHasPrefix", "workosUserIDHasSuffix", "workosUserIDEqualFold", "workosUserIDContainsFold", "workosOrgID", "workosOrgIDNEQ", "workosOrgIDIn", "workosOrgIDNotIn", "workosOrgIDGT", "workosOrgIDGTE", "workosOrgIDLT", "workosOrgIDLTE", "workosOrgIDContains", "workosOrgIDHasPrefix", "workosOrgIDHasSuffix", "workosOrgIDIsNil", "workosOrgIDNotNil", "workosOrgIDEqualFold", "workosOrgIDContainsFold", "hasSubscription", "hasSubscriptionWith", "hasLedgerEntries", "hasLedgerEntriesWith", "hasMeetingMinuteUsages", "hasMeetingMinuteUsagesWith", "hasLlmUsages", "hasLlmUsagesWith", "hasOauthConnections", "hasOauthConnectionsWith", "hasMcpConnections", "hasMcpConnectionsWith", "hasBackgroundTasks", "hasBackgroundTasksWith", "hasBackgroundTaskArtifacts", "hasBackgroundTaskArtifactsWith", "hasBackgroundTaskRuns", "hasBackgroundTaskRunsWith", "hasBackgroundTaskRunEvents", "hasBackgroundTaskRunEventsWith", "hasBackgroundTaskScheduleStates", "hasBackgroundTaskScheduleStatesWith", "hasCloudEvents", "hasCloudEventsWith", "hasGoogleWatches", "hasGoogleWatchesWith", "hasAgentDefinitions", "hasAgentDefinitionsWith", "hasAgentSessions", "hasAgentSessionsWith", "hasAgentTurns", "hasAgentTurnsWith", "hasAgentSessionEvents", "hasAgentSessionEventsWith", "hasAgentToolCalls", "hasAgentToolCallsWith", "hasAgentApprovals", "hasAgentApprovalsWith", "hasAgentToolResultBlobs", "hasAgentToolResultBlobsWith", "hasRevenueWorkspaces", "hasRevenueWorkspacesWith", "hasRevenueWorkspaceMembers", "hasRevenueWorkspaceMembersWith", "hasRelationships", "hasRelationshipsWith", "hasRevenueEvidences", "hasRevenueEvidencesWith", "hasCommitments", "hasCommitmentsWith", "hasRevenueActions", "hasRevenueActionsWith", "hasRevenueActionRevisions", "hasRevenueActionRevisionsWith", "hasPolicyDecisionSnapshots", "hasPolicyDecisionSnapshotsWith", "hasActionOutcomes", "hasActionOutcomesWith", "hasRevenueOutboxEvents", "hasRevenueOutboxEventsWith", "hasRevenueLeakScans", "hasRevenueLeakScansWith", "hasMailThreads", "hasMailThreadsWith", "hasMailMessageMetas", "hasMailMessageMetasWith", "hasMailBodyCaches", "hasMailBodyCachesWith", "hasMailSignals", "hasMailSignalsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -64923,6 +65796,20 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.HasMailBodyCachesWith = data
+		case "hasMailSignals":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasMailSignals"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasMailSignals = data
+		case "hasMailSignalsWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasMailSignalsWith"))
+			data, err := ec.unmarshalOMailSignalWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasMailSignalsWith = data
 		}
 	}
 	return it, nil
@@ -65006,6 +65893,11 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._MailThread(ctx, sel, obj)
+	case *ent.MailSignal:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._MailSignal(ctx, sel, obj)
 	case *ent.MailMessageMeta:
 		if obj == nil {
 			return graphql.Null
@@ -69672,6 +70564,139 @@ func (ec *executionContext) _MailMessageMeta(ctx context.Context, sel ast.Select
 	return out
 }
 
+var mailSignalImplementors = []string{"MailSignal", "Node"}
+
+func (ec *executionContext) _MailSignal(ctx context.Context, sel ast.SelectionSet, obj *ent.MailSignal) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mailSignalImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MailSignal")
+		case "id":
+			out.Values[i] = ec._MailSignal_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._MailSignal_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._MailSignal_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "classification":
+			out.Values[i] = ec._MailSignal_classification(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "embeddingModel":
+			out.Values[i] = ec._MailSignal_embeddingModel(ctx, field, obj)
+		case "computedAt":
+			out.Values[i] = ec._MailSignal_computedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "thread":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MailSignal_thread(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MailSignal_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mailThreadImplementors = []string{"MailThread", "Node"}
 
 func (ec *executionContext) _MailThread(ctx context.Context, sel ast.SelectionSet, obj *ent.MailThread) graphql.Marshaler {
@@ -69820,6 +70845,39 @@ func (ec *executionContext) _MailThread(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._MailThread_messages(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "signal":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MailThread_signal(ctx, field, obj)
 				return res
 			}
 
@@ -73821,6 +74879,39 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "mailSignals":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_mailSignals(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -74842,6 +75933,21 @@ func (ec *executionContext) marshalNMailMessageMeta2ᚖgithubᚗcomᚋOppulence�
 
 func (ec *executionContext) unmarshalNMailMessageMetaWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailMessageMetaWhereInput(ctx context.Context, v any) (*ent.MailMessageMetaWhereInput, error) {
 	res, err := ec.unmarshalInputMailMessageMetaWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMailSignal2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignal(ctx context.Context, sel ast.SelectionSet, v *ent.MailSignal) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MailSignal(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNMailSignalWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalWhereInput(ctx context.Context, v any) (*ent.MailSignalWhereInput, error) {
+	res, err := ec.unmarshalInputMailSignalWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -76835,6 +77941,58 @@ func (ec *executionContext) unmarshalOMailMessageMetaWhereInput2ᚖgithubᚗcom�
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputMailMessageMetaWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMailSignal2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.MailSignal) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNMailSignal2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignal(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOMailSignal2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignal(ctx context.Context, sel ast.SelectionSet, v *ent.MailSignal) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MailSignal(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOMailSignalWhereInput2ᚕᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalWhereInputᚄ(ctx context.Context, v any) ([]*ent.MailSignalWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.MailSignalWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNMailSignalWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOMailSignalWhereInput2ᚖgithubᚗcomᚋOppulenceᚑEngineeringᚋrowboatᚋappsᚋrowboatᚑapiᚋentᚐMailSignalWhereInput(ctx context.Context, v any) (*ent.MailSignalWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputMailSignalWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

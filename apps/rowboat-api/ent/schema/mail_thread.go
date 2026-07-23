@@ -54,6 +54,9 @@ func (MailThread) Edges() []ent.Edge {
 		edge.From("relationship", Relationship.Type).Ref("mail_threads").Unique(),
 		edge.To("messages", MailMessageMeta.Type).
 			StorageKey(edge.Column("mail_thread_id")),
+		edge.To("signal", MailSignal.Type).
+			Unique().
+			StorageKey(edge.Column("mail_thread_id")),
 	}
 }
 

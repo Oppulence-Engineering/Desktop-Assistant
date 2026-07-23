@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AddressBook, CircleNotch, Plus } from "@phosphor-icons/react";
+import { AddressBook, CircleNotch, MagnifyingGlass, Plus, Sparkle } from "@phosphor-icons/react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ import {
   listRelationships,
   RELATIONSHIP_KIND_LABELS,
   relativeTime,
+  semanticSearch,
+  type SemanticMatch,
 } from "@/lib/revenue";
 import { EmptyBlock, errMessage, ListSkeleton, ModeChip } from "@/components/revenue/shared";
 import type { RelationshipDetail, RevenueRelationship } from "@/types/revenue";
@@ -78,6 +80,7 @@ export function RelationshipsView({
 
   return (
     <div className="flex flex-col gap-4">
+      <SemanticSearch onError={onError} />
       <div className="flex items-center justify-between">
         <span className="text-xs text-primary/45">{rows.length} relationships</span>
         <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
@@ -159,6 +162,81 @@ export function RelationshipsView({
         />
       ) : null}
     </div>
+  );
+}
+
+// SemanticSearch is the RFC 031 Layer-2 recall box. It quietly hides itself
+// when semantic memory is not configured on the backend.
+function SemanticSearch({ onError }: { onError: (m: string) => void }) {
+  const [query, setQuery] = React.useState("");
+  const [matches, setMatches] = React.useState<SemanticMatch[] | null>(null);
+  const [busy, setBusy] = React.useState(false);
+  const [unavailable, setUnavailable] = React.useState(false);
+
+  if (unavailable) return null;
+
+  const run = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    setBusy(true);
+    onError("");
+    try {
+      const res = await semanticSearch(query.trim());
+      if (!res.available) {
+        setUnavailable(true);
+        return;
+      }
+      setMatches(res.matches);
+    } catch (err) {
+      onError(errMessage(err, "Search failed."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={run} className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-primary/40" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search your relationships in plain language — e.g. 'proposals waiting on pricing'"
+            className="pl-8"
+          />
+        </div>
+        <Button type="submit" size="sm" disabled={busy || !query.trim()}>
+          {busy ? <CircleNotch className="animate-spin" /> : <Sparkle />} Search
+        </Button>
+      </div>
+      {matches !== null ? (
+        matches.length === 0 ? (
+          <p className="text-xs text-primary/45">No matches.</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
+            {matches.map((m) => (
+              <li key={m.threadId} className="flex items-center gap-3 px-3 py-2">
+                <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
+                  {m.classification}
+                </Badge>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm text-primary/80">
+                    {m.subject || m.counterparty}
+                  </div>
+                  {m.summary ? (
+                    <div className="truncate text-xs text-primary/45">{m.summary}</div>
+                  ) : null}
+                </div>
+                <span className="shrink-0 text-xs tabular-nums text-primary/40">
+                  {Math.round(m.score * 100)}%
+                </span>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : null}
+    </form>
   );
 }
 

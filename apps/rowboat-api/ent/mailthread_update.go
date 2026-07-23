@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -301,6 +302,25 @@ func (_u *MailThreadUpdate) AddMessages(v ...*MailMessageMeta) *MailThreadUpdate
 	return _u.AddMessageIDs(ids...)
 }
 
+// SetSignalID sets the "signal" edge to the MailSignal entity by ID.
+func (_u *MailThreadUpdate) SetSignalID(id uuid.UUID) *MailThreadUpdate {
+	_u.mutation.SetSignalID(id)
+	return _u
+}
+
+// SetNillableSignalID sets the "signal" edge to the MailSignal entity by ID if the given value is not nil.
+func (_u *MailThreadUpdate) SetNillableSignalID(id *uuid.UUID) *MailThreadUpdate {
+	if id != nil {
+		_u = _u.SetSignalID(*id)
+	}
+	return _u
+}
+
+// SetSignal sets the "signal" edge to the MailSignal entity.
+func (_u *MailThreadUpdate) SetSignal(v *MailSignal) *MailThreadUpdate {
+	return _u.SetSignalID(v.ID)
+}
+
 // Mutation returns the MailThreadMutation object of the builder.
 func (_u *MailThreadUpdate) Mutation() *MailThreadMutation {
 	return _u.mutation
@@ -337,6 +357,12 @@ func (_u *MailThreadUpdate) RemoveMessages(v ...*MailMessageMeta) *MailThreadUpd
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMessageIDs(ids...)
+}
+
+// ClearSignal clears the "signal" edge to the MailSignal entity.
+func (_u *MailThreadUpdate) ClearSignal() *MailThreadUpdate {
+	_u.mutation.ClearSignal()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -594,6 +620,35 @@ func (_u *MailThreadUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailmessagemeta.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SignalCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   mailthread.SignalTable,
+			Columns: []string{mailthread.SignalColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SignalIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   mailthread.SignalTable,
+			Columns: []string{mailthread.SignalColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -889,6 +944,25 @@ func (_u *MailThreadUpdateOne) AddMessages(v ...*MailMessageMeta) *MailThreadUpd
 	return _u.AddMessageIDs(ids...)
 }
 
+// SetSignalID sets the "signal" edge to the MailSignal entity by ID.
+func (_u *MailThreadUpdateOne) SetSignalID(id uuid.UUID) *MailThreadUpdateOne {
+	_u.mutation.SetSignalID(id)
+	return _u
+}
+
+// SetNillableSignalID sets the "signal" edge to the MailSignal entity by ID if the given value is not nil.
+func (_u *MailThreadUpdateOne) SetNillableSignalID(id *uuid.UUID) *MailThreadUpdateOne {
+	if id != nil {
+		_u = _u.SetSignalID(*id)
+	}
+	return _u
+}
+
+// SetSignal sets the "signal" edge to the MailSignal entity.
+func (_u *MailThreadUpdateOne) SetSignal(v *MailSignal) *MailThreadUpdateOne {
+	return _u.SetSignalID(v.ID)
+}
+
 // Mutation returns the MailThreadMutation object of the builder.
 func (_u *MailThreadUpdateOne) Mutation() *MailThreadMutation {
 	return _u.mutation
@@ -925,6 +999,12 @@ func (_u *MailThreadUpdateOne) RemoveMessages(v ...*MailMessageMeta) *MailThread
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMessageIDs(ids...)
+}
+
+// ClearSignal clears the "signal" edge to the MailSignal entity.
+func (_u *MailThreadUpdateOne) ClearSignal() *MailThreadUpdateOne {
+	_u.mutation.ClearSignal()
+	return _u
 }
 
 // Where appends a list predicates to the MailThreadUpdate builder.
@@ -1212,6 +1292,35 @@ func (_u *MailThreadUpdateOne) sqlSave(ctx context.Context) (_node *MailThread, 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailmessagemeta.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SignalCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   mailthread.SignalTable,
+			Columns: []string{mailthread.SignalColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SignalIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   mailthread.SignalTable,
+			Columns: []string{mailthread.SignalColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
