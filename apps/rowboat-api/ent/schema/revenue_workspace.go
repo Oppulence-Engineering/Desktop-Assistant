@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 )
@@ -73,5 +74,16 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("scans", RevenueLeakScan.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
+	}
+}
+
+// Indexes of the RevenueWorkspace.
+func (RevenueWorkspace) Indexes() []ent.Index {
+	return []ent.Index{
+		// One workspace per owner (founder-mode tenancy). This makes
+		// CurrentWorkspace's get-or-create race-safe: a concurrent first
+		// touch loses on the unique constraint and falls back to the winner's
+		// row instead of silently splitting the tenant into two workspaces.
+		index.Edges("user").Unique(),
 	}
 }

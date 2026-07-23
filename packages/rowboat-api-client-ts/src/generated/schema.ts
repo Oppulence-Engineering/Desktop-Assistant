@@ -9231,18 +9231,26 @@ export interface operations {
           /**
            * @description Action type.
            * @example warm_follow_up
+           * @enum {string}
            */
-          actionType?: string | null;
+          actionType?:
+            | "warm_follow_up"
+            | "proposal_nudge"
+            | "referral_reconnect"
+            | "customer_risk"
+            | "meeting_follow_up";
           /**
            * @description Channel.
            * @example email
+           * @enum {string}
            */
-          channel?: string | null;
+          channel?: "email" | "slack" | "call" | "crm_task";
           /**
            * @description Execution mode.
            * @example draft
+           * @enum {string}
            */
-          executionMode?: string | null;
+          executionMode?: "draft" | "send";
           /**
            * @description Proposed body.
            * @example Updated body
@@ -9281,6 +9289,7 @@ export interface operations {
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
+      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
       /** @description Execution already started; the action is immutable. */
