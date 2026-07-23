@@ -23588,6 +23588,18 @@ type RevenueWorkspaceWhereInput struct {
 	LastVerifiedAtIsNil  bool        `json:"lastVerifiedAtIsNil,omitempty"`
 	LastVerifiedAtNotNil bool        `json:"lastVerifiedAtNotNil,omitempty"`
 
+	// "last_digest_at" field predicates.
+	LastDigestAt       *time.Time  `json:"lastDigestAt,omitempty"`
+	LastDigestAtNEQ    *time.Time  `json:"lastDigestAtNEQ,omitempty"`
+	LastDigestAtIn     []time.Time `json:"lastDigestAtIn,omitempty"`
+	LastDigestAtNotIn  []time.Time `json:"lastDigestAtNotIn,omitempty"`
+	LastDigestAtGT     *time.Time  `json:"lastDigestAtGT,omitempty"`
+	LastDigestAtGTE    *time.Time  `json:"lastDigestAtGTE,omitempty"`
+	LastDigestAtLT     *time.Time  `json:"lastDigestAtLT,omitempty"`
+	LastDigestAtLTE    *time.Time  `json:"lastDigestAtLTE,omitempty"`
+	LastDigestAtIsNil  bool        `json:"lastDigestAtIsNil,omitempty"`
+	LastDigestAtNotNil bool        `json:"lastDigestAtNotNil,omitempty"`
+
 	// "user" edge predicates.
 	HasUser     *bool             `json:"hasUser,omitempty"`
 	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
@@ -24014,6 +24026,36 @@ func (i *RevenueWorkspaceWhereInput) P() (predicate.RevenueWorkspace, error) {
 	}
 	if i.LastVerifiedAtNotNil {
 		predicates = append(predicates, revenueworkspace.LastVerifiedAtNotNil())
+	}
+	if i.LastDigestAt != nil {
+		predicates = append(predicates, revenueworkspace.LastDigestAtEQ(*i.LastDigestAt))
+	}
+	if i.LastDigestAtNEQ != nil {
+		predicates = append(predicates, revenueworkspace.LastDigestAtNEQ(*i.LastDigestAtNEQ))
+	}
+	if len(i.LastDigestAtIn) > 0 {
+		predicates = append(predicates, revenueworkspace.LastDigestAtIn(i.LastDigestAtIn...))
+	}
+	if len(i.LastDigestAtNotIn) > 0 {
+		predicates = append(predicates, revenueworkspace.LastDigestAtNotIn(i.LastDigestAtNotIn...))
+	}
+	if i.LastDigestAtGT != nil {
+		predicates = append(predicates, revenueworkspace.LastDigestAtGT(*i.LastDigestAtGT))
+	}
+	if i.LastDigestAtGTE != nil {
+		predicates = append(predicates, revenueworkspace.LastDigestAtGTE(*i.LastDigestAtGTE))
+	}
+	if i.LastDigestAtLT != nil {
+		predicates = append(predicates, revenueworkspace.LastDigestAtLT(*i.LastDigestAtLT))
+	}
+	if i.LastDigestAtLTE != nil {
+		predicates = append(predicates, revenueworkspace.LastDigestAtLTE(*i.LastDigestAtLTE))
+	}
+	if i.LastDigestAtIsNil {
+		predicates = append(predicates, revenueworkspace.LastDigestAtIsNil())
+	}
+	if i.LastDigestAtNotNil {
+		predicates = append(predicates, revenueworkspace.LastDigestAtNotNil())
 	}
 
 	if i.HasUser != nil {

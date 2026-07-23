@@ -146,6 +146,20 @@ func (_c *RevenueWorkspaceCreate) SetNillableLastVerifiedAt(v *time.Time) *Reven
 	return _c
 }
 
+// SetLastDigestAt sets the "last_digest_at" field.
+func (_c *RevenueWorkspaceCreate) SetLastDigestAt(v time.Time) *RevenueWorkspaceCreate {
+	_c.mutation.SetLastDigestAt(v)
+	return _c
+}
+
+// SetNillableLastDigestAt sets the "last_digest_at" field if the given value is not nil.
+func (_c *RevenueWorkspaceCreate) SetNillableLastDigestAt(v *time.Time) *RevenueWorkspaceCreate {
+	if v != nil {
+		_c.SetLastDigestAt(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *RevenueWorkspaceCreate) SetID(v uuid.UUID) *RevenueWorkspaceCreate {
 	_c.mutation.SetID(v)
@@ -457,6 +471,10 @@ func (_c *RevenueWorkspaceCreate) createSpec() (*RevenueWorkspace, *sqlgraph.Cre
 	if value, ok := _c.mutation.LastVerifiedAt(); ok {
 		_spec.SetField(revenueworkspace.FieldLastVerifiedAt, field.TypeTime, value)
 		_node.LastVerifiedAt = &value
+	}
+	if value, ok := _c.mutation.LastDigestAt(); ok {
+		_spec.SetField(revenueworkspace.FieldLastDigestAt, field.TypeTime, value)
+		_node.LastDigestAt = &value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -779,6 +797,24 @@ func (u *RevenueWorkspaceUpsert) ClearLastVerifiedAt() *RevenueWorkspaceUpsert {
 	return u
 }
 
+// SetLastDigestAt sets the "last_digest_at" field.
+func (u *RevenueWorkspaceUpsert) SetLastDigestAt(v time.Time) *RevenueWorkspaceUpsert {
+	u.Set(revenueworkspace.FieldLastDigestAt, v)
+	return u
+}
+
+// UpdateLastDigestAt sets the "last_digest_at" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsert) UpdateLastDigestAt() *RevenueWorkspaceUpsert {
+	u.SetExcluded(revenueworkspace.FieldLastDigestAt)
+	return u
+}
+
+// ClearLastDigestAt clears the value of the "last_digest_at" field.
+func (u *RevenueWorkspaceUpsert) ClearLastDigestAt() *RevenueWorkspaceUpsert {
+	u.SetNull(revenueworkspace.FieldLastDigestAt)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -953,6 +989,27 @@ func (u *RevenueWorkspaceUpsertOne) UpdateLastVerifiedAt() *RevenueWorkspaceUpse
 func (u *RevenueWorkspaceUpsertOne) ClearLastVerifiedAt() *RevenueWorkspaceUpsertOne {
 	return u.Update(func(s *RevenueWorkspaceUpsert) {
 		s.ClearLastVerifiedAt()
+	})
+}
+
+// SetLastDigestAt sets the "last_digest_at" field.
+func (u *RevenueWorkspaceUpsertOne) SetLastDigestAt(v time.Time) *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.SetLastDigestAt(v)
+	})
+}
+
+// UpdateLastDigestAt sets the "last_digest_at" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsertOne) UpdateLastDigestAt() *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.UpdateLastDigestAt()
+	})
+}
+
+// ClearLastDigestAt clears the value of the "last_digest_at" field.
+func (u *RevenueWorkspaceUpsertOne) ClearLastDigestAt() *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.ClearLastDigestAt()
 	})
 }
 
@@ -1297,6 +1354,27 @@ func (u *RevenueWorkspaceUpsertBulk) UpdateLastVerifiedAt() *RevenueWorkspaceUps
 func (u *RevenueWorkspaceUpsertBulk) ClearLastVerifiedAt() *RevenueWorkspaceUpsertBulk {
 	return u.Update(func(s *RevenueWorkspaceUpsert) {
 		s.ClearLastVerifiedAt()
+	})
+}
+
+// SetLastDigestAt sets the "last_digest_at" field.
+func (u *RevenueWorkspaceUpsertBulk) SetLastDigestAt(v time.Time) *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.SetLastDigestAt(v)
+	})
+}
+
+// UpdateLastDigestAt sets the "last_digest_at" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsertBulk) UpdateLastDigestAt() *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.UpdateLastDigestAt()
+	})
+}
+
+// ClearLastDigestAt clears the value of the "last_digest_at" field.
+func (u *RevenueWorkspaceUpsertBulk) ClearLastDigestAt() *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.ClearLastDigestAt()
 	})
 }
 

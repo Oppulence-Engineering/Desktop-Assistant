@@ -399,6 +399,19 @@ type Config struct {
 	RevenueAutoScanMinInterval  time.Duration
 	RevenueAutoScanMaxPerCycle  int
 	RevenueAutoScanLookbackDays int
+
+	// Proactive digest (RFC 030). Ships dark behind RevenueDigestEnabled and
+	// requires a configured email provider. Emails each user with open
+	// actions a summary no more often than RevenueDigestMinInterval.
+	RevenueDigestEnabled     bool
+	RevenueDigestInterval    time.Duration
+	RevenueDigestMinInterval time.Duration
+	RevenueDigestMaxPerCycle int
+
+	// Transactional email provider (Resend). An empty ResendAPIKey disables
+	// all outbound email (the sender becomes a fail-closed no-op).
+	ResendAPIKey string
+	EmailFrom    string
 }
 
 // AgentSigningSecret resolves the HMAC signing key for agent-runtime tokens:
@@ -673,6 +686,12 @@ func Load() Config {
 		RevenueAutoScanMinInterval:  getdur("REVENUE_AUTO_SCAN_MIN_INTERVAL", 24*time.Hour),
 		RevenueAutoScanMaxPerCycle:  getint("REVENUE_AUTO_SCAN_MAX_PER_CYCLE", 200),
 		RevenueAutoScanLookbackDays: getint("REVENUE_AUTO_SCAN_LOOKBACK_DAYS", 90),
+		RevenueDigestEnabled:        getbool("REVENUE_DIGEST_ENABLED", false),
+		RevenueDigestInterval:       getdur("REVENUE_DIGEST_INTERVAL", time.Hour),
+		RevenueDigestMinInterval:    getdur("REVENUE_DIGEST_MIN_INTERVAL", 7*24*time.Hour),
+		RevenueDigestMaxPerCycle:    getint("REVENUE_DIGEST_MAX_PER_CYCLE", 200),
+		ResendAPIKey:                getenv("RESEND_API_KEY", ""),
+		EmailFrom:                   getenv("EMAIL_FROM", "Oppulence <digest@oppulence.io>"),
 		RevenueFacadeBaseURL:        getenv("REVENUE_FACADE_BASE_URL", ""),
 		RevenueFacadeServiceToken:   getenv("REVENUE_FACADE_SERVICE_TOKEN", ""),
 		RevenueFacadeTimeout:        getdur("REVENUE_FACADE_TIMEOUT", 15*time.Second),

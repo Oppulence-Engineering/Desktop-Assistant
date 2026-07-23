@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/email"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
@@ -117,6 +118,14 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 		}
 	}
 
+	// Proactive digest emails (RFC 030). Ships dark behind
+	// REVENUE_DIGEST_ENABLED and needs a configured email provider.
+	if cfg.RevenueDigestEnabled {
+		if err := startRevenueDigest(ctx, cfg, log, database); err != nil {
+			log.Warn("revenue digest not started", zap.Error(err))
+		}
+	}
+
 	if cfg.GoogleWatchEnabled {
 		watchMgr, werr := buildWatchManager(ctx, cfg, log, database)
 		if werr != nil {
@@ -194,6 +203,32 @@ func startRevenueAutoScan(ctx context.Context, cfg appconfig.Config, log *zap.Lo
 		LookbackDays: cfg.RevenueAutoScanLookbackDays,
 	}, log)
 	go func() { _ = scanner.Run(ctx) }()
+	return nil
+}
+
+// startRevenueDigest builds the revenue service and email provider, then runs
+// the proactive-digest sweeper until the context is cancelled.
+func startRevenueDigest(ctx context.Context, cfg appconfig.Config, log *zap.Logger, database *db.DB) error {
+	sec := secrets.NewFromConfig(cfg)
+	if err := sec.LoadInfisical(ctx, cfg); err != nil {
+		if cfg.InfisicalEnabled && cfg.IsProduction() {
+			return fmt.Errorf("infisical secret load failed in production: %w", err)
+		}
+		log.Warn("infisical load failed; using env vendor keys", zap.Error(err))
+	}
+	sender := email.NewResend(email.ResendConfig{APIKey: cfg.ResendAPIKey, From: cfg.EmailFrom})
+	if !sender.Enabled() {
+		log.Warn("revenue digest enabled but no email provider configured (RESEND_API_KEY/EMAIL_FROM)")
+		return nil
+	}
+	svc := revenue.NewService(database.Client, nil, nil, log)
+	digest := revenue.NewDigestSender(svc, sender, revenue.DigestConfig{
+		Interval:    cfg.RevenueDigestInterval,
+		MinPerUser:  cfg.RevenueDigestMinInterval,
+		MaxPerCycle: cfg.RevenueDigestMaxPerCycle,
+		AppURL:      cfg.AppURL,
+	}, log)
+	go func() { _ = digest.Run(ctx) }()
 	return nil
 }
 

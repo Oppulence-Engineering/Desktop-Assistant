@@ -1244,6 +1244,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/revenue-digest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preview the proactive digest
+     * @description Returns the digest content the scheduled email is built from: the top open loops and running impact counts.
+     */
+    get: operations["getRevenueDigest"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/revenue-impact": {
     parameters: {
       query?: never;
@@ -4893,6 +4913,58 @@ export interface components {
       updated_at: string;
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
+    };
+    /** @description The proactive digest content: the top open loops plus running impact counts. This is what the scheduled digest email is built from. */
+    RevenueDigest: {
+      /**
+       * Format: date-time
+       * @description When composed.
+       * @example 2026-07-23T09:00:00Z
+       */
+      generatedAt: string;
+      /**
+       * @description Actions handled.
+       * @example 20
+       */
+      handled?: number;
+      /**
+       * @description Meetings booked.
+       * @example 2
+       */
+      meetingsBooked?: number;
+      /**
+       * @description Total open actions.
+       * @example 8
+       */
+      openCount: number;
+      /**
+       * @description Replies observed.
+       * @example 6
+       */
+      replied?: number;
+      /** @description Highest-priority open loops. */
+      top?: {
+        /**
+         * @description Human detector label.
+         * @example Unanswered proposal
+         */
+        detector?: string;
+        /**
+         * @description Priority score.
+         * @example 82
+         */
+        priority?: number;
+        /**
+         * @description Evidence-backed reason.
+         * @example You sent a proposal 10 days ago with no reply.
+         */
+        reason?: string;
+        /**
+         * @description Recipient email.
+         * @example buyer@example.com
+         */
+        recipient?: string;
+      }[];
     };
     RevenueEvidence: {
       actions?: components["schemas"]["RevenueAction"][];
@@ -9669,6 +9741,27 @@ export interface operations {
       400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
+    };
+  };
+  getRevenueDigest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Digest content. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueDigest"];
+        };
+      };
+      401: components["responses"]["401"];
     };
   };
   getRevenueImpact: {

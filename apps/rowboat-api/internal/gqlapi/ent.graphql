@@ -7672,6 +7672,7 @@ type RevenueWorkspace implements Node {
   mode: String!
   status: String!
   lastVerifiedAt: Time
+  lastDigestAt: Time
   user: User!
   members: [RevenueWorkspaceMember!]
   relationships: [Relationship!]
@@ -7935,6 +7936,19 @@ input RevenueWorkspaceWhereInput {
   lastVerifiedAtLTE: Time
   lastVerifiedAtIsNil: Boolean
   lastVerifiedAtNotNil: Boolean
+  """
+  last_digest_at field predicates
+  """
+  lastDigestAt: Time
+  lastDigestAtNEQ: Time
+  lastDigestAtIn: [Time!]
+  lastDigestAtNotIn: [Time!]
+  lastDigestAtGT: Time
+  lastDigestAtGTE: Time
+  lastDigestAtLT: Time
+  lastDigestAtLTE: Time
+  lastDigestAtIsNil: Boolean
+  lastDigestAtNotNil: Boolean
   """
   user edge predicates
   """

@@ -1529,6 +1529,7 @@ var (
 		{Name: "mode", Type: field.TypeString, Default: "local"},
 		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "last_verified_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_digest_at", Type: field.TypeTime, Nullable: true},
 		{Name: "user_revenue_workspaces", Type: field.TypeUUID},
 	}
 	// RevenueWorkspacesTable holds the schema information for the "revenue_workspaces" table.
@@ -1539,7 +1540,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "revenue_workspaces_users_revenue_workspaces",
-				Columns:    []*schema.Column{RevenueWorkspacesColumns[9]},
+				Columns:    []*schema.Column{RevenueWorkspacesColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1548,7 +1549,7 @@ var (
 			{
 				Name:    "revenueworkspace_user_revenue_workspaces",
 				Unique:  true,
-				Columns: []*schema.Column{RevenueWorkspacesColumns[9]},
+				Columns: []*schema.Column{RevenueWorkspacesColumns[10]},
 			},
 		},
 	}
