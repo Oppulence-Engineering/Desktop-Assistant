@@ -1042,6 +1042,100 @@ var (
 			},
 		},
 	}
+	// MailMessageMetaColumns holds the columns for the "mail_message_meta" table.
+	MailMessageMetaColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "provider_message_id", Type: field.TypeString},
+		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "direction", Type: field.TypeString},
+		{Name: "from_addr", Type: field.TypeString, Nullable: true},
+		{Name: "to_addr", Type: field.TypeString, Nullable: true},
+		{Name: "subject", Type: field.TypeString, Nullable: true},
+		{Name: "labels", Type: field.TypeJSON},
+		{Name: "mail_thread_id", Type: field.TypeUUID},
+		{Name: "user_mail_message_metas", Type: field.TypeUUID},
+	}
+	// MailMessageMetaTable holds the schema information for the "mail_message_meta" table.
+	MailMessageMetaTable = &schema.Table{
+		Name:       "mail_message_meta",
+		Columns:    MailMessageMetaColumns,
+		PrimaryKey: []*schema.Column{MailMessageMetaColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "mail_message_meta_mail_threads_messages",
+				Columns:    []*schema.Column{MailMessageMetaColumns[10]},
+				RefColumns: []*schema.Column{MailThreadsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "mail_message_meta_users_mail_message_metas",
+				Columns:    []*schema.Column{MailMessageMetaColumns[11]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "mailmessagemeta_provider_message_id_user_mail_message_metas",
+				Unique:  true,
+				Columns: []*schema.Column{MailMessageMetaColumns[3], MailMessageMetaColumns[11]},
+			},
+		},
+	}
+	// MailThreadsColumns holds the columns for the "mail_threads" table.
+	MailThreadsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "provider", Type: field.TypeString, Default: "gmail"},
+		{Name: "provider_thread_id", Type: field.TypeString},
+		{Name: "subject", Type: field.TypeString, Nullable: true},
+		{Name: "counterparty_email", Type: field.TypeString, Nullable: true},
+		{Name: "account_domain", Type: field.TypeString, Nullable: true},
+		{Name: "labels", Type: field.TypeJSON},
+		{Name: "reply_state", Type: field.TypeString, Default: "quiet"},
+		{Name: "last_direction", Type: field.TypeString, Nullable: true},
+		{Name: "last_activity_at", Type: field.TypeTime, Nullable: true},
+		{Name: "message_count", Type: field.TypeInt, Default: 0},
+		{Name: "outbound_count", Type: field.TypeInt, Default: 0},
+		{Name: "inbound_count", Type: field.TypeInt, Default: 0},
+		{Name: "relationship_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "user_mail_threads", Type: field.TypeUUID},
+	}
+	// MailThreadsTable holds the schema information for the "mail_threads" table.
+	MailThreadsTable = &schema.Table{
+		Name:       "mail_threads",
+		Columns:    MailThreadsColumns,
+		PrimaryKey: []*schema.Column{MailThreadsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "mail_threads_relationships_mail_threads",
+				Columns:    []*schema.Column{MailThreadsColumns[15]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "mail_threads_users_mail_threads",
+				Columns:    []*schema.Column{MailThreadsColumns[16]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "mailthread_provider_provider_thread_id_user_mail_threads",
+				Unique:  true,
+				Columns: []*schema.Column{MailThreadsColumns[3], MailThreadsColumns[4], MailThreadsColumns[16]},
+			},
+			{
+				Name:    "mailthread_last_activity_at_user_mail_threads",
+				Unique:  false,
+				Columns: []*schema.Column{MailThreadsColumns[11], MailThreadsColumns[16]},
+			},
+		},
+	}
 	// MeetingMinuteUsagesColumns holds the columns for the "meeting_minute_usages" table.
 	MeetingMinuteUsagesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1785,6 +1879,8 @@ var (
 		LlmUsageHistoriesTable,
 		McpConnectionsTable,
 		McpConnectionHistoriesTable,
+		MailMessageMetaTable,
+		MailThreadsTable,
 		MeetingMinuteUsagesTable,
 		OauthConnectionsTable,
 		OauthConnectionHistoriesTable,
@@ -1846,6 +1942,10 @@ func init() {
 	GoogleWatchesTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	McpConnectionsTable.ForeignKeys[0].RefTable = UsersTable
+	MailMessageMetaTable.ForeignKeys[0].RefTable = MailThreadsTable
+	MailMessageMetaTable.ForeignKeys[1].RefTable = UsersTable
+	MailThreadsTable.ForeignKeys[0].RefTable = RelationshipsTable
+	MailThreadsTable.ForeignKeys[1].RefTable = UsersTable
 	MeetingMinuteUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	OauthConnectionsTable.ForeignKeys[0].RefTable = UsersTable
 	PolicyDecisionSnapshotsTable.ForeignKeys[0].RefTable = RevenueActionsTable

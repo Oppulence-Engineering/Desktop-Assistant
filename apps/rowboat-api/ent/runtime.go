@@ -25,6 +25,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -977,6 +979,98 @@ func init() {
 	mcpconnectionhistoryDescID := mcpconnectionhistoryFields[0].Descriptor()
 	// mcpconnectionhistory.DefaultID holds the default value on creation for the id field.
 	mcpconnectionhistory.DefaultID = mcpconnectionhistoryDescID.Default.(func() uuid.UUID)
+	mailmessagemetaMixin := schema.MailMessageMeta{}.Mixin()
+	mailmessagemetaMixinFields0 := mailmessagemetaMixin[0].Fields()
+	_ = mailmessagemetaMixinFields0
+	mailmessagemetaFields := schema.MailMessageMeta{}.Fields()
+	_ = mailmessagemetaFields
+	// mailmessagemetaDescCreatedAt is the schema descriptor for created_at field.
+	mailmessagemetaDescCreatedAt := mailmessagemetaMixinFields0[1].Descriptor()
+	// mailmessagemeta.DefaultCreatedAt holds the default value on creation for the created_at field.
+	mailmessagemeta.DefaultCreatedAt = mailmessagemetaDescCreatedAt.Default.(func() time.Time)
+	// mailmessagemetaDescUpdatedAt is the schema descriptor for updated_at field.
+	mailmessagemetaDescUpdatedAt := mailmessagemetaMixinFields0[2].Descriptor()
+	// mailmessagemeta.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	mailmessagemeta.DefaultUpdatedAt = mailmessagemetaDescUpdatedAt.Default.(func() time.Time)
+	// mailmessagemeta.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	mailmessagemeta.UpdateDefaultUpdatedAt = mailmessagemetaDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// mailmessagemetaDescProviderMessageID is the schema descriptor for provider_message_id field.
+	mailmessagemetaDescProviderMessageID := mailmessagemetaFields[0].Descriptor()
+	// mailmessagemeta.ProviderMessageIDValidator is a validator for the "provider_message_id" field. It is called by the builders before save.
+	mailmessagemeta.ProviderMessageIDValidator = mailmessagemetaDescProviderMessageID.Validators[0].(func(string) error)
+	// mailmessagemetaDescDirection is the schema descriptor for direction field.
+	mailmessagemetaDescDirection := mailmessagemetaFields[2].Descriptor()
+	// mailmessagemeta.DirectionValidator is a validator for the "direction" field. It is called by the builders before save.
+	mailmessagemeta.DirectionValidator = mailmessagemetaDescDirection.Validators[0].(func(string) error)
+	// mailmessagemetaDescLabels is the schema descriptor for labels field.
+	mailmessagemetaDescLabels := mailmessagemetaFields[6].Descriptor()
+	// mailmessagemeta.DefaultLabels holds the default value on creation for the labels field.
+	mailmessagemeta.DefaultLabels = mailmessagemetaDescLabels.Default.([]string)
+	// mailmessagemetaDescID is the schema descriptor for id field.
+	mailmessagemetaDescID := mailmessagemetaMixinFields0[0].Descriptor()
+	// mailmessagemeta.DefaultID holds the default value on creation for the id field.
+	mailmessagemeta.DefaultID = mailmessagemetaDescID.Default.(func() uuid.UUID)
+	mailthreadMixin := schema.MailThread{}.Mixin()
+	mailthreadMixinFields0 := mailthreadMixin[0].Fields()
+	_ = mailthreadMixinFields0
+	mailthreadFields := schema.MailThread{}.Fields()
+	_ = mailthreadFields
+	// mailthreadDescCreatedAt is the schema descriptor for created_at field.
+	mailthreadDescCreatedAt := mailthreadMixinFields0[1].Descriptor()
+	// mailthread.DefaultCreatedAt holds the default value on creation for the created_at field.
+	mailthread.DefaultCreatedAt = mailthreadDescCreatedAt.Default.(func() time.Time)
+	// mailthreadDescUpdatedAt is the schema descriptor for updated_at field.
+	mailthreadDescUpdatedAt := mailthreadMixinFields0[2].Descriptor()
+	// mailthread.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	mailthread.DefaultUpdatedAt = mailthreadDescUpdatedAt.Default.(func() time.Time)
+	// mailthread.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	mailthread.UpdateDefaultUpdatedAt = mailthreadDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// mailthreadDescProvider is the schema descriptor for provider field.
+	mailthreadDescProvider := mailthreadFields[0].Descriptor()
+	// mailthread.DefaultProvider holds the default value on creation for the provider field.
+	mailthread.DefaultProvider = mailthreadDescProvider.Default.(string)
+	// mailthread.ProviderValidator is a validator for the "provider" field. It is called by the builders before save.
+	mailthread.ProviderValidator = mailthreadDescProvider.Validators[0].(func(string) error)
+	// mailthreadDescProviderThreadID is the schema descriptor for provider_thread_id field.
+	mailthreadDescProviderThreadID := mailthreadFields[1].Descriptor()
+	// mailthread.ProviderThreadIDValidator is a validator for the "provider_thread_id" field. It is called by the builders before save.
+	mailthread.ProviderThreadIDValidator = mailthreadDescProviderThreadID.Validators[0].(func(string) error)
+	// mailthreadDescLabels is the schema descriptor for labels field.
+	mailthreadDescLabels := mailthreadFields[5].Descriptor()
+	// mailthread.DefaultLabels holds the default value on creation for the labels field.
+	mailthread.DefaultLabels = mailthreadDescLabels.Default.([]string)
+	// mailthreadDescReplyState is the schema descriptor for reply_state field.
+	mailthreadDescReplyState := mailthreadFields[6].Descriptor()
+	// mailthread.DefaultReplyState holds the default value on creation for the reply_state field.
+	mailthread.DefaultReplyState = mailthreadDescReplyState.Default.(string)
+	// mailthread.ReplyStateValidator is a validator for the "reply_state" field. It is called by the builders before save.
+	mailthread.ReplyStateValidator = mailthreadDescReplyState.Validators[0].(func(string) error)
+	// mailthreadDescLastDirection is the schema descriptor for last_direction field.
+	mailthreadDescLastDirection := mailthreadFields[7].Descriptor()
+	// mailthread.LastDirectionValidator is a validator for the "last_direction" field. It is called by the builders before save.
+	mailthread.LastDirectionValidator = mailthreadDescLastDirection.Validators[0].(func(string) error)
+	// mailthreadDescMessageCount is the schema descriptor for message_count field.
+	mailthreadDescMessageCount := mailthreadFields[9].Descriptor()
+	// mailthread.DefaultMessageCount holds the default value on creation for the message_count field.
+	mailthread.DefaultMessageCount = mailthreadDescMessageCount.Default.(int)
+	// mailthread.MessageCountValidator is a validator for the "message_count" field. It is called by the builders before save.
+	mailthread.MessageCountValidator = mailthreadDescMessageCount.Validators[0].(func(int) error)
+	// mailthreadDescOutboundCount is the schema descriptor for outbound_count field.
+	mailthreadDescOutboundCount := mailthreadFields[10].Descriptor()
+	// mailthread.DefaultOutboundCount holds the default value on creation for the outbound_count field.
+	mailthread.DefaultOutboundCount = mailthreadDescOutboundCount.Default.(int)
+	// mailthread.OutboundCountValidator is a validator for the "outbound_count" field. It is called by the builders before save.
+	mailthread.OutboundCountValidator = mailthreadDescOutboundCount.Validators[0].(func(int) error)
+	// mailthreadDescInboundCount is the schema descriptor for inbound_count field.
+	mailthreadDescInboundCount := mailthreadFields[11].Descriptor()
+	// mailthread.DefaultInboundCount holds the default value on creation for the inbound_count field.
+	mailthread.DefaultInboundCount = mailthreadDescInboundCount.Default.(int)
+	// mailthread.InboundCountValidator is a validator for the "inbound_count" field. It is called by the builders before save.
+	mailthread.InboundCountValidator = mailthreadDescInboundCount.Validators[0].(func(int) error)
+	// mailthreadDescID is the schema descriptor for id field.
+	mailthreadDescID := mailthreadMixinFields0[0].Descriptor()
+	// mailthread.DefaultID holds the default value on creation for the id field.
+	mailthread.DefaultID = mailthreadDescID.Default.(func() uuid.UUID)
 	meetingminuteusageMixin := schema.MeetingMinuteUsage{}.Mixin()
 	meetingminuteusageMixinFields0 := meetingminuteusageMixin[0].Fields()
 	_ = meetingminuteusageMixinFields0

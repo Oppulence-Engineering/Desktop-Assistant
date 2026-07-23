@@ -39,6 +39,11 @@ type Handler struct {
 	redirectURI    string // must exactly match a redirect URI registered in Google Cloud
 	deepLinkScheme string // desktop custom scheme (rowboat)
 	scopes         []string
+
+	// onDisconnect runs when a user disconnects Google, after the connection is
+	// deleted — used to purge derived data (e.g. the RFC 031 mail index) so the
+	// "your mail stays yours, disconnect anytime" promise is mechanically true.
+	onDisconnect func(ctx context.Context, u *ent.User) error
 }
 
 var errGoogleAccountOwned = errors.New("google account is already connected to another user")
@@ -80,6 +85,41 @@ func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, log *zap
 func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
 	policy.Name = "google-oauth"
 	h.http = outbound.NewClient(policy)
+}
+
+// SetOnDisconnect installs a callback run after a Google disconnect (used to
+// purge derived data such as the mail index).
+func (h *Handler) SetOnDisconnect(fn func(ctx context.Context, u *ent.User) error) {
+	h.onDisconnect = fn
+}
+
+// Disconnect removes the user's Google connection and purges data derived from
+// it. Idempotent: no connection returns 204. The OAuth grant should also be
+// revoked by the user in their Google account; deleting the refresh token here
+// stops all further access from our side immediately.
+func (h *Handler) Disconnect(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+		return
+	}
+	ctx := r.Context()
+	_, err := h.client.OAuthConnection.Delete().
+		Where(oauthconnection.ProviderEQ("google")).
+		Exec(ctx)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "could not disconnect", "internal_error")
+		return
+	}
+	// Purge derived data (RFC 031: disconnect drops the mail index). Best
+	// effort — the connection is already gone, so a purge error must not fail
+	// the disconnect; it is logged and swept later by retention.
+	if h.onDisconnect != nil {
+		if perr := h.onDisconnect(ctx, u); perr != nil {
+			h.log.Warn("google disconnect: derived-data purge failed", zap.Error(perr))
+		}
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // SetOAuthFlow configures the browser-facing Google OAuth (start + callback).

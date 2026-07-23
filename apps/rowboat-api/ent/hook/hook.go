@@ -273,6 +273,30 @@ func (f MCPConnectionHistoryFunc) Mutate(ctx context.Context, m ent.Mutation) (e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MCPConnectionHistoryMutation", m)
 }
 
+// The MailMessageMetaFunc type is an adapter to allow the use of ordinary
+// function as MailMessageMeta mutator.
+type MailMessageMetaFunc func(context.Context, *ent.MailMessageMetaMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MailMessageMetaFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MailMessageMetaMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MailMessageMetaMutation", m)
+}
+
+// The MailThreadFunc type is an adapter to allow the use of ordinary
+// function as MailThread mutator.
+type MailThreadFunc func(context.Context, *ent.MailThreadMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MailThreadFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MailThreadMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MailThreadMutation", m)
+}
+
 // The MeetingMinuteUsageFunc type is an adapter to allow the use of ordinary
 // function as MeetingMinuteUsage mutator.
 type MeetingMinuteUsageFunc func(context.Context, *ent.MeetingMinuteUsageMutation) (ent.Value, error)

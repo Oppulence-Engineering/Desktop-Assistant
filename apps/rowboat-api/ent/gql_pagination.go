@@ -30,6 +30,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -5104,6 +5106,504 @@ func (_m *MCPConnection) ToEdge(order *MCPConnectionOrder) *MCPConnectionEdge {
 		order = DefaultMCPConnectionOrder
 	}
 	return &MCPConnectionEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// MailMessageMetaEdge is the edge representation of MailMessageMeta.
+type MailMessageMetaEdge struct {
+	Node   *MailMessageMeta `json:"node"`
+	Cursor Cursor           `json:"cursor"`
+}
+
+// MailMessageMetaConnection is the connection containing edges to MailMessageMeta.
+type MailMessageMetaConnection struct {
+	Edges      []*MailMessageMetaEdge `json:"edges"`
+	PageInfo   PageInfo               `json:"pageInfo"`
+	TotalCount int                    `json:"totalCount"`
+}
+
+func (c *MailMessageMetaConnection) build(nodes []*MailMessageMeta, pager *mailmessagemetaPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *MailMessageMeta
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *MailMessageMeta {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *MailMessageMeta {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*MailMessageMetaEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &MailMessageMetaEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// MailMessageMetaPaginateOption enables pagination customization.
+type MailMessageMetaPaginateOption func(*mailmessagemetaPager) error
+
+// WithMailMessageMetaOrder configures pagination ordering.
+func WithMailMessageMetaOrder(order *MailMessageMetaOrder) MailMessageMetaPaginateOption {
+	if order == nil {
+		order = DefaultMailMessageMetaOrder
+	}
+	o := *order
+	return func(pager *mailmessagemetaPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultMailMessageMetaOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithMailMessageMetaFilter configures pagination filter.
+func WithMailMessageMetaFilter(filter func(*MailMessageMetaQuery) (*MailMessageMetaQuery, error)) MailMessageMetaPaginateOption {
+	return func(pager *mailmessagemetaPager) error {
+		if filter == nil {
+			return errors.New("MailMessageMetaQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type mailmessagemetaPager struct {
+	reverse bool
+	order   *MailMessageMetaOrder
+	filter  func(*MailMessageMetaQuery) (*MailMessageMetaQuery, error)
+}
+
+func newMailMessageMetaPager(opts []MailMessageMetaPaginateOption, reverse bool) (*mailmessagemetaPager, error) {
+	pager := &mailmessagemetaPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultMailMessageMetaOrder
+	}
+	return pager, nil
+}
+
+func (p *mailmessagemetaPager) applyFilter(query *MailMessageMetaQuery) (*MailMessageMetaQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *mailmessagemetaPager) toCursor(_m *MailMessageMeta) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *mailmessagemetaPager) applyCursors(query *MailMessageMetaQuery, after, before *Cursor) (*MailMessageMetaQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultMailMessageMetaOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *mailmessagemetaPager) applyOrder(query *MailMessageMetaQuery) *MailMessageMetaQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultMailMessageMetaOrder.Field {
+		query = query.Order(DefaultMailMessageMetaOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *mailmessagemetaPager) orderExpr(query *MailMessageMetaQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultMailMessageMetaOrder.Field {
+			b.Comma().Ident(DefaultMailMessageMetaOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to MailMessageMeta.
+func (_m *MailMessageMetaQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...MailMessageMetaPaginateOption,
+) (*MailMessageMetaConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newMailMessageMetaPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &MailMessageMetaConnection{Edges: []*MailMessageMetaEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// MailMessageMetaOrderField defines the ordering field of MailMessageMeta.
+type MailMessageMetaOrderField struct {
+	// Value extracts the ordering value from the given MailMessageMeta.
+	Value    func(*MailMessageMeta) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) mailmessagemeta.OrderOption
+	toCursor func(*MailMessageMeta) Cursor
+}
+
+// MailMessageMetaOrder defines the ordering of MailMessageMeta.
+type MailMessageMetaOrder struct {
+	Direction OrderDirection             `json:"direction"`
+	Field     *MailMessageMetaOrderField `json:"field"`
+}
+
+// DefaultMailMessageMetaOrder is the default ordering of MailMessageMeta.
+var DefaultMailMessageMetaOrder = &MailMessageMetaOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &MailMessageMetaOrderField{
+		Value: func(_m *MailMessageMeta) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: mailmessagemeta.FieldID,
+		toTerm: mailmessagemeta.ByID,
+		toCursor: func(_m *MailMessageMeta) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts MailMessageMeta into MailMessageMetaEdge.
+func (_m *MailMessageMeta) ToEdge(order *MailMessageMetaOrder) *MailMessageMetaEdge {
+	if order == nil {
+		order = DefaultMailMessageMetaOrder
+	}
+	return &MailMessageMetaEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// MailThreadEdge is the edge representation of MailThread.
+type MailThreadEdge struct {
+	Node   *MailThread `json:"node"`
+	Cursor Cursor      `json:"cursor"`
+}
+
+// MailThreadConnection is the connection containing edges to MailThread.
+type MailThreadConnection struct {
+	Edges      []*MailThreadEdge `json:"edges"`
+	PageInfo   PageInfo          `json:"pageInfo"`
+	TotalCount int               `json:"totalCount"`
+}
+
+func (c *MailThreadConnection) build(nodes []*MailThread, pager *mailthreadPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *MailThread
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *MailThread {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *MailThread {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*MailThreadEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &MailThreadEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// MailThreadPaginateOption enables pagination customization.
+type MailThreadPaginateOption func(*mailthreadPager) error
+
+// WithMailThreadOrder configures pagination ordering.
+func WithMailThreadOrder(order *MailThreadOrder) MailThreadPaginateOption {
+	if order == nil {
+		order = DefaultMailThreadOrder
+	}
+	o := *order
+	return func(pager *mailthreadPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultMailThreadOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithMailThreadFilter configures pagination filter.
+func WithMailThreadFilter(filter func(*MailThreadQuery) (*MailThreadQuery, error)) MailThreadPaginateOption {
+	return func(pager *mailthreadPager) error {
+		if filter == nil {
+			return errors.New("MailThreadQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type mailthreadPager struct {
+	reverse bool
+	order   *MailThreadOrder
+	filter  func(*MailThreadQuery) (*MailThreadQuery, error)
+}
+
+func newMailThreadPager(opts []MailThreadPaginateOption, reverse bool) (*mailthreadPager, error) {
+	pager := &mailthreadPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultMailThreadOrder
+	}
+	return pager, nil
+}
+
+func (p *mailthreadPager) applyFilter(query *MailThreadQuery) (*MailThreadQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *mailthreadPager) toCursor(_m *MailThread) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *mailthreadPager) applyCursors(query *MailThreadQuery, after, before *Cursor) (*MailThreadQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultMailThreadOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *mailthreadPager) applyOrder(query *MailThreadQuery) *MailThreadQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultMailThreadOrder.Field {
+		query = query.Order(DefaultMailThreadOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *mailthreadPager) orderExpr(query *MailThreadQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultMailThreadOrder.Field {
+			b.Comma().Ident(DefaultMailThreadOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to MailThread.
+func (_m *MailThreadQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...MailThreadPaginateOption,
+) (*MailThreadConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newMailThreadPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &MailThreadConnection{Edges: []*MailThreadEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// MailThreadOrderField defines the ordering field of MailThread.
+type MailThreadOrderField struct {
+	// Value extracts the ordering value from the given MailThread.
+	Value    func(*MailThread) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) mailthread.OrderOption
+	toCursor func(*MailThread) Cursor
+}
+
+// MailThreadOrder defines the ordering of MailThread.
+type MailThreadOrder struct {
+	Direction OrderDirection        `json:"direction"`
+	Field     *MailThreadOrderField `json:"field"`
+}
+
+// DefaultMailThreadOrder is the default ordering of MailThread.
+var DefaultMailThreadOrder = &MailThreadOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &MailThreadOrderField{
+		Value: func(_m *MailThread) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: mailthread.FieldID,
+		toTerm: mailthread.ByID,
+		toCursor: func(_m *MailThread) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts MailThread into MailThreadEdge.
+func (_m *MailThread) ToEdge(order *MailThreadOrder) *MailThreadEdge {
+	if order == nil {
+		order = DefaultMailThreadOrder
+	}
+	return &MailThreadEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

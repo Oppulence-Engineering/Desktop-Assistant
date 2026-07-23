@@ -51,6 +51,8 @@ const (
 	EdgeActions = "actions"
 	// EdgeEvidences holds the string denoting the evidences edge name in mutations.
 	EdgeEvidences = "evidences"
+	// EdgeMailThreads holds the string denoting the mail_threads edge name in mutations.
+	EdgeMailThreads = "mail_threads"
 	// Table holds the table name of the relationship in the database.
 	Table = "relationships"
 	// WorkspaceTable is the table that holds the workspace relation/edge.
@@ -86,6 +88,13 @@ const (
 	// EvidencesInverseTable is the table name for the RevenueEvidence entity.
 	// It exists in this package in order to avoid circular dependency with the "revenueevidence" package.
 	EvidencesInverseTable = "revenue_evidences"
+	// MailThreadsTable is the table that holds the mail_threads relation/edge.
+	MailThreadsTable = "mail_threads"
+	// MailThreadsInverseTable is the table name for the MailThread entity.
+	// It exists in this package in order to avoid circular dependency with the "mailthread" package.
+	MailThreadsInverseTable = "mail_threads"
+	// MailThreadsColumn is the table column denoting the mail_threads relation/edge.
+	MailThreadsColumn = "relationship_id"
 )
 
 // Columns holds all SQL columns for relationship fields.
@@ -278,6 +287,20 @@ func ByEvidences(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newEvidencesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByMailThreadsCount orders the results by mail_threads count.
+func ByMailThreadsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMailThreadsStep(), opts...)
+	}
+}
+
+// ByMailThreads orders the results by mail_threads terms.
+func ByMailThreads(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMailThreadsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newWorkspaceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -311,5 +334,12 @@ func newEvidencesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EvidencesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, EvidencesTable, EvidencesPrimaryKey...),
+	)
+}
+func newMailThreadsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MailThreadsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MailThreadsTable, MailThreadsColumn),
 	)
 }

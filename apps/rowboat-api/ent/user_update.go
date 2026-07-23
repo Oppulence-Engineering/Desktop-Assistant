@@ -29,6 +29,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -587,6 +589,36 @@ func (_u *UserUpdate) AddRevenueLeakScans(v ...*RevenueLeakScan) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddRevenueLeakScanIDs(ids...)
+}
+
+// AddMailThreadIDs adds the "mail_threads" edge to the MailThread entity by IDs.
+func (_u *UserUpdate) AddMailThreadIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddMailThreadIDs(ids...)
+	return _u
+}
+
+// AddMailThreads adds the "mail_threads" edges to the MailThread entity.
+func (_u *UserUpdate) AddMailThreads(v ...*MailThread) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMailThreadIDs(ids...)
+}
+
+// AddMailMessageMetaIDs adds the "mail_message_metas" edge to the MailMessageMeta entity by IDs.
+func (_u *UserUpdate) AddMailMessageMetaIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddMailMessageMetaIDs(ids...)
+	return _u
+}
+
+// AddMailMessageMetas adds the "mail_message_metas" edges to the MailMessageMeta entity.
+func (_u *UserUpdate) AddMailMessageMetas(v ...*MailMessageMeta) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMailMessageMetaIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -1228,6 +1260,48 @@ func (_u *UserUpdate) RemoveRevenueLeakScans(v ...*RevenueLeakScan) *UserUpdate 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRevenueLeakScanIDs(ids...)
+}
+
+// ClearMailThreads clears all "mail_threads" edges to the MailThread entity.
+func (_u *UserUpdate) ClearMailThreads() *UserUpdate {
+	_u.mutation.ClearMailThreads()
+	return _u
+}
+
+// RemoveMailThreadIDs removes the "mail_threads" edge to MailThread entities by IDs.
+func (_u *UserUpdate) RemoveMailThreadIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveMailThreadIDs(ids...)
+	return _u
+}
+
+// RemoveMailThreads removes "mail_threads" edges to MailThread entities.
+func (_u *UserUpdate) RemoveMailThreads(v ...*MailThread) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMailThreadIDs(ids...)
+}
+
+// ClearMailMessageMetas clears all "mail_message_metas" edges to the MailMessageMeta entity.
+func (_u *UserUpdate) ClearMailMessageMetas() *UserUpdate {
+	_u.mutation.ClearMailMessageMetas()
+	return _u
+}
+
+// RemoveMailMessageMetaIDs removes the "mail_message_metas" edge to MailMessageMeta entities by IDs.
+func (_u *UserUpdate) RemoveMailMessageMetaIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveMailMessageMetaIDs(ids...)
+	return _u
+}
+
+// RemoveMailMessageMetas removes "mail_message_metas" edges to MailMessageMeta entities.
+func (_u *UserUpdate) RemoveMailMessageMetas(v ...*MailMessageMeta) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMailMessageMetaIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -2685,6 +2759,96 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.MailThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailThreadsTable,
+			Columns: []string{user.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMailThreadsIDs(); len(nodes) > 0 && !_u.mutation.MailThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailThreadsTable,
+			Columns: []string{user.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MailThreadsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailThreadsTable,
+			Columns: []string{user.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MailMessageMetasCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailMessageMetasTable,
+			Columns: []string{user.MailMessageMetasColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailmessagemeta.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMailMessageMetasIDs(); len(nodes) > 0 && !_u.mutation.MailMessageMetasCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailMessageMetasTable,
+			Columns: []string{user.MailMessageMetasColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailmessagemeta.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MailMessageMetasIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailMessageMetasTable,
+			Columns: []string{user.MailMessageMetasColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailmessagemeta.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -3232,6 +3396,36 @@ func (_u *UserUpdateOne) AddRevenueLeakScans(v ...*RevenueLeakScan) *UserUpdateO
 		ids[i] = v[i].ID
 	}
 	return _u.AddRevenueLeakScanIDs(ids...)
+}
+
+// AddMailThreadIDs adds the "mail_threads" edge to the MailThread entity by IDs.
+func (_u *UserUpdateOne) AddMailThreadIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddMailThreadIDs(ids...)
+	return _u
+}
+
+// AddMailThreads adds the "mail_threads" edges to the MailThread entity.
+func (_u *UserUpdateOne) AddMailThreads(v ...*MailThread) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMailThreadIDs(ids...)
+}
+
+// AddMailMessageMetaIDs adds the "mail_message_metas" edge to the MailMessageMeta entity by IDs.
+func (_u *UserUpdateOne) AddMailMessageMetaIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddMailMessageMetaIDs(ids...)
+	return _u
+}
+
+// AddMailMessageMetas adds the "mail_message_metas" edges to the MailMessageMeta entity.
+func (_u *UserUpdateOne) AddMailMessageMetas(v ...*MailMessageMeta) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMailMessageMetaIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -3873,6 +4067,48 @@ func (_u *UserUpdateOne) RemoveRevenueLeakScans(v ...*RevenueLeakScan) *UserUpda
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRevenueLeakScanIDs(ids...)
+}
+
+// ClearMailThreads clears all "mail_threads" edges to the MailThread entity.
+func (_u *UserUpdateOne) ClearMailThreads() *UserUpdateOne {
+	_u.mutation.ClearMailThreads()
+	return _u
+}
+
+// RemoveMailThreadIDs removes the "mail_threads" edge to MailThread entities by IDs.
+func (_u *UserUpdateOne) RemoveMailThreadIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveMailThreadIDs(ids...)
+	return _u
+}
+
+// RemoveMailThreads removes "mail_threads" edges to MailThread entities.
+func (_u *UserUpdateOne) RemoveMailThreads(v ...*MailThread) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMailThreadIDs(ids...)
+}
+
+// ClearMailMessageMetas clears all "mail_message_metas" edges to the MailMessageMeta entity.
+func (_u *UserUpdateOne) ClearMailMessageMetas() *UserUpdateOne {
+	_u.mutation.ClearMailMessageMetas()
+	return _u
+}
+
+// RemoveMailMessageMetaIDs removes the "mail_message_metas" edge to MailMessageMeta entities by IDs.
+func (_u *UserUpdateOne) RemoveMailMessageMetaIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveMailMessageMetaIDs(ids...)
+	return _u
+}
+
+// RemoveMailMessageMetas removes "mail_message_metas" edges to MailMessageMeta entities.
+func (_u *UserUpdateOne) RemoveMailMessageMetas(v ...*MailMessageMeta) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMailMessageMetaIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -5353,6 +5589,96 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueleakscan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MailThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailThreadsTable,
+			Columns: []string{user.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMailThreadsIDs(); len(nodes) > 0 && !_u.mutation.MailThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailThreadsTable,
+			Columns: []string{user.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MailThreadsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailThreadsTable,
+			Columns: []string{user.MailThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MailMessageMetasCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailMessageMetasTable,
+			Columns: []string{user.MailMessageMetasColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailmessagemeta.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMailMessageMetasIDs(); len(nodes) > 0 && !_u.mutation.MailMessageMetasCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailMessageMetasTable,
+			Columns: []string{user.MailMessageMetasColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailmessagemeta.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MailMessageMetasIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailMessageMetasTable,
+			Columns: []string{user.MailMessageMetasColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailmessagemeta.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

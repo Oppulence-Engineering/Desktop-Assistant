@@ -67,15 +67,18 @@ type RelationshipEdges struct {
 	Actions []*RevenueAction `json:"actions,omitempty"`
 	// Evidences holds the value of the evidences edge.
 	Evidences []*RevenueEvidence `json:"evidences,omitempty"`
+	// MailThreads holds the value of the mail_threads edge.
+	MailThreads []*MailThread `json:"mail_threads,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 	// totalCount holds the count of the edges above.
-	totalCount [5]map[string]int
+	totalCount [6]map[string]int
 
 	namedCommitments map[string][]*Commitment
 	namedActions     map[string][]*RevenueAction
 	namedEvidences   map[string][]*RevenueEvidence
+	namedMailThreads map[string][]*MailThread
 }
 
 // WorkspaceOrErr returns the Workspace value or an error if the edge
@@ -125,6 +128,15 @@ func (e RelationshipEdges) EvidencesOrErr() ([]*RevenueEvidence, error) {
 		return e.Evidences, nil
 	}
 	return nil, &NotLoadedError{edge: "evidences"}
+}
+
+// MailThreadsOrErr returns the MailThreads value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) MailThreadsOrErr() ([]*MailThread, error) {
+	if e.loadedTypes[5] {
+		return e.MailThreads, nil
+	}
+	return nil, &NotLoadedError{edge: "mail_threads"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -299,6 +311,11 @@ func (_m *Relationship) QueryEvidences() *RevenueEvidenceQuery {
 	return NewRelationshipClient(_m.config).QueryEvidences(_m)
 }
 
+// QueryMailThreads queries the "mail_threads" edge of the Relationship entity.
+func (_m *Relationship) QueryMailThreads() *MailThreadQuery {
+	return NewRelationshipClient(_m.config).QueryMailThreads(_m)
+}
+
 // Update returns a builder for updating this Relationship.
 // Note that you need to call Relationship.Unwrap() before calling this method if this Relationship
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -436,6 +453,30 @@ func (_m *Relationship) appendNamedEvidences(name string, edges ...*RevenueEvide
 		_m.Edges.namedEvidences[name] = []*RevenueEvidence{}
 	} else {
 		_m.Edges.namedEvidences[name] = append(_m.Edges.namedEvidences[name], edges...)
+	}
+}
+
+// NamedMailThreads returns the MailThreads named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedMailThreads(name string) ([]*MailThread, error) {
+	if _m.Edges.namedMailThreads == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedMailThreads[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedMailThreads(name string, edges ...*MailThread) {
+	if _m.Edges.namedMailThreads == nil {
+		_m.Edges.namedMailThreads = make(map[string][]*MailThread)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedMailThreads[name] = []*MailThread{}
+	} else {
+		_m.Edges.namedMailThreads[name] = append(_m.Edges.namedMailThreads[name], edges...)
 	}
 }
 
