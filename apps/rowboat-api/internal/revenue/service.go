@@ -263,12 +263,22 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	return rel, err
 }
 
-// ListRelationships returns the workspace's relationships, newest touch first.
+// relationshipListLimit bounds the relationships listing (the queue, not the
+// CRM, is the product; a client that needs more should filter). Exposed so the
+// handler can document it.
+const relationshipListLimit = 200
+
+// ListRelationships returns the workspace's relationships, newest touch first,
+// each with its open queue actions eager-loaded so the caller can report
+// open-loop counts.
 func (s *Service) ListRelationships(ctx context.Context, u *ent.User) ([]*ent.Relationship, error) {
 	return s.client.Relationship.Query().
 		Where(relationship.HasUserWith(user.IDEQ(u.ID))).
+		WithActions(func(q *ent.RevenueActionQuery) {
+			q.Where(revenueaction.QueueStatusEQ(QueueOpen))
+		}).
 		Order(ent.Desc(relationship.FieldUpdatedAt)).
-		Limit(200).
+		Limit(relationshipListLimit).
 		All(ctx)
 }
 
@@ -718,8 +728,9 @@ func (s *Service) Evaluate(ctx context.Context, u *ent.User, id uuid.UUID) (*ent
 		// Fail closed: policy stays pending, nothing can be approved or sent.
 		return nil, err
 	}
-	revenuemetrics.PreflightRequests.WithLabelValues(decision.Status, reasonGroup(decision.ReasonCodes)).Inc()
-	revenuemetrics.PreflightDuration.WithLabelValues(decision.Status).Observe(elapsed)
+	statusLabel := boundedStatus(decision.Status)
+	revenuemetrics.PreflightRequests.WithLabelValues(statusLabel, reasonGroup(decision.ReasonCodes)).Inc()
+	revenuemetrics.PreflightDuration.WithLabelValues(statusLabel).Observe(elapsed)
 
 	// The decision must be about the exact revision we asked about.
 	if decision.Revision != action.Revision || decision.RevisionHash != action.RevisionHash {
@@ -765,14 +776,27 @@ func (s *Service) Evaluate(ctx context.Context, u *ent.User, id uuid.UUID) (*ent
 	}
 
 	// Apply the decision to the action's policy dimension, but only for the
-	// same revision — a concurrent edit invalidates this evaluation.
-	n, err := txc.RevenueAction.Update().
+	// same revision — a concurrent edit invalidates this evaluation. A fresh
+	// evaluation also invalidates any prior approval: the operator approved a
+	// specific decision, and this is a new one, so they must approve again
+	// (this closes the "re-evaluate to review_required after approval, then
+	// send" bypass). The idempotent short-circuit above already returns an
+	// unchanged unexpired decision without reaching here, so a genuine
+	// no-op re-evaluate never needlessly drops an approval.
+	upd := txc.RevenueAction.Update().
 		Where(
 			revenueaction.IDEQ(action.ID),
 			revenueaction.RevisionEQ(action.Revision),
 		).
-		SetPolicyStatus(decision.Status).
-		Save(ctx)
+		SetPolicyStatus(decision.Status)
+	if action.ApprovalStatus == ApprovalApproved {
+		upd.SetApprovalStatus(ApprovalPending).
+			ClearApprovedRevision().
+			ClearApprovedDecisionID().
+			ClearApprovedBy().
+			ClearApprovedAt()
+	}
+	n, err := upd.Save(ctx)
 	if err != nil {
 		_ = tx.Rollback()
 		return nil, err
@@ -793,18 +817,41 @@ func (s *Service) Evaluate(ctx context.Context, u *ent.User, id uuid.UUID) (*ent
 	return snap, nil
 }
 
+// boundedStatus clamps a facade-supplied decision status to the known enum so
+// a misbehaving or hostile facade cannot explode Prometheus label cardinality
+// (RFC 030: never let unbounded provider strings become metric labels).
+func boundedStatus(status string) string {
+	switch status {
+	case PolicyPassed, PolicyReviewRequired, PolicyBlocked:
+		return status
+	default:
+		return "other"
+	}
+}
+
+// knownReasonGroups is the allowlist of facade reason-code prefixes that may
+// appear as a metric label. Anything else collapses to "other".
+var knownReasonGroups = map[string]bool{
+	"suppression": true, "verification": true, "research": true,
+	"crm": true, "ownership": true, "policy": true, "workspace": true,
+}
+
 // reasonGroup collapses facade reason codes into a bounded metric label.
 func reasonGroup(codes []string) string {
 	if len(codes) == 0 {
 		return "none"
 	}
 	// The first code's prefix (e.g. "suppression", "verification") is the
-	// group; never the full code list.
+	// group; never the full code list, and only from a fixed allowlist so a
+	// facade-controlled string can never become an unbounded/PII label.
 	code := codes[0]
 	if i := strings.IndexAny(code, "._:"); i > 0 {
-		return code[:i]
+		code = code[:i]
 	}
-	return code
+	if knownReasonGroups[code] {
+		return code
+	}
+	return "other"
 }
 
 // --- approve / reject (invariants 1, 2, 4, 5) --------------------------------
@@ -891,7 +938,8 @@ func (s *Service) Approve(ctx context.Context, u *ent.User, id uuid.UUID, accept
 }
 
 // currentDecision loads the freshest decision snapshot for the action's exact
-// current revision and hash, enforcing invariant 5 (expiry).
+// current revision and hash, enforcing invariant 5 (expiry). Used by Approve
+// to pick the decision to bind.
 func (s *Service) currentDecision(ctx context.Context, action *ent.RevenueAction) (*ent.PolicyDecisionSnapshot, error) {
 	snap, err := s.client.PolicyDecisionSnapshot.Query().
 		Where(
@@ -906,6 +954,41 @@ func (s *Service) currentDecision(ctx context.Context, action *ent.RevenueAction
 			return nil, ErrNoDecision
 		}
 		return nil, err
+	}
+	if !snap.ExpiresAt.After(s.now()) {
+		return nil, ErrDecisionExpired // invariant 5
+	}
+	return snap, nil
+}
+
+// boundDecision loads the EXACT decision the approval was bound to
+// (invariant 2), re-checks it against the current revision/hash, verifies it
+// has not expired (invariants 5, 9), and that its status still permits a send.
+// It deliberately does not fall back to the newest snapshot: a re-evaluation
+// after approval must go back through Approve, never be silently consumed at
+// execution time.
+func (s *Service) boundDecision(ctx context.Context, action *ent.RevenueAction) (*ent.PolicyDecisionSnapshot, error) {
+	if action.ApprovedDecisionID == nil {
+		return nil, ErrNotApproved
+	}
+	snap, err := s.client.PolicyDecisionSnapshot.Query().
+		Where(policydecisionsnapshot.IDEQ(*action.ApprovedDecisionID)).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, ErrNotApproved
+		}
+		return nil, err
+	}
+	// The bound decision must be for the revision we are about to send.
+	if snap.ActionRevision != action.Revision || snap.RevisionHash != action.RevisionHash {
+		return nil, ErrNotApproved
+	}
+	// review_required is acceptable only because Approve already required an
+	// explicit risk acceptance to bind it; blocked can never be bound. Guard
+	// anyway so a status is never trusted implicitly.
+	if snap.Status != PolicyPassed && snap.Status != PolicyReviewRequired {
+		return nil, ErrBlocked
 	}
 	if !snap.ExpiresAt.After(s.now()) {
 		return nil, ErrDecisionExpired // invariant 5
@@ -1027,9 +1110,12 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 		if ws.Mode != ModeLinked {
 			return nil, ErrWorkspaceNotLinked
 		}
-		// Invariants 5 and 9: the bound decision must still be unexpired at
-		// execution time.
-		if _, err := s.currentDecision(ctx, action); err != nil {
+		// Invariants 2, 4, 5, 9: the exact APPROVAL-BOUND decision — not
+		// merely the newest snapshot — must still be valid and permissive at
+		// execution time. A re-evaluation after approval invalidates the
+		// approval (see Evaluate), so this cannot silently consume a decision
+		// the operator never approved.
+		if _, err := s.boundDecision(ctx, action); err != nil {
 			return nil, err
 		}
 	}
@@ -1040,6 +1126,14 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 		action.ExecutionStatus == ExecAmbiguous {
 		revenuemetrics.DuplicatesPrevented.WithLabelValues("execute").Inc()
 		return action, nil
+	}
+
+	// Invariant: an action removed from the active queue (dismissed/snoozed)
+	// must not execute, even if it still carries a stale approval. A
+	// successfully-sent action is queue_status=handled and is caught by the
+	// idempotent short-circuit above, so here the queue must be open.
+	if action.QueueStatus != QueueOpen {
+		return nil, fmt.Errorf("%w: queue status %q", ErrConflict, action.QueueStatus)
 	}
 
 	idem := ExecutionIdempotencyKey(action.ID.String(), action.Revision)
@@ -1053,6 +1147,7 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 			revenueaction.RevisionEQ(action.Revision),
 			revenueaction.ExecutionStatusEQ(ExecPending),
 			revenueaction.ApprovalStatusEQ(ApprovalApproved),
+			revenueaction.QueueStatusEQ(QueueOpen),
 		).
 		SetExecutionStatus(ExecRequested).
 		SetExecutionIdempotencyKey(idem).
@@ -1107,16 +1202,21 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 		}
 		revenuemetrics.Executions.WithLabelValues(action.ExecutionOwner, ExecAmbiguous, action.Channel).Inc()
 	default:
+		// A definite failure (nothing reached the provider — 4xx, missing
+		// scope, dead token) returns the action to pending so the operator
+		// can fix the cause and retry, or edit it. Only ErrAmbiguous (above)
+		// is a terminal, non-retryable state, because there a message may
+		// have been sent. The error string is retained for the UI.
 		if _, err := s.client.RevenueAction.Update().
-			Where(revenueaction.IDEQ(action.ID)).
-			SetExecutionStatus(ExecFailed).
+			Where(revenueaction.IDEQ(action.ID), revenueaction.ExecutionStatusEQ(ExecRequested)).
+			SetExecutionStatus(ExecPending).
 			SetExecutionError(execErr.Error()).
 			Save(ctx); err != nil {
 			return nil, err
 		}
 		revenuemetrics.Executions.WithLabelValues(action.ExecutionOwner, ExecFailed, action.Channel).Inc()
 		_ = s.appendOutbox(ctx, s.client, ws, u, "revenue.action.failed.v1", action.ID,
-			"failed:"+idem, map[string]any{"revision": action.Revision}, s.now())
+			"failed:"+idem+":"+s.now().Format(time.RFC3339Nano), map[string]any{"revision": action.Revision}, s.now())
 	}
 	return s.GetAction(ctx, id)
 }

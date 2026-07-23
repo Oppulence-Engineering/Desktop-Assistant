@@ -119,6 +119,16 @@ func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
 	}
 }
 
+// relationshipToDTOWithOpen is relationshipToDTO plus the open-loop count,
+// populated from an eager-loaded (open-filtered) actions edge.
+func relationshipToDTOWithOpen(rel *ent.Relationship) relationshipDTO {
+	dto := relationshipToDTO(rel)
+	if actions, err := rel.Edges.ActionsOrErr(); err == nil {
+		dto.OpenActions = len(actions)
+	}
+	return dto
+}
+
 type actionDTO struct {
 	ID                 string          `json:"id"`
 	RelationshipID     string          `json:"relationshipId,omitempty"`
@@ -437,7 +447,7 @@ func (h *Handler) ListRelationships(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]relationshipDTO, 0, len(rels))
 	for _, rel := range rels {
-		out = append(out, relationshipToDTO(rel))
+		out = append(out, relationshipToDTOWithOpen(rel))
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"relationships": out})
 }

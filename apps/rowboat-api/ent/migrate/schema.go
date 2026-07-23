@@ -1544,6 +1544,13 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "revenueworkspace_user_revenue_workspaces",
+				Unique:  true,
+				Columns: []*schema.Column{RevenueWorkspacesColumns[9]},
+			},
+		},
 	}
 	// RevenueWorkspaceMembersColumns holds the columns for the "revenue_workspace_members" table.
 	RevenueWorkspaceMembersColumns = []*schema.Column{
