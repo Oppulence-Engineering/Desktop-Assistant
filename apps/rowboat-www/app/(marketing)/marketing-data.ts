@@ -169,11 +169,6 @@ export const alternativeLinks: LinkItem[] = [
 
 export const socialLinks: LinkItem[] = [
   {
-    label: "GitHub",
-    href: "https://github.com/Oppulence-Engineering",
-    external: true,
-  },
-  {
     label: "Discord",
     href: "https://discord.gg/wajrgmJQ6b",
     external: true,
