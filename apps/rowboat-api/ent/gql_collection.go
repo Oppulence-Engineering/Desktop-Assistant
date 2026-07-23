@@ -7,6 +7,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -15,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -172,6 +174,154 @@ func newActionOutcomePaginateArgs(rv map[string]any) *actionoutcomePaginateArgs 
 	}
 	if v, ok := rv[whereField].(*ActionOutcomeWhereInput); ok {
 		args.opts = append(args.opts, WithActionOutcomeFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *ActionProposalQuery) CollectFields(ctx context.Context, satisfies ...string) (*ActionProposalQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *ActionProposalQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(actionproposal.Columns))
+		selectedFields = []string{actionproposal.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[actionproposal.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldCreatedAt)
+				fieldSeen[actionproposal.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[actionproposal.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldUpdatedAt)
+				fieldSeen[actionproposal.FieldUpdatedAt] = struct{}{}
+			}
+		case "target":
+			if _, ok := fieldSeen[actionproposal.FieldTarget]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldTarget)
+				fieldSeen[actionproposal.FieldTarget] = struct{}{}
+			}
+		case "kind":
+			if _, ok := fieldSeen[actionproposal.FieldKind]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldKind)
+				fieldSeen[actionproposal.FieldKind] = struct{}{}
+			}
+		case "paramsJSON":
+			if _, ok := fieldSeen[actionproposal.FieldParamsJSON]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldParamsJSON)
+				fieldSeen[actionproposal.FieldParamsJSON] = struct{}{}
+			}
+		case "financial":
+			if _, ok := fieldSeen[actionproposal.FieldFinancial]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldFinancial)
+				fieldSeen[actionproposal.FieldFinancial] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[actionproposal.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldStatus)
+				fieldSeen[actionproposal.FieldStatus] = struct{}{}
+			}
+		case "correlationID":
+			if _, ok := fieldSeen[actionproposal.FieldCorrelationID]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldCorrelationID)
+				fieldSeen[actionproposal.FieldCorrelationID] = struct{}{}
+			}
+		case "entityID":
+			if _, ok := fieldSeen[actionproposal.FieldEntityID]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldEntityID)
+				fieldSeen[actionproposal.FieldEntityID] = struct{}{}
+			}
+		case "originRunID":
+			if _, ok := fieldSeen[actionproposal.FieldOriginRunID]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldOriginRunID)
+				fieldSeen[actionproposal.FieldOriginRunID] = struct{}{}
+			}
+		case "expiresAt":
+			if _, ok := fieldSeen[actionproposal.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldExpiresAt)
+				fieldSeen[actionproposal.FieldExpiresAt] = struct{}{}
+			}
+		case "approvedAt":
+			if _, ok := fieldSeen[actionproposal.FieldApprovedAt]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldApprovedAt)
+				fieldSeen[actionproposal.FieldApprovedAt] = struct{}{}
+			}
+		case "executedAt":
+			if _, ok := fieldSeen[actionproposal.FieldExecutedAt]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldExecutedAt)
+				fieldSeen[actionproposal.FieldExecutedAt] = struct{}{}
+			}
+		case "reason":
+			if _, ok := fieldSeen[actionproposal.FieldReason]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldReason)
+				fieldSeen[actionproposal.FieldReason] = struct{}{}
+			}
+		case "resultRef":
+			if _, ok := fieldSeen[actionproposal.FieldResultRef]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldResultRef)
+				fieldSeen[actionproposal.FieldResultRef] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type actionproposalPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []ActionProposalPaginateOption
+}
+
+func newActionProposalPaginateArgs(rv map[string]any) *actionproposalPaginateArgs {
+	args := &actionproposalPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*ActionProposalWhereInput); ok {
+		args.opts = append(args.opts, WithActionProposalFilter(v.Filter))
 	}
 	return args
 }
@@ -1475,6 +1625,129 @@ func newAgentTurnPaginateArgs(rv map[string]any) *agentturnPaginateArgs {
 	}
 	if v, ok := rv[whereField].(*AgentTurnWhereInput); ok {
 		args.opts = append(args.opts, WithAgentTurnFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *ApprovalTokenQuery) CollectFields(ctx context.Context, satisfies ...string) (*ApprovalTokenQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *ApprovalTokenQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(approvaltoken.Columns))
+		selectedFields = []string{approvaltoken.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[approvaltoken.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, approvaltoken.FieldCreatedAt)
+				fieldSeen[approvaltoken.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[approvaltoken.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, approvaltoken.FieldUpdatedAt)
+				fieldSeen[approvaltoken.FieldUpdatedAt] = struct{}{}
+			}
+		case "tokenHash":
+			if _, ok := fieldSeen[approvaltoken.FieldTokenHash]; !ok {
+				selectedFields = append(selectedFields, approvaltoken.FieldTokenHash)
+				fieldSeen[approvaltoken.FieldTokenHash] = struct{}{}
+			}
+		case "proposalID":
+			if _, ok := fieldSeen[approvaltoken.FieldProposalID]; !ok {
+				selectedFields = append(selectedFields, approvaltoken.FieldProposalID)
+				fieldSeen[approvaltoken.FieldProposalID] = struct{}{}
+			}
+		case "paramsHash":
+			if _, ok := fieldSeen[approvaltoken.FieldParamsHash]; !ok {
+				selectedFields = append(selectedFields, approvaltoken.FieldParamsHash)
+				fieldSeen[approvaltoken.FieldParamsHash] = struct{}{}
+			}
+		case "operatorUserID":
+			if _, ok := fieldSeen[approvaltoken.FieldOperatorUserID]; !ok {
+				selectedFields = append(selectedFields, approvaltoken.FieldOperatorUserID)
+				fieldSeen[approvaltoken.FieldOperatorUserID] = struct{}{}
+			}
+		case "stepUp":
+			if _, ok := fieldSeen[approvaltoken.FieldStepUp]; !ok {
+				selectedFields = append(selectedFields, approvaltoken.FieldStepUp)
+				fieldSeen[approvaltoken.FieldStepUp] = struct{}{}
+			}
+		case "expiresAt":
+			if _, ok := fieldSeen[approvaltoken.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, approvaltoken.FieldExpiresAt)
+				fieldSeen[approvaltoken.FieldExpiresAt] = struct{}{}
+			}
+		case "consumed":
+			if _, ok := fieldSeen[approvaltoken.FieldConsumed]; !ok {
+				selectedFields = append(selectedFields, approvaltoken.FieldConsumed)
+				fieldSeen[approvaltoken.FieldConsumed] = struct{}{}
+			}
+		case "consumedAt":
+			if _, ok := fieldSeen[approvaltoken.FieldConsumedAt]; !ok {
+				selectedFields = append(selectedFields, approvaltoken.FieldConsumedAt)
+				fieldSeen[approvaltoken.FieldConsumedAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type approvaltokenPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []ApprovalTokenPaginateOption
+}
+
+func newApprovalTokenPaginateArgs(rv map[string]any) *approvaltokenPaginateArgs {
+	args := &approvaltokenPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*ApprovalTokenWhereInput); ok {
+		args.opts = append(args.opts, WithApprovalTokenFilter(v.Filter))
 	}
 	return args
 }
@@ -6122,6 +6395,32 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedMailSignals(alias, func(wq *MailSignalQuery) {
+				*wq = *query
+			})
+
+		case "actionProposals":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ActionProposalClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, actionproposalImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedActionProposals(alias, func(wq *ActionProposalQuery) {
+				*wq = *query
+			})
+
+		case "approvalTokens":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApprovalTokenClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, approvaltokenImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedApprovalTokens(alias, func(wq *ApprovalTokenQuery) {
 				*wq = *query
 			})
 		case "createdAt":

@@ -34,7 +34,11 @@ func (CloudEvent) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("source").
 			Validate(oneOfBackgroundTask("source",
-				"gmail", "google_calendar", "google_drive", "slack", "webhook", "mcp", "github", "linear", "stripe", "internal")),
+				"gmail", "google_calendar", "google_drive", "slack", "webhook", "mcp", "github", "linear", "stripe", "internal",
+				// Product Act-seam return sources (RFC 023 Watch leg / RFC 013):
+				// the state change a closed-loop action produces comes back as a
+				// CloudEvent from the product it operated.
+				"conduit", "cadence", "eigen", "corinthian", "canvas")),
 		field.String("source_event_id").Optional(),   // provider's id (e.g. Gmail historyId)
 		field.String("source_account_id").Optional(), // which connected account
 		field.String("event_type").Optional(),        // provider-specific, e.g. "message.new"

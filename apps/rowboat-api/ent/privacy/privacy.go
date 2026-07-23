@@ -134,6 +134,30 @@ func (f ActionOutcomeMutationRuleFunc) EvalMutation(ctx context.Context, m ent.M
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ActionOutcomeMutation", m)
 }
 
+// The ActionProposalQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ActionProposalQueryRuleFunc func(context.Context, *ent.ActionProposalQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ActionProposalQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ActionProposalQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ActionProposalQuery", q)
+}
+
+// The ActionProposalMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ActionProposalMutationRuleFunc func(context.Context, *ent.ActionProposalMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ActionProposalMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ActionProposalMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ActionProposalMutation", m)
+}
+
 // The AgentApprovalQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type AgentApprovalQueryRuleFunc func(context.Context, *ent.AgentApprovalQuery) error
@@ -324,6 +348,30 @@ func (f AgentTurnMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutat
 		return f(ctx, m)
 	}
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.AgentTurnMutation", m)
+}
+
+// The ApprovalTokenQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ApprovalTokenQueryRuleFunc func(context.Context, *ent.ApprovalTokenQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ApprovalTokenQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ApprovalTokenQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ApprovalTokenQuery", q)
+}
+
+// The ApprovalTokenMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ApprovalTokenMutationRuleFunc func(context.Context, *ent.ApprovalTokenMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ApprovalTokenMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ApprovalTokenMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ApprovalTokenMutation", m)
 }
 
 // The BackgroundTaskQueryRuleFunc type is an adapter to allow the use of ordinary

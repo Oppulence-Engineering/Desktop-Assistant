@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// ActionOutcome is the client for interacting with the ActionOutcome builders.
 	ActionOutcome *ActionOutcomeClient
+	// ActionProposal is the client for interacting with the ActionProposal builders.
+	ActionProposal *ActionProposalClient
 	// AgentApproval is the client for interacting with the AgentApproval builders.
 	AgentApproval *AgentApprovalClient
 	// AgentDefinition is the client for interacting with the AgentDefinition builders.
@@ -30,6 +32,8 @@ type Tx struct {
 	AgentToolResultBlob *AgentToolResultBlobClient
 	// AgentTurn is the client for interacting with the AgentTurn builders.
 	AgentTurn *AgentTurnClient
+	// ApprovalToken is the client for interacting with the ApprovalToken builders.
+	ApprovalToken *ApprovalTokenClient
 	// BackgroundTask is the client for interacting with the BackgroundTask builders.
 	BackgroundTask *BackgroundTaskClient
 	// BackgroundTaskArtifact is the client for interacting with the BackgroundTaskArtifact builders.
@@ -230,6 +234,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.ActionOutcome = NewActionOutcomeClient(tx.config)
+	tx.ActionProposal = NewActionProposalClient(tx.config)
 	tx.AgentApproval = NewAgentApprovalClient(tx.config)
 	tx.AgentDefinition = NewAgentDefinitionClient(tx.config)
 	tx.AgentDefinitionHistory = NewAgentDefinitionHistoryClient(tx.config)
@@ -238,6 +243,7 @@ func (tx *Tx) init() {
 	tx.AgentToolCall = NewAgentToolCallClient(tx.config)
 	tx.AgentToolResultBlob = NewAgentToolResultBlobClient(tx.config)
 	tx.AgentTurn = NewAgentTurnClient(tx.config)
+	tx.ApprovalToken = NewApprovalTokenClient(tx.config)
 	tx.BackgroundTask = NewBackgroundTaskClient(tx.config)
 	tx.BackgroundTaskArtifact = NewBackgroundTaskArtifactClient(tx.config)
 	tx.BackgroundTaskRun = NewBackgroundTaskRunClient(tx.config)

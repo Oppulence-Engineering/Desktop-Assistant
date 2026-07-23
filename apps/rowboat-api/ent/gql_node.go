@@ -9,6 +9,7 @@ import (
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -17,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -60,6 +62,11 @@ var actionoutcomeImplementors = []string{"ActionOutcome", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*ActionOutcome) IsNode() {}
 
+var actionproposalImplementors = []string{"ActionProposal", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*ActionProposal) IsNode() {}
+
 var agentapprovalImplementors = []string{"AgentApproval", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
@@ -99,6 +106,11 @@ var agentturnImplementors = []string{"AgentTurn", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*AgentTurn) IsNode() {}
+
+var approvaltokenImplementors = []string{"ApprovalToken", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*ApprovalToken) IsNode() {}
 
 var backgroundtaskImplementors = []string{"BackgroundTask", "Node"}
 
@@ -312,6 +324,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			}
 		}
 		return query.Only(ctx)
+	case actionproposal.Table:
+		query := c.ActionProposal.Query().
+			Where(actionproposal.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, actionproposalImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case agentapproval.Table:
 		query := c.AgentApproval.Query().
 			Where(agentapproval.ID(id))
@@ -380,6 +401,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(agentturn.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agentturnImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case approvaltoken.Table:
+		query := c.ApprovalToken.Query().
+			Where(approvaltoken.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, approvaltokenImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -734,6 +764,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 				*noder = node
 			}
 		}
+	case actionproposal.Table:
+		query := c.ActionProposal.Query().
+			Where(actionproposal.IDIn(ids...))
+		query, err := query.CollectFields(ctx, actionproposalImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case agentapproval.Table:
 		query := c.AgentApproval.Query().
 			Where(agentapproval.IDIn(ids...))
@@ -850,6 +896,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.AgentTurn.Query().
 			Where(agentturn.IDIn(ids...))
 		query, err := query.CollectFields(ctx, agentturnImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case approvaltoken.Table:
+		query := c.ApprovalToken.Query().
+			Where(approvaltoken.IDIn(ids...))
+		query, err := query.CollectFields(ctx, approvaltokenImplementors...)
 		if err != nil {
 			return nil, err
 		}

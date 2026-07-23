@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
@@ -20,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -94,6 +96,8 @@ type UserQuery struct {
 	withMailMessageMetas                  *MailMessageMetaQuery
 	withMailBodyCaches                    *MailBodyCacheQuery
 	withMailSignals                       *MailSignalQuery
+	withActionProposals                   *ActionProposalQuery
+	withApprovalTokens                    *ApprovalTokenQuery
 	modifiers                             []func(*sql.Selector)
 	loadTotal                             []func(context.Context, []*User) error
 	withNamedLedgerEntries                map[string]*CreditLedgerQuery
@@ -130,6 +134,8 @@ type UserQuery struct {
 	withNamedMailMessageMetas             map[string]*MailMessageMetaQuery
 	withNamedMailBodyCaches               map[string]*MailBodyCacheQuery
 	withNamedMailSignals                  map[string]*MailSignalQuery
+	withNamedActionProposals              map[string]*ActionProposalQuery
+	withNamedApprovalTokens               map[string]*ApprovalTokenQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -936,6 +942,50 @@ func (_q *UserQuery) QueryMailSignals() *MailSignalQuery {
 	return query
 }
 
+// QueryActionProposals chains the current query on the "action_proposals" edge.
+func (_q *UserQuery) QueryActionProposals() *ActionProposalQuery {
+	query := (&ActionProposalClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(actionproposal.Table, actionproposal.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ActionProposalsTable, user.ActionProposalsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryApprovalTokens chains the current query on the "approval_tokens" edge.
+func (_q *UserQuery) QueryApprovalTokens() *ApprovalTokenQuery {
+	query := (&ApprovalTokenClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(approvaltoken.Table, approvaltoken.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ApprovalTokensTable, user.ApprovalTokensColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -1163,6 +1213,8 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withMailMessageMetas:             _q.withMailMessageMetas.Clone(),
 		withMailBodyCaches:               _q.withMailBodyCaches.Clone(),
 		withMailSignals:                  _q.withMailSignals.Clone(),
+		withActionProposals:              _q.withActionProposals.Clone(),
+		withApprovalTokens:               _q.withApprovalTokens.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -1554,6 +1606,28 @@ func (_q *UserQuery) WithMailSignals(opts ...func(*MailSignalQuery)) *UserQuery 
 	return _q
 }
 
+// WithActionProposals tells the query-builder to eager-load the nodes that are connected to
+// the "action_proposals" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithActionProposals(opts ...func(*ActionProposalQuery)) *UserQuery {
+	query := (&ActionProposalClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withActionProposals = query
+	return _q
+}
+
+// WithApprovalTokens tells the query-builder to eager-load the nodes that are connected to
+// the "approval_tokens" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithApprovalTokens(opts ...func(*ApprovalTokenQuery)) *UserQuery {
+	query := (&ApprovalTokenClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withApprovalTokens = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -1632,7 +1706,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [35]bool{
+		loadedTypes = [37]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -1668,6 +1742,8 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withMailMessageMetas != nil,
 			_q.withMailBodyCaches != nil,
 			_q.withMailSignals != nil,
+			_q.withActionProposals != nil,
+			_q.withApprovalTokens != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -1957,6 +2033,20 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withActionProposals; query != nil {
+		if err := _q.loadActionProposals(ctx, query, nodes,
+			func(n *User) { n.Edges.ActionProposals = []*ActionProposal{} },
+			func(n *User, e *ActionProposal) { n.Edges.ActionProposals = append(n.Edges.ActionProposals, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withApprovalTokens; query != nil {
+		if err := _q.loadApprovalTokens(ctx, query, nodes,
+			func(n *User) { n.Edges.ApprovalTokens = []*ApprovalToken{} },
+			func(n *User, e *ApprovalToken) { n.Edges.ApprovalTokens = append(n.Edges.ApprovalTokens, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -2192,6 +2282,20 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadMailSignals(ctx, query, nodes,
 			func(n *User) { n.appendNamedMailSignals(name) },
 			func(n *User, e *MailSignal) { n.appendNamedMailSignals(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedActionProposals {
+		if err := _q.loadActionProposals(ctx, query, nodes,
+			func(n *User) { n.appendNamedActionProposals(name) },
+			func(n *User, e *ActionProposal) { n.appendNamedActionProposals(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedApprovalTokens {
+		if err := _q.loadApprovalTokens(ctx, query, nodes,
+			func(n *User) { n.appendNamedApprovalTokens(name) },
+			func(n *User, e *ApprovalToken) { n.appendNamedApprovalTokens(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3285,6 +3389,68 @@ func (_q *UserQuery) loadMailSignals(ctx context.Context, query *MailSignalQuery
 	}
 	return nil
 }
+func (_q *UserQuery) loadActionProposals(ctx context.Context, query *ActionProposalQuery, nodes []*User, init func(*User), assign func(*User, *ActionProposal)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ActionProposal(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ActionProposalsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_action_proposals
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_action_proposals" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_action_proposals" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadApprovalTokens(ctx context.Context, query *ApprovalTokenQuery, nodes []*User, init func(*User), assign func(*User, *ApprovalToken)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ApprovalToken(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ApprovalTokensColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_approval_tokens
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_approval_tokens" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_approval_tokens" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -3843,6 +4009,34 @@ func (_q *UserQuery) WithNamedMailSignals(name string, opts ...func(*MailSignalQ
 		_q.withNamedMailSignals = make(map[string]*MailSignalQuery)
 	}
 	_q.withNamedMailSignals[name] = query
+	return _q
+}
+
+// WithNamedActionProposals tells the query-builder to eager-load the nodes that are connected to the "action_proposals"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedActionProposals(name string, opts ...func(*ActionProposalQuery)) *UserQuery {
+	query := (&ActionProposalClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedActionProposals == nil {
+		_q.withNamedActionProposals = make(map[string]*ActionProposalQuery)
+	}
+	_q.withNamedActionProposals[name] = query
+	return _q
+}
+
+// WithNamedApprovalTokens tells the query-builder to eager-load the nodes that are connected to the "approval_tokens"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedApprovalTokens(name string, opts ...func(*ApprovalTokenQuery)) *UserQuery {
+	query := (&ApprovalTokenClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedApprovalTokens == nil {
+		_q.withNamedApprovalTokens = make(map[string]*ApprovalTokenQuery)
+	}
+	_q.withNamedApprovalTokens[name] = query
 	return _q
 }
 

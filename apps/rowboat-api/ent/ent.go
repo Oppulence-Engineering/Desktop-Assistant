@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -21,6 +22,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -116,6 +118,7 @@ func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			actionoutcome.Table:               actionoutcome.ValidColumn,
+			actionproposal.Table:              actionproposal.ValidColumn,
 			agentapproval.Table:               agentapproval.ValidColumn,
 			agentdefinition.Table:             agentdefinition.ValidColumn,
 			agentdefinitionhistory.Table:      agentdefinitionhistory.ValidColumn,
@@ -124,6 +127,7 @@ func checkColumn(t, c string) error {
 			agenttoolcall.Table:               agenttoolcall.ValidColumn,
 			agenttoolresultblob.Table:         agenttoolresultblob.ValidColumn,
 			agentturn.Table:                   agentturn.ValidColumn,
+			approvaltoken.Table:               approvaltoken.ValidColumn,
 			backgroundtask.Table:              backgroundtask.ValidColumn,
 			backgroundtaskartifact.Table:      backgroundtaskartifact.ValidColumn,
 			backgroundtaskrun.Table:           backgroundtaskrun.ValidColumn,

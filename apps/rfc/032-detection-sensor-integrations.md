@@ -1,16 +1,16 @@
 # RFC 032: Detection Sensor Integrations for Revenue Memory
 
-|                  |                                                                                                                                                                                                                            |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 032                                                                                                                                                                                                                        |
-| **Status**       | Draft                                                                                                                                                                                                                      |
-| **Track**        | Product/platform - which integrations the warm-revenue loop adds after Gmail and Outlook, and in what order                                                                                                                |
-| **Owners**       | `rowboat/apps/rowboat-api` (connectors, detection, ledger)                                                                                                                                                                 |
-| **Created**      | 2026-07-22                                                                                                                                                                                                                 |
-| **Last updated** | 2026-07-22                                                                                                                                                                                                                 |
-| **Depends on**   | [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 019](./019-google-push-infrastructure.md), [RFC 030](./030-revenue-memory-outbound-governance.md), [RFC 031](./031-tiered-mail-storage-for-revenue-memory.md) |
-| **Related**      | [RFC 022](./022-unified-entity-graph.md), [RFC 023](./023-closed-loop-actions.md), [email-001](./email-001-mailbox-provider-foundation.md) (Outlook provider), [013](./013-oppulence-product-connector-fabric.md)          |
-| **Supersedes**   | none; sequences the connector roadmap that RFC 030's detection layer consumes                                                                                                                                              |
+|                  |                                                                                                                                                                                                                                     |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 032                                                                                                                                                                                                                                 |
+| **Status**       | Draft                                                                                                                                                                                                                               |
+| **Track**        | Product/platform - which integrations the warm-revenue loop adds after Gmail and Outlook, and in what order                                                                                                                         |
+| **Owners**       | `rowboat/apps/rowboat-api` (connectors, detection, ledger)                                                                                                                                                                          |
+| **Created**      | 2026-07-22                                                                                                                                                                                                                          |
+| **Last updated** | 2026-07-22                                                                                                                                                                                                                          |
+| **Depends on**   | [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 019](./019-google-push-infrastructure.md), [RFC 030](./complete-030-revenue-memory-outbound-governance.md), [RFC 031](./031-tiered-mail-storage-for-revenue-memory.md) |
+| **Related**      | [RFC 022](./022-unified-entity-graph.md), [RFC 023](./023-closed-loop-actions.md), [email-001](./email-001-mailbox-provider-foundation.md) (Outlook provider), [013](./013-oppulence-product-connector-fabric.md)                   |
+| **Supersedes**   | none; sequences the connector roadmap that RFC 030's detection layer consumes                                                                                                                                                       |
 
 ## Main point
 

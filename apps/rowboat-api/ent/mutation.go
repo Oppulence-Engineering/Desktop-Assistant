@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -20,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -69,6 +71,7 @@ const (
 
 	// Node types.
 	TypeActionOutcome               = "ActionOutcome"
+	TypeActionProposal              = "ActionProposal"
 	TypeAgentApproval               = "AgentApproval"
 	TypeAgentDefinition             = "AgentDefinition"
 	TypeAgentDefinitionHistory      = "AgentDefinitionHistory"
@@ -77,6 +80,7 @@ const (
 	TypeAgentToolCall               = "AgentToolCall"
 	TypeAgentToolResultBlob         = "AgentToolResultBlob"
 	TypeAgentTurn                   = "AgentTurn"
+	TypeApprovalToken               = "ApprovalToken"
 	TypeBackgroundTask              = "BackgroundTask"
 	TypeBackgroundTaskArtifact      = "BackgroundTaskArtifact"
 	TypeBackgroundTaskRun           = "BackgroundTaskRun"
@@ -974,6 +978,1408 @@ func (m *ActionOutcomeMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown ActionOutcome edge %s", name)
+}
+
+// ActionProposalMutation represents an operation that mutates the ActionProposal nodes in the graph.
+type ActionProposalMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *uuid.UUID
+	created_at     *time.Time
+	updated_at     *time.Time
+	target         *string
+	kind           *string
+	params_json    *string
+	financial      *bool
+	rationale      *string
+	status         *string
+	correlation_id *string
+	entity_id      *string
+	origin_run_id  *string
+	expires_at     *time.Time
+	approved_at    *time.Time
+	executed_at    *time.Time
+	reason         *string
+	result_ref     *string
+	clearedFields  map[string]struct{}
+	user           *uuid.UUID
+	cleareduser    bool
+	done           bool
+	oldValue       func(context.Context) (*ActionProposal, error)
+	predicates     []predicate.ActionProposal
+}
+
+var _ ent.Mutation = (*ActionProposalMutation)(nil)
+
+// actionproposalOption allows management of the mutation configuration using functional options.
+type actionproposalOption func(*ActionProposalMutation)
+
+// newActionProposalMutation creates new mutation for the ActionProposal entity.
+func newActionProposalMutation(c config, op Op, opts ...actionproposalOption) *ActionProposalMutation {
+	m := &ActionProposalMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeActionProposal,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withActionProposalID sets the ID field of the mutation.
+func withActionProposalID(id uuid.UUID) actionproposalOption {
+	return func(m *ActionProposalMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ActionProposal
+		)
+		m.oldValue = func(ctx context.Context) (*ActionProposal, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ActionProposal.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withActionProposal sets the old ActionProposal of the mutation.
+func withActionProposal(node *ActionProposal) actionproposalOption {
+	return func(m *ActionProposalMutation) {
+		m.oldValue = func(context.Context) (*ActionProposal, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ActionProposalMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ActionProposalMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ActionProposal entities.
+func (m *ActionProposalMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ActionProposalMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ActionProposalMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ActionProposal.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ActionProposalMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ActionProposalMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ActionProposalMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ActionProposalMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ActionProposalMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ActionProposalMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetTarget sets the "target" field.
+func (m *ActionProposalMutation) SetTarget(s string) {
+	m.target = &s
+}
+
+// Target returns the value of the "target" field in the mutation.
+func (m *ActionProposalMutation) Target() (r string, exists bool) {
+	v := m.target
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTarget returns the old "target" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldTarget(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTarget is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTarget requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTarget: %w", err)
+	}
+	return oldValue.Target, nil
+}
+
+// ResetTarget resets all changes to the "target" field.
+func (m *ActionProposalMutation) ResetTarget() {
+	m.target = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *ActionProposalMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *ActionProposalMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *ActionProposalMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetParamsJSON sets the "params_json" field.
+func (m *ActionProposalMutation) SetParamsJSON(s string) {
+	m.params_json = &s
+}
+
+// ParamsJSON returns the value of the "params_json" field in the mutation.
+func (m *ActionProposalMutation) ParamsJSON() (r string, exists bool) {
+	v := m.params_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldParamsJSON returns the old "params_json" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldParamsJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldParamsJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldParamsJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldParamsJSON: %w", err)
+	}
+	return oldValue.ParamsJSON, nil
+}
+
+// ClearParamsJSON clears the value of the "params_json" field.
+func (m *ActionProposalMutation) ClearParamsJSON() {
+	m.params_json = nil
+	m.clearedFields[actionproposal.FieldParamsJSON] = struct{}{}
+}
+
+// ParamsJSONCleared returns if the "params_json" field was cleared in this mutation.
+func (m *ActionProposalMutation) ParamsJSONCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldParamsJSON]
+	return ok
+}
+
+// ResetParamsJSON resets all changes to the "params_json" field.
+func (m *ActionProposalMutation) ResetParamsJSON() {
+	m.params_json = nil
+	delete(m.clearedFields, actionproposal.FieldParamsJSON)
+}
+
+// SetFinancial sets the "financial" field.
+func (m *ActionProposalMutation) SetFinancial(b bool) {
+	m.financial = &b
+}
+
+// Financial returns the value of the "financial" field in the mutation.
+func (m *ActionProposalMutation) Financial() (r bool, exists bool) {
+	v := m.financial
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFinancial returns the old "financial" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldFinancial(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFinancial is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFinancial requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFinancial: %w", err)
+	}
+	return oldValue.Financial, nil
+}
+
+// ResetFinancial resets all changes to the "financial" field.
+func (m *ActionProposalMutation) ResetFinancial() {
+	m.financial = nil
+}
+
+// SetRationale sets the "rationale" field.
+func (m *ActionProposalMutation) SetRationale(s string) {
+	m.rationale = &s
+}
+
+// Rationale returns the value of the "rationale" field in the mutation.
+func (m *ActionProposalMutation) Rationale() (r string, exists bool) {
+	v := m.rationale
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRationale returns the old "rationale" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldRationale(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRationale is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRationale requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRationale: %w", err)
+	}
+	return oldValue.Rationale, nil
+}
+
+// ClearRationale clears the value of the "rationale" field.
+func (m *ActionProposalMutation) ClearRationale() {
+	m.rationale = nil
+	m.clearedFields[actionproposal.FieldRationale] = struct{}{}
+}
+
+// RationaleCleared returns if the "rationale" field was cleared in this mutation.
+func (m *ActionProposalMutation) RationaleCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldRationale]
+	return ok
+}
+
+// ResetRationale resets all changes to the "rationale" field.
+func (m *ActionProposalMutation) ResetRationale() {
+	m.rationale = nil
+	delete(m.clearedFields, actionproposal.FieldRationale)
+}
+
+// SetStatus sets the "status" field.
+func (m *ActionProposalMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *ActionProposalMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *ActionProposalMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetCorrelationID sets the "correlation_id" field.
+func (m *ActionProposalMutation) SetCorrelationID(s string) {
+	m.correlation_id = &s
+}
+
+// CorrelationID returns the value of the "correlation_id" field in the mutation.
+func (m *ActionProposalMutation) CorrelationID() (r string, exists bool) {
+	v := m.correlation_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCorrelationID returns the old "correlation_id" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldCorrelationID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCorrelationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCorrelationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCorrelationID: %w", err)
+	}
+	return oldValue.CorrelationID, nil
+}
+
+// ClearCorrelationID clears the value of the "correlation_id" field.
+func (m *ActionProposalMutation) ClearCorrelationID() {
+	m.correlation_id = nil
+	m.clearedFields[actionproposal.FieldCorrelationID] = struct{}{}
+}
+
+// CorrelationIDCleared returns if the "correlation_id" field was cleared in this mutation.
+func (m *ActionProposalMutation) CorrelationIDCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldCorrelationID]
+	return ok
+}
+
+// ResetCorrelationID resets all changes to the "correlation_id" field.
+func (m *ActionProposalMutation) ResetCorrelationID() {
+	m.correlation_id = nil
+	delete(m.clearedFields, actionproposal.FieldCorrelationID)
+}
+
+// SetEntityID sets the "entity_id" field.
+func (m *ActionProposalMutation) SetEntityID(s string) {
+	m.entity_id = &s
+}
+
+// EntityID returns the value of the "entity_id" field in the mutation.
+func (m *ActionProposalMutation) EntityID() (r string, exists bool) {
+	v := m.entity_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEntityID returns the old "entity_id" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldEntityID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEntityID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEntityID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEntityID: %w", err)
+	}
+	return oldValue.EntityID, nil
+}
+
+// ClearEntityID clears the value of the "entity_id" field.
+func (m *ActionProposalMutation) ClearEntityID() {
+	m.entity_id = nil
+	m.clearedFields[actionproposal.FieldEntityID] = struct{}{}
+}
+
+// EntityIDCleared returns if the "entity_id" field was cleared in this mutation.
+func (m *ActionProposalMutation) EntityIDCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldEntityID]
+	return ok
+}
+
+// ResetEntityID resets all changes to the "entity_id" field.
+func (m *ActionProposalMutation) ResetEntityID() {
+	m.entity_id = nil
+	delete(m.clearedFields, actionproposal.FieldEntityID)
+}
+
+// SetOriginRunID sets the "origin_run_id" field.
+func (m *ActionProposalMutation) SetOriginRunID(s string) {
+	m.origin_run_id = &s
+}
+
+// OriginRunID returns the value of the "origin_run_id" field in the mutation.
+func (m *ActionProposalMutation) OriginRunID() (r string, exists bool) {
+	v := m.origin_run_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOriginRunID returns the old "origin_run_id" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldOriginRunID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOriginRunID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOriginRunID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOriginRunID: %w", err)
+	}
+	return oldValue.OriginRunID, nil
+}
+
+// ClearOriginRunID clears the value of the "origin_run_id" field.
+func (m *ActionProposalMutation) ClearOriginRunID() {
+	m.origin_run_id = nil
+	m.clearedFields[actionproposal.FieldOriginRunID] = struct{}{}
+}
+
+// OriginRunIDCleared returns if the "origin_run_id" field was cleared in this mutation.
+func (m *ActionProposalMutation) OriginRunIDCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldOriginRunID]
+	return ok
+}
+
+// ResetOriginRunID resets all changes to the "origin_run_id" field.
+func (m *ActionProposalMutation) ResetOriginRunID() {
+	m.origin_run_id = nil
+	delete(m.clearedFields, actionproposal.FieldOriginRunID)
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *ActionProposalMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *ActionProposalMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (m *ActionProposalMutation) ClearExpiresAt() {
+	m.expires_at = nil
+	m.clearedFields[actionproposal.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
+func (m *ActionProposalMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldExpiresAt]
+	return ok
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *ActionProposalMutation) ResetExpiresAt() {
+	m.expires_at = nil
+	delete(m.clearedFields, actionproposal.FieldExpiresAt)
+}
+
+// SetApprovedAt sets the "approved_at" field.
+func (m *ActionProposalMutation) SetApprovedAt(t time.Time) {
+	m.approved_at = &t
+}
+
+// ApprovedAt returns the value of the "approved_at" field in the mutation.
+func (m *ActionProposalMutation) ApprovedAt() (r time.Time, exists bool) {
+	v := m.approved_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldApprovedAt returns the old "approved_at" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldApprovedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldApprovedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldApprovedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldApprovedAt: %w", err)
+	}
+	return oldValue.ApprovedAt, nil
+}
+
+// ClearApprovedAt clears the value of the "approved_at" field.
+func (m *ActionProposalMutation) ClearApprovedAt() {
+	m.approved_at = nil
+	m.clearedFields[actionproposal.FieldApprovedAt] = struct{}{}
+}
+
+// ApprovedAtCleared returns if the "approved_at" field was cleared in this mutation.
+func (m *ActionProposalMutation) ApprovedAtCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldApprovedAt]
+	return ok
+}
+
+// ResetApprovedAt resets all changes to the "approved_at" field.
+func (m *ActionProposalMutation) ResetApprovedAt() {
+	m.approved_at = nil
+	delete(m.clearedFields, actionproposal.FieldApprovedAt)
+}
+
+// SetExecutedAt sets the "executed_at" field.
+func (m *ActionProposalMutation) SetExecutedAt(t time.Time) {
+	m.executed_at = &t
+}
+
+// ExecutedAt returns the value of the "executed_at" field in the mutation.
+func (m *ActionProposalMutation) ExecutedAt() (r time.Time, exists bool) {
+	v := m.executed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExecutedAt returns the old "executed_at" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldExecutedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExecutedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExecutedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExecutedAt: %w", err)
+	}
+	return oldValue.ExecutedAt, nil
+}
+
+// ClearExecutedAt clears the value of the "executed_at" field.
+func (m *ActionProposalMutation) ClearExecutedAt() {
+	m.executed_at = nil
+	m.clearedFields[actionproposal.FieldExecutedAt] = struct{}{}
+}
+
+// ExecutedAtCleared returns if the "executed_at" field was cleared in this mutation.
+func (m *ActionProposalMutation) ExecutedAtCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldExecutedAt]
+	return ok
+}
+
+// ResetExecutedAt resets all changes to the "executed_at" field.
+func (m *ActionProposalMutation) ResetExecutedAt() {
+	m.executed_at = nil
+	delete(m.clearedFields, actionproposal.FieldExecutedAt)
+}
+
+// SetReason sets the "reason" field.
+func (m *ActionProposalMutation) SetReason(s string) {
+	m.reason = &s
+}
+
+// Reason returns the value of the "reason" field in the mutation.
+func (m *ActionProposalMutation) Reason() (r string, exists bool) {
+	v := m.reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReason returns the old "reason" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReason: %w", err)
+	}
+	return oldValue.Reason, nil
+}
+
+// ClearReason clears the value of the "reason" field.
+func (m *ActionProposalMutation) ClearReason() {
+	m.reason = nil
+	m.clearedFields[actionproposal.FieldReason] = struct{}{}
+}
+
+// ReasonCleared returns if the "reason" field was cleared in this mutation.
+func (m *ActionProposalMutation) ReasonCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldReason]
+	return ok
+}
+
+// ResetReason resets all changes to the "reason" field.
+func (m *ActionProposalMutation) ResetReason() {
+	m.reason = nil
+	delete(m.clearedFields, actionproposal.FieldReason)
+}
+
+// SetResultRef sets the "result_ref" field.
+func (m *ActionProposalMutation) SetResultRef(s string) {
+	m.result_ref = &s
+}
+
+// ResultRef returns the value of the "result_ref" field in the mutation.
+func (m *ActionProposalMutation) ResultRef() (r string, exists bool) {
+	v := m.result_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResultRef returns the old "result_ref" field's value of the ActionProposal entity.
+// If the ActionProposal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionProposalMutation) OldResultRef(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResultRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResultRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResultRef: %w", err)
+	}
+	return oldValue.ResultRef, nil
+}
+
+// ClearResultRef clears the value of the "result_ref" field.
+func (m *ActionProposalMutation) ClearResultRef() {
+	m.result_ref = nil
+	m.clearedFields[actionproposal.FieldResultRef] = struct{}{}
+}
+
+// ResultRefCleared returns if the "result_ref" field was cleared in this mutation.
+func (m *ActionProposalMutation) ResultRefCleared() bool {
+	_, ok := m.clearedFields[actionproposal.FieldResultRef]
+	return ok
+}
+
+// ResetResultRef resets all changes to the "result_ref" field.
+func (m *ActionProposalMutation) ResetResultRef() {
+	m.result_ref = nil
+	delete(m.clearedFields, actionproposal.FieldResultRef)
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *ActionProposalMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *ActionProposalMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *ActionProposalMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *ActionProposalMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *ActionProposalMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *ActionProposalMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the ActionProposalMutation builder.
+func (m *ActionProposalMutation) Where(ps ...predicate.ActionProposal) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ActionProposalMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ActionProposalMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ActionProposal, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ActionProposalMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ActionProposalMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ActionProposal).
+func (m *ActionProposalMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ActionProposalMutation) Fields() []string {
+	fields := make([]string, 0, 16)
+	if m.created_at != nil {
+		fields = append(fields, actionproposal.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, actionproposal.FieldUpdatedAt)
+	}
+	if m.target != nil {
+		fields = append(fields, actionproposal.FieldTarget)
+	}
+	if m.kind != nil {
+		fields = append(fields, actionproposal.FieldKind)
+	}
+	if m.params_json != nil {
+		fields = append(fields, actionproposal.FieldParamsJSON)
+	}
+	if m.financial != nil {
+		fields = append(fields, actionproposal.FieldFinancial)
+	}
+	if m.rationale != nil {
+		fields = append(fields, actionproposal.FieldRationale)
+	}
+	if m.status != nil {
+		fields = append(fields, actionproposal.FieldStatus)
+	}
+	if m.correlation_id != nil {
+		fields = append(fields, actionproposal.FieldCorrelationID)
+	}
+	if m.entity_id != nil {
+		fields = append(fields, actionproposal.FieldEntityID)
+	}
+	if m.origin_run_id != nil {
+		fields = append(fields, actionproposal.FieldOriginRunID)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, actionproposal.FieldExpiresAt)
+	}
+	if m.approved_at != nil {
+		fields = append(fields, actionproposal.FieldApprovedAt)
+	}
+	if m.executed_at != nil {
+		fields = append(fields, actionproposal.FieldExecutedAt)
+	}
+	if m.reason != nil {
+		fields = append(fields, actionproposal.FieldReason)
+	}
+	if m.result_ref != nil {
+		fields = append(fields, actionproposal.FieldResultRef)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ActionProposalMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case actionproposal.FieldCreatedAt:
+		return m.CreatedAt()
+	case actionproposal.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case actionproposal.FieldTarget:
+		return m.Target()
+	case actionproposal.FieldKind:
+		return m.Kind()
+	case actionproposal.FieldParamsJSON:
+		return m.ParamsJSON()
+	case actionproposal.FieldFinancial:
+		return m.Financial()
+	case actionproposal.FieldRationale:
+		return m.Rationale()
+	case actionproposal.FieldStatus:
+		return m.Status()
+	case actionproposal.FieldCorrelationID:
+		return m.CorrelationID()
+	case actionproposal.FieldEntityID:
+		return m.EntityID()
+	case actionproposal.FieldOriginRunID:
+		return m.OriginRunID()
+	case actionproposal.FieldExpiresAt:
+		return m.ExpiresAt()
+	case actionproposal.FieldApprovedAt:
+		return m.ApprovedAt()
+	case actionproposal.FieldExecutedAt:
+		return m.ExecutedAt()
+	case actionproposal.FieldReason:
+		return m.Reason()
+	case actionproposal.FieldResultRef:
+		return m.ResultRef()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ActionProposalMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case actionproposal.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case actionproposal.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case actionproposal.FieldTarget:
+		return m.OldTarget(ctx)
+	case actionproposal.FieldKind:
+		return m.OldKind(ctx)
+	case actionproposal.FieldParamsJSON:
+		return m.OldParamsJSON(ctx)
+	case actionproposal.FieldFinancial:
+		return m.OldFinancial(ctx)
+	case actionproposal.FieldRationale:
+		return m.OldRationale(ctx)
+	case actionproposal.FieldStatus:
+		return m.OldStatus(ctx)
+	case actionproposal.FieldCorrelationID:
+		return m.OldCorrelationID(ctx)
+	case actionproposal.FieldEntityID:
+		return m.OldEntityID(ctx)
+	case actionproposal.FieldOriginRunID:
+		return m.OldOriginRunID(ctx)
+	case actionproposal.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case actionproposal.FieldApprovedAt:
+		return m.OldApprovedAt(ctx)
+	case actionproposal.FieldExecutedAt:
+		return m.OldExecutedAt(ctx)
+	case actionproposal.FieldReason:
+		return m.OldReason(ctx)
+	case actionproposal.FieldResultRef:
+		return m.OldResultRef(ctx)
+	}
+	return nil, fmt.Errorf("unknown ActionProposal field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ActionProposalMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case actionproposal.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case actionproposal.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case actionproposal.FieldTarget:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTarget(v)
+		return nil
+	case actionproposal.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case actionproposal.FieldParamsJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetParamsJSON(v)
+		return nil
+	case actionproposal.FieldFinancial:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFinancial(v)
+		return nil
+	case actionproposal.FieldRationale:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRationale(v)
+		return nil
+	case actionproposal.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case actionproposal.FieldCorrelationID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCorrelationID(v)
+		return nil
+	case actionproposal.FieldEntityID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEntityID(v)
+		return nil
+	case actionproposal.FieldOriginRunID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOriginRunID(v)
+		return nil
+	case actionproposal.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case actionproposal.FieldApprovedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetApprovedAt(v)
+		return nil
+	case actionproposal.FieldExecutedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExecutedAt(v)
+		return nil
+	case actionproposal.FieldReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReason(v)
+		return nil
+	case actionproposal.FieldResultRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResultRef(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ActionProposal field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ActionProposalMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ActionProposalMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ActionProposalMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ActionProposal numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ActionProposalMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(actionproposal.FieldParamsJSON) {
+		fields = append(fields, actionproposal.FieldParamsJSON)
+	}
+	if m.FieldCleared(actionproposal.FieldRationale) {
+		fields = append(fields, actionproposal.FieldRationale)
+	}
+	if m.FieldCleared(actionproposal.FieldCorrelationID) {
+		fields = append(fields, actionproposal.FieldCorrelationID)
+	}
+	if m.FieldCleared(actionproposal.FieldEntityID) {
+		fields = append(fields, actionproposal.FieldEntityID)
+	}
+	if m.FieldCleared(actionproposal.FieldOriginRunID) {
+		fields = append(fields, actionproposal.FieldOriginRunID)
+	}
+	if m.FieldCleared(actionproposal.FieldExpiresAt) {
+		fields = append(fields, actionproposal.FieldExpiresAt)
+	}
+	if m.FieldCleared(actionproposal.FieldApprovedAt) {
+		fields = append(fields, actionproposal.FieldApprovedAt)
+	}
+	if m.FieldCleared(actionproposal.FieldExecutedAt) {
+		fields = append(fields, actionproposal.FieldExecutedAt)
+	}
+	if m.FieldCleared(actionproposal.FieldReason) {
+		fields = append(fields, actionproposal.FieldReason)
+	}
+	if m.FieldCleared(actionproposal.FieldResultRef) {
+		fields = append(fields, actionproposal.FieldResultRef)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ActionProposalMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ActionProposalMutation) ClearField(name string) error {
+	switch name {
+	case actionproposal.FieldParamsJSON:
+		m.ClearParamsJSON()
+		return nil
+	case actionproposal.FieldRationale:
+		m.ClearRationale()
+		return nil
+	case actionproposal.FieldCorrelationID:
+		m.ClearCorrelationID()
+		return nil
+	case actionproposal.FieldEntityID:
+		m.ClearEntityID()
+		return nil
+	case actionproposal.FieldOriginRunID:
+		m.ClearOriginRunID()
+		return nil
+	case actionproposal.FieldExpiresAt:
+		m.ClearExpiresAt()
+		return nil
+	case actionproposal.FieldApprovedAt:
+		m.ClearApprovedAt()
+		return nil
+	case actionproposal.FieldExecutedAt:
+		m.ClearExecutedAt()
+		return nil
+	case actionproposal.FieldReason:
+		m.ClearReason()
+		return nil
+	case actionproposal.FieldResultRef:
+		m.ClearResultRef()
+		return nil
+	}
+	return fmt.Errorf("unknown ActionProposal nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ActionProposalMutation) ResetField(name string) error {
+	switch name {
+	case actionproposal.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case actionproposal.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case actionproposal.FieldTarget:
+		m.ResetTarget()
+		return nil
+	case actionproposal.FieldKind:
+		m.ResetKind()
+		return nil
+	case actionproposal.FieldParamsJSON:
+		m.ResetParamsJSON()
+		return nil
+	case actionproposal.FieldFinancial:
+		m.ResetFinancial()
+		return nil
+	case actionproposal.FieldRationale:
+		m.ResetRationale()
+		return nil
+	case actionproposal.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case actionproposal.FieldCorrelationID:
+		m.ResetCorrelationID()
+		return nil
+	case actionproposal.FieldEntityID:
+		m.ResetEntityID()
+		return nil
+	case actionproposal.FieldOriginRunID:
+		m.ResetOriginRunID()
+		return nil
+	case actionproposal.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case actionproposal.FieldApprovedAt:
+		m.ResetApprovedAt()
+		return nil
+	case actionproposal.FieldExecutedAt:
+		m.ResetExecutedAt()
+		return nil
+	case actionproposal.FieldReason:
+		m.ResetReason()
+		return nil
+	case actionproposal.FieldResultRef:
+		m.ResetResultRef()
+		return nil
+	}
+	return fmt.Errorf("unknown ActionProposal field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ActionProposalMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, actionproposal.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ActionProposalMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case actionproposal.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ActionProposalMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ActionProposalMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ActionProposalMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, actionproposal.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ActionProposalMutation) EdgeCleared(name string) bool {
+	switch name {
+	case actionproposal.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ActionProposalMutation) ClearEdge(name string) error {
+	switch name {
+	case actionproposal.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown ActionProposal unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ActionProposalMutation) ResetEdge(name string) error {
+	switch name {
+	case actionproposal.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown ActionProposal edge %s", name)
 }
 
 // AgentApprovalMutation represents an operation that mutates the AgentApproval nodes in the graph.
@@ -12898,6 +14304,913 @@ func (m *AgentTurnMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown AgentTurn edge %s", name)
+}
+
+// ApprovalTokenMutation represents an operation that mutates the ApprovalToken nodes in the graph.
+type ApprovalTokenMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	token_hash       *string
+	proposal_id      *string
+	params_hash      *string
+	operator_user_id *string
+	step_up          *bool
+	expires_at       *time.Time
+	consumed         *bool
+	consumed_at      *time.Time
+	clearedFields    map[string]struct{}
+	user             *uuid.UUID
+	cleareduser      bool
+	done             bool
+	oldValue         func(context.Context) (*ApprovalToken, error)
+	predicates       []predicate.ApprovalToken
+}
+
+var _ ent.Mutation = (*ApprovalTokenMutation)(nil)
+
+// approvaltokenOption allows management of the mutation configuration using functional options.
+type approvaltokenOption func(*ApprovalTokenMutation)
+
+// newApprovalTokenMutation creates new mutation for the ApprovalToken entity.
+func newApprovalTokenMutation(c config, op Op, opts ...approvaltokenOption) *ApprovalTokenMutation {
+	m := &ApprovalTokenMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeApprovalToken,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withApprovalTokenID sets the ID field of the mutation.
+func withApprovalTokenID(id uuid.UUID) approvaltokenOption {
+	return func(m *ApprovalTokenMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ApprovalToken
+		)
+		m.oldValue = func(ctx context.Context) (*ApprovalToken, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ApprovalToken.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withApprovalToken sets the old ApprovalToken of the mutation.
+func withApprovalToken(node *ApprovalToken) approvaltokenOption {
+	return func(m *ApprovalTokenMutation) {
+		m.oldValue = func(context.Context) (*ApprovalToken, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ApprovalTokenMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ApprovalTokenMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ApprovalToken entities.
+func (m *ApprovalTokenMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ApprovalTokenMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ApprovalTokenMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ApprovalToken.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ApprovalTokenMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ApprovalTokenMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ApprovalToken entity.
+// If the ApprovalToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalTokenMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ApprovalTokenMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ApprovalTokenMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ApprovalTokenMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ApprovalToken entity.
+// If the ApprovalToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalTokenMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ApprovalTokenMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetTokenHash sets the "token_hash" field.
+func (m *ApprovalTokenMutation) SetTokenHash(s string) {
+	m.token_hash = &s
+}
+
+// TokenHash returns the value of the "token_hash" field in the mutation.
+func (m *ApprovalTokenMutation) TokenHash() (r string, exists bool) {
+	v := m.token_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTokenHash returns the old "token_hash" field's value of the ApprovalToken entity.
+// If the ApprovalToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalTokenMutation) OldTokenHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTokenHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTokenHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTokenHash: %w", err)
+	}
+	return oldValue.TokenHash, nil
+}
+
+// ResetTokenHash resets all changes to the "token_hash" field.
+func (m *ApprovalTokenMutation) ResetTokenHash() {
+	m.token_hash = nil
+}
+
+// SetProposalID sets the "proposal_id" field.
+func (m *ApprovalTokenMutation) SetProposalID(s string) {
+	m.proposal_id = &s
+}
+
+// ProposalID returns the value of the "proposal_id" field in the mutation.
+func (m *ApprovalTokenMutation) ProposalID() (r string, exists bool) {
+	v := m.proposal_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProposalID returns the old "proposal_id" field's value of the ApprovalToken entity.
+// If the ApprovalToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalTokenMutation) OldProposalID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProposalID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProposalID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProposalID: %w", err)
+	}
+	return oldValue.ProposalID, nil
+}
+
+// ResetProposalID resets all changes to the "proposal_id" field.
+func (m *ApprovalTokenMutation) ResetProposalID() {
+	m.proposal_id = nil
+}
+
+// SetParamsHash sets the "params_hash" field.
+func (m *ApprovalTokenMutation) SetParamsHash(s string) {
+	m.params_hash = &s
+}
+
+// ParamsHash returns the value of the "params_hash" field in the mutation.
+func (m *ApprovalTokenMutation) ParamsHash() (r string, exists bool) {
+	v := m.params_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldParamsHash returns the old "params_hash" field's value of the ApprovalToken entity.
+// If the ApprovalToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalTokenMutation) OldParamsHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldParamsHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldParamsHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldParamsHash: %w", err)
+	}
+	return oldValue.ParamsHash, nil
+}
+
+// ResetParamsHash resets all changes to the "params_hash" field.
+func (m *ApprovalTokenMutation) ResetParamsHash() {
+	m.params_hash = nil
+}
+
+// SetOperatorUserID sets the "operator_user_id" field.
+func (m *ApprovalTokenMutation) SetOperatorUserID(s string) {
+	m.operator_user_id = &s
+}
+
+// OperatorUserID returns the value of the "operator_user_id" field in the mutation.
+func (m *ApprovalTokenMutation) OperatorUserID() (r string, exists bool) {
+	v := m.operator_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOperatorUserID returns the old "operator_user_id" field's value of the ApprovalToken entity.
+// If the ApprovalToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalTokenMutation) OldOperatorUserID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOperatorUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOperatorUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOperatorUserID: %w", err)
+	}
+	return oldValue.OperatorUserID, nil
+}
+
+// ResetOperatorUserID resets all changes to the "operator_user_id" field.
+func (m *ApprovalTokenMutation) ResetOperatorUserID() {
+	m.operator_user_id = nil
+}
+
+// SetStepUp sets the "step_up" field.
+func (m *ApprovalTokenMutation) SetStepUp(b bool) {
+	m.step_up = &b
+}
+
+// StepUp returns the value of the "step_up" field in the mutation.
+func (m *ApprovalTokenMutation) StepUp() (r bool, exists bool) {
+	v := m.step_up
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStepUp returns the old "step_up" field's value of the ApprovalToken entity.
+// If the ApprovalToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalTokenMutation) OldStepUp(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStepUp is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStepUp requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStepUp: %w", err)
+	}
+	return oldValue.StepUp, nil
+}
+
+// ResetStepUp resets all changes to the "step_up" field.
+func (m *ApprovalTokenMutation) ResetStepUp() {
+	m.step_up = nil
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *ApprovalTokenMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *ApprovalTokenMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the ApprovalToken entity.
+// If the ApprovalToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalTokenMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *ApprovalTokenMutation) ResetExpiresAt() {
+	m.expires_at = nil
+}
+
+// SetConsumed sets the "consumed" field.
+func (m *ApprovalTokenMutation) SetConsumed(b bool) {
+	m.consumed = &b
+}
+
+// Consumed returns the value of the "consumed" field in the mutation.
+func (m *ApprovalTokenMutation) Consumed() (r bool, exists bool) {
+	v := m.consumed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConsumed returns the old "consumed" field's value of the ApprovalToken entity.
+// If the ApprovalToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalTokenMutation) OldConsumed(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConsumed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConsumed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConsumed: %w", err)
+	}
+	return oldValue.Consumed, nil
+}
+
+// ResetConsumed resets all changes to the "consumed" field.
+func (m *ApprovalTokenMutation) ResetConsumed() {
+	m.consumed = nil
+}
+
+// SetConsumedAt sets the "consumed_at" field.
+func (m *ApprovalTokenMutation) SetConsumedAt(t time.Time) {
+	m.consumed_at = &t
+}
+
+// ConsumedAt returns the value of the "consumed_at" field in the mutation.
+func (m *ApprovalTokenMutation) ConsumedAt() (r time.Time, exists bool) {
+	v := m.consumed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConsumedAt returns the old "consumed_at" field's value of the ApprovalToken entity.
+// If the ApprovalToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalTokenMutation) OldConsumedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConsumedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConsumedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConsumedAt: %w", err)
+	}
+	return oldValue.ConsumedAt, nil
+}
+
+// ClearConsumedAt clears the value of the "consumed_at" field.
+func (m *ApprovalTokenMutation) ClearConsumedAt() {
+	m.consumed_at = nil
+	m.clearedFields[approvaltoken.FieldConsumedAt] = struct{}{}
+}
+
+// ConsumedAtCleared returns if the "consumed_at" field was cleared in this mutation.
+func (m *ApprovalTokenMutation) ConsumedAtCleared() bool {
+	_, ok := m.clearedFields[approvaltoken.FieldConsumedAt]
+	return ok
+}
+
+// ResetConsumedAt resets all changes to the "consumed_at" field.
+func (m *ApprovalTokenMutation) ResetConsumedAt() {
+	m.consumed_at = nil
+	delete(m.clearedFields, approvaltoken.FieldConsumedAt)
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *ApprovalTokenMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *ApprovalTokenMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *ApprovalTokenMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *ApprovalTokenMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *ApprovalTokenMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *ApprovalTokenMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the ApprovalTokenMutation builder.
+func (m *ApprovalTokenMutation) Where(ps ...predicate.ApprovalToken) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ApprovalTokenMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ApprovalTokenMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ApprovalToken, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ApprovalTokenMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ApprovalTokenMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ApprovalToken).
+func (m *ApprovalTokenMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ApprovalTokenMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.created_at != nil {
+		fields = append(fields, approvaltoken.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, approvaltoken.FieldUpdatedAt)
+	}
+	if m.token_hash != nil {
+		fields = append(fields, approvaltoken.FieldTokenHash)
+	}
+	if m.proposal_id != nil {
+		fields = append(fields, approvaltoken.FieldProposalID)
+	}
+	if m.params_hash != nil {
+		fields = append(fields, approvaltoken.FieldParamsHash)
+	}
+	if m.operator_user_id != nil {
+		fields = append(fields, approvaltoken.FieldOperatorUserID)
+	}
+	if m.step_up != nil {
+		fields = append(fields, approvaltoken.FieldStepUp)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, approvaltoken.FieldExpiresAt)
+	}
+	if m.consumed != nil {
+		fields = append(fields, approvaltoken.FieldConsumed)
+	}
+	if m.consumed_at != nil {
+		fields = append(fields, approvaltoken.FieldConsumedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ApprovalTokenMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case approvaltoken.FieldCreatedAt:
+		return m.CreatedAt()
+	case approvaltoken.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case approvaltoken.FieldTokenHash:
+		return m.TokenHash()
+	case approvaltoken.FieldProposalID:
+		return m.ProposalID()
+	case approvaltoken.FieldParamsHash:
+		return m.ParamsHash()
+	case approvaltoken.FieldOperatorUserID:
+		return m.OperatorUserID()
+	case approvaltoken.FieldStepUp:
+		return m.StepUp()
+	case approvaltoken.FieldExpiresAt:
+		return m.ExpiresAt()
+	case approvaltoken.FieldConsumed:
+		return m.Consumed()
+	case approvaltoken.FieldConsumedAt:
+		return m.ConsumedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ApprovalTokenMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case approvaltoken.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case approvaltoken.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case approvaltoken.FieldTokenHash:
+		return m.OldTokenHash(ctx)
+	case approvaltoken.FieldProposalID:
+		return m.OldProposalID(ctx)
+	case approvaltoken.FieldParamsHash:
+		return m.OldParamsHash(ctx)
+	case approvaltoken.FieldOperatorUserID:
+		return m.OldOperatorUserID(ctx)
+	case approvaltoken.FieldStepUp:
+		return m.OldStepUp(ctx)
+	case approvaltoken.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case approvaltoken.FieldConsumed:
+		return m.OldConsumed(ctx)
+	case approvaltoken.FieldConsumedAt:
+		return m.OldConsumedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ApprovalToken field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ApprovalTokenMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case approvaltoken.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case approvaltoken.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case approvaltoken.FieldTokenHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTokenHash(v)
+		return nil
+	case approvaltoken.FieldProposalID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProposalID(v)
+		return nil
+	case approvaltoken.FieldParamsHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetParamsHash(v)
+		return nil
+	case approvaltoken.FieldOperatorUserID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOperatorUserID(v)
+		return nil
+	case approvaltoken.FieldStepUp:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStepUp(v)
+		return nil
+	case approvaltoken.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case approvaltoken.FieldConsumed:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConsumed(v)
+		return nil
+	case approvaltoken.FieldConsumedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConsumedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ApprovalToken field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ApprovalTokenMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ApprovalTokenMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ApprovalTokenMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ApprovalToken numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ApprovalTokenMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(approvaltoken.FieldConsumedAt) {
+		fields = append(fields, approvaltoken.FieldConsumedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ApprovalTokenMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ApprovalTokenMutation) ClearField(name string) error {
+	switch name {
+	case approvaltoken.FieldConsumedAt:
+		m.ClearConsumedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ApprovalToken nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ApprovalTokenMutation) ResetField(name string) error {
+	switch name {
+	case approvaltoken.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case approvaltoken.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case approvaltoken.FieldTokenHash:
+		m.ResetTokenHash()
+		return nil
+	case approvaltoken.FieldProposalID:
+		m.ResetProposalID()
+		return nil
+	case approvaltoken.FieldParamsHash:
+		m.ResetParamsHash()
+		return nil
+	case approvaltoken.FieldOperatorUserID:
+		m.ResetOperatorUserID()
+		return nil
+	case approvaltoken.FieldStepUp:
+		m.ResetStepUp()
+		return nil
+	case approvaltoken.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case approvaltoken.FieldConsumed:
+		m.ResetConsumed()
+		return nil
+	case approvaltoken.FieldConsumedAt:
+		m.ResetConsumedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ApprovalToken field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ApprovalTokenMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, approvaltoken.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ApprovalTokenMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case approvaltoken.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ApprovalTokenMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ApprovalTokenMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ApprovalTokenMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, approvaltoken.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ApprovalTokenMutation) EdgeCleared(name string) bool {
+	switch name {
+	case approvaltoken.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ApprovalTokenMutation) ClearEdge(name string) error {
+	switch name {
+	case approvaltoken.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown ApprovalToken unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ApprovalTokenMutation) ResetEdge(name string) error {
+	switch name {
+	case approvaltoken.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown ApprovalToken edge %s", name)
 }
 
 // BackgroundTaskMutation represents an operation that mutates the BackgroundTask nodes in the graph.
@@ -51820,6 +54133,12 @@ type UserMutation struct {
 	mail_signals                           map[uuid.UUID]struct{}
 	removedmail_signals                    map[uuid.UUID]struct{}
 	clearedmail_signals                    bool
+	action_proposals                       map[uuid.UUID]struct{}
+	removedaction_proposals                map[uuid.UUID]struct{}
+	clearedaction_proposals                bool
+	approval_tokens                        map[uuid.UUID]struct{}
+	removedapproval_tokens                 map[uuid.UUID]struct{}
+	clearedapproval_tokens                 bool
 	done                                   bool
 	oldValue                               func(context.Context) (*User, error)
 	predicates                             []predicate.User
@@ -54010,6 +56329,114 @@ func (m *UserMutation) ResetMailSignals() {
 	m.removedmail_signals = nil
 }
 
+// AddActionProposalIDs adds the "action_proposals" edge to the ActionProposal entity by ids.
+func (m *UserMutation) AddActionProposalIDs(ids ...uuid.UUID) {
+	if m.action_proposals == nil {
+		m.action_proposals = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.action_proposals[ids[i]] = struct{}{}
+	}
+}
+
+// ClearActionProposals clears the "action_proposals" edge to the ActionProposal entity.
+func (m *UserMutation) ClearActionProposals() {
+	m.clearedaction_proposals = true
+}
+
+// ActionProposalsCleared reports if the "action_proposals" edge to the ActionProposal entity was cleared.
+func (m *UserMutation) ActionProposalsCleared() bool {
+	return m.clearedaction_proposals
+}
+
+// RemoveActionProposalIDs removes the "action_proposals" edge to the ActionProposal entity by IDs.
+func (m *UserMutation) RemoveActionProposalIDs(ids ...uuid.UUID) {
+	if m.removedaction_proposals == nil {
+		m.removedaction_proposals = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.action_proposals, ids[i])
+		m.removedaction_proposals[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedActionProposals returns the removed IDs of the "action_proposals" edge to the ActionProposal entity.
+func (m *UserMutation) RemovedActionProposalsIDs() (ids []uuid.UUID) {
+	for id := range m.removedaction_proposals {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ActionProposalsIDs returns the "action_proposals" edge IDs in the mutation.
+func (m *UserMutation) ActionProposalsIDs() (ids []uuid.UUID) {
+	for id := range m.action_proposals {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetActionProposals resets all changes to the "action_proposals" edge.
+func (m *UserMutation) ResetActionProposals() {
+	m.action_proposals = nil
+	m.clearedaction_proposals = false
+	m.removedaction_proposals = nil
+}
+
+// AddApprovalTokenIDs adds the "approval_tokens" edge to the ApprovalToken entity by ids.
+func (m *UserMutation) AddApprovalTokenIDs(ids ...uuid.UUID) {
+	if m.approval_tokens == nil {
+		m.approval_tokens = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.approval_tokens[ids[i]] = struct{}{}
+	}
+}
+
+// ClearApprovalTokens clears the "approval_tokens" edge to the ApprovalToken entity.
+func (m *UserMutation) ClearApprovalTokens() {
+	m.clearedapproval_tokens = true
+}
+
+// ApprovalTokensCleared reports if the "approval_tokens" edge to the ApprovalToken entity was cleared.
+func (m *UserMutation) ApprovalTokensCleared() bool {
+	return m.clearedapproval_tokens
+}
+
+// RemoveApprovalTokenIDs removes the "approval_tokens" edge to the ApprovalToken entity by IDs.
+func (m *UserMutation) RemoveApprovalTokenIDs(ids ...uuid.UUID) {
+	if m.removedapproval_tokens == nil {
+		m.removedapproval_tokens = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.approval_tokens, ids[i])
+		m.removedapproval_tokens[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedApprovalTokens returns the removed IDs of the "approval_tokens" edge to the ApprovalToken entity.
+func (m *UserMutation) RemovedApprovalTokensIDs() (ids []uuid.UUID) {
+	for id := range m.removedapproval_tokens {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ApprovalTokensIDs returns the "approval_tokens" edge IDs in the mutation.
+func (m *UserMutation) ApprovalTokensIDs() (ids []uuid.UUID) {
+	for id := range m.approval_tokens {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetApprovalTokens resets all changes to the "approval_tokens" edge.
+func (m *UserMutation) ResetApprovalTokens() {
+	m.approval_tokens = nil
+	m.clearedapproval_tokens = false
+	m.removedapproval_tokens = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -54226,7 +56653,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 35)
+	edges := make([]string, 0, 37)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -54331,6 +56758,12 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.mail_signals != nil {
 		edges = append(edges, user.EdgeMailSignals)
+	}
+	if m.action_proposals != nil {
+		edges = append(edges, user.EdgeActionProposals)
+	}
+	if m.approval_tokens != nil {
+		edges = append(edges, user.EdgeApprovalTokens)
 	}
 	return edges
 }
@@ -54547,13 +56980,25 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeActionProposals:
+		ids := make([]ent.Value, 0, len(m.action_proposals))
+		for id := range m.action_proposals {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeApprovalTokens:
+		ids := make([]ent.Value, 0, len(m.approval_tokens))
+		for id := range m.approval_tokens {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 35)
+	edges := make([]string, 0, 37)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -54655,6 +57100,12 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedmail_signals != nil {
 		edges = append(edges, user.EdgeMailSignals)
+	}
+	if m.removedaction_proposals != nil {
+		edges = append(edges, user.EdgeActionProposals)
+	}
+	if m.removedapproval_tokens != nil {
+		edges = append(edges, user.EdgeApprovalTokens)
 	}
 	return edges
 }
@@ -54867,13 +57318,25 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeActionProposals:
+		ids := make([]ent.Value, 0, len(m.removedaction_proposals))
+		for id := range m.removedaction_proposals {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeApprovalTokens:
+		ids := make([]ent.Value, 0, len(m.removedapproval_tokens))
+		for id := range m.removedapproval_tokens {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 35)
+	edges := make([]string, 0, 37)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -54979,6 +57442,12 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedmail_signals {
 		edges = append(edges, user.EdgeMailSignals)
 	}
+	if m.clearedaction_proposals {
+		edges = append(edges, user.EdgeActionProposals)
+	}
+	if m.clearedapproval_tokens {
+		edges = append(edges, user.EdgeApprovalTokens)
+	}
 	return edges
 }
 
@@ -55056,6 +57525,10 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedmail_body_caches
 	case user.EdgeMailSignals:
 		return m.clearedmail_signals
+	case user.EdgeActionProposals:
+		return m.clearedaction_proposals
+	case user.EdgeApprovalTokens:
+		return m.clearedapproval_tokens
 	}
 	return false
 }
@@ -55179,6 +57652,12 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeMailSignals:
 		m.ResetMailSignals()
+		return nil
+	case user.EdgeActionProposals:
+		m.ResetActionProposals()
+		return nil
+	case user.EdgeApprovalTokens:
+		m.ResetApprovalTokens()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

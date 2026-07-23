@@ -107,11 +107,15 @@ type UserEdges struct {
 	MailBodyCaches []*MailBodyCache `json:"mail_body_caches,omitempty"`
 	// MailSignals holds the value of the mail_signals edge.
 	MailSignals []*MailSignal `json:"mail_signals,omitempty"`
+	// ActionProposals holds the value of the action_proposals edge.
+	ActionProposals []*ActionProposal `json:"action_proposals,omitempty"`
+	// ApprovalTokens holds the value of the approval_tokens edge.
+	ApprovalTokens []*ApprovalToken `json:"approval_tokens,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [35]bool
+	loadedTypes [37]bool
 	// totalCount holds the count of the edges above.
-	totalCount [35]map[string]int
+	totalCount [37]map[string]int
 
 	namedLedgerEntries                map[string][]*CreditLedger
 	namedMeetingMinuteUsages          map[string][]*MeetingMinuteUsage
@@ -147,6 +151,8 @@ type UserEdges struct {
 	namedMailMessageMetas             map[string][]*MailMessageMeta
 	namedMailBodyCaches               map[string][]*MailBodyCache
 	namedMailSignals                  map[string][]*MailSignal
+	namedActionProposals              map[string][]*ActionProposal
+	namedApprovalTokens               map[string][]*ApprovalToken
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -466,6 +472,24 @@ func (e UserEdges) MailSignalsOrErr() ([]*MailSignal, error) {
 	return nil, &NotLoadedError{edge: "mail_signals"}
 }
 
+// ActionProposalsOrErr returns the ActionProposals value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ActionProposalsOrErr() ([]*ActionProposal, error) {
+	if e.loadedTypes[35] {
+		return e.ActionProposals, nil
+	}
+	return nil, &NotLoadedError{edge: "action_proposals"}
+}
+
+// ApprovalTokensOrErr returns the ApprovalTokens value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ApprovalTokensOrErr() ([]*ApprovalToken, error) {
+	if e.loadedTypes[36] {
+		return e.ApprovalTokens, nil
+	}
+	return nil, &NotLoadedError{edge: "approval_tokens"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -714,6 +738,16 @@ func (_m *User) QueryMailBodyCaches() *MailBodyCacheQuery {
 // QueryMailSignals queries the "mail_signals" edge of the User entity.
 func (_m *User) QueryMailSignals() *MailSignalQuery {
 	return NewUserClient(_m.config).QueryMailSignals(_m)
+}
+
+// QueryActionProposals queries the "action_proposals" edge of the User entity.
+func (_m *User) QueryActionProposals() *ActionProposalQuery {
+	return NewUserClient(_m.config).QueryActionProposals(_m)
+}
+
+// QueryApprovalTokens queries the "approval_tokens" edge of the User entity.
+func (_m *User) QueryApprovalTokens() *ApprovalTokenQuery {
+	return NewUserClient(_m.config).QueryApprovalTokens(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -1570,6 +1604,54 @@ func (_m *User) appendNamedMailSignals(name string, edges ...*MailSignal) {
 		_m.Edges.namedMailSignals[name] = []*MailSignal{}
 	} else {
 		_m.Edges.namedMailSignals[name] = append(_m.Edges.namedMailSignals[name], edges...)
+	}
+}
+
+// NamedActionProposals returns the ActionProposals named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedActionProposals(name string) ([]*ActionProposal, error) {
+	if _m.Edges.namedActionProposals == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedActionProposals[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedActionProposals(name string, edges ...*ActionProposal) {
+	if _m.Edges.namedActionProposals == nil {
+		_m.Edges.namedActionProposals = make(map[string][]*ActionProposal)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedActionProposals[name] = []*ActionProposal{}
+	} else {
+		_m.Edges.namedActionProposals[name] = append(_m.Edges.namedActionProposals[name], edges...)
+	}
+}
+
+// NamedApprovalTokens returns the ApprovalTokens named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedApprovalTokens(name string) ([]*ApprovalToken, error) {
+	if _m.Edges.namedApprovalTokens == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedApprovalTokens[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedApprovalTokens(name string, edges ...*ApprovalToken) {
+	if _m.Edges.namedApprovalTokens == nil {
+		_m.Edges.namedApprovalTokens = make(map[string][]*ApprovalToken)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedApprovalTokens[name] = []*ApprovalToken{}
+	} else {
+		_m.Edges.namedApprovalTokens[name] = append(_m.Edges.namedApprovalTokens[name], edges...)
 	}
 }
 

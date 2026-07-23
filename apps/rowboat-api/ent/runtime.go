@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -14,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -91,6 +93,47 @@ func init() {
 	actionoutcomeDescID := actionoutcomeMixinFields0[0].Descriptor()
 	// actionoutcome.DefaultID holds the default value on creation for the id field.
 	actionoutcome.DefaultID = actionoutcomeDescID.Default.(func() uuid.UUID)
+	actionproposalMixin := schema.ActionProposal{}.Mixin()
+	actionproposalMixinFields0 := actionproposalMixin[0].Fields()
+	_ = actionproposalMixinFields0
+	actionproposalFields := schema.ActionProposal{}.Fields()
+	_ = actionproposalFields
+	// actionproposalDescCreatedAt is the schema descriptor for created_at field.
+	actionproposalDescCreatedAt := actionproposalMixinFields0[1].Descriptor()
+	// actionproposal.DefaultCreatedAt holds the default value on creation for the created_at field.
+	actionproposal.DefaultCreatedAt = actionproposalDescCreatedAt.Default.(func() time.Time)
+	// actionproposalDescUpdatedAt is the schema descriptor for updated_at field.
+	actionproposalDescUpdatedAt := actionproposalMixinFields0[2].Descriptor()
+	// actionproposal.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	actionproposal.DefaultUpdatedAt = actionproposalDescUpdatedAt.Default.(func() time.Time)
+	// actionproposal.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	actionproposal.UpdateDefaultUpdatedAt = actionproposalDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// actionproposalDescTarget is the schema descriptor for target field.
+	actionproposalDescTarget := actionproposalFields[0].Descriptor()
+	// actionproposal.TargetValidator is a validator for the "target" field. It is called by the builders before save.
+	actionproposal.TargetValidator = actionproposalDescTarget.Validators[0].(func(string) error)
+	// actionproposalDescKind is the schema descriptor for kind field.
+	actionproposalDescKind := actionproposalFields[1].Descriptor()
+	// actionproposal.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	actionproposal.KindValidator = actionproposalDescKind.Validators[0].(func(string) error)
+	// actionproposalDescParamsJSON is the schema descriptor for params_json field.
+	actionproposalDescParamsJSON := actionproposalFields[2].Descriptor()
+	// actionproposal.ParamsJSONValidator is a validator for the "params_json" field. It is called by the builders before save.
+	actionproposal.ParamsJSONValidator = actionproposalDescParamsJSON.Validators[0].(func(string) error)
+	// actionproposalDescFinancial is the schema descriptor for financial field.
+	actionproposalDescFinancial := actionproposalFields[3].Descriptor()
+	// actionproposal.DefaultFinancial holds the default value on creation for the financial field.
+	actionproposal.DefaultFinancial = actionproposalDescFinancial.Default.(bool)
+	// actionproposalDescStatus is the schema descriptor for status field.
+	actionproposalDescStatus := actionproposalFields[5].Descriptor()
+	// actionproposal.DefaultStatus holds the default value on creation for the status field.
+	actionproposal.DefaultStatus = actionproposalDescStatus.Default.(string)
+	// actionproposal.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	actionproposal.StatusValidator = actionproposalDescStatus.Validators[0].(func(string) error)
+	// actionproposalDescID is the schema descriptor for id field.
+	actionproposalDescID := actionproposalMixinFields0[0].Descriptor()
+	// actionproposal.DefaultID holds the default value on creation for the id field.
+	actionproposal.DefaultID = actionproposalDescID.Default.(func() uuid.UUID)
 	agentapprovalMixin := schema.AgentApproval{}.Mixin()
 	agentapprovalMixinFields0 := agentapprovalMixin[0].Fields()
 	_ = agentapprovalMixinFields0
@@ -501,6 +544,49 @@ func init() {
 	agentturnDescID := agentturnMixinFields0[0].Descriptor()
 	// agentturn.DefaultID holds the default value on creation for the id field.
 	agentturn.DefaultID = agentturnDescID.Default.(func() uuid.UUID)
+	approvaltokenMixin := schema.ApprovalToken{}.Mixin()
+	approvaltokenMixinFields0 := approvaltokenMixin[0].Fields()
+	_ = approvaltokenMixinFields0
+	approvaltokenFields := schema.ApprovalToken{}.Fields()
+	_ = approvaltokenFields
+	// approvaltokenDescCreatedAt is the schema descriptor for created_at field.
+	approvaltokenDescCreatedAt := approvaltokenMixinFields0[1].Descriptor()
+	// approvaltoken.DefaultCreatedAt holds the default value on creation for the created_at field.
+	approvaltoken.DefaultCreatedAt = approvaltokenDescCreatedAt.Default.(func() time.Time)
+	// approvaltokenDescUpdatedAt is the schema descriptor for updated_at field.
+	approvaltokenDescUpdatedAt := approvaltokenMixinFields0[2].Descriptor()
+	// approvaltoken.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	approvaltoken.DefaultUpdatedAt = approvaltokenDescUpdatedAt.Default.(func() time.Time)
+	// approvaltoken.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	approvaltoken.UpdateDefaultUpdatedAt = approvaltokenDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// approvaltokenDescTokenHash is the schema descriptor for token_hash field.
+	approvaltokenDescTokenHash := approvaltokenFields[0].Descriptor()
+	// approvaltoken.TokenHashValidator is a validator for the "token_hash" field. It is called by the builders before save.
+	approvaltoken.TokenHashValidator = approvaltokenDescTokenHash.Validators[0].(func(string) error)
+	// approvaltokenDescProposalID is the schema descriptor for proposal_id field.
+	approvaltokenDescProposalID := approvaltokenFields[1].Descriptor()
+	// approvaltoken.ProposalIDValidator is a validator for the "proposal_id" field. It is called by the builders before save.
+	approvaltoken.ProposalIDValidator = approvaltokenDescProposalID.Validators[0].(func(string) error)
+	// approvaltokenDescParamsHash is the schema descriptor for params_hash field.
+	approvaltokenDescParamsHash := approvaltokenFields[2].Descriptor()
+	// approvaltoken.ParamsHashValidator is a validator for the "params_hash" field. It is called by the builders before save.
+	approvaltoken.ParamsHashValidator = approvaltokenDescParamsHash.Validators[0].(func(string) error)
+	// approvaltokenDescOperatorUserID is the schema descriptor for operator_user_id field.
+	approvaltokenDescOperatorUserID := approvaltokenFields[3].Descriptor()
+	// approvaltoken.OperatorUserIDValidator is a validator for the "operator_user_id" field. It is called by the builders before save.
+	approvaltoken.OperatorUserIDValidator = approvaltokenDescOperatorUserID.Validators[0].(func(string) error)
+	// approvaltokenDescStepUp is the schema descriptor for step_up field.
+	approvaltokenDescStepUp := approvaltokenFields[4].Descriptor()
+	// approvaltoken.DefaultStepUp holds the default value on creation for the step_up field.
+	approvaltoken.DefaultStepUp = approvaltokenDescStepUp.Default.(bool)
+	// approvaltokenDescConsumed is the schema descriptor for consumed field.
+	approvaltokenDescConsumed := approvaltokenFields[6].Descriptor()
+	// approvaltoken.DefaultConsumed holds the default value on creation for the consumed field.
+	approvaltoken.DefaultConsumed = approvaltokenDescConsumed.Default.(bool)
+	// approvaltokenDescID is the schema descriptor for id field.
+	approvaltokenDescID := approvaltokenMixinFields0[0].Descriptor()
+	// approvaltoken.DefaultID holds the default value on creation for the id field.
+	approvaltoken.DefaultID = approvaltokenDescID.Default.(func() uuid.UUID)
 	backgroundtaskMixin := schema.BackgroundTask{}.Mixin()
 	backgroundtaskMixinFields0 := backgroundtaskMixin[0].Fields()
 	_ = backgroundtaskMixinFields0

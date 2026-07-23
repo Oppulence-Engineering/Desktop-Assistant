@@ -21,6 +21,18 @@ func (f ActionOutcomeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Valu
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ActionOutcomeMutation", m)
 }
 
+// The ActionProposalFunc type is an adapter to allow the use of ordinary
+// function as ActionProposal mutator.
+type ActionProposalFunc func(context.Context, *ent.ActionProposalMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ActionProposalFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ActionProposalMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ActionProposalMutation", m)
+}
+
 // The AgentApprovalFunc type is an adapter to allow the use of ordinary
 // function as AgentApproval mutator.
 type AgentApprovalFunc func(context.Context, *ent.AgentApprovalMutation) (ent.Value, error)
@@ -115,6 +127,18 @@ func (f AgentTurnFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentTurnMutation", m)
+}
+
+// The ApprovalTokenFunc type is an adapter to allow the use of ordinary
+// function as ApprovalToken mutator.
+type ApprovalTokenFunc func(context.Context, *ent.ApprovalTokenMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ApprovalTokenFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ApprovalTokenMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ApprovalTokenMutation", m)
 }
 
 // The BackgroundTaskFunc type is an adapter to allow the use of ordinary

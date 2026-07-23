@@ -56,6 +56,58 @@ var (
 			},
 		},
 	}
+	// ActionProposalsColumns holds the columns for the "action_proposals" table.
+	ActionProposalsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "target", Type: field.TypeString},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "params_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "financial", Type: field.TypeBool, Default: false},
+		{Name: "rationale", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "status", Type: field.TypeString, Default: "pending"},
+		{Name: "correlation_id", Type: field.TypeString, Nullable: true},
+		{Name: "entity_id", Type: field.TypeString, Nullable: true},
+		{Name: "origin_run_id", Type: field.TypeString, Nullable: true},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "approved_at", Type: field.TypeTime, Nullable: true},
+		{Name: "executed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "reason", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "result_ref", Type: field.TypeString, Nullable: true},
+		{Name: "user_action_proposals", Type: field.TypeUUID},
+	}
+	// ActionProposalsTable holds the schema information for the "action_proposals" table.
+	ActionProposalsTable = &schema.Table{
+		Name:       "action_proposals",
+		Columns:    ActionProposalsColumns,
+		PrimaryKey: []*schema.Column{ActionProposalsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "action_proposals_users_action_proposals",
+				Columns:    []*schema.Column{ActionProposalsColumns[17]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "actionproposal_status",
+				Unique:  false,
+				Columns: []*schema.Column{ActionProposalsColumns[8]},
+			},
+			{
+				Name:    "actionproposal_target",
+				Unique:  false,
+				Columns: []*schema.Column{ActionProposalsColumns[3]},
+			},
+			{
+				Name:    "actionproposal_correlation_id",
+				Unique:  false,
+				Columns: []*schema.Column{ActionProposalsColumns[9]},
+			},
+		},
+	}
 	// AgentApprovalsColumns holds the columns for the "agent_approvals" table.
 	AgentApprovalsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -449,6 +501,42 @@ var (
 				Name:    "agentturn_status",
 				Unique:  false,
 				Columns: []*schema.Column{AgentTurnsColumns[5]},
+			},
+		},
+	}
+	// ApprovalTokensColumns holds the columns for the "approval_tokens" table.
+	ApprovalTokensColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "token_hash", Type: field.TypeString, Unique: true},
+		{Name: "proposal_id", Type: field.TypeString},
+		{Name: "params_hash", Type: field.TypeString},
+		{Name: "operator_user_id", Type: field.TypeString},
+		{Name: "step_up", Type: field.TypeBool, Default: false},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "consumed", Type: field.TypeBool, Default: false},
+		{Name: "consumed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_approval_tokens", Type: field.TypeUUID},
+	}
+	// ApprovalTokensTable holds the schema information for the "approval_tokens" table.
+	ApprovalTokensTable = &schema.Table{
+		Name:       "approval_tokens",
+		Columns:    ApprovalTokensColumns,
+		PrimaryKey: []*schema.Column{ApprovalTokensColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "approval_tokens_users_approval_tokens",
+				Columns:    []*schema.Column{ApprovalTokensColumns[11]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "approvaltoken_proposal_id",
+				Unique:  false,
+				Columns: []*schema.Column{ApprovalTokensColumns[4]},
 			},
 		},
 	}
@@ -1942,6 +2030,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		ActionOutcomesTable,
+		ActionProposalsTable,
 		AgentApprovalsTable,
 		AgentDefinitionsTable,
 		AgentdefinitionHistoryTable,
@@ -1950,6 +2039,7 @@ var (
 		AgentToolCallsTable,
 		AgentToolResultBlobsTable,
 		AgentTurnsTable,
+		ApprovalTokensTable,
 		BackgroundTasksTable,
 		BackgroundTaskArtifactsTable,
 		BackgroundTaskRunsTable,
@@ -1994,6 +2084,7 @@ func init() {
 	ActionOutcomesTable.ForeignKeys[0].RefTable = RevenueActionsTable
 	ActionOutcomesTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	ActionOutcomesTable.ForeignKeys[2].RefTable = UsersTable
+	ActionProposalsTable.ForeignKeys[0].RefTable = UsersTable
 	AgentApprovalsTable.ForeignKeys[0].RefTable = AgentSessionsTable
 	AgentApprovalsTable.ForeignKeys[1].RefTable = UsersTable
 	AgentDefinitionsTable.ForeignKeys[0].RefTable = UsersTable
@@ -2009,6 +2100,7 @@ func init() {
 	AgentToolResultBlobsTable.ForeignKeys[0].RefTable = UsersTable
 	AgentTurnsTable.ForeignKeys[0].RefTable = AgentSessionsTable
 	AgentTurnsTable.ForeignKeys[1].RefTable = UsersTable
+	ApprovalTokensTable.ForeignKeys[0].RefTable = UsersTable
 	BackgroundTasksTable.ForeignKeys[0].RefTable = UsersTable
 	BackgroundTaskArtifactsTable.ForeignKeys[0].RefTable = BackgroundTasksTable
 	BackgroundTaskArtifactsTable.ForeignKeys[1].RefTable = UsersTable

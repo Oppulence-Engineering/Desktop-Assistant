@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/proto/entpb"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/actions"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentchannels"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentgitops"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
@@ -419,6 +421,29 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		return err
 	})
 
+	// Closed-loop action broker (RFC 023). Ships dark behind ACTIONS_ENABLED.
+	// The propose→approve→execute→watch surface issues single-use, params-bound
+	// approval tokens; no money-moving action executes without a valid one. The
+	// product Act-seam executor is nil until a product MCP is wired, so execute
+	// fails closed (approve/reject/audit still work).
+	var actionsH *actions.Handler
+	if cfg.ActionsEnabled {
+		actionSigner, err := actions.NewSigner(cfg.AgentSigningSecret())
+		if err != nil {
+			return fmt.Errorf("wire actions broker: %w", err)
+		}
+		actionBroker := actions.NewBroker(client, actionSigner, nil, actions.Config{
+			TokenTTL:                  cfg.ActionTokenTTL,
+			WatchTimeout:              cfg.ActionWatchTimeout,
+			RequireStepUpForFinancial: cfg.ActionRequireStepUpForFinancial,
+		}, log)
+		stepUp := func(r *http.Request) bool {
+			a, ok := auth.ActorFromCtx(r.Context())
+			return ok && authMW.SatisfiesStepUp(a, auth.StepUpRecentAuth)
+		}
+		actionsH = actions.NewHandler(actionBroker, stepUp, log)
+	}
+
 	r := srv.Router()
 
 	// Public (no auth).
@@ -640,6 +665,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Use(rl.PerUserWindow(ratelimit.GroupRevenue, 120, time.Minute))
 			revenueH.Mount(r)
 		})
+
+		// RFC 023 closed-loop action broker (ships dark behind ACTIONS_ENABLED).
+		if actionsH != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(rl.PerUserWindow(ratelimit.GroupActions, 120, time.Minute))
+				actionsH.Mount(r)
+			})
+		}
 
 		r.Get("/v1/connectors", connectorsH.List)
 		r.Route("/v1/connections", func(r chi.Router) {

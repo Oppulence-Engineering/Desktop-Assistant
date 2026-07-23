@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
@@ -19,6 +20,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
@@ -651,6 +653,36 @@ func (_u *UserUpdate) AddMailSignals(v ...*MailSignal) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMailSignalIDs(ids...)
+}
+
+// AddActionProposalIDs adds the "action_proposals" edge to the ActionProposal entity by IDs.
+func (_u *UserUpdate) AddActionProposalIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddActionProposalIDs(ids...)
+	return _u
+}
+
+// AddActionProposals adds the "action_proposals" edges to the ActionProposal entity.
+func (_u *UserUpdate) AddActionProposals(v ...*ActionProposal) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddActionProposalIDs(ids...)
+}
+
+// AddApprovalTokenIDs adds the "approval_tokens" edge to the ApprovalToken entity by IDs.
+func (_u *UserUpdate) AddApprovalTokenIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddApprovalTokenIDs(ids...)
+	return _u
+}
+
+// AddApprovalTokens adds the "approval_tokens" edges to the ApprovalToken entity.
+func (_u *UserUpdate) AddApprovalTokens(v ...*ApprovalToken) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddApprovalTokenIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -1376,6 +1408,48 @@ func (_u *UserUpdate) RemoveMailSignals(v ...*MailSignal) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMailSignalIDs(ids...)
+}
+
+// ClearActionProposals clears all "action_proposals" edges to the ActionProposal entity.
+func (_u *UserUpdate) ClearActionProposals() *UserUpdate {
+	_u.mutation.ClearActionProposals()
+	return _u
+}
+
+// RemoveActionProposalIDs removes the "action_proposals" edge to ActionProposal entities by IDs.
+func (_u *UserUpdate) RemoveActionProposalIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveActionProposalIDs(ids...)
+	return _u
+}
+
+// RemoveActionProposals removes "action_proposals" edges to ActionProposal entities.
+func (_u *UserUpdate) RemoveActionProposals(v ...*ActionProposal) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveActionProposalIDs(ids...)
+}
+
+// ClearApprovalTokens clears all "approval_tokens" edges to the ApprovalToken entity.
+func (_u *UserUpdate) ClearApprovalTokens() *UserUpdate {
+	_u.mutation.ClearApprovalTokens()
+	return _u
+}
+
+// RemoveApprovalTokenIDs removes the "approval_tokens" edge to ApprovalToken entities by IDs.
+func (_u *UserUpdate) RemoveApprovalTokenIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveApprovalTokenIDs(ids...)
+	return _u
+}
+
+// RemoveApprovalTokens removes "approval_tokens" edges to ApprovalToken entities.
+func (_u *UserUpdate) RemoveApprovalTokens(v ...*ApprovalToken) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveApprovalTokenIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -3013,6 +3087,96 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ActionProposalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionProposalsTable,
+			Columns: []string{user.ActionProposalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionproposal.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedActionProposalsIDs(); len(nodes) > 0 && !_u.mutation.ActionProposalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionProposalsTable,
+			Columns: []string{user.ActionProposalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionproposal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ActionProposalsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionProposalsTable,
+			Columns: []string{user.ActionProposalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionproposal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ApprovalTokensCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ApprovalTokensTable,
+			Columns: []string{user.ApprovalTokensColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approvaltoken.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedApprovalTokensIDs(); len(nodes) > 0 && !_u.mutation.ApprovalTokensCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ApprovalTokensTable,
+			Columns: []string{user.ApprovalTokensColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approvaltoken.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ApprovalTokensIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ApprovalTokensTable,
+			Columns: []string{user.ApprovalTokensColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approvaltoken.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -3620,6 +3784,36 @@ func (_u *UserUpdateOne) AddMailSignals(v ...*MailSignal) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMailSignalIDs(ids...)
+}
+
+// AddActionProposalIDs adds the "action_proposals" edge to the ActionProposal entity by IDs.
+func (_u *UserUpdateOne) AddActionProposalIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddActionProposalIDs(ids...)
+	return _u
+}
+
+// AddActionProposals adds the "action_proposals" edges to the ActionProposal entity.
+func (_u *UserUpdateOne) AddActionProposals(v ...*ActionProposal) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddActionProposalIDs(ids...)
+}
+
+// AddApprovalTokenIDs adds the "approval_tokens" edge to the ApprovalToken entity by IDs.
+func (_u *UserUpdateOne) AddApprovalTokenIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddApprovalTokenIDs(ids...)
+	return _u
+}
+
+// AddApprovalTokens adds the "approval_tokens" edges to the ApprovalToken entity.
+func (_u *UserUpdateOne) AddApprovalTokens(v ...*ApprovalToken) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddApprovalTokenIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -4345,6 +4539,48 @@ func (_u *UserUpdateOne) RemoveMailSignals(v ...*MailSignal) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMailSignalIDs(ids...)
+}
+
+// ClearActionProposals clears all "action_proposals" edges to the ActionProposal entity.
+func (_u *UserUpdateOne) ClearActionProposals() *UserUpdateOne {
+	_u.mutation.ClearActionProposals()
+	return _u
+}
+
+// RemoveActionProposalIDs removes the "action_proposals" edge to ActionProposal entities by IDs.
+func (_u *UserUpdateOne) RemoveActionProposalIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveActionProposalIDs(ids...)
+	return _u
+}
+
+// RemoveActionProposals removes "action_proposals" edges to ActionProposal entities.
+func (_u *UserUpdateOne) RemoveActionProposals(v ...*ActionProposal) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveActionProposalIDs(ids...)
+}
+
+// ClearApprovalTokens clears all "approval_tokens" edges to the ApprovalToken entity.
+func (_u *UserUpdateOne) ClearApprovalTokens() *UserUpdateOne {
+	_u.mutation.ClearApprovalTokens()
+	return _u
+}
+
+// RemoveApprovalTokenIDs removes the "approval_tokens" edge to ApprovalToken entities by IDs.
+func (_u *UserUpdateOne) RemoveApprovalTokenIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveApprovalTokenIDs(ids...)
+	return _u
+}
+
+// RemoveApprovalTokens removes "approval_tokens" edges to ApprovalToken entities.
+func (_u *UserUpdateOne) RemoveApprovalTokens(v ...*ApprovalToken) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveApprovalTokenIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -6005,6 +6241,96 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ActionProposalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionProposalsTable,
+			Columns: []string{user.ActionProposalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionproposal.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedActionProposalsIDs(); len(nodes) > 0 && !_u.mutation.ActionProposalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionProposalsTable,
+			Columns: []string{user.ActionProposalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionproposal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ActionProposalsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionProposalsTable,
+			Columns: []string{user.ActionProposalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionproposal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ApprovalTokensCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ApprovalTokensTable,
+			Columns: []string{user.ApprovalTokensColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approvaltoken.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedApprovalTokensIDs(); len(nodes) > 0 && !_u.mutation.ApprovalTokensCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ApprovalTokensTable,
+			Columns: []string{user.ApprovalTokensColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approvaltoken.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ApprovalTokensIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ApprovalTokensTable,
+			Columns: []string{user.ApprovalTokensColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approvaltoken.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
