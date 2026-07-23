@@ -3968,4 +3968,45 @@
       filter: invert(1);
     }
   }
+
+  /*
+   * Polish round 1 — fluid rhythm and type detailing. Fixed section
+   * paddings become viewport-fluid clamps so mobile is never over-padded
+   * and desktop keeps its air; running text wraps pretty.
+   */
+  .linear-hero {
+    padding-top: clamp(112px, 14vw, 152px);
+    padding-bottom: clamp(48px, 6vw, 72px);
+  }
+
+  .linear-manifesto {
+    padding-block: clamp(88px, 11vw, 148px);
+  }
+
+  .linear-product-section {
+    padding-block: clamp(64px, 8vw, 96px);
+  }
+
+  .linear-product-header {
+    padding-bottom: clamp(44px, 6vw, 72px);
+  }
+
+  .linear-updates {
+    padding-block: clamp(64px, 8vw, 96px);
+  }
+
+  .linear-faq {
+    padding-block: clamp(80px, 10vw, 128px);
+  }
+
+  .linear-final-cta {
+    margin-block: clamp(88px, 11vw, 144px);
+  }
+
+  .linear-body,
+  .linear-faq details p,
+  .linear-product-description p,
+  .linear-proof p:first-child {
+    text-wrap: pretty;
+  }
 }
