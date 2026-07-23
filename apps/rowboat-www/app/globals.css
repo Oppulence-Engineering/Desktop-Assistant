@@ -3284,4 +3284,234 @@
     margin-top: auto;
     padding-top: 6px;
   }
+
+  /*
+   * SF Pro flat-scale pass. The marketing surface adopts the system
+   * SF Pro stack at two weights (400/500) with -0.15px tracking, a
+   * four-step type scale (12/13/14/24px), a three-step ink ramp
+   * (#292929 / #5D5D5D / #9E9E9E), and a radius system of 8px
+   * navigation, 16px cards, pill CTAs. Icons: 14px nav, 20px cards
+   * (sized in marketing-components). Mono keeps its accent role but
+   * micro-labels normalize to 12px. Dark keeps its oklch ramp via the
+   * re-declaration block at the end.
+   */
+  .marketing-polar {
+    --font-sf:
+      "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui,
+      "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --foreground: #292929;
+    --card-foreground: #292929;
+    --popover-foreground: #292929;
+    --primary: #292929;
+    --secondary-foreground: #292929;
+    --accent-foreground: #292929;
+    --muted-foreground: #5d5d5d;
+    --linear-text-secondary: #5d5d5d;
+    --linear-text-tertiary: #9e9e9e;
+    --linear-text-quaternary: #9e9e9e;
+    font-family: var(--font-sf);
+    font-feature-settings: normal;
+    font-weight: 400;
+    letter-spacing: -0.15px;
+  }
+
+  .marketing-polar .font-display {
+    font-family: var(--font-sf);
+    font-weight: 500;
+    letter-spacing: -0.15px;
+  }
+
+  .marketing-polar :is(h1, h2, h3, h4) {
+    font-weight: 500;
+    letter-spacing: -0.15px;
+  }
+
+  /* Display type: everything above body collapses to 24px medium. */
+  .linear-hero-title,
+  .linear-subpage-title,
+  .linear-page-title,
+  .linear-product-title,
+  .linear-final-cta h2,
+  .linear-faq h2,
+  .linear-blog-featured h2 {
+    margin-left: 0;
+    font-family: var(--font-sf);
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.15px;
+    line-height: 1.35;
+  }
+
+  .linear-manifesto h2,
+  .linear-statement-title {
+    max-width: 760px;
+    margin-left: 0;
+    font-family: var(--font-sf);
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: -0.15px;
+    line-height: 1.5;
+    color: var(--linear-text-secondary);
+  }
+
+  .linear-manifesto h2 strong,
+  .linear-statement-title strong {
+    font-weight: 500;
+    color: var(--foreground);
+  }
+
+  /* Body: 14px secondary ink. */
+  .linear-body,
+  .linear-product-description p,
+  .linear-subpage-description > p {
+    font-size: 14px;
+    letter-spacing: -0.15px;
+    line-height: 1.6;
+    color: var(--linear-text-secondary);
+  }
+
+  /* Card titles: 14px medium primary ink; card copy: 13px secondary. */
+  .linear-update h3,
+  .linear-faq summary,
+  .linear-blog-card h3 {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--foreground);
+  }
+
+  .linear-faq details p,
+  .linear-blog-card p,
+  .linear-plan li {
+    font-size: 13px;
+    color: var(--linear-text-secondary);
+  }
+
+  .linear-proof p:first-child {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--foreground);
+  }
+
+  .linear-product-tab {
+    font-size: 14px;
+    color: var(--linear-text-secondary);
+  }
+
+  .linear-hero-card-what {
+    font-size: 13px;
+  }
+
+  .linear-plan-price {
+    font-family: var(--font-sf);
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.15px;
+  }
+
+  /* Mono micro-labels normalize to the 12px floor. */
+  .linear-index,
+  .linear-new-pill,
+  .linear-hero-card-title,
+  .linear-hero-card-what em,
+  .linear-hero-card-act,
+  .linear-hero-card-foot,
+  .linear-cta-note,
+  .linear-plan-name,
+  .linear-chip,
+  .linear-blog-read,
+  .linear-footer-note,
+  .linear-proof p:last-child {
+    font-size: 12px;
+  }
+
+  .linear-footer-column {
+    font-size: 13px;
+    letter-spacing: -0.15px;
+  }
+
+  /* Navigation: 8px radius, 14px medium, 24px wordmark. */
+  .linear-logo,
+  .linear-nav-link,
+  .linear-nav-trigger {
+    border-radius: 8px;
+  }
+
+  .linear-nav-link,
+  .linear-nav-trigger {
+    font-family: var(--font-sf);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.15px;
+  }
+
+  .linear-logo .font-display {
+    font-size: 24px;
+  }
+
+  .linear-mobile-panel > a {
+    font-family: var(--font-sf);
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.15px;
+  }
+
+  /* CTAs: pill. */
+  .linear-button-primary,
+  .linear-button-secondary,
+  .linear-button-ghost,
+  .linear-hero-card-act,
+  .marketing-cta-primary,
+  .marketing-cta-secondary {
+    border-radius: 999px;
+  }
+
+  .linear-button-primary,
+  .linear-button-secondary,
+  .linear-button-ghost {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.15px;
+  }
+
+  /* Cards: 16px radius; chips ride the pill. */
+  .linear-hero-card,
+  .linear-product-panel,
+  .linear-blog-featured,
+  .linear-blog-card,
+  .linear-plan-grid,
+  .marketing-surface,
+  .marketing-surface-strong,
+  .marketing-preview,
+  .linear-dropdown-panel .marketing-surface-strong {
+    border-radius: 16px;
+  }
+
+  .linear-plan-grid {
+    overflow: hidden;
+  }
+
+  .linear-product-panel img {
+    border-radius: 8px;
+  }
+
+  .linear-chip {
+    border-radius: 999px;
+  }
+
+  /* Dark keeps the oklch ramp the hex ink values would otherwise clobber. */
+  @media (prefers-color-scheme: dark) {
+    .marketing-polar {
+      --foreground: oklch(98.5% 0 0);
+      --card-foreground: oklch(98.5% 0 0);
+      --popover-foreground: oklch(98.5% 0 0);
+      --primary: oklch(98.5% 0 0);
+      --secondary-foreground: oklch(98.5% 0 0);
+      --accent-foreground: oklch(98.5% 0 0);
+      --muted-foreground: oklch(70.8% 0 0);
+      --linear-text-secondary: oklch(85% 0 0);
+      --linear-text-tertiary: oklch(70.8% 0 0);
+      --linear-text-quaternary: oklch(55% 0 0);
+    }
+  }
 }

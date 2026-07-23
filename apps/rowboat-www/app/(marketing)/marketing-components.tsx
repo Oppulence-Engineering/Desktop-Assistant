@@ -97,7 +97,7 @@ function MarketingIcon({
         className,
       )}
     >
-      <Icon style={{ fontSize: compact ? "0.875rem" : "1rem" }} />
+      <Icon style={{ fontSize: compact ? "0.875rem" : "1.25rem" }} />
     </span>
   );
 }
@@ -249,7 +249,7 @@ function EyebrowPill({
   return (
     <p
       className={cn(
-        "marketing-eyebrow inline-flex w-fit max-w-full items-center gap-2 rounded-full py-1 pr-3 pl-1.5 font-mono text-[10px] uppercase tracking-wider",
+        "marketing-eyebrow inline-flex w-fit max-w-full items-center gap-2 rounded-full py-1 pr-3 pl-1.5 font-mono text-xs uppercase tracking-wider",
         className,
       )}
     >
@@ -377,7 +377,7 @@ function InlineLogo({
         width={iconSize}
       />
       {!compact ? (
-        <span className="font-display text-[24px] leading-6 font-semibold text-primary">
+        <span className="font-display text-[24px] leading-6 font-medium text-primary">
           oppulence
         </span>
       ) : null}
@@ -446,7 +446,7 @@ export function TopBar() {
             rel="noopener noreferrer"
             target="_blank"
           >
-            <GithubLogoIcon style={{ fontSize: "1rem" }} />
+            <GithubLogoIcon style={{ fontSize: "0.875rem" }} />
           </a>
           <Link className="linear-nav-link hidden md:inline-flex" href="/sign-in">
             Sign in
@@ -611,12 +611,12 @@ function HomeHero() {
       </h1>
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Link
-          className="linear-button-primary !h-12 !px-6 !text-[15px] sm:!w-[250px]"
+          className="linear-button-primary !h-12 !px-6 !text-[14px] sm:!w-[250px]"
           href="/book-a-demo"
         >
           See what is slipping
         </Link>
-        <Link className="linear-button-ghost !h-12 !px-5 !text-[15px]" href="/product">
+        <Link className="linear-button-ghost !h-12 !px-5 !text-[14px]" href="/product">
           How it works <span className="ml-2 text-foreground/40">→</span>
         </Link>
       </div>
@@ -979,10 +979,10 @@ function DesktopScreenshotPreview({
           <span className="size-2 rounded-full bg-oppulence-yellow/70" />
           <span className="size-2 rounded-full bg-oppulence-green/70" />
         </div>
-        <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+        <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
           Oppulence Desktop
         </span>
-        <span className="hidden font-mono text-[10px] text-muted-foreground uppercase tracking-wider sm:inline">
+        <span className="hidden font-mono text-xs text-muted-foreground uppercase tracking-wider sm:inline">
           Local graph
         </span>
       </div>
@@ -1020,11 +1020,11 @@ export function GenericPage({ page }: { page: MarketingPage }) {
             <article className="marketing-surface border p-5" key={bullet}>
               <div className="flex items-center justify-between gap-3">
                 <MarketingIcon icon={icon} tone={tone} />
-                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                   0{index + 1}
                 </span>
               </div>
-              <p className="mt-4 text-sm leading-relaxed text-foreground/78">{bullet}</p>
+              <p className="mt-4 text-[13px] leading-relaxed text-foreground/78">{bullet}</p>
             </article>
           );
         })}
@@ -1070,10 +1070,10 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
               >
                 <MarketingIcon compact icon={icon} tone={tone} />
                 <div className="min-w-0">
-                  <p className="font-mono text-[10px] text-foreground/55 uppercase tracking-wider">
+                  <p className="font-mono text-xs text-foreground/55 uppercase tracking-wider">
                     0{index + 1}
                   </p>
-                  <p className="mt-1 text-sm text-foreground/75">{bullet}</p>
+                  <p className="mt-1 text-[13px] text-foreground/75">{bullet}</p>
                 </div>
               </article>
             );
@@ -1091,12 +1091,12 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
             <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
               Why it matters
             </p>
-            <p className="mt-4 text-foreground/80 text-sm leading-relaxed">{details.summary}</p>
-            <h2 className="mt-8 font-semibold text-xl">How it works</h2>
+            <p className="mt-4 text-foreground/80 text-[13px] leading-relaxed">{details.summary}</p>
+            <h2 className="mt-8 font-medium text-sm">How it works</h2>
             <ol className="mt-4 space-y-3">
               {details.workflow.map((step, index) => (
-                <li className="flex gap-3 text-sm leading-relaxed" key={step}>
-                  <span className="marketing-icon-frame size-7 rounded font-mono text-[10px] text-muted-foreground">
+                <li className="flex gap-3 text-[13px] leading-relaxed" key={step}>
+                  <span className="marketing-icon-frame size-7 rounded font-mono text-xs text-muted-foreground">
                     {index + 1}
                   </span>
                   <span className="text-foreground/75">{step}</span>
@@ -1112,18 +1112,18 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
               return (
                 <article className="marketing-surface border p-6" key={section.title}>
                   <MarketingIcon icon={icon} tone={tone} />
-                  <h2 className="mt-5 font-semibold text-xl">{section.title}</h2>
-                  <p className="mt-3 text-muted-foreground text-sm leading-relaxed">
+                  <h2 className="mt-5 font-medium text-sm">{section.title}</h2>
+                  <p className="mt-3 text-muted-foreground text-[13px] leading-relaxed">
                     {section.body}
                   </p>
                 </article>
               );
             })}
             <article className="marketing-surface-strong border p-6">
-              <h2 className="font-semibold text-xl">Operational outcomes</h2>
+              <h2 className="font-medium text-sm">Operational outcomes</h2>
               <div className="mt-4 grid gap-3">
                 {details.outcomes.map((outcome) => (
-                  <div className="flex gap-3 text-sm leading-relaxed" key={outcome}>
+                  <div className="flex gap-3 text-[13px] leading-relaxed" key={outcome}>
                     <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
                     <span className="text-foreground/75">{outcome}</span>
                   </div>
@@ -1140,9 +1140,7 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
                 <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
                   Use cases
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold">
-                  Where the graph changes the workflow.
-                </h2>
+                <h2 className="mt-2 text-2xl font-medium">Where the graph changes the workflow.</h2>
               </div>
               <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
                 The feature pages stay concrete: each capability maps back to work traces, graph
@@ -1156,8 +1154,8 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
                 return (
                   <article className="marketing-surface border p-5" key={useCase.title}>
                     <MarketingIcon icon={icon} tone={tone} />
-                    <h3 className="mt-4 font-semibold">{useCase.title}</h3>
-                    <p className="mt-2 text-muted-foreground text-sm leading-relaxed">
+                    <h3 className="mt-4 font-medium">{useCase.title}</h3>
+                    <p className="mt-2 text-muted-foreground text-[13px] leading-relaxed">
                       {useCase.body}
                     </p>
                   </article>
@@ -1178,7 +1176,7 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
               <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
                 Related
               </p>
-              <h2 className="mt-2 text-2xl font-semibold">Keep following the revenue loop.</h2>
+              <h2 className="mt-2 text-2xl font-medium">Keep following the revenue loop.</h2>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
@@ -1231,16 +1229,16 @@ function FeatureActionButtons({
     <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
       <Button
         asChild
-        className="marketing-cta-primary h-12 border border-transparent px-6 font-medium text-md has-[>svg]:px-4"
+        className="marketing-cta-primary h-12 border border-transparent px-6 font-medium text-sm has-[>svg]:px-4"
       >
         <Link href="/book-a-demo">
           {primary}
-          <ArrowRightIcon style={{ fontSize: "1rem" }} />
+          <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
         </Link>
       </Button>
       <Button
         asChild
-        className="marketing-cta-secondary h-12 justify-between border border-primary/10 px-4 font-medium text-md"
+        className="marketing-cta-secondary h-12 justify-between border border-primary/10 px-4 font-medium text-sm"
         variant="ghost"
       >
         <Link href="/product">{secondary}</Link>
@@ -1264,7 +1262,7 @@ function PageShell({ page, children }: { page: MarketingPage; children: ReactNod
               <Button asChild className="marketing-cta-primary">
                 <Link href={page.ctaHref ?? "/book-a-demo"}>
                   {page.ctaLabel ?? "Book a Revenue Leak Scan"}
-                  <ArrowRightIcon style={{ fontSize: "1rem" }} />
+                  <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
                 </Link>
               </Button>
               <Button asChild className="marketing-cta-secondary" variant="outline">
@@ -1287,7 +1285,7 @@ function ProofGrid({ page }: { page: MarketingPage }) {
           <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
             Why teams trust the queue
           </p>
-          <h2 className="mt-2 text-2xl font-semibold">Built for evidence-backed action.</h2>
+          <h2 className="mt-2 text-2xl font-medium">Built for evidence-backed action.</h2>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
           Each workflow keeps the same standards: source evidence, current relationship context,
@@ -1299,10 +1297,10 @@ function ProofGrid({ page }: { page: MarketingPage }) {
           <article className="marketing-surface flex gap-3 border p-4" key={item}>
             <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
             <div className="min-w-0">
-              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 0{index + 1}
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-foreground/72">{item}</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-foreground/72">{item}</p>
             </div>
           </article>
         ))}
@@ -1319,7 +1317,7 @@ function IntegrationsPanel() {
           <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
             Connector surface
           </p>
-          <h2 className="mt-2 text-2xl font-semibold">Sources stay visible and reviewable.</h2>
+          <h2 className="mt-2 text-2xl font-medium">Sources stay visible and reviewable.</h2>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
           Oppulence keeps each connected source legible while agents work across the graph.
@@ -1331,7 +1329,7 @@ function IntegrationsPanel() {
 
           return (
             <div
-              className="marketing-surface flex items-center gap-3 border px-4 py-3 font-mono text-sm"
+              className="marketing-surface flex items-center gap-3 border px-4 py-3 font-mono text-[13px]"
               key={item}
             >
               <MarketingIcon compact icon={icon} tone={tone} />
@@ -1351,7 +1349,7 @@ function ToolPanel({ page }: { page: MarketingPage }) {
         <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
           Tool workflow
         </p>
-        <h2 className="mt-2 text-2xl font-semibold">A clear path from check to action.</h2>
+        <h2 className="mt-2 text-2xl font-medium">A clear path from check to action.</h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           This is a static marketing representation of the tool route. The production validator or
           quiz logic can be wired behind the same URL when ready.
@@ -1364,7 +1362,7 @@ function ToolPanel({ page }: { page: MarketingPage }) {
         </div>
         <div className="mt-5 space-y-3">
           {page.bullets.map((bullet) => (
-            <div className="marketing-chip flex gap-3 border px-4 py-3 text-sm" key={bullet}>
+            <div className="marketing-chip flex gap-3 border px-4 py-3 text-[13px]" key={bullet}>
               <MarketingIcon compact icon={SealCheckIcon} tone="green" />
               <span>{bullet}</span>
             </div>
@@ -1383,7 +1381,7 @@ function ApiReferenceEmbed() {
           <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
             API reference
           </p>
-          <h2 className="mt-2 text-2xl font-semibold">Explore the live Oppulence API contract.</h2>
+          <h2 className="mt-2 text-2xl font-medium">Explore the live Oppulence API contract.</h2>
         </div>
         <div className="flex flex-wrap gap-3">
           <Button asChild className="marketing-cta-secondary" variant="ghost">
@@ -1493,7 +1491,7 @@ export function BlogIndexPage({ page }: { page: MarketingPage }) {
 export function BlogArticlePage({ page }: { page: MarketingPage }) {
   return (
     <PageShell page={page}>
-      <article className="max-w-3xl space-y-8 text-base leading-relaxed text-foreground/78">
+      <article className="max-w-3xl space-y-8 text-sm leading-relaxed text-foreground/78">
         <p>
           Most knowledge-base and documentation categories assume the answer is a better publishing
           surface. Oppulence starts one layer lower: the living graph agents and operators rely on
@@ -1530,7 +1528,7 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
           <Button asChild className="marketing-cta-primary mt-1">
             <Link href="/book-a-demo">
               Become an early customer
-              <ArrowRightIcon style={{ fontSize: "1rem" }} />
+              <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
             </Link>
           </Button>
         </section>
@@ -1549,15 +1547,15 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
           >
             <div className="flex items-start justify-between gap-3">
               <MarketingIcon icon={GithubLogoIcon} tone="blue" />
-              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 Story
               </span>
             </div>
-            <h2 className="mt-4 text-xl font-semibold">{story.title}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            <h2 className="mt-4 text-sm font-medium">{story.title}</h2>
+            <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
               {story.description}
             </p>
-            <div className="mt-auto flex items-center justify-between border-primary/10 border-t pt-4 font-mono text-[10px] text-foreground/60 uppercase tracking-wider">
+            <div className="mt-auto flex items-center justify-between border-primary/10 border-t pt-4 font-mono text-xs text-foreground/60 uppercase tracking-wider">
               <span>Open story</span>
               <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
             </div>
@@ -1579,14 +1577,14 @@ export function CustomerStoryPage({ page }: { page: MarketingPage }) {
                 icon={customerStoryIcons[index]?.icon ?? BriefcaseIcon}
                 tone={customerStoryIcons[index]?.tone ?? "neutral"}
               />
-              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 0{index + 1}
               </span>
             </div>
-            <p className="mt-5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <p className="mt-5 font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {title}
             </p>
-            <p className="mt-4 text-sm leading-relaxed text-foreground/76">
+            <p className="mt-4 text-[13px] leading-relaxed text-foreground/76">
               {page.bullets[index] ?? page.description}
             </p>
           </article>
@@ -1602,10 +1600,10 @@ export function DemoPage({ page }: { page: MarketingPage }) {
     <PageShell page={page}>
       <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="marketing-surface border p-6">
-          <h2 className="text-2xl font-semibold">Your Revenue Leak Scan walkthrough</h2>
+          <h2 className="text-2xl font-medium">Your Revenue Leak Scan walkthrough</h2>
           <ul className="mt-6 space-y-4">
             {page.bullets.map((bullet) => (
-              <li className="flex gap-3 text-sm leading-relaxed" key={bullet}>
+              <li className="flex gap-3 text-[13px] leading-relaxed" key={bullet}>
                 <MarketingIcon compact icon={PlayIcon} tone="orange" />
                 <span>{bullet}</span>
               </li>
@@ -1619,7 +1617,7 @@ export function DemoPage({ page }: { page: MarketingPage }) {
           <div className="mt-5 grid gap-3">
             {["Work email", "Company", "CRM or sales system"].map((field) => (
               <div
-                className="marketing-chip border px-4 py-3 text-sm text-muted-foreground"
+                className="marketing-chip border px-4 py-3 text-[13px] text-muted-foreground"
                 key={field}
               >
                 {field}
@@ -1654,7 +1652,7 @@ export function LegalPage({ page }: { page: MarketingPage }) {
 export function NotFoundMarketingPage() {
   return (
     <div className="px-6 pt-40 pb-20 md:px-8">
-      <h1 className="font-display text-5xl leading-none font-normal md:text-7xl">Page not found</h1>
+      <h1 className="font-display text-[24px] font-medium">Page not found</h1>
       <p className="mt-4 max-w-xl text-muted-foreground">
         This route is not in the Oppulence marketing surface.
       </p>
