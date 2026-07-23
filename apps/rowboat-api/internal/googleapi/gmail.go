@@ -263,3 +263,58 @@ func (c *Client) GetThreadMessages(ctx context.Context, token, threadID string) 
 	}
 	return out, nil
 }
+
+// GetMessageBody fetches one message with format=full and returns its
+// plain-text body (RFC 031 Layer 3, on-demand). It walks the MIME parts for a
+// text/plain payload, falling back to the top-level body, and decodes Gmail's
+// base64url. HTML parts are ignored — the caller wants readable text, and not
+// rendering remote HTML is the safer default. One API call.
+func (c *Client) GetMessageBody(ctx context.Context, token, messageID string) (string, error) {
+	q := url.Values{}
+	q.Set("format", "full")
+	var msg struct {
+		Payload gmailPart `json:"payload"`
+	}
+	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages/"+url.PathEscape(messageID), q, &msg); err != nil {
+		return "", fmt.Errorf("gmail messages.get body %s: %w", messageID, err)
+	}
+	if body := extractPlainText(&msg.Payload); body != "" {
+		return body, nil
+	}
+	return "", nil
+}
+
+type gmailPart struct {
+	MimeType string      `json:"mimeType"`
+	Body     gmailBody   `json:"body"`
+	Parts    []gmailPart `json:"parts"`
+}
+
+type gmailBody struct {
+	Data string `json:"data"`
+}
+
+// extractPlainText returns the first text/plain body found in the MIME tree,
+// decoding Gmail's URL-safe base64.
+func extractPlainText(p *gmailPart) string {
+	if p == nil {
+		return ""
+	}
+	if strings.HasPrefix(p.MimeType, "text/plain") && p.Body.Data != "" {
+		if decoded, err := base64.URLEncoding.DecodeString(p.Body.Data); err == nil {
+			return string(decoded)
+		}
+	}
+	for i := range p.Parts {
+		if s := extractPlainText(&p.Parts[i]); s != "" {
+			return s
+		}
+	}
+	// Fall back to a bare body on a leaf with no explicit text/plain part.
+	if len(p.Parts) == 0 && p.Body.Data != "" && !strings.HasPrefix(p.MimeType, "text/html") {
+		if decoded, err := base64.URLEncoding.DecodeString(p.Body.Data); err == nil {
+			return string(decoded)
+		}
+	}
+	return ""
+}

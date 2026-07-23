@@ -116,6 +116,11 @@ export const getAction = (actionId: string) => call<RevenueAction>(`/revenue-act
 export const getAudit = (actionId: string) =>
   call<ActionAudit>(`/revenue-actions/${actionId}/audit`);
 
+// getSourceBody fetches the original email body behind an action (RFC 031
+// Layer 3), served from a sealed short-TTL cache or fetched on demand.
+export const getSourceBody = (actionId: string) =>
+  call<{ body: string }>(`/revenue-actions/${actionId}/source-body`).then((r) => r.body);
+
 export interface CreateActionInput {
   relationshipId: string;
   actionType: string;

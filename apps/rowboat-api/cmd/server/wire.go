@@ -390,6 +390,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// Gate execution behind a paid plan: scan/queue/draft/ROI stay free,
 	// approve+execute require an active subscription.
 	revenueSvc.SetEntitlements(revenue.NewSubscriptionEntitlements(client))
+	// Layer-3 (RFC 031): on-demand original-email retrieval, cached sealed with
+	// the column key for a short TTL.
+	revenueSvc.SetBodyFetcher(gmailExec, sealer, time.Duration(cfg.MailBodyCacheTTLHours)*time.Hour)
 	revenueH := revenue.NewHandler(revenueSvc, log)
 	// RFC 031: disconnecting Google purges the mail index (Layers 1-3);
 	// Layer-4 evidence quotes survive as the user's own action history.

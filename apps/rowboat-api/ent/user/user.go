@@ -91,6 +91,8 @@ const (
 	EdgeMailThreads = "mail_threads"
 	// EdgeMailMessageMetas holds the string denoting the mail_message_metas edge name in mutations.
 	EdgeMailMessageMetas = "mail_message_metas"
+	// EdgeMailBodyCaches holds the string denoting the mail_body_caches edge name in mutations.
+	EdgeMailBodyCaches = "mail_body_caches"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -324,6 +326,13 @@ const (
 	MailMessageMetasInverseTable = "mail_message_meta"
 	// MailMessageMetasColumn is the table column denoting the mail_message_metas relation/edge.
 	MailMessageMetasColumn = "user_mail_message_metas"
+	// MailBodyCachesTable is the table that holds the mail_body_caches relation/edge.
+	MailBodyCachesTable = "mail_body_caches"
+	// MailBodyCachesInverseTable is the table name for the MailBodyCache entity.
+	// It exists in this package in order to avoid circular dependency with the "mailbodycache" package.
+	MailBodyCachesInverseTable = "mail_body_caches"
+	// MailBodyCachesColumn is the table column denoting the mail_body_caches relation/edge.
+	MailBodyCachesColumn = "user_mail_body_caches"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -846,6 +855,20 @@ func ByMailMessageMetas(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newMailMessageMetasStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByMailBodyCachesCount orders the results by mail_body_caches count.
+func ByMailBodyCachesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMailBodyCachesStep(), opts...)
+	}
+}
+
+// ByMailBodyCaches orders the results by mail_body_caches terms.
+func ByMailBodyCaches(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMailBodyCachesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -1075,5 +1098,12 @@ func newMailMessageMetasStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MailMessageMetasInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MailMessageMetasTable, MailMessageMetasColumn),
+	)
+}
+func newMailBodyCachesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MailBodyCachesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MailBodyCachesTable, MailBodyCachesColumn),
 	)
 }

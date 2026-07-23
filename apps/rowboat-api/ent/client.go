@@ -37,6 +37,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -109,6 +110,8 @@ type Client struct {
 	MCPConnection *MCPConnectionClient
 	// MCPConnectionHistory is the client for interacting with the MCPConnectionHistory builders.
 	MCPConnectionHistory *MCPConnectionHistoryClient
+	// MailBodyCache is the client for interacting with the MailBodyCache builders.
+	MailBodyCache *MailBodyCacheClient
 	// MailMessageMeta is the client for interacting with the MailMessageMeta builders.
 	MailMessageMeta *MailMessageMetaClient
 	// MailThread is the client for interacting with the MailThread builders.
@@ -185,6 +188,7 @@ func (c *Client) init() {
 	c.LLMUsageHistory = NewLLMUsageHistoryClient(c.config)
 	c.MCPConnection = NewMCPConnectionClient(c.config)
 	c.MCPConnectionHistory = NewMCPConnectionHistoryClient(c.config)
+	c.MailBodyCache = NewMailBodyCacheClient(c.config)
 	c.MailMessageMeta = NewMailMessageMetaClient(c.config)
 	c.MailThread = NewMailThreadClient(c.config)
 	c.MeetingMinuteUsage = NewMeetingMinuteUsageClient(c.config)
@@ -356,6 +360,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		LLMUsageHistory:             NewLLMUsageHistoryClient(cfg),
 		MCPConnection:               NewMCPConnectionClient(cfg),
 		MCPConnectionHistory:        NewMCPConnectionHistoryClient(cfg),
+		MailBodyCache:               NewMailBodyCacheClient(cfg),
 		MailMessageMeta:             NewMailMessageMetaClient(cfg),
 		MailThread:                  NewMailThreadClient(cfg),
 		MeetingMinuteUsage:          NewMeetingMinuteUsageClient(cfg),
@@ -416,6 +421,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		LLMUsageHistory:             NewLLMUsageHistoryClient(cfg),
 		MCPConnection:               NewMCPConnectionClient(cfg),
 		MCPConnectionHistory:        NewMCPConnectionHistoryClient(cfg),
+		MailBodyCache:               NewMailBodyCacheClient(cfg),
 		MailMessageMeta:             NewMailMessageMetaClient(cfg),
 		MailThread:                  NewMailThreadClient(cfg),
 		MeetingMinuteUsage:          NewMeetingMinuteUsageClient(cfg),
@@ -469,12 +475,13 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AgentTurn, c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
 		c.Commitment, c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory,
-		c.MCPConnection, c.MCPConnectionHistory, c.MailMessageMeta, c.MailThread,
-		c.MeetingMinuteUsage, c.OAuthConnection, c.OAuthConnectionHistory,
-		c.OAuthPending, c.PolicyDecisionSnapshot, c.Relationship, c.RevenueAction,
-		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
-		c.RevenueOutboxEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
-		c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
+		c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta,
+		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
+		c.OAuthConnectionHistory, c.OAuthPending, c.PolicyDecisionSnapshot,
+		c.Relationship, c.RevenueAction, c.RevenueActionRevision, c.RevenueEvidence,
+		c.RevenueLeakScan, c.RevenueOutboxEvent, c.RevenueWorkspace,
+		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory, c.User,
+		c.UserHistory,
 	} {
 		n.Use(hooks...)
 	}
@@ -489,12 +496,13 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AgentTurn, c.BackgroundTask, c.BackgroundTaskArtifact, c.BackgroundTaskRun,
 		c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState, c.CloudEvent,
 		c.Commitment, c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory,
-		c.MCPConnection, c.MCPConnectionHistory, c.MailMessageMeta, c.MailThread,
-		c.MeetingMinuteUsage, c.OAuthConnection, c.OAuthConnectionHistory,
-		c.OAuthPending, c.PolicyDecisionSnapshot, c.Relationship, c.RevenueAction,
-		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
-		c.RevenueOutboxEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
-		c.Subscription, c.SubscriptionHistory, c.User, c.UserHistory,
+		c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta,
+		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
+		c.OAuthConnectionHistory, c.OAuthPending, c.PolicyDecisionSnapshot,
+		c.Relationship, c.RevenueAction, c.RevenueActionRevision, c.RevenueEvidence,
+		c.RevenueLeakScan, c.RevenueOutboxEvent, c.RevenueWorkspace,
+		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory, c.User,
+		c.UserHistory,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -547,6 +555,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.MCPConnection.mutate(ctx, m)
 	case *MCPConnectionHistoryMutation:
 		return c.MCPConnectionHistory.mutate(ctx, m)
+	case *MailBodyCacheMutation:
+		return c.MailBodyCache.mutate(ctx, m)
 	case *MailMessageMetaMutation:
 		return c.MailMessageMeta.mutate(ctx, m)
 	case *MailThreadMutation:
@@ -4252,6 +4262,155 @@ func (c *MCPConnectionHistoryClient) mutate(ctx context.Context, m *MCPConnectio
 	}
 }
 
+// MailBodyCacheClient is a client for the MailBodyCache schema.
+type MailBodyCacheClient struct {
+	config
+}
+
+// NewMailBodyCacheClient returns a client for the MailBodyCache from the given config.
+func NewMailBodyCacheClient(c config) *MailBodyCacheClient {
+	return &MailBodyCacheClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `mailbodycache.Hooks(f(g(h())))`.
+func (c *MailBodyCacheClient) Use(hooks ...Hook) {
+	c.hooks.MailBodyCache = append(c.hooks.MailBodyCache, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `mailbodycache.Intercept(f(g(h())))`.
+func (c *MailBodyCacheClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MailBodyCache = append(c.inters.MailBodyCache, interceptors...)
+}
+
+// Create returns a builder for creating a MailBodyCache entity.
+func (c *MailBodyCacheClient) Create() *MailBodyCacheCreate {
+	mutation := newMailBodyCacheMutation(c.config, OpCreate)
+	return &MailBodyCacheCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MailBodyCache entities.
+func (c *MailBodyCacheClient) CreateBulk(builders ...*MailBodyCacheCreate) *MailBodyCacheCreateBulk {
+	return &MailBodyCacheCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MailBodyCacheClient) MapCreateBulk(slice any, setFunc func(*MailBodyCacheCreate, int)) *MailBodyCacheCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MailBodyCacheCreateBulk{err: fmt.Errorf("calling to MailBodyCacheClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MailBodyCacheCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MailBodyCacheCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MailBodyCache.
+func (c *MailBodyCacheClient) Update() *MailBodyCacheUpdate {
+	mutation := newMailBodyCacheMutation(c.config, OpUpdate)
+	return &MailBodyCacheUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MailBodyCacheClient) UpdateOne(_m *MailBodyCache) *MailBodyCacheUpdateOne {
+	mutation := newMailBodyCacheMutation(c.config, OpUpdateOne, withMailBodyCache(_m))
+	return &MailBodyCacheUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MailBodyCacheClient) UpdateOneID(id uuid.UUID) *MailBodyCacheUpdateOne {
+	mutation := newMailBodyCacheMutation(c.config, OpUpdateOne, withMailBodyCacheID(id))
+	return &MailBodyCacheUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MailBodyCache.
+func (c *MailBodyCacheClient) Delete() *MailBodyCacheDelete {
+	mutation := newMailBodyCacheMutation(c.config, OpDelete)
+	return &MailBodyCacheDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MailBodyCacheClient) DeleteOne(_m *MailBodyCache) *MailBodyCacheDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MailBodyCacheClient) DeleteOneID(id uuid.UUID) *MailBodyCacheDeleteOne {
+	builder := c.Delete().Where(mailbodycache.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MailBodyCacheDeleteOne{builder}
+}
+
+// Query returns a query builder for MailBodyCache.
+func (c *MailBodyCacheClient) Query() *MailBodyCacheQuery {
+	return &MailBodyCacheQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMailBodyCache},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MailBodyCache entity by its id.
+func (c *MailBodyCacheClient) Get(ctx context.Context, id uuid.UUID) (*MailBodyCache, error) {
+	return c.Query().Where(mailbodycache.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MailBodyCacheClient) GetX(ctx context.Context, id uuid.UUID) *MailBodyCache {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a MailBodyCache.
+func (c *MailBodyCacheClient) QueryUser(_m *MailBodyCache) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mailbodycache.Table, mailbodycache.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mailbodycache.UserTable, mailbodycache.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MailBodyCacheClient) Hooks() []Hook {
+	return c.hooks.MailBodyCache
+}
+
+// Interceptors returns the client interceptors.
+func (c *MailBodyCacheClient) Interceptors() []Interceptor {
+	return c.inters.MailBodyCache
+}
+
+func (c *MailBodyCacheClient) mutate(ctx context.Context, m *MailBodyCacheMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MailBodyCacheCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MailBodyCacheUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MailBodyCacheUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MailBodyCacheDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MailBodyCache mutation op: %q", m.Op())
+	}
+}
+
 // MailMessageMetaClient is a client for the MailMessageMeta schema.
 type MailMessageMetaClient struct {
 	config
@@ -7901,6 +8060,22 @@ func (c *UserClient) QueryMailMessageMetas(_m *User) *MailMessageMetaQuery {
 	return query
 }
 
+// QueryMailBodyCaches queries the mail_body_caches edge of a User.
+func (c *UserClient) QueryMailBodyCaches(_m *User) *MailBodyCacheQuery {
+	query := (&MailBodyCacheClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(mailbodycache.Table, mailbodycache.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MailBodyCachesTable, user.MailBodyCachesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -8067,11 +8242,12 @@ type (
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
 		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, Commitment,
 		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
-		MCPConnectionHistory, MailMessageMeta, MailThread, MeetingMinuteUsage,
-		OAuthConnection, OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot,
-		Relationship, RevenueAction, RevenueActionRevision, RevenueEvidence,
-		RevenueLeakScan, RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember,
-		Subscription, SubscriptionHistory, User, UserHistory []ent.Hook
+		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailThread,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		PolicyDecisionSnapshot, Relationship, RevenueAction, RevenueActionRevision,
+		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueWorkspace,
+		RevenueWorkspaceMember, Subscription, SubscriptionHistory, User,
+		UserHistory []ent.Hook
 	}
 	inters struct {
 		ActionOutcome, AgentApproval, AgentDefinition, AgentDefinitionHistory,
@@ -8079,10 +8255,11 @@ type (
 		BackgroundTask, BackgroundTaskArtifact, BackgroundTaskRun,
 		BackgroundTaskRunEvent, BackgroundTaskScheduleState, CloudEvent, Commitment,
 		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
-		MCPConnectionHistory, MailMessageMeta, MailThread, MeetingMinuteUsage,
-		OAuthConnection, OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot,
-		Relationship, RevenueAction, RevenueActionRevision, RevenueEvidence,
-		RevenueLeakScan, RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember,
-		Subscription, SubscriptionHistory, User, UserHistory []ent.Interceptor
+		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailThread,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		PolicyDecisionSnapshot, Relationship, RevenueAction, RevenueActionRevision,
+		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueWorkspace,
+		RevenueWorkspaceMember, Subscription, SubscriptionHistory, User,
+		UserHistory []ent.Interceptor
 	}
 )

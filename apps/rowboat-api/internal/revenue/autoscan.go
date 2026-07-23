@@ -117,8 +117,9 @@ func (a *AutoScanner) sweep(ctx context.Context) {
 		a.log.Info("revenue auto-scan sweep", zap.Int("candidates", len(users)), zap.Int("started", started))
 	}
 
-	// RFC 031 retention: prune Layer-1 mail-index rows past the window. This is
-	// a cross-tenant maintenance delete keyed on age, so it runs internal.
+	// RFC 031 retention: prune Layer-1 mail-index rows past the window and any
+	// expired Layer-3 body-cache rows. Cross-tenant maintenance deletes keyed
+	// on age, so they run internal.
 	if a.cfg.RetentionMonths > 0 {
 		cutoff := a.svc.now().AddDate(0, -a.cfg.RetentionMonths, 0)
 		if n, err := a.svc.SweepMailRetention(ictx, cutoff); err != nil {
@@ -126,6 +127,11 @@ func (a *AutoScanner) sweep(ctx context.Context) {
 		} else if n > 0 {
 			a.log.Info("revenue mail retention pruned", zap.Int("rows", n))
 		}
+	}
+	if n, err := a.svc.SweepBodyCache(ictx, a.svc.now()); err != nil {
+		a.log.Warn("revenue body-cache sweep", zap.Error(err))
+	} else if n > 0 {
+		a.log.Info("revenue body cache pruned", zap.Int("rows", n))
 	}
 }
 

@@ -83,6 +83,20 @@ func (_c *RevenueEvidenceCreate) SetSourceRecordID(v string) *RevenueEvidenceCre
 	return _c
 }
 
+// SetSourceMessageID sets the "source_message_id" field.
+func (_c *RevenueEvidenceCreate) SetSourceMessageID(v string) *RevenueEvidenceCreate {
+	_c.mutation.SetSourceMessageID(v)
+	return _c
+}
+
+// SetNillableSourceMessageID sets the "source_message_id" field if the given value is not nil.
+func (_c *RevenueEvidenceCreate) SetNillableSourceMessageID(v *string) *RevenueEvidenceCreate {
+	if v != nil {
+		_c.SetSourceMessageID(*v)
+	}
+	return _c
+}
+
 // SetSourceURI sets the "source_uri" field.
 func (_c *RevenueEvidenceCreate) SetSourceURI(v string) *RevenueEvidenceCreate {
 	_c.mutation.SetSourceURI(v)
@@ -378,6 +392,10 @@ func (_c *RevenueEvidenceCreate) createSpec() (*RevenueEvidence, *sqlgraph.Creat
 		_spec.SetField(revenueevidence.FieldSourceRecordID, field.TypeString, value)
 		_node.SourceRecordID = value
 	}
+	if value, ok := _c.mutation.SourceMessageID(); ok {
+		_spec.SetField(revenueevidence.FieldSourceMessageID, field.TypeString, value)
+		_node.SourceMessageID = value
+	}
 	if value, ok := _c.mutation.SourceURI(); ok {
 		_spec.SetField(revenueevidence.FieldSourceURI, field.TypeString, value)
 		_node.SourceURI = value
@@ -594,6 +612,24 @@ func (u *RevenueEvidenceUpsert) UpdateSourceRecordID() *RevenueEvidenceUpsert {
 	return u
 }
 
+// SetSourceMessageID sets the "source_message_id" field.
+func (u *RevenueEvidenceUpsert) SetSourceMessageID(v string) *RevenueEvidenceUpsert {
+	u.Set(revenueevidence.FieldSourceMessageID, v)
+	return u
+}
+
+// UpdateSourceMessageID sets the "source_message_id" field to the value that was provided on create.
+func (u *RevenueEvidenceUpsert) UpdateSourceMessageID() *RevenueEvidenceUpsert {
+	u.SetExcluded(revenueevidence.FieldSourceMessageID)
+	return u
+}
+
+// ClearSourceMessageID clears the value of the "source_message_id" field.
+func (u *RevenueEvidenceUpsert) ClearSourceMessageID() *RevenueEvidenceUpsert {
+	u.SetNull(revenueevidence.FieldSourceMessageID)
+	return u
+}
+
 // SetSourceURI sets the "source_uri" field.
 func (u *RevenueEvidenceUpsert) SetSourceURI(v string) *RevenueEvidenceUpsert {
 	u.Set(revenueevidence.FieldSourceURI, v)
@@ -807,6 +843,27 @@ func (u *RevenueEvidenceUpsertOne) SetSourceRecordID(v string) *RevenueEvidenceU
 func (u *RevenueEvidenceUpsertOne) UpdateSourceRecordID() *RevenueEvidenceUpsertOne {
 	return u.Update(func(s *RevenueEvidenceUpsert) {
 		s.UpdateSourceRecordID()
+	})
+}
+
+// SetSourceMessageID sets the "source_message_id" field.
+func (u *RevenueEvidenceUpsertOne) SetSourceMessageID(v string) *RevenueEvidenceUpsertOne {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.SetSourceMessageID(v)
+	})
+}
+
+// UpdateSourceMessageID sets the "source_message_id" field to the value that was provided on create.
+func (u *RevenueEvidenceUpsertOne) UpdateSourceMessageID() *RevenueEvidenceUpsertOne {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.UpdateSourceMessageID()
+	})
+}
+
+// ClearSourceMessageID clears the value of the "source_message_id" field.
+func (u *RevenueEvidenceUpsertOne) ClearSourceMessageID() *RevenueEvidenceUpsertOne {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.ClearSourceMessageID()
 	})
 }
 
@@ -1207,6 +1264,27 @@ func (u *RevenueEvidenceUpsertBulk) SetSourceRecordID(v string) *RevenueEvidence
 func (u *RevenueEvidenceUpsertBulk) UpdateSourceRecordID() *RevenueEvidenceUpsertBulk {
 	return u.Update(func(s *RevenueEvidenceUpsert) {
 		s.UpdateSourceRecordID()
+	})
+}
+
+// SetSourceMessageID sets the "source_message_id" field.
+func (u *RevenueEvidenceUpsertBulk) SetSourceMessageID(v string) *RevenueEvidenceUpsertBulk {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.SetSourceMessageID(v)
+	})
+}
+
+// UpdateSourceMessageID sets the "source_message_id" field to the value that was provided on create.
+func (u *RevenueEvidenceUpsertBulk) UpdateSourceMessageID() *RevenueEvidenceUpsertBulk {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.UpdateSourceMessageID()
+	})
+}
+
+// ClearSourceMessageID clears the value of the "source_message_id" field.
+func (u *RevenueEvidenceUpsertBulk) ClearSourceMessageID() *RevenueEvidenceUpsertBulk {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.ClearSourceMessageID()
 	})
 }
 

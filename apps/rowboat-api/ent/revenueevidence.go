@@ -31,6 +31,8 @@ type RevenueEvidence struct {
 	SourceAccountID string `json:"source_account_id,omitempty"`
 	// SourceRecordID holds the value of the "source_record_id" field.
 	SourceRecordID string `json:"source_record_id,omitempty"`
+	// SourceMessageID holds the value of the "source_message_id" field.
+	SourceMessageID string `json:"source_message_id,omitempty"`
 	// SourceURI holds the value of the "source_uri" field.
 	SourceURI string `json:"source_uri,omitempty"`
 	// ContentHash holds the value of the "content_hash" field.
@@ -132,7 +134,7 @@ func (*RevenueEvidence) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case revenueevidence.FieldPayloadCiphertext, revenueevidence.FieldExternalEvidenceRefs:
 			values[i] = new([]byte)
-		case revenueevidence.FieldSource, revenueevidence.FieldSourceAccountID, revenueevidence.FieldSourceRecordID, revenueevidence.FieldSourceURI, revenueevidence.FieldContentHash, revenueevidence.FieldExcerpt:
+		case revenueevidence.FieldSource, revenueevidence.FieldSourceAccountID, revenueevidence.FieldSourceRecordID, revenueevidence.FieldSourceMessageID, revenueevidence.FieldSourceURI, revenueevidence.FieldContentHash, revenueevidence.FieldExcerpt:
 			values[i] = new(sql.NullString)
 		case revenueevidence.FieldCreatedAt, revenueevidence.FieldUpdatedAt, revenueevidence.FieldOccurredAt, revenueevidence.FieldObservedAt:
 			values[i] = new(sql.NullTime)
@@ -192,6 +194,12 @@ func (_m *RevenueEvidence) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field source_record_id", values[i])
 			} else if value.Valid {
 				_m.SourceRecordID = value.String
+			}
+		case revenueevidence.FieldSourceMessageID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field source_message_id", values[i])
+			} else if value.Valid {
+				_m.SourceMessageID = value.String
 			}
 		case revenueevidence.FieldSourceURI:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -326,6 +334,9 @@ func (_m *RevenueEvidence) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("source_record_id=")
 	builder.WriteString(_m.SourceRecordID)
+	builder.WriteString(", ")
+	builder.WriteString("source_message_id=")
+	builder.WriteString(_m.SourceMessageID)
 	builder.WriteString(", ")
 	builder.WriteString("source_uri=")
 	builder.WriteString(_m.SourceURI)

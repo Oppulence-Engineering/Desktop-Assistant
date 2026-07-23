@@ -3988,6 +3988,61 @@
         "required": ["name", "trustTier"],
         "type": "object"
       },
+      "MailBodyCache": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "provider": {
+            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+            "example": "openai",
+            "type": "string"
+          },
+          "provider_message_id": {
+            "type": "string"
+          },
+          "sealed_body": {
+            "format": "byte",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "provider",
+          "provider_message_id",
+          "sealed_body",
+          "expires_at",
+          "user"
+        ],
+        "type": "object"
+      },
       "MailMessageMeta": {
         "properties": {
           "created_at": {
@@ -5178,6 +5233,9 @@
           "source_account_id": {
             "type": "string"
           },
+          "source_message_id": {
+            "type": "string"
+          },
           "source_record_id": {
             "type": "string"
           },
@@ -6340,6 +6398,12 @@
             "description": "LLM usage rows for the user.",
             "items": {
               "$ref": "#/components/schemas/LLMUsage"
+            },
+            "type": "array"
+          },
+          "mail_body_caches": {
+            "items": {
+              "$ref": "#/components/schemas/MailBodyCache"
             },
             "type": "array"
           },
@@ -11847,6 +11911,57 @@
           }
         ],
         "summary": "Snooze an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}/source-body": {
+      "get": {
+        "description": "Returns the plain-text body of the original email behind this action (RFC 031 Layer 3), served from the sealed short-TTL cache or fetched from Gmail on demand. 404 when no source message is linked or the body is unavailable.",
+        "operationId": "getRevenueActionSourceBody",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Body.",
+                  "properties": {
+                    "body": {
+                      "description": "Plain-text body.",
+                      "example": "Hi — following up on the proposal...",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Original email body."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get the original email body",
         "tags": ["Revenue"]
       }
     },

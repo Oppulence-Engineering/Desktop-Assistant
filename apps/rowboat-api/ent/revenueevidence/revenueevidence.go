@@ -25,6 +25,8 @@ const (
 	FieldSourceAccountID = "source_account_id"
 	// FieldSourceRecordID holds the string denoting the source_record_id field in the database.
 	FieldSourceRecordID = "source_record_id"
+	// FieldSourceMessageID holds the string denoting the source_message_id field in the database.
+	FieldSourceMessageID = "source_message_id"
 	// FieldSourceURI holds the string denoting the source_uri field in the database.
 	FieldSourceURI = "source_uri"
 	// FieldContentHash holds the string denoting the content_hash field in the database.
@@ -90,6 +92,7 @@ var Columns = []string{
 	FieldSource,
 	FieldSourceAccountID,
 	FieldSourceRecordID,
+	FieldSourceMessageID,
 	FieldSourceURI,
 	FieldContentHash,
 	FieldExcerpt,
@@ -183,6 +186,11 @@ func BySourceAccountID(opts ...sql.OrderTermOption) OrderOption {
 // BySourceRecordID orders the results by the source_record_id field.
 func BySourceRecordID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSourceRecordID, opts...).ToFunc()
+}
+
+// BySourceMessageID orders the results by the source_message_id field.
+func BySourceMessageID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSourceMessageID, opts...).ToFunc()
 }
 
 // BySourceURI orders the results by the source_uri field.

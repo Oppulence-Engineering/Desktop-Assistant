@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -129,17 +130,22 @@ func (s *Service) indexThread(ctx context.Context, u *ent.User, sum *threadSumma
 // survive — they are the customer's own action history. Runs in the caller's
 // tenant scope.
 func (s *Service) PurgeMailIndex(ctx context.Context, u *ent.User) (int, error) {
+	bodies, err := s.client.MailBodyCache.Delete().
+		Where(mailbodycache.HasUserWith(user.IDEQ(u.ID))).Exec(ctx)
+	if err != nil {
+		return 0, err
+	}
 	msgs, err := s.client.MailMessageMeta.Delete().
 		Where(mailmessagemeta.HasUserWith(user.IDEQ(u.ID))).Exec(ctx)
 	if err != nil {
-		return 0, err
+		return bodies, err
 	}
 	threads, err := s.client.MailThread.Delete().
 		Where(mailthread.HasUserWith(user.IDEQ(u.ID))).Exec(ctx)
 	if err != nil {
-		return msgs, err
+		return bodies + msgs, err
 	}
-	return msgs + threads, nil
+	return bodies + msgs + threads, nil
 }
 
 // SweepMailRetention deletes Layer-1 rows whose last activity is older than the

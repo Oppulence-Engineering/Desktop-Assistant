@@ -1264,6 +1264,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/revenue-actions/{actionId}/source-body": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the original email body
+     * @description Returns the plain-text body of the original email behind this action (RFC 031 Layer 3), served from the sealed short-TTL cache or fetched from Gmail on demand. 404 when no source message is linked or the body is unavailable.
+     */
+    get: operations["getRevenueActionSourceBody"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/revenue-digest": {
     parameters: {
       query?: never;
@@ -4310,6 +4330,42 @@ export interface components {
        */
       trustTier: "read" | "write" | "act" | "money-moving";
     };
+    MailBodyCache: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description Credential or one-time ticket expiry timestamp.
+       * @example 2026-06-04T20:48:00Z
+       */
+      expires_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+       * @example openai
+       */
+      provider: string;
+      provider_message_id: string;
+      /** Format: byte */
+      sealed_body: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
     MailMessageMeta: {
       /**
        * Format: date-time
@@ -5086,6 +5142,7 @@ export interface components {
       relationships?: components["schemas"]["Relationship"][];
       source: string;
       source_account_id?: string;
+      source_message_id?: string;
       source_record_id: string;
       source_uri?: string;
       /**
@@ -5934,6 +5991,7 @@ export interface components {
       ledger_entries?: components["schemas"]["CreditLedger"][];
       /** @description LLM usage rows for the user. */
       llm_usages?: components["schemas"]["LLMUsage"][];
+      mail_body_caches?: components["schemas"]["MailBodyCache"][];
       mail_message_metas?: components["schemas"]["MailMessageMeta"][];
       mail_threads?: components["schemas"]["MailThread"][];
       /** @description MCP connector connections for the user. */
@@ -9892,6 +9950,37 @@ export interface operations {
         };
       };
       400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  getRevenueActionSourceBody: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Original email body. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /**
+             * @description Plain-text body.
+             * @example Hi — following up on the proposal...
+             */
+            body?: string;
+          };
+        };
+      };
       401: components["responses"]["401"];
       404: components["responses"]["404"];
     };

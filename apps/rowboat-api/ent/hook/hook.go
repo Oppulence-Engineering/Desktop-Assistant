@@ -273,6 +273,18 @@ func (f MCPConnectionHistoryFunc) Mutate(ctx context.Context, m ent.Mutation) (e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MCPConnectionHistoryMutation", m)
 }
 
+// The MailBodyCacheFunc type is an adapter to allow the use of ordinary
+// function as MailBodyCache mutator.
+type MailBodyCacheFunc func(context.Context, *ent.MailBodyCacheMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MailBodyCacheFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MailBodyCacheMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MailBodyCacheMutation", m)
+}
+
 // The MailMessageMetaFunc type is an adapter to allow the use of ordinary
 // function as MailMessageMeta mutator.
 type MailMessageMetaFunc func(context.Context, *ent.MailMessageMetaMutation) (ent.Value, error)
