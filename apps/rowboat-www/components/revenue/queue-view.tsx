@@ -50,6 +50,7 @@ import {
   PolicyBadge,
   priorityTone,
 } from "@/components/revenue/shared";
+import { capture, RevenueEvents } from "@/lib/analytics";
 import { ReviewSheet } from "@/components/revenue/review-sheet";
 import { AuditSheet } from "@/components/revenue/audit-sheet";
 import type { RevenueAction, RevenueRelationship, RevenueWorkspace } from "@/types/revenue";
@@ -154,7 +155,10 @@ export function QueueView({
             <li key={action.id}>
               <ActionCard
                 action={action}
-                onReview={() => setSelected(action)}
+                onReview={() => {
+                  capture(RevenueEvents.ActionReviewed, { detector: action.detector });
+                  setSelected(action);
+                }}
                 onAudit={() => setAuditFor(action)}
                 onOptimisticRemove={removeFromQueue}
                 onError={onError}

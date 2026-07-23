@@ -46,6 +46,7 @@ import {
   PolicyBadge,
   PriorityBreakdown,
 } from "@/components/revenue/shared";
+import { capture, RevenueEvents } from "@/lib/analytics";
 import type { RevenueAction, RevenueWorkspace } from "@/types/revenue";
 
 export function ReviewSheet({
@@ -129,6 +130,7 @@ export function ReviewSheet({
   const upgrade = async () => {
     setBusy("upgrade");
     onError("");
+    capture(RevenueEvents.UpgradeClicked, { from: "review_sheet" });
     try {
       const url = await startCheckout("pro");
       window.location.assign(url);
@@ -153,7 +155,15 @@ export function ReviewSheet({
       return await getAction(action.id);
     });
 
-  const approve = () => wrap("approve", () => approveAction(action.id, acceptRisk));
+  const approve = () =>
+    wrap("approve", async () => {
+      const r = await approveAction(action.id, acceptRisk);
+      capture(RevenueEvents.ActionApproved, {
+        detector: action.detector,
+        mode: action.executionMode,
+      });
+      return r;
+    });
 
   const doReject = () =>
     wrap("reject", () => rejectAction(action.id, rejectReason || "not_appropriate"), {
@@ -162,10 +172,21 @@ export function ReviewSheet({
     });
 
   const execute = () =>
-    wrap("execute", () => executeAction(action.id), {
-      note: isSend ? "Sent." : "Draft created in your Gmail — open Gmail to review and send.",
-      removeOnDone: true,
-    });
+    wrap(
+      "execute",
+      async () => {
+        const r = await executeAction(action.id);
+        capture(RevenueEvents.ActionExecuted, {
+          detector: action.detector,
+          mode: action.executionMode,
+        });
+        return r;
+      },
+      {
+        note: isSend ? "Sent." : "Draft created in your Gmail — open Gmail to review and send.",
+        removeOnDone: true,
+      },
+    );
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>

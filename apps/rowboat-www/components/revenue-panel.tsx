@@ -14,6 +14,7 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { capture, RevenueEvents } from "@/lib/analytics";
 import { getScan, getScans, getWorkspace, RevenueAPIError, startScan } from "@/lib/revenue";
 import { ImpactView } from "@/components/revenue/impact-view";
 import { QueueView } from "@/components/revenue/queue-view";
@@ -118,6 +119,7 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
     setError(null);
     setNotice(null);
     setScanning(true);
+    capture(RevenueEvents.ScanStarted);
     try {
       const s = await startScan(90);
       setActiveScan(s);

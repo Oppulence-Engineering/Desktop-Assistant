@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { linkWorkspace, relativeTime, RevenueAPIError } from "@/lib/revenue";
 import { Field, errMessage } from "@/components/revenue/shared";
+import { capture, RevenueEvents } from "@/lib/analytics";
 import type { RevenueWorkspace } from "@/types/revenue";
 
 export function WorkspaceView({
@@ -41,6 +42,7 @@ export function WorkspaceView({
         outboundOrganizationId: orgId.trim() || undefined,
       });
       onLinked(ws);
+      capture(RevenueEvents.WorkspaceLinked);
       onNotice("Workspace linked — governed sending is now enabled.");
     } catch (e) {
       onError(

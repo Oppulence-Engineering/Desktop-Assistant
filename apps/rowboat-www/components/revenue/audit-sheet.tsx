@@ -28,6 +28,7 @@ import {
   relativeTime,
 } from "@/lib/revenue";
 import { errMessage, PolicyBadge } from "@/components/revenue/shared";
+import { capture, RevenueEvents } from "@/lib/analytics";
 import type { ActionAudit, RevenueAction } from "@/types/revenue";
 
 export function AuditSheet({
@@ -76,6 +77,7 @@ export function AuditSheet({
         source: "user",
         sourceEventId: `manual:${outcome}:${Date.now()}`,
       });
+      capture(RevenueEvents.OutcomeLogged, { kind: outcome });
       await load(action.id);
     } catch (e) {
       onError(errMessage(e, "Could not record the outcome."));
