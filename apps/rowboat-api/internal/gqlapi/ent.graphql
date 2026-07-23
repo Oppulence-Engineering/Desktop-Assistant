@@ -8259,6 +8259,7 @@ type RevenueWorkspace implements Node {
   status: String!
   lastVerifiedAt: Time
   lastDigestAt: Time
+  mailHistoryID: String
   user: User!
   members: [RevenueWorkspaceMember!]
   relationships: [Relationship!]
@@ -8535,6 +8536,24 @@ input RevenueWorkspaceWhereInput {
   lastDigestAtLTE: Time
   lastDigestAtIsNil: Boolean
   lastDigestAtNotNil: Boolean
+  """
+  mail_history_id field predicates
+  """
+  mailHistoryID: String
+  mailHistoryIDNEQ: String
+  mailHistoryIDIn: [String!]
+  mailHistoryIDNotIn: [String!]
+  mailHistoryIDGT: String
+  mailHistoryIDGTE: String
+  mailHistoryIDLT: String
+  mailHistoryIDLTE: String
+  mailHistoryIDContains: String
+  mailHistoryIDHasPrefix: String
+  mailHistoryIDHasSuffix: String
+  mailHistoryIDIsNil: Boolean
+  mailHistoryIDNotNil: Boolean
+  mailHistoryIDEqualFold: String
+  mailHistoryIDContainsFold: String
   """
   user edge predicates
   """

@@ -37,6 +37,8 @@ type RevenueWorkspace struct {
 	LastVerifiedAt *time.Time `json:"last_verified_at,omitempty"`
 	// LastDigestAt holds the value of the "last_digest_at" field.
 	LastDigestAt *time.Time `json:"last_digest_at,omitempty"`
+	// MailHistoryID holds the value of the "mail_history_id" field.
+	MailHistoryID string `json:"mail_history_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RevenueWorkspaceQuery when eager-loading is set.
 	Edges                   RevenueWorkspaceEdges `json:"edges"`
@@ -180,7 +182,7 @@ func (*RevenueWorkspace) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case revenueworkspace.FieldWorkosOrgID, revenueworkspace.FieldOutboundOrganizationID, revenueworkspace.FieldOutboundWorkspaceID, revenueworkspace.FieldMode, revenueworkspace.FieldStatus:
+		case revenueworkspace.FieldWorkosOrgID, revenueworkspace.FieldOutboundOrganizationID, revenueworkspace.FieldOutboundWorkspaceID, revenueworkspace.FieldMode, revenueworkspace.FieldStatus, revenueworkspace.FieldMailHistoryID:
 			values[i] = new(sql.NullString)
 		case revenueworkspace.FieldCreatedAt, revenueworkspace.FieldUpdatedAt, revenueworkspace.FieldLastVerifiedAt, revenueworkspace.FieldLastDigestAt:
 			values[i] = new(sql.NullTime)
@@ -265,6 +267,12 @@ func (_m *RevenueWorkspace) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.LastDigestAt = new(time.Time)
 				*_m.LastDigestAt = value.Time
+			}
+		case revenueworkspace.FieldMailHistoryID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field mail_history_id", values[i])
+			} else if value.Valid {
+				_m.MailHistoryID = value.String
 			}
 		case revenueworkspace.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -391,6 +399,9 @@ func (_m *RevenueWorkspace) String() string {
 		builder.WriteString("last_digest_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("mail_history_id=")
+	builder.WriteString(_m.MailHistoryID)
 	builder.WriteByte(')')
 	return builder.String()
 }

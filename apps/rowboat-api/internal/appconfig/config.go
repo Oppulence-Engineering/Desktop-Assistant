@@ -402,6 +402,7 @@ type Config struct {
 	RevenueMailRetentionMonths   int
 	MailBodyCacheTTLHours        int
 	RevenueSemanticMemoryEnabled bool
+	RevenueMailPushSyncEnabled   bool
 	EmbeddingsModel              string
 
 	// Proactive digest (RFC 030). Ships dark behind RevenueDigestEnabled and
@@ -693,6 +694,7 @@ func Load() Config {
 		RevenueMailRetentionMonths:   getint("REVENUE_MAIL_RETENTION_MONTHS", 18),
 		MailBodyCacheTTLHours:        getint("MAIL_BODY_CACHE_TTL_HOURS", 72),
 		RevenueSemanticMemoryEnabled: getbool("REVENUE_SEMANTIC_MEMORY_ENABLED", false),
+		RevenueMailPushSyncEnabled:   getbool("REVENUE_MAIL_PUSH_SYNC_ENABLED", false),
 		EmbeddingsModel:              getenv("EMBEDDINGS_MODEL", "text-embedding-3-small"),
 		RevenueDigestEnabled:         getbool("REVENUE_DIGEST_ENABLED", false),
 		RevenueDigestInterval:        getdur("REVENUE_DIGEST_INTERVAL", time.Hour),

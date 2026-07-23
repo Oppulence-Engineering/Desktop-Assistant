@@ -318,3 +318,72 @@ func extractPlainText(p *gmailPart) string {
 	}
 	return ""
 }
+
+// ErrHistoryGap means the startHistoryId is older than Gmail retains (a 404):
+// the caller must fall back to a full re-sync rather than an incremental walk.
+var ErrHistoryGap = fmt.Errorf("gmail: history id too old; full re-sync required")
+
+// maxHistoryPages bounds the history.list pagination per push (one busy
+// mailbox update is a handful of pages at most).
+const maxHistoryPages = 10
+
+// ListHistory walks users.history.list from startHistoryID and returns the
+// unique thread ids touched by added messages, plus the mailbox's latest
+// historyId. A 404 (cursor too old) surfaces as ErrHistoryGap. Metadata only —
+// no bodies are fetched here.
+func (c *Client) ListHistory(ctx context.Context, token, startHistoryID string) (threadIDs []string, latestHistoryID string, err error) {
+	seen := map[string]struct{}{}
+	pageToken := ""
+	for page := 0; page < maxHistoryPages; page++ {
+		q := url.Values{}
+		q.Set("startHistoryId", startHistoryID)
+		q.Add("historyTypes", "messageAdded")
+		if pageToken != "" {
+			q.Set("pageToken", pageToken)
+		}
+		var resp struct {
+			History []struct {
+				MessagesAdded []struct {
+					Message struct {
+						ID       string `json:"id"`
+						ThreadID string `json:"threadId"`
+					} `json:"message"`
+				} `json:"messagesAdded"`
+			} `json:"history"`
+			HistoryID     string `json:"historyId"`
+			NextPageToken string `json:"nextPageToken"`
+		}
+		if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/history", q, &resp); err != nil {
+			if isNotFound(err) {
+				return nil, "", ErrHistoryGap
+			}
+			return nil, "", fmt.Errorf("gmail history.list: %w", err)
+		}
+		if resp.HistoryID != "" {
+			latestHistoryID = resp.HistoryID
+		}
+		for _, h := range resp.History {
+			for _, m := range h.MessagesAdded {
+				tid := m.Message.ThreadID
+				if tid == "" {
+					continue
+				}
+				if _, ok := seen[tid]; !ok {
+					seen[tid] = struct{}{}
+					threadIDs = append(threadIDs, tid)
+				}
+			}
+		}
+		if resp.NextPageToken == "" {
+			break
+		}
+		pageToken = resp.NextPageToken
+	}
+	return threadIDs, latestHistoryID, nil
+}
+
+// isNotFound reports whether err is a googleapi status error with code 404
+// (doJSON formats these as "... returned 404").
+func isNotFound(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "returned 404")
+}

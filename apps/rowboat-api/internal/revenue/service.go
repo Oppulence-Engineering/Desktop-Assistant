@@ -142,6 +142,7 @@ type Service struct {
 	sealer       *crypto.Sealer
 	mailBodyTTL  time.Duration
 	embedder     embeddings.Embedder
+	mailSyncer   MailSyncer
 	log          *zap.Logger
 	now          func() time.Time
 }
