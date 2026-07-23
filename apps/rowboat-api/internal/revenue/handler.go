@@ -36,6 +36,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/current", h.CurrentWorkspace)
 		r.Post("/link", h.LinkWorkspace)
 	})
+	r.Get("/v1/revenue-impact", h.Impact)
 	r.Route("/v1/revenue-leak-scans", func(r chi.Router) {
 		r.Post("/", h.StartScan)
 		r.Get("/{scanId}", h.GetScan)
@@ -352,6 +353,68 @@ func (h *Handler) LinkWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, h.workspaceDTO(ws))
+}
+
+// --- impact ------------------------------------------------------------------
+
+type impactDTO struct {
+	Surfaced  int `json:"surfaced"`
+	Open      int `json:"open"`
+	Handled   int `json:"handled"`
+	Snoozed   int `json:"snoozed"`
+	Dismissed int `json:"dismissed"`
+	Approved  int `json:"approved"`
+	Executed  int `json:"executed"`
+	Replied   int `json:"replied"`
+	Meetings  int `json:"meetingsBooked"`
+	Won       int `json:"won"`
+	Lost      int `json:"lost"`
+	// Rates are fractions in [0,1]; null when there is no denominator yet.
+	ReplyRate   *float64       `json:"replyRate"`
+	MeetingRate *float64       `json:"meetingRate"`
+	Outcomes    map[string]int `json:"outcomes"`
+	ByDetector  []DetectorStat `json:"byDetector"`
+}
+
+func ratio(num, den int) *float64 {
+	if den <= 0 {
+		return nil
+	}
+	r := float64(num) / float64(den)
+	return &r
+}
+
+// Impact returns the aggregate ROI picture for the caller.
+func (h *Handler) Impact(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	imp, err := h.svc.Impact(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	replied := imp.OutcomeCount("replied")
+	meetings := imp.OutcomeCount("meeting_booked")
+	dto := impactDTO{
+		Surfaced:    imp.Surfaced,
+		Open:        imp.Open,
+		Handled:     imp.Handled,
+		Snoozed:     imp.Snoozed,
+		Dismissed:   imp.Dismissed,
+		Approved:    imp.Approved,
+		Executed:    imp.Executed,
+		Replied:     replied,
+		Meetings:    meetings,
+		Won:         imp.OutcomeCount("won"),
+		Lost:        imp.OutcomeCount("lost"),
+		ReplyRate:   ratio(replied, imp.Executed),
+		MeetingRate: ratio(meetings, imp.Executed),
+		Outcomes:    imp.Outcomes,
+		ByDetector:  imp.Detectors,
+	}
+	httpx.WriteJSON(w, http.StatusOK, dto)
 }
 
 // --- scan endpoints ----------------------------------------------------------
