@@ -37,6 +37,7 @@ type Handler struct {
 	log    *zap.Logger
 
 	slackAgentDispatcher SlackAgentDispatcher
+	gmailHistoryConsumer GmailHistoryConsumer
 	googlePushVerifier   googlePushVerifier
 	googlePushEmail      string
 }
@@ -58,6 +59,16 @@ func New(client *ent.Client, sealer *crypto.Sealer, router RouteController, cfg 
 // the agent channel adapter after the CloudEvent row durably claims the event.
 func (h *Handler) SetSlackAgentDispatcher(fn SlackAgentDispatcher) {
 	h.slackAgentDispatcher = fn
+}
+
+// GmailHistoryConsumer syncs the RFC 031 Layer-1 mail index from a Gmail push
+// (a history pointer) for owner. It never carries mail content in the push.
+type GmailHistoryConsumer func(ctx context.Context, owner *ent.User, historyID uint64) error
+
+// SetGmailHistoryConsumer lets /v1/webhooks/google keep the revenue mail index
+// live: each Gmail push triggers an incremental History-API sync.
+func (h *Handler) SetGmailHistoryConsumer(fn GmailHistoryConsumer) {
+	h.gmailHistoryConsumer = fn
 }
 
 // SetGooglePushVerifier enables OIDC verification for Gmail Pub/Sub pushes.

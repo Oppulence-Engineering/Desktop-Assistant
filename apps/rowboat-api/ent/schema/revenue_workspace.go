@@ -61,6 +61,9 @@ func (RevenueWorkspace) Fields() []ent.Field {
 		// When the last proactive digest email was sent, so the scheduled
 		// sender can honor a per-user minimum interval.
 		field.Time("last_digest_at").Optional().Nillable(),
+		// The Gmail History API cursor for push-driven Layer-1 sync (RFC 031).
+		// Empty until the first push bootstraps it.
+		field.String("mail_history_id").Optional(),
 	}
 }
 

@@ -1,6 +1,7 @@
 package cloudevents
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
@@ -123,6 +124,21 @@ func (h *Handler) handleGmailPush(w http.ResponseWriter, r *http.Request, body [
 		h.log.Warn("gmail push for unresolved account dropped", zap.String("sourceAccountId", email))
 		w.WriteHeader(http.StatusOK)
 		return
+	}
+
+	// Keep the RFC 031 Layer-1 mail index live: a detached, tenant-scoped
+	// incremental sync from the Gmail History API. Best-effort — the webhook
+	// still acknowledges the push regardless, and a stale cursor self-heals on
+	// the next scan.
+	if h.gmailHistoryConsumer != nil {
+		historyID := note.HistoryID
+		go func() {
+			ctx, cancel := context.WithTimeout(auth.WithUser(context.Background(), owner), 2*time.Minute)
+			defer cancel()
+			if err := h.gmailHistoryConsumer(ctx, owner, historyID); err != nil {
+				h.log.Debug("gmail history sync", zap.Error(err))
+			}
+		}()
 	}
 
 	req := IngestRequest{

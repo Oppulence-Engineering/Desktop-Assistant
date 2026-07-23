@@ -404,6 +404,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		}))
 	}
 	revenueH := revenue.NewHandler(revenueSvc, log)
+	// RFC 031 Layer-1 push sync: keep the mail index live from Gmail pushes.
+	// Ships dark behind REVENUE_MAIL_PUSH_SYNC_ENABLED.
+	if cfg.RevenueMailPushSyncEnabled {
+		revenueSvc.SetMailSyncer(gmailExec)
+		cloudEventsH.SetGmailHistoryConsumer(func(ctx context.Context, owner *ent.User, historyID uint64) error {
+			return revenueSvc.SyncMailFromPush(ctx, owner, historyID)
+		})
+	}
 	// RFC 031: disconnecting Google purges the mail index (Layers 1-3);
 	// Layer-4 evidence quotes survive as the user's own action history.
 	googleH.SetOnDisconnect(func(ctx context.Context, u *ent.User) error {

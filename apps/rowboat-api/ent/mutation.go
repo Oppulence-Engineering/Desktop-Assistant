@@ -47412,6 +47412,7 @@ type RevenueWorkspaceMutation struct {
 	status                   *string
 	last_verified_at         *time.Time
 	last_digest_at           *time.Time
+	mail_history_id          *string
 	clearedFields            map[string]struct{}
 	user                     *uuid.UUID
 	cleareduser              bool
@@ -47938,6 +47939,55 @@ func (m *RevenueWorkspaceMutation) LastDigestAtCleared() bool {
 func (m *RevenueWorkspaceMutation) ResetLastDigestAt() {
 	m.last_digest_at = nil
 	delete(m.clearedFields, revenueworkspace.FieldLastDigestAt)
+}
+
+// SetMailHistoryID sets the "mail_history_id" field.
+func (m *RevenueWorkspaceMutation) SetMailHistoryID(s string) {
+	m.mail_history_id = &s
+}
+
+// MailHistoryID returns the value of the "mail_history_id" field in the mutation.
+func (m *RevenueWorkspaceMutation) MailHistoryID() (r string, exists bool) {
+	v := m.mail_history_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMailHistoryID returns the old "mail_history_id" field's value of the RevenueWorkspace entity.
+// If the RevenueWorkspace object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueWorkspaceMutation) OldMailHistoryID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMailHistoryID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMailHistoryID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMailHistoryID: %w", err)
+	}
+	return oldValue.MailHistoryID, nil
+}
+
+// ClearMailHistoryID clears the value of the "mail_history_id" field.
+func (m *RevenueWorkspaceMutation) ClearMailHistoryID() {
+	m.mail_history_id = nil
+	m.clearedFields[revenueworkspace.FieldMailHistoryID] = struct{}{}
+}
+
+// MailHistoryIDCleared returns if the "mail_history_id" field was cleared in this mutation.
+func (m *RevenueWorkspaceMutation) MailHistoryIDCleared() bool {
+	_, ok := m.clearedFields[revenueworkspace.FieldMailHistoryID]
+	return ok
+}
+
+// ResetMailHistoryID resets all changes to the "mail_history_id" field.
+func (m *RevenueWorkspaceMutation) ResetMailHistoryID() {
+	m.mail_history_id = nil
+	delete(m.clearedFields, revenueworkspace.FieldMailHistoryID)
 }
 
 // SetUserID sets the "user" edge to the User entity by id.
@@ -48499,7 +48549,7 @@ func (m *RevenueWorkspaceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevenueWorkspaceMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.created_at != nil {
 		fields = append(fields, revenueworkspace.FieldCreatedAt)
 	}
@@ -48527,6 +48577,9 @@ func (m *RevenueWorkspaceMutation) Fields() []string {
 	if m.last_digest_at != nil {
 		fields = append(fields, revenueworkspace.FieldLastDigestAt)
 	}
+	if m.mail_history_id != nil {
+		fields = append(fields, revenueworkspace.FieldMailHistoryID)
+	}
 	return fields
 }
 
@@ -48553,6 +48606,8 @@ func (m *RevenueWorkspaceMutation) Field(name string) (ent.Value, bool) {
 		return m.LastVerifiedAt()
 	case revenueworkspace.FieldLastDigestAt:
 		return m.LastDigestAt()
+	case revenueworkspace.FieldMailHistoryID:
+		return m.MailHistoryID()
 	}
 	return nil, false
 }
@@ -48580,6 +48635,8 @@ func (m *RevenueWorkspaceMutation) OldField(ctx context.Context, name string) (e
 		return m.OldLastVerifiedAt(ctx)
 	case revenueworkspace.FieldLastDigestAt:
 		return m.OldLastDigestAt(ctx)
+	case revenueworkspace.FieldMailHistoryID:
+		return m.OldMailHistoryID(ctx)
 	}
 	return nil, fmt.Errorf("unknown RevenueWorkspace field %s", name)
 }
@@ -48652,6 +48709,13 @@ func (m *RevenueWorkspaceMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetLastDigestAt(v)
 		return nil
+	case revenueworkspace.FieldMailHistoryID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMailHistoryID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace field %s", name)
 }
@@ -48697,6 +48761,9 @@ func (m *RevenueWorkspaceMutation) ClearedFields() []string {
 	if m.FieldCleared(revenueworkspace.FieldLastDigestAt) {
 		fields = append(fields, revenueworkspace.FieldLastDigestAt)
 	}
+	if m.FieldCleared(revenueworkspace.FieldMailHistoryID) {
+		fields = append(fields, revenueworkspace.FieldMailHistoryID)
+	}
 	return fields
 }
 
@@ -48725,6 +48792,9 @@ func (m *RevenueWorkspaceMutation) ClearField(name string) error {
 		return nil
 	case revenueworkspace.FieldLastDigestAt:
 		m.ClearLastDigestAt()
+		return nil
+	case revenueworkspace.FieldMailHistoryID:
+		m.ClearMailHistoryID()
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace nullable field %s", name)
@@ -48760,6 +48830,9 @@ func (m *RevenueWorkspaceMutation) ResetField(name string) error {
 		return nil
 	case revenueworkspace.FieldLastDigestAt:
 		m.ResetLastDigestAt()
+		return nil
+	case revenueworkspace.FieldMailHistoryID:
+		m.ResetMailHistoryID()
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace field %s", name)

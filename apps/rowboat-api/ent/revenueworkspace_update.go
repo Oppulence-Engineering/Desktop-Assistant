@@ -173,6 +173,26 @@ func (_u *RevenueWorkspaceUpdate) ClearLastDigestAt() *RevenueWorkspaceUpdate {
 	return _u
 }
 
+// SetMailHistoryID sets the "mail_history_id" field.
+func (_u *RevenueWorkspaceUpdate) SetMailHistoryID(v string) *RevenueWorkspaceUpdate {
+	_u.mutation.SetMailHistoryID(v)
+	return _u
+}
+
+// SetNillableMailHistoryID sets the "mail_history_id" field if the given value is not nil.
+func (_u *RevenueWorkspaceUpdate) SetNillableMailHistoryID(v *string) *RevenueWorkspaceUpdate {
+	if v != nil {
+		_u.SetMailHistoryID(*v)
+	}
+	return _u
+}
+
+// ClearMailHistoryID clears the value of the "mail_history_id" field.
+func (_u *RevenueWorkspaceUpdate) ClearMailHistoryID() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearMailHistoryID()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *RevenueWorkspaceUpdate) SetUserID(id uuid.UUID) *RevenueWorkspaceUpdate {
 	_u.mutation.SetUserID(id)
@@ -623,6 +643,12 @@ func (_u *RevenueWorkspaceUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if _u.mutation.LastDigestAtCleared() {
 		_spec.ClearField(revenueworkspace.FieldLastDigestAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.MailHistoryID(); ok {
+		_spec.SetField(revenueworkspace.FieldMailHistoryID, field.TypeString, value)
+	}
+	if _u.mutation.MailHistoryIDCleared() {
+		_spec.ClearField(revenueworkspace.FieldMailHistoryID, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1212,6 +1238,26 @@ func (_u *RevenueWorkspaceUpdateOne) ClearLastDigestAt() *RevenueWorkspaceUpdate
 	return _u
 }
 
+// SetMailHistoryID sets the "mail_history_id" field.
+func (_u *RevenueWorkspaceUpdateOne) SetMailHistoryID(v string) *RevenueWorkspaceUpdateOne {
+	_u.mutation.SetMailHistoryID(v)
+	return _u
+}
+
+// SetNillableMailHistoryID sets the "mail_history_id" field if the given value is not nil.
+func (_u *RevenueWorkspaceUpdateOne) SetNillableMailHistoryID(v *string) *RevenueWorkspaceUpdateOne {
+	if v != nil {
+		_u.SetMailHistoryID(*v)
+	}
+	return _u
+}
+
+// ClearMailHistoryID clears the value of the "mail_history_id" field.
+func (_u *RevenueWorkspaceUpdateOne) ClearMailHistoryID() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearMailHistoryID()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *RevenueWorkspaceUpdateOne) SetUserID(id uuid.UUID) *RevenueWorkspaceUpdateOne {
 	_u.mutation.SetUserID(id)
@@ -1692,6 +1738,12 @@ func (_u *RevenueWorkspaceUpdateOne) sqlSave(ctx context.Context) (_node *Revenu
 	}
 	if _u.mutation.LastDigestAtCleared() {
 		_spec.ClearField(revenueworkspace.FieldLastDigestAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.MailHistoryID(); ok {
+		_spec.SetField(revenueworkspace.FieldMailHistoryID, field.TypeString, value)
+	}
+	if _u.mutation.MailHistoryIDCleared() {
+		_spec.ClearField(revenueworkspace.FieldMailHistoryID, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -133,6 +133,30 @@ func (e *GmailExecutor) FetchBody(ctx context.Context, userID uuid.UUID, message
 	return e.google.GetMessageBody(ctx, token, messageID)
 }
 
+// SyncHistory implements MailSyncer (RFC 031 Layer-1 push sync): from a stored
+// history cursor, list the touched threads via the Gmail History API and fetch
+// each thread's metadata. Returns the threads, the user's own address, and the
+// mailbox's latest history id. googleapi.ErrHistoryGap surfaces a stale cursor.
+func (e *GmailExecutor) SyncHistory(ctx context.Context, userID uuid.UUID, startHistoryID string) (threads [][]googleapi.GmailThreadMessage, selfEmail, latestHistoryID string, err error) {
+	conn, token, cerr := e.connection(ctx, userID, scopeGmailReadonly)
+	if cerr != nil {
+		return nil, "", "", cerr
+	}
+	threadIDs, latest, herr := e.google.ListHistory(ctx, token, startHistoryID)
+	if herr != nil {
+		return nil, conn.ExternalAccountID, "", herr
+	}
+	out := make([][]googleapi.GmailThreadMessage, 0, len(threadIDs))
+	for _, id := range threadIDs {
+		msgs, terr := e.google.GetThreadMessages(ctx, token, id)
+		if terr != nil {
+			continue // one unreadable thread must not abort the sync
+		}
+		out = append(out, msgs)
+	}
+	return out, conn.ExternalAccountID, latest, nil
+}
+
 // accessToken resolves the assigned user's Google credential, enforcing
 // invariant 11 at the credential layer: the sender connection is looked up
 // for exactly req.UserID, never substituted.

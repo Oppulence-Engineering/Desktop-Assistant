@@ -160,6 +160,20 @@ func (_c *RevenueWorkspaceCreate) SetNillableLastDigestAt(v *time.Time) *Revenue
 	return _c
 }
 
+// SetMailHistoryID sets the "mail_history_id" field.
+func (_c *RevenueWorkspaceCreate) SetMailHistoryID(v string) *RevenueWorkspaceCreate {
+	_c.mutation.SetMailHistoryID(v)
+	return _c
+}
+
+// SetNillableMailHistoryID sets the "mail_history_id" field if the given value is not nil.
+func (_c *RevenueWorkspaceCreate) SetNillableMailHistoryID(v *string) *RevenueWorkspaceCreate {
+	if v != nil {
+		_c.SetMailHistoryID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *RevenueWorkspaceCreate) SetID(v uuid.UUID) *RevenueWorkspaceCreate {
 	_c.mutation.SetID(v)
@@ -475,6 +489,10 @@ func (_c *RevenueWorkspaceCreate) createSpec() (*RevenueWorkspace, *sqlgraph.Cre
 	if value, ok := _c.mutation.LastDigestAt(); ok {
 		_spec.SetField(revenueworkspace.FieldLastDigestAt, field.TypeTime, value)
 		_node.LastDigestAt = &value
+	}
+	if value, ok := _c.mutation.MailHistoryID(); ok {
+		_spec.SetField(revenueworkspace.FieldMailHistoryID, field.TypeString, value)
+		_node.MailHistoryID = value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -815,6 +833,24 @@ func (u *RevenueWorkspaceUpsert) ClearLastDigestAt() *RevenueWorkspaceUpsert {
 	return u
 }
 
+// SetMailHistoryID sets the "mail_history_id" field.
+func (u *RevenueWorkspaceUpsert) SetMailHistoryID(v string) *RevenueWorkspaceUpsert {
+	u.Set(revenueworkspace.FieldMailHistoryID, v)
+	return u
+}
+
+// UpdateMailHistoryID sets the "mail_history_id" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsert) UpdateMailHistoryID() *RevenueWorkspaceUpsert {
+	u.SetExcluded(revenueworkspace.FieldMailHistoryID)
+	return u
+}
+
+// ClearMailHistoryID clears the value of the "mail_history_id" field.
+func (u *RevenueWorkspaceUpsert) ClearMailHistoryID() *RevenueWorkspaceUpsert {
+	u.SetNull(revenueworkspace.FieldMailHistoryID)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -1010,6 +1046,27 @@ func (u *RevenueWorkspaceUpsertOne) UpdateLastDigestAt() *RevenueWorkspaceUpsert
 func (u *RevenueWorkspaceUpsertOne) ClearLastDigestAt() *RevenueWorkspaceUpsertOne {
 	return u.Update(func(s *RevenueWorkspaceUpsert) {
 		s.ClearLastDigestAt()
+	})
+}
+
+// SetMailHistoryID sets the "mail_history_id" field.
+func (u *RevenueWorkspaceUpsertOne) SetMailHistoryID(v string) *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.SetMailHistoryID(v)
+	})
+}
+
+// UpdateMailHistoryID sets the "mail_history_id" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsertOne) UpdateMailHistoryID() *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.UpdateMailHistoryID()
+	})
+}
+
+// ClearMailHistoryID clears the value of the "mail_history_id" field.
+func (u *RevenueWorkspaceUpsertOne) ClearMailHistoryID() *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.ClearMailHistoryID()
 	})
 }
 
@@ -1375,6 +1432,27 @@ func (u *RevenueWorkspaceUpsertBulk) UpdateLastDigestAt() *RevenueWorkspaceUpser
 func (u *RevenueWorkspaceUpsertBulk) ClearLastDigestAt() *RevenueWorkspaceUpsertBulk {
 	return u.Update(func(s *RevenueWorkspaceUpsert) {
 		s.ClearLastDigestAt()
+	})
+}
+
+// SetMailHistoryID sets the "mail_history_id" field.
+func (u *RevenueWorkspaceUpsertBulk) SetMailHistoryID(v string) *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.SetMailHistoryID(v)
+	})
+}
+
+// UpdateMailHistoryID sets the "mail_history_id" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsertBulk) UpdateMailHistoryID() *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.UpdateMailHistoryID()
+	})
+}
+
+// ClearMailHistoryID clears the value of the "mail_history_id" field.
+func (u *RevenueWorkspaceUpsertBulk) ClearMailHistoryID() *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.ClearMailHistoryID()
 	})
 }
 
