@@ -37,6 +37,7 @@ import {
   getAction,
   rejectAction,
   RevenueAPIError,
+  startCheckout,
 } from "@/lib/revenue";
 import {
   errMessage,
@@ -45,6 +46,7 @@ import {
   PolicyBadge,
   PriorityBreakdown,
 } from "@/components/revenue/shared";
+import { capture, RevenueEvents } from "@/lib/analytics";
 import type { RevenueAction, RevenueWorkspace } from "@/types/revenue";
 
 export function ReviewSheet({
@@ -72,6 +74,7 @@ export function ReviewSheet({
   const [acceptRisk, setAcceptRisk] = React.useState(false);
   const [rejecting, setRejecting] = React.useState(false);
   const [rejectReason, setRejectReason] = React.useState("");
+  const [upsell, setUpsell] = React.useState(false);
 
   React.useEffect(() => {
     if (action) {
@@ -80,6 +83,7 @@ export function ReviewSheet({
       setAcceptRisk(false);
       setRejecting(false);
       setRejectReason("");
+      setUpsell(false);
     }
   }, [action]);
 
@@ -109,12 +113,29 @@ export function ReviewSheet({
       if (opts?.note) onNotice(opts.note);
       if (opts?.removeOnDone) onRemoved(action.id);
     } catch (e) {
+      if (e instanceof RevenueAPIError && e.code === "subscription_required") {
+        setUpsell(true); // acting is a paid step; show the upgrade prompt inline
+        return;
+      }
       onError(
         e instanceof RevenueAPIError
           ? e.message
           : errMessage(e, "The action could not be completed."),
       );
     } finally {
+      setBusy(null);
+    }
+  };
+
+  const upgrade = async () => {
+    setBusy("upgrade");
+    onError("");
+    capture(RevenueEvents.UpgradeClicked, { from: "review_sheet" });
+    try {
+      const url = await startCheckout("pro");
+      window.location.assign(url);
+    } catch (e) {
+      onError(errMessage(e, "Could not start checkout."));
       setBusy(null);
     }
   };
@@ -134,7 +155,15 @@ export function ReviewSheet({
       return await getAction(action.id);
     });
 
-  const approve = () => wrap("approve", () => approveAction(action.id, acceptRisk));
+  const approve = () =>
+    wrap("approve", async () => {
+      const r = await approveAction(action.id, acceptRisk);
+      capture(RevenueEvents.ActionApproved, {
+        detector: action.detector,
+        mode: action.executionMode,
+      });
+      return r;
+    });
 
   const doReject = () =>
     wrap("reject", () => rejectAction(action.id, rejectReason || "not_appropriate"), {
@@ -143,10 +172,21 @@ export function ReviewSheet({
     });
 
   const execute = () =>
-    wrap("execute", () => executeAction(action.id), {
-      note: isSend ? "Sent." : "Draft created in your Gmail — open Gmail to review and send.",
-      removeOnDone: true,
-    });
+    wrap(
+      "execute",
+      async () => {
+        const r = await executeAction(action.id);
+        capture(RevenueEvents.ActionExecuted, {
+          detector: action.detector,
+          mode: action.executionMode,
+        });
+        return r;
+      },
+      {
+        note: isSend ? "Sent." : "Draft created in your Gmail — open Gmail to review and send.",
+        removeOnDone: true,
+      },
+    );
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
@@ -170,6 +210,23 @@ export function ReviewSheet({
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-5 px-4 py-5">
+          {upsell ? (
+            <div className="flex flex-col gap-2 rounded-[2px] border border-oppulence-orange/40 bg-oppulence-orange/5 p-4">
+              <div className="text-sm font-medium text-primary">
+                Acting on actions is a paid step
+              </div>
+              <p className="text-sm text-primary/65">
+                Scanning, the queue, drafts, and your impact stay free. Approving and sending need a
+                subscription — upgrade to act on this one.
+              </p>
+              <div>
+                <Button size="sm" onClick={upgrade} disabled={busy !== null}>
+                  {busy === "upgrade" ? <CircleNotch className="animate-spin" /> : null} Upgrade to
+                  act
+                </Button>
+              </div>
+            </div>
+          ) : null}
           {blocked ? (
             <Alert variant="destructive">
               <Prohibit weight="fill" />

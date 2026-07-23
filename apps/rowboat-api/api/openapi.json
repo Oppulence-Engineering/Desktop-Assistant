@@ -10950,6 +10950,24 @@
           "401": {
             "$ref": "#/components/responses/401"
           },
+          "402": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "subscription_required",
+                  "detail": "an active subscription is required to act on actions",
+                  "requestId": "req-abc123",
+                  "status": 402,
+                  "title": "Payment Required",
+                  "type": "https://api.rowboat.dev/problems/subscription_required"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Acting on actions requires a paid subscription."
+          },
           "404": {
             "$ref": "#/components/responses/404"
           },
@@ -11340,6 +11358,24 @@
           },
           "401": {
             "$ref": "#/components/responses/401"
+          },
+          "402": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "subscription_required",
+                  "detail": "an active subscription is required to act on actions",
+                  "requestId": "req-abc123",
+                  "status": 402,
+                  "title": "Payment Required",
+                  "type": "https://api.rowboat.dev/problems/subscription_required"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Acting on actions requires a paid subscription."
           },
           "404": {
             "$ref": "#/components/responses/404"
