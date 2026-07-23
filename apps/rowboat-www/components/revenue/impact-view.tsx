@@ -1,20 +1,24 @@
 "use client";
 
 import * as React from "react";
-import { ChartLineUp } from "@phosphor-icons/react";
+import { ChartLineUp, EnvelopeSimple } from "@phosphor-icons/react";
 
-import { DETECTOR_LABELS, getImpact } from "@/lib/revenue";
+import { DETECTOR_LABELS, getDigest, getImpact } from "@/lib/revenue";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/revenue/shared";
 import { cn } from "@/lib/utils";
-import type { RevenueImpact } from "@/types/revenue";
+import type { RevenueDigest, RevenueImpact } from "@/types/revenue";
 
 export function ImpactView({ onError }: { onError: (m: string) => void }) {
   const [data, setData] = React.useState<RevenueImpact | null>(null);
+  const [digest, setDigest] = React.useState<RevenueDigest | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    void getImpact()
-      .then(setData)
+    void Promise.all([getImpact(), getDigest().catch(() => null)])
+      .then(([imp, dg]) => {
+        setData(imp);
+        setDigest(dg);
+      })
       .catch((e) => onError(errMessage(e, "Could not load impact.")))
       .finally(() => setLoading(false));
   }, [onError]);
@@ -44,6 +48,32 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* weekly digest preview — the same summary the email is built from */}
+      {digest && digest.top.length > 0 ? (
+        <section className="rounded-[2px] border border-border p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <EnvelopeSimple weight="fill" className="size-4 text-primary/55" />
+            <span className="text-sm font-medium text-primary">Your weekly digest</span>
+            <span className="text-xs text-primary/45">emailed while you have open loops</span>
+          </div>
+          <ul className="flex flex-col gap-1.5">
+            {digest.top.slice(0, 3).map((a, i) => (
+              <li key={i} className="flex items-center justify-between gap-3 text-sm">
+                <span className="truncate text-primary/75">
+                  <span className="text-primary/45">{a.detector}:</span> {a.reason}
+                </span>
+                <span className="shrink-0 text-xs tabular-nums text-primary/40">{a.priority}</span>
+              </li>
+            ))}
+          </ul>
+          {digest.openCount > 3 ? (
+            <p className="mt-2 text-xs text-primary/45">
+              +{digest.openCount - 3} more in your queue
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
       {/* headline stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Open loops surfaced" value={data.surfaced} />

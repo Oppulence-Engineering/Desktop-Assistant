@@ -178,6 +178,22 @@ export interface DetectorStat {
   handled: number;
 }
 
+export interface DigestAction {
+  detector: string;
+  recipient: string;
+  reason: string;
+  priority: number;
+}
+
+export interface RevenueDigest {
+  generatedAt: string;
+  openCount: number;
+  replied: number;
+  meetingsBooked: number;
+  handled: number;
+  top: DigestAction[];
+}
+
 export interface RevenueImpact {
   surfaced: number;
   open: number;

@@ -9,6 +9,7 @@ import type {
   ActionAudit,
   RelationshipDetail,
   RevenueAction,
+  RevenueDigest,
   RevenueImpact,
   RevenueLeakScan,
   RevenueOutcome,
@@ -61,6 +62,8 @@ const post = (path: string, body?: unknown) =>
 export const getWorkspace = () => call<RevenueWorkspace>("/revenue-workspaces/current");
 
 export const getImpact = () => call<RevenueImpact>("/revenue-impact");
+
+export const getDigest = () => call<RevenueDigest>("/revenue-digest");
 
 // --- billing (upgrade to act) ------------------------------------------------
 
