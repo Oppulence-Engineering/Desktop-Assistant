@@ -389,6 +389,16 @@ type Config struct {
 	RevenueFacadeBaseURL      string
 	RevenueFacadeServiceToken string
 	RevenueFacadeTimeout      time.Duration
+
+	// Background auto-scan sweeper (RFC 030 WP3, self-running). Ships dark:
+	// the scheduler only starts it when RevenueAutoScanEnabled is true. It
+	// runs an incremental leak scan for every Google-connected user no more
+	// often than RevenueAutoScanMinInterval.
+	RevenueAutoScanEnabled      bool
+	RevenueAutoScanInterval     time.Duration
+	RevenueAutoScanMinInterval  time.Duration
+	RevenueAutoScanMaxPerCycle  int
+	RevenueAutoScanLookbackDays int
 }
 
 // AgentSigningSecret resolves the HMAC signing key for agent-runtime tokens:
@@ -658,9 +668,14 @@ func Load() Config {
 		AgentDeclarativeToolsEnabled: getbool("AGENT_DECLARATIVE_TOOLS_ENABLED", false),
 		AgentGitOpsEnabled:           getbool("AGENT_GITOPS_ENABLED", false),
 
-		RevenueFacadeBaseURL:      getenv("REVENUE_FACADE_BASE_URL", ""),
-		RevenueFacadeServiceToken: getenv("REVENUE_FACADE_SERVICE_TOKEN", ""),
-		RevenueFacadeTimeout:      getdur("REVENUE_FACADE_TIMEOUT", 15*time.Second),
+		RevenueAutoScanEnabled:      getbool("REVENUE_AUTO_SCAN_ENABLED", false),
+		RevenueAutoScanInterval:     getdur("REVENUE_AUTO_SCAN_INTERVAL", time.Hour),
+		RevenueAutoScanMinInterval:  getdur("REVENUE_AUTO_SCAN_MIN_INTERVAL", 24*time.Hour),
+		RevenueAutoScanMaxPerCycle:  getint("REVENUE_AUTO_SCAN_MAX_PER_CYCLE", 200),
+		RevenueAutoScanLookbackDays: getint("REVENUE_AUTO_SCAN_LOOKBACK_DAYS", 90),
+		RevenueFacadeBaseURL:        getenv("REVENUE_FACADE_BASE_URL", ""),
+		RevenueFacadeServiceToken:   getenv("REVENUE_FACADE_SERVICE_TOKEN", ""),
+		RevenueFacadeTimeout:        getdur("REVENUE_FACADE_TIMEOUT", 15*time.Second),
 	}
 }
 

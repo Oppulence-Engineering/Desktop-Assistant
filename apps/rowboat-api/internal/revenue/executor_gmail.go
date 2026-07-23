@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -90,14 +91,22 @@ func (e *GmailExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResu
 // scoped to the scanning user's own mailbox with the read-only scope. The
 // second return value is the user's own address for counterparty
 // classification.
-func (e *GmailExecutor) SweepThreads(ctx context.Context, userID uuid.UUID, lookbackDays, maxThreads int) ([][]googleapi.GmailThreadMessage, string, error) {
+func (e *GmailExecutor) SweepThreads(ctx context.Context, userID uuid.UUID, lookbackDays, maxThreads int, since *time.Time) ([][]googleapi.GmailThreadMessage, string, error) {
 	conn, token, err := e.connection(ctx, userID, scopeGmailReadonly)
 	if err != nil {
 		return nil, "", err
 	}
 	// Sent-anchored query: every revenue-relevant thread has at least one
 	// outbound message, and it keeps newsletter/notification noise out.
-	query := fmt.Sprintf("in:sent newer_than:%dd", lookbackDays)
+	// With a cursor, bound the lower edge by the last freshness timestamp
+	// (Gmail's after: is second-granularity) so a recurring scan only reads
+	// new mail; the first scan uses the full lookback window.
+	var query string
+	if since != nil {
+		query = fmt.Sprintf("in:sent after:%d", since.Unix())
+	} else {
+		query = fmt.Sprintf("in:sent newer_than:%dd", lookbackDays)
+	}
 	ids, err := e.google.ListThreadIDs(ctx, token, query, maxThreads)
 	if err != nil {
 		return nil, "", fmt.Errorf("revenue: gmail thread sweep: %w", err)

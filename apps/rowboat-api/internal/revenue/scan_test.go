@@ -17,7 +17,7 @@ type fakeSweeper struct {
 	err     error
 }
 
-func (f *fakeSweeper) SweepThreads(context.Context, uuid.UUID, int, int) ([][]googleapi.GmailThreadMessage, string, error) {
+func (f *fakeSweeper) SweepThreads(context.Context, uuid.UUID, int, int, *time.Time) ([][]googleapi.GmailThreadMessage, string, error) {
 	return f.threads, f.email, f.err
 }
 
@@ -236,7 +236,7 @@ func TestScanRejectsConcurrentRun(t *testing.T) {
 
 type blockingSweeper struct{ unblock chan struct{} }
 
-func (b *blockingSweeper) SweepThreads(context.Context, uuid.UUID, int, int) ([][]googleapi.GmailThreadMessage, string, error) {
+func (b *blockingSweeper) SweepThreads(context.Context, uuid.UUID, int, int, *time.Time) ([][]googleapi.GmailThreadMessage, string, error) {
 	<-b.unblock
 	return nil, selfAddr, nil
 }

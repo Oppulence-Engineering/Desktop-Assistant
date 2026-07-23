@@ -41,8 +41,10 @@ const (
 type ThreadSweeper interface {
 	// SweepThreads returns the metadata-only messages of up to maxThreads
 	// recent threads plus the scanning user's own address (to classify
-	// counterparties). Never bodies.
-	SweepThreads(ctx context.Context, userID uuid.UUID, lookbackDays, maxThreads int) ([][]googleapi.GmailThreadMessage, string, error)
+	// counterparties). Never bodies. When since is non-nil the sweep is
+	// incremental: only threads touched after that timestamp are read (the
+	// prior scan's source-freshness cursor), so recurring scans are cheap.
+	SweepThreads(ctx context.Context, userID uuid.UUID, lookbackDays, maxThreads int, since *time.Time) ([][]googleapi.GmailThreadMessage, string, error)
 }
 
 // SetSweeper installs the scan source (nil leaves scans unavailable).
@@ -134,6 +136,25 @@ func (s *Service) StartScan(ctx context.Context, u *ent.User, lookbackDays int) 
 	return scan, nil
 }
 
+// lastScanFreshness returns the source-freshness cursor of the caller's most
+// recent completed scan (excluding the one now running), or nil for a first
+// scan. It is the lower bound for an incremental sweep.
+func (s *Service) lastScanFreshness(ctx context.Context, u *ent.User, excludeID uuid.UUID) *time.Time {
+	prev, err := s.client.RevenueLeakScan.Query().
+		Where(
+			revenueleakscan.HasUserWith(user.IDEQ(u.ID)),
+			revenueleakscan.StatusEQ("completed"),
+			revenueleakscan.IDNEQ(excludeID),
+			revenueleakscan.SourceFreshnessAtNotNil(),
+		).
+		Order(ent.Desc(revenueleakscan.FieldCreatedAt)).
+		First(ctx)
+	if err != nil || prev.SourceFreshnessAt == nil {
+		return nil
+	}
+	return prev.SourceFreshnessAt
+}
+
 // GetScan returns one scan's progress.
 func (s *Service) GetScan(ctx context.Context, id uuid.UUID) (*ent.RevenueLeakScan, error) {
 	scan, err := s.client.RevenueLeakScan.Query().Where(revenueleakscan.IDEQ(id)).Only(ctx)
@@ -190,7 +211,11 @@ type scanStats struct {
 
 func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLeakScan) (scanStats, error) {
 	var stats scanStats
-	threads, selfEmail, err := s.sweeper.SweepThreads(ctx, u.ID, scan.LookbackDays, scanMaxThreads)
+	// Incremental cursor: read only mail newer than the freshest message the
+	// last completed scan observed. The first scan (no prior cursor) reads the
+	// full lookback window.
+	since := s.lastScanFreshness(ctx, u, scan.ID)
+	threads, selfEmail, err := s.sweeper.SweepThreads(ctx, u.ID, scan.LookbackDays, scanMaxThreads, since)
 	if err != nil {
 		return stats, err
 	}
