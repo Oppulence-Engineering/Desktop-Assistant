@@ -3286,18 +3286,18 @@
   }
 
   /*
-   * SF Pro flat-scale pass. The marketing surface adopts the system
-   * SF Pro stack at two weights (400/500) with -0.15px tracking, a
-   * four-step type scale (12/13/14/24px), a three-step ink ramp
-   * (#292929 / #5D5D5D / #9E9E9E), and a radius system of 8px
-   * navigation, 16px cards, pill CTAs. Icons: 14px nav, 20px cards
-   * (sized in marketing-components). Mono keeps its accent role but
-   * micro-labels normalize to 12px. Dark keeps its oklch ramp via the
-   * re-declaration block at the end.
+   * Inter flat-scale pass. The marketing surface adopts self-hosted
+   * Inter (next/font, OFL — commercially safe, unlike SF Pro) at two
+   * weights (400/500) with -0.15px tracking, a four-step type scale
+   * (12/13/14/24px), a three-step ink ramp (#292929 / #5D5D5D /
+   * #9E9E9E), and a radius system of 8px navigation, 16px cards, pill
+   * CTAs. Icons: 14px nav, 20px cards (sized in marketing-components).
+   * Mono keeps its accent role but micro-labels normalize to 12px.
+   * Dark keeps its oklch ramp via the re-declaration block at the end.
    */
   .marketing-polar {
-    --font-sf:
-      "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui,
+    --font-marketing-sans:
+      var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui,
       "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     --foreground: #292929;
     --card-foreground: #292929;
@@ -3309,14 +3309,14 @@
     --linear-text-secondary: #5d5d5d;
     --linear-text-tertiary: #9e9e9e;
     --linear-text-quaternary: #9e9e9e;
-    font-family: var(--font-sf);
-    font-feature-settings: normal;
+    font-family: var(--font-marketing-sans);
+    font-feature-settings: "cv01", "ss03";
     font-weight: 400;
     letter-spacing: -0.15px;
   }
 
   .marketing-polar .font-display {
-    font-family: var(--font-sf);
+    font-family: var(--font-marketing-sans);
     font-weight: 500;
     letter-spacing: -0.15px;
   }
@@ -3335,7 +3335,7 @@
   .linear-faq h2,
   .linear-blog-featured h2 {
     margin-left: 0;
-    font-family: var(--font-sf);
+    font-family: var(--font-marketing-sans);
     font-size: 24px;
     font-weight: 500;
     letter-spacing: -0.15px;
@@ -3346,7 +3346,7 @@
   .linear-statement-title {
     max-width: 760px;
     margin-left: 0;
-    font-family: var(--font-sf);
+    font-family: var(--font-marketing-sans);
     font-size: 24px;
     font-weight: 400;
     letter-spacing: -0.15px;
@@ -3403,7 +3403,7 @@
   }
 
   .linear-plan-price {
-    font-family: var(--font-sf);
+    font-family: var(--font-marketing-sans);
     font-size: 24px;
     font-weight: 500;
     letter-spacing: -0.15px;
@@ -3439,7 +3439,7 @@
 
   .linear-nav-link,
   .linear-nav-trigger {
-    font-family: var(--font-sf);
+    font-family: var(--font-marketing-sans);
     font-size: 14px;
     font-weight: 500;
     letter-spacing: -0.15px;
@@ -3450,7 +3450,7 @@
   }
 
   .linear-mobile-panel > a {
-    font-family: var(--font-sf);
+    font-family: var(--font-marketing-sans);
     font-size: 24px;
     font-weight: 500;
     letter-spacing: -0.15px;
