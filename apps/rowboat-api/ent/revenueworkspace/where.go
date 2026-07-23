@@ -96,6 +96,11 @@ func LastVerifiedAt(v time.Time) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.FieldEQ(FieldLastVerifiedAt, v))
 }
 
+// LastDigestAt applies equality check predicate on the "last_digest_at" field. It's identical to LastDigestAtEQ.
+func LastDigestAt(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldEQ(FieldLastDigestAt, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.FieldEQ(FieldCreatedAt, v))
@@ -579,6 +584,56 @@ func LastVerifiedAtIsNil() predicate.RevenueWorkspace {
 // LastVerifiedAtNotNil applies the NotNil predicate on the "last_verified_at" field.
 func LastVerifiedAtNotNil() predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.FieldNotNull(FieldLastVerifiedAt))
+}
+
+// LastDigestAtEQ applies the EQ predicate on the "last_digest_at" field.
+func LastDigestAtEQ(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldEQ(FieldLastDigestAt, v))
+}
+
+// LastDigestAtNEQ applies the NEQ predicate on the "last_digest_at" field.
+func LastDigestAtNEQ(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldNEQ(FieldLastDigestAt, v))
+}
+
+// LastDigestAtIn applies the In predicate on the "last_digest_at" field.
+func LastDigestAtIn(vs ...time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldIn(FieldLastDigestAt, vs...))
+}
+
+// LastDigestAtNotIn applies the NotIn predicate on the "last_digest_at" field.
+func LastDigestAtNotIn(vs ...time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldNotIn(FieldLastDigestAt, vs...))
+}
+
+// LastDigestAtGT applies the GT predicate on the "last_digest_at" field.
+func LastDigestAtGT(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldGT(FieldLastDigestAt, v))
+}
+
+// LastDigestAtGTE applies the GTE predicate on the "last_digest_at" field.
+func LastDigestAtGTE(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldGTE(FieldLastDigestAt, v))
+}
+
+// LastDigestAtLT applies the LT predicate on the "last_digest_at" field.
+func LastDigestAtLT(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldLT(FieldLastDigestAt, v))
+}
+
+// LastDigestAtLTE applies the LTE predicate on the "last_digest_at" field.
+func LastDigestAtLTE(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldLTE(FieldLastDigestAt, v))
+}
+
+// LastDigestAtIsNil applies the IsNil predicate on the "last_digest_at" field.
+func LastDigestAtIsNil() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldIsNull(FieldLastDigestAt))
+}
+
+// LastDigestAtNotNil applies the NotNil predicate on the "last_digest_at" field.
+func LastDigestAtNotNil() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldNotNull(FieldLastDigestAt))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

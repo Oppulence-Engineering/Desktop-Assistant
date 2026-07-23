@@ -98,6 +98,20 @@ func addRevenueSchemas(schemas obj) {
 		})),
 	}, "surfaced", "open", "handled", "approved", "executed")
 
+	schemas["RevenueDigest"] = objectSchema("The proactive digest content: the top open loops plus running impact counts. This is what the scheduled digest email is built from.", obj{
+		"generatedAt":    stringSchema("When composed.", "2026-07-23T09:00:00Z", obj{"format": "date-time"}),
+		"openCount":      intSchema("Total open actions.", 8),
+		"replied":        intSchema("Replies observed.", 6),
+		"meetingsBooked": intSchema("Meetings booked.", 2),
+		"handled":        intSchema("Actions handled.", 20),
+		"top": arraySchema("Highest-priority open loops.", objectSchema("Digest action.", obj{
+			"detector":  stringSchema("Human detector label.", "Unanswered proposal"),
+			"recipient": stringSchema("Recipient email.", "buyer@example.com"),
+			"reason":    stringSchema("Evidence-backed reason.", "You sent a proposal 10 days ago with no reply."),
+			"priority":  intSchema("Priority score.", 82),
+		})),
+	}, "generatedAt", "openCount")
+
 	schemas["RevenueLeakScan"] = objectSchema("One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable.", obj{
 		"id":                   uuidSchema("Scan id.", "4d8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"status":               stringEnum("Scan status.", "completed", "pending", "running", "completed", "failed"),
@@ -142,6 +156,10 @@ func addRevenuePaths(paths obj) {
 
 	paths["/v1/revenue-impact"] = obj{"get": operation("Revenue", "Get the revenue impact summary", "Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.", "getRevenueImpact", bearer(), nil, nil, obj{
 		"200": jsonResponse("Impact summary.", ref("RevenueImpact"), nil),
+		"401": responseRef("401"),
+	})}
+	paths["/v1/revenue-digest"] = obj{"get": operation("Revenue", "Preview the proactive digest", "Returns the digest content the scheduled email is built from: the top open loops and running impact counts.", "getRevenueDigest", bearer(), nil, nil, obj{
+		"200": jsonResponse("Digest content.", ref("RevenueDigest"), nil),
 		"401": responseRef("401"),
 	})}
 

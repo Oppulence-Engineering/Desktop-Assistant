@@ -43250,6 +43250,7 @@ type RevenueWorkspaceMutation struct {
 	mode                     *string
 	status                   *string
 	last_verified_at         *time.Time
+	last_digest_at           *time.Time
 	clearedFields            map[string]struct{}
 	user                     *uuid.UUID
 	cleareduser              bool
@@ -43727,6 +43728,55 @@ func (m *RevenueWorkspaceMutation) LastVerifiedAtCleared() bool {
 func (m *RevenueWorkspaceMutation) ResetLastVerifiedAt() {
 	m.last_verified_at = nil
 	delete(m.clearedFields, revenueworkspace.FieldLastVerifiedAt)
+}
+
+// SetLastDigestAt sets the "last_digest_at" field.
+func (m *RevenueWorkspaceMutation) SetLastDigestAt(t time.Time) {
+	m.last_digest_at = &t
+}
+
+// LastDigestAt returns the value of the "last_digest_at" field in the mutation.
+func (m *RevenueWorkspaceMutation) LastDigestAt() (r time.Time, exists bool) {
+	v := m.last_digest_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastDigestAt returns the old "last_digest_at" field's value of the RevenueWorkspace entity.
+// If the RevenueWorkspace object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueWorkspaceMutation) OldLastDigestAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastDigestAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastDigestAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastDigestAt: %w", err)
+	}
+	return oldValue.LastDigestAt, nil
+}
+
+// ClearLastDigestAt clears the value of the "last_digest_at" field.
+func (m *RevenueWorkspaceMutation) ClearLastDigestAt() {
+	m.last_digest_at = nil
+	m.clearedFields[revenueworkspace.FieldLastDigestAt] = struct{}{}
+}
+
+// LastDigestAtCleared returns if the "last_digest_at" field was cleared in this mutation.
+func (m *RevenueWorkspaceMutation) LastDigestAtCleared() bool {
+	_, ok := m.clearedFields[revenueworkspace.FieldLastDigestAt]
+	return ok
+}
+
+// ResetLastDigestAt resets all changes to the "last_digest_at" field.
+func (m *RevenueWorkspaceMutation) ResetLastDigestAt() {
+	m.last_digest_at = nil
+	delete(m.clearedFields, revenueworkspace.FieldLastDigestAt)
 }
 
 // SetUserID sets the "user" edge to the User entity by id.
@@ -44288,7 +44338,7 @@ func (m *RevenueWorkspaceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevenueWorkspaceMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, revenueworkspace.FieldCreatedAt)
 	}
@@ -44312,6 +44362,9 @@ func (m *RevenueWorkspaceMutation) Fields() []string {
 	}
 	if m.last_verified_at != nil {
 		fields = append(fields, revenueworkspace.FieldLastVerifiedAt)
+	}
+	if m.last_digest_at != nil {
+		fields = append(fields, revenueworkspace.FieldLastDigestAt)
 	}
 	return fields
 }
@@ -44337,6 +44390,8 @@ func (m *RevenueWorkspaceMutation) Field(name string) (ent.Value, bool) {
 		return m.Status()
 	case revenueworkspace.FieldLastVerifiedAt:
 		return m.LastVerifiedAt()
+	case revenueworkspace.FieldLastDigestAt:
+		return m.LastDigestAt()
 	}
 	return nil, false
 }
@@ -44362,6 +44417,8 @@ func (m *RevenueWorkspaceMutation) OldField(ctx context.Context, name string) (e
 		return m.OldStatus(ctx)
 	case revenueworkspace.FieldLastVerifiedAt:
 		return m.OldLastVerifiedAt(ctx)
+	case revenueworkspace.FieldLastDigestAt:
+		return m.OldLastDigestAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown RevenueWorkspace field %s", name)
 }
@@ -44427,6 +44484,13 @@ func (m *RevenueWorkspaceMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetLastVerifiedAt(v)
 		return nil
+	case revenueworkspace.FieldLastDigestAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastDigestAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace field %s", name)
 }
@@ -44469,6 +44533,9 @@ func (m *RevenueWorkspaceMutation) ClearedFields() []string {
 	if m.FieldCleared(revenueworkspace.FieldLastVerifiedAt) {
 		fields = append(fields, revenueworkspace.FieldLastVerifiedAt)
 	}
+	if m.FieldCleared(revenueworkspace.FieldLastDigestAt) {
+		fields = append(fields, revenueworkspace.FieldLastDigestAt)
+	}
 	return fields
 }
 
@@ -44494,6 +44561,9 @@ func (m *RevenueWorkspaceMutation) ClearField(name string) error {
 		return nil
 	case revenueworkspace.FieldLastVerifiedAt:
 		m.ClearLastVerifiedAt()
+		return nil
+	case revenueworkspace.FieldLastDigestAt:
+		m.ClearLastDigestAt()
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace nullable field %s", name)
@@ -44526,6 +44596,9 @@ func (m *RevenueWorkspaceMutation) ResetField(name string) error {
 		return nil
 	case revenueworkspace.FieldLastVerifiedAt:
 		m.ResetLastVerifiedAt()
+		return nil
+	case revenueworkspace.FieldLastDigestAt:
+		m.ResetLastDigestAt()
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace field %s", name)

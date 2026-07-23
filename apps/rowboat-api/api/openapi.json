@@ -4890,6 +4890,69 @@
         ],
         "type": "object"
       },
+      "RevenueDigest": {
+        "description": "The proactive digest content: the top open loops plus running impact counts. This is what the scheduled digest email is built from.",
+        "properties": {
+          "generatedAt": {
+            "description": "When composed.",
+            "example": "2026-07-23T09:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "handled": {
+            "description": "Actions handled.",
+            "example": 20,
+            "type": "integer"
+          },
+          "meetingsBooked": {
+            "description": "Meetings booked.",
+            "example": 2,
+            "type": "integer"
+          },
+          "openCount": {
+            "description": "Total open actions.",
+            "example": 8,
+            "type": "integer"
+          },
+          "replied": {
+            "description": "Replies observed.",
+            "example": 6,
+            "type": "integer"
+          },
+          "top": {
+            "description": "Highest-priority open loops.",
+            "items": {
+              "description": "Digest action.",
+              "properties": {
+                "detector": {
+                  "description": "Human detector label.",
+                  "example": "Unanswered proposal",
+                  "type": "string"
+                },
+                "priority": {
+                  "description": "Priority score.",
+                  "example": 82,
+                  "type": "integer"
+                },
+                "reason": {
+                  "description": "Evidence-backed reason.",
+                  "example": "You sent a proposal 10 days ago with no reply.",
+                  "type": "string"
+                },
+                "recipient": {
+                  "description": "Recipient email.",
+                  "example": "buyer@example.com",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["generatedAt", "openCount"],
+        "type": "object"
+      },
       "RevenueEvidence": {
         "properties": {
           "actions": {
@@ -11549,6 +11612,34 @@
           }
         ],
         "summary": "Snooze an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-digest": {
+      "get": {
+        "description": "Returns the digest content the scheduled email is built from: the top open loops and running impact counts.",
+        "operationId": "getRevenueDigest",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueDigest"
+                }
+              }
+            },
+            "description": "Digest content."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Preview the proactive digest",
         "tags": ["Revenue"]
       }
     },

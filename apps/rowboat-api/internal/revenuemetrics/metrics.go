@@ -89,4 +89,10 @@ var (
 		Name: "revenue_auto_scans_started_total",
 		Help: "Revenue leak scans started by the background sweeper.",
 	})
+
+	// DigestsSent counts proactive digest emails delivered.
+	DigestsSent = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "revenue_digests_sent_total",
+		Help: "Proactive revenue digest emails sent.",
+	})
 )

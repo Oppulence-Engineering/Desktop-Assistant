@@ -37,6 +37,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Post("/link", h.LinkWorkspace)
 	})
 	r.Get("/v1/revenue-impact", h.Impact)
+	r.Get("/v1/revenue-digest", h.Digest)
 	r.Route("/v1/revenue-leak-scans", func(r chi.Router) {
 		r.Post("/", h.StartScan)
 		r.Get("/{scanId}", h.GetScan)
@@ -415,6 +416,21 @@ func (h *Handler) Impact(w http.ResponseWriter, r *http.Request) {
 		ByDetector:  imp.Detectors,
 	}
 	httpx.WriteJSON(w, http.StatusOK, dto)
+}
+
+// Digest returns the caller's current digest content (the same summary the
+// proactive email is built from), so the UI can preview it.
+func (h *Handler) Digest(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	dg, err := h.svc.Digest(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, dg)
 }
 
 // --- scan endpoints ----------------------------------------------------------
