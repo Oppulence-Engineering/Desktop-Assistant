@@ -123,6 +123,16 @@ func (e *GmailExecutor) SweepThreads(ctx context.Context, userID uuid.UUID, look
 	return threads, conn.ExternalAccountID, nil
 }
 
+// FetchBody implements MailBodyFetcher (RFC 031 Layer 3): the plain-text body
+// of one message, read with the user's read-only Gmail scope.
+func (e *GmailExecutor) FetchBody(ctx context.Context, userID uuid.UUID, messageID string) (string, error) {
+	_, token, err := e.connection(ctx, userID, scopeGmailReadonly)
+	if err != nil {
+		return "", err
+	}
+	return e.google.GetMessageBody(ctx, token, messageID)
+}
+
 // accessToken resolves the assigned user's Google credential, enforcing
 // invariant 11 at the credential layer: the sender connection is looked up
 // for exactly req.UserID, never substituted.

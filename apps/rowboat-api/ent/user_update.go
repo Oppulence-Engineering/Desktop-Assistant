@@ -29,6 +29,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -619,6 +620,21 @@ func (_u *UserUpdate) AddMailMessageMetas(v ...*MailMessageMeta) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMailMessageMetaIDs(ids...)
+}
+
+// AddMailBodyCachIDs adds the "mail_body_caches" edge to the MailBodyCache entity by IDs.
+func (_u *UserUpdate) AddMailBodyCachIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddMailBodyCachIDs(ids...)
+	return _u
+}
+
+// AddMailBodyCaches adds the "mail_body_caches" edges to the MailBodyCache entity.
+func (_u *UserUpdate) AddMailBodyCaches(v ...*MailBodyCache) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMailBodyCachIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -1302,6 +1318,27 @@ func (_u *UserUpdate) RemoveMailMessageMetas(v ...*MailMessageMeta) *UserUpdate 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMailMessageMetaIDs(ids...)
+}
+
+// ClearMailBodyCaches clears all "mail_body_caches" edges to the MailBodyCache entity.
+func (_u *UserUpdate) ClearMailBodyCaches() *UserUpdate {
+	_u.mutation.ClearMailBodyCaches()
+	return _u
+}
+
+// RemoveMailBodyCachIDs removes the "mail_body_caches" edge to MailBodyCache entities by IDs.
+func (_u *UserUpdate) RemoveMailBodyCachIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveMailBodyCachIDs(ids...)
+	return _u
+}
+
+// RemoveMailBodyCaches removes "mail_body_caches" edges to MailBodyCache entities.
+func (_u *UserUpdate) RemoveMailBodyCaches(v ...*MailBodyCache) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMailBodyCachIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -2849,6 +2886,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.MailBodyCachesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailBodyCachesTable,
+			Columns: []string{user.MailBodyCachesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailbodycache.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMailBodyCachesIDs(); len(nodes) > 0 && !_u.mutation.MailBodyCachesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailBodyCachesTable,
+			Columns: []string{user.MailBodyCachesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailbodycache.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MailBodyCachesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailBodyCachesTable,
+			Columns: []string{user.MailBodyCachesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailbodycache.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -3426,6 +3508,21 @@ func (_u *UserUpdateOne) AddMailMessageMetas(v ...*MailMessageMeta) *UserUpdateO
 		ids[i] = v[i].ID
 	}
 	return _u.AddMailMessageMetaIDs(ids...)
+}
+
+// AddMailBodyCachIDs adds the "mail_body_caches" edge to the MailBodyCache entity by IDs.
+func (_u *UserUpdateOne) AddMailBodyCachIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddMailBodyCachIDs(ids...)
+	return _u
+}
+
+// AddMailBodyCaches adds the "mail_body_caches" edges to the MailBodyCache entity.
+func (_u *UserUpdateOne) AddMailBodyCaches(v ...*MailBodyCache) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMailBodyCachIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -4109,6 +4206,27 @@ func (_u *UserUpdateOne) RemoveMailMessageMetas(v ...*MailMessageMeta) *UserUpda
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMailMessageMetaIDs(ids...)
+}
+
+// ClearMailBodyCaches clears all "mail_body_caches" edges to the MailBodyCache entity.
+func (_u *UserUpdateOne) ClearMailBodyCaches() *UserUpdateOne {
+	_u.mutation.ClearMailBodyCaches()
+	return _u
+}
+
+// RemoveMailBodyCachIDs removes the "mail_body_caches" edge to MailBodyCache entities by IDs.
+func (_u *UserUpdateOne) RemoveMailBodyCachIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveMailBodyCachIDs(ids...)
+	return _u
+}
+
+// RemoveMailBodyCaches removes "mail_body_caches" edges to MailBodyCache entities.
+func (_u *UserUpdateOne) RemoveMailBodyCaches(v ...*MailBodyCache) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMailBodyCachIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -5679,6 +5797,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailmessagemeta.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MailBodyCachesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailBodyCachesTable,
+			Columns: []string{user.MailBodyCachesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailbodycache.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMailBodyCachesIDs(); len(nodes) > 0 && !_u.mutation.MailBodyCachesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailBodyCachesTable,
+			Columns: []string{user.MailBodyCachesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailbodycache.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MailBodyCachesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailBodyCachesTable,
+			Columns: []string{user.MailBodyCachesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailbodycache.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

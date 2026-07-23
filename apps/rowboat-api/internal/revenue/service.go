@@ -17,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenuemetrics"
 )
 
@@ -136,6 +137,9 @@ type Service struct {
 	executor     Executor
 	sweeper      ThreadSweeper
 	entitlements Entitlements
+	bodyFetcher  MailBodyFetcher
+	sealer       *crypto.Sealer
+	mailBodyTTL  time.Duration
 	log          *zap.Logger
 	now          func() time.Time
 }

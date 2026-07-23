@@ -81,6 +81,11 @@ func SourceRecordID(v string) predicate.RevenueEvidence {
 	return predicate.RevenueEvidence(sql.FieldEQ(FieldSourceRecordID, v))
 }
 
+// SourceMessageID applies equality check predicate on the "source_message_id" field. It's identical to SourceMessageIDEQ.
+func SourceMessageID(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldEQ(FieldSourceMessageID, v))
+}
+
 // SourceURI applies equality check predicate on the "source_uri" field. It's identical to SourceURIEQ.
 func SourceURI(v string) predicate.RevenueEvidence {
 	return predicate.RevenueEvidence(sql.FieldEQ(FieldSourceURI, v))
@@ -394,6 +399,81 @@ func SourceRecordIDEqualFold(v string) predicate.RevenueEvidence {
 // SourceRecordIDContainsFold applies the ContainsFold predicate on the "source_record_id" field.
 func SourceRecordIDContainsFold(v string) predicate.RevenueEvidence {
 	return predicate.RevenueEvidence(sql.FieldContainsFold(FieldSourceRecordID, v))
+}
+
+// SourceMessageIDEQ applies the EQ predicate on the "source_message_id" field.
+func SourceMessageIDEQ(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldEQ(FieldSourceMessageID, v))
+}
+
+// SourceMessageIDNEQ applies the NEQ predicate on the "source_message_id" field.
+func SourceMessageIDNEQ(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldNEQ(FieldSourceMessageID, v))
+}
+
+// SourceMessageIDIn applies the In predicate on the "source_message_id" field.
+func SourceMessageIDIn(vs ...string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldIn(FieldSourceMessageID, vs...))
+}
+
+// SourceMessageIDNotIn applies the NotIn predicate on the "source_message_id" field.
+func SourceMessageIDNotIn(vs ...string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldNotIn(FieldSourceMessageID, vs...))
+}
+
+// SourceMessageIDGT applies the GT predicate on the "source_message_id" field.
+func SourceMessageIDGT(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldGT(FieldSourceMessageID, v))
+}
+
+// SourceMessageIDGTE applies the GTE predicate on the "source_message_id" field.
+func SourceMessageIDGTE(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldGTE(FieldSourceMessageID, v))
+}
+
+// SourceMessageIDLT applies the LT predicate on the "source_message_id" field.
+func SourceMessageIDLT(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldLT(FieldSourceMessageID, v))
+}
+
+// SourceMessageIDLTE applies the LTE predicate on the "source_message_id" field.
+func SourceMessageIDLTE(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldLTE(FieldSourceMessageID, v))
+}
+
+// SourceMessageIDContains applies the Contains predicate on the "source_message_id" field.
+func SourceMessageIDContains(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldContains(FieldSourceMessageID, v))
+}
+
+// SourceMessageIDHasPrefix applies the HasPrefix predicate on the "source_message_id" field.
+func SourceMessageIDHasPrefix(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldHasPrefix(FieldSourceMessageID, v))
+}
+
+// SourceMessageIDHasSuffix applies the HasSuffix predicate on the "source_message_id" field.
+func SourceMessageIDHasSuffix(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldHasSuffix(FieldSourceMessageID, v))
+}
+
+// SourceMessageIDIsNil applies the IsNil predicate on the "source_message_id" field.
+func SourceMessageIDIsNil() predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldIsNull(FieldSourceMessageID))
+}
+
+// SourceMessageIDNotNil applies the NotNil predicate on the "source_message_id" field.
+func SourceMessageIDNotNil() predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldNotNull(FieldSourceMessageID))
+}
+
+// SourceMessageIDEqualFold applies the EqualFold predicate on the "source_message_id" field.
+func SourceMessageIDEqualFold(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldEqualFold(FieldSourceMessageID, v))
+}
+
+// SourceMessageIDContainsFold applies the ContainsFold predicate on the "source_message_id" field.
+func SourceMessageIDContainsFold(v string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldContainsFold(FieldSourceMessageID, v))
 }
 
 // SourceURIEQ applies the EQ predicate on the "source_uri" field.

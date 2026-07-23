@@ -30,6 +30,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -5106,6 +5107,255 @@ func (_m *MCPConnection) ToEdge(order *MCPConnectionOrder) *MCPConnectionEdge {
 		order = DefaultMCPConnectionOrder
 	}
 	return &MCPConnectionEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// MailBodyCacheEdge is the edge representation of MailBodyCache.
+type MailBodyCacheEdge struct {
+	Node   *MailBodyCache `json:"node"`
+	Cursor Cursor         `json:"cursor"`
+}
+
+// MailBodyCacheConnection is the connection containing edges to MailBodyCache.
+type MailBodyCacheConnection struct {
+	Edges      []*MailBodyCacheEdge `json:"edges"`
+	PageInfo   PageInfo             `json:"pageInfo"`
+	TotalCount int                  `json:"totalCount"`
+}
+
+func (c *MailBodyCacheConnection) build(nodes []*MailBodyCache, pager *mailbodycachePager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *MailBodyCache
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *MailBodyCache {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *MailBodyCache {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*MailBodyCacheEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &MailBodyCacheEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// MailBodyCachePaginateOption enables pagination customization.
+type MailBodyCachePaginateOption func(*mailbodycachePager) error
+
+// WithMailBodyCacheOrder configures pagination ordering.
+func WithMailBodyCacheOrder(order *MailBodyCacheOrder) MailBodyCachePaginateOption {
+	if order == nil {
+		order = DefaultMailBodyCacheOrder
+	}
+	o := *order
+	return func(pager *mailbodycachePager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultMailBodyCacheOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithMailBodyCacheFilter configures pagination filter.
+func WithMailBodyCacheFilter(filter func(*MailBodyCacheQuery) (*MailBodyCacheQuery, error)) MailBodyCachePaginateOption {
+	return func(pager *mailbodycachePager) error {
+		if filter == nil {
+			return errors.New("MailBodyCacheQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type mailbodycachePager struct {
+	reverse bool
+	order   *MailBodyCacheOrder
+	filter  func(*MailBodyCacheQuery) (*MailBodyCacheQuery, error)
+}
+
+func newMailBodyCachePager(opts []MailBodyCachePaginateOption, reverse bool) (*mailbodycachePager, error) {
+	pager := &mailbodycachePager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultMailBodyCacheOrder
+	}
+	return pager, nil
+}
+
+func (p *mailbodycachePager) applyFilter(query *MailBodyCacheQuery) (*MailBodyCacheQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *mailbodycachePager) toCursor(_m *MailBodyCache) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *mailbodycachePager) applyCursors(query *MailBodyCacheQuery, after, before *Cursor) (*MailBodyCacheQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultMailBodyCacheOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *mailbodycachePager) applyOrder(query *MailBodyCacheQuery) *MailBodyCacheQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultMailBodyCacheOrder.Field {
+		query = query.Order(DefaultMailBodyCacheOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *mailbodycachePager) orderExpr(query *MailBodyCacheQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultMailBodyCacheOrder.Field {
+			b.Comma().Ident(DefaultMailBodyCacheOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to MailBodyCache.
+func (_m *MailBodyCacheQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...MailBodyCachePaginateOption,
+) (*MailBodyCacheConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newMailBodyCachePager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &MailBodyCacheConnection{Edges: []*MailBodyCacheEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// MailBodyCacheOrderField defines the ordering field of MailBodyCache.
+type MailBodyCacheOrderField struct {
+	// Value extracts the ordering value from the given MailBodyCache.
+	Value    func(*MailBodyCache) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) mailbodycache.OrderOption
+	toCursor func(*MailBodyCache) Cursor
+}
+
+// MailBodyCacheOrder defines the ordering of MailBodyCache.
+type MailBodyCacheOrder struct {
+	Direction OrderDirection           `json:"direction"`
+	Field     *MailBodyCacheOrderField `json:"field"`
+}
+
+// DefaultMailBodyCacheOrder is the default ordering of MailBodyCache.
+var DefaultMailBodyCacheOrder = &MailBodyCacheOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &MailBodyCacheOrderField{
+		Value: func(_m *MailBodyCache) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: mailbodycache.FieldID,
+		toTerm: mailbodycache.ByID,
+		toCursor: func(_m *MailBodyCache) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts MailBodyCache into MailBodyCacheEdge.
+func (_m *MailBodyCache) ToEdge(order *MailBodyCacheOrder) *MailBodyCacheEdge {
+	if order == nil {
+		order = DefaultMailBodyCacheOrder
+	}
+	return &MailBodyCacheEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

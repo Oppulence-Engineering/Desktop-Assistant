@@ -89,6 +89,26 @@ func (_u *RevenueEvidenceUpdate) SetNillableSourceRecordID(v *string) *RevenueEv
 	return _u
 }
 
+// SetSourceMessageID sets the "source_message_id" field.
+func (_u *RevenueEvidenceUpdate) SetSourceMessageID(v string) *RevenueEvidenceUpdate {
+	_u.mutation.SetSourceMessageID(v)
+	return _u
+}
+
+// SetNillableSourceMessageID sets the "source_message_id" field if the given value is not nil.
+func (_u *RevenueEvidenceUpdate) SetNillableSourceMessageID(v *string) *RevenueEvidenceUpdate {
+	if v != nil {
+		_u.SetSourceMessageID(*v)
+	}
+	return _u
+}
+
+// ClearSourceMessageID clears the value of the "source_message_id" field.
+func (_u *RevenueEvidenceUpdate) ClearSourceMessageID() *RevenueEvidenceUpdate {
+	_u.mutation.ClearSourceMessageID()
+	return _u
+}
+
 // SetSourceURI sets the "source_uri" field.
 func (_u *RevenueEvidenceUpdate) SetSourceURI(v string) *RevenueEvidenceUpdate {
 	_u.mutation.SetSourceURI(v)
@@ -431,6 +451,12 @@ func (_u *RevenueEvidenceUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if value, ok := _u.mutation.SourceRecordID(); ok {
 		_spec.SetField(revenueevidence.FieldSourceRecordID, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.SourceMessageID(); ok {
+		_spec.SetField(revenueevidence.FieldSourceMessageID, field.TypeString, value)
+	}
+	if _u.mutation.SourceMessageIDCleared() {
+		_spec.ClearField(revenueevidence.FieldSourceMessageID, field.TypeString)
+	}
 	if value, ok := _u.mutation.SourceURI(); ok {
 		_spec.SetField(revenueevidence.FieldSourceURI, field.TypeString, value)
 	}
@@ -730,6 +756,26 @@ func (_u *RevenueEvidenceUpdateOne) SetNillableSourceRecordID(v *string) *Revenu
 	if v != nil {
 		_u.SetSourceRecordID(*v)
 	}
+	return _u
+}
+
+// SetSourceMessageID sets the "source_message_id" field.
+func (_u *RevenueEvidenceUpdateOne) SetSourceMessageID(v string) *RevenueEvidenceUpdateOne {
+	_u.mutation.SetSourceMessageID(v)
+	return _u
+}
+
+// SetNillableSourceMessageID sets the "source_message_id" field if the given value is not nil.
+func (_u *RevenueEvidenceUpdateOne) SetNillableSourceMessageID(v *string) *RevenueEvidenceUpdateOne {
+	if v != nil {
+		_u.SetSourceMessageID(*v)
+	}
+	return _u
+}
+
+// ClearSourceMessageID clears the value of the "source_message_id" field.
+func (_u *RevenueEvidenceUpdateOne) ClearSourceMessageID() *RevenueEvidenceUpdateOne {
+	_u.mutation.ClearSourceMessageID()
 	return _u
 }
 
@@ -1104,6 +1150,12 @@ func (_u *RevenueEvidenceUpdateOne) sqlSave(ctx context.Context) (_node *Revenue
 	}
 	if value, ok := _u.mutation.SourceRecordID(); ok {
 		_spec.SetField(revenueevidence.FieldSourceRecordID, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SourceMessageID(); ok {
+		_spec.SetField(revenueevidence.FieldSourceMessageID, field.TypeString, value)
+	}
+	if _u.mutation.SourceMessageIDCleared() {
+		_spec.ClearField(revenueevidence.FieldSourceMessageID, field.TypeString)
 	}
 	if value, ok := _u.mutation.SourceURI(); ok {
 		_spec.SetField(revenueevidence.FieldSourceURI, field.TypeString, value)

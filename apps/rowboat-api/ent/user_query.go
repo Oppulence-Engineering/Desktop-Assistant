@@ -30,6 +30,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -90,6 +91,7 @@ type UserQuery struct {
 	withRevenueLeakScans                  *RevenueLeakScanQuery
 	withMailThreads                       *MailThreadQuery
 	withMailMessageMetas                  *MailMessageMetaQuery
+	withMailBodyCaches                    *MailBodyCacheQuery
 	modifiers                             []func(*sql.Selector)
 	loadTotal                             []func(context.Context, []*User) error
 	withNamedLedgerEntries                map[string]*CreditLedgerQuery
@@ -124,6 +126,7 @@ type UserQuery struct {
 	withNamedRevenueLeakScans             map[string]*RevenueLeakScanQuery
 	withNamedMailThreads                  map[string]*MailThreadQuery
 	withNamedMailMessageMetas             map[string]*MailMessageMetaQuery
+	withNamedMailBodyCaches               map[string]*MailBodyCacheQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -886,6 +889,28 @@ func (_q *UserQuery) QueryMailMessageMetas() *MailMessageMetaQuery {
 	return query
 }
 
+// QueryMailBodyCaches chains the current query on the "mail_body_caches" edge.
+func (_q *UserQuery) QueryMailBodyCaches() *MailBodyCacheQuery {
+	query := (&MailBodyCacheClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(mailbodycache.Table, mailbodycache.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MailBodyCachesTable, user.MailBodyCachesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -1111,6 +1136,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withRevenueLeakScans:             _q.withRevenueLeakScans.Clone(),
 		withMailThreads:                  _q.withMailThreads.Clone(),
 		withMailMessageMetas:             _q.withMailMessageMetas.Clone(),
+		withMailBodyCaches:               _q.withMailBodyCaches.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -1480,6 +1506,17 @@ func (_q *UserQuery) WithMailMessageMetas(opts ...func(*MailMessageMetaQuery)) *
 	return _q
 }
 
+// WithMailBodyCaches tells the query-builder to eager-load the nodes that are connected to
+// the "mail_body_caches" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithMailBodyCaches(opts ...func(*MailBodyCacheQuery)) *UserQuery {
+	query := (&MailBodyCacheClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withMailBodyCaches = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -1558,7 +1595,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [33]bool{
+		loadedTypes = [34]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -1592,6 +1629,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withRevenueLeakScans != nil,
 			_q.withMailThreads != nil,
 			_q.withMailMessageMetas != nil,
+			_q.withMailBodyCaches != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -1867,6 +1905,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withMailBodyCaches; query != nil {
+		if err := _q.loadMailBodyCaches(ctx, query, nodes,
+			func(n *User) { n.Edges.MailBodyCaches = []*MailBodyCache{} },
+			func(n *User, e *MailBodyCache) { n.Edges.MailBodyCaches = append(n.Edges.MailBodyCaches, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -2088,6 +2133,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadMailMessageMetas(ctx, query, nodes,
 			func(n *User) { n.appendNamedMailMessageMetas(name) },
 			func(n *User, e *MailMessageMeta) { n.appendNamedMailMessageMetas(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedMailBodyCaches {
+		if err := _q.loadMailBodyCaches(ctx, query, nodes,
+			func(n *User) { n.appendNamedMailBodyCaches(name) },
+			func(n *User, e *MailBodyCache) { n.appendNamedMailBodyCaches(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3119,6 +3171,37 @@ func (_q *UserQuery) loadMailMessageMetas(ctx context.Context, query *MailMessag
 	}
 	return nil
 }
+func (_q *UserQuery) loadMailBodyCaches(ctx context.Context, query *MailBodyCacheQuery, nodes []*User, init func(*User), assign func(*User, *MailBodyCache)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.MailBodyCache(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.MailBodyCachesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_mail_body_caches
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_mail_body_caches" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_mail_body_caches" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -3649,6 +3732,20 @@ func (_q *UserQuery) WithNamedMailMessageMetas(name string, opts ...func(*MailMe
 		_q.withNamedMailMessageMetas = make(map[string]*MailMessageMetaQuery)
 	}
 	_q.withNamedMailMessageMetas[name] = query
+	return _q
+}
+
+// WithNamedMailBodyCaches tells the query-builder to eager-load the nodes that are connected to the "mail_body_caches"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedMailBodyCaches(name string, opts ...func(*MailBodyCacheQuery)) *UserQuery {
+	query := (&MailBodyCacheClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedMailBodyCaches == nil {
+		_q.withNamedMailBodyCaches = make(map[string]*MailBodyCacheQuery)
+	}
+	_q.withNamedMailBodyCaches[name] = query
 	return _q
 }
 

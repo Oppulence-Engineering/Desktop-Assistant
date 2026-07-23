@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -152,6 +153,11 @@ var mcpconnectionImplementors = []string{"MCPConnection", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*MCPConnection) IsNode() {}
+
+var mailbodycacheImplementors = []string{"MailBodyCache", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*MailBodyCache) IsNode() {}
 
 var mailmessagemetaImplementors = []string{"MailMessageMeta", "Node"}
 
@@ -467,6 +473,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(mcpconnection.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, mcpconnectionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case mailbodycache.Table:
+		query := c.MailBodyCache.Query().
+			Where(mailbodycache.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, mailbodycacheImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -996,6 +1011,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.MCPConnection.Query().
 			Where(mcpconnection.IDIn(ids...))
 		query, err := query.CollectFields(ctx, mcpconnectionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case mailbodycache.Table:
+		query := c.MailBodyCache.Query().
+			Where(mailbodycache.IDIn(ids...))
+		query, err := query.CollectFields(ctx, mailbodycacheImplementors...)
 		if err != nil {
 			return nil, err
 		}

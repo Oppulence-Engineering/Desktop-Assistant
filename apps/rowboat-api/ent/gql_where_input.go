@@ -26,6 +26,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -15598,6 +15599,362 @@ func (i *MCPConnectionWhereInput) P() (predicate.MCPConnection, error) {
 	}
 }
 
+// MailBodyCacheWhereInput represents a where input for filtering MailBodyCache queries.
+type MailBodyCacheWhereInput struct {
+	Predicates []predicate.MailBodyCache  `json:"-"`
+	Not        *MailBodyCacheWhereInput   `json:"not,omitempty"`
+	Or         []*MailBodyCacheWhereInput `json:"or,omitempty"`
+	And        []*MailBodyCacheWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "provider" field predicates.
+	Provider             *string  `json:"provider,omitempty"`
+	ProviderNEQ          *string  `json:"providerNEQ,omitempty"`
+	ProviderIn           []string `json:"providerIn,omitempty"`
+	ProviderNotIn        []string `json:"providerNotIn,omitempty"`
+	ProviderGT           *string  `json:"providerGT,omitempty"`
+	ProviderGTE          *string  `json:"providerGTE,omitempty"`
+	ProviderLT           *string  `json:"providerLT,omitempty"`
+	ProviderLTE          *string  `json:"providerLTE,omitempty"`
+	ProviderContains     *string  `json:"providerContains,omitempty"`
+	ProviderHasPrefix    *string  `json:"providerHasPrefix,omitempty"`
+	ProviderHasSuffix    *string  `json:"providerHasSuffix,omitempty"`
+	ProviderEqualFold    *string  `json:"providerEqualFold,omitempty"`
+	ProviderContainsFold *string  `json:"providerContainsFold,omitempty"`
+
+	// "provider_message_id" field predicates.
+	ProviderMessageID             *string  `json:"providerMessageID,omitempty"`
+	ProviderMessageIDNEQ          *string  `json:"providerMessageIDNEQ,omitempty"`
+	ProviderMessageIDIn           []string `json:"providerMessageIDIn,omitempty"`
+	ProviderMessageIDNotIn        []string `json:"providerMessageIDNotIn,omitempty"`
+	ProviderMessageIDGT           *string  `json:"providerMessageIDGT,omitempty"`
+	ProviderMessageIDGTE          *string  `json:"providerMessageIDGTE,omitempty"`
+	ProviderMessageIDLT           *string  `json:"providerMessageIDLT,omitempty"`
+	ProviderMessageIDLTE          *string  `json:"providerMessageIDLTE,omitempty"`
+	ProviderMessageIDContains     *string  `json:"providerMessageIDContains,omitempty"`
+	ProviderMessageIDHasPrefix    *string  `json:"providerMessageIDHasPrefix,omitempty"`
+	ProviderMessageIDHasSuffix    *string  `json:"providerMessageIDHasSuffix,omitempty"`
+	ProviderMessageIDEqualFold    *string  `json:"providerMessageIDEqualFold,omitempty"`
+	ProviderMessageIDContainsFold *string  `json:"providerMessageIDContainsFold,omitempty"`
+
+	// "expires_at" field predicates.
+	ExpiresAt      *time.Time  `json:"expiresAt,omitempty"`
+	ExpiresAtNEQ   *time.Time  `json:"expiresAtNEQ,omitempty"`
+	ExpiresAtIn    []time.Time `json:"expiresAtIn,omitempty"`
+	ExpiresAtNotIn []time.Time `json:"expiresAtNotIn,omitempty"`
+	ExpiresAtGT    *time.Time  `json:"expiresAtGT,omitempty"`
+	ExpiresAtGTE   *time.Time  `json:"expiresAtGTE,omitempty"`
+	ExpiresAtLT    *time.Time  `json:"expiresAtLT,omitempty"`
+	ExpiresAtLTE   *time.Time  `json:"expiresAtLTE,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *MailBodyCacheWhereInput) AddPredicates(predicates ...predicate.MailBodyCache) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the MailBodyCacheWhereInput filter on the MailBodyCacheQuery builder.
+func (i *MailBodyCacheWhereInput) Filter(q *MailBodyCacheQuery) (*MailBodyCacheQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyMailBodyCacheWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyMailBodyCacheWhereInput is returned in case the MailBodyCacheWhereInput is empty.
+var ErrEmptyMailBodyCacheWhereInput = errors.New("ent: empty predicate MailBodyCacheWhereInput")
+
+// P returns a predicate for filtering mailbodycaches.
+// An error is returned if the input is empty or invalid.
+func (i *MailBodyCacheWhereInput) P() (predicate.MailBodyCache, error) {
+	var predicates []predicate.MailBodyCache
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, mailbodycache.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.MailBodyCache, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, mailbodycache.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.MailBodyCache, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, mailbodycache.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, mailbodycache.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, mailbodycache.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, mailbodycache.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, mailbodycache.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, mailbodycache.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, mailbodycache.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, mailbodycache.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, mailbodycache.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, mailbodycache.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, mailbodycache.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, mailbodycache.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, mailbodycache.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, mailbodycache.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, mailbodycache.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, mailbodycache.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, mailbodycache.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, mailbodycache.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, mailbodycache.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, mailbodycache.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, mailbodycache.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, mailbodycache.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, mailbodycache.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, mailbodycache.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, mailbodycache.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.Provider != nil {
+		predicates = append(predicates, mailbodycache.ProviderEQ(*i.Provider))
+	}
+	if i.ProviderNEQ != nil {
+		predicates = append(predicates, mailbodycache.ProviderNEQ(*i.ProviderNEQ))
+	}
+	if len(i.ProviderIn) > 0 {
+		predicates = append(predicates, mailbodycache.ProviderIn(i.ProviderIn...))
+	}
+	if len(i.ProviderNotIn) > 0 {
+		predicates = append(predicates, mailbodycache.ProviderNotIn(i.ProviderNotIn...))
+	}
+	if i.ProviderGT != nil {
+		predicates = append(predicates, mailbodycache.ProviderGT(*i.ProviderGT))
+	}
+	if i.ProviderGTE != nil {
+		predicates = append(predicates, mailbodycache.ProviderGTE(*i.ProviderGTE))
+	}
+	if i.ProviderLT != nil {
+		predicates = append(predicates, mailbodycache.ProviderLT(*i.ProviderLT))
+	}
+	if i.ProviderLTE != nil {
+		predicates = append(predicates, mailbodycache.ProviderLTE(*i.ProviderLTE))
+	}
+	if i.ProviderContains != nil {
+		predicates = append(predicates, mailbodycache.ProviderContains(*i.ProviderContains))
+	}
+	if i.ProviderHasPrefix != nil {
+		predicates = append(predicates, mailbodycache.ProviderHasPrefix(*i.ProviderHasPrefix))
+	}
+	if i.ProviderHasSuffix != nil {
+		predicates = append(predicates, mailbodycache.ProviderHasSuffix(*i.ProviderHasSuffix))
+	}
+	if i.ProviderEqualFold != nil {
+		predicates = append(predicates, mailbodycache.ProviderEqualFold(*i.ProviderEqualFold))
+	}
+	if i.ProviderContainsFold != nil {
+		predicates = append(predicates, mailbodycache.ProviderContainsFold(*i.ProviderContainsFold))
+	}
+	if i.ProviderMessageID != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDEQ(*i.ProviderMessageID))
+	}
+	if i.ProviderMessageIDNEQ != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDNEQ(*i.ProviderMessageIDNEQ))
+	}
+	if len(i.ProviderMessageIDIn) > 0 {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDIn(i.ProviderMessageIDIn...))
+	}
+	if len(i.ProviderMessageIDNotIn) > 0 {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDNotIn(i.ProviderMessageIDNotIn...))
+	}
+	if i.ProviderMessageIDGT != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDGT(*i.ProviderMessageIDGT))
+	}
+	if i.ProviderMessageIDGTE != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDGTE(*i.ProviderMessageIDGTE))
+	}
+	if i.ProviderMessageIDLT != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDLT(*i.ProviderMessageIDLT))
+	}
+	if i.ProviderMessageIDLTE != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDLTE(*i.ProviderMessageIDLTE))
+	}
+	if i.ProviderMessageIDContains != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDContains(*i.ProviderMessageIDContains))
+	}
+	if i.ProviderMessageIDHasPrefix != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDHasPrefix(*i.ProviderMessageIDHasPrefix))
+	}
+	if i.ProviderMessageIDHasSuffix != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDHasSuffix(*i.ProviderMessageIDHasSuffix))
+	}
+	if i.ProviderMessageIDEqualFold != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDEqualFold(*i.ProviderMessageIDEqualFold))
+	}
+	if i.ProviderMessageIDContainsFold != nil {
+		predicates = append(predicates, mailbodycache.ProviderMessageIDContainsFold(*i.ProviderMessageIDContainsFold))
+	}
+	if i.ExpiresAt != nil {
+		predicates = append(predicates, mailbodycache.ExpiresAtEQ(*i.ExpiresAt))
+	}
+	if i.ExpiresAtNEQ != nil {
+		predicates = append(predicates, mailbodycache.ExpiresAtNEQ(*i.ExpiresAtNEQ))
+	}
+	if len(i.ExpiresAtIn) > 0 {
+		predicates = append(predicates, mailbodycache.ExpiresAtIn(i.ExpiresAtIn...))
+	}
+	if len(i.ExpiresAtNotIn) > 0 {
+		predicates = append(predicates, mailbodycache.ExpiresAtNotIn(i.ExpiresAtNotIn...))
+	}
+	if i.ExpiresAtGT != nil {
+		predicates = append(predicates, mailbodycache.ExpiresAtGT(*i.ExpiresAtGT))
+	}
+	if i.ExpiresAtGTE != nil {
+		predicates = append(predicates, mailbodycache.ExpiresAtGTE(*i.ExpiresAtGTE))
+	}
+	if i.ExpiresAtLT != nil {
+		predicates = append(predicates, mailbodycache.ExpiresAtLT(*i.ExpiresAtLT))
+	}
+	if i.ExpiresAtLTE != nil {
+		predicates = append(predicates, mailbodycache.ExpiresAtLTE(*i.ExpiresAtLTE))
+	}
+
+	if i.HasUser != nil {
+		p := mailbodycache.HasUser()
+		if !*i.HasUser {
+			p = mailbodycache.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, mailbodycache.HasUserWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyMailBodyCacheWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return mailbodycache.And(predicates...), nil
+	}
+}
+
 // MailMessageMetaWhereInput represents a where input for filtering MailMessageMeta queries.
 type MailMessageMetaWhereInput struct {
 	Predicates []predicate.MailMessageMeta  `json:"-"`
@@ -22656,6 +23013,23 @@ type RevenueEvidenceWhereInput struct {
 	SourceRecordIDEqualFold    *string  `json:"sourceRecordIDEqualFold,omitempty"`
 	SourceRecordIDContainsFold *string  `json:"sourceRecordIDContainsFold,omitempty"`
 
+	// "source_message_id" field predicates.
+	SourceMessageID             *string  `json:"sourceMessageID,omitempty"`
+	SourceMessageIDNEQ          *string  `json:"sourceMessageIDNEQ,omitempty"`
+	SourceMessageIDIn           []string `json:"sourceMessageIDIn,omitempty"`
+	SourceMessageIDNotIn        []string `json:"sourceMessageIDNotIn,omitempty"`
+	SourceMessageIDGT           *string  `json:"sourceMessageIDGT,omitempty"`
+	SourceMessageIDGTE          *string  `json:"sourceMessageIDGTE,omitempty"`
+	SourceMessageIDLT           *string  `json:"sourceMessageIDLT,omitempty"`
+	SourceMessageIDLTE          *string  `json:"sourceMessageIDLTE,omitempty"`
+	SourceMessageIDContains     *string  `json:"sourceMessageIDContains,omitempty"`
+	SourceMessageIDHasPrefix    *string  `json:"sourceMessageIDHasPrefix,omitempty"`
+	SourceMessageIDHasSuffix    *string  `json:"sourceMessageIDHasSuffix,omitempty"`
+	SourceMessageIDIsNil        bool     `json:"sourceMessageIDIsNil,omitempty"`
+	SourceMessageIDNotNil       bool     `json:"sourceMessageIDNotNil,omitempty"`
+	SourceMessageIDEqualFold    *string  `json:"sourceMessageIDEqualFold,omitempty"`
+	SourceMessageIDContainsFold *string  `json:"sourceMessageIDContainsFold,omitempty"`
+
 	// "source_uri" field predicates.
 	SourceURI             *string  `json:"sourceURI,omitempty"`
 	SourceURINEQ          *string  `json:"sourceURINEQ,omitempty"`
@@ -23011,6 +23385,51 @@ func (i *RevenueEvidenceWhereInput) P() (predicate.RevenueEvidence, error) {
 	}
 	if i.SourceRecordIDContainsFold != nil {
 		predicates = append(predicates, revenueevidence.SourceRecordIDContainsFold(*i.SourceRecordIDContainsFold))
+	}
+	if i.SourceMessageID != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDEQ(*i.SourceMessageID))
+	}
+	if i.SourceMessageIDNEQ != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDNEQ(*i.SourceMessageIDNEQ))
+	}
+	if len(i.SourceMessageIDIn) > 0 {
+		predicates = append(predicates, revenueevidence.SourceMessageIDIn(i.SourceMessageIDIn...))
+	}
+	if len(i.SourceMessageIDNotIn) > 0 {
+		predicates = append(predicates, revenueevidence.SourceMessageIDNotIn(i.SourceMessageIDNotIn...))
+	}
+	if i.SourceMessageIDGT != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDGT(*i.SourceMessageIDGT))
+	}
+	if i.SourceMessageIDGTE != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDGTE(*i.SourceMessageIDGTE))
+	}
+	if i.SourceMessageIDLT != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDLT(*i.SourceMessageIDLT))
+	}
+	if i.SourceMessageIDLTE != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDLTE(*i.SourceMessageIDLTE))
+	}
+	if i.SourceMessageIDContains != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDContains(*i.SourceMessageIDContains))
+	}
+	if i.SourceMessageIDHasPrefix != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDHasPrefix(*i.SourceMessageIDHasPrefix))
+	}
+	if i.SourceMessageIDHasSuffix != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDHasSuffix(*i.SourceMessageIDHasSuffix))
+	}
+	if i.SourceMessageIDIsNil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDIsNil())
+	}
+	if i.SourceMessageIDNotNil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDNotNil())
+	}
+	if i.SourceMessageIDEqualFold != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDEqualFold(*i.SourceMessageIDEqualFold))
+	}
+	if i.SourceMessageIDContainsFold != nil {
+		predicates = append(predicates, revenueevidence.SourceMessageIDContainsFold(*i.SourceMessageIDContainsFold))
 	}
 	if i.SourceURI != nil {
 		predicates = append(predicates, revenueevidence.SourceURIEQ(*i.SourceURI))
@@ -26793,6 +27212,10 @@ type UserWhereInput struct {
 	// "mail_message_metas" edge predicates.
 	HasMailMessageMetas     *bool                        `json:"hasMailMessageMetas,omitempty"`
 	HasMailMessageMetasWith []*MailMessageMetaWhereInput `json:"hasMailMessageMetasWith,omitempty"`
+
+	// "mail_body_caches" edge predicates.
+	HasMailBodyCaches     *bool                      `json:"hasMailBodyCaches,omitempty"`
+	HasMailBodyCachesWith []*MailBodyCacheWhereInput `json:"hasMailBodyCachesWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -27661,6 +28084,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasMailMessageMetasWith(with...))
+	}
+	if i.HasMailBodyCaches != nil {
+		p := user.HasMailBodyCaches()
+		if !*i.HasMailBodyCaches {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasMailBodyCachesWith) > 0 {
+		with := make([]predicate.MailBodyCache, 0, len(i.HasMailBodyCachesWith))
+		for _, w := range i.HasMailBodyCachesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasMailBodyCachesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasMailBodyCachesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

@@ -60,6 +60,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Post("/{actionId}/reject", h.Reject)
 		r.Post("/{actionId}/execute", h.Execute)
 		r.Post("/{actionId}/outcomes", h.AppendOutcome)
+		r.Get("/{actionId}/source-body", h.SourceBody)
 	})
 }
 
@@ -433,6 +434,30 @@ func (h *Handler) Digest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, dg)
+}
+
+// SourceBody returns the original email body behind an action (RFC 031 Layer
+// 3, on demand). Read-only; served from the sealed short-TTL cache or fetched
+// from Gmail. 404 when there is no linked source or the body is unavailable.
+func (h *Handler) SourceBody(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "actionId")
+	if !ok {
+		return
+	}
+	body, err := h.svc.ActionSourceBody(r.Context(), u, id)
+	if err != nil {
+		if errors.Is(err, ErrBodyUnavailable) {
+			httpx.Error(w, http.StatusNotFound, "no original email available for this action", "body_unavailable")
+			return
+		}
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]string{"body": body})
 }
 
 // --- scan endpoints ----------------------------------------------------------

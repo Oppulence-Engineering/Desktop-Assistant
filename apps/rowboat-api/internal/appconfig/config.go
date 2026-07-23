@@ -400,6 +400,7 @@ type Config struct {
 	RevenueAutoScanMaxPerCycle  int
 	RevenueAutoScanLookbackDays int
 	RevenueMailRetentionMonths  int
+	MailBodyCacheTTLHours       int
 
 	// Proactive digest (RFC 030). Ships dark behind RevenueDigestEnabled and
 	// requires a configured email provider. Emails each user with open
@@ -688,6 +689,7 @@ func Load() Config {
 		RevenueAutoScanMaxPerCycle:  getint("REVENUE_AUTO_SCAN_MAX_PER_CYCLE", 200),
 		RevenueAutoScanLookbackDays: getint("REVENUE_AUTO_SCAN_LOOKBACK_DAYS", 90),
 		RevenueMailRetentionMonths:  getint("REVENUE_MAIL_RETENTION_MONTHS", 18),
+		MailBodyCacheTTLHours:       getint("MAIL_BODY_CACHE_TTL_HOURS", 72),
 		RevenueDigestEnabled:        getbool("REVENUE_DIGEST_ENABLED", false),
 		RevenueDigestInterval:       getdur("REVENUE_DIGEST_INTERVAL", time.Hour),
 		RevenueDigestMinInterval:    getdur("REVENUE_DIGEST_MIN_INTERVAL", 7*24*time.Hour),
