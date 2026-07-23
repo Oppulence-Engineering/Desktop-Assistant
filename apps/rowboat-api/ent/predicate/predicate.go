@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// ActionOutcome is the predicate function for actionoutcome builders.
+type ActionOutcome func(*sql.Selector)
+
 // AgentApproval is the predicate function for agentapproval builders.
 type AgentApproval func(*sql.Selector)
 
@@ -48,6 +51,9 @@ type BackgroundTaskScheduleState func(*sql.Selector)
 // CloudEvent is the predicate function for cloudevent builders.
 type CloudEvent func(*sql.Selector)
 
+// Commitment is the predicate function for commitment builders.
+type Commitment func(*sql.Selector)
+
 // CreditLedger is the predicate function for creditledger builders.
 type CreditLedger func(*sql.Selector)
 
@@ -77,6 +83,30 @@ type OAuthConnectionHistory func(*sql.Selector)
 
 // OAuthPending is the predicate function for oauthpending builders.
 type OAuthPending func(*sql.Selector)
+
+// PolicyDecisionSnapshot is the predicate function for policydecisionsnapshot builders.
+type PolicyDecisionSnapshot func(*sql.Selector)
+
+// Relationship is the predicate function for relationship builders.
+type Relationship func(*sql.Selector)
+
+// RevenueAction is the predicate function for revenueaction builders.
+type RevenueAction func(*sql.Selector)
+
+// RevenueActionRevision is the predicate function for revenueactionrevision builders.
+type RevenueActionRevision func(*sql.Selector)
+
+// RevenueEvidence is the predicate function for revenueevidence builders.
+type RevenueEvidence func(*sql.Selector)
+
+// RevenueOutboxEvent is the predicate function for revenueoutboxevent builders.
+type RevenueOutboxEvent func(*sql.Selector)
+
+// RevenueWorkspace is the predicate function for revenueworkspace builders.
+type RevenueWorkspace func(*sql.Selector)
+
+// RevenueWorkspaceMember is the predicate function for revenueworkspacemember builders.
+type RevenueWorkspaceMember func(*sql.Selector)
 
 // Subscription is the predicate function for subscription builders.
 type Subscription func(*sql.Selector)

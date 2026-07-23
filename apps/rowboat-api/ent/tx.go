@@ -12,6 +12,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// ActionOutcome is the client for interacting with the ActionOutcome builders.
+	ActionOutcome *ActionOutcomeClient
 	// AgentApproval is the client for interacting with the AgentApproval builders.
 	AgentApproval *AgentApprovalClient
 	// AgentDefinition is the client for interacting with the AgentDefinition builders.
@@ -40,6 +42,8 @@ type Tx struct {
 	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
 	// CloudEvent is the client for interacting with the CloudEvent builders.
 	CloudEvent *CloudEventClient
+	// Commitment is the client for interacting with the Commitment builders.
+	Commitment *CommitmentClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
 	// GoogleWatch is the client for interacting with the GoogleWatch builders.
@@ -60,6 +64,22 @@ type Tx struct {
 	OAuthConnectionHistory *OAuthConnectionHistoryClient
 	// OAuthPending is the client for interacting with the OAuthPending builders.
 	OAuthPending *OAuthPendingClient
+	// PolicyDecisionSnapshot is the client for interacting with the PolicyDecisionSnapshot builders.
+	PolicyDecisionSnapshot *PolicyDecisionSnapshotClient
+	// Relationship is the client for interacting with the Relationship builders.
+	Relationship *RelationshipClient
+	// RevenueAction is the client for interacting with the RevenueAction builders.
+	RevenueAction *RevenueActionClient
+	// RevenueActionRevision is the client for interacting with the RevenueActionRevision builders.
+	RevenueActionRevision *RevenueActionRevisionClient
+	// RevenueEvidence is the client for interacting with the RevenueEvidence builders.
+	RevenueEvidence *RevenueEvidenceClient
+	// RevenueOutboxEvent is the client for interacting with the RevenueOutboxEvent builders.
+	RevenueOutboxEvent *RevenueOutboxEventClient
+	// RevenueWorkspace is the client for interacting with the RevenueWorkspace builders.
+	RevenueWorkspace *RevenueWorkspaceClient
+	// RevenueWorkspaceMember is the client for interacting with the RevenueWorkspaceMember builders.
+	RevenueWorkspaceMember *RevenueWorkspaceMemberClient
 	// Subscription is the client for interacting with the Subscription builders.
 	Subscription *SubscriptionClient
 	// SubscriptionHistory is the client for interacting with the SubscriptionHistory builders.
@@ -199,6 +219,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.ActionOutcome = NewActionOutcomeClient(tx.config)
 	tx.AgentApproval = NewAgentApprovalClient(tx.config)
 	tx.AgentDefinition = NewAgentDefinitionClient(tx.config)
 	tx.AgentDefinitionHistory = NewAgentDefinitionHistoryClient(tx.config)
@@ -213,6 +234,7 @@ func (tx *Tx) init() {
 	tx.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(tx.config)
 	tx.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(tx.config)
 	tx.CloudEvent = NewCloudEventClient(tx.config)
+	tx.Commitment = NewCommitmentClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
 	tx.GoogleWatch = NewGoogleWatchClient(tx.config)
 	tx.LLMUsage = NewLLMUsageClient(tx.config)
@@ -223,6 +245,14 @@ func (tx *Tx) init() {
 	tx.OAuthConnection = NewOAuthConnectionClient(tx.config)
 	tx.OAuthConnectionHistory = NewOAuthConnectionHistoryClient(tx.config)
 	tx.OAuthPending = NewOAuthPendingClient(tx.config)
+	tx.PolicyDecisionSnapshot = NewPolicyDecisionSnapshotClient(tx.config)
+	tx.Relationship = NewRelationshipClient(tx.config)
+	tx.RevenueAction = NewRevenueActionClient(tx.config)
+	tx.RevenueActionRevision = NewRevenueActionRevisionClient(tx.config)
+	tx.RevenueEvidence = NewRevenueEvidenceClient(tx.config)
+	tx.RevenueOutboxEvent = NewRevenueOutboxEventClient(tx.config)
+	tx.RevenueWorkspace = NewRevenueWorkspaceClient(tx.config)
+	tx.RevenueWorkspaceMember = NewRevenueWorkspaceMemberClient(tx.config)
 	tx.Subscription = NewSubscriptionClient(tx.config)
 	tx.SubscriptionHistory = NewSubscriptionHistoryClient(tx.config)
 	tx.User = NewUserClient(tx.config)
@@ -236,7 +266,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: AgentApproval.QueryXXX(), the query will be executed
+// applies a query, for example: ActionOutcome.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

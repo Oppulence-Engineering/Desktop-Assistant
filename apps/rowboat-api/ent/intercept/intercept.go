@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -22,6 +23,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -32,7 +34,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -93,6 +103,33 @@ func (f TraverseFunc) Traverse(ctx context.Context, q ent.Query) error {
 		return err
 	}
 	return f(ctx, query)
+}
+
+// The ActionOutcomeFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ActionOutcomeFunc func(context.Context, *ent.ActionOutcomeQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ActionOutcomeFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ActionOutcomeQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ActionOutcomeQuery", q)
+}
+
+// The TraverseActionOutcome type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseActionOutcome func(context.Context, *ent.ActionOutcomeQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseActionOutcome) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseActionOutcome) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ActionOutcomeQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ActionOutcomeQuery", q)
 }
 
 // The AgentApprovalFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -473,6 +510,33 @@ func (f TraverseCloudEvent) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.CloudEventQuery", q)
 }
 
+// The CommitmentFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CommitmentFunc func(context.Context, *ent.CommitmentQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CommitmentFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CommitmentQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CommitmentQuery", q)
+}
+
+// The TraverseCommitment type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCommitment func(context.Context, *ent.CommitmentQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCommitment) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCommitment) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CommitmentQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CommitmentQuery", q)
+}
+
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary function as a Querier.
 type CreditLedgerFunc func(context.Context, *ent.CreditLedgerQuery) (ent.Value, error)
 
@@ -743,6 +807,222 @@ func (f TraverseOAuthPending) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.OAuthPendingQuery", q)
 }
 
+// The PolicyDecisionSnapshotFunc type is an adapter to allow the use of ordinary function as a Querier.
+type PolicyDecisionSnapshotFunc func(context.Context, *ent.PolicyDecisionSnapshotQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f PolicyDecisionSnapshotFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.PolicyDecisionSnapshotQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.PolicyDecisionSnapshotQuery", q)
+}
+
+// The TraversePolicyDecisionSnapshot type is an adapter to allow the use of ordinary function as Traverser.
+type TraversePolicyDecisionSnapshot func(context.Context, *ent.PolicyDecisionSnapshotQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraversePolicyDecisionSnapshot) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraversePolicyDecisionSnapshot) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.PolicyDecisionSnapshotQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.PolicyDecisionSnapshotQuery", q)
+}
+
+// The RelationshipFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelationshipFunc func(context.Context, *ent.RelationshipQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelationshipFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelationshipQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelationshipQuery", q)
+}
+
+// The TraverseRelationship type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelationship func(context.Context, *ent.RelationshipQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelationship) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelationship) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelationshipQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelationshipQuery", q)
+}
+
+// The RevenueActionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RevenueActionFunc func(context.Context, *ent.RevenueActionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RevenueActionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RevenueActionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RevenueActionQuery", q)
+}
+
+// The TraverseRevenueAction type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRevenueAction func(context.Context, *ent.RevenueActionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRevenueAction) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRevenueAction) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RevenueActionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RevenueActionQuery", q)
+}
+
+// The RevenueActionRevisionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RevenueActionRevisionFunc func(context.Context, *ent.RevenueActionRevisionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RevenueActionRevisionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RevenueActionRevisionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RevenueActionRevisionQuery", q)
+}
+
+// The TraverseRevenueActionRevision type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRevenueActionRevision func(context.Context, *ent.RevenueActionRevisionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRevenueActionRevision) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRevenueActionRevision) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RevenueActionRevisionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RevenueActionRevisionQuery", q)
+}
+
+// The RevenueEvidenceFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RevenueEvidenceFunc func(context.Context, *ent.RevenueEvidenceQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RevenueEvidenceFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RevenueEvidenceQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RevenueEvidenceQuery", q)
+}
+
+// The TraverseRevenueEvidence type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRevenueEvidence func(context.Context, *ent.RevenueEvidenceQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRevenueEvidence) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRevenueEvidence) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RevenueEvidenceQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RevenueEvidenceQuery", q)
+}
+
+// The RevenueOutboxEventFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RevenueOutboxEventFunc func(context.Context, *ent.RevenueOutboxEventQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RevenueOutboxEventFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RevenueOutboxEventQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RevenueOutboxEventQuery", q)
+}
+
+// The TraverseRevenueOutboxEvent type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRevenueOutboxEvent func(context.Context, *ent.RevenueOutboxEventQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRevenueOutboxEvent) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRevenueOutboxEvent) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RevenueOutboxEventQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RevenueOutboxEventQuery", q)
+}
+
+// The RevenueWorkspaceFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RevenueWorkspaceFunc func(context.Context, *ent.RevenueWorkspaceQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RevenueWorkspaceFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RevenueWorkspaceQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RevenueWorkspaceQuery", q)
+}
+
+// The TraverseRevenueWorkspace type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRevenueWorkspace func(context.Context, *ent.RevenueWorkspaceQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRevenueWorkspace) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRevenueWorkspace) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RevenueWorkspaceQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RevenueWorkspaceQuery", q)
+}
+
+// The RevenueWorkspaceMemberFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RevenueWorkspaceMemberFunc func(context.Context, *ent.RevenueWorkspaceMemberQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RevenueWorkspaceMemberFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RevenueWorkspaceMemberQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RevenueWorkspaceMemberQuery", q)
+}
+
+// The TraverseRevenueWorkspaceMember type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRevenueWorkspaceMember func(context.Context, *ent.RevenueWorkspaceMemberQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRevenueWorkspaceMember) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRevenueWorkspaceMember) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RevenueWorkspaceMemberQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RevenueWorkspaceMemberQuery", q)
+}
+
 // The SubscriptionFunc type is an adapter to allow the use of ordinary function as a Querier.
 type SubscriptionFunc func(context.Context, *ent.SubscriptionQuery) (ent.Value, error)
 
@@ -854,6 +1134,8 @@ func (f TraverseUserHistory) Traverse(ctx context.Context, q ent.Query) error {
 // NewQuery returns the generic Query interface for the given typed query.
 func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
+	case *ent.ActionOutcomeQuery:
+		return &query[*ent.ActionOutcomeQuery, predicate.ActionOutcome, actionoutcome.OrderOption]{typ: ent.TypeActionOutcome, tq: q}, nil
 	case *ent.AgentApprovalQuery:
 		return &query[*ent.AgentApprovalQuery, predicate.AgentApproval, agentapproval.OrderOption]{typ: ent.TypeAgentApproval, tq: q}, nil
 	case *ent.AgentDefinitionQuery:
@@ -882,6 +1164,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.BackgroundTaskScheduleStateQuery, predicate.BackgroundTaskScheduleState, backgroundtaskschedulestate.OrderOption]{typ: ent.TypeBackgroundTaskScheduleState, tq: q}, nil
 	case *ent.CloudEventQuery:
 		return &query[*ent.CloudEventQuery, predicate.CloudEvent, cloudevent.OrderOption]{typ: ent.TypeCloudEvent, tq: q}, nil
+	case *ent.CommitmentQuery:
+		return &query[*ent.CommitmentQuery, predicate.Commitment, commitment.OrderOption]{typ: ent.TypeCommitment, tq: q}, nil
 	case *ent.CreditLedgerQuery:
 		return &query[*ent.CreditLedgerQuery, predicate.CreditLedger, creditledger.OrderOption]{typ: ent.TypeCreditLedger, tq: q}, nil
 	case *ent.GoogleWatchQuery:
@@ -902,6 +1186,22 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.OAuthConnectionHistoryQuery, predicate.OAuthConnectionHistory, oauthconnectionhistory.OrderOption]{typ: ent.TypeOAuthConnectionHistory, tq: q}, nil
 	case *ent.OAuthPendingQuery:
 		return &query[*ent.OAuthPendingQuery, predicate.OAuthPending, oauthpending.OrderOption]{typ: ent.TypeOAuthPending, tq: q}, nil
+	case *ent.PolicyDecisionSnapshotQuery:
+		return &query[*ent.PolicyDecisionSnapshotQuery, predicate.PolicyDecisionSnapshot, policydecisionsnapshot.OrderOption]{typ: ent.TypePolicyDecisionSnapshot, tq: q}, nil
+	case *ent.RelationshipQuery:
+		return &query[*ent.RelationshipQuery, predicate.Relationship, relationship.OrderOption]{typ: ent.TypeRelationship, tq: q}, nil
+	case *ent.RevenueActionQuery:
+		return &query[*ent.RevenueActionQuery, predicate.RevenueAction, revenueaction.OrderOption]{typ: ent.TypeRevenueAction, tq: q}, nil
+	case *ent.RevenueActionRevisionQuery:
+		return &query[*ent.RevenueActionRevisionQuery, predicate.RevenueActionRevision, revenueactionrevision.OrderOption]{typ: ent.TypeRevenueActionRevision, tq: q}, nil
+	case *ent.RevenueEvidenceQuery:
+		return &query[*ent.RevenueEvidenceQuery, predicate.RevenueEvidence, revenueevidence.OrderOption]{typ: ent.TypeRevenueEvidence, tq: q}, nil
+	case *ent.RevenueOutboxEventQuery:
+		return &query[*ent.RevenueOutboxEventQuery, predicate.RevenueOutboxEvent, revenueoutboxevent.OrderOption]{typ: ent.TypeRevenueOutboxEvent, tq: q}, nil
+	case *ent.RevenueWorkspaceQuery:
+		return &query[*ent.RevenueWorkspaceQuery, predicate.RevenueWorkspace, revenueworkspace.OrderOption]{typ: ent.TypeRevenueWorkspace, tq: q}, nil
+	case *ent.RevenueWorkspaceMemberQuery:
+		return &query[*ent.RevenueWorkspaceMemberQuery, predicate.RevenueWorkspaceMember, revenueworkspacemember.OrderOption]{typ: ent.TypeRevenueWorkspaceMember, tq: q}, nil
 	case *ent.SubscriptionQuery:
 		return &query[*ent.SubscriptionQuery, predicate.Subscription, subscription.OrderOption]{typ: ent.TypeSubscription, tq: q}, nil
 	case *ent.SubscriptionHistoryQuery:

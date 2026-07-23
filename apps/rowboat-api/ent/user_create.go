@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
@@ -25,12 +26,21 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -422,6 +432,156 @@ func (_c *UserCreate) AddAgentToolResultBlobs(v ...*AgentToolResultBlob) *UserCr
 		ids[i] = v[i].ID
 	}
 	return _c.AddAgentToolResultBlobIDs(ids...)
+}
+
+// AddRevenueWorkspaceIDs adds the "revenue_workspaces" edge to the RevenueWorkspace entity by IDs.
+func (_c *UserCreate) AddRevenueWorkspaceIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRevenueWorkspaceIDs(ids...)
+	return _c
+}
+
+// AddRevenueWorkspaces adds the "revenue_workspaces" edges to the RevenueWorkspace entity.
+func (_c *UserCreate) AddRevenueWorkspaces(v ...*RevenueWorkspace) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRevenueWorkspaceIDs(ids...)
+}
+
+// AddRevenueWorkspaceMemberIDs adds the "revenue_workspace_members" edge to the RevenueWorkspaceMember entity by IDs.
+func (_c *UserCreate) AddRevenueWorkspaceMemberIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRevenueWorkspaceMemberIDs(ids...)
+	return _c
+}
+
+// AddRevenueWorkspaceMembers adds the "revenue_workspace_members" edges to the RevenueWorkspaceMember entity.
+func (_c *UserCreate) AddRevenueWorkspaceMembers(v ...*RevenueWorkspaceMember) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRevenueWorkspaceMemberIDs(ids...)
+}
+
+// AddRelationshipIDs adds the "relationships" edge to the Relationship entity by IDs.
+func (_c *UserCreate) AddRelationshipIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRelationshipIDs(ids...)
+	return _c
+}
+
+// AddRelationships adds the "relationships" edges to the Relationship entity.
+func (_c *UserCreate) AddRelationships(v ...*Relationship) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRelationshipIDs(ids...)
+}
+
+// AddRevenueEvidenceIDs adds the "revenue_evidences" edge to the RevenueEvidence entity by IDs.
+func (_c *UserCreate) AddRevenueEvidenceIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRevenueEvidenceIDs(ids...)
+	return _c
+}
+
+// AddRevenueEvidences adds the "revenue_evidences" edges to the RevenueEvidence entity.
+func (_c *UserCreate) AddRevenueEvidences(v ...*RevenueEvidence) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRevenueEvidenceIDs(ids...)
+}
+
+// AddCommitmentIDs adds the "commitments" edge to the Commitment entity by IDs.
+func (_c *UserCreate) AddCommitmentIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddCommitmentIDs(ids...)
+	return _c
+}
+
+// AddCommitments adds the "commitments" edges to the Commitment entity.
+func (_c *UserCreate) AddCommitments(v ...*Commitment) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommitmentIDs(ids...)
+}
+
+// AddRevenueActionIDs adds the "revenue_actions" edge to the RevenueAction entity by IDs.
+func (_c *UserCreate) AddRevenueActionIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRevenueActionIDs(ids...)
+	return _c
+}
+
+// AddRevenueActions adds the "revenue_actions" edges to the RevenueAction entity.
+func (_c *UserCreate) AddRevenueActions(v ...*RevenueAction) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRevenueActionIDs(ids...)
+}
+
+// AddRevenueActionRevisionIDs adds the "revenue_action_revisions" edge to the RevenueActionRevision entity by IDs.
+func (_c *UserCreate) AddRevenueActionRevisionIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRevenueActionRevisionIDs(ids...)
+	return _c
+}
+
+// AddRevenueActionRevisions adds the "revenue_action_revisions" edges to the RevenueActionRevision entity.
+func (_c *UserCreate) AddRevenueActionRevisions(v ...*RevenueActionRevision) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRevenueActionRevisionIDs(ids...)
+}
+
+// AddPolicyDecisionSnapshotIDs adds the "policy_decision_snapshots" edge to the PolicyDecisionSnapshot entity by IDs.
+func (_c *UserCreate) AddPolicyDecisionSnapshotIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddPolicyDecisionSnapshotIDs(ids...)
+	return _c
+}
+
+// AddPolicyDecisionSnapshots adds the "policy_decision_snapshots" edges to the PolicyDecisionSnapshot entity.
+func (_c *UserCreate) AddPolicyDecisionSnapshots(v ...*PolicyDecisionSnapshot) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPolicyDecisionSnapshotIDs(ids...)
+}
+
+// AddActionOutcomeIDs adds the "action_outcomes" edge to the ActionOutcome entity by IDs.
+func (_c *UserCreate) AddActionOutcomeIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddActionOutcomeIDs(ids...)
+	return _c
+}
+
+// AddActionOutcomes adds the "action_outcomes" edges to the ActionOutcome entity.
+func (_c *UserCreate) AddActionOutcomes(v ...*ActionOutcome) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddActionOutcomeIDs(ids...)
+}
+
+// AddRevenueOutboxEventIDs adds the "revenue_outbox_events" edge to the RevenueOutboxEvent entity by IDs.
+func (_c *UserCreate) AddRevenueOutboxEventIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRevenueOutboxEventIDs(ids...)
+	return _c
+}
+
+// AddRevenueOutboxEvents adds the "revenue_outbox_events" edges to the RevenueOutboxEvent entity.
+func (_c *UserCreate) AddRevenueOutboxEvents(v ...*RevenueOutboxEvent) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRevenueOutboxEventIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -858,6 +1018,166 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenttoolresultblob.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RevenueWorkspacesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspacesTable,
+			Columns: []string{user.RevenueWorkspacesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RevenueWorkspaceMembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueWorkspaceMembersTable,
+			Columns: []string{user.RevenueWorkspaceMembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueworkspacemember.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelationshipsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipsTable,
+			Columns: []string{user.RelationshipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RevenueEvidencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueEvidencesTable,
+			Columns: []string{user.RevenueEvidencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommitmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommitmentsTable,
+			Columns: []string{user.CommitmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RevenueActionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionsTable,
+			Columns: []string{user.RevenueActionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RevenueActionRevisionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueActionRevisionsTable,
+			Columns: []string{user.RevenueActionRevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueactionrevision.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PolicyDecisionSnapshotsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PolicyDecisionSnapshotsTable,
+			Columns: []string{user.PolicyDecisionSnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(policydecisionsnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ActionOutcomesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ActionOutcomesTable,
+			Columns: []string{user.ActionOutcomesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(actionoutcome.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RevenueOutboxEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueOutboxEventsTable,
+			Columns: []string{user.RevenueOutboxEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenueoutboxevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

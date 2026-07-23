@@ -202,6 +202,67 @@
       }
     },
     "schemas": {
+      "ActionOutcome": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/RevenueAction"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "metadata_json": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "source_event_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "kind",
+          "source",
+          "source_event_id",
+          "occurred_at",
+          "workspace",
+          "action",
+          "user"
+        ],
+        "type": "object"
+      },
       "AgentApproval": {
         "properties": {
           "approval_id": {
@@ -2585,6 +2646,80 @@
         "required": ["runs"],
         "type": "object"
       },
+      "Commitment": {
+        "properties": {
+          "confidence": {
+            "format": "double",
+            "type": "number"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "due_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "evidences": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueEvidence"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/Relationship"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "user_confirmed": {
+            "type": "boolean"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "direction",
+          "text",
+          "status",
+          "confidence",
+          "user_confirmed",
+          "workspace",
+          "relationship",
+          "user"
+        ],
+        "type": "object"
+      },
       "ConfigResponse": {
         "description": "Public bootstrap values consumed by the desktop before sign-in.",
         "properties": {
@@ -4134,6 +4269,106 @@
         "required": ["access_token", "expires_at"],
         "type": "object"
       },
+      "PolicyDecisionSnapshot": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/RevenueAction"
+          },
+          "action_revision": {
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "crm_json": {
+            "type": "string"
+          },
+          "evaluated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "outbound_lead_id": {
+            "type": "string"
+          },
+          "reason_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "research_json": {
+            "type": "string"
+          },
+          "response_hash": {
+            "type": "string"
+          },
+          "revision_hash": {
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "suppression_json": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "verification_json": {
+            "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "action_revision",
+          "revision_hash",
+          "status",
+          "reason_codes",
+          "evidence_refs",
+          "evaluated_at",
+          "expires_at",
+          "response_hash",
+          "workspace",
+          "action",
+          "user"
+        ],
+        "type": "object"
+      },
       "PreConsentRequest": {
         "description": "Ory pre-consent webhook payload mapped by ops.",
         "properties": {
@@ -4246,6 +4481,861 @@
           }
         },
         "required": ["type", "title", "status", "code", "reconnectRequired"],
+        "type": "object"
+      },
+      "Relationship": {
+        "properties": {
+          "account_domain": {
+            "type": "string"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueAction"
+            },
+            "type": "array"
+          },
+          "commitments": {
+            "items": {
+              "$ref": "#/components/schemas/Commitment"
+            },
+            "type": "array"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "evidences": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueEvidence"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "last_touch_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "next_action_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "outbound_account_ref": {
+            "type": "string"
+          },
+          "outbound_lead_id": {
+            "type": "string"
+          },
+          "primary_email": {
+            "type": "string"
+          },
+          "resource_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "kind",
+          "display_name",
+          "resource_refs",
+          "status",
+          "workspace",
+          "user"
+        ],
+        "type": "object"
+      },
+      "RevenueAction": {
+        "description": "One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.",
+        "properties": {
+          "actionType": {
+            "description": "Action type.",
+            "enum": [
+              "warm_follow_up",
+              "proposal_nudge",
+              "referral_reconnect",
+              "customer_risk",
+              "meeting_follow_up"
+            ],
+            "example": "warm_follow_up",
+            "type": "string"
+          },
+          "approvalStatus": {
+            "description": "Approval state, bound to the exact revision and decision.",
+            "enum": ["pending", "approved", "rejected"],
+            "example": "pending",
+            "type": "string"
+          },
+          "approvedAt": {
+            "description": "Approval time.",
+            "example": "2026-07-12T12:05:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "approvedRevision": {
+            "description": "Revision the approval is bound to.",
+            "example": 1,
+            "type": "integer"
+          },
+          "channel": {
+            "description": "Delivery channel.",
+            "enum": ["email", "slack", "call", "crm_task"],
+            "example": "email",
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "Creation time.",
+            "example": "2026-07-12T12:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "detector": {
+            "description": "Detector that produced the action.",
+            "enum": [
+              "requested_follow_up_due",
+              "unanswered_proposal",
+              "waiting_on_me",
+              "dormant_warm_opportunity",
+              "neglected_referral",
+              "former_customer_reconnect",
+              "manual"
+            ],
+            "example": "manual",
+            "type": "string"
+          },
+          "dismissReason": {
+            "description": "Dismissal reason label.",
+            "example": "already_handled",
+            "type": "string"
+          },
+          "dueAt": {
+            "description": "Due time.",
+            "example": "2026-07-15T00:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "executedAt": {
+            "description": "Execution time.",
+            "example": "2026-07-12T12:06:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "executionError": {
+            "description": "Bounded execution error.",
+            "example": "",
+            "type": "string"
+          },
+          "executionMode": {
+            "description": "Draft lands in the operator's mailbox; send requires a passed unexpired decision and a linked workspace.",
+            "enum": ["draft", "send"],
+            "example": "draft",
+            "type": "string"
+          },
+          "executionOwner": {
+            "description": "Exactly one owner may execute a revision.",
+            "enum": ["rowboat", "outbound"],
+            "example": "rowboat",
+            "type": "string"
+          },
+          "executionStatus": {
+            "description": "Execution state. A lost provider result is ambiguous, never auto-resent.",
+            "enum": ["pending", "requested", "sent", "failed", "ambiguous", "cancelled"],
+            "example": "pending",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "policyStatus": {
+            "description": "Preflight state. Facade unavailability keeps pending (fail closed).",
+            "enum": ["pending", "passed", "review_required", "blocked", "stale"],
+            "example": "pending",
+            "type": "string"
+          },
+          "priorityComponents": {
+            "additionalProperties": true,
+            "description": "Per-component priority breakdown; every component is stored and shown.",
+            "type": "object"
+          },
+          "priorityScore": {
+            "description": "Explainable priority score (0-100).",
+            "example": 82,
+            "type": "integer"
+          },
+          "proposedMessage": {
+            "description": "Proposed message body.",
+            "example": "Hi Jordan — you asked me to circle back this month...",
+            "type": "string"
+          },
+          "proposedSubject": {
+            "description": "Proposed email subject.",
+            "example": "Following up as promised",
+            "type": "string"
+          },
+          "providerMessageId": {
+            "description": "Provider message id after execution.",
+            "example": "msg_01",
+            "type": "string"
+          },
+          "providerThreadId": {
+            "description": "Provider thread id after execution.",
+            "example": "thread_01",
+            "type": "string"
+          },
+          "queueStatus": {
+            "description": "Operator triage state.",
+            "enum": ["open", "snoozed", "dismissed", "handled"],
+            "example": "open",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "recipientEmail": {
+            "description": "Recipient email address.",
+            "example": "buyer@example.com",
+            "type": "string"
+          },
+          "relationshipId": {
+            "description": "Owning relationship id.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "revision": {
+            "description": "Current revision number.",
+            "example": 1,
+            "type": "integer"
+          },
+          "revisionHash": {
+            "description": "Canonical hash of the revision content.",
+            "example": "sha256:ab12...",
+            "type": "string"
+          },
+          "senderAccountRef": {
+            "description": "Sender account reference.",
+            "example": "gmail:me@company.com",
+            "type": "string"
+          },
+          "snoozedUntil": {
+            "description": "Snooze wake time.",
+            "example": "2026-07-20T09:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "description": "Last update time.",
+            "example": "2026-07-12T12:06:00Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "actionType",
+          "channel",
+          "detector",
+          "revision",
+          "revisionHash",
+          "reason",
+          "priorityScore",
+          "queueStatus",
+          "policyStatus",
+          "approvalStatus",
+          "executionStatus",
+          "executionOwner",
+          "executionMode"
+        ],
+        "type": "object"
+      },
+      "RevenueActionRevision": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/RevenueAction"
+          },
+          "action_type": {
+            "type": "string"
+          },
+          "assigned_user_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "proposed_message": {
+            "type": "string"
+          },
+          "proposed_subject": {
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "recipient_email": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "revision_hash": {
+            "type": "string"
+          },
+          "sender_account_ref": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "revision",
+          "revision_hash",
+          "action_type",
+          "channel",
+          "action",
+          "user"
+        ],
+        "type": "object"
+      },
+      "RevenueEvidence": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueAction"
+            },
+            "type": "array"
+          },
+          "commitments": {
+            "items": {
+              "$ref": "#/components/schemas/Commitment"
+            },
+            "type": "array"
+          },
+          "content_hash": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "excerpt": {
+            "type": "string"
+          },
+          "external_evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "payload_ciphertext": {
+            "format": "byte",
+            "type": "string"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/Relationship"
+            },
+            "type": "array"
+          },
+          "source": {
+            "type": "string"
+          },
+          "source_account_id": {
+            "type": "string"
+          },
+          "source_record_id": {
+            "type": "string"
+          },
+          "source_uri": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "source",
+          "source_record_id",
+          "content_hash",
+          "occurred_at",
+          "observed_at",
+          "external_evidence_refs",
+          "workspace",
+          "user"
+        ],
+        "type": "object"
+      },
+      "RevenueOutboxEvent": {
+        "properties": {
+          "action_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "causation_id": {
+            "type": "string"
+          },
+          "correlation_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "delivery_status": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "type": "string"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "next_attempt_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "payload_json": {
+            "type": "string"
+          },
+          "schema_version": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "event_type",
+          "schema_version",
+          "idempotency_key",
+          "occurred_at",
+          "delivery_status",
+          "attempts",
+          "workspace",
+          "user"
+        ],
+        "type": "object"
+      },
+      "RevenueOutcome": {
+        "description": "One observed action outcome, append-only and idempotent on (action, source, sourceEventId).",
+        "properties": {
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Outcome kind.",
+            "enum": [
+              "sent",
+              "delivered",
+              "bounced",
+              "replied",
+              "meeting_booked",
+              "won",
+              "lost",
+              "dismissed",
+              "bad_recommendation"
+            ],
+            "example": "replied",
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "When the outcome occurred.",
+            "example": "2026-07-12T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "description": "Observing source.",
+            "enum": ["gmail", "calendar", "crm", "user", "outbound"],
+            "example": "gmail",
+            "type": "string"
+          },
+          "sourceEventId": {
+            "description": "Source event id used for deduplication.",
+            "example": "msg_01",
+            "type": "string"
+          }
+        },
+        "required": ["id", "kind", "source", "sourceEventId", "occurredAt"],
+        "type": "object"
+      },
+      "RevenuePolicyDecision": {
+        "description": "Immutable OutboundConsole preflight decision for one exact action revision. Rowboat snapshots the decision; it never composes one.",
+        "properties": {
+          "crm": {
+            "additionalProperties": true,
+            "description": "CRM sub-result snapshot; unknown when the connector is unavailable.",
+            "type": "object"
+          },
+          "evaluatedAt": {
+            "description": "Evaluation time.",
+            "example": "2026-07-12T12:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "description": "Decision expiry; expired decisions must be re-evaluated before approval or execution.",
+            "example": "2026-07-13T12:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "reasonCodes": {
+            "description": "Bounded reason codes.",
+            "items": {
+              "description": "Reason code.",
+              "example": "suppression.opted_out",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "research": {
+            "additionalProperties": true,
+            "description": "Research sub-result snapshot.",
+            "type": "object"
+          },
+          "revision": {
+            "description": "Action revision the decision is about.",
+            "example": 1,
+            "type": "integer"
+          },
+          "revisionHash": {
+            "description": "Revision hash the decision is bound to.",
+            "example": "sha256:ab12...",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": ["passed", "review_required", "blocked"],
+            "example": "active",
+            "type": "string"
+          },
+          "suppression": {
+            "additionalProperties": true,
+            "description": "Suppression sub-result snapshot.",
+            "type": "object"
+          },
+          "verification": {
+            "additionalProperties": true,
+            "description": "Verification sub-result snapshot.",
+            "type": "object"
+          }
+        },
+        "required": ["id", "revision", "revisionHash", "status", "evaluatedAt", "expiresAt"],
+        "type": "object"
+      },
+      "RevenueRelationship": {
+        "description": "Longitudinal revenue-memory relationship. The enriched commercial lead stays canonical in OutboundConsole and is referenced, never duplicated.",
+        "properties": {
+          "accountDomain": {
+            "description": "Account domain.",
+            "example": "example.com",
+            "type": "string"
+          },
+          "displayName": {
+            "description": "Human display name.",
+            "example": "Jordan Buyer",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Relationship kind.",
+            "enum": ["person", "company", "customer", "opportunity", "referral", "partner"],
+            "example": "person",
+            "type": "string"
+          },
+          "lastTouchAt": {
+            "description": "Last observed touch.",
+            "example": "2026-04-10T15:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "nextActionAt": {
+            "description": "Next planned action.",
+            "example": "2026-07-01T00:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "openActions": {
+            "description": "Open queue actions for this relationship.",
+            "example": 1,
+            "type": "integer"
+          },
+          "primaryEmail": {
+            "description": "Primary email address.",
+            "example": "buyer@example.com",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": ["active", "dormant", "closed", "archived"],
+            "example": "active",
+            "type": "string"
+          },
+          "summary": {
+            "description": "Bounded relationship summary.",
+            "example": "Asked for pricing in April; wants a follow-up in July.",
+            "type": "string"
+          }
+        },
+        "required": ["id", "kind", "displayName", "status"],
+        "type": "object"
+      },
+      "RevenueWorkspace": {
+        "description": "Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.",
+        "properties": {
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastVerifiedAt": {
+            "description": "When the link was last verified.",
+            "example": "2026-07-12T12:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "mode": {
+            "description": "Workspace mode.",
+            "enum": ["local", "linked"],
+            "example": "local",
+            "type": "string"
+          },
+          "outboundOrganizationId": {
+            "description": "OutboundConsole organization id.",
+            "example": "org_01ABC",
+            "type": "string"
+          },
+          "outboundWorkspaceId": {
+            "description": "OutboundConsole workspace id.",
+            "example": "ws_01ABC",
+            "type": "string"
+          },
+          "preflightAvailable": {
+            "description": "Whether policy preflight can run (linked and active).",
+            "example": false,
+            "type": "boolean"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": ["active", "disconnected", "repair_required"],
+            "example": "active",
+            "type": "string"
+          }
+        },
+        "required": ["id", "mode", "status", "preflightAvailable"],
+        "type": "object"
+      },
+      "RevenueWorkspaceMember": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "outbound_account_id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": ["id", "created_at", "updated_at", "role", "status", "workspace", "user"],
         "type": "object"
       },
       "RevisionConflictEnvelope": {
@@ -4711,6 +5801,12 @@
       "User": {
         "description": "Local mirror of a WorkOS identity. Upserted when a verified bearer token is first seen.",
         "properties": {
+          "action_outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/ActionOutcome"
+            },
+            "type": "array"
+          },
           "agent_approvals": {
             "items": {
               "$ref": "#/components/schemas/AgentApproval"
@@ -4793,6 +5889,12 @@
             },
             "type": "array"
           },
+          "commitments": {
+            "items": {
+              "$ref": "#/components/schemas/Commitment"
+            },
+            "type": "array"
+          },
           "created_at": {
             "description": "Row creation timestamp.",
             "example": "2026-06-04T20:38:00Z",
@@ -4847,6 +5949,54 @@
             "description": "Third-party OAuth connections for the user.",
             "items": {
               "$ref": "#/components/schemas/OAuthConnection"
+            },
+            "type": "array"
+          },
+          "policy_decision_snapshots": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyDecisionSnapshot"
+            },
+            "type": "array"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/Relationship"
+            },
+            "type": "array"
+          },
+          "revenue_action_revisions": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueActionRevision"
+            },
+            "type": "array"
+          },
+          "revenue_actions": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueAction"
+            },
+            "type": "array"
+          },
+          "revenue_evidences": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueEvidence"
+            },
+            "type": "array"
+          },
+          "revenue_outbox_events": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueOutboxEvent"
+            },
+            "type": "array"
+          },
+          "revenue_workspace_members": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueWorkspaceMember"
+            },
+            "type": "array"
+          },
+          "revenue_workspaces": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueWorkspace"
             },
             "type": "array"
           },
@@ -9104,6 +10254,1210 @@
         "tags": ["Billing"]
       }
     },
+    "/v1/relationships": {
+      "get": {
+        "description": "Lists relationship summaries with open-loop counts.",
+        "operationId": "listRevenueRelationships",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Relationship list.",
+                  "properties": {
+                    "relationships": {
+                      "description": "Relationships.",
+                      "items": {
+                        "$ref": "#/components/schemas/RevenueRelationship"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Relationships."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List relationships",
+        "tags": ["Revenue"]
+      },
+      "post": {
+        "description": "Records a relationship in the caller's workspace.",
+        "operationId": "createRevenueRelationship",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "displayName": "Jordan Buyer",
+                "kind": "person",
+                "primaryEmail": "buyer@example.com"
+              },
+              "schema": {
+                "description": "Create request.",
+                "properties": {
+                  "accountDomain": {
+                    "description": "Account domain.",
+                    "example": "example.com",
+                    "type": "string"
+                  },
+                  "displayName": {
+                    "description": "Display name.",
+                    "example": "Jordan Buyer",
+                    "type": "string"
+                  },
+                  "kind": {
+                    "description": "Relationship kind.",
+                    "enum": ["person", "company", "customer", "opportunity", "referral", "partner"],
+                    "example": "person",
+                    "type": "string"
+                  },
+                  "primaryEmail": {
+                    "description": "Primary email.",
+                    "example": "buyer@example.com",
+                    "type": "string"
+                  },
+                  "summary": {
+                    "description": "Summary.",
+                    "example": "Warm lead from the April demo.",
+                    "type": "string"
+                  }
+                },
+                "required": ["kind", "displayName"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Relationship.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueRelationship"
+                }
+              }
+            },
+            "description": "Created relationship."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Create a relationship",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/relationships/{relationshipId}": {
+      "get": {
+        "description": "Returns one relationship with its commitments and actions.",
+        "operationId": "getRevenueRelationship",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Relationship detail.",
+                  "properties": {
+                    "actions": {
+                      "description": "Actions for this relationship.",
+                      "items": {
+                        "$ref": "#/components/schemas/RevenueAction"
+                      },
+                      "type": "array"
+                    },
+                    "relationship": {
+                      "$ref": "#/components/schemas/RevenueRelationship"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Relationship detail."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get a relationship",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions": {
+      "get": {
+        "description": "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.",
+        "operationId": "listRevenueActions",
+        "parameters": [
+          {
+            "description": "Queue status filter, or all.",
+            "in": "query",
+            "name": "queueStatus",
+            "required": false,
+            "schema": {
+              "enum": ["open", "snoozed", "dismissed", "handled", "all"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size (max 100, default 10).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Action list.",
+                  "properties": {
+                    "actions": {
+                      "description": "Actions.",
+                      "items": {
+                        "$ref": "#/components/schemas/RevenueAction"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Queue page."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List the action queue",
+        "tags": ["Revenue"]
+      },
+      "post": {
+        "description": "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.",
+        "operationId": "createRevenueAction",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Create request.",
+                "properties": {
+                  "actionType": {
+                    "description": "Action type.",
+                    "enum": [
+                      "warm_follow_up",
+                      "proposal_nudge",
+                      "referral_reconnect",
+                      "customer_risk",
+                      "meeting_follow_up"
+                    ],
+                    "example": "warm_follow_up",
+                    "type": "string"
+                  },
+                  "channel": {
+                    "description": "Delivery channel.",
+                    "enum": ["email", "slack", "call", "crm_task"],
+                    "example": "email",
+                    "type": "string"
+                  },
+                  "dueAt": {
+                    "description": "Due time.",
+                    "example": "2026-07-15T00:00:00Z",
+                    "format": "date-time",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "executionMode": {
+                    "description": "Execution mode.",
+                    "enum": ["draft", "send"],
+                    "example": "draft",
+                    "type": "string"
+                  },
+                  "priorityComponents": {
+                    "additionalProperties": true,
+                    "description": "Per-component priority breakdown.",
+                    "type": "object"
+                  },
+                  "priorityScore": {
+                    "description": "Priority (0-100).",
+                    "example": 80,
+                    "type": "integer"
+                  },
+                  "proposedMessage": {
+                    "description": "Proposed body.",
+                    "example": "Hi Jordan — circling back as promised...",
+                    "type": "string"
+                  },
+                  "proposedSubject": {
+                    "description": "Proposed subject.",
+                    "example": "Following up as promised",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "description": "Evidence-backed reason.",
+                    "example": "They asked for a follow-up in July.",
+                    "type": "string"
+                  },
+                  "recipientEmail": {
+                    "description": "Recipient email.",
+                    "example": "buyer@example.com",
+                    "type": "string"
+                  },
+                  "relationshipId": {
+                    "description": "Owning relationship id.",
+                    "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "senderAccountRef": {
+                    "description": "Sender account reference.",
+                    "example": "gmail:me@company.com",
+                    "type": "string"
+                  }
+                },
+                "required": ["relationshipId", "actionType", "channel", "reason"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Action.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueAction"
+                }
+              }
+            },
+            "description": "Created action."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Create a manual action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}": {
+      "get": {
+        "description": "Returns one action with relationship context.",
+        "operationId": "getRevenueAction",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueAction"
+                }
+              }
+            },
+            "description": "Action."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}/approve": {
+      "post": {
+        "description": "Approves the current revision. Send-mode actions require a passed (or explicitly risk-accepted review_required) unexpired decision bound to the exact revision; blocked actions can never be approved.",
+        "operationId": "approveRevenueAction",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "acceptRisk": false
+              },
+              "schema": {
+                "description": "Approve request.",
+                "properties": {
+                  "acceptRisk": {
+                    "description": "Explicitly accept a review_required decision.",
+                    "example": false,
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "description": "Approval options.",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueAction"
+                }
+              }
+            },
+            "description": "Approved action."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "blocked",
+                  "detail": "action is blocked by policy",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/blocked"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Invariant violation: blocked, no decision, expired decision, or review required."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Approve an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}/audit": {
+      "get": {
+        "description": "Returns the full observe, decision, approval, execution, and outcome chain for one action.",
+        "operationId": "getRevenueActionAudit",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Audit chain.",
+                  "properties": {
+                    "action": {
+                      "$ref": "#/components/schemas/RevenueAction"
+                    },
+                    "decisions": {
+                      "description": "Policy decision snapshots.",
+                      "items": {
+                        "$ref": "#/components/schemas/RevenuePolicyDecision"
+                      },
+                      "type": "array"
+                    },
+                    "outcomes": {
+                      "description": "Observed outcomes.",
+                      "items": {
+                        "$ref": "#/components/schemas/RevenueOutcome"
+                      },
+                      "type": "array"
+                    },
+                    "revisions": {
+                      "description": "Immutable revision snapshots.",
+                      "items": {
+                        "additionalProperties": true,
+                        "description": "Revision snapshot.",
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Audit chain."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get the audit chain",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}/dismiss": {
+      "post": {
+        "description": "Dismisses the action with a reason label and records the dismissed outcome.",
+        "operationId": "dismissRevenueAction",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "reason": "already_handled"
+              },
+              "schema": {
+                "description": "Dismiss request.",
+                "properties": {
+                  "reason": {
+                    "description": "Reason label.",
+                    "example": "already_handled",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "description": "Dismissal reason.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueAction"
+                }
+              }
+            },
+            "description": "Dismissed action."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Dismiss an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}/edit": {
+      "post": {
+        "description": "Creates a new revision and invalidates the previous policy decision and approval. Editing is refused once execution has started.",
+        "operationId": "editRevenueAction",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Edit request.",
+                "properties": {
+                  "actionType": {
+                    "description": "Action type.",
+                    "example": "warm_follow_up",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "channel": {
+                    "description": "Channel.",
+                    "example": "email",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "executionMode": {
+                    "description": "Execution mode.",
+                    "example": "draft",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "proposedMessage": {
+                    "description": "Proposed body.",
+                    "example": "Updated body",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "proposedSubject": {
+                    "description": "Proposed subject.",
+                    "example": "Updated subject",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "reason": {
+                    "description": "Reason.",
+                    "example": "Updated context.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "recipientEmail": {
+                    "description": "Recipient email.",
+                    "example": "buyer@example.com",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "senderAccountRef": {
+                    "description": "Sender account reference.",
+                    "example": "gmail:me@company.com",
+                    "nullable": true,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "description": "Fields to change; omitted fields keep their value.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueAction"
+                }
+              }
+            },
+            "description": "Action at its new revision."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "not_editable",
+                  "detail": "execution already started; the action is immutable",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/not_editable"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Execution already started; the action is immutable."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Edit an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}/evaluate": {
+      "post": {
+        "description": "Requests or retries the OutboundConsole preflight for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).",
+        "operationId": "evaluateRevenueAction",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenuePolicyDecision"
+                }
+              }
+            },
+            "description": "Decision snapshot."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "facade_unavailable",
+                  "detail": "policy preflight unavailable; the action stays pending",
+                  "requestId": "req-abc123",
+                  "status": 503,
+                  "title": "Service Unavailable",
+                  "type": "https://api.rowboat.dev/problems/facade_unavailable"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Policy facade unavailable; the action stays pending."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Request policy preflight",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}/execute": {
+      "post": {
+        "description": "Executes the approved current revision exactly once through the assigned execution owner, with an idempotency key derived from the action and revision. A duplicate execute returns the existing result. A lost provider result is marked ambiguous and never automatically resent.",
+        "operationId": "executeRevenueAction",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueAction"
+                }
+              }
+            },
+            "description": "Action after execution."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "not_approved",
+                  "detail": "action is not approved for its current revision",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/not_approved"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Invariant violation: not approved, blocked, expired decision, or workspace not linked for sends."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Execute an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}/outcomes": {
+      "post": {
+        "description": "Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.",
+        "operationId": "recordRevenueActionOutcome",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "kind": "replied",
+                "source": "gmail",
+                "sourceEventId": "msg_01"
+              },
+              "schema": {
+                "description": "Outcome request.",
+                "properties": {
+                  "kind": {
+                    "description": "Outcome kind.",
+                    "enum": [
+                      "sent",
+                      "delivered",
+                      "bounced",
+                      "replied",
+                      "meeting_booked",
+                      "won",
+                      "lost",
+                      "dismissed",
+                      "bad_recommendation"
+                    ],
+                    "example": "replied",
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "additionalProperties": true,
+                    "description": "Bounded metadata.",
+                    "type": "object"
+                  },
+                  "occurredAt": {
+                    "description": "When the outcome occurred.",
+                    "example": "2026-07-12T14:00:00Z",
+                    "format": "date-time",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "source": {
+                    "description": "Observing source.",
+                    "enum": ["gmail", "calendar", "crm", "user", "outbound"],
+                    "example": "gmail",
+                    "type": "string"
+                  },
+                  "sourceEventId": {
+                    "description": "Source event id for deduplication.",
+                    "example": "msg_01",
+                    "type": "string"
+                  }
+                },
+                "required": ["kind", "source", "sourceEventId"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Outcome.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueOutcome"
+                }
+              }
+            },
+            "description": "Recorded outcome."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Record an outcome",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}/reject": {
+      "post": {
+        "description": "Rejects the current revision with a reason.",
+        "operationId": "rejectRevenueAction",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "reason": "wrong_recipient"
+              },
+              "schema": {
+                "description": "Reject request.",
+                "properties": {
+                  "reason": {
+                    "description": "Reason.",
+                    "example": "wrong_recipient",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "description": "Rejection reason.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueAction"
+                }
+              }
+            },
+            "description": "Rejected action."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Reject an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-actions/{actionId}/snooze": {
+      "post": {
+        "description": "Parks the action until a bounded future timestamp (at most 90 days).",
+        "operationId": "snoozeRevenueAction",
+        "parameters": [
+          {
+            "description": "Action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "until": "2026-07-20T09:00:00Z"
+              },
+              "schema": {
+                "description": "Snooze request.",
+                "properties": {
+                  "until": {
+                    "description": "Wake time.",
+                    "example": "2026-07-20T09:00:00Z",
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                },
+                "required": ["until"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Wake time.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueAction"
+                }
+              }
+            },
+            "description": "Snoozed action."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Snooze an action",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-workspaces/current": {
+      "get": {
+        "description": "Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.",
+        "operationId": "getRevenueWorkspace",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueWorkspace"
+                }
+              }
+            },
+            "description": "Current workspace."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get current revenue workspace",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-workspaces/link": {
+      "post": {
+        "description": "Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.",
+        "operationId": "linkRevenueWorkspace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "outboundOrganizationId": "org_01ABC",
+                "outboundWorkspaceId": "ws_01ABC"
+              },
+              "schema": {
+                "description": "Link request.",
+                "properties": {
+                  "outboundOrganizationId": {
+                    "description": "OutboundConsole organization id.",
+                    "example": "org_01ABC",
+                    "type": "string"
+                  },
+                  "outboundWorkspaceId": {
+                    "description": "OutboundConsole workspace id.",
+                    "example": "ws_01ABC",
+                    "type": "string"
+                  }
+                },
+                "required": ["outboundWorkspaceId"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "OutboundConsole identifiers.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueWorkspace"
+                }
+              }
+            },
+            "description": "Linked workspace."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "facade_unavailable",
+                  "detail": "policy preflight unavailable; the action stays pending",
+                  "requestId": "req-abc123",
+                  "status": 503,
+                  "title": "Service Unavailable",
+                  "type": "https://api.rowboat.dev/problems/facade_unavailable"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Policy facade unavailable; the link fails closed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Link the OutboundConsole workspace",
+        "tags": ["Revenue"]
+      }
+    },
     "/v1/search/exa": {
       "post": {
         "description": "Credit-gated Exa /search proxy. The request body is forwarded unchanged and the upstream JSON response is returned unchanged.",
@@ -9871,6 +12225,10 @@
     {
       "description": "Shared-secret webhooks from OAuth infrastructure.",
       "name": "Webhooks"
+    },
+    {
+      "description": "Revenue Action Queue: relationships, evidence-backed actions, OutboundConsole policy preflight, approval, and governed execution (RFC 030). Mounted only when REVENUE_ENABLED is true.",
+      "name": "Revenue"
     },
     {
       "description": "Server-to-server APIs guarded by X-Internal-Secret.",
