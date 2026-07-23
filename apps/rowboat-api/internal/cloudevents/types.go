@@ -63,6 +63,7 @@ type IngestRequest struct {
 	Source          string          `json:"source"`
 	SourceEventID   string          `json:"sourceEventId,omitempty"`
 	SourceAccountID string          `json:"sourceAccountId,omitempty"`
+	CorrelationID   string          `json:"correlationId,omitempty"`
 	EventType       string          `json:"eventType,omitempty"`
 	Subject         string          `json:"subject,omitempty"`
 	Text            string          `json:"text,omitempty"`

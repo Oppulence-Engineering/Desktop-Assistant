@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/actions"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentsessions"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentstream"
@@ -237,6 +238,23 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 
 		w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{})
 
+		// RFC 023 broker, shared by the propose-only runtime tool and the
+		// cloud-event Watch leg. Nil when actions are disabled. No executor is
+		// wired in the worker: it only proposes and closes loops; brokered
+		// execution happens in the API server.
+		var actionBroker *actions.Broker
+		if cfg.ActionsEnabled {
+			if signer, serr := actions.NewSigner(cfg.AgentSigningSecret()); serr != nil {
+				log.Warn("actions enabled but signer unavailable; RFC 023 worker features disabled", zap.Error(serr))
+			} else {
+				actionBroker = actions.NewBroker(client, signer, nil, actions.Config{
+					TokenTTL:                  cfg.ActionTokenTTL,
+					WatchTimeout:              cfg.ActionWatchTimeout,
+					RequireStepUpForFinancial: cfg.ActionRequireStepUpForFinancial,
+				}, log)
+			}
+		}
+
 		activities := &backgroundtaskworkflow.Activities{Client: client, Log: log}
 		if cfg.CloudRuntimeEnabled && deps != nil {
 			activities.Runtime = backgroundtaskruntime.NewDefault()
@@ -273,6 +291,13 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 				MaxScriptBytes: cfg.CloudRuntimeSandboxMaxScriptBytes,
 				MaxOutputBytes: cfg.CloudRuntimeSandboxMaxOutputBytes,
 			}
+			// RFC 023: expose the propose-only action tool when actions are
+			// enabled. The model can only propose; approval + brokered execution
+			// happen in the API server.
+			if actionBroker != nil {
+				activities.ActionProposer = backgroundtaskworkflow.NewActionProposer(actionBroker, client)
+				log.Info("closed-loop action proposing enabled (RFC 023)")
+			}
 			log.Info("cloud agent runtime enabled",
 				zap.String("model", cfg.CloudRuntimeModel),
 				zap.Duration("max_duration", cfg.CloudRuntimeMaxDuration),
@@ -304,14 +329,20 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		})
 
 		if cfg.CloudEventsRoutingEnabled && deps != nil {
-			cloudevents.Register(w, &cloudevents.Activities{Router: &cloudevents.Router{
+			router := &cloudevents.Router{
 				Client:    client,
 				LLM:       deps.LLM,
 				Starter:   starter,
 				Threshold: cfg.CloudEventsMatchThreshold,
 				Model:     cfg.CloudEventsRouterModel,
 				Log:       log,
-			}, Log: log})
+			}
+			// RFC 023 Watch leg: close the loop on product Act-seam return events.
+			if actionBroker != nil {
+				router.Watcher = actionWatcherAdapter{broker: actionBroker}
+				log.Info("closed-loop action watch enabled (RFC 023)")
+			}
+			cloudevents.Register(w, &cloudevents.Activities{Router: router, Log: log})
 			log.Info("cloud event route workflow registered",
 				zap.String("model", cfg.CloudEventsRouterModel),
 				zap.Float64("threshold", cfg.CloudEventsMatchThreshold))

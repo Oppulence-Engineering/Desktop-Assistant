@@ -164,6 +164,8 @@ type ActionProposal implements Node {
   executedAt: Time
   reason: String
   resultRef: String
+  returnEventID: String
+  resolvedAt: Time
   user: User!
 }
 """
@@ -407,6 +409,37 @@ input ActionProposalWhereInput {
   resultRefNotNil: Boolean
   resultRefEqualFold: String
   resultRefContainsFold: String
+  """
+  return_event_id field predicates
+  """
+  returnEventID: String
+  returnEventIDNEQ: String
+  returnEventIDIn: [String!]
+  returnEventIDNotIn: [String!]
+  returnEventIDGT: String
+  returnEventIDGTE: String
+  returnEventIDLT: String
+  returnEventIDLTE: String
+  returnEventIDContains: String
+  returnEventIDHasPrefix: String
+  returnEventIDHasSuffix: String
+  returnEventIDIsNil: Boolean
+  returnEventIDNotNil: Boolean
+  returnEventIDEqualFold: String
+  returnEventIDContainsFold: String
+  """
+  resolved_at field predicates
+  """
+  resolvedAt: Time
+  resolvedAtNEQ: Time
+  resolvedAtIn: [Time!]
+  resolvedAtNotIn: [Time!]
+  resolvedAtGT: Time
+  resolvedAtGTE: Time
+  resolvedAtLT: Time
+  resolvedAtLTE: Time
+  resolvedAtIsNil: Boolean
+  resolvedAtNotNil: Boolean
   """
   user edge predicates
   """
@@ -4413,6 +4446,7 @@ type CloudEvent implements Node {
   source: String!
   sourceEventID: String
   sourceAccountID: String
+  correlationID: String
   eventType: String
   subject: String
   text: String
@@ -4549,6 +4583,24 @@ input CloudEventWhereInput {
   sourceAccountIDNotNil: Boolean
   sourceAccountIDEqualFold: String
   sourceAccountIDContainsFold: String
+  """
+  correlation_id field predicates
+  """
+  correlationID: String
+  correlationIDNEQ: String
+  correlationIDIn: [String!]
+  correlationIDNotIn: [String!]
+  correlationIDGT: String
+  correlationIDGTE: String
+  correlationIDLT: String
+  correlationIDLTE: String
+  correlationIDContains: String
+  correlationIDHasPrefix: String
+  correlationIDHasSuffix: String
+  correlationIDIsNil: Boolean
+  correlationIDNotNil: Boolean
+  correlationIDEqualFold: String
+  correlationIDContainsFold: String
   """
   event_type field predicates
   """

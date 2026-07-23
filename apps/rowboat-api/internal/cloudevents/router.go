@@ -11,6 +11,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
@@ -53,6 +54,28 @@ type RunStarter interface {
 	Start(ctx context.Context, p backgroundtaskruns.Params) (*ent.BackgroundTaskRun, error)
 }
 
+// ActionWatchResult is what an ActionWatcher reports for a product return event.
+type ActionWatchResult struct {
+	Matched       bool   // a proposal for the event's correlation id exists
+	AlreadyClosed bool   // the loop was already closed (duplicate return event)
+	OriginRunID   string // run whose objective produced the proposal (may be "")
+	Kind          string
+	Target        string
+	ResultRef     string
+}
+
+// ActionWatcher closes the RFC 023 loop: it correlates a product Act-seam
+// return CloudEvent to the executed ActionProposal that produced it and marks
+// the loop resolved. The router owns the actual live-note re-trigger (it holds
+// the run starter). Implemented by the actions broker via an adapter so this
+// package does not depend on internal/actions.
+type ActionWatcher interface {
+	CorrelateReturn(ctx context.Context, owner *ent.User, ev *ent.CloudEvent) (ActionWatchResult, error)
+	// IsProductSource reports whether a CloudEvent source is a product return
+	// source (so ordinary inbound events skip the Watch path entirely).
+	IsProductSource(source string) bool
+}
+
 // Router matches one stored CloudEvent against the owner's API-target tasks
 // (two-pass LLM decision, desktop parity) and fires trigger=event runs. It is
 // plain Go with no Temporal dependency: the workflow activity calls Route, and
@@ -65,6 +88,10 @@ type Router struct {
 	Model            string  // routing model
 	MaxEligibleTasks int     // 0 → defaultMaxEligibleTasks
 	Log              *zap.Logger
+
+	// Watcher closes the RFC 023 loop for product Act-seam return events. Nil
+	// when ACTIONS_ENABLED is off — product return events then route normally.
+	Watcher ActionWatcher
 }
 
 // terminalRouteError marks failures that must not be retried (the event row
@@ -103,6 +130,13 @@ func (r *Router) Route(ctx context.Context, eventID uuid.UUID) error {
 	owner, err := ev.QueryUser().Only(ctx)
 	if err != nil {
 		return fmt.Errorf("load event owner: %w", err)
+	}
+
+	// RFC 023 Watch leg: a product Act-seam return event closes the loop on the
+	// proposal that produced it and re-triggers the originating live-note,
+	// instead of going through generic task matching.
+	if r.Watcher != nil && r.Watcher.IsProductSource(ev.Source) {
+		return r.watch(ctx, ev, owner, log)
 	}
 
 	targets, capped, err := r.eligibleTargets(ctx, owner.ID)
@@ -314,6 +348,85 @@ func (r *Router) pass2(ctx context.Context, ev *ent.CloudEvent, t eligibleTask, 
 }
 
 // finish marks the event routed and stores the decision summary.
+// watch handles a product Act-seam return event (RFC 023 WP4): it closes the
+// loop on the correlated proposal and re-triggers the originating task's run so
+// the live-note updates with the result. Correlation failures leave the event
+// routed (a return event that matches no live proposal is not an error).
+func (r *Router) watch(ctx context.Context, ev *ent.CloudEvent, owner *ent.User, log *zap.Logger) error {
+	summary := routingJSON{}
+	res, err := r.Watcher.CorrelateReturn(ctx, owner, ev)
+	if err != nil {
+		// Transient DB error — leave pending and let the workflow retry.
+		return fmt.Errorf("watch correlate return: %w", err)
+	}
+	if !res.Matched {
+		summary.Error = "no matching proposal for correlation id"
+		metricRouteMatches.WithLabelValues("watch_unmatched").Inc()
+		return r.finish(ctx, ev, summary, nil)
+	}
+	if res.AlreadyClosed {
+		// Duplicate at-least-once return event: idempotent no-op.
+		metricRouteMatches.WithLabelValues("watch_duplicate").Inc()
+		return r.finish(ctx, ev, summary, nil)
+	}
+	metricRouteMatches.WithLabelValues("watch_closed").Inc()
+
+	var fired []*ent.BackgroundTaskRun
+	if res.OriginRunID != "" {
+		run, rerr := r.reTriggerOrigin(ctx, ev, owner, res, log)
+		if rerr != nil {
+			// The loop is already recorded closed; a re-trigger failure must not
+			// undo that or fail the event. Surface it in the summary.
+			summary.Error = "re-trigger failed: " + truncate(rerr.Error(), 160)
+			metricRouteFailures.WithLabelValues("watch_retrigger").Inc()
+			log.Error("action-return re-trigger failed",
+				zap.String("eventId", ev.ID.String()), zap.String("originRunId", res.OriginRunID), zap.Error(rerr))
+		} else if run != nil {
+			fired = append(fired, run)
+			metricTriggeredRuns.WithLabelValues(ev.Source).Inc()
+		}
+	}
+	return r.finish(ctx, ev, summary, fired)
+}
+
+// reTriggerOrigin resolves the originating run's task and starts a new run with
+// the return event as context, so the objective (live-note) advances.
+func (r *Router) reTriggerOrigin(ctx context.Context, ev *ent.CloudEvent, owner *ent.User, res ActionWatchResult, _ *zap.Logger) (*ent.BackgroundTaskRun, error) {
+	origin, err := r.Client.BackgroundTaskRun.Query().
+		Where(
+			backgroundtaskrun.RunIDEQ(res.OriginRunID),
+			backgroundtaskrun.HasUserWith(user.IDEQ(owner.ID)),
+		).
+		WithTask().
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load origin run: %w", err)
+	}
+	task := origin.Edges.Task
+	if task == nil {
+		return nil, fmt.Errorf("origin run %s has no task", res.OriginRunID)
+	}
+	return r.Starter.Start(ctx, backgroundtaskruns.Params{
+		User:             owner,
+		Task:             task,
+		Trigger:          "action-return",
+		RunIDPrefix:      "action-return-",
+		RequestedContext: actionReturnContext(res),
+		CloudEventID:     &ev.ID,
+		QueuedMessage:    "Queued from action return event (RFC 023 loop close).",
+		Source:           backgroundtaskruns.SourceEvent,
+	})
+}
+
+// actionReturnContext renders the objective context for a re-triggered run.
+func actionReturnContext(res ActionWatchResult) string {
+	ctx := fmt.Sprintf("The action %q on %q completed", res.Kind, res.Target)
+	if res.ResultRef != "" {
+		ctx += fmt.Sprintf(" (result: %s)", res.ResultRef)
+	}
+	return ctx + ". Review the product's return event and update the thread accordingly."
+}
+
 func (r *Router) finish(ctx context.Context, ev *ent.CloudEvent, summary routingJSON, fired []*ent.BackgroundTaskRun) error {
 	raw, err := json.Marshal(summary)
 	if err != nil {

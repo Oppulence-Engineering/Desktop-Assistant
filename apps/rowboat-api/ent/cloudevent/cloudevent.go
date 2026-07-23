@@ -25,6 +25,8 @@ const (
 	FieldSourceEventID = "source_event_id"
 	// FieldSourceAccountID holds the string denoting the source_account_id field in the database.
 	FieldSourceAccountID = "source_account_id"
+	// FieldCorrelationID holds the string denoting the correlation_id field in the database.
+	FieldCorrelationID = "correlation_id"
 	// FieldEventType holds the string denoting the event_type field in the database.
 	FieldEventType = "event_type"
 	// FieldSubject holds the string denoting the subject field in the database.
@@ -77,6 +79,7 @@ var Columns = []string{
 	FieldSource,
 	FieldSourceEventID,
 	FieldSourceAccountID,
+	FieldCorrelationID,
 	FieldEventType,
 	FieldSubject,
 	FieldText,
@@ -167,6 +170,11 @@ func BySourceEventID(opts ...sql.OrderTermOption) OrderOption {
 // BySourceAccountID orders the results by the source_account_id field.
 func BySourceAccountID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSourceAccountID, opts...).ToFunc()
+}
+
+// ByCorrelationID orders the results by the correlation_id field.
+func ByCorrelationID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCorrelationID, opts...).ToFunc()
 }
 
 // ByEventType orders the results by the event_type field.

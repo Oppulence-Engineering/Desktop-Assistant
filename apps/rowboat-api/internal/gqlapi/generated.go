@@ -68,7 +68,9 @@ type ComplexityRoot struct {
 		OriginRunID   func(childComplexity int) int
 		ParamsJSON    func(childComplexity int) int
 		Reason        func(childComplexity int) int
+		ResolvedAt    func(childComplexity int) int
 		ResultRef     func(childComplexity int) int
+		ReturnEventID func(childComplexity int) int
 		Status        func(childComplexity int) int
 		Target        func(childComplexity int) int
 		UpdatedAt     func(childComplexity int) int
@@ -452,6 +454,7 @@ type ComplexityRoot struct {
 	}
 
 	CloudEvent struct {
+		CorrelationID    func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		DedupeKey        func(childComplexity int) int
 		EventType        func(childComplexity int) int
@@ -1116,12 +1119,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ActionProposal.Reason(childComplexity), true
+	case "ActionProposal.resolvedAt":
+		if e.ComplexityRoot.ActionProposal.ResolvedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ActionProposal.ResolvedAt(childComplexity), true
 	case "ActionProposal.resultRef":
 		if e.ComplexityRoot.ActionProposal.ResultRef == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ActionProposal.ResultRef(childComplexity), true
+	case "ActionProposal.returnEventID":
+		if e.ComplexityRoot.ActionProposal.ReturnEventID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ActionProposal.ReturnEventID(childComplexity), true
 	case "ActionProposal.status":
 		if e.ComplexityRoot.ActionProposal.Status == nil {
 			break
@@ -2944,6 +2959,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.BillingSubscriptionEdge.Node(childComplexity), true
 
+	case "CloudEvent.correlationID":
+		if e.ComplexityRoot.CloudEvent.CorrelationID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CloudEvent.CorrelationID(childComplexity), true
 	case "CloudEvent.createdAt":
 		if e.ComplexityRoot.CloudEvent.CreatedAt == nil {
 			break
@@ -5575,6 +5596,10 @@ func (ec *executionContext) childFields_ActionProposal(ctx context.Context, fiel
 		return ec.fieldContext_ActionProposal_reason(ctx, field)
 	case "resultRef":
 		return ec.fieldContext_ActionProposal_resultRef(ctx, field)
+	case "returnEventID":
+		return ec.fieldContext_ActionProposal_returnEventID(ctx, field)
+	case "resolvedAt":
+		return ec.fieldContext_ActionProposal_resolvedAt(ctx, field)
 	case "user":
 		return ec.fieldContext_ActionProposal_user(ctx, field)
 	}
@@ -6289,6 +6314,8 @@ func (ec *executionContext) childFields_CloudEvent(ctx context.Context, field gr
 		return ec.fieldContext_CloudEvent_sourceEventID(ctx, field)
 	case "sourceAccountID":
 		return ec.fieldContext_CloudEvent_sourceAccountID(ctx, field)
+	case "correlationID":
+		return ec.fieldContext_CloudEvent_correlationID(ctx, field)
 	case "eventType":
 		return ec.fieldContext_CloudEvent_eventType(ctx, field)
 	case "subject":
@@ -8589,6 +8616,52 @@ func (ec *executionContext) _ActionProposal_resultRef(ctx context.Context, field
 }
 func (ec *executionContext) fieldContext_ActionProposal_resultRef(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("ActionProposal", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ActionProposal_returnEventID(ctx context.Context, field graphql.CollectedField, obj *ent.ActionProposal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ActionProposal_returnEventID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ReturnEventID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ActionProposal_returnEventID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ActionProposal", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ActionProposal_resolvedAt(ctx context.Context, field graphql.CollectedField, obj *ent.ActionProposal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ActionProposal_resolvedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ResolvedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ActionProposal_resolvedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ActionProposal", field, false, false, errors.New("field of type Time does not have child fields"))
 }
 
 func (ec *executionContext) _ActionProposal_user(ctx context.Context, field graphql.CollectedField, obj *ent.ActionProposal) (ret graphql.Marshaler) {
@@ -16020,6 +16093,29 @@ func (ec *executionContext) _CloudEvent_sourceAccountID(ctx context.Context, fie
 	)
 }
 func (ec *executionContext) fieldContext_CloudEvent_sourceAccountID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CloudEvent", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _CloudEvent_correlationID(ctx context.Context, field graphql.CollectedField, obj *ent.CloudEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CloudEvent_correlationID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CorrelationID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_CloudEvent_correlationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("CloudEvent", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -27970,7 +28066,7 @@ func (ec *executionContext) unmarshalInputActionProposalWhereInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "target", "targetNEQ", "targetIn", "targetNotIn", "targetGT", "targetGTE", "targetLT", "targetLTE", "targetContains", "targetHasPrefix", "targetHasSuffix", "targetEqualFold", "targetContainsFold", "kind", "kindNEQ", "kindIn", "kindNotIn", "kindGT", "kindGTE", "kindLT", "kindLTE", "kindContains", "kindHasPrefix", "kindHasSuffix", "kindEqualFold", "kindContainsFold", "paramsJSON", "paramsJSONNEQ", "paramsJSONIn", "paramsJSONNotIn", "paramsJSONGT", "paramsJSONGTE", "paramsJSONLT", "paramsJSONLTE", "paramsJSONContains", "paramsJSONHasPrefix", "paramsJSONHasSuffix", "paramsJSONIsNil", "paramsJSONNotNil", "paramsJSONEqualFold", "paramsJSONContainsFold", "financial", "financialNEQ", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "correlationID", "correlationIDNEQ", "correlationIDIn", "correlationIDNotIn", "correlationIDGT", "correlationIDGTE", "correlationIDLT", "correlationIDLTE", "correlationIDContains", "correlationIDHasPrefix", "correlationIDHasSuffix", "correlationIDIsNil", "correlationIDNotNil", "correlationIDEqualFold", "correlationIDContainsFold", "entityID", "entityIDNEQ", "entityIDIn", "entityIDNotIn", "entityIDGT", "entityIDGTE", "entityIDLT", "entityIDLTE", "entityIDContains", "entityIDHasPrefix", "entityIDHasSuffix", "entityIDIsNil", "entityIDNotNil", "entityIDEqualFold", "entityIDContainsFold", "originRunID", "originRunIDNEQ", "originRunIDIn", "originRunIDNotIn", "originRunIDGT", "originRunIDGTE", "originRunIDLT", "originRunIDLTE", "originRunIDContains", "originRunIDHasPrefix", "originRunIDHasSuffix", "originRunIDIsNil", "originRunIDNotNil", "originRunIDEqualFold", "originRunIDContainsFold", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "approvedAt", "approvedAtNEQ", "approvedAtIn", "approvedAtNotIn", "approvedAtGT", "approvedAtGTE", "approvedAtLT", "approvedAtLTE", "approvedAtIsNil", "approvedAtNotNil", "executedAt", "executedAtNEQ", "executedAtIn", "executedAtNotIn", "executedAtGT", "executedAtGTE", "executedAtLT", "executedAtLTE", "executedAtIsNil", "executedAtNotNil", "reason", "reasonNEQ", "reasonIn", "reasonNotIn", "reasonGT", "reasonGTE", "reasonLT", "reasonLTE", "reasonContains", "reasonHasPrefix", "reasonHasSuffix", "reasonIsNil", "reasonNotNil", "reasonEqualFold", "reasonContainsFold", "resultRef", "resultRefNEQ", "resultRefIn", "resultRefNotIn", "resultRefGT", "resultRefGTE", "resultRefLT", "resultRefLTE", "resultRefContains", "resultRefHasPrefix", "resultRefHasSuffix", "resultRefIsNil", "resultRefNotNil", "resultRefEqualFold", "resultRefContainsFold", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "target", "targetNEQ", "targetIn", "targetNotIn", "targetGT", "targetGTE", "targetLT", "targetLTE", "targetContains", "targetHasPrefix", "targetHasSuffix", "targetEqualFold", "targetContainsFold", "kind", "kindNEQ", "kindIn", "kindNotIn", "kindGT", "kindGTE", "kindLT", "kindLTE", "kindContains", "kindHasPrefix", "kindHasSuffix", "kindEqualFold", "kindContainsFold", "paramsJSON", "paramsJSONNEQ", "paramsJSONIn", "paramsJSONNotIn", "paramsJSONGT", "paramsJSONGTE", "paramsJSONLT", "paramsJSONLTE", "paramsJSONContains", "paramsJSONHasPrefix", "paramsJSONHasSuffix", "paramsJSONIsNil", "paramsJSONNotNil", "paramsJSONEqualFold", "paramsJSONContainsFold", "financial", "financialNEQ", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "correlationID", "correlationIDNEQ", "correlationIDIn", "correlationIDNotIn", "correlationIDGT", "correlationIDGTE", "correlationIDLT", "correlationIDLTE", "correlationIDContains", "correlationIDHasPrefix", "correlationIDHasSuffix", "correlationIDIsNil", "correlationIDNotNil", "correlationIDEqualFold", "correlationIDContainsFold", "entityID", "entityIDNEQ", "entityIDIn", "entityIDNotIn", "entityIDGT", "entityIDGTE", "entityIDLT", "entityIDLTE", "entityIDContains", "entityIDHasPrefix", "entityIDHasSuffix", "entityIDIsNil", "entityIDNotNil", "entityIDEqualFold", "entityIDContainsFold", "originRunID", "originRunIDNEQ", "originRunIDIn", "originRunIDNotIn", "originRunIDGT", "originRunIDGTE", "originRunIDLT", "originRunIDLTE", "originRunIDContains", "originRunIDHasPrefix", "originRunIDHasSuffix", "originRunIDIsNil", "originRunIDNotNil", "originRunIDEqualFold", "originRunIDContainsFold", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "approvedAt", "approvedAtNEQ", "approvedAtIn", "approvedAtNotIn", "approvedAtGT", "approvedAtGTE", "approvedAtLT", "approvedAtLTE", "approvedAtIsNil", "approvedAtNotNil", "executedAt", "executedAtNEQ", "executedAtIn", "executedAtNotIn", "executedAtGT", "executedAtGTE", "executedAtLT", "executedAtLTE", "executedAtIsNil", "executedAtNotNil", "reason", "reasonNEQ", "reasonIn", "reasonNotIn", "reasonGT", "reasonGTE", "reasonLT", "reasonLTE", "reasonContains", "reasonHasPrefix", "reasonHasSuffix", "reasonIsNil", "reasonNotNil", "reasonEqualFold", "reasonContainsFold", "resultRef", "resultRefNEQ", "resultRefIn", "resultRefNotIn", "resultRefGT", "resultRefGTE", "resultRefLT", "resultRefLTE", "resultRefContains", "resultRefHasPrefix", "resultRefHasSuffix", "resultRefIsNil", "resultRefNotNil", "resultRefEqualFold", "resultRefContainsFold", "returnEventID", "returnEventIDNEQ", "returnEventIDIn", "returnEventIDNotIn", "returnEventIDGT", "returnEventIDGTE", "returnEventIDLT", "returnEventIDLTE", "returnEventIDContains", "returnEventIDHasPrefix", "returnEventIDHasSuffix", "returnEventIDIsNil", "returnEventIDNotNil", "returnEventIDEqualFold", "returnEventIDContainsFold", "resolvedAt", "resolvedAtNEQ", "resolvedAtIn", "resolvedAtNotIn", "resolvedAtGT", "resolvedAtGTE", "resolvedAtLT", "resolvedAtLTE", "resolvedAtIsNil", "resolvedAtNotNil", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -29293,6 +29389,181 @@ func (ec *executionContext) unmarshalInputActionProposalWhereInput(ctx context.C
 				return it, err
 			}
 			it.ResultRefContainsFold = data
+		case "returnEventID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventID = data
+		case "returnEventIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDNEQ = data
+		case "returnEventIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDIn = data
+		case "returnEventIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDNotIn = data
+		case "returnEventIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDGT = data
+		case "returnEventIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDGTE = data
+		case "returnEventIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDLT = data
+		case "returnEventIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDLTE = data
+		case "returnEventIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDContains = data
+		case "returnEventIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDHasPrefix = data
+		case "returnEventIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDHasSuffix = data
+		case "returnEventIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDIsNil = data
+		case "returnEventIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDNotNil = data
+		case "returnEventIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDEqualFold = data
+		case "returnEventIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnEventIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnEventIDContainsFold = data
+		case "resolvedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolvedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolvedAt = data
+		case "resolvedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolvedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolvedAtNEQ = data
+		case "resolvedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolvedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolvedAtIn = data
+		case "resolvedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolvedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolvedAtNotIn = data
+		case "resolvedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolvedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolvedAtGT = data
+		case "resolvedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolvedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolvedAtGTE = data
+		case "resolvedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolvedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolvedAtLT = data
+		case "resolvedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolvedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolvedAtLTE = data
+		case "resolvedAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolvedAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolvedAtIsNil = data
+		case "resolvedAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolvedAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolvedAtNotNil = data
 		case "hasUser":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUser"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -48169,7 +48440,7 @@ func (ec *executionContext) unmarshalInputCloudEventWhereInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "source", "sourceNEQ", "sourceIn", "sourceNotIn", "sourceGT", "sourceGTE", "sourceLT", "sourceLTE", "sourceContains", "sourceHasPrefix", "sourceHasSuffix", "sourceEqualFold", "sourceContainsFold", "sourceEventID", "sourceEventIDNEQ", "sourceEventIDIn", "sourceEventIDNotIn", "sourceEventIDGT", "sourceEventIDGTE", "sourceEventIDLT", "sourceEventIDLTE", "sourceEventIDContains", "sourceEventIDHasPrefix", "sourceEventIDHasSuffix", "sourceEventIDIsNil", "sourceEventIDNotNil", "sourceEventIDEqualFold", "sourceEventIDContainsFold", "sourceAccountID", "sourceAccountIDNEQ", "sourceAccountIDIn", "sourceAccountIDNotIn", "sourceAccountIDGT", "sourceAccountIDGTE", "sourceAccountIDLT", "sourceAccountIDLTE", "sourceAccountIDContains", "sourceAccountIDHasPrefix", "sourceAccountIDHasSuffix", "sourceAccountIDIsNil", "sourceAccountIDNotNil", "sourceAccountIDEqualFold", "sourceAccountIDContainsFold", "eventType", "eventTypeNEQ", "eventTypeIn", "eventTypeNotIn", "eventTypeGT", "eventTypeGTE", "eventTypeLT", "eventTypeLTE", "eventTypeContains", "eventTypeHasPrefix", "eventTypeHasSuffix", "eventTypeIsNil", "eventTypeNotNil", "eventTypeEqualFold", "eventTypeContainsFold", "subject", "subjectNEQ", "subjectIn", "subjectNotIn", "subjectGT", "subjectGTE", "subjectLT", "subjectLTE", "subjectContains", "subjectHasPrefix", "subjectHasSuffix", "subjectIsNil", "subjectNotNil", "subjectEqualFold", "subjectContainsFold", "text", "textNEQ", "textIn", "textNotIn", "textGT", "textGTE", "textLT", "textLTE", "textContains", "textHasPrefix", "textHasSuffix", "textIsNil", "textNotNil", "textEqualFold", "textContainsFold", "routingJSON", "routingJSONNEQ", "routingJSONIn", "routingJSONNotIn", "routingJSONGT", "routingJSONGTE", "routingJSONLT", "routingJSONLTE", "routingJSONContains", "routingJSONHasPrefix", "routingJSONHasSuffix", "routingJSONIsNil", "routingJSONNotNil", "routingJSONEqualFold", "routingJSONContainsFold", "dedupeKey", "dedupeKeyNEQ", "dedupeKeyIn", "dedupeKeyNotIn", "dedupeKeyGT", "dedupeKeyGTE", "dedupeKeyLT", "dedupeKeyLTE", "dedupeKeyContains", "dedupeKeyHasPrefix", "dedupeKeyHasSuffix", "dedupeKeyEqualFold", "dedupeKeyContainsFold", "routingStatus", "routingStatusNEQ", "routingStatusIn", "routingStatusNotIn", "routingStatusGT", "routingStatusGTE", "routingStatusLT", "routingStatusLTE", "routingStatusContains", "routingStatusHasPrefix", "routingStatusHasSuffix", "routingStatusEqualFold", "routingStatusContainsFold", "matchedTaskCount", "matchedTaskCountNEQ", "matchedTaskCountIn", "matchedTaskCountNotIn", "matchedTaskCountGT", "matchedTaskCountGTE", "matchedTaskCountLT", "matchedTaskCountLTE", "occurredAt", "occurredAtNEQ", "occurredAtIn", "occurredAtNotIn", "occurredAtGT", "occurredAtGTE", "occurredAtLT", "occurredAtLTE", "occurredAtIsNil", "occurredAtNotNil", "receivedAt", "receivedAtNEQ", "receivedAtIn", "receivedAtNotIn", "receivedAtGT", "receivedAtGTE", "receivedAtLT", "receivedAtLTE", "routedAt", "routedAtNEQ", "routedAtIn", "routedAtNotIn", "routedAtGT", "routedAtGTE", "routedAtLT", "routedAtLTE", "routedAtIsNil", "routedAtNotNil", "hasUser", "hasUserWith", "hasRuns", "hasRunsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "source", "sourceNEQ", "sourceIn", "sourceNotIn", "sourceGT", "sourceGTE", "sourceLT", "sourceLTE", "sourceContains", "sourceHasPrefix", "sourceHasSuffix", "sourceEqualFold", "sourceContainsFold", "sourceEventID", "sourceEventIDNEQ", "sourceEventIDIn", "sourceEventIDNotIn", "sourceEventIDGT", "sourceEventIDGTE", "sourceEventIDLT", "sourceEventIDLTE", "sourceEventIDContains", "sourceEventIDHasPrefix", "sourceEventIDHasSuffix", "sourceEventIDIsNil", "sourceEventIDNotNil", "sourceEventIDEqualFold", "sourceEventIDContainsFold", "sourceAccountID", "sourceAccountIDNEQ", "sourceAccountIDIn", "sourceAccountIDNotIn", "sourceAccountIDGT", "sourceAccountIDGTE", "sourceAccountIDLT", "sourceAccountIDLTE", "sourceAccountIDContains", "sourceAccountIDHasPrefix", "sourceAccountIDHasSuffix", "sourceAccountIDIsNil", "sourceAccountIDNotNil", "sourceAccountIDEqualFold", "sourceAccountIDContainsFold", "correlationID", "correlationIDNEQ", "correlationIDIn", "correlationIDNotIn", "correlationIDGT", "correlationIDGTE", "correlationIDLT", "correlationIDLTE", "correlationIDContains", "correlationIDHasPrefix", "correlationIDHasSuffix", "correlationIDIsNil", "correlationIDNotNil", "correlationIDEqualFold", "correlationIDContainsFold", "eventType", "eventTypeNEQ", "eventTypeIn", "eventTypeNotIn", "eventTypeGT", "eventTypeGTE", "eventTypeLT", "eventTypeLTE", "eventTypeContains", "eventTypeHasPrefix", "eventTypeHasSuffix", "eventTypeIsNil", "eventTypeNotNil", "eventTypeEqualFold", "eventTypeContainsFold", "subject", "subjectNEQ", "subjectIn", "subjectNotIn", "subjectGT", "subjectGTE", "subjectLT", "subjectLTE", "subjectContains", "subjectHasPrefix", "subjectHasSuffix", "subjectIsNil", "subjectNotNil", "subjectEqualFold", "subjectContainsFold", "text", "textNEQ", "textIn", "textNotIn", "textGT", "textGTE", "textLT", "textLTE", "textContains", "textHasPrefix", "textHasSuffix", "textIsNil", "textNotNil", "textEqualFold", "textContainsFold", "routingJSON", "routingJSONNEQ", "routingJSONIn", "routingJSONNotIn", "routingJSONGT", "routingJSONGTE", "routingJSONLT", "routingJSONLTE", "routingJSONContains", "routingJSONHasPrefix", "routingJSONHasSuffix", "routingJSONIsNil", "routingJSONNotNil", "routingJSONEqualFold", "routingJSONContainsFold", "dedupeKey", "dedupeKeyNEQ", "dedupeKeyIn", "dedupeKeyNotIn", "dedupeKeyGT", "dedupeKeyGTE", "dedupeKeyLT", "dedupeKeyLTE", "dedupeKeyContains", "dedupeKeyHasPrefix", "dedupeKeyHasSuffix", "dedupeKeyEqualFold", "dedupeKeyContainsFold", "routingStatus", "routingStatusNEQ", "routingStatusIn", "routingStatusNotIn", "routingStatusGT", "routingStatusGTE", "routingStatusLT", "routingStatusLTE", "routingStatusContains", "routingStatusHasPrefix", "routingStatusHasSuffix", "routingStatusEqualFold", "routingStatusContainsFold", "matchedTaskCount", "matchedTaskCountNEQ", "matchedTaskCountIn", "matchedTaskCountNotIn", "matchedTaskCountGT", "matchedTaskCountGTE", "matchedTaskCountLT", "matchedTaskCountLTE", "occurredAt", "occurredAtNEQ", "occurredAtIn", "occurredAtNotIn", "occurredAtGT", "occurredAtGTE", "occurredAtLT", "occurredAtLTE", "occurredAtIsNil", "occurredAtNotNil", "receivedAt", "receivedAtNEQ", "receivedAtIn", "receivedAtNotIn", "receivedAtGT", "receivedAtGTE", "receivedAtLT", "receivedAtLTE", "routedAt", "routedAtNEQ", "routedAtIn", "routedAtNotIn", "routedAtGT", "routedAtGTE", "routedAtLT", "routedAtLTE", "routedAtIsNil", "routedAtNotNil", "hasUser", "hasUserWith", "hasRuns", "hasRunsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -48666,6 +48937,111 @@ func (ec *executionContext) unmarshalInputCloudEventWhereInput(ctx context.Conte
 				return it, err
 			}
 			it.SourceAccountIDContainsFold = data
+		case "correlationID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationID = data
+		case "correlationIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDNEQ = data
+		case "correlationIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDIn = data
+		case "correlationIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDNotIn = data
+		case "correlationIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDGT = data
+		case "correlationIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDGTE = data
+		case "correlationIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDLT = data
+		case "correlationIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDLTE = data
+		case "correlationIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDContains = data
+		case "correlationIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDHasPrefix = data
+		case "correlationIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDHasSuffix = data
+		case "correlationIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDIsNil = data
+		case "correlationIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDNotNil = data
+		case "correlationIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDEqualFold = data
+		case "correlationIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("correlationIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CorrelationIDContainsFold = data
 		case "eventType":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("eventType"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -69591,6 +69967,10 @@ func (ec *executionContext) _ActionProposal(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._ActionProposal_reason(ctx, field, obj)
 		case "resultRef":
 			out.Values[i] = ec._ActionProposal_resultRef(ctx, field, obj)
+		case "returnEventID":
+			out.Values[i] = ec._ActionProposal_returnEventID(ctx, field, obj)
+		case "resolvedAt":
+			out.Values[i] = ec._ActionProposal_resolvedAt(ctx, field, obj)
 		case "user":
 			field := field
 
@@ -72785,6 +73165,8 @@ func (ec *executionContext) _CloudEvent(ctx context.Context, sel ast.SelectionSe
 			out.Values[i] = ec._CloudEvent_sourceEventID(ctx, field, obj)
 		case "sourceAccountID":
 			out.Values[i] = ec._CloudEvent_sourceAccountID(ctx, field, obj)
+		case "correlationID":
+			out.Values[i] = ec._CloudEvent_correlationID(ctx, field, obj)
 		case "eventType":
 			out.Values[i] = ec._CloudEvent_eventType(ctx, field, obj)
 		case "subject":

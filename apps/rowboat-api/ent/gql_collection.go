@@ -285,6 +285,16 @@ func (_q *ActionProposalQuery) collectField(ctx context.Context, oneNode bool, o
 				selectedFields = append(selectedFields, actionproposal.FieldResultRef)
 				fieldSeen[actionproposal.FieldResultRef] = struct{}{}
 			}
+		case "returnEventID":
+			if _, ok := fieldSeen[actionproposal.FieldReturnEventID]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldReturnEventID)
+				fieldSeen[actionproposal.FieldReturnEventID] = struct{}{}
+			}
+		case "resolvedAt":
+			if _, ok := fieldSeen[actionproposal.FieldResolvedAt]; !ok {
+				selectedFields = append(selectedFields, actionproposal.FieldResolvedAt)
+				fieldSeen[actionproposal.FieldResolvedAt] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:
@@ -2694,6 +2704,11 @@ func (_q *CloudEventQuery) collectField(ctx context.Context, oneNode bool, opCtx
 			if _, ok := fieldSeen[cloudevent.FieldSourceAccountID]; !ok {
 				selectedFields = append(selectedFields, cloudevent.FieldSourceAccountID)
 				fieldSeen[cloudevent.FieldSourceAccountID] = struct{}{}
+			}
+		case "correlationID":
+			if _, ok := fieldSeen[cloudevent.FieldCorrelationID]; !ok {
+				selectedFields = append(selectedFields, cloudevent.FieldCorrelationID)
+				fieldSeen[cloudevent.FieldCorrelationID] = struct{}{}
 			}
 		case "eventType":
 			if _, ok := fieldSeen[cloudevent.FieldEventType]; !ok {

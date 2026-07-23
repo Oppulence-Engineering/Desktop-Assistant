@@ -75,6 +75,8 @@ var (
 		{Name: "executed_at", Type: field.TypeTime, Nullable: true},
 		{Name: "reason", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "result_ref", Type: field.TypeString, Nullable: true},
+		{Name: "return_event_id", Type: field.TypeString, Nullable: true},
+		{Name: "resolved_at", Type: field.TypeTime, Nullable: true},
 		{Name: "user_action_proposals", Type: field.TypeUUID},
 	}
 	// ActionProposalsTable holds the schema information for the "action_proposals" table.
@@ -85,7 +87,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "action_proposals_users_action_proposals",
-				Columns:    []*schema.Column{ActionProposalsColumns[17]},
+				Columns:    []*schema.Column{ActionProposalsColumns[19]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -829,6 +831,7 @@ var (
 		{Name: "source", Type: field.TypeString},
 		{Name: "source_event_id", Type: field.TypeString, Nullable: true},
 		{Name: "source_account_id", Type: field.TypeString, Nullable: true},
+		{Name: "correlation_id", Type: field.TypeString, Nullable: true},
 		{Name: "event_type", Type: field.TypeString, Nullable: true},
 		{Name: "subject", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "text", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -850,7 +853,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cloud_events_users_cloud_events",
-				Columns:    []*schema.Column{CloudEventsColumns[17]},
+				Columns:    []*schema.Column{CloudEventsColumns[18]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -859,17 +862,22 @@ var (
 			{
 				Name:    "cloudevent_source_dedupe_key_user_cloud_events",
 				Unique:  true,
-				Columns: []*schema.Column{CloudEventsColumns[3], CloudEventsColumns[11], CloudEventsColumns[17]},
+				Columns: []*schema.Column{CloudEventsColumns[3], CloudEventsColumns[12], CloudEventsColumns[18]},
 			},
 			{
 				Name:    "cloudevent_routing_status",
 				Unique:  false,
-				Columns: []*schema.Column{CloudEventsColumns[12]},
+				Columns: []*schema.Column{CloudEventsColumns[13]},
 			},
 			{
 				Name:    "cloudevent_received_at",
 				Unique:  false,
-				Columns: []*schema.Column{CloudEventsColumns[15]},
+				Columns: []*schema.Column{CloudEventsColumns[16]},
+			},
+			{
+				Name:    "cloudevent_correlation_id",
+				Unique:  false,
+				Columns: []*schema.Column{CloudEventsColumns[6]},
 			},
 		},
 	}
