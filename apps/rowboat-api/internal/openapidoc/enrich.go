@@ -62,7 +62,7 @@ func Enrich(spec obj) {
 		obj{"name": "Google OAuth", "description": "Browser and desktop handoff endpoints for Google OAuth tokens."},
 		obj{"name": "Connectors", "description": "Connector registry, OAuth start/callback, MCP token minting, and disconnect flows."},
 		obj{"name": "Webhooks", "description": "Shared-secret webhooks from OAuth infrastructure."},
-		obj{"name": "Revenue", "description": "Revenue Action Queue: relationships, evidence-backed actions, OutboundConsole policy preflight, approval, and governed execution (RFC 030). Mounted only when REVENUE_ENABLED is true."},
+		obj{"name": "Revenue", "description": "Revenue Action Queue: relationships, evidence-backed actions, OutboundConsole policy preflight, approval, and governed execution (RFC 030)."},
 		obj{"name": "Internal", "description": "Server-to-server APIs guarded by X-Internal-Secret."},
 		obj{"name": "GraphQL", "description": "Internal admin GraphQL over the ent graph."},
 	}

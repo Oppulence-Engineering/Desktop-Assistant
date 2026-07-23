@@ -364,32 +364,29 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		}
 	}
 
-	// Revenue memory and outbound governance (RFC 030). Ships dark behind
-	// REVENUE_ENABLED. Without a facade base URL the fail-closed disabled
-	// facade is used: observation and drafts work, preflight and sends don't.
-	var revenueH *revenue.Handler
-	if cfg.RevenueEnabled {
-		var facade revenue.FacadeClient
-		if cfg.RevenueFacadeBaseURL != "" {
-			facade = revenue.NewHTTPFacade(revenue.HTTPFacadeConfig{
-				BaseURL:      cfg.RevenueFacadeBaseURL,
-				ServiceToken: cfg.RevenueFacadeServiceToken,
-				Timeout:      cfg.RevenueFacadeTimeout,
-			})
-		}
-		// Gmail is the first execution owner (draft in the operator's own
-		// mailbox by default; sends stay gated behind approval + preflight).
-		gmailExec := revenue.NewGmailExecutor(client, sealer, sec, googleapi.New(googleapi.Config{
-			TokenURL:        cfg.GoogleTokenURL,
-			GmailBaseURL:    cfg.GmailAPIBaseURL,
-			CalendarBaseURL: cfg.CalendarAPIBaseURL,
-			DriveBaseURL:    cfg.DriveAPIBaseURL,
-		}))
-		revenueSvc := revenue.NewService(client, facade, gmailExec, log)
-		// The Gmail backend also feeds the leak scan (read-only sweep).
-		revenueSvc.SetSweeper(gmailExec)
-		revenueH = revenue.NewHandler(revenueSvc, log)
+	// Revenue memory and outbound governance (RFC 030). Always mounted.
+	// Without a facade base URL the fail-closed disabled facade is used:
+	// observation and drafts work, preflight and sends don't.
+	var facade revenue.FacadeClient
+	if cfg.RevenueFacadeBaseURL != "" {
+		facade = revenue.NewHTTPFacade(revenue.HTTPFacadeConfig{
+			BaseURL:      cfg.RevenueFacadeBaseURL,
+			ServiceToken: cfg.RevenueFacadeServiceToken,
+			Timeout:      cfg.RevenueFacadeTimeout,
+		})
 	}
+	// Gmail is the first execution owner (draft in the operator's own
+	// mailbox by default; sends stay gated behind approval + preflight).
+	gmailExec := revenue.NewGmailExecutor(client, sealer, sec, googleapi.New(googleapi.Config{
+		TokenURL:        cfg.GoogleTokenURL,
+		GmailBaseURL:    cfg.GmailAPIBaseURL,
+		CalendarBaseURL: cfg.CalendarAPIBaseURL,
+		DriveBaseURL:    cfg.DriveAPIBaseURL,
+	}))
+	revenueSvc := revenue.NewService(client, facade, gmailExec, log)
+	// The Gmail backend also feeds the leak scan (read-only sweep).
+	revenueSvc.SetSweeper(gmailExec)
+	revenueH := revenue.NewHandler(revenueSvc, log)
 
 	r := srv.Router()
 
@@ -605,14 +602,12 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Get("/{eventId}/runs", cloudEventsH.Runs)
 		})
 
-		// RFC 030 revenue queue. Mounted only when the master flag is on;
-		// the lifecycle enforces the state-machine invariants server-side.
-		if revenueH != nil {
-			r.Group(func(r chi.Router) {
-				r.Use(rl.PerUserWindow(ratelimit.GroupRevenue, 120, time.Minute))
-				revenueH.Mount(r)
-			})
-		}
+		// RFC 030 revenue queue. The lifecycle enforces the state-machine
+		// invariants server-side.
+		r.Group(func(r chi.Router) {
+			r.Use(rl.PerUserWindow(ratelimit.GroupRevenue, 120, time.Minute))
+			revenueH.Mount(r)
+		})
 
 		r.Get("/v1/connectors", connectorsH.List)
 		r.Route("/v1/connections", func(r chi.Router) {
