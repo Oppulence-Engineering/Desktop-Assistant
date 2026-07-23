@@ -132,3 +132,42 @@ export interface RevenuePolicyDecision {
   evaluatedAt: string;
   expiresAt: string;
 }
+
+export type OutcomeKind =
+  | "sent"
+  | "delivered"
+  | "bounced"
+  | "replied"
+  | "meeting_booked"
+  | "won"
+  | "lost"
+  | "dismissed"
+  | "bad_recommendation";
+
+export interface RevenueOutcome {
+  id: string;
+  kind: OutcomeKind;
+  source: "gmail" | "calendar" | "crm" | "user" | "outbound";
+  sourceEventId: string;
+  occurredAt: string;
+}
+
+export interface ActionRevisionSnapshot {
+  revision: number;
+  revisionHash: string;
+  actionType: string;
+  channel: string;
+  createdAt: string;
+}
+
+export interface ActionAudit {
+  action: RevenueAction;
+  revisions: ActionRevisionSnapshot[];
+  decisions: RevenuePolicyDecision[];
+  outcomes: RevenueOutcome[];
+}
+
+export interface RelationshipDetail {
+  relationship: RevenueRelationship;
+  actions: RevenueAction[];
+}
