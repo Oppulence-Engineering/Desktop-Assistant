@@ -105,11 +105,13 @@ type UserEdges struct {
 	MailMessageMetas []*MailMessageMeta `json:"mail_message_metas,omitempty"`
 	// MailBodyCaches holds the value of the mail_body_caches edge.
 	MailBodyCaches []*MailBodyCache `json:"mail_body_caches,omitempty"`
+	// MailSignals holds the value of the mail_signals edge.
+	MailSignals []*MailSignal `json:"mail_signals,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [34]bool
+	loadedTypes [35]bool
 	// totalCount holds the count of the edges above.
-	totalCount [34]map[string]int
+	totalCount [35]map[string]int
 
 	namedLedgerEntries                map[string][]*CreditLedger
 	namedMeetingMinuteUsages          map[string][]*MeetingMinuteUsage
@@ -144,6 +146,7 @@ type UserEdges struct {
 	namedMailThreads                  map[string][]*MailThread
 	namedMailMessageMetas             map[string][]*MailMessageMeta
 	namedMailBodyCaches               map[string][]*MailBodyCache
+	namedMailSignals                  map[string][]*MailSignal
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -454,6 +457,15 @@ func (e UserEdges) MailBodyCachesOrErr() ([]*MailBodyCache, error) {
 	return nil, &NotLoadedError{edge: "mail_body_caches"}
 }
 
+// MailSignalsOrErr returns the MailSignals value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) MailSignalsOrErr() ([]*MailSignal, error) {
+	if e.loadedTypes[34] {
+		return e.MailSignals, nil
+	}
+	return nil, &NotLoadedError{edge: "mail_signals"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -697,6 +709,11 @@ func (_m *User) QueryMailMessageMetas() *MailMessageMetaQuery {
 // QueryMailBodyCaches queries the "mail_body_caches" edge of the User entity.
 func (_m *User) QueryMailBodyCaches() *MailBodyCacheQuery {
 	return NewUserClient(_m.config).QueryMailBodyCaches(_m)
+}
+
+// QueryMailSignals queries the "mail_signals" edge of the User entity.
+func (_m *User) QueryMailSignals() *MailSignalQuery {
+	return NewUserClient(_m.config).QueryMailSignals(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -1529,6 +1546,30 @@ func (_m *User) appendNamedMailBodyCaches(name string, edges ...*MailBodyCache) 
 		_m.Edges.namedMailBodyCaches[name] = []*MailBodyCache{}
 	} else {
 		_m.Edges.namedMailBodyCaches[name] = append(_m.Edges.namedMailBodyCaches[name], edges...)
+	}
+}
+
+// NamedMailSignals returns the MailSignals named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedMailSignals(name string) ([]*MailSignal, error) {
+	if _m.Edges.namedMailSignals == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedMailSignals[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedMailSignals(name string, edges ...*MailSignal) {
+	if _m.Edges.namedMailSignals == nil {
+		_m.Edges.namedMailSignals = make(map[string][]*MailSignal)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedMailSignals[name] = []*MailSignal{}
+	} else {
+		_m.Edges.namedMailSignals[name] = append(_m.Edges.namedMailSignals[name], edges...)
 	}
 }
 

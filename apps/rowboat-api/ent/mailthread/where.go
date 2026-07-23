@@ -935,6 +935,29 @@ func HasMessagesWith(preds ...predicate.MailMessageMeta) predicate.MailThread {
 	})
 }
 
+// HasSignal applies the HasEdge predicate on the "signal" edge.
+func HasSignal() predicate.MailThread {
+	return predicate.MailThread(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, SignalTable, SignalColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSignalWith applies the HasEdge predicate on the "signal" edge with a given conditions (other predicates).
+func HasSignalWith(preds ...predicate.MailSignal) predicate.MailThread {
+	return predicate.MailThread(func(s *sql.Selector) {
+		step := newSignalStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.MailThread) predicate.MailThread {
 	return predicate.MailThread(sql.AndPredicates(predicates...))

@@ -60,6 +60,8 @@ type Tx struct {
 	MailBodyCache *MailBodyCacheClient
 	// MailMessageMeta is the client for interacting with the MailMessageMeta builders.
 	MailMessageMeta *MailMessageMetaClient
+	// MailSignal is the client for interacting with the MailSignal builders.
+	MailSignal *MailSignalClient
 	// MailThread is the client for interacting with the MailThread builders.
 	MailThread *MailThreadClient
 	// MeetingMinuteUsage is the client for interacting with the MeetingMinuteUsage builders.
@@ -251,6 +253,7 @@ func (tx *Tx) init() {
 	tx.MCPConnectionHistory = NewMCPConnectionHistoryClient(tx.config)
 	tx.MailBodyCache = NewMailBodyCacheClient(tx.config)
 	tx.MailMessageMeta = NewMailMessageMetaClient(tx.config)
+	tx.MailSignal = NewMailSignalClient(tx.config)
 	tx.MailThread = NewMailThreadClient(tx.config)
 	tx.MeetingMinuteUsage = NewMeetingMinuteUsageClient(tx.config)
 	tx.OAuthConnection = NewOAuthConnectionClient(tx.config)

@@ -1364,6 +1364,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/revenue-search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Semantic search over mail
+     * @description Natural-language search over the caller's Layer-2 signals (RFC 031). Returns available=false with no matches when semantic memory is not configured.
+     */
+    get: operations["revenueSemanticSearch"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/revenue-workspaces/current": {
     parameters: {
       query?: never;
@@ -4397,6 +4417,36 @@ export interface components {
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
     };
+    MailSignal: {
+      classification: string;
+      /** Format: date-time */
+      computed_at: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: byte */
+      embedding?: string;
+      embedding_model?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      summary?: string;
+      thread: components["schemas"]["MailThread"];
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
     MailThread: {
       account_domain?: string;
       counterparty_email?: string;
@@ -4428,6 +4478,7 @@ export interface components {
       provider_thread_id: string;
       relationship?: components["schemas"]["Relationship"];
       reply_state: string;
+      signal?: components["schemas"]["MailSignal"];
       subject?: string;
       /**
        * Format: date-time
@@ -5993,6 +6044,7 @@ export interface components {
       llm_usages?: components["schemas"]["LLMUsage"][];
       mail_body_caches?: components["schemas"]["MailBodyCache"][];
       mail_message_metas?: components["schemas"]["MailMessageMeta"][];
+      mail_signals?: components["schemas"]["MailSignal"][];
       mail_threads?: components["schemas"]["MailThread"][];
       /** @description MCP connector connections for the user. */
       mcp_connections?: components["schemas"]["MCPConnection"][];
@@ -10106,6 +10158,71 @@ export interface operations {
       };
       401: components["responses"]["401"];
       404: components["responses"]["404"];
+    };
+  };
+  revenueSemanticSearch: {
+    parameters: {
+      query: {
+        /** @description Search query. */
+        q: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Ranked matches. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /**
+             * @description Whether semantic memory is configured.
+             * @example true
+             */
+            available?: boolean;
+            /** @description Ranked matches. */
+            matches?: {
+              /**
+               * @description Signal class.
+               * @example deal
+               * @enum {string}
+               */
+              classification?: "deal" | "invoice" | "client" | "referral" | "other";
+              /**
+               * @description Counterparty email.
+               * @example buyer@example.com
+               */
+              counterparty?: string;
+              /**
+               * @description Cosine similarity.
+               * @example 0.82
+               */
+              score?: number;
+              /**
+               * @description Thread subject.
+               * @example Proposal follow-up
+               */
+              subject?: string;
+              /**
+               * @description Derived summary.
+               * @example Unanswered proposal from 10 days ago.
+               */
+              summary?: string;
+              /**
+               * @description Provider thread id.
+               * @example thr_01
+               */
+              threadId?: string;
+            }[];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
     };
   };
   getRevenueWorkspace: {

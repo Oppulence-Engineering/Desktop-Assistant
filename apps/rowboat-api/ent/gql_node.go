@@ -29,6 +29,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -163,6 +164,11 @@ var mailmessagemetaImplementors = []string{"MailMessageMeta", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*MailMessageMeta) IsNode() {}
+
+var mailsignalImplementors = []string{"MailSignal", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*MailSignal) IsNode() {}
 
 var mailthreadImplementors = []string{"MailThread", "Node"}
 
@@ -491,6 +497,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(mailmessagemeta.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, mailmessagemetaImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case mailsignal.Table:
+		query := c.MailSignal.Query().
+			Where(mailsignal.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, mailsignalImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1043,6 +1058,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.MailMessageMeta.Query().
 			Where(mailmessagemeta.IDIn(ids...))
 		query, err := query.CollectFields(ctx, mailmessagemetaImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case mailsignal.Table:
+		query := c.MailSignal.Query().
+			Where(mailsignal.IDIn(ids...))
+		query, err := query.CollectFields(ctx, mailsignalImplementors...)
 		if err != nil {
 			return nil, err
 		}

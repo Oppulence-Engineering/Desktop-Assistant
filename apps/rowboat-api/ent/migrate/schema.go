@@ -1121,6 +1121,51 @@ var (
 			},
 		},
 	}
+	// MailSignalsColumns holds the columns for the "mail_signals" table.
+	MailSignalsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "classification", Type: field.TypeString, Default: "other"},
+		{Name: "summary", Type: field.TypeString, Nullable: true},
+		{Name: "embedding_model", Type: field.TypeString, Nullable: true},
+		{Name: "embedding", Type: field.TypeBytes, Nullable: true},
+		{Name: "computed_at", Type: field.TypeTime},
+		{Name: "mail_thread_id", Type: field.TypeUUID, Unique: true},
+		{Name: "user_mail_signals", Type: field.TypeUUID},
+	}
+	// MailSignalsTable holds the schema information for the "mail_signals" table.
+	MailSignalsTable = &schema.Table{
+		Name:       "mail_signals",
+		Columns:    MailSignalsColumns,
+		PrimaryKey: []*schema.Column{MailSignalsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "mail_signals_mail_threads_signal",
+				Columns:    []*schema.Column{MailSignalsColumns[8]},
+				RefColumns: []*schema.Column{MailThreadsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "mail_signals_users_mail_signals",
+				Columns:    []*schema.Column{MailSignalsColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "mailsignal_mail_thread_id",
+				Unique:  true,
+				Columns: []*schema.Column{MailSignalsColumns[8]},
+			},
+			{
+				Name:    "mailsignal_classification_user_mail_signals",
+				Unique:  false,
+				Columns: []*schema.Column{MailSignalsColumns[3], MailSignalsColumns[9]},
+			},
+		},
+	}
 	// MailThreadsColumns holds the columns for the "mail_threads" table.
 	MailThreadsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1919,6 +1964,7 @@ var (
 		McpConnectionHistoriesTable,
 		MailBodyCachesTable,
 		MailMessageMetaTable,
+		MailSignalsTable,
 		MailThreadsTable,
 		MeetingMinuteUsagesTable,
 		OauthConnectionsTable,
@@ -1984,6 +2030,8 @@ func init() {
 	MailBodyCachesTable.ForeignKeys[0].RefTable = UsersTable
 	MailMessageMetaTable.ForeignKeys[0].RefTable = MailThreadsTable
 	MailMessageMetaTable.ForeignKeys[1].RefTable = UsersTable
+	MailSignalsTable.ForeignKeys[0].RefTable = MailThreadsTable
+	MailSignalsTable.ForeignKeys[1].RefTable = UsersTable
 	MailThreadsTable.ForeignKeys[0].RefTable = RelationshipsTable
 	MailThreadsTable.ForeignKeys[1].RefTable = UsersTable
 	MeetingMinuteUsagesTable.ForeignKeys[0].RefTable = UsersTable

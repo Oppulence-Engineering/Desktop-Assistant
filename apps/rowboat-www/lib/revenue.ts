@@ -65,6 +65,27 @@ export const getImpact = () => call<RevenueImpact>("/revenue-impact");
 
 export const getDigest = () => call<RevenueDigest>("/revenue-digest");
 
+export interface SemanticMatch {
+  threadId: string;
+  subject: string;
+  counterparty: string;
+  classification: string;
+  summary: string;
+  score: number;
+}
+
+// semanticSearch runs a natural-language search over the mail signals (RFC 031
+// Layer 2). `available` is false when semantic memory isn't configured.
+export async function semanticSearch(
+  query: string,
+): Promise<{ available: boolean; matches: SemanticMatch[] }> {
+  const params = new URLSearchParams({ q: query });
+  const body = await call<{ available: boolean; matches: SemanticMatch[] }>(
+    `/revenue-search?${params.toString()}`,
+  );
+  return { available: body.available, matches: body.matches ?? [] };
+}
+
 // --- billing (upgrade to act) ------------------------------------------------
 
 // startCheckout opens a Stripe Checkout session for the given plan and returns

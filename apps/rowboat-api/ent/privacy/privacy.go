@@ -686,6 +686,30 @@ func (f MailMessageMetaMutationRuleFunc) EvalMutation(ctx context.Context, m ent
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.MailMessageMetaMutation", m)
 }
 
+// The MailSignalQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type MailSignalQueryRuleFunc func(context.Context, *ent.MailSignalQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f MailSignalQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.MailSignalQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.MailSignalQuery", q)
+}
+
+// The MailSignalMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type MailSignalMutationRuleFunc func(context.Context, *ent.MailSignalMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f MailSignalMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.MailSignalMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.MailSignalMutation", m)
+}
+
 // The MailThreadQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type MailThreadQueryRuleFunc func(context.Context, *ent.MailThreadQuery) error

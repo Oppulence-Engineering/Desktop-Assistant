@@ -28,6 +28,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/docs"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/embeddings"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/feedback"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
@@ -393,6 +394,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// Layer-3 (RFC 031): on-demand original-email retrieval, cached sealed with
 	// the column key for a short TTL.
 	revenueSvc.SetBodyFetcher(gmailExec, sealer, time.Duration(cfg.MailBodyCacheTTLHours)*time.Hour)
+	// Layer-2 (RFC 031): semantic memory. Ships dark behind
+	// REVENUE_SEMANTIC_MEMORY_ENABLED and needs an embeddings key.
+	if cfg.RevenueSemanticMemoryEnabled {
+		revenueSvc.SetEmbedder(embeddings.New(embeddings.Config{
+			APIKey:  sec.OpenAI(),
+			BaseURL: cfg.OpenAIBaseURL,
+			Model:   cfg.EmbeddingsModel,
+		}))
+	}
 	revenueH := revenue.NewHandler(revenueSvc, log)
 	// RFC 031: disconnecting Google purges the mail index (Layers 1-3);
 	// Layer-4 evidence quotes survive as the user's own action history.
