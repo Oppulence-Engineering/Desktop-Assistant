@@ -48,9 +48,8 @@ func TestCorrelateReturnClosesLoop(t *testing.T) {
 	if !m.Matched || m.AlreadyClosed {
 		t.Fatalf("expected fresh match, got %+v", m)
 	}
-	if m.OriginRunID != "" {
-		// propose() sets no origin run; the tool path would. Fine either way.
-	}
+	// propose() here sets no origin run (the runtime tool path would); the
+	// binding fields below are what matter for correlation.
 	if m.Kind != p.Kind || m.Target != p.Target {
 		t.Fatalf("match binding wrong: %+v", m)
 	}

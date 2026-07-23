@@ -149,10 +149,10 @@ func classifyActError(err error) error {
 
 // snippet bounds an error body for logs/messages.
 func snippet(b []byte) string {
-	const max = 300
+	const limit = 300
 	s := strings.TrimSpace(string(b))
-	if len(s) > max {
-		return s[:max]
+	if len(s) > limit {
+		return s[:limit]
 	}
 	return s
 }
