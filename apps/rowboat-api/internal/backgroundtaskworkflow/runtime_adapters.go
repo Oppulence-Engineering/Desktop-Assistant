@@ -190,6 +190,11 @@ func (a *Activities) toolRegistry(ctx context.Context, task *ent.BackgroundTask,
 			}
 		}
 	}
+	if owner != nil && a.ActionProposer != nil {
+		// RFC 023 propose-only tool: the model can record a pending finance
+		// action for human approval, never execute one.
+		tools = append(tools, backgroundtaskruntime.NewProposeActionTool(a.ActionProposer))
+	}
 	if owner != nil {
 		deps := agentregistry.ToolDeps{
 			Client:  a.Client,

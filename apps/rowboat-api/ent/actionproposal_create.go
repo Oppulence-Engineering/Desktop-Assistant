@@ -233,6 +233,34 @@ func (_c *ActionProposalCreate) SetNillableResultRef(v *string) *ActionProposalC
 	return _c
 }
 
+// SetReturnEventID sets the "return_event_id" field.
+func (_c *ActionProposalCreate) SetReturnEventID(v string) *ActionProposalCreate {
+	_c.mutation.SetReturnEventID(v)
+	return _c
+}
+
+// SetNillableReturnEventID sets the "return_event_id" field if the given value is not nil.
+func (_c *ActionProposalCreate) SetNillableReturnEventID(v *string) *ActionProposalCreate {
+	if v != nil {
+		_c.SetReturnEventID(*v)
+	}
+	return _c
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (_c *ActionProposalCreate) SetResolvedAt(v time.Time) *ActionProposalCreate {
+	_c.mutation.SetResolvedAt(v)
+	return _c
+}
+
+// SetNillableResolvedAt sets the "resolved_at" field if the given value is not nil.
+func (_c *ActionProposalCreate) SetNillableResolvedAt(v *time.Time) *ActionProposalCreate {
+	if v != nil {
+		_c.SetResolvedAt(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *ActionProposalCreate) SetID(v uuid.UUID) *ActionProposalCreate {
 	_c.mutation.SetID(v)
@@ -457,6 +485,14 @@ func (_c *ActionProposalCreate) createSpec() (*ActionProposal, *sqlgraph.CreateS
 	if value, ok := _c.mutation.ResultRef(); ok {
 		_spec.SetField(actionproposal.FieldResultRef, field.TypeString, value)
 		_node.ResultRef = value
+	}
+	if value, ok := _c.mutation.ReturnEventID(); ok {
+		_spec.SetField(actionproposal.FieldReturnEventID, field.TypeString, value)
+		_node.ReturnEventID = value
+	}
+	if value, ok := _c.mutation.ResolvedAt(); ok {
+		_spec.SetField(actionproposal.FieldResolvedAt, field.TypeTime, value)
+		_node.ResolvedAt = &value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -764,6 +800,42 @@ func (u *ActionProposalUpsert) UpdateResultRef() *ActionProposalUpsert {
 // ClearResultRef clears the value of the "result_ref" field.
 func (u *ActionProposalUpsert) ClearResultRef() *ActionProposalUpsert {
 	u.SetNull(actionproposal.FieldResultRef)
+	return u
+}
+
+// SetReturnEventID sets the "return_event_id" field.
+func (u *ActionProposalUpsert) SetReturnEventID(v string) *ActionProposalUpsert {
+	u.Set(actionproposal.FieldReturnEventID, v)
+	return u
+}
+
+// UpdateReturnEventID sets the "return_event_id" field to the value that was provided on create.
+func (u *ActionProposalUpsert) UpdateReturnEventID() *ActionProposalUpsert {
+	u.SetExcluded(actionproposal.FieldReturnEventID)
+	return u
+}
+
+// ClearReturnEventID clears the value of the "return_event_id" field.
+func (u *ActionProposalUpsert) ClearReturnEventID() *ActionProposalUpsert {
+	u.SetNull(actionproposal.FieldReturnEventID)
+	return u
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (u *ActionProposalUpsert) SetResolvedAt(v time.Time) *ActionProposalUpsert {
+	u.Set(actionproposal.FieldResolvedAt, v)
+	return u
+}
+
+// UpdateResolvedAt sets the "resolved_at" field to the value that was provided on create.
+func (u *ActionProposalUpsert) UpdateResolvedAt() *ActionProposalUpsert {
+	u.SetExcluded(actionproposal.FieldResolvedAt)
+	return u
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (u *ActionProposalUpsert) ClearResolvedAt() *ActionProposalUpsert {
+	u.SetNull(actionproposal.FieldResolvedAt)
 	return u
 }
 
@@ -1095,6 +1167,48 @@ func (u *ActionProposalUpsertOne) UpdateResultRef() *ActionProposalUpsertOne {
 func (u *ActionProposalUpsertOne) ClearResultRef() *ActionProposalUpsertOne {
 	return u.Update(func(s *ActionProposalUpsert) {
 		s.ClearResultRef()
+	})
+}
+
+// SetReturnEventID sets the "return_event_id" field.
+func (u *ActionProposalUpsertOne) SetReturnEventID(v string) *ActionProposalUpsertOne {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.SetReturnEventID(v)
+	})
+}
+
+// UpdateReturnEventID sets the "return_event_id" field to the value that was provided on create.
+func (u *ActionProposalUpsertOne) UpdateReturnEventID() *ActionProposalUpsertOne {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.UpdateReturnEventID()
+	})
+}
+
+// ClearReturnEventID clears the value of the "return_event_id" field.
+func (u *ActionProposalUpsertOne) ClearReturnEventID() *ActionProposalUpsertOne {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.ClearReturnEventID()
+	})
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (u *ActionProposalUpsertOne) SetResolvedAt(v time.Time) *ActionProposalUpsertOne {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.SetResolvedAt(v)
+	})
+}
+
+// UpdateResolvedAt sets the "resolved_at" field to the value that was provided on create.
+func (u *ActionProposalUpsertOne) UpdateResolvedAt() *ActionProposalUpsertOne {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.UpdateResolvedAt()
+	})
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (u *ActionProposalUpsertOne) ClearResolvedAt() *ActionProposalUpsertOne {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.ClearResolvedAt()
 	})
 }
 
@@ -1593,6 +1707,48 @@ func (u *ActionProposalUpsertBulk) UpdateResultRef() *ActionProposalUpsertBulk {
 func (u *ActionProposalUpsertBulk) ClearResultRef() *ActionProposalUpsertBulk {
 	return u.Update(func(s *ActionProposalUpsert) {
 		s.ClearResultRef()
+	})
+}
+
+// SetReturnEventID sets the "return_event_id" field.
+func (u *ActionProposalUpsertBulk) SetReturnEventID(v string) *ActionProposalUpsertBulk {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.SetReturnEventID(v)
+	})
+}
+
+// UpdateReturnEventID sets the "return_event_id" field to the value that was provided on create.
+func (u *ActionProposalUpsertBulk) UpdateReturnEventID() *ActionProposalUpsertBulk {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.UpdateReturnEventID()
+	})
+}
+
+// ClearReturnEventID clears the value of the "return_event_id" field.
+func (u *ActionProposalUpsertBulk) ClearReturnEventID() *ActionProposalUpsertBulk {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.ClearReturnEventID()
+	})
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (u *ActionProposalUpsertBulk) SetResolvedAt(v time.Time) *ActionProposalUpsertBulk {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.SetResolvedAt(v)
+	})
+}
+
+// UpdateResolvedAt sets the "resolved_at" field to the value that was provided on create.
+func (u *ActionProposalUpsertBulk) UpdateResolvedAt() *ActionProposalUpsertBulk {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.UpdateResolvedAt()
+	})
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (u *ActionProposalUpsertBulk) ClearResolvedAt() *ActionProposalUpsertBulk {
+	return u.Update(func(s *ActionProposalUpsert) {
+		s.ClearResolvedAt()
 	})
 }
 

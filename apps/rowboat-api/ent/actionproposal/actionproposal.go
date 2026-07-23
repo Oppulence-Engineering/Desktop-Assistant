@@ -47,6 +47,10 @@ const (
 	FieldReason = "reason"
 	// FieldResultRef holds the string denoting the result_ref field in the database.
 	FieldResultRef = "result_ref"
+	// FieldReturnEventID holds the string denoting the return_event_id field in the database.
+	FieldReturnEventID = "return_event_id"
+	// FieldResolvedAt holds the string denoting the resolved_at field in the database.
+	FieldResolvedAt = "resolved_at"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// Table holds the table name of the actionproposal in the database.
@@ -79,6 +83,8 @@ var Columns = []string{
 	FieldExecutedAt,
 	FieldReason,
 	FieldResultRef,
+	FieldReturnEventID,
+	FieldResolvedAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "action_proposals"
@@ -211,6 +217,16 @@ func ByReason(opts ...sql.OrderTermOption) OrderOption {
 // ByResultRef orders the results by the result_ref field.
 func ByResultRef(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResultRef, opts...).ToFunc()
+}
+
+// ByReturnEventID orders the results by the return_event_id field.
+func ByReturnEventID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReturnEventID, opts...).ToFunc()
+}
+
+// ByResolvedAt orders the results by the resolved_at field.
+func ByResolvedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResolvedAt, opts...).ToFunc()
 }
 
 // ByUserField orders the results by user field.

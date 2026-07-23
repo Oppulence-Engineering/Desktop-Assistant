@@ -425,6 +425,11 @@ type Config struct {
 	ActionTokenTTL                  time.Duration
 	ActionWatchTimeout              time.Duration
 	ActionRequireStepUpForFinancial bool
+	// Product Act-seam endpoint approved actions execute against (RFC 023 WP3).
+	// Empty ⇒ no executor is wired and execute fails closed.
+	ActionActSeamBaseURL string
+	ActionActSeamToken   string
+	ActionActSeamTimeout time.Duration
 }
 
 // AgentSigningSecret resolves the HMAC signing key for agent-runtime tokens:
@@ -718,6 +723,9 @@ func Load() Config {
 		ActionTokenTTL:                  getdur("ACTION_TOKEN_TTL", 5*time.Minute),
 		ActionWatchTimeout:              getdur("ACTION_WATCH_TIMEOUT", 24*time.Hour),
 		ActionRequireStepUpForFinancial: getbool("ACTION_REQUIRE_STEP_UP_FOR_FINANCIAL", true),
+		ActionActSeamBaseURL:            getenv("ACTION_ACT_SEAM_BASE_URL", ""),
+		ActionActSeamToken:              getenv("ACTION_ACT_SEAM_TOKEN", ""),
+		ActionActSeamTimeout:            getdur("ACTION_ACT_SEAM_TIMEOUT", 30*time.Second),
 	}
 }
 

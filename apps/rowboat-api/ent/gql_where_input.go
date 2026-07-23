@@ -809,6 +809,35 @@ type ActionProposalWhereInput struct {
 	ResultRefEqualFold    *string  `json:"resultRefEqualFold,omitempty"`
 	ResultRefContainsFold *string  `json:"resultRefContainsFold,omitempty"`
 
+	// "return_event_id" field predicates.
+	ReturnEventID             *string  `json:"returnEventID,omitempty"`
+	ReturnEventIDNEQ          *string  `json:"returnEventIDNEQ,omitempty"`
+	ReturnEventIDIn           []string `json:"returnEventIDIn,omitempty"`
+	ReturnEventIDNotIn        []string `json:"returnEventIDNotIn,omitempty"`
+	ReturnEventIDGT           *string  `json:"returnEventIDGT,omitempty"`
+	ReturnEventIDGTE          *string  `json:"returnEventIDGTE,omitempty"`
+	ReturnEventIDLT           *string  `json:"returnEventIDLT,omitempty"`
+	ReturnEventIDLTE          *string  `json:"returnEventIDLTE,omitempty"`
+	ReturnEventIDContains     *string  `json:"returnEventIDContains,omitempty"`
+	ReturnEventIDHasPrefix    *string  `json:"returnEventIDHasPrefix,omitempty"`
+	ReturnEventIDHasSuffix    *string  `json:"returnEventIDHasSuffix,omitempty"`
+	ReturnEventIDIsNil        bool     `json:"returnEventIDIsNil,omitempty"`
+	ReturnEventIDNotNil       bool     `json:"returnEventIDNotNil,omitempty"`
+	ReturnEventIDEqualFold    *string  `json:"returnEventIDEqualFold,omitempty"`
+	ReturnEventIDContainsFold *string  `json:"returnEventIDContainsFold,omitempty"`
+
+	// "resolved_at" field predicates.
+	ResolvedAt       *time.Time  `json:"resolvedAt,omitempty"`
+	ResolvedAtNEQ    *time.Time  `json:"resolvedAtNEQ,omitempty"`
+	ResolvedAtIn     []time.Time `json:"resolvedAtIn,omitempty"`
+	ResolvedAtNotIn  []time.Time `json:"resolvedAtNotIn,omitempty"`
+	ResolvedAtGT     *time.Time  `json:"resolvedAtGT,omitempty"`
+	ResolvedAtGTE    *time.Time  `json:"resolvedAtGTE,omitempty"`
+	ResolvedAtLT     *time.Time  `json:"resolvedAtLT,omitempty"`
+	ResolvedAtLTE    *time.Time  `json:"resolvedAtLTE,omitempty"`
+	ResolvedAtIsNil  bool        `json:"resolvedAtIsNil,omitempty"`
+	ResolvedAtNotNil bool        `json:"resolvedAtNotNil,omitempty"`
+
 	// "user" edge predicates.
 	HasUser     *bool             `json:"hasUser,omitempty"`
 	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
@@ -1484,6 +1513,81 @@ func (i *ActionProposalWhereInput) P() (predicate.ActionProposal, error) {
 	}
 	if i.ResultRefContainsFold != nil {
 		predicates = append(predicates, actionproposal.ResultRefContainsFold(*i.ResultRefContainsFold))
+	}
+	if i.ReturnEventID != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDEQ(*i.ReturnEventID))
+	}
+	if i.ReturnEventIDNEQ != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDNEQ(*i.ReturnEventIDNEQ))
+	}
+	if len(i.ReturnEventIDIn) > 0 {
+		predicates = append(predicates, actionproposal.ReturnEventIDIn(i.ReturnEventIDIn...))
+	}
+	if len(i.ReturnEventIDNotIn) > 0 {
+		predicates = append(predicates, actionproposal.ReturnEventIDNotIn(i.ReturnEventIDNotIn...))
+	}
+	if i.ReturnEventIDGT != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDGT(*i.ReturnEventIDGT))
+	}
+	if i.ReturnEventIDGTE != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDGTE(*i.ReturnEventIDGTE))
+	}
+	if i.ReturnEventIDLT != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDLT(*i.ReturnEventIDLT))
+	}
+	if i.ReturnEventIDLTE != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDLTE(*i.ReturnEventIDLTE))
+	}
+	if i.ReturnEventIDContains != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDContains(*i.ReturnEventIDContains))
+	}
+	if i.ReturnEventIDHasPrefix != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDHasPrefix(*i.ReturnEventIDHasPrefix))
+	}
+	if i.ReturnEventIDHasSuffix != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDHasSuffix(*i.ReturnEventIDHasSuffix))
+	}
+	if i.ReturnEventIDIsNil {
+		predicates = append(predicates, actionproposal.ReturnEventIDIsNil())
+	}
+	if i.ReturnEventIDNotNil {
+		predicates = append(predicates, actionproposal.ReturnEventIDNotNil())
+	}
+	if i.ReturnEventIDEqualFold != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDEqualFold(*i.ReturnEventIDEqualFold))
+	}
+	if i.ReturnEventIDContainsFold != nil {
+		predicates = append(predicates, actionproposal.ReturnEventIDContainsFold(*i.ReturnEventIDContainsFold))
+	}
+	if i.ResolvedAt != nil {
+		predicates = append(predicates, actionproposal.ResolvedAtEQ(*i.ResolvedAt))
+	}
+	if i.ResolvedAtNEQ != nil {
+		predicates = append(predicates, actionproposal.ResolvedAtNEQ(*i.ResolvedAtNEQ))
+	}
+	if len(i.ResolvedAtIn) > 0 {
+		predicates = append(predicates, actionproposal.ResolvedAtIn(i.ResolvedAtIn...))
+	}
+	if len(i.ResolvedAtNotIn) > 0 {
+		predicates = append(predicates, actionproposal.ResolvedAtNotIn(i.ResolvedAtNotIn...))
+	}
+	if i.ResolvedAtGT != nil {
+		predicates = append(predicates, actionproposal.ResolvedAtGT(*i.ResolvedAtGT))
+	}
+	if i.ResolvedAtGTE != nil {
+		predicates = append(predicates, actionproposal.ResolvedAtGTE(*i.ResolvedAtGTE))
+	}
+	if i.ResolvedAtLT != nil {
+		predicates = append(predicates, actionproposal.ResolvedAtLT(*i.ResolvedAtLT))
+	}
+	if i.ResolvedAtLTE != nil {
+		predicates = append(predicates, actionproposal.ResolvedAtLTE(*i.ResolvedAtLTE))
+	}
+	if i.ResolvedAtIsNil {
+		predicates = append(predicates, actionproposal.ResolvedAtIsNil())
+	}
+	if i.ResolvedAtNotNil {
+		predicates = append(predicates, actionproposal.ResolvedAtNotNil())
 	}
 
 	if i.HasUser != nil {
@@ -13758,6 +13862,23 @@ type CloudEventWhereInput struct {
 	SourceAccountIDEqualFold    *string  `json:"sourceAccountIDEqualFold,omitempty"`
 	SourceAccountIDContainsFold *string  `json:"sourceAccountIDContainsFold,omitempty"`
 
+	// "correlation_id" field predicates.
+	CorrelationID             *string  `json:"correlationID,omitempty"`
+	CorrelationIDNEQ          *string  `json:"correlationIDNEQ,omitempty"`
+	CorrelationIDIn           []string `json:"correlationIDIn,omitempty"`
+	CorrelationIDNotIn        []string `json:"correlationIDNotIn,omitempty"`
+	CorrelationIDGT           *string  `json:"correlationIDGT,omitempty"`
+	CorrelationIDGTE          *string  `json:"correlationIDGTE,omitempty"`
+	CorrelationIDLT           *string  `json:"correlationIDLT,omitempty"`
+	CorrelationIDLTE          *string  `json:"correlationIDLTE,omitempty"`
+	CorrelationIDContains     *string  `json:"correlationIDContains,omitempty"`
+	CorrelationIDHasPrefix    *string  `json:"correlationIDHasPrefix,omitempty"`
+	CorrelationIDHasSuffix    *string  `json:"correlationIDHasSuffix,omitempty"`
+	CorrelationIDIsNil        bool     `json:"correlationIDIsNil,omitempty"`
+	CorrelationIDNotNil       bool     `json:"correlationIDNotNil,omitempty"`
+	CorrelationIDEqualFold    *string  `json:"correlationIDEqualFold,omitempty"`
+	CorrelationIDContainsFold *string  `json:"correlationIDContainsFold,omitempty"`
+
 	// "event_type" field predicates.
 	EventType             *string  `json:"eventType,omitempty"`
 	EventTypeNEQ          *string  `json:"eventTypeNEQ,omitempty"`
@@ -14180,6 +14301,51 @@ func (i *CloudEventWhereInput) P() (predicate.CloudEvent, error) {
 	}
 	if i.SourceAccountIDContainsFold != nil {
 		predicates = append(predicates, cloudevent.SourceAccountIDContainsFold(*i.SourceAccountIDContainsFold))
+	}
+	if i.CorrelationID != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDEQ(*i.CorrelationID))
+	}
+	if i.CorrelationIDNEQ != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDNEQ(*i.CorrelationIDNEQ))
+	}
+	if len(i.CorrelationIDIn) > 0 {
+		predicates = append(predicates, cloudevent.CorrelationIDIn(i.CorrelationIDIn...))
+	}
+	if len(i.CorrelationIDNotIn) > 0 {
+		predicates = append(predicates, cloudevent.CorrelationIDNotIn(i.CorrelationIDNotIn...))
+	}
+	if i.CorrelationIDGT != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDGT(*i.CorrelationIDGT))
+	}
+	if i.CorrelationIDGTE != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDGTE(*i.CorrelationIDGTE))
+	}
+	if i.CorrelationIDLT != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDLT(*i.CorrelationIDLT))
+	}
+	if i.CorrelationIDLTE != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDLTE(*i.CorrelationIDLTE))
+	}
+	if i.CorrelationIDContains != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDContains(*i.CorrelationIDContains))
+	}
+	if i.CorrelationIDHasPrefix != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDHasPrefix(*i.CorrelationIDHasPrefix))
+	}
+	if i.CorrelationIDHasSuffix != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDHasSuffix(*i.CorrelationIDHasSuffix))
+	}
+	if i.CorrelationIDIsNil {
+		predicates = append(predicates, cloudevent.CorrelationIDIsNil())
+	}
+	if i.CorrelationIDNotNil {
+		predicates = append(predicates, cloudevent.CorrelationIDNotNil())
+	}
+	if i.CorrelationIDEqualFold != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDEqualFold(*i.CorrelationIDEqualFold))
+	}
+	if i.CorrelationIDContainsFold != nil {
+		predicates = append(predicates, cloudevent.CorrelationIDContainsFold(*i.CorrelationIDContainsFold))
 	}
 	if i.EventType != nil {
 		predicates = append(predicates, cloudevent.EventTypeEQ(*i.EventType))

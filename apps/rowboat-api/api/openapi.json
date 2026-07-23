@@ -326,7 +326,14 @@
             "example": "llm_settle",
             "type": "string"
           },
+          "resolved_at": {
+            "format": "date-time",
+            "type": "string"
+          },
           "result_ref": {
+            "type": "string"
+          },
+          "return_event_id": {
             "type": "string"
           },
           "status": {

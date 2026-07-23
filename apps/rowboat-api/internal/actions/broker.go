@@ -24,8 +24,22 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/actionmetrics"
 )
+
+// ProductSources are the CloudEvent sources that carry product Act-seam return
+// events for the Watch leg (RFC 023 / RFC 013).
+var ProductSources = map[string]struct{}{
+	"conduit": {}, "cadence": {}, "eigen": {}, "corinthian": {}, "canvas": {},
+}
+
+// IsProductSource reports whether a CloudEvent source is a product Act-seam
+// return source.
+func IsProductSource(source string) bool {
+	_, ok := ProductSources[source]
+	return ok
+}
 
 // Proposal lifecycle statuses (the state machine).
 const (
@@ -440,6 +454,81 @@ func (b *Broker) Audit(ctx context.Context, resourceRef string) ([]AuditEntry, e
 		out = append(out, AuditEntry{Proposal: p, Tokens: views})
 	}
 	return out, nil
+}
+
+// ReturnMatch is the outcome of correlating a product return event to the
+// proposal that produced it (RFC 023 Watch leg).
+type ReturnMatch struct {
+	// Matched is true when a proposal for the event's correlation id exists.
+	Matched bool
+	// AlreadyClosed is true when the loop was already closed by a prior return
+	// event (duplicate at-least-once delivery) — the caller must not re-trigger.
+	AlreadyClosed bool
+	ProposalID    string
+	// OriginRunID is the run whose objective produced the proposal; the caller
+	// re-triggers its task with the return context to update the live-note.
+	OriginRunID string
+	Kind        string
+	Target      string
+	ResultRef   string
+}
+
+// CorrelateReturn matches a product Act-seam return CloudEvent to the executed
+// proposal that produced it (by correlation id, scoped to the event owner),
+// closes the loop, and reports what the caller should re-trigger. It is
+// idempotent: a duplicate return event finds the proposal already resolved and
+// returns AlreadyClosed without re-triggering. The caller (the cloud-event
+// router) owns the actual live-note re-trigger, since it holds the run starter.
+func (b *Broker) CorrelateReturn(ctx context.Context, owner *ent.User, ev *ent.CloudEvent) (*ReturnMatch, error) {
+	corr := strings.TrimSpace(ev.CorrelationID)
+	if corr == "" {
+		return &ReturnMatch{}, nil
+	}
+	// Internal callers (the router) bypass the tenant interceptor, so scope the
+	// lookup to the event owner explicitly.
+	base := b.client.ActionProposal.Query().
+		Where(
+			actionproposal.CorrelationID(corr),
+			actionproposal.HasUserWith(user.IDEQ(owner.ID)),
+		)
+	p, err := base.Clone().
+		Where(
+			actionproposal.ResolvedAtIsNil(),
+			actionproposal.StatusIn(StatusExecuted, StatusExecutedUnconfirmed),
+		).
+		Order(ent.Desc(actionproposal.FieldCreatedAt)).
+		First(ctx)
+	if err != nil {
+		if !ent.IsNotFound(err) {
+			return nil, fmt.Errorf("actions: correlate return: %w", err)
+		}
+		// No unresolved executed proposal. If one is already resolved for this
+		// correlation, this is a duplicate return event — a no-op, not a miss.
+		resolved, rerr := base.Clone().Where(actionproposal.ResolvedAtNotNil()).Exist(ctx)
+		if rerr != nil {
+			return nil, fmt.Errorf("actions: correlate return (resolved check): %w", rerr)
+		}
+		return &ReturnMatch{Matched: resolved, AlreadyClosed: resolved}, nil
+	}
+
+	now := b.now()
+	if _, err := b.client.ActionProposal.UpdateOneID(p.ID).
+		SetResolvedAt(now).
+		SetReturnEventID(ev.ID.String()).
+		Save(ctx); err != nil {
+		return nil, fmt.Errorf("actions: close loop: %w", err)
+	}
+	if p.ExecutedAt != nil {
+		actionmetrics.LoopClose.WithLabelValues(p.Kind).Observe(now.Sub(*p.ExecutedAt).Seconds())
+	}
+	return &ReturnMatch{
+		Matched:     true,
+		ProposalID:  p.ID.String(),
+		OriginRunID: p.OriginRunID,
+		Kind:        p.Kind,
+		Target:      p.Target,
+		ResultRef:   p.ResultRef,
+	}, nil
 }
 
 // boolLabel maps a bool to a stable low-cardinality metric label.

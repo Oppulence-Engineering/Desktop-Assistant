@@ -41,7 +41,11 @@ func (CloudEvent) Fields() []ent.Field {
 				"conduit", "cadence", "eigen", "corinthian", "canvas")),
 		field.String("source_event_id").Optional(),   // provider's id (e.g. Gmail historyId)
 		field.String("source_account_id").Optional(), // which connected account
-		field.String("event_type").Optional(),        // provider-specific, e.g. "message.new"
+		// correlation_id ties a product Act-seam return event back to the
+		// ActionProposal that produced it (RFC 023 Watch leg). Empty for
+		// ordinary inbound events.
+		field.String("correlation_id").Optional(),
+		field.String("event_type").Optional(), // provider-specific, e.g. "message.new"
 		field.Text("subject").Optional(),
 		// text is the normalized human-readable gist. subject/text stay plaintext
 		// because they are what the router's prompts read; the full provider
@@ -81,5 +85,6 @@ func (CloudEvent) Indexes() []ent.Index {
 		index.Fields("source", "dedupe_key").Edges("user").Unique(), // idempotency guard
 		index.Fields("routing_status"),
 		index.Fields("received_at"),
+		index.Fields("correlation_id"), // RFC 023 Watch-leg correlation
 	}
 }

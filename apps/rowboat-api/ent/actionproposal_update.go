@@ -292,6 +292,46 @@ func (_u *ActionProposalUpdate) ClearResultRef() *ActionProposalUpdate {
 	return _u
 }
 
+// SetReturnEventID sets the "return_event_id" field.
+func (_u *ActionProposalUpdate) SetReturnEventID(v string) *ActionProposalUpdate {
+	_u.mutation.SetReturnEventID(v)
+	return _u
+}
+
+// SetNillableReturnEventID sets the "return_event_id" field if the given value is not nil.
+func (_u *ActionProposalUpdate) SetNillableReturnEventID(v *string) *ActionProposalUpdate {
+	if v != nil {
+		_u.SetReturnEventID(*v)
+	}
+	return _u
+}
+
+// ClearReturnEventID clears the value of the "return_event_id" field.
+func (_u *ActionProposalUpdate) ClearReturnEventID() *ActionProposalUpdate {
+	_u.mutation.ClearReturnEventID()
+	return _u
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (_u *ActionProposalUpdate) SetResolvedAt(v time.Time) *ActionProposalUpdate {
+	_u.mutation.SetResolvedAt(v)
+	return _u
+}
+
+// SetNillableResolvedAt sets the "resolved_at" field if the given value is not nil.
+func (_u *ActionProposalUpdate) SetNillableResolvedAt(v *time.Time) *ActionProposalUpdate {
+	if v != nil {
+		_u.SetResolvedAt(*v)
+	}
+	return _u
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (_u *ActionProposalUpdate) ClearResolvedAt() *ActionProposalUpdate {
+	_u.mutation.ClearResolvedAt()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *ActionProposalUpdate) SetUserID(id uuid.UUID) *ActionProposalUpdate {
 	_u.mutation.SetUserID(id)
@@ -464,6 +504,18 @@ func (_u *ActionProposalUpdate) sqlSave(ctx context.Context) (_node int, err err
 	}
 	if _u.mutation.ResultRefCleared() {
 		_spec.ClearField(actionproposal.FieldResultRef, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReturnEventID(); ok {
+		_spec.SetField(actionproposal.FieldReturnEventID, field.TypeString, value)
+	}
+	if _u.mutation.ReturnEventIDCleared() {
+		_spec.ClearField(actionproposal.FieldReturnEventID, field.TypeString)
+	}
+	if value, ok := _u.mutation.ResolvedAt(); ok {
+		_spec.SetField(actionproposal.FieldResolvedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ResolvedAtCleared() {
+		_spec.ClearField(actionproposal.FieldResolvedAt, field.TypeTime)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -776,6 +828,46 @@ func (_u *ActionProposalUpdateOne) ClearResultRef() *ActionProposalUpdateOne {
 	return _u
 }
 
+// SetReturnEventID sets the "return_event_id" field.
+func (_u *ActionProposalUpdateOne) SetReturnEventID(v string) *ActionProposalUpdateOne {
+	_u.mutation.SetReturnEventID(v)
+	return _u
+}
+
+// SetNillableReturnEventID sets the "return_event_id" field if the given value is not nil.
+func (_u *ActionProposalUpdateOne) SetNillableReturnEventID(v *string) *ActionProposalUpdateOne {
+	if v != nil {
+		_u.SetReturnEventID(*v)
+	}
+	return _u
+}
+
+// ClearReturnEventID clears the value of the "return_event_id" field.
+func (_u *ActionProposalUpdateOne) ClearReturnEventID() *ActionProposalUpdateOne {
+	_u.mutation.ClearReturnEventID()
+	return _u
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (_u *ActionProposalUpdateOne) SetResolvedAt(v time.Time) *ActionProposalUpdateOne {
+	_u.mutation.SetResolvedAt(v)
+	return _u
+}
+
+// SetNillableResolvedAt sets the "resolved_at" field if the given value is not nil.
+func (_u *ActionProposalUpdateOne) SetNillableResolvedAt(v *time.Time) *ActionProposalUpdateOne {
+	if v != nil {
+		_u.SetResolvedAt(*v)
+	}
+	return _u
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (_u *ActionProposalUpdateOne) ClearResolvedAt() *ActionProposalUpdateOne {
+	_u.mutation.ClearResolvedAt()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *ActionProposalUpdateOne) SetUserID(id uuid.UUID) *ActionProposalUpdateOne {
 	_u.mutation.SetUserID(id)
@@ -978,6 +1070,18 @@ func (_u *ActionProposalUpdateOne) sqlSave(ctx context.Context) (_node *ActionPr
 	}
 	if _u.mutation.ResultRefCleared() {
 		_spec.ClearField(actionproposal.FieldResultRef, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReturnEventID(); ok {
+		_spec.SetField(actionproposal.FieldReturnEventID, field.TypeString, value)
+	}
+	if _u.mutation.ReturnEventIDCleared() {
+		_spec.ClearField(actionproposal.FieldReturnEventID, field.TypeString)
+	}
+	if value, ok := _u.mutation.ResolvedAt(); ok {
+		_spec.SetField(actionproposal.FieldResolvedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ResolvedAtCleared() {
+		_spec.ClearField(actionproposal.FieldResolvedAt, field.TypeTime)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

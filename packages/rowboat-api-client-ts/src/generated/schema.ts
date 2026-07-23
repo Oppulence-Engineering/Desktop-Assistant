@@ -1721,7 +1721,10 @@ export interface components {
         | "exa_search"
         | "grant"
         | "refund";
+      /** Format: date-time */
+      resolved_at?: string;
       result_ref?: string;
+      return_event_id?: string;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
        * @example active

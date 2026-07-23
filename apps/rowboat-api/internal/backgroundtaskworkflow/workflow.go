@@ -272,6 +272,12 @@ type Activities struct {
 	Conduit       *faculties.Client
 	Eigen         *faculties.Client
 	DefaultModel  string
+
+	// ActionProposer records closed-loop finance-action proposals for human
+	// approval (RFC 023). Non-nil only when ACTIONS_ENABLED: it adds the
+	// propose-only action.propose tool to a run's registry. There is
+	// deliberately no execute tool — execution is brokered behind a token.
+	ActionProposer backgroundtaskruntime.ActionProposer
 }
 
 // MarkRunRunning claims a queued API run for execution.

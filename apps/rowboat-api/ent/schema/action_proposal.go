@@ -71,6 +71,11 @@ func (ActionProposal) Fields() []ent.Field {
 		// The product's resulting object id after a successful execute (e.g. the
 		// new dunning step id). Links execution to the eventual return event.
 		field.String("result_ref").Optional(),
+		// Watch leg (RFC 023 WP4): the product's return CloudEvent that closed
+		// the loop, and when. resolved_at is the idempotency anchor — a duplicate
+		// return event finds it already set and is a no-op.
+		field.String("return_event_id").Optional(),
+		field.Time("resolved_at").Optional().Nillable(),
 	}
 }
 

@@ -88,6 +88,20 @@ func (_c *CloudEventCreate) SetNillableSourceAccountID(v *string) *CloudEventCre
 	return _c
 }
 
+// SetCorrelationID sets the "correlation_id" field.
+func (_c *CloudEventCreate) SetCorrelationID(v string) *CloudEventCreate {
+	_c.mutation.SetCorrelationID(v)
+	return _c
+}
+
+// SetNillableCorrelationID sets the "correlation_id" field if the given value is not nil.
+func (_c *CloudEventCreate) SetNillableCorrelationID(v *string) *CloudEventCreate {
+	if v != nil {
+		_c.SetCorrelationID(*v)
+	}
+	return _c
+}
+
 // SetEventType sets the "event_type" field.
 func (_c *CloudEventCreate) SetEventType(v string) *CloudEventCreate {
 	_c.mutation.SetEventType(v)
@@ -429,6 +443,10 @@ func (_c *CloudEventCreate) createSpec() (*CloudEvent, *sqlgraph.CreateSpec) {
 		_spec.SetField(cloudevent.FieldSourceAccountID, field.TypeString, value)
 		_node.SourceAccountID = value
 	}
+	if value, ok := _c.mutation.CorrelationID(); ok {
+		_spec.SetField(cloudevent.FieldCorrelationID, field.TypeString, value)
+		_node.CorrelationID = value
+	}
 	if value, ok := _c.mutation.EventType(); ok {
 		_spec.SetField(cloudevent.FieldEventType, field.TypeString, value)
 		_node.EventType = value
@@ -615,6 +633,24 @@ func (u *CloudEventUpsert) UpdateSourceAccountID() *CloudEventUpsert {
 // ClearSourceAccountID clears the value of the "source_account_id" field.
 func (u *CloudEventUpsert) ClearSourceAccountID() *CloudEventUpsert {
 	u.SetNull(cloudevent.FieldSourceAccountID)
+	return u
+}
+
+// SetCorrelationID sets the "correlation_id" field.
+func (u *CloudEventUpsert) SetCorrelationID(v string) *CloudEventUpsert {
+	u.Set(cloudevent.FieldCorrelationID, v)
+	return u
+}
+
+// UpdateCorrelationID sets the "correlation_id" field to the value that was provided on create.
+func (u *CloudEventUpsert) UpdateCorrelationID() *CloudEventUpsert {
+	u.SetExcluded(cloudevent.FieldCorrelationID)
+	return u
+}
+
+// ClearCorrelationID clears the value of the "correlation_id" field.
+func (u *CloudEventUpsert) ClearCorrelationID() *CloudEventUpsert {
+	u.SetNull(cloudevent.FieldCorrelationID)
 	return u
 }
 
@@ -907,6 +943,27 @@ func (u *CloudEventUpsertOne) UpdateSourceAccountID() *CloudEventUpsertOne {
 func (u *CloudEventUpsertOne) ClearSourceAccountID() *CloudEventUpsertOne {
 	return u.Update(func(s *CloudEventUpsert) {
 		s.ClearSourceAccountID()
+	})
+}
+
+// SetCorrelationID sets the "correlation_id" field.
+func (u *CloudEventUpsertOne) SetCorrelationID(v string) *CloudEventUpsertOne {
+	return u.Update(func(s *CloudEventUpsert) {
+		s.SetCorrelationID(v)
+	})
+}
+
+// UpdateCorrelationID sets the "correlation_id" field to the value that was provided on create.
+func (u *CloudEventUpsertOne) UpdateCorrelationID() *CloudEventUpsertOne {
+	return u.Update(func(s *CloudEventUpsert) {
+		s.UpdateCorrelationID()
+	})
+}
+
+// ClearCorrelationID clears the value of the "correlation_id" field.
+func (u *CloudEventUpsertOne) ClearCorrelationID() *CloudEventUpsertOne {
+	return u.Update(func(s *CloudEventUpsert) {
+		s.ClearCorrelationID()
 	})
 }
 
@@ -1394,6 +1451,27 @@ func (u *CloudEventUpsertBulk) UpdateSourceAccountID() *CloudEventUpsertBulk {
 func (u *CloudEventUpsertBulk) ClearSourceAccountID() *CloudEventUpsertBulk {
 	return u.Update(func(s *CloudEventUpsert) {
 		s.ClearSourceAccountID()
+	})
+}
+
+// SetCorrelationID sets the "correlation_id" field.
+func (u *CloudEventUpsertBulk) SetCorrelationID(v string) *CloudEventUpsertBulk {
+	return u.Update(func(s *CloudEventUpsert) {
+		s.SetCorrelationID(v)
+	})
+}
+
+// UpdateCorrelationID sets the "correlation_id" field to the value that was provided on create.
+func (u *CloudEventUpsertBulk) UpdateCorrelationID() *CloudEventUpsertBulk {
+	return u.Update(func(s *CloudEventUpsert) {
+		s.UpdateCorrelationID()
+	})
+}
+
+// ClearCorrelationID clears the value of the "correlation_id" field.
+func (u *CloudEventUpsertBulk) ClearCorrelationID() *CloudEventUpsertBulk {
+	return u.Update(func(s *CloudEventUpsert) {
+		s.ClearCorrelationID()
 	})
 }
 

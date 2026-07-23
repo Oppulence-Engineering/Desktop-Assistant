@@ -106,6 +106,9 @@ func (h *Handler) ingestWithAfterCreate(ctx context.Context, u *ent.User, req In
 	if req.SourceAccountID != "" {
 		create = create.SetSourceAccountID(req.SourceAccountID)
 	}
+	if req.CorrelationID != "" {
+		create = create.SetCorrelationID(req.CorrelationID)
+	}
 	if req.EventType != "" {
 		create = create.SetEventType(req.EventType)
 	}

@@ -432,7 +432,17 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		if err != nil {
 			return fmt.Errorf("wire actions broker: %w", err)
 		}
-		actionBroker := actions.NewBroker(client, actionSigner, nil, actions.Config{
+		// The product Act-seam executor is wired only when configured; without
+		// it execute fails closed (approve/reject/audit still work).
+		var actExec actions.Executor
+		if httpSeam := actions.NewHTTPActSeam(actions.HTTPActSeamConfig{
+			BaseURL:      cfg.ActionActSeamBaseURL,
+			ServiceToken: cfg.ActionActSeamToken,
+			Timeout:      cfg.ActionActSeamTimeout,
+		}); httpSeam != nil {
+			actExec = httpSeam
+		}
+		actionBroker := actions.NewBroker(client, actionSigner, actExec, actions.Config{
 			TokenTTL:                  cfg.ActionTokenTTL,
 			WatchTimeout:              cfg.ActionWatchTimeout,
 			RequireStepUpForFinancial: cfg.ActionRequireStepUpForFinancial,

@@ -29,6 +29,8 @@ type CloudEvent struct {
 	SourceEventID string `json:"source_event_id,omitempty"`
 	// SourceAccountID holds the value of the "source_account_id" field.
 	SourceAccountID string `json:"source_account_id,omitempty"`
+	// CorrelationID holds the value of the "correlation_id" field.
+	CorrelationID string `json:"correlation_id,omitempty"`
 	// EventType holds the value of the "event_type" field.
 	EventType string `json:"event_type,omitempty"`
 	// Subject holds the value of the "subject" field.
@@ -102,7 +104,7 @@ func (*CloudEvent) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case cloudevent.FieldMatchedTaskCount:
 			values[i] = new(sql.NullInt64)
-		case cloudevent.FieldSource, cloudevent.FieldSourceEventID, cloudevent.FieldSourceAccountID, cloudevent.FieldEventType, cloudevent.FieldSubject, cloudevent.FieldText, cloudevent.FieldRoutingJSON, cloudevent.FieldDedupeKey, cloudevent.FieldRoutingStatus:
+		case cloudevent.FieldSource, cloudevent.FieldSourceEventID, cloudevent.FieldSourceAccountID, cloudevent.FieldCorrelationID, cloudevent.FieldEventType, cloudevent.FieldSubject, cloudevent.FieldText, cloudevent.FieldRoutingJSON, cloudevent.FieldDedupeKey, cloudevent.FieldRoutingStatus:
 			values[i] = new(sql.NullString)
 		case cloudevent.FieldCreatedAt, cloudevent.FieldUpdatedAt, cloudevent.FieldOccurredAt, cloudevent.FieldReceivedAt, cloudevent.FieldRoutedAt:
 			values[i] = new(sql.NullTime)
@@ -160,6 +162,12 @@ func (_m *CloudEvent) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field source_account_id", values[i])
 			} else if value.Valid {
 				_m.SourceAccountID = value.String
+			}
+		case cloudevent.FieldCorrelationID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field correlation_id", values[i])
+			} else if value.Valid {
+				_m.CorrelationID = value.String
 			}
 		case cloudevent.FieldEventType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -296,6 +304,9 @@ func (_m *CloudEvent) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("source_account_id=")
 	builder.WriteString(_m.SourceAccountID)
+	builder.WriteString(", ")
+	builder.WriteString("correlation_id=")
+	builder.WriteString(_m.CorrelationID)
 	builder.WriteString(", ")
 	builder.WriteString("event_type=")
 	builder.WriteString(_m.EventType)
